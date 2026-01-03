@@ -1,0 +1,20 @@
+{
+    // 1. 告诉 clangd 编译数据库在哪里 (核心)
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/out/debug",
+        "--clang-tidy", // 开启静态分析
+        "--background-index", // 后台建立索引
+        "--completion-style=detailed",
+        "--header-insertion=iwyu" // 智能插入头文件 (Include What You Use)
+    ],
+    // 2. 启用保存时自动格式化
+    "editor.formatOnSave": true,
+    "editor.inlayHints.enabled": "off",
+    // 3. 确保格式化器使用的是 clangd，而不是其他插件
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    }
+}

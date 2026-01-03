@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch MSVC",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/out/debug/saauso.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/out/debug",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "Ninja Build Debug"
+        }
+    ]
+}

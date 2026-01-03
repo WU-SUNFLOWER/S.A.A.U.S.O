@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Gn Build Debug",
+            "type": "shell",
+            "command": "gn",
+            "args": [
+                "gen",
+                "${workspaceFolder}/out/debug",
+                "--args=is_debug=true"
+            ],
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Ninja Build Debug",
+            "type": "shell",
+            "command": "ninja",
+            "args": [
+                "-C",
+                "${workspaceFolder}/out/debug"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "Gn Build Debug",
+            "problemMatcher": "$msCompile" 
+        }
+    ]
+}

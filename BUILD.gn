@@ -1,5 +1,7 @@
-executable("hello_world") {
+executable("saauso") {
   sources = [ "src/main.cc" ]
+
+  include_dirs = [ "//" ]
 
   # 1. 加载基础配置
   configs = [ "//build:compiler_defaults" ]

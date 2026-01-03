@@ -16,6 +16,7 @@ is_mac = current_os == "mac"
 declare_args() {
   is_debug = false
   is_asan = false
+  llvm_lib_path = "D:\\LLVM\\lib\\clang\\21\\lib\\windows"
 }
 
 set_default_toolchain("//build/toolchain:clang")
