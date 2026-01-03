@@ -1,0 +1,15 @@
+executable("hello_world") {
+  sources = [ "src/main.cc" ]
+
+  # 1. 加载基础配置
+  configs = [ "//build:compiler_defaults" ]
+
+  # 2. 根据参数加载 Debug 或 Release 配置
+  if (is_debug) {
+    configs += [ "//build:debug" ]
+  } else if (is_asan) {
+    configs += [ "//build:asan" ]
+  } else {
+    configs += [ "//build:release" ]
+  }
+}

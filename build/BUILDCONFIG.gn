@@ -1,0 +1,21 @@
+if (target_os == "") {
+  target_os = host_os
+}
+
+if (target_cpu == "") {
+  target_cpu = host_cpu
+}
+
+if (current_os == "") {
+  current_os = target_os
+}
+is_win = current_os == "win"
+is_linux = current_os == "linux"
+is_mac = current_os == "mac"
+
+declare_args() {
+  is_debug = false
+  is_asan = false
+}
+
+set_default_toolchain("//build/toolchain:clang")

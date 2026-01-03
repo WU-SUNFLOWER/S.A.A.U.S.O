@@ -1,0 +1,51 @@
+# build/toolchain/BUILD.gn
+
+toolchain("clang") {
+  tool("cc") {
+    depfile = "{{output}}.d"
+    # 关键修正：加入了 defines, include_dirs, cflags, cflags_c
+    command = "clang-cl /nologo /showIncludes {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}}"
+    depsformat = "msvc"
+    description = "CC {{output}}"
+    outputs = [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.obj" ]
+  }
+
+  # cxx 工具修改
+  tool("cxx") {
+    depfile = "{{output}}.d"
+    # 确保 /EHsc 仍然存在，并且 ClangDriver 支持它
+    command = "clang-cl /nologo /showIncludes {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /c {{source}} /Fo{{output}}"
+    depsformat = "msvc"
+    description = "CXX {{output}}"
+    outputs = [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.obj" ]
+  }
+
+  tool("alink") {
+    command = "llvm-lib /nologo /OUT:{{output}} {{inputs}}"
+    description = "LIB {{output}}"
+    outputs = [ "{{target_out_dir}}/{{target_output_name}}.lib" ]
+    default_output_extension = ".lib"
+    output_prefix = "lib"
+  }
+
+  tool("link") {
+    # 回归使用 lld-link，这是 Windows 上最标准且高性能的做法
+    # {{ldflags}} 会包含所有的库路径和链接参数
+    # /DEBUG 参数会由 build/BUILD.gn 中的 config 传入，这里不需要硬编码
+    command = "lld-link /nologo {{ldflags}} /OUT:{{output}} {{inputs}}"
+    
+    description = "LINK {{output}}"
+    outputs = [ "{{root_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+    default_output_extension = ".exe"
+  }
+
+  tool("stamp") {
+    command = "cmd /c type nul > {{output}}"
+    description = "STAMP {{output}}"
+  }
+
+  tool("copy") {
+    command = "cmd /c copy /y {{source}} {{output}}"
+    description = "COPY {{source}} {{output}}"
+  }
+}

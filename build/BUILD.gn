@@ -1,0 +1,64 @@
+# build/BUILD.gn
+
+# 1. 基础配置
+config("compiler_defaults") {
+  if (is_win) {
+    cflags = [
+      "/std:c++17",
+      "/EHsc",
+      "/W3",
+      "-Wno-deprecated-declarations",
+    ]
+    defines = [
+      "UNICODE",
+      "_UNICODE",
+      "NOMINMAX",
+    ]
+  }
+
+  include_dirs = [ "//" ]
+}
+
+# 2. Debug 配置
+config("debug") {
+  cflags = [
+    "/Od",
+    "/Zi",
+    "/MDd",
+  ]
+  ldflags = [
+    "/DEBUG",
+  ]
+  defines = [ "_DEBUG" ]
+}
+
+# 3. Release 配置
+config("release") {
+  cflags = [
+    "/O2",
+    "/MD",
+    "-flto=thin", 
+  ]
+  ldflags = [
+    "/OPT:REF",
+    "/OPT:ICF",
+  ]
+  defines = [ "NDEBUG" ]
+}
+
+# 4. ASan 配置 (修复链接错误)
+config("asan") {
+  cflags = [
+    "/Od",
+    "/Zi",
+    "/MD",
+    "-fsanitize=address", 
+  ]
+  ldflags = [
+    "/LIBPATH:D:\\LLVM\\lib\\clang\\21\\lib\\windows",
+    "clang_rt.asan_dynamic-x86_64.lib",
+    "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib",
+  ]
+
+  defines = [ "ASAN_BUILD" ]
+}
