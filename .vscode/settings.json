@@ -10,11 +10,16 @@
     // 2. 启用保存时自动格式化
     "editor.formatOnSave": true,
     "editor.inlayHints.enabled": "off",
+    // 编辑器的制表符大小（空格数）
+    "editor.tabSize": 2,
+    // 是否在按 Tab 键时插入空格
+    "editor.insertSpaces": true,
     // 3. 确保格式化器使用的是 clangd，而不是其他插件
     "[cpp]": {
         "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
     },
     "[c]": {
         "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-    }
+    },
+    "explorer.copyRelativePathSeparator": "/",
 }

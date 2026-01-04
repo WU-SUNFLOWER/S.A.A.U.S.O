@@ -1,5 +1,9 @@
-#ifndef BUILD_BUILD_CONFIG_H_
-#define BUILD_BUILD_CONFIG_H_
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#ifndef SAAUSO_BUILD_BUILD_CONFIG_H_
+#define SAAUSO_BUILD_BUILD_CONFIG_H_
 
 // 1. 先把所有平台默认设为 0 (False)
 #define IS_WIN 0
@@ -20,4 +24,4 @@
 #error "Please add support for your platform in build_config.h"
 #endif
 
-#endif  // BUILD_BUILD_CONFIG_H_
+#endif  // SAAUSO_BUILD_BUILD_CONFIG_H_
