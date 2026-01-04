@@ -1,7 +1,7 @@
 executable("saauso") {
-  sources = [ "src/main.cc" ]
+  sources = [ "//src/main.cc" ]
 
-  include_dirs = [ "//" ]
+  include_dirs = [ "//src" ]
 
   # 1. 加载基础配置
   configs = [ "//build:compiler_defaults" ]

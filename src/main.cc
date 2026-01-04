@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "build/build_config.h"  // 引入我们的探测头文件
+#include "build/buildflag.h"
 
 void PlatformSpecificFunction(int x, int y) {
   // 这种写法优于 #ifdef，因为编译器会检查所有分支的语法
