@@ -22,11 +22,11 @@ Object** AllocateArray(int size) {
 }  // namespace
 
 // static
+
 ArrayList* ArrayList::NewInstance(int init_capacity) {
   HandleScope scope;
 
   Handle<ArrayList> object(Universe::heap_->Allocate<ArrayList>());
-  object->set_shape(Universe::array_list_shape_);
   object->capacity_ = init_capacity;
   object->length_ = 0;
   object->array_ = AllocateArray(object->capacity_);

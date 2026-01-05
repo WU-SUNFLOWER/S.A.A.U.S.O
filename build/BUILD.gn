@@ -4,7 +4,7 @@
 config("compiler_defaults") {
   if (is_win) {
     cflags = [
-      "/std:c++17",
+      "/std:c++20",
       "/EHsc",
       "/W3",
       "-Wno-deprecated-declarations",
@@ -16,7 +16,7 @@ config("compiler_defaults") {
     ]
   } else if (is_linux) {
     cflags = [
-      "-std=c++17",
+      "-std=c++20",
       "-Wall",                       # 开启常用警告
       "-Wno-deprecated-declarations",
       "-fPIC",                       # 生成位置无关代码 (对动态库是必须的，对可执行文件通常也没问题)

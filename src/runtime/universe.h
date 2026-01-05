@@ -5,20 +5,20 @@
 #ifndef SAAUSO_RUNTIME_UNIVERSE_H_
 #define SAAUSO_RUNTIME_UNIVERSE_H_
 
-#include "objects/object-shape.h"
 namespace saauso::internal {
 
 class Heap;
 class ObjectShape;
 class Klass;
+class PyObject;
 
 class Universe {
  public:
   static Heap* heap_;
 
-  static ObjectShape* array_list_shape_;
-  static ObjectShape* string_shape_;
-  static ObjectShape* hash_table_shape_;
+  static PyObject* py_none_object_;
+  static PyObject* py_true_object_;
+  static PyObject* py_false_object_;
 
   static void Genesis();
   static void Destroy();

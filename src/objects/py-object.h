@@ -5,11 +5,15 @@
 #ifndef SAAUSO_OBJECTS_PY_OBJECTS_H_
 #define SAAUSO_OBJECTS_PY_OBJECTS_H_
 
-#include "objects/heap-object.h"
+#include <cstdio>
+
+#include "objects/objects.h"
 
 namespace saauso::internal {
 
-class PyObject : public HeapObject {};
+class PyObject : public Object {
+  virtual void print() { printf("This is an object.\n"); }
+};
 
 }  // namespace saauso::internal
 

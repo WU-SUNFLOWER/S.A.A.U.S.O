@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/string.h"
+#include "objects/py-string.h"
 
 #include <algorithm>
 #include <cassert>
@@ -21,43 +21,50 @@ constexpr uint64_t kInvalidHashCache = 0;
 constexpr uint64_t kFallbackHashCache = kInvalidHashCache + 1;
 }  // namespace
 
-// static
-String* String::NewInstance(int length) {
-  HandleScope scope;
+////////////////////////////////////////////////////////////
 
-  Handle<String> object(Universe::heap_->Allocate<String>());
-  object->set_shape(Universe::string_shape_);
+// static
+Handle<PyString> PyString::NewInstance(int length) {
+  Handle<PyString> object(Universe::heap_->Allocate<PyString>());
+
   object->length_ = length;
+  // 在虚拟机堆上分配一块空间，用于存放实际的字符串
   object->buffer_ =
       static_cast<char*>(Universe::heap_->AllocateRaw(sizeof(char) * length));
   object->hash_ = kInvalidHashCache;
 
-  return object.get();
+  return object;
 }
 
 // static
-String* String::NewInstance(const char* source, int length) {
-  HandleScope scope;
-  Handle<String> object(NewInstance(length));
+Handle<PyString> PyString::NewInstance(const char* source, int length) {
+  Handle<PyString> object(NewInstance(length));
 
   std::memcpy(object->buffer_, source, length);
 
-  return object.get();
+  return object;
 }
 
-void String::Set(int index, char value) {
+// static
+PyString* PyString::Cast(PyObject* object) {
+  return reinterpret_cast<PyString*>(object);
+}
+
+////////////////////////////////////////////////////////////
+
+void PyString::Set(int index, char value) {
   assert(0 <= index && index < length_);
 
   buffer_[index] = value;
 }
 
-char String::Get(int index) const {
+char PyString::Get(int index) const {
   assert(0 <= index && index < length_);
 
   return buffer_[index];
 }
 
-uint64_t String::GetHash() {
+uint64_t PyString::GetHash() {
   if (hash_ == kInvalidHashCache) {
     hash_ = rapidhash(buffer_, length_);
     if (hash_ == kInvalidHashCache) {
@@ -67,11 +74,11 @@ uint64_t String::GetHash() {
   return hash_;
 }
 
-bool String::HasHashCache() const {
+bool PyString::HasHashCache() const {
   return hash_ != kInvalidHashCache;
 }
 
-bool String::IsEqualTo(String* other) {
+bool PyString::IsEqualTo(PyString* other) {
   if (length_ != other->length()) {
     return false;
   }
@@ -85,7 +92,7 @@ bool String::IsEqualTo(String* other) {
   return std::memcmp(buffer_, other->buffer(), length_) == 0;
 }
 
-bool String::IsLessThan(String* other) {
+bool PyString::IsLessThan(PyString* other) {
   // 比较长度取较小值，避免越界
   int min_len = std::min(length_, other->length());
 
@@ -101,7 +108,7 @@ bool String::IsLessThan(String* other) {
   return length_ < other->length();
 }
 
-bool String::IsLargerThan(String* other) {
+bool PyString::IsLargerThan(PyString* other) {
   int min_len = std::min(length_, other->length());
   int cmp = std::memcmp(buffer_, other->buffer(), min_len);
 
@@ -113,22 +120,28 @@ bool String::IsLargerThan(String* other) {
   return length_ > other->length();
 }
 
-String* String::Slice(int from, int to) const {
-  assert(0 <= from && from <= to && to < length_);
+// static
+Handle<PyString> PyString::Slice(Handle<PyString> string, int from, int to) {
+  assert(0 <= from && from <= to && to < string->length_);
 
-  return String::NewInstance(buffer_ + from, to - from + 1);
+  int sliced_length = to - from + 1;
+  Handle<PyString> result = PyString::NewInstance(sliced_length);
+
+  std::memcpy(result->buffer_, string->buffer_ + from, sliced_length);
+  return result;
 }
 
-String* String::Append(String* other) const {
-  HandleScope scope;
+// static
+Handle<PyString> PyString::Append(Handle<PyString> string,
+                                  Handle<PyString> other) {
+  int new_length = string->length_ + other->length();
+  Handle<PyString> new_object(PyString::NewInstance(new_length));
 
-  int new_length = length_ + other->length();
-  Handle<String> new_object(String::NewInstance(new_length));
+  std::memcpy(new_object->buffer_, string->buffer_, string->length_);
+  std::memcpy(new_object->buffer_ + string->length_, other->buffer(),
+              other->length());
 
-  std::memcpy(new_object->buffer_, buffer_, length_);
-  std::memcpy(new_object->buffer_ + length_, other->buffer(), other->length());
-
-  return new_object.get();
+  return new_object;
 }
 
 }  // namespace saauso::internal

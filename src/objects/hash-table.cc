@@ -7,9 +7,7 @@
 #include <cassert>
 #include <cstring>
 
-#include "handles/handles.h"
 #include "heap/heap.h"
-#include "objects/string.h"
 #include "runtime/universe.h"
 
 namespace saauso::internal {
@@ -22,7 +20,7 @@ constexpr double kMaxLoadFactor = 0.75;
 // HashTable基座实现
 
 template <typename Shape, typename Key>
-Object* HashTable<Shape, Key>::Get(Key key) {
+Object* HashTable<Shape, Key>::Get(Key key) const {
   if (capacity_ == 0) {
     return nullptr;
   }
@@ -67,7 +65,7 @@ void HashTable<Shape, Key>::Put(Key key, Object* value) {
 }
 
 template <typename Shape, typename Key>
-bool HashTable<Shape, Key>::Contains(Key key) {
+bool HashTable<Shape, Key>::Contains(Key key) const {
   return Get(key) != nullptr;
 }
 
@@ -122,24 +120,25 @@ uint64_t HashTable<Shape, Key>::GetProbe(uint64_t index, uint64_t mask) {
 ///////////////////////////////////////////////////////////////////////////////////////
 // 字符串哈希表实现
 
-// static
-bool StringHashTableShape::IsMatch(String* key, String* other) {
-  return key->IsEqualTo(other);
-}
+// // static
+// bool StringHashTableShape::IsMatch(String* key, String* other) {
+//   return key->IsEqualTo(other);
+// }
 
-// static
-uint64_t StringHashTableShape::Hash(String* key) {
-  return key->GetHash();
-}
+// // static
+// uint64_t StringHashTableShape::Hash(String* key) {
+//   return key->GetHash();
+// }
 
-// static
-StringHashTable* StringHashTable::NewInstance(int init_capacity) {
-  HandleScope scope;
+// // static
+// StringHashTable* StringHashTable::NewInstance(int init_capacity) {
+//   HandleScope scope;
 
-  Handle<StringHashTable> object(Universe::heap_->Allocate<StringHashTable>());
-  object->Init(init_capacity);
+//   Handle<StringHashTable>
+//   object(Universe::heap_->Allocate<StringHashTable>());
+//   object->Init(init_capacity);
 
-  return object.get();
-}
+//   return object.get();
+// }
 
 }  // namespace saauso::internal

@@ -2,18 +2,20 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "runtime/universe.h"
+#include "objects/py-double.h"
 
+#include "handles/handles.h"
 #include "heap/heap.h"
+#include "runtime/universe.h"
 
 namespace saauso::internal {
 
 // static
-void Universe::Genesis() {
-  heap_ = new Heap();
-}
+Handle<PyDouble> PyDouble::NewInstance(double value) {
+  Handle<PyDouble> object(Universe::heap_->Allocate<PyDouble>());
+  object->value_ = value;
 
-// static
-void Universe::Destroy() {}
+  return object;
+}
 
 }  // namespace saauso::internal

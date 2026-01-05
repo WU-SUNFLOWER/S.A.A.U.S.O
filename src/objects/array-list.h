@@ -5,11 +5,11 @@
 #ifndef SAAUSO_OBJECTS_ARRAY_LIST_H_
 #define SAAUSO_OBJECTS_ARRAY_LIST_H_
 
-#include "objects/heap-object.h"
+#include "objects/objects.h"
 
 namespace saauso::internal {
 
-class ArrayList : public HeapObject {
+class ArrayList : public Object {
  public:
   static ArrayList* NewInstance(int init_capacity = 8);
 

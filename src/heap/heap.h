@@ -17,6 +17,8 @@ class Heap {
   }
 };
 
+#define WRITE_BARRIER
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_HEAP_HEAP_H_

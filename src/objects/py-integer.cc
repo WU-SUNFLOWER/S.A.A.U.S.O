@@ -2,18 +2,20 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "runtime/universe.h"
+#include "objects/py-integer.h"
 
+#include "handles/handles.h"
 #include "heap/heap.h"
+#include "runtime/universe.h"
 
 namespace saauso::internal {
 
 // static
-void Universe::Genesis() {
-  heap_ = new Heap();
-}
+Handle<PyInteger> PyInteger::NewInstance(int value) {
+  Handle<PyInteger> object(Universe::heap_->Allocate<PyInteger>());
+  object->value_ = value;
 
-// static
-void Universe::Destroy() {}
+  return object;
+}
 
 }  // namespace saauso::internal

@@ -7,13 +7,12 @@
 
 #include <cstdint>
 
-#include "objects/heap-object.h"
 #include "objects/objects.h"
 
 namespace saauso::internal {
 
 template <typename Shape, typename Key>
-class HashTable : public HeapObject {
+class HashTable : public Object {
  public:
   Object* Get(Key key) const;
   void Put(Key key, Object* value);
@@ -40,17 +39,15 @@ class HashTable : public HeapObject {
   int occupied_{0};
 };
 
-class String;
+// class StringHashTableShape {
+//   static bool IsMatch(String* key, String* other);
+//   static uint64_t Hash(String* key);
+// };
 
-class StringHashTableShape {
-  static bool IsMatch(String* key, String* other);
-  static uint64_t Hash(String* key);
-};
-
-class StringHashTable : public HashTable<StringHashTableShape, String*> {
- public:
-  static StringHashTable* NewInstance(int init_capacity = 4);
-};
+// class StringHashTable : public HashTable<StringHashTableShape, String*> {
+//  public:
+//   static StringHashTable* NewInstance(int init_capacity = 4);
+// };
 
 }  // namespace saauso::internal
 
