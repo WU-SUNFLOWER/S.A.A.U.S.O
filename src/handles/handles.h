@@ -5,6 +5,7 @@
 #ifndef SAAUSO_HANDLES_HANDLES_H_
 #define SAAUSO_HANDLES_HANDLES_H_
 
+#include <cassert>
 #include <type_traits>
 
 namespace saauso::internal {
@@ -46,12 +47,19 @@ class Handle {
     requires(is_subtype_v<S, T>)
       : address_(other.address_) {}
 
-  T* operator->() const { return address_; }
-  T* operator*() const { return address_; }
+  T* operator->() const {
+    assert(!IsNull());
+    return address_;
+  }
+  T* operator*() const {
+    assert(!IsNull());
+    return address_;
+  }
 
   template <class S>
   static Handle<T> Cast(Handle<S> that) {
-    return Handle<T>(T::Cast(*that));
+    T::Cast(*that);  // 这行代码起到断言的作用
+    return Handle<T>(reinterpret_cast<T*>(*that));
   }
 
   bool IsNull() { return address_ == nullptr; }

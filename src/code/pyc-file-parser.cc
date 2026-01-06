@@ -9,7 +9,7 @@
 #include "code/binary-file-reader.h"
 #include "handles/handles.h"
 #include "objects/code-object.h"
-#include "objects/py-double.h"
+#include "objects/py-float.h"
 #include "objects/py-integer.h"
 #include "objects/py-list.h"
 #include "objects/py-object.h"
@@ -241,7 +241,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = PyInteger::NewInstance(reader_->ReadInt32());
         break;
       case kDoubleFlag:
-        object = PyDouble::NewInstance(reader_->ReadDouble());
+        object = PyFloat::NewInstance(reader_->ReadDouble());
         break;
       case kNoneObjectFlag:
         object = Handle<PyObject>(Universe::py_none_object_);

@@ -9,11 +9,13 @@ namespace saauso::internal {
 
 class Heap {
  public:
-  void* AllocateRaw(size_t size_in_bytes);
+  enum class AllocationSpace { kNewSpace, kOldSpace, kMetaSpace };
+
+  void* AllocateRaw(size_t size_in_bytes, AllocationSpace space);
 
   template <typename T>
-  T* Allocate() {
-    return static_cast<T*>(AllocateRaw(sizeof(T)));
+  T* Allocate(AllocationSpace space) {
+    return static_cast<T*>(AllocateRaw(sizeof(T), space));
   }
 };
 

@@ -35,9 +35,11 @@ class PyList : public PyObject {
   bool IsEmpty() const { return length_ == 0; };
   bool IsFull() const { return length_ == capacity_; }
 
-  // 触发GC的方法均单独实现成static函数
-  static void Append(Handle<PyList> list, Handle<PyObject> value);
-  static void Insert(Handle<PyList> list, int index, Handle<PyObject> value);
+  // 特别提醒：
+  // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
+  // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
+  void Append(Handle<PyObject> value);
+  void Insert(int index, Handle<PyObject> value);
 
  private:
   int capacity_{0};

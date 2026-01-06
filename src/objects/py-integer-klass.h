@@ -1,0 +1,42 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#ifndef SAAUSO_OBJECTS_PY_INTEGER_KLASS_H_
+#define SAAUSO_OBJECTS_PY_INTEGER_KLASS_H_
+
+#include "handles/handles.h"
+#include "objects/klass.h"
+
+namespace saauso::internal {
+
+class PyObject;
+class PyBoolean;
+
+class PyIntegerKlass : public Klass {
+ public:
+  static PyIntegerKlass* GetInstance();
+
+  void Initialize();
+
+ private:
+  PyIntegerKlass();
+  static PyIntegerKlass* instance_;
+
+  static Handle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
+
+  static PyBoolean* Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_Less(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
+};
+
+}  // namespace saauso::internal
+
+#endif  // SAAUSO_OBJECTS_PY_INTEGER_KLASS_H_

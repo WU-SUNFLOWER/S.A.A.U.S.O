@@ -5,12 +5,16 @@
 #include "runtime/universe.h"
 
 #include "heap/heap.h"
+#include "objects/py-boolean.h"
 
 namespace saauso::internal {
 
 // static
 void Universe::Genesis() {
   heap_ = new Heap();
+
+  py_true_object_ = PyBoolean::NewInstance(true);
+  py_false_object_ = PyBoolean::NewInstance(false);
 }
 
 // static

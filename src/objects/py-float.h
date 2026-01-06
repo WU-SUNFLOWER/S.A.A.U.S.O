@@ -5,14 +5,19 @@
 #include "handles/handles.h"
 #include "objects/py-object.h"
 
-#ifndef SAAUSO_OBJECTS_PY_DOUBLE_H_
-#define SAAUSO_OBJECTS_PY_DOUBLE_H_
+#ifndef SAAUSO_OBJECTS_PY_FLOAT_H_
+#define SAAUSO_OBJECTS_PY_FLOAT_H_
 
 namespace saauso::internal {
 
-class PyDouble : public PyObject {
+class PyFloat : public PyObject {
  public:
-  static Handle<PyDouble> NewInstance(double value);
+  static Handle<PyFloat> NewInstance(double value);
+
+  static PyFloat* Cast(PyObject* object);
+
+  double value() const { return value_; }
+  void set_value(double value) { value_ = value; }
 
  private:
   double value_;

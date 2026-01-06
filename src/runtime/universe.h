@@ -8,20 +8,24 @@
 namespace saauso::internal {
 
 class Heap;
-class ObjectShape;
 class Klass;
 class PyObject;
+class PyBoolean;
 
 class Universe {
  public:
   static Heap* heap_;
 
   static PyObject* py_none_object_;
-  static PyObject* py_true_object_;
-  static PyObject* py_false_object_;
+  static PyBoolean* py_true_object_;
+  static PyBoolean* py_false_object_;
 
   static void Genesis();
   static void Destroy();
+
+  static PyBoolean* ToPyBoolean(bool condition) {
+    return condition ? py_true_object_ : py_false_object_;
+  }
 };
 
 }  // namespace saauso::internal

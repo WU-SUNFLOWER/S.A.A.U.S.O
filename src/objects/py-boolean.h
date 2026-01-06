@@ -2,26 +2,24 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "handles/handles.h"
 #include "klass.h"
 #include "objects/py-object.h"
 
-#ifndef SAAUSO_OBJECTS_PY_INTEGER_H_
-#define SAAUSO_OBJECTS_PY_INTEGER_H_
+#ifndef SAAUSO_OBJECTS_PY_BOOLEAN_H_
+#define SAAUSO_OBJECTS_PY_BOOLEAN_H_
 
 namespace saauso::internal {
 
-class PyInteger : public PyObject {
+class PyBoolean : public PyObject {
  public:
-  static Handle<PyInteger> NewInstance(int64_t value);
+  static PyBoolean* NewInstance(bool value);
 
-  static PyInteger* Cast(PyObject* object);
+  static PyBoolean* Cast(PyObject* object);
 
-  int64_t value() const { return value_; }
-  void set_value(int64_t value) { value_ = value; }
+  bool value() const { return value_; }
 
  private:
-  int64_t value_;
+  bool value_;
 };
 
 }  // namespace saauso::internal

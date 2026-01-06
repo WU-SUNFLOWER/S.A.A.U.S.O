@@ -5,11 +5,14 @@
 #include "heap/heap.h"
 
 #include <cstdlib>
+#include <cstring>
 
 namespace saauso::internal {
 
-void* Heap::AllocateRaw(size_t size_in_bytes) {
-  return malloc(size_in_bytes);
+void* Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
+  void* result = std::malloc(size_in_bytes);
+  std::memset(result, 0x00, size_in_bytes);
+  return result;
 }
 
 }  // namespace saauso::internal

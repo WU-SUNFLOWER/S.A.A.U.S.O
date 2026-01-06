@@ -11,6 +11,7 @@
 
 #include "handles/handles.h"
 #include "heap/heap.h"
+#include "objects/py-string-klass.h"
 #include "runtime/universe.h"
 #include "third_party/rapidhash/rapidhash.h"
 
@@ -25,15 +26,19 @@ constexpr uint64_t kFallbackHashCache = kInvalidHashCache + 1;
 
 // static
 Handle<PyString> PyString::NewInstance(int length) {
-  Handle<PyString> object(Universe::heap_->Allocate<PyString>());
+  Handle<PyString> object(
+      Universe::heap_->Allocate<PyString>(Heap::AllocationSpace::kNewSpace));
 
   object->length_ = length;
   object->hash_ = kInvalidHashCache;
 
   // 在虚拟机堆上分配一块空间，用于存放实际的字符串
   object->buffer_ = nullptr;
-  object->buffer_ =
-      static_cast<char*>(Universe::heap_->AllocateRaw(sizeof(char) * length));
+  object->buffer_ = static_cast<char*>(Universe::heap_->AllocateRaw(
+      sizeof(char) * length, Heap::AllocationSpace::kNewSpace));
+
+  // 绑定klass
+  object->set_klass(PyStringKlass::GetInstance());
 
   return object;
 }
@@ -48,7 +53,13 @@ Handle<PyString> PyString::NewInstance(const char* source, int length) {
 }
 
 // static
+Handle<PyString> PyString::NewInstance(const char* source) {
+  return NewInstance(source, std::strlen(source));
+}
+
+// static
 PyString* PyString::Cast(PyObject* object) {
+  assert(object->IsPyString());
   return reinterpret_cast<PyString*>(object);
 }
 
