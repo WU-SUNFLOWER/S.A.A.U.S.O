@@ -76,20 +76,23 @@ Handle<CodeObject> PycFileParser::Parse() {
 
   int index = 0;
   if (ref_flag) {
-    index = cache_->length();
-    PyList::Append(cache_, Handle<PyObject>::Null());
+    // 先在cache中占个位
+    index = cache->length();
+    PyList::Append(cache, Handle<PyObject>::Null());
   }
 
-  Handle<CodeObject> code_object(ParseCodeObject());
+  Handle<CodeObject> code_object = ParseCodeObject(string_table, cache);
 
   if (ref_flag) {
-    cache_->Set(index, code_object.get());
+    // 对象构造完毕，缓存到cache
+    cache->Set(index, code_object);
   }
 
   return code_object.EscapeFrom(&scope);
 }
 
-Handle<CodeObject> PycFileParser::ParseCodeObject() {
+Handle<CodeObject> PycFileParser::ParseCodeObject(Handle<PyList> string_table,
+                                                  Handle<PyList> cache) {
   HandleScope scope;
 
   int arg_count = reader_->ReadInt32();
@@ -99,17 +102,17 @@ Handle<CodeObject> PycFileParser::ParseCodeObject() {
   int stack_size = reader_->ReadInt32();
   int flags = reader_->ReadInt32();
 
-  Handle<PyString> bytecodes(ParseByteCodes());
-  Handle<PyList> consts(ParseConsts());
-  Handle<PyList> names(ParseNames());
-  Handle<PyList> var_names(ParseVarNames());
-  Handle<PyList> free_vars(ParseFreeVars());
-  Handle<PyList> cell_vars(ParseCellVars());
+  Handle<PyString> bytecodes = ParseByteCodes(string_table, cache);
+  Handle<PyList> consts = ParseConsts(string_table, cache);
+  Handle<PyList> names = ParseNames(string_table, cache);
+  Handle<PyList> var_names = ParseVarNames(string_table, cache);
+  Handle<PyList> free_vars = ParseFreeVars(string_table, cache);
+  Handle<PyList> cell_vars = ParseCellVars(string_table, cache);
 
-  Handle<PyString> file_name(ParseFileName());
-  Handle<PyString> module_name(ParseName());
+  Handle<PyString> file_name = ParseFileName(string_table, cache);
+  Handle<PyString> module_name = ParseName(string_table, cache);
   int begin_line_no = reader_->ReadInt32();
-  Handle<PyString> lnotab(ParseNoTable());
+  Handle<PyString> lnotab = ParseNoTable(string_table, cache);
 
   Handle<CodeObject> result = CodeObject::NewInstance(
       arg_count, posonly_arg_count, kwonly_arg_count, nlocals, stack_size,
@@ -119,40 +122,47 @@ Handle<CodeObject> PycFileParser::ParseCodeObject() {
   return result.EscapeFrom(&scope);
 }
 
-Handle<PyString> PycFileParser::ParseByteCodes() {
+Handle<PyString> PycFileParser::ParseByteCodes(Handle<PyList> string_table,
+                                               Handle<PyList> cache) {
   char object_type = reader_->ReadByte();
   assert(GET_OBJECT_TYPE_CHAR(object_type) == kStringFlag);
 
   Handle<PyString> s = ParseString(true);
   if (HAS_REF_FLAG(object_type)) {
-    PyList::Append(cache_, Handle<PyObject>(s));
+    PyList::Append(cache, s);
   }
 
   return s;
 }
 
-Handle<PyList> PycFileParser::ParseConsts() {
-  return ParseTuple();
+Handle<PyList> PycFileParser::ParseConsts(Handle<PyList> string_table,
+                                          Handle<PyList> cache) {
+  return ParseTuple(string_table, cache);
 }
 
-Handle<PyList> PycFileParser::ParseNames() {
-  return ParseTuple();
+Handle<PyList> PycFileParser::ParseNames(Handle<PyList> string_table,
+                                         Handle<PyList> cache) {
+  return ParseTuple(string_table, cache);
 }
 
-Handle<PyList> PycFileParser::ParseVarNames() {
-  return ParseTuple();
+Handle<PyList> PycFileParser::ParseVarNames(Handle<PyList> string_table,
+                                            Handle<PyList> cache) {
+  return ParseTuple(string_table, cache);
 }
 
-Handle<PyList> PycFileParser::ParseFreeVars() {
-  return ParseTuple();
+Handle<PyList> PycFileParser::ParseFreeVars(Handle<PyList> string_table,
+                                            Handle<PyList> cache) {
+  return ParseTuple(string_table, cache);
 }
 
-Handle<PyList> PycFileParser::ParseCellVars() {
-  return ParseTuple();
+Handle<PyList> PycFileParser::ParseCellVars(Handle<PyList> string_table,
+                                            Handle<PyList> cache) {
+  return ParseTuple(string_table, cache);
 }
 
-Handle<PyString> PycFileParser::ParseFileName() {
-  return ParseName();
+Handle<PyString> PycFileParser::ParseFileName(Handle<PyList> string_table,
+                                              Handle<PyList> cache) {
+  return ParseName(string_table, cache);
 }
 
 Handle<PyString> PycFileParser::ParseString(bool is_long_string) {
@@ -172,30 +182,30 @@ Handle<PyString> PycFileParser::ParseString(bool is_long_string) {
   return PyString::NewInstance(str_value.get(), length);
 }
 
-Handle<PyList> PycFileParser::ParseTuple() {
+Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
+                                         Handle<PyList> cache) {
   char raw_object_type = reader_->ReadByte();
   char object_type = GET_OBJECT_TYPE_CHAR(raw_object_type);
 
   Handle<PyList> tuple;
   switch (object_type) {
     case kTupleFlag: {
-      int index = cache_->length();
-
+      int cache_index = cache->length();
       if (HAS_REF_FLAG(object_type)) {
-        PyList::Append(cache_, Handle<PyObject>::Null());
+        PyList::Append(cache, Handle<PyObject>::Null());
       }
 
-      tuple = Handle<PyList>(ParseTupleImpl());
+      tuple = ParseTupleImpl(string_table, cache);
 
       if (HAS_REF_FLAG(object_type)) {
-        cache_->Set(index, tuple.get());
+        cache->Set(cache_index, tuple);
       }
 
       break;
     }
     case kInCacheObjectFlag: {
       int index = reader_->ReadInt32();
-      tuple = Handle<PyList>::Cast(cache_->Get(index));
+      tuple = Handle<PyList>::Cast(cache->Get(index));
     }
     default:
       printf("unknown object type: %c\n", object_type);
@@ -205,32 +215,33 @@ Handle<PyList> PycFileParser::ParseTuple() {
   return tuple;
 }
 
-Handle<PyList> PycFileParser::ParseTupleImpl() {
-  HandleScope scope;
-
+Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
+                                             Handle<PyList> cache) {
   uint8_t length = reader_->ReadByte();
-  Handle<PyList> list((PyList::NewInstance(length)));
+  Handle<PyList> list = PyList::NewInstance(length);
 
   for (int i = 0; i < length; ++i) {
+    HandleScope scope;
+
     char raw_object_type = reader_->ReadByte();
 
     int index = 0;
     if (HAS_REF_FLAG(raw_object_type)) {
-      index = cache_->length();
-      PyList::Append(cache_, Handle<PyObject>::Null());
+      index = cache->length();
+      PyList::Append(cache, Handle<PyObject>::Null());
     }
 
     Handle<PyObject> object;
     char object_type = GET_OBJECT_TYPE_CHAR(raw_object_type);
     switch (object_type) {
       case kCodeObjectFlag:
-        object = ParseCodeObject();
+        object = ParseCodeObject(string_table, cache);
         break;
       case kIntegerFlag:
-        object = Handle<PyObject>(PyInteger::NewInstance(reader_->ReadInt32()));
+        object = PyInteger::NewInstance(reader_->ReadInt32());
         break;
       case kDoubleFlag:
-        object = Handle<PyObject>(PyDouble::NewInstance(reader_->ReadDouble()));
+        object = PyDouble::NewInstance(reader_->ReadDouble());
         break;
       case kNoneObjectFlag:
         object = Handle<PyObject>(Universe::py_none_object_);
@@ -242,40 +253,41 @@ Handle<PyList> PycFileParser::ParseTupleImpl() {
         object = Handle<PyObject>(Universe::py_false_object_);
         break;
       case kInternedStringFlag:
-        object = Handle<PyObject>(ParseString(true));
+        object = ParseString(true);
         break;
       case kShortAsciiStringFlag:
       case kShortAsciiInternedStringFlag:
-        object = Handle<PyObject>(ParseString(false));
+        object = ParseString(false);
         break;
       case kStringFlag:
-        object = Handle<PyObject>(ParseString(true));
+        object = ParseString(true);
         break;
       case kInStringTableObjectFlag:
-        object = Handle<PyObject>(string_table_->Get(reader_->ReadInt32()));
+        object = string_table->Get(reader_->ReadInt32());
         break;
       case kInCacheObjectFlag:
-        object = Handle<PyObject>(cache_->Get(reader_->ReadInt32()));
+        object = cache->Get(reader_->ReadInt32());
         break;
       case kTupleFlag:
-        object = Handle<PyObject>(ParseTuple());
+        object = ParseTuple(string_table, cache);
         break;
       default:
         printf("unknown object type: %c\n", object_type);
         exit(0);
     }
 
-    list->Set(i, object.get());
+    list->Set(i, object);
 
     if (HAS_REF_FLAG(raw_object_type)) {
-      cache_->Set(index, object.get());
+      cache->Set(index, object);
     }
   }
 
   return list;
 }
 
-Handle<PyString> PycFileParser::ParseName() {
+Handle<PyString> PycFileParser::ParseName(Handle<PyList> string_table,
+                                          Handle<PyList> cache) {
   char object_type = reader_->ReadByte();
 
   Handle<PyString> s;
@@ -291,24 +303,25 @@ Handle<PyString> PycFileParser::ParseName() {
       break;
     case kInCacheObjectFlag: {
       int index = reader_->ReadInt32();
-      s = Handle<PyString>::Cast(string_table_->Get(index));
+      s = Handle<PyString>::Cast(string_table->Get(index));
       break;
     }
     case kInStringTableObjectFlag: {
       int index = reader_->ReadInt32();
-      s = Handle<PyString>::Cast(cache_->Get(index));
+      s = Handle<PyString>::Cast(cache->Get(index));
       break;
     }
   }
 
   if (HAS_REF_FLAG(object_type)) {
-    PyList::Append(cache_, Handle<PyObject>(s));
+    PyList::Append(cache, s);
   }
 
   return s;
 }
 
-Handle<PyString> PycFileParser::ParseNoTable() {
+Handle<PyString> PycFileParser::ParseNoTable(Handle<PyList> string_table,
+                                             Handle<PyList> cache) {
   char raw_object_type = reader_->ReadByte();
   char object_type = GET_OBJECT_TYPE_CHAR(raw_object_type);
 
@@ -316,11 +329,11 @@ Handle<PyString> PycFileParser::ParseNoTable() {
   switch (object_type) {
     case kStringFlag:
     case kInternedStringFlag:
-      s = Handle<PyString>(ParseString(true));
+      s = ParseString(true);
       break;
     case kInCacheObjectFlag: {
       int index = reader_->ReadInt32();
-      s = Handle<PyString>::Cast(cache_->Get(index));
+      s = Handle<PyString>::Cast(cache->Get(index));
       break;
     }
     default:
@@ -329,7 +342,7 @@ Handle<PyString> PycFileParser::ParseNoTable() {
   }
 
   if (HAS_REF_FLAG(object_type)) {
-    PyList::Append(cache_, Handle<PyObject>(s));
+    PyList::Append(cache, s);
   }
 
   return s;

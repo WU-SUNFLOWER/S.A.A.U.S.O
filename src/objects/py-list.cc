@@ -28,6 +28,10 @@ Handle<PyList> PyList::NewInstance(int init_capacity) {
   Handle<PyList> object(Universe::heap_->Allocate<PyList>());
   object->capacity_ = init_capacity;
   object->length_ = 0;
+
+  // AllocateArray会触发GC，
+  // 在此之前先手工将array_置为空，避免GC尝试访问一个悬空指针
+  object->array_ = nullptr;
   object->array_ = AllocateArray(object->capacity_);
 
   return object;
@@ -58,10 +62,10 @@ Handle<PyObject> PyList::GetLast() const {
   return Handle<PyObject>(array_[length_ - 1]);
 }
 
-void PyList::Set(int index, PyObject* value) {
+void PyList::Set(int index, Handle<PyObject> value) {
   assert(0 <= index && index < length_);
 
-  array_[index] = value;
+  array_[index] = *value;
   WRITE_BARRIER;
 }
 

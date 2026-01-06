@@ -24,7 +24,7 @@ class PyList : public PyObject {
   Handle<PyObject> Get(int index) const;
   Handle<PyObject> GetLast() const;
 
-  void Set(int index, PyObject* value);
+  void Set(int index, Handle<PyObject> value);
 
   void Remove(int index);
   void Clear();

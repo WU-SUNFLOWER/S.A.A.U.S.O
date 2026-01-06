@@ -23,22 +23,30 @@ class PycFileParser {
   Handle<CodeObject> Parse();
 
  private:
-  Handle<CodeObject> ParseCodeObject();
+  Handle<CodeObject> ParseCodeObject(Handle<PyList> string_table,
+                                     Handle<PyList> cache);
 
-  Handle<PyString> ParseByteCodes();
-  Handle<PyList> ParseConsts();
-  Handle<PyList> ParseNames();
-  Handle<PyList> ParseVarNames();
-  Handle<PyList> ParseFreeVars();
-  Handle<PyList> ParseCellVars();
+  Handle<PyString> ParseByteCodes(Handle<PyList> string_table,
+                                  Handle<PyList> cache);
+  Handle<PyList> ParseConsts(Handle<PyList> string_table, Handle<PyList> cache);
+  Handle<PyList> ParseNames(Handle<PyList> string_table, Handle<PyList> cache);
+  Handle<PyList> ParseVarNames(Handle<PyList> string_table,
+                               Handle<PyList> cache);
+  Handle<PyList> ParseFreeVars(Handle<PyList> string_table,
+                               Handle<PyList> cache);
+  Handle<PyList> ParseCellVars(Handle<PyList> string_table,
+                               Handle<PyList> cache);
 
-  Handle<PyString> ParseFileName();
-  Handle<PyString> ParseName();
-  Handle<PyString> ParseNoTable();
+  Handle<PyString> ParseFileName(Handle<PyList> string_table,
+                                 Handle<PyList> cache);
+  Handle<PyString> ParseName(Handle<PyList> string_table, Handle<PyList> cache);
+  Handle<PyString> ParseNoTable(Handle<PyList> string_table,
+                                Handle<PyList> cache);
 
   Handle<PyString> ParseString(bool is_long_string);
-  Handle<PyList> ParseTuple();
-  Handle<PyList> ParseTupleImpl();
+  Handle<PyList> ParseTuple(Handle<PyList> string_table, Handle<PyList> cache);
+  Handle<PyList> ParseTupleImpl(Handle<PyList> string_table,
+                                Handle<PyList> cache);
 
   std::unique_ptr<BinaryFileReader> reader_;
 };

@@ -28,10 +28,12 @@ Handle<PyString> PyString::NewInstance(int length) {
   Handle<PyString> object(Universe::heap_->Allocate<PyString>());
 
   object->length_ = length;
+  object->hash_ = kInvalidHashCache;
+
   // 在虚拟机堆上分配一块空间，用于存放实际的字符串
+  object->buffer_ = nullptr;
   object->buffer_ =
       static_cast<char*>(Universe::heap_->AllocateRaw(sizeof(char) * length));
-  object->hash_ = kInvalidHashCache;
 
   return object;
 }
