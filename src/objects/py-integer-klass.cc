@@ -113,7 +113,7 @@ Handle<PyObject> PyIntegerKlass::Virtual_Div(Handle<PyObject> self,
   if (other->IsPyFloat()) {
     double value =
         static_cast<double>(self_value) / Handle<PyFloat>::Cast(other)->value();
-    return PyInteger::NewInstance(value);
+    return PyFloat::NewInstance(value);
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉

@@ -21,7 +21,7 @@
 namespace saauso::internal {
 
 Klass* PyObject::klass() const {
-  // 特化：Smi复用PyIntegerKlass
+  // 特化：Smi使用PyIntegerKlass，使得它表现得像一个标准的Python对象
   if (IsPySmi()) {
     return PyIntegerKlass::GetInstance();
   }
