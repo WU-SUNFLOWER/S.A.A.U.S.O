@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# 设置报错即停止
+set -e
+
+# 检测操作系统，如果是 Windows (MINGW/MSYS)，则使用 .bat 后缀
+case "$(uname -s)" in
+    MSYS*|MINGW*|CYGWIN*)
+        GN_EXE="gn.exe"
+        NINJA_EXE="ninja.exe"
+        ;;
+    *)
+        GN_EXE="gn"
+        NINJA_EXE="ninja"
+        ;;
+esac
+
+# 定义帮助信息
+usage() {
+    echo "使用方法: $0 [release | debug | asan | unittest]"
+    echo "------------------------------------------------"
+    echo "  release  : 默认发布版本"
+    echo "  debug    : 调试版本 (is_debug=true)"
+    echo "  asan     : 内存检测版本 (is_asan=true)"
+    echo "  unittest : 单元测试版本 (is_asan=true, 编译 saauso_unittests)"
+    exit 1
+}
+
+# 检查输入参数
+if [ -z "$1" ]; then
+    usage
+fi
+
+MODE=$1
+OUT_DIR=""
+GN_ARGS=""
+TARGET="saauso"
+
+case $MODE in
+    release)
+        OUT_DIR="out/release"
+        GN_ARGS=""
+        ;;
+    debug)
+        OUT_DIR="out/debug"
+        GN_ARGS="is_debug=true"
+        ;;
+    asan)
+        OUT_DIR="out/asan"
+        GN_ARGS="is_asan=true"
+        ;;
+    unittest)
+        OUT_DIR="out/unittest"
+        GN_ARGS="is_asan=true"
+        TARGET="saauso_unittests"
+        ;;
+    *)
+        echo "错误: 未知的模式 '$MODE'"
+        usage
+        ;;
+esac
+
+echo "==== 正在构建模式: $MODE ===="
+echo "----------------------------"
+
+# 1. 生成配置
+if [ -z "$GN_ARGS" ]; then
+    $GN_EXE gen "$OUT_DIR"
+else
+    $GN_EXE gen "$OUT_DIR" --args="$GN_ARGS"
+fi
+
+# 2. 执行编译
+$NINJA_EXE -C "$OUT_DIR" "$TARGET"
+
+# 3. 导出编译命令 (用于 IDE 补全)
+$GN_EXE gen "$OUT_DIR" --export-compile-commands
+
+echo "----------------------------"
+echo "🎉🎉🎉构建完成！"
