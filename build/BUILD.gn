@@ -62,7 +62,6 @@ config("release") {
     ldflags = [
       "/OPT:REF",
       "/OPT:ICF",
-      "-flto=thin",  # 链接时也需要 LTO 参数
     ]
   } else if (is_linux) {
     cflags = [

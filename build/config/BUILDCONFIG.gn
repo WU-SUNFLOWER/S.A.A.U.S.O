@@ -1,3 +1,7 @@
+# Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+# Use of this source code is governed by a GNU-style license that can be
+# found in the LICENSE file.
+
 if (target_os == "") {
   target_os = host_os
 }
@@ -20,3 +24,26 @@ declare_args() {
 }
 
 set_default_toolchain("//build/toolchain:clang")
+
+_default_configs = [ "//build:compiler_defaults" ]
+
+if (is_debug) {
+  _default_configs += [ "//build:debug" ]
+} else if (is_asan) {
+  _default_configs += [ "//build:asan" ]
+} else {
+  _default_configs += [ "//build:release" ]
+}
+
+set_defaults("static_library") {
+  configs = _default_configs
+}
+set_defaults("source_set") {
+  configs = _default_configs
+}
+set_defaults("executable") {
+  configs = _default_configs
+}
+set_defaults("shared_library") {
+  configs = _default_configs
+}

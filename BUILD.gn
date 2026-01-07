@@ -67,19 +67,7 @@ source_set("saauso_sources") {
   ]
 
   # 加载基础配置
-  public_configs = [
-    ":saauso_includes",
-    "//build:compiler_defaults",
-  ]
-
-  # 根据构建目标参数，加载相应的构建配置
-  if (is_debug) {
-    public_configs += [ "//build:debug" ]
-  } else if (is_asan) {
-    public_configs += [ "//build:asan" ]
-  } else {
-    public_configs += [ "//build:release" ]
-  }
+  public_configs = [ ":saauso_includes" ]
 }
 
 executable("saauso") {

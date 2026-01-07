@@ -20,26 +20,10 @@ static_library("gtest") {
     "src/googletest",
     "src/googlemock",
   ]
-  configs = [ "//build:compiler_defaults" ]
-  if (is_debug) {
-    configs += [ "//build:debug" ]
-  } else if (is_asan) {
-    configs += [ "//build:asan" ]
-  } else {
-    configs += [ "//build:release" ]
-  }
 }
 
 static_library("gtest_main") {
   testonly = true
   sources = [ "src/googletest/src/gtest_main.cc" ]
   deps = [ ":gtest" ]
-  configs = [ "//build:compiler_defaults" ]
-  if (is_debug) {
-    configs += [ "//build:debug" ]
-  } else if (is_asan) {
-    configs += [ "//build:asan" ]
-  } else {
-    configs += [ "//build:release" ]
-  }
 }
