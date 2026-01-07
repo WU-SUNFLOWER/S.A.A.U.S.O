@@ -2,13 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/hash-table.h"
+#include "src/objects/hash-table.h"
 
 #include <cassert>
 #include <cstring>
 
-#include "heap/heap.h"
-#include "runtime/universe.h"
+#include "src/heap/heap.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 

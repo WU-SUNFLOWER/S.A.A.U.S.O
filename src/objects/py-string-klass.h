@@ -5,8 +5,9 @@
 #ifndef SAAUSO_OBJECTS_PY_STRING_KLASS_H_
 #define SAAUSO_OBJECTS_PY_STRING_KLASS_H_
 
-#include "objects/klass.h"
-#include "handles/handles.h"
+#include "src/handles/handles.h"
+#include "src/objects/klass.h"
+
 
 namespace saauso::internal {
 
@@ -25,15 +26,22 @@ class PyStringKlass : public Klass {
 
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
 
-  static PyBoolean* Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static PyBoolean* Virtual_Equal(Handle<PyObject> self,
+                                  Handle<PyObject> other);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other);
   static PyBoolean* Virtual_Less(Handle<PyObject> self, Handle<PyObject> other);
-  static PyBoolean* Virtual_Greater(Handle<PyObject> self, Handle<PyObject> other);
-  static PyBoolean* Virtual_LessEqual(Handle<PyObject> self, Handle<PyObject> other);
-  static PyBoolean* Virtual_GreaterEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static PyBoolean* Virtual_Greater(Handle<PyObject> self,
+                                    Handle<PyObject> other);
+  static PyBoolean* Virtual_LessEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other);
+  static PyBoolean* Virtual_GreaterEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other);
 
-  static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self, Handle<PyObject> subscr);
-  static Handle<PyObject> Virtual_Add(Handle<PyObject> self, Handle<PyObject> other);
+  static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
+                                         Handle<PyObject> subscr);
+  static Handle<PyObject> Virtual_Add(Handle<PyObject> self,
+                                      Handle<PyObject> other);
   static void Virtual_Print(Handle<PyObject> self);
   static size_t Virtual_InstanceSize(PyObject* self);
 };

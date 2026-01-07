@@ -2,15 +2,15 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-code-object-klass.h"
+#include "src/objects/py-code-object-klass.h"
 
 #include <cstdint>
 #include <cstdio>
 
-#include "heap/heap.h"
-#include "objects/py-code-object.h"
-#include "objects/py-string.h"
-#include "runtime/universe.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-code-object.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 

@@ -11,12 +11,13 @@ class Heap;
 class Klass;
 class PyObject;
 class PyBoolean;
+class PyNone;
 
 class Universe {
  public:
   static Heap* heap_;
 
-  static PyObject* py_none_object_;
+  static PyNone* py_none_object_;
   static PyBoolean* py_true_object_;
   static PyBoolean* py_false_object_;
 

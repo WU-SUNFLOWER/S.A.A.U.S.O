@@ -5,7 +5,7 @@
 #ifndef SAAUSO_OBJECTS_PY_BOOLEAN_KLASS_H_
 #define SAAUSO_OBJECTS_PY_BOOLEAN_KLASS_H_
 
-#include "objects/klass.h"
+#include "src/objects/klass.h"
 
 namespace saauso::internal {
 
@@ -21,8 +21,10 @@ class PyBooleanKlass : public Klass {
   static PyBooleanKlass* instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
-  static PyBoolean* Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static PyBoolean* Virtual_Equal(Handle<PyObject> self,
+                                  Handle<PyObject> other);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other);
 };
 
 class PyNoneKlass : public Klass {
@@ -35,8 +37,10 @@ class PyNoneKlass : public Klass {
   static PyNoneKlass* instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
-  static PyBoolean* Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static PyBoolean* Virtual_Equal(Handle<PyObject> self,
+                                  Handle<PyObject> other);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other);
 };
 
 }  // namespace saauso::internal

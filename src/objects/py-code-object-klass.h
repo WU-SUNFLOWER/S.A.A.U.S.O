@@ -5,7 +5,7 @@
 #ifndef SAAUSO_OBJECTS_PY_CODE_OBJECT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_CODE_OBJECT_KLASS_H_
 
-#include "objects/klass.h"
+#include "src/objects/klass.h"
 
 namespace saauso::internal {
 

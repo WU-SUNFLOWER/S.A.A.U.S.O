@@ -2,22 +2,22 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "runtime/universe.h"
+#include "src/runtime/universe.h"
 
-#include "heap/heap.h"
-#include "objects/klass.h"
-#include "objects/py-float-klass.h"
-#include "objects/py-list-klass.h"
-#include "objects/py-oddballs-klass.h"
-#include "objects/py-oddballs.h"
-#include "objects/py-smi-klass.h"
-#include "objects/py-string-klass.h"
+#include "src/heap/heap.h"
+#include "src/objects/klass.h"
+#include "src/objects/py-float-klass.h"
+#include "src/objects/py-list-klass.h"
+#include "src/objects/py-oddballs-klass.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi-klass.h"
+#include "src/objects/py-string-klass.h"
 
 namespace saauso::internal {
 
 Heap* Universe::heap_ = nullptr;
 
-PyObject* Universe::py_none_object_ = nullptr;
+PyNone* Universe::py_none_object_ = nullptr;
 PyBoolean* Universe::py_true_object_ = nullptr;
 PyBoolean* Universe::py_false_object_ = nullptr;
 
@@ -25,6 +25,7 @@ PyBoolean* Universe::py_false_object_ = nullptr;
 void Universe::Genesis() {
   heap_ = new Heap();
 
+  py_none_object_ = PyNone::NewInstance();
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
 

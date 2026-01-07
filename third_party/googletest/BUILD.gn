@@ -1,0 +1,45 @@
+# Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+# Use of this source code is governed by a GNU-style license that can be
+# found in the LICENSE file.
+
+config("gtest_config") {
+  include_dirs = [
+    "src/googletest/include",
+    "src/googlemock/include",
+  ]
+}
+
+static_library("gtest") {
+  testonly = true
+  sources = [
+    "src/googlemock/src/gmock-all.cc",
+    "src/googletest/src/gtest-all.cc",
+  ]
+  public_configs = [ ":gtest_config" ]
+  include_dirs = [
+    "src/googletest",
+    "src/googlemock",
+  ]
+  configs = [ "//build:compiler_defaults" ]
+  if (is_debug) {
+    configs += [ "//build:debug" ]
+  } else if (is_asan) {
+    configs += [ "//build:asan" ]
+  } else {
+    configs += [ "//build:release" ]
+  }
+}
+
+static_library("gtest_main") {
+  testonly = true
+  sources = [ "src/googletest/src/gtest_main.cc" ]
+  deps = [ ":gtest" ]
+  configs = [ "//build:compiler_defaults" ]
+  if (is_debug) {
+    configs += [ "//build:debug" ]
+  } else if (is_asan) {
+    configs += [ "//build:asan" ]
+  } else {
+    configs += [ "//build:release" ]
+  }
+}

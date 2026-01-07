@@ -5,7 +5,7 @@
 #ifndef SAAUSO_OBJECTS_ARRAY_LIST_H_
 #define SAAUSO_OBJECTS_ARRAY_LIST_H_
 
-#include "objects/objects.h"
+#include "src/objects/objects.h"
 
 namespace saauso::internal {
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-smi.h"
+#include "src/objects/py-smi.h"
 
 namespace saauso::internal {
 

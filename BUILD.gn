@@ -1,8 +1,15 @@
-executable("saauso") {
-  sources = [
-    # 入口文件
-    "//src/main.cc",
+# Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+# Use of this source code is governed by a GNU-style license that can be
+# found in the LICENSE file.
 
+config("saauso_includes") {
+  include_dirs = [ "//" ]
+}
+
+# 将核心代码定义为 source_set 或 static_library
+# source_set 在 Chromium 中更常用，因为它只是逻辑上的分组，不生成 .a/.lib
+source_set("saauso_sources") {
+  sources = [
     # build (配置头文件)
     "//src/build/build_config.h",
     "//src/build/buildflag.h",
@@ -56,20 +63,40 @@ executable("saauso") {
     "//src/runtime/universe.h",
 
     # third_party (第三方库)
-    "//src/third_party/rapidhash/rapidhash.h",
+    "//third_party/rapidhash/rapidhash.h",
   ]
 
-  include_dirs = [ "//src" ]
+  # 加载基础配置
+  public_configs = [
+    ":saauso_includes",
+    "//build:compiler_defaults",
+  ]
 
-  # 1. 加载基础配置
-  configs = [ "//build:compiler_defaults" ]
-
-  # 2. 根据参数加载 Debug 或 Release 配置
+  # 根据构建目标参数，加载相应的构建配置
   if (is_debug) {
-    configs += [ "//build:debug" ]
+    public_configs += [ "//build:debug" ]
   } else if (is_asan) {
-    configs += [ "//build:asan" ]
+    public_configs += [ "//build:asan" ]
   } else {
-    configs += [ "//build:release" ]
+    public_configs += [ "//build:release" ]
   }
+}
+
+executable("saauso") {
+  sources = [ "//src/main.cc" ]
+  deps = [ ":saauso_sources" ]
+}
+
+executable("saauso_unittests") {
+  testonly = true  # 声明这只是一个测试目标
+
+  sources = [
+    # 在这里添加你的测试文件
+    "//test/unittests/py-objects-unittest.cc",
+  ]
+
+  deps = [
+    ":saauso_sources",
+    "//testing/gtest",
+  ]
 }

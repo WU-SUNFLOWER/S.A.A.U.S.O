@@ -2,18 +2,19 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-oddballs-klass.h"
+#include "src/objects/py-oddballs-klass.h"
 
 #include <cstdio>
 
-#include "heap/heap.h"
-#include "objects/py-float.h"
-#include "objects/py-oddballs.h"
-#include "objects/py-smi.h"
-#include "objects/py-string.h"
-#include "py-object.h"
-#include "runtime/universe.h"
-#include "utils/utils.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-float.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/universe.h"
+#include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 

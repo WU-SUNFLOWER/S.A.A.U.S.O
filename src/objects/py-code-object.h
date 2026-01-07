@@ -5,8 +5,8 @@
 #ifndef SAAUSO_OBJECTS_CODE_OBJECT_H_
 #define SAAUSO_OBJECTS_CODE_OBJECT_H_
 
-#include "handles/handles.h"
-#include "objects/py-object.h"
+#include "src/handles/handles.h"
+#include "src/objects/py-object.h"
 
 namespace saauso::internal {
 

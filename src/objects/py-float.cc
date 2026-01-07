@@ -2,14 +2,14 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-float.h"
+#include "src/objects/py-float.h"
 
 #include <cassert>
 
-#include "handles/handles.h"
-#include "heap/heap.h"
-#include "objects/py-float-klass.h"
-#include "runtime/universe.h"
+#include "src/handles/handles.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-float-klass.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 

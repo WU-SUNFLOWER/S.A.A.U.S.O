@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "handles/handles.h"
-#include "objects/py-object.h"
+#include "src/handles/handles.h"
+#include "src/objects/py-object.h"
 
 #ifndef SAAUSO_PyObjectS_PY_LIST_H_
 #define SAAUSO_PyObjectS_PY_LIST_H_
@@ -12,7 +12,8 @@ namespace saauso::internal {
 
 class PyList : public PyObject {
  public:
-  static Handle<PyList> NewInstance(int64_t init_capacity = 8);
+  static constexpr int64_t kDefaultInitialCapacity = 4;
+  static Handle<PyList> NewInstance(int64_t init_capacity = kDefaultInitialCapacity);
   static PyList* Cast(PyObject* object);
 
   // 以下方法均不会触发GC
@@ -33,7 +34,10 @@ class PyList : public PyObject {
   int64_t length() const { return length_; };
 
   bool IsEmpty() const { return length_ == 0; };
-  bool IsFull() const { return length_ == capacity_; }
+  bool IsFull() const {
+    assert(length_ <= capacity_);
+    return length_ == capacity_;
+  }
 
   // 特别提醒：
   // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，

@@ -2,19 +2,20 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "code/pyc-file-parser.h"
+#include "src/code/pyc-file-parser.h"
 
 #include <cassert>
 
-#include "code/binary-file-reader.h"
-#include "handles/handles.h"
-#include "objects/py-code-object.h"
-#include "objects/py-float.h"
-#include "objects/py-list.h"
-#include "objects/py-object.h"
-#include "objects/py-smi.h"
-#include "objects/py-string.h"
-#include "runtime/universe.h"
+#include "src/code/binary-file-reader.h"
+#include "src/handles/handles.h"
+#include "src/objects/py-code-object.h"
+#include "src/objects/py-float.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
@@ -244,15 +245,13 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = PyFloat::NewInstance(reader_->ReadDouble());
         break;
       case kNoneObjectFlag:
-        object = Handle<PyObject>(Universe::py_none_object_);
+        object = Handle<PyNone>(Universe::py_none_object_);
         break;
       case kTrueObjectFlag:
-        object = Handle<PyObject>(
-            reinterpret_cast<PyObject*>(Universe::py_true_object_));
+        object = Handle<PyBoolean>(Universe::py_true_object_);
         break;
       case kFalseObjectFlag:
-        object = Handle<PyObject>(
-            reinterpret_cast<PyObject*>(Universe::py_false_object_));
+        object = Handle<PyBoolean>(Universe::py_false_object_);
         break;
       case kInternedStringFlag:
         object = ParseString(true);

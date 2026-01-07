@@ -1,35 +1,47 @@
-#include <iostream>
+#include <cstdio>
 
-#include "build/build_config.h"  // 引入我们的探测头文件
-#include "build/buildflag.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/universe.h"
 
-void PlatformSpecificFunction(int x, int y) {
-  // 这种写法优于 #ifdef，因为编译器会检查所有分支的语法
-  if (BUILDFLAG(IS_WIN)) {
-    std::cout << "[Logic] I am running on Windows!" << std::endl;
-  }
-
-  if (BUILDFLAG(IS_LINUX)) {
-    std::cout << "[Logic] I am running on Linux!" << std::endl;
-  }
-}
-
-void TestAsan() {
-  int* ar = new int[10];
-  ar[10086] = 123;
-  std::cout << "unreachable!!!" << std::endl;
-}
+using namespace saauso::internal;
 
 int main() {
-  std::cout << "Hello, BuildFlags!" << std::endl;
+  HandleScope scope;
 
-  PlatformSpecificFunction(1, 2);
+  Universe::Genesis();
 
-  // 你甚至可以直接打印宏的值
-  std::cout << "Debug info: IS_WIN=" << BUILDFLAG(IS_WIN)
-            << ", IS_LINUX=" << BUILDFLAG(IS_LINUX) << std::endl;
+  Handle<PyObject> object1 = PyString::NewInstance("Hello World");
+  Handle<PyObject> object2(PySmi::FromInt(1234));
+  Handle<PyBoolean> object3(Universe::py_true_object_);
+  Handle<PyBoolean> object4(Universe::py_false_object_);
+  Handle<PyNone> object5(Universe::py_none_object_);
+  Handle<PyObject> object6(PySmi::FromInt(3));
 
-  TestAsan();
+  Handle<PyObject> object7 = object2->Mul(object6);
 
-  return 0;
+  Handle<PyList> list = PyList::NewInstance(1);
+  list->Append(object1);
+  list->Append(object2);
+  list->Append(object3);
+  list->Append(object4);
+  list->Append(object5);
+  list->Append(object6);
+  list->Append(object7);
+
+  for (auto i = 0; i < list->length(); ++i) {
+    list->Get(i)->Print();
+    std::putchar('\n');
+  }
+
+  std::puts("----------------------------");
+
+  auto list2 = Handle<PyList>::Cast(list->Add(list));
+  for (auto i = 0; i < list2->length(); ++i) {
+    list2->Get(i)->Print();
+    std::putchar('\n');
+  }
 }

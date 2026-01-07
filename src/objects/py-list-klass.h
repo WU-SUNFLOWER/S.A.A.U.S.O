@@ -5,8 +5,8 @@
 #ifndef SAAUSO_OBJECTS_PY_LIST_KLASS_H_
 #define SAAUSO_OBJECTS_PY_LIST_KLASS_H_
 
-#include "handles/handles.h"
-#include "objects/klass.h"
+#include "src/handles/handles.h"
+#include "src/objects/klass.h"
 
 namespace saauso::internal {
 

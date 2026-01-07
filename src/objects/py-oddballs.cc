@@ -2,13 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-oddballs.h"
+#include "src/objects/py-oddballs.h"
 
 #include <cassert>
 
-#include "heap/heap.h"
-#include "objects/py-oddballs-klass.h"
-#include "runtime/universe.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-oddballs-klass.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
@@ -41,7 +41,7 @@ PyBoolean* PyBoolean::Reverse() {
 // Python空值
 
 // static
-PyNone* PyNone::NewInstance(bool value) {
+PyNone* PyNone::NewInstance() {
   // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
   PyNone* object =
       Universe::heap_->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);

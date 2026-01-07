@@ -2,22 +2,22 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-object.h"
+#include "src/objects/py-object.h"
 
 #include <cassert>
 
-#include "handles/handles.h"
-#include "objects/klass.h"
-#include "objects/py-code-object-klass.h"
-#include "objects/py-float-klass.h"
-#include "objects/py-list-klass.h"
-#include "objects/py-oddballs-klass.h"
-#include "objects/py-oddballs.h"
-#include "objects/py-smi-klass.h"
-#include "objects/py-smi.h"
-#include "objects/py-string-klass.h"
-#include "runtime/universe.h"
-#include "utils/utils.h"
+#include "src/handles/handles.h"
+#include "src/objects/klass.h"
+#include "src/objects/py-code-object-klass.h"
+#include "src/objects/py-float-klass.h"
+#include "src/objects/py-list-klass.h"
+#include "src/objects/py-oddballs-klass.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi-klass.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string-klass.h"
+#include "src/runtime/universe.h"
+#include "src/utils/utils.h"
 
 namespace saauso::internal {
 

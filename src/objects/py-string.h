@@ -7,8 +7,8 @@
 
 #include <cstdint>
 
-#include "handles/handles.h"
-#include "objects/py-object.h"
+#include "src/handles/handles.h"
+#include "src/objects/py-object.h"
 
 namespace saauso::internal {
 

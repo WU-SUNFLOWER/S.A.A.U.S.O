@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "code/binary-file-reader.h"
+#include "src/code/binary-file-reader.h"
 
 namespace saauso::internal {
 

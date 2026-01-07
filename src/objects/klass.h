@@ -5,10 +5,10 @@
 #ifndef SAAUSO_OBJECTS_KLASS_H_
 #define SAAUSO_OBJECTS_KLASS_H_
 
-#include "handles/handles.h"
-#include "objects/objects.h"
-#include "objects/py-object.h"
-#include "objects/py-string.h"
+#include "src/handles/handles.h"
+#include "src/objects/objects.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-string.h"
 
 namespace saauso::internal {
 

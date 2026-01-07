@@ -1,3 +1,6 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
 {
     "version": "2.0.0",
     "tasks": [
@@ -28,7 +31,7 @@
                 "isDefault": true
             },
             "dependsOn": "Gn Build Debug",
-            "problemMatcher": "$msCompile" 
+            "problemMatcher": "$msCompile"
         }
     ]
 }

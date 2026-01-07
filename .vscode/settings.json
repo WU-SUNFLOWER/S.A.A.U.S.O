@@ -1,7 +1,11 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
 {
     // 1. 告诉 clangd 编译数据库在哪里 (核心)
     "clangd.arguments": [
         "--compile-commands-dir=${workspaceFolder}/out/debug",
+        "--query-driver=D:/LLVM/bin/*.exe", // 指向你的 LLVM bin 目录
         "--clang-tidy", // 开启静态分析
         "--background-index", // 后台建立索引
         "--completion-style=detailed",
@@ -20,6 +24,9 @@
     },
     "[c]": {
         "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "[gn]": {
+        "editor.defaultFormatter": "Google.gn"
     },
     "explorer.copyRelativePathSeparator": "/",
 }

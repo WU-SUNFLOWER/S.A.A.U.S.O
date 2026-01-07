@@ -2,13 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/array-list.h"
+#include "src/objects/array-list.h"
 
 #include <cassert>
 
-#include "handles/handles.h"
-#include "heap/heap.h"
-#include "runtime/universe.h"
+#include "src/handles/handles.h"
+#include "src/heap/heap.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 

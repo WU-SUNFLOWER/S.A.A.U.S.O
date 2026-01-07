@@ -2,16 +2,16 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-list.h"
+#include "src/objects/py-list.h"
 
 #include <cassert>
 
-#include "code/pyc-file-parser.h"
-#include "handles/handles.h"
-#include "heap/heap.h"
-#include "objects/py-list-klass.h"
-#include "objects/py-object.h"
-#include "runtime/universe.h"
+#include "src/code/pyc-file-parser.h"
+#include "src/handles/handles.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-list-klass.h"
+#include "src/objects/py-object.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
@@ -34,7 +34,9 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   // AllocateArray会触发GC，
   // 在此之前先手工将array_置为空，避免GC尝试访问一个悬空指针
   object->array_ = nullptr;
-  object->array_ = AllocateArray(object->capacity_);
+  if (object->capacity_ > 0) [[likely]] {
+    object->array_ = AllocateArray(object->capacity_);
+  }
 
   // 绑定klass
   object->set_klass(PyListKlass::GetInstance());
@@ -122,7 +124,8 @@ void PyList::Insert(int64_t index, Handle<PyObject> value) {
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
-  int64_t new_capacity = list->capacity_ << 1;
+  int64_t new_capacity =
+      std::max(kDefaultInitialCapacity, list->capacity_ << 1);
   PyObject** new_array = AllocateArray(new_capacity);
 
   for (auto i = 0; i < list->length_; ++i) {

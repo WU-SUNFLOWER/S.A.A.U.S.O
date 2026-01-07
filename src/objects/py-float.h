@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "handles/handles.h"
-#include "objects/py-object.h"
+#include "src/handles/handles.h"
+#include "src/objects/py-object.h"
 
 #ifndef SAAUSO_OBJECTS_PY_FLOAT_H_
 #define SAAUSO_OBJECTS_PY_FLOAT_H_

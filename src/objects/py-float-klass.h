@@ -5,8 +5,8 @@
 #ifndef SAAUSO_OBJECTS_PY_FLOAT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_FLOAT_KLASS_H_
 
-#include "objects/klass.h"
-#include "py-object.h"
+#include "src/objects/klass.h"
+#include "src/objects/py-object.h"
 
 namespace saauso::internal {
 

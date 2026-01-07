@@ -2,18 +2,18 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-list-klass.h"
+#include "src/objects/py-list-klass.h"
 
 #include <cstdio>
 
-#include "code/pyc-file-parser.h"
-#include "heap/heap.h"
-#include "objects/py-list.h"
-#include "objects/py-object.h"
-#include "objects/py-smi.h"
-#include "objects/py-string.h"
-#include "runtime/universe.h"
-#include "utils/utils.h"
+#include "src/code/pyc-file-parser.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/universe.h"
+#include "src/utils/utils.h"
 
 namespace saauso::internal {
 

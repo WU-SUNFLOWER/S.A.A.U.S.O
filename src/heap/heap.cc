@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "heap/heap.h"
+#include "src/heap/heap.h"
 
 #include <cstdlib>
 #include <cstring>

@@ -2,14 +2,14 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-code-object.h"
+#include "src/objects/py-code-object.h"
 
-#include "handles/handles.h"
-#include "heap/heap.h"
-#include "objects/py-code-object-klass.h"
-#include "objects/py-list.h"
-#include "objects/py-string.h"
-#include "runtime/universe.h"
+#include "src/handles/handles.h"
+#include "src/heap/heap.h"
+#include "src/objects/py-code-object-klass.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
