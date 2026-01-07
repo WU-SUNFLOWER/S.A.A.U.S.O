@@ -12,7 +12,7 @@
 namespace saauso::internal {
 
 class BinaryFileReader;
-class CodeObject;
+class PyCodeObject;
 class PyList;
 class PyString;
 
@@ -20,11 +20,11 @@ class PycFileParser {
  public:
   explicit PycFileParser(const char* filename);
 
-  Handle<CodeObject> Parse();
+  Handle<PyCodeObject> Parse();
 
  private:
-  Handle<CodeObject> ParseCodeObject(Handle<PyList> string_table,
-                                     Handle<PyList> cache);
+  Handle<PyCodeObject> ParseCodeObject(Handle<PyList> string_table,
+                                       Handle<PyList> cache);
 
   Handle<PyString> ParseByteCodes(Handle<PyList> string_table,
                                   Handle<PyList> cache);

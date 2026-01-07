@@ -1,5 +1,63 @@
 executable("saauso") {
-  sources = [ "//src/main.cc" ]
+  sources = [
+    # 入口文件
+    "//src/main.cc",
+
+    # build (配置头文件)
+    "//src/build/build_config.h",
+    "//src/build/buildflag.h",
+
+    # code (代码解析相关)
+    "//src/code/binary-file-reader.cc",
+    "//src/code/binary-file-reader.h",
+    "//src/code/pyc-file-parser.cc",
+    "//src/code/pyc-file-parser.h",
+
+    # handles
+    "//src/handles/handles.h",
+
+    # heap (堆管理)
+    "//src/heap/heap.cc",
+    "//src/heap/heap.h",
+
+    # objects (对象系统)
+    "//src/objects/klass.h",
+    "//src/objects/objects.h",
+    "//src/objects/py-code-object-klass.cc",
+    "//src/objects/py-code-object-klass.h",
+    "//src/objects/py-code-object.cc",
+    "//src/objects/py-code-object.h",
+    "//src/objects/py-float-klass.cc",
+    "//src/objects/py-float-klass.h",
+    "//src/objects/py-float.cc",
+    "//src/objects/py-float.h",
+    "//src/objects/py-list-klass.cc",
+    "//src/objects/py-list-klass.h",
+    "//src/objects/py-list.cc",
+    "//src/objects/py-list.h",
+    "//src/objects/py-object.cc",
+    "//src/objects/py-object.h",
+    "//src/objects/py-oddballs-klass.cc",
+    "//src/objects/py-oddballs-klass.h",
+    "//src/objects/py-oddballs.cc",
+    "//src/objects/py-oddballs.h",
+    "//src/objects/py-smi-klass.cc",
+    "//src/objects/py-smi-klass.h",
+    "//src/objects/py-smi.cc",
+    "//src/objects/py-smi.h",
+    "//src/objects/py-string-klass.cc",
+    "//src/objects/py-string-klass.h",
+    "//src/objects/py-string.cc",
+    "//src/objects/py-string.h",
+
+    # runtime (运行时)
+    "//src/runtime/factory.h",
+    "//src/runtime/universe.cc",
+    "//src/runtime/universe.h",
+
+    # third_party (第三方库)
+    "//src/third_party/rapidhash/rapidhash.h",
+  ]
 
   include_dirs = [ "//src" ]
 

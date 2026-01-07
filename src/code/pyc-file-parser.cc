@@ -8,11 +8,11 @@
 
 #include "code/binary-file-reader.h"
 #include "handles/handles.h"
-#include "objects/code-object.h"
+#include "objects/py-code-object.h"
 #include "objects/py-float.h"
-#include "objects/py-integer.h"
 #include "objects/py-list.h"
 #include "objects/py-object.h"
+#include "objects/py-smi.h"
 #include "objects/py-string.h"
 #include "runtime/universe.h"
 
@@ -49,7 +49,7 @@ constexpr char kInStringTableObjectFlag = 'R';
 PycFileParser::PycFileParser(const char* filename)
     : reader_(std::make_unique<BinaryFileReader>(filename)) {}
 
-Handle<CodeObject> PycFileParser::Parse() {
+Handle<PyCodeObject> PycFileParser::Parse() {
   HandleScope scope;
 
   int magic_number [[maybe_unused]] = reader_->ReadInt32();
@@ -68,7 +68,7 @@ Handle<CodeObject> PycFileParser::Parse() {
   object_type &= 0x7f;
 
   if (object_type != 'c') {
-    return Handle<CodeObject>::Null();
+    return Handle<PyCodeObject>::Null();
   }
 
   Handle<PyList> string_table = PyList::NewInstance();
@@ -78,10 +78,10 @@ Handle<CodeObject> PycFileParser::Parse() {
   if (ref_flag) {
     // 先在cache中占个位
     index = cache->length();
-    PyList::Append(cache, Handle<PyObject>::Null());
+    cache->Append(Handle<PyObject>::Null());
   }
 
-  Handle<CodeObject> code_object = ParseCodeObject(string_table, cache);
+  Handle<PyCodeObject> code_object = ParseCodeObject(string_table, cache);
 
   if (ref_flag) {
     // 对象构造完毕，缓存到cache
@@ -91,8 +91,8 @@ Handle<CodeObject> PycFileParser::Parse() {
   return code_object.EscapeFrom(&scope);
 }
 
-Handle<CodeObject> PycFileParser::ParseCodeObject(Handle<PyList> string_table,
-                                                  Handle<PyList> cache) {
+Handle<PyCodeObject> PycFileParser::ParseCodeObject(Handle<PyList> string_table,
+                                                    Handle<PyList> cache) {
   HandleScope scope;
 
   int arg_count = reader_->ReadInt32();
@@ -114,7 +114,7 @@ Handle<CodeObject> PycFileParser::ParseCodeObject(Handle<PyList> string_table,
   int begin_line_no = reader_->ReadInt32();
   Handle<PyString> lnotab = ParseNoTable(string_table, cache);
 
-  Handle<CodeObject> result = CodeObject::NewInstance(
+  Handle<PyCodeObject> result = PyCodeObject::NewInstance(
       arg_count, posonly_arg_count, kwonly_arg_count, nlocals, stack_size,
       flags, bytecodes, names, consts, var_names, free_vars, cell_vars,
       file_name, module_name, begin_line_no, lnotab);
@@ -129,7 +129,7 @@ Handle<PyString> PycFileParser::ParseByteCodes(Handle<PyList> string_table,
 
   Handle<PyString> s = ParseString(true);
   if (HAS_REF_FLAG(object_type)) {
-    PyList::Append(cache, s);
+    cache->Append(s);
   }
 
   return s;
@@ -192,7 +192,7 @@ Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
     case kTupleFlag: {
       int cache_index = cache->length();
       if (HAS_REF_FLAG(object_type)) {
-        PyList::Append(cache, Handle<PyObject>::Null());
+        cache->Append(Handle<PyObject>::Null());
       }
 
       tuple = ParseTupleImpl(string_table, cache);
@@ -228,7 +228,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
     int index = 0;
     if (HAS_REF_FLAG(raw_object_type)) {
       index = cache->length();
-      PyList::Append(cache, Handle<PyObject>::Null());
+      cache->Append(Handle<PyObject>::Null());
     }
 
     Handle<PyObject> object;
@@ -238,7 +238,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = ParseCodeObject(string_table, cache);
         break;
       case kIntegerFlag:
-        object = PyInteger::NewInstance(reader_->ReadInt32());
+        object = Handle<PyObject>(PySmi::FromInt(reader_->ReadInt32()));
         break;
       case kDoubleFlag:
         object = PyFloat::NewInstance(reader_->ReadDouble());
@@ -247,10 +247,12 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = Handle<PyObject>(Universe::py_none_object_);
         break;
       case kTrueObjectFlag:
-        object = Handle<PyObject>(Universe::py_true_object_);
+        object = Handle<PyObject>(
+            reinterpret_cast<PyObject*>(Universe::py_true_object_));
         break;
       case kFalseObjectFlag:
-        object = Handle<PyObject>(Universe::py_false_object_);
+        object = Handle<PyObject>(
+            reinterpret_cast<PyObject*>(Universe::py_false_object_));
         break;
       case kInternedStringFlag:
         object = ParseString(true);
@@ -314,7 +316,7 @@ Handle<PyString> PycFileParser::ParseName(Handle<PyList> string_table,
   }
 
   if (HAS_REF_FLAG(object_type)) {
-    PyList::Append(cache, s);
+    cache->Append(s);
   }
 
   return s;
@@ -342,7 +344,7 @@ Handle<PyString> PycFileParser::ParseNoTable(Handle<PyList> string_table,
   }
 
   if (HAS_REF_FLAG(object_type)) {
-    PyList::Append(cache, s);
+    cache->Append(cache);
   }
 
   return s;

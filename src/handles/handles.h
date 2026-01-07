@@ -8,6 +8,8 @@
 #include <cassert>
 #include <type_traits>
 
+#include "objects/objects.h"
+
 namespace saauso::internal {
 
 /////////////////////////////////// 魔法开始 ///////////////////////////////////
@@ -38,7 +40,7 @@ template <typename T>
 class Handle {
  public:
   Handle() : address_(nullptr) {}
-  explicit Handle(T* address) : address_(address) {}
+  explicit Handle(T* address) : address_(static_cast<Object*>(address)) {}
 
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>
@@ -49,11 +51,12 @@ class Handle {
 
   T* operator->() const {
     assert(!IsNull());
-    return address_;
+    return reinterpret_cast<T*>(address_);
   }
+
   T* operator*() const {
     assert(!IsNull());
-    return address_;
+    return reinterpret_cast<T*>(address_);
   }
 
   template <class S>
@@ -62,30 +65,24 @@ class Handle {
     return Handle<T>(reinterpret_cast<T*>(*that));
   }
 
-  bool IsNull() { return address_ == nullptr; }
+  bool IsNull() const { return address_ == nullptr; }
   static Handle<T> Null() { return Handle<T>(); }
 
-  Handle<T> EscapeFrom(HandleScope* scope) { return address_; }
+  Handle<T> EscapeFrom(HandleScope* scope) {
+    return Handle<T>(reinterpret_cast<T*>(address_));
+  }
 
  private:
-  T* address_;
+  // 为了便于隐式转换，
+  // 我们允许任意类型的Handle<T>可以访问其他任意类型Handle<S>的内部指针
+  template <typename>
+  friend class Handle;
+
+  Object* address_;
 };
 
 class [[maybe_unused]] HandleScope {};
 
-template <typename T>
-class GlobalHandle {
- public:
-  explicit GlobalHandle(T* address) : address_(address) {}
-
-  T* operator->() const { return address_; }
-  T& operator*() const { return *address_; }
-
-  T* get() const { return address_; }
-
- private:
-  T* address_;
-};
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_HANDLES_HANDLES_H_

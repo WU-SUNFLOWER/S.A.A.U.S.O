@@ -23,6 +23,7 @@ class PyObject : public Object {
   bool IsPyList() const;
   bool IsPyString() const;
   bool IsPyBoolean() const;
+  bool IsPyCodeObject() const;
 
   // 以下方法依赖挂在Universe上的全局指针
   bool IsPyTrue() const;

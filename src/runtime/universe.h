@@ -27,8 +27,7 @@ class Universe {
     return condition ? py_true_object_ : py_false_object_;
   }
 
-  private:
-  
+ private:
 };
 
 }  // namespace saauso::internal

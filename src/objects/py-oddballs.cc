@@ -33,6 +33,9 @@ PyBoolean* PyBoolean::Cast(PyObject* object) {
   return reinterpret_cast<PyBoolean*>(object);
 }
 
+PyBoolean* PyBoolean::Reverse() {
+  return Universe::ToPyBoolean(!value_);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // Python空值

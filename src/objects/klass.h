@@ -7,11 +7,11 @@
 
 #include "handles/handles.h"
 #include "objects/objects.h"
+#include "objects/py-object.h"
+#include "objects/py-string.h"
 
 namespace saauso::internal {
 
-class PyObject;
-class PyString;
 class PyBoolean;
 
 /////////////////虚函数表 定义开始///////////////////////////

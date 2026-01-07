@@ -9,6 +9,8 @@
 
 namespace saauso::internal {
 
+class PyBoolean;
+
 class PyBooleanKlass : public Klass {
  public:
   static PyBooleanKlass* GetInstance();
@@ -17,6 +19,10 @@ class PyBooleanKlass : public Klass {
  private:
   PyBooleanKlass();
   static PyBooleanKlass* instance_;
+
+  static void Virtual_Print(Handle<PyObject> self);
+  static PyBoolean* Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
 };
 
 class PyNoneKlass : public Klass {
@@ -27,6 +33,10 @@ class PyNoneKlass : public Klass {
  private:
   PyNoneKlass();
   static PyNoneKlass* instance_;
+
+  static void Virtual_Print(Handle<PyObject> self);
+  static PyBoolean* Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
 };
 
 }  // namespace saauso::internal

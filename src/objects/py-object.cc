@@ -8,16 +8,16 @@
 
 #include "handles/handles.h"
 #include "objects/klass.h"
-#include "objects/py-oddballs-klass.h"
-#include "objects/py-oddballs.h"
+#include "objects/py-code-object-klass.h"
 #include "objects/py-float-klass.h"
 #include "objects/py-list-klass.h"
+#include "objects/py-oddballs-klass.h"
+#include "objects/py-oddballs.h"
 #include "objects/py-smi-klass.h"
 #include "objects/py-smi.h"
 #include "objects/py-string-klass.h"
 #include "runtime/universe.h"
 #include "utils/utils.h"
-
 
 namespace saauso::internal {
 
@@ -56,6 +56,10 @@ bool PyObject::IsPyString() const {
 
 bool PyObject::IsPyBoolean() const {
   return klass() == PyBooleanKlass::GetInstance();
+}
+
+bool PyObject::IsPyCodeObject() const {
+  return klass() == PyCodeObjectKlass::GetInstance();
 }
 
 bool PyObject::IsPyTrue() const {
