@@ -5,6 +5,8 @@
 #ifndef SAAUSO_HEAP_HEAP_H_
 #define SAAUSO_HEAP_HEAP_H_
 
+#include <cstddef>
+
 namespace saauso::internal {
 
 class Heap {

@@ -10,6 +10,9 @@ config("saauso_includes") {
 # source_set 在 Chromium 中更常用，因为它只是逻辑上的分组，不生成 .a/.lib
 source_set("saauso_sources") {
   sources = [
+    # include
+    "//include/saauso-internal.h",
+
     # build (配置头文件)
     "//src/build/build_config.h",
     "//src/build/buildflag.h",

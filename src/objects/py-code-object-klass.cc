@@ -36,8 +36,8 @@ void PyCodeObjectKlass::Initialize() {
 // static
 void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto code = Handle<PyCodeObject>::Cast(self);
-  std::printf("<code object greet at 0x%llx, file \"%.*s\", line %d>",
-              reinterpret_cast<uint64_t>(*code),
+  std::printf("<code object greet at 0x%p, file \"%.*s\", line %d>",
+              static_cast<void*>(*code),
               static_cast<int>(code->file_name_->length()),
               code->file_name_->buffer(), code->line_no_);
 }

@@ -8,6 +8,7 @@
 #include <cassert>
 #include <type_traits>
 
+#include "include/saauso-internal.h"
 #include "src/objects/objects.h"
 
 namespace saauso::internal {
@@ -39,8 +40,8 @@ class HandleScope;
 template <typename T>
 class Handle {
  public:
-  Handle() : address_(nullptr) {}
-  explicit Handle(T* address) : address_(static_cast<Object*>(address)) {}
+  Handle() : address_(kNullAddress) {}
+  explicit Handle(T* address) : address_(reinterpret_cast<Address>(address)) {}
 
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>
@@ -65,7 +66,7 @@ class Handle {
     return Handle<T>(reinterpret_cast<T*>(*that));
   }
 
-  bool IsNull() const { return address_ == nullptr; }
+  bool IsNull() const { return address_ == kNullAddress; }
   static Handle<T> Null() { return Handle<T>(); }
 
   Handle<T> EscapeFrom(HandleScope* scope) {
@@ -78,7 +79,7 @@ class Handle {
   template <typename>
   friend class Handle;
 
-  Object* address_;
+  Address address_;
 };
 
 class [[maybe_unused]] HandleScope {};

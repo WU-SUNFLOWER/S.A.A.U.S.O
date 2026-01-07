@@ -89,7 +89,8 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
                                           Handle<PyObject> coeff) {
   auto list = Handle<PyList>::Cast(self);
-  auto decoded_coeff = std::max(0ll, Handle<PySmi>::Cast(coeff)->value());
+  auto decoded_coeff =
+      std::max(static_cast<int64_t>(0), Handle<PySmi>::Cast(coeff)->value());
 
   auto result = PyList::NewInstance(list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
@@ -113,7 +114,8 @@ void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
   auto list = Handle<PyList>::Cast(self);
 
   auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
-  if (!InRangeWithRightOpen(decoded_subscr, 0ll, list->length())) {
+  if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
+                            list->length())) {
     std::printf("IndexError: list assignment index out of range");
     std::exit(1);
   }
@@ -126,7 +128,8 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   auto list = Handle<PyList>::Cast(self);
 
   auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
-  if (!InRangeWithRightOpen(decoded_subscr, 0ll, list->length())) {
+  if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
+                            list->length())) {
     std::printf("IndexError: list assignment index out of range");
     std::exit(1);
   }

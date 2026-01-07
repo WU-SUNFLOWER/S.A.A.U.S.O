@@ -5,6 +5,8 @@
 #ifndef SAAUSO_OBJECTS_KLASS_H_
 #define SAAUSO_OBJECTS_KLASS_H_
 
+#include <cstddef>
+
 #include "src/handles/handles.h"
 #include "src/objects/objects.h"
 #include "src/objects/py-object.h"

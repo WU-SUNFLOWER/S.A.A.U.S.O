@@ -44,8 +44,13 @@ config("debug") {
     cflags = [
       "-O0",  # 禁用优化
       "-g",  # 生成调试信息 (DWARF)
+      "-fsanitize=undefined",
     ]
-    # Linux 下 ldflags 通常不需要特殊参数来启用调试符号，但可以加 -rdynamic
+    ldflags = [
+      "-O0",  # 链接器优化级别
+      "-g",
+      "-fsanitize=undefined",
+    ]
   }
 
   defines = [ "_DEBUG" ]
@@ -65,14 +70,18 @@ config("release") {
     ]
   } else if (is_linux) {
     cflags = [
-      "-O3",  # 最大优化
-      "-flto=thin",  # 开启 ThinLTO
+      "-O1",  # 最大优化
+      #"-flto=thin",  # 开启 ThinLTO
+      "-g",
+      "-fsanitize=undefined",
     ]
     ldflags = [
-      "-O3",  # 链接器优化级别
-      "-flto=thin",  # 链接器 LTO 处理
-      "-Wl,--gc-sections",  # 移除未使用的段 (类似 Windows 的
+      "-O1",  # 链接器优化级别
+      #"-flto=thin",  # 链接器 LTO 处理
+      #"-Wl,--gc-sections",  # 移除未使用的段 (类似 Windows 的
                             # /OPT:REF)
+      "-g",
+      "-fsanitize=undefined",
     ]
   }
 

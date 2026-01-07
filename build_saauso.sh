@@ -37,7 +37,7 @@ GN_ARGS=""
 TARGET="saauso"
 
 case $MODE in
-    release)
+  release)
         OUT_DIR="out/release"
         GN_ARGS=""
         ;;
@@ -51,7 +51,7 @@ case $MODE in
         ;;
     unittest)
         OUT_DIR="out/unittest"
-        GN_ARGS="is_asan=true"
+        GN_ARGS="is_debug=true"
         TARGET="saauso_unittests"
         ;;
     *)

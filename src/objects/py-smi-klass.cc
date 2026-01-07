@@ -4,7 +4,9 @@
 
 #include "src/objects/py-smi-klass.h"
 
+#include <cinttypes>
 #include <cstdio>
+#include <cstdlib>
 
 #include "src/heap/heap.h"
 #include "src/objects/py-float.h"
@@ -14,6 +16,7 @@
 #include "src/objects/py-string.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 
@@ -52,7 +55,7 @@ void PySmiKlass::Initialize() {
 ////////////////////////////////////////////////////////////////////
 
 void PySmiKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("%lld", PySmi::Cast(*self)->value());
+  std::printf("%" PRId64, PySmi::Cast(*self)->value());
 }
 
 // static
@@ -68,7 +71,7 @@ Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
 
   return Handle<PyObject>::Null();
 }
@@ -86,7 +89,7 @@ Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
 
   return Handle<PyObject>::Null();
 }
@@ -104,7 +107,7 @@ Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
 
   return Handle<PyObject>::Null();
 }
@@ -123,7 +126,7 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
 
   return Handle<PyObject>::Null();
 }
@@ -142,7 +145,7 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
 
   return Handle<PyObject>::Null();
 }
@@ -160,7 +163,7 @@ PyBoolean* PySmiKlass::Virtual_Greater(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
   return nullptr;
 }
 
@@ -177,7 +180,7 @@ PyBoolean* PySmiKlass::Virtual_Less(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
 
   return nullptr;
 }
@@ -195,7 +198,7 @@ PyBoolean* PySmiKlass::Virtual_Equal(Handle<PyObject> self,
   }
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  assert(0);
+  std::exit(1);
   return nullptr;
 }
 

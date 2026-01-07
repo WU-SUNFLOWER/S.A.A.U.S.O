@@ -99,7 +99,8 @@ Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
   auto s = Handle<PyString>::Cast(self);
 
   auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
-  if (!InRangeWithRightOpen(decoded_subscr, 0ll, s->length())) [[unlikely]] {
+  if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
+                            s->length())) [[unlikely]] {
     std::printf("IndexError: string index out of range");
     std::exit(1);
   }

@@ -2,18 +2,21 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/handles/handles.h"
-#include "src/objects/py-object.h"
-
 #ifndef SAAUSO_PyObjectS_PY_LIST_H_
 #define SAAUSO_PyObjectS_PY_LIST_H_
+
+#include <cstdint>
+
+#include "src/handles/handles.h"
+#include "src/objects/py-object.h"
 
 namespace saauso::internal {
 
 class PyList : public PyObject {
  public:
   static constexpr int64_t kDefaultInitialCapacity = 4;
-  static Handle<PyList> NewInstance(int64_t init_capacity = kDefaultInitialCapacity);
+  static Handle<PyList> NewInstance(
+      int64_t init_capacity = kDefaultInitialCapacity);
   static PyList* Cast(PyObject* object);
 
   // 以下方法均不会触发GC
