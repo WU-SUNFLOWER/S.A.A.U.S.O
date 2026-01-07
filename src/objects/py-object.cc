@@ -8,22 +8,23 @@
 
 #include "handles/handles.h"
 #include "objects/klass.h"
-#include "objects/py-boolean-klass.h"
-#include "objects/py-boolean.h"
+#include "objects/py-oddballs-klass.h"
+#include "objects/py-oddballs.h"
 #include "objects/py-float-klass.h"
-#include "objects/py-integer-klass.h"
 #include "objects/py-list-klass.h"
+#include "objects/py-smi-klass.h"
 #include "objects/py-smi.h"
 #include "objects/py-string-klass.h"
 #include "runtime/universe.h"
 #include "utils/utils.h"
 
+
 namespace saauso::internal {
 
 Klass* PyObject::klass() const {
-  // 特化：Smi使用PyIntegerKlass，使得它表现得像一个标准的Python对象
+  // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
   if (IsPySmi()) {
-    return PyIntegerKlass::GetInstance();
+    return PySmiKlass::GetInstance();
   }
 
   assert(IsHeapObject());
@@ -40,10 +41,6 @@ void PyObject::set_klass(Klass* klass) {
 
 ///////////////////////////////////////////////////////////////////
 // 类型判断工具函数 开始
-
-bool PyObject::IsPyInteger() const {
-  return klass() == PyIntegerKlass::GetInstance();
-}
 
 bool PyObject::IsPyFloat() const {
   return klass() == PyFloatKlass::GetInstance();
@@ -312,6 +309,11 @@ void PyObject::DeletSubscr(Handle<PyObject> subscr_name) {
 
   assert(klass()->vtable_.del_subscr);
   klass()->vtable_.del_subscr(this_handle, subscr_name);
+}
+
+size_t PyObject::GetInstanceSize() {
+  assert(klass()->vtable_.instance_size);
+  return klass()->vtable_.instance_size(this);
 }
 
 }  // namespace saauso::internal

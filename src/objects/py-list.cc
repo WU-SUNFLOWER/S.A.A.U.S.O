@@ -25,7 +25,7 @@ PyObject** AllocateArray(int size) {
 }  // namespace
 
 // static
-Handle<PyList> PyList::NewInstance(int init_capacity) {
+Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   Handle<PyList> object(
       Universe::heap_->Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
   object->capacity_ = init_capacity;
@@ -68,17 +68,17 @@ Handle<PyObject> PyList::GetLast() const {
   return Handle<PyObject>(array_[length_ - 1]);
 }
 
-void PyList::Set(int index, Handle<PyObject> value) {
+void PyList::Set(int64_t index, Handle<PyObject> value) {
   assert(0 <= index && index < length_);
 
   array_[index] = *value;
   WRITE_BARRIER;
 }
 
-void PyList::Remove(int index) {
+void PyList::Remove(int64_t index) {
   assert(0 <= index && index < length_);
 
-  for (int i = index; i < length_ - 1; ++i) {
+  for (auto i = index; i < length_ - 1; ++i) {
     array_[i] = array_[i + 1];
   }
 
@@ -102,7 +102,7 @@ void PyList::Append(Handle<PyObject> value) {
   WRITE_BARRIER;
 }
 
-void PyList::Insert(int index, Handle<PyObject> value) {
+void PyList::Insert(int64_t index, Handle<PyObject> value) {
   assert(0 <= index && index < length_);
 
   HandleScope scope;
@@ -113,7 +113,7 @@ void PyList::Insert(int index, Handle<PyObject> value) {
   }
   ++this_handle->length_;
 
-  for (int i = this_handle->length_; i > index; --i) {
+  for (auto i = this_handle->length_; i > index; --i) {
     this_handle->array_[i] = this_handle->array_[i - 1];
   }
 
@@ -122,10 +122,10 @@ void PyList::Insert(int index, Handle<PyObject> value) {
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
-  int new_capacity = list->capacity_ << 1;
+  int64_t new_capacity = list->capacity_ << 1;
   PyObject** new_array = AllocateArray(new_capacity);
 
-  for (int i = 0; i < list->length_; ++i) {
+  for (auto i = 0; i < list->length_; ++i) {
     new_array[i] = list->array_[i];
   }
 

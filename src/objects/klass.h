@@ -85,7 +85,7 @@ struct VirtualTable {
   // PyObject* len(PyObject* object);
   VirtualFuncType_1_1_SAFE len{nullptr};
 
-  // PyObject* print(PyObject* object, PyObject* target);
+  // PyObject* contains(PyObject* object);
   VirtualFuncType_1_2_SAFE_BOOL contains{nullptr};
 
   // void print(PyObject* object);
@@ -94,6 +94,10 @@ struct VirtualTable {
   VirtualFuncType_1_1_SAFE repr{nullptr};
   // void del_subscr(PyObject* object, PyObject* subscr);
   VirtualFuncType_0_2_SAFE del_subscr{nullptr};
+
+  // 获取实例对象大小，调用该函数绝对不允许触发GC
+  // size_t instance_object(PyObject*);
+  size_t (*instance_size)(Oop){nullptr};
 };
 /////////////////虚函数表 定义结束///////////////////////////
 

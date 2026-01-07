@@ -5,15 +5,14 @@
 #include "klass.h"
 #include "objects/py-object.h"
 
-#ifndef SAAUSO_OBJECTS_PY_BOOLEAN_H_
-#define SAAUSO_OBJECTS_PY_BOOLEAN_H_
+#ifndef SAAUSO_OBJECTS_PY_ODDBALLS_H_
+#define SAAUSO_OBJECTS_PY_ODDBALLS_H_
 
 namespace saauso::internal {
 
 class PyBoolean : public PyObject {
  public:
   static PyBoolean* NewInstance(bool value);
-
   static PyBoolean* Cast(PyObject* object);
 
   bool value() const { return value_; }
@@ -22,6 +21,12 @@ class PyBoolean : public PyObject {
   bool value_;
 };
 
+class PyNone : public PyObject {
+ public:
+  static PyNone* NewInstance(bool value);
+  static PyNone* Cast(PyObject* object);
+};
+
 }  // namespace saauso::internal
 
-#endif  // SAAUSO_OBJECTS_PY_INTEGER_H_
+#endif  // SAAUSO_OBJECTS_PY_ODDBALLS_H_

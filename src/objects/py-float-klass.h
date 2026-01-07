@@ -20,18 +20,20 @@ class PyFloatKlass : public Klass {
   PyFloatKlass();
   static PyFloatKlass* instance_;
 
-  static PyObject* Virtual_Add(PyObject*, PyObject*);
-  static PyObject* Virtual_Sub(PyObject*, PyObject*);
-  static PyObject* Virtual_Mul(PyObject*, PyObject*);
-  static PyObject* Virtual_Div(PyObject*, PyObject*);
-  static PyObject* Virtual_Mod(PyObject*, PyObject*);
+  static void Virtual_Print(Handle<PyObject>);
 
-  static PyObject* Virtual_Greater(PyObject*, PyObject*);
-  static PyObject* Virtual_Less(PyObject*, PyObject*);
-  static PyObject* Virtual_Equal(PyObject*, PyObject*);
-  static PyObject* Virtual_NotEqual(PyObject*, PyObject*);
-  static PyObject* Virtual_GreaterEqual(PyObject*, PyObject*);
-  static PyObject* Virtual_LessEqual(PyObject*, PyObject*);
+  static Handle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
+
+  static PyBoolean* Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_Less(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
+  static PyBoolean* Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
 };
 
 }  // namespace saauso::internal

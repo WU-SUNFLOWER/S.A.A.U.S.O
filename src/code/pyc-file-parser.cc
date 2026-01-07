@@ -58,9 +58,9 @@ Handle<CodeObject> PycFileParser::Parse() {
   int file_size [[maybe_unused]] = reader_->ReadInt32();
 
 #ifdef _DEBUG
-  printf("magic number is 0x%x\n", magic_number);
-  printf("timestamp is %d\n", timestamp);
-  printf("file size is %d\n", file_size);
+  std::printf("magic number is 0x%x\n", magic_number);
+  std::printf("timestamp is %d\n", timestamp);
+  std::printf("file size is %d\n", file_size);
 #endif  // _DEBUG
 
   char object_type = reader_->ReadByte();
@@ -208,8 +208,8 @@ Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
       tuple = Handle<PyList>::Cast(cache->Get(index));
     }
     default:
-      printf("unknown object type: %c\n", object_type);
-      exit(0);
+      std::printf("unknown object type: %c\n", object_type);
+      std::exit(1);
   }
 
   return tuple;
@@ -272,8 +272,8 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = ParseTuple(string_table, cache);
         break;
       default:
-        printf("unknown object type: %c\n", object_type);
-        exit(0);
+        std::printf("unknown object type: %c\n", object_type);
+        std::exit(1);
     }
 
     list->Set(i, object);
@@ -337,8 +337,8 @@ Handle<PyString> PycFileParser::ParseNoTable(Handle<PyList> string_table,
       break;
     }
     default:
-      printf("expect a string for no table, but got %c\n", object_type);
-      exit(0);
+      std::printf("expect a string for no table, but got %c\n", object_type);
+      std::exit(1);
   }
 
   if (HAS_REF_FLAG(object_type)) {

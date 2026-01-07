@@ -21,4 +21,14 @@ auto PythonMod(T1 a, T2 b) {
   }
 }
 
+template <typename T>
+bool InRangeWithRightOpen(T v, T l, T r) {
+  return l <= v && v < r;
+}
+
+template <typename T>
+bool InRangeWithRightClose(T v, T l, T r) {
+  return l <= v && v <= r;
+}
+
 }  // namespace saauso::internal

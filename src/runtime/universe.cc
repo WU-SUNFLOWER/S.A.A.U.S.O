@@ -5,7 +5,13 @@
 #include "runtime/universe.h"
 
 #include "heap/heap.h"
-#include "objects/py-boolean.h"
+#include "objects/klass.h"
+#include "objects/py-float-klass.h"
+#include "objects/py-list-klass.h"
+#include "objects/py-oddballs-klass.h"
+#include "objects/py-oddballs.h"
+#include "objects/py-smi-klass.h"
+#include "objects/py-string-klass.h"
 
 namespace saauso::internal {
 
@@ -15,6 +21,13 @@ void Universe::Genesis() {
 
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
+
+  PyNoneKlass::GetInstance()->Initialize();
+  PyBooleanKlass::GetInstance()->Initialize();
+  PyFloatKlass::GetInstance()->Initialize();
+  PySmiKlass::GetInstance()->Initialize();
+  PyStringKlass::GetInstance()->Initialize();
+  PyListKlass::GetInstance()->Initialize();
 }
 
 // static

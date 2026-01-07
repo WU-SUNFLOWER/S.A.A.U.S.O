@@ -67,8 +67,6 @@ class Handle {
 
   Handle<T> EscapeFrom(HandleScope* scope) { return address_; }
 
-  T* get() const { return address_; }
-
  private:
   T* address_;
 };

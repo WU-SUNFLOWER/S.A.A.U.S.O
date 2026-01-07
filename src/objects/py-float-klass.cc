@@ -2,16 +2,48 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "heap/heap.h"
 #include "objects/py-float-klass.h"
-#include "objects/py-string.h"
-#include "runtime/universe.h"
 
+#include <cstdio>
+
+#include "heap/heap.h"
+#include "objects/py-oddballs.h"
+#include "objects/py-float.h"
+#include "objects/py-smi.h"
+#include "objects/py-string.h"
+#include "py-object.h"
+#include "runtime/universe.h"
+#include "utils/utils.h"
 
 namespace saauso::internal {
 
+namespace {
+
+double ExtractValue(Handle<PyObject> object) {
+  if (object->IsPyFloat()) {
+    return Handle<PyFloat>::Cast(object)->value();
+  }
+
+  if (object->IsPySmi()) {
+    return Handle<PySmi>::Cast(object)->value();
+  }
+
+  std::printf(
+      "TypeError: unsupported operand type(s) for +: 'float' and '%.*s'",
+      static_cast<int>(object->klass()->name()->length()),
+      object->klass()->name()->buffer());
+  std::exit(1);
+
+  return 0;
+}
+
+}  // namespace
+
+////////////////////////////////////////////////////////////////////
+
 PyFloatKlass* PyFloatKlass::instance_ = nullptr;
 
+// static
 PyFloatKlass* PyFloatKlass::GetInstance() {
   if (instance_ == nullptr) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyFloatKlass>(
@@ -19,6 +51,8 @@ PyFloatKlass* PyFloatKlass::GetInstance() {
   }
   return instance_;
 }
+
+////////////////////////////////////////////////////////////////////
 
 void PyFloatKlass::Initialize() {
   // 初始化虚函数表
@@ -33,24 +67,124 @@ void PyFloatKlass::Initialize() {
   vtable_.not_equal = &Virtual_NotEqual;
   vtable_.ge = &Virtual_GreaterEqual;
   vtable_.le = &Virtual_LessEqual;
+  vtable_.print = &Virtual_Print;
 
   // 设置类名
   set_name(PyString::NewInstance("float"));
 }
 
+////////////////////////////////////////////////////////////////////
+
+void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
+  std::printf("%g", PyFloat::Cast(*self)->value());
+}
+
 // static
-PyObject* PyFloatKlass::Virtual_Add(PyObject* a, PyObject* b) {}
+Handle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return PyFloat::NewInstance(self_value + other_value);
+}
 
-PyObject* PyFloatKlass::Virtual_Sub(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_Mul(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_Div(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_Mod(PyObject*, PyObject*) {}
+// static
+Handle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return PyFloat::NewInstance(self_value - other_value);
+}
 
-PyObject* PyFloatKlass::Virtual_Greater(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_Less(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_Equal(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_NotEqual(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_GreaterEqual(PyObject*, PyObject*) {}
-PyObject* PyFloatKlass::Virtual_LessEqual(PyObject*, PyObject*) {}
+// static
+Handle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return PyFloat::NewInstance(self_value * other_value);
+}
+
+// static
+Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  if (other_value == 0) {
+    std::printf("ZeroDivisionError: float division by zero");
+    std::exit(1);
+  }
+  return PyFloat::NewInstance(self_value / other_value);
+}
+
+// static
+Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  if (other_value == 0) {
+    std::printf("ZeroDivisionError: float modulo");
+    std::exit(1);
+  }
+  return PyFloat::NewInstance(PythonMod(self_value, other_value));
+}
+
+// static
+PyBoolean* PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return Universe::ToPyBoolean(self_value > other_value);
+}
+
+// static
+PyBoolean* PyFloatKlass::Virtual_Less(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return Universe::ToPyBoolean(self_value < other_value);
+}
+
+// static
+PyBoolean* PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
+                                       Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return Universe::ToPyBoolean(self_value == other_value);
+}
+
+// static
+PyBoolean* PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
+  assert(self->IsPyFloat());
+  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double other_value = ExtractValue(other);
+  return Universe::ToPyBoolean(self_value != other_value);
+}
+
+// static
+PyBoolean* PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
+  assert(self->IsPySmi());
+  bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
+            Virtual_Equal(self, other)->IsPyTrue());
+  return Universe::ToPyBoolean(v);
+}
+
+// static
+PyBoolean* PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
+  assert(self->IsPySmi());
+  bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
+            Virtual_Less(self, other)->IsPyFalse());
+  return Universe::ToPyBoolean(v);
+}
 
 }  // namespace saauso::internal

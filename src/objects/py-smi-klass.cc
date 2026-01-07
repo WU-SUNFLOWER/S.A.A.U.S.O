@@ -2,12 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "objects/py-integer-klass.h"
+#include "objects/py-smi-klass.h"
+
+#include <cstdio>
 
 #include "heap/heap.h"
-#include "objects/py-boolean.h"
+#include "objects/py-oddballs.h"
 #include "objects/py-float.h"
-#include "objects/py-integer.h"
 #include "objects/py-smi.h"
 #include "objects/py-string.h"
 #include "py-object.h"
@@ -16,12 +17,12 @@
 
 namespace saauso::internal {
 
-PyIntegerKlass* PyIntegerKlass::instance_ = nullptr;
+PySmiKlass* PySmiKlass::instance_ = nullptr;
 
 // static
-PyIntegerKlass* PyIntegerKlass::GetInstance() {
+PySmiKlass* PySmiKlass::GetInstance() {
   if (instance_ == nullptr) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyIntegerKlass>(
+    instance_ = Universe::heap_->Allocate<PySmiKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
   return instance_;
@@ -29,7 +30,7 @@ PyIntegerKlass* PyIntegerKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PyIntegerKlass::Initialize() {
+void PySmiKlass::Initialize() {
   // 初始化虚函数表
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;
@@ -42,6 +43,7 @@ void PyIntegerKlass::Initialize() {
   vtable_.not_equal = &Virtual_NotEqual;
   vtable_.ge = &Virtual_GreaterEqual;
   vtable_.le = &Virtual_LessEqual;
+  vtable_.print = &Virtual_Print;
 
   // 设置类名
   set_name(PyString::NewInstance("int"));
@@ -49,10 +51,14 @@ void PyIntegerKlass::Initialize() {
 
 ////////////////////////////////////////////////////////////////////
 
+void PySmiKlass::Virtual_Print(Handle<PyObject> self) {
+  std::printf("%lld", PySmi::Cast(*self)->value());
+}
+
 // static
-Handle<PyObject> PyIntegerKlass::Virtual_Add(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -68,9 +74,9 @@ Handle<PyObject> PyIntegerKlass::Virtual_Add(Handle<PyObject> self,
 }
 
 // static
-Handle<PyObject> PyIntegerKlass::Virtual_Sub(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -86,9 +92,9 @@ Handle<PyObject> PyIntegerKlass::Virtual_Sub(Handle<PyObject> self,
 }
 
 // static
-Handle<PyObject> PyIntegerKlass::Virtual_Mul(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -104,9 +110,9 @@ Handle<PyObject> PyIntegerKlass::Virtual_Mul(Handle<PyObject> self,
 }
 
 // static
-Handle<PyObject> PyIntegerKlass::Virtual_Div(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -123,9 +129,9 @@ Handle<PyObject> PyIntegerKlass::Virtual_Div(Handle<PyObject> self,
 }
 
 // static
-Handle<PyObject> PyIntegerKlass::Virtual_Mod(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -142,9 +148,9 @@ Handle<PyObject> PyIntegerKlass::Virtual_Mod(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyIntegerKlass::Virtual_Greater(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+PyBoolean* PySmiKlass::Virtual_Greater(Handle<PyObject> self,
+                                       Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -159,9 +165,9 @@ PyBoolean* PyIntegerKlass::Virtual_Greater(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyIntegerKlass::Virtual_Less(Handle<PyObject> self,
-                                        Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+PyBoolean* PySmiKlass::Virtual_Less(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -177,9 +183,9 @@ PyBoolean* PyIntegerKlass::Virtual_Less(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyIntegerKlass::Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+PyBoolean* PySmiKlass::Virtual_Equal(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
 
@@ -194,17 +200,17 @@ PyBoolean* PyIntegerKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyIntegerKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+PyBoolean* PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   return Universe::ToPyBoolean(!Virtual_Equal(self, other)->IsPyTrue());
 }
 
 // static
-PyBoolean* PyIntegerKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                                Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+PyBoolean* PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
             Virtual_Equal(self, other)->IsPyTrue());
@@ -212,9 +218,9 @@ PyBoolean* PyIntegerKlass::Virtual_GreaterEqual(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyIntegerKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
-  assert(self->IsPyInteger());
+PyBoolean* PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  assert(self->IsPySmi());
 
   bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
             Virtual_Less(self, other)->IsPyFalse());

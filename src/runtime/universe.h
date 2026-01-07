@@ -26,6 +26,9 @@ class Universe {
   static PyBoolean* ToPyBoolean(bool condition) {
     return condition ? py_true_object_ : py_false_object_;
   }
+
+  private:
+  
 };
 
 }  // namespace saauso::internal

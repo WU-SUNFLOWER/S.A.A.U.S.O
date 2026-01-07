@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 class PyList : public PyObject {
  public:
-  static Handle<PyList> NewInstance(int init_capacity = 8);
+  static Handle<PyList> NewInstance(int64_t init_capacity = 8);
   static PyList* Cast(PyObject* object);
 
   // 以下方法均不会触发GC
@@ -24,13 +24,13 @@ class PyList : public PyObject {
   Handle<PyObject> Get(int index) const;
   Handle<PyObject> GetLast() const;
 
-  void Set(int index, Handle<PyObject> value);
+  void Set(int64_t index, Handle<PyObject> value);
 
-  void Remove(int index);
+  void Remove(int64_t index);
   void Clear();
 
-  int capacity() const { return capacity_; };
-  int length() const { return length_; };
+  int64_t capacity() const { return capacity_; };
+  int64_t length() const { return length_; };
 
   bool IsEmpty() const { return length_ == 0; };
   bool IsFull() const { return length_ == capacity_; }
@@ -39,11 +39,11 @@ class PyList : public PyObject {
   // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
   // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
   void Append(Handle<PyObject> value);
-  void Insert(int index, Handle<PyObject> value);
+  void Insert(int64_t index, Handle<PyObject> value);
 
  private:
-  int capacity_{0};
-  int length_{0};
+  int64_t capacity_{0};
+  int64_t length_{0};
   // TODO: 实现Visitor入口函数，将PyList和缓冲区拷贝到survivor区
   PyObject** array_{nullptr};
 

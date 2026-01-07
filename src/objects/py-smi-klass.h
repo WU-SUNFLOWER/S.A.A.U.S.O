@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_OBJECTS_PY_INTEGER_KLASS_H_
-#define SAAUSO_OBJECTS_PY_INTEGER_KLASS_H_
+#ifndef SAAUSO_OBJECTS_PY_SMI_KLASS_H_
+#define SAAUSO_OBJECTS_PY_SMI_KLASS_H_
 
 #include "handles/handles.h"
 #include "objects/klass.h"
@@ -13,15 +13,17 @@ namespace saauso::internal {
 class PyObject;
 class PyBoolean;
 
-class PyIntegerKlass : public Klass {
+class PySmiKlass : public Klass {
  public:
-  static PyIntegerKlass* GetInstance();
+  static PySmiKlass* GetInstance();
 
   void Initialize();
 
  private:
-  PyIntegerKlass();
-  static PyIntegerKlass* instance_;
+  PySmiKlass();
+  static PySmiKlass* instance_;
+
+  static void Virtual_Print(Handle<PyObject>);
 
   static Handle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
   static Handle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
@@ -39,4 +41,4 @@ class PyIntegerKlass : public Klass {
 
 }  // namespace saauso::internal
 
-#endif  // SAAUSO_OBJECTS_PY_INTEGER_KLASS_H_
+#endif  // SAAUSO_OBJECTS_PY_SMI_KLASS_H_

@@ -6,19 +6,27 @@
 #define SAAUSO_OBJECTS_PY_BOOLEAN_KLASS_H_
 
 #include "objects/klass.h"
-#include "py-object.h"
 
 namespace saauso::internal {
 
 class PyBooleanKlass : public Klass {
  public:
   static PyBooleanKlass* GetInstance();
-
   void Initialize();
 
  private:
   PyBooleanKlass();
   static PyBooleanKlass* instance_;
+};
+
+class PyNoneKlass : public Klass {
+ public:
+  static PyNoneKlass* GetInstance();
+  void Initialize();
+
+ private:
+  PyNoneKlass();
+  static PyNoneKlass* instance_;
 };
 
 }  // namespace saauso::internal

@@ -19,7 +19,6 @@ class PyObject : public Object {
   void set_klass(Klass* klass);
 
   // 以下方法依赖对象绑定的klass指针
-  bool IsPyInteger() const;
   bool IsPyFloat() const;
   bool IsPyList() const;
   bool IsPyString() const;
@@ -71,6 +70,8 @@ class PyObject : public Object {
   Handle<PyObject> Iter();
   Handle<PyObject> Next();
   void DeletSubscr(Handle<PyObject> subscr_name);
+
+  size_t GetInstanceSize();
   ////////////////// 多态函数 结束 //////////////////
 
  private:
