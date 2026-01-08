@@ -17,7 +17,6 @@
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
-
 namespace saauso::internal {
 
 PySmiKlass* PySmiKlass::instance_ = nullptr;
@@ -151,8 +150,8 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PySmiKlass::Virtual_Greater(Handle<PyObject> self,
-                                       Handle<PyObject> other) {
+Tagged<PyBoolean> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
@@ -168,8 +167,8 @@ PyBoolean* PySmiKlass::Virtual_Greater(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PySmiKlass::Virtual_Less(Handle<PyObject> self,
-                                    Handle<PyObject> other) {
+Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
   assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
@@ -186,8 +185,8 @@ PyBoolean* PySmiKlass::Virtual_Less(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PySmiKlass::Virtual_Equal(Handle<PyObject> self,
-                                     Handle<PyObject> other) {
+Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
   assert(self->IsPySmi());
 
   int64_t self_value = PySmi::Cast(*self)->value();
@@ -203,16 +202,16 @@ PyBoolean* PySmiKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                        Handle<PyObject> other) {
+Tagged<PyBoolean> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                               Handle<PyObject> other) {
   assert(self->IsPySmi());
 
   return Universe::ToPyBoolean(!Virtual_Equal(self, other)->IsPyTrue());
 }
 
 // static
-PyBoolean* PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+Tagged<PyBoolean> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                                   Handle<PyObject> other) {
   assert(self->IsPySmi());
 
   bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
@@ -221,8 +220,8 @@ PyBoolean* PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+Tagged<PyBoolean> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   assert(self->IsPySmi());
 
   bool v = (Virtual_Greater(self, other)->IsPyTrue() ||

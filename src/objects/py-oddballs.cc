@@ -7,6 +7,8 @@
 #include <cassert>
 
 #include "src/heap/heap.h"
+#include "src/objects/klass.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/runtime/universe.h"
 
@@ -16,24 +18,24 @@ namespace saauso::internal {
 // Python布尔值
 
 // static
-PyBoolean* PyBoolean::NewInstance(bool value) {
+Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
   // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
-  PyBoolean* object =
+  auto object =
       Universe::heap_->Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);
 
   object->value_ = value;
-  object->set_klass(PyBooleanKlass::GetInstance());
+  PyObject::SetKlass(object, PyBooleanKlass::GetInstance());
 
   return object;
 }
 
 // static
-PyBoolean* PyBoolean::Cast(PyObject* object) {
-  assert(object->IsPyBoolean());
-  return reinterpret_cast<PyBoolean*>(object);
+Tagged<PyBoolean> PyBoolean::Cast(Tagged<PyObject> object) {
+  assert(IsPyBoolean(object));
+  return Tagged<PyBoolean>::Cast(object);
 }
 
-PyBoolean* PyBoolean::Reverse() {
+Tagged<PyBoolean> PyBoolean::Reverse() {
   return Universe::ToPyBoolean(!value_);
 }
 
@@ -41,18 +43,18 @@ PyBoolean* PyBoolean::Reverse() {
 // Python空值
 
 // static
-PyNone* PyNone::NewInstance() {
+Tagged<PyNone> PyNone::NewInstance() {
   // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
-  PyNone* object =
+  auto object =
       Universe::heap_->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
-  object->set_klass(PyNoneKlass::GetInstance());
+  PyObject::SetKlass(object, PyNoneKlass::GetInstance());
   return object;
 }
 
 // static
-PyNone* PyNone::Cast(PyObject* object) {
-  assert(object->IsPyNone());
-  return reinterpret_cast<PyNone*>(object);
+Tagged<PyNone> PyNone::Cast(Tagged<PyObject> object) {
+  assert(IsPyNone(object));
+  return Tagged<PyNone>::Cast(object);
 }
 
 }  // namespace saauso::internal

@@ -15,7 +15,6 @@
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
-
 namespace saauso::internal {
 
 PyBooleanKlass* PyBooleanKlass::instance_ = nullptr;
@@ -49,8 +48,8 @@ void PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 // static
-PyBoolean* PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   bool v = Handle<PyBoolean>::Cast(self)->value();
 
   bool result = false;
@@ -66,8 +65,8 @@ PyBoolean* PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+Tagged<PyBoolean> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                                   Handle<PyObject> other) {
   return Virtual_Equal(self, other)->Reverse();
 }
 
@@ -99,15 +98,15 @@ void PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 // static
-PyBoolean* PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
-                                      Handle<PyObject> other) {
+Tagged<PyBoolean> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
   assert(self->IsPyNone());
   return Universe::ToPyBoolean(*self == *other);
 }
 
 // static
-PyBoolean* PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+Tagged<PyBoolean> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   return Virtual_Equal(self, other)->Reverse();
 }
 

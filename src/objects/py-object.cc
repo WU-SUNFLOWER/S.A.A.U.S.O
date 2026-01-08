@@ -6,6 +6,7 @@
 
 #include <cassert>
 
+#include "py-object.h"
 #include "src/handles/handles.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-code-object-klass.h"
@@ -21,303 +22,293 @@
 
 namespace saauso::internal {
 
-Klass* PyObject::klass() const {
+Klass* PyObject::GetKlass(Tagged<PyObject> object) {
   // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
-  if (IsPySmi()) {
+  if (IsPySmi(object)) {
     return PySmiKlass::GetInstance();
   }
 
-  assert(IsHeapObject());
-  assert(klass_ != nullptr);
+  assert(IsHeapObject(object));
+  assert(object->klass_ != nullptr);
 
-  return klass_;
+  return object->klass_;
 }
 
-void PyObject::set_klass(Klass* klass) {
+void PyObject::SetKlass(Tagged<PyObject> object, Klass* klass) {
   assert(klass != nullptr);
-  assert(IsHeapObject());
-  klass_ = klass;
+  assert(IsHeapObject(object));
+  object->klass_ = klass;
 }
 
 ///////////////////////////////////////////////////////////////////
 // 类型判断工具函数 开始
 
-bool PyObject::IsPyFloat() const {
-  return klass() == PyFloatKlass::GetInstance();
+#define IMPL_PY_CHECKER_WITH_HANDLE_ARG(name) \
+  bool Is##name(Handle<PyObject> object) {    \
+    return Is##name(*object);                 \
+  }
+
+#define IMPL_PY_CHECKER_BY_KLASS(name)                               \
+  bool Is##name(Tagged<PyObject> object) {                           \
+    return PyObject::GetKlass(object) == name##Klass::GetInstance(); \
+  }                                                                  \
+  IMPL_PY_CHECKER_WITH_HANDLE_ARG(name)
+
+// 实现IsPyFloat、IsPyString、IsPyList等一系列函数
+PY_TYPE_IN_HEAP_LIST(IMPL_PY_CHECKER_BY_KLASS)
+#undef IMPL_PY_CHECKER_BY_KLASS
+
+bool IsPySmi(Tagged<PyObject> object) {
+  return object.IsSmi();
 }
 
-bool PyObject::IsPyList() const {
-  return klass() == PyListKlass::GetInstance();
+bool IsPyTrue(Tagged<PyObject> object) {
+  return object.ptr() == Tagged<PyObject>(Universe::py_true_object_).ptr();
 }
 
-bool PyObject::IsPyString() const {
-  return klass() == PyStringKlass::GetInstance();
+bool IsPyFalse(Tagged<PyObject> object) {
+  return object.ptr() == Tagged<PyObject>(Universe::py_false_object_).ptr();
 }
 
-bool PyObject::IsPyBoolean() const {
-  return klass() == PyBooleanKlass::GetInstance();
+bool IsHeapObject(Tagged<PyObject> object) {
+  return !IsPySmi(object);
 }
 
-bool PyObject::IsPyCodeObject() const {
-  return klass() == PyCodeObjectKlass::GetInstance();
+bool IsGcAbleObject(Tagged<PyObject> object) {
+  return !IsPySmi(object) && !IsPyBoolean(object) && !IsPyNone(object);
 }
 
-bool PyObject::IsPyTrue() const {
-  return this == static_cast<PyObject*>(Universe::py_true_object_);
-}
-
-bool PyObject::IsPyFalse() const {
-  return this == static_cast<PyObject*>(Universe::py_false_object_);
-}
-
-bool PyObject::IsPyNone() const {
-  return this == static_cast<PyObject*>(Universe::py_none_object_);
-}
-
-bool PyObject::IsPySmi() const {
-  return (reinterpret_cast<int64_t>(this) & PySmi::kSmiTagMask) ==
-         PySmi::kSmiTag;
-}
-
-bool PyObject::IsHeapObject() const {
-  return !IsPySmi();
-}
-
-bool PyObject::IsGcAbleObject() const {
-  return !IsPySmi() && !IsPyTrue() && !IsPyFalse() && !IsPyNone();
-}
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PySmi)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTrue)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFalse)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
+#undef IMPL_PY_CHECKER_WITH_HANDLE_ARG
 
 ///////////////////////////////////////////////////////////////////
 // 多态虚方法入口 开始
 
-void PyObject::Print() {
+void PyObject::Print(Handle<PyObject> self) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.print);
-  klass()->vtable_.print(this_handle);
+  auto* klass = PyObject::GetKlass(*self);
+  assert(klass);
+
+  klass->vtable_.print(self);
 }
 
-Handle<PyObject> PyObject::Add(Handle<PyObject> other) {
+Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(this)->value() +
-                                           PySmi::Cast(*other)->value()));
+  if (IsPySmi(*self) && IsPySmi(*self)) {
+    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() +
+                                           PySmi::Cast(*other).value()));
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.add);
-  return klass()->vtable_.add(this_handle, other).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.add);
+  return GetKlass(*self)->vtable_.add(self, other).EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::Sub(Handle<PyObject> other) {
+Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(this)->value() -
-                                           PySmi::Cast(*other)->value()));
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() -
+                                           PySmi::Cast(*other).value()));
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.sub);
-  return klass()->vtable_.sub(this_handle, other).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.sub);
+  return GetKlass(*self)->vtable_.sub(self, other).EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::Mul(Handle<PyObject> other) {
+Handle<PyObject> PyObject::Mul(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(this)->value() *
-                                           PySmi::Cast(*other)->value()));
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() *
+                                           PySmi::Cast(*other).value()));
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.mul);
-  return klass()->vtable_.mul(this_handle, other).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.mul);
+  return GetKlass(*self)->vtable_.mul(self, other).EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::Div(Handle<PyObject> other) {
+Handle<PyObject> PyObject::Div(Handle<PyObject> self, Handle<PyObject> other) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.div);
-  return klass()->vtable_.div(this_handle, other).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.div);
+  return GetKlass(*self)->vtable_.div(self, other).EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::Mod(Handle<PyObject> other) {
+Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
+  if (IsPySmi(*self) && IsPySmi(*other)) {
     auto result =
-        PythonMod(PySmi::Cast(this)->value(), PySmi::Cast(*other)->value());
+        PythonMod(PySmi::Cast(*self).value(), PySmi::Cast(*other).value());
     return Handle<PyObject>(PySmi::FromInt(result));
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.mod);
-  return klass()->vtable_.mod(this_handle, other).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.mod);
+  return GetKlass(*self)->vtable_.mod(self, other).EscapeFrom(&scope);
 }
 
-PyBoolean* PyObject::Greater(Handle<PyObject> other) {
+Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Universe::ToPyBoolean(PySmi::Cast(this)->value() >
-                                 PySmi::Cast(*other)->value());
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Universe::ToPyBoolean(PySmi::Cast(*self).value() >
+                                 PySmi::Cast(*other).value());
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.greater);
-  return klass()->vtable_.greater(this_handle, other);
+  assert(GetKlass(*self)->vtable_.greater);
+  return GetKlass(*self)->vtable_.greater(self, other);
 }
 
-PyBoolean* PyObject::Less(Handle<PyObject> other) {
+Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Universe::ToPyBoolean(PySmi::Cast(this)->value() <
-                                 PySmi::Cast(*other)->value());
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Universe::ToPyBoolean(PySmi::Cast(*self).value() <
+                                 PySmi::Cast(*other).value());
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.less);
-  return klass()->vtable_.less(this_handle, other);
+  assert(GetKlass(*self)->vtable_.less);
+  return GetKlass(*self)->vtable_.less(self, other);
 }
 
-PyBoolean* PyObject::Equal(Handle<PyObject> other) {
+Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
+                                  Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Universe::ToPyBoolean(PySmi::Cast(this)->value() ==
-                                 PySmi::Cast(*other)->value());
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Universe::ToPyBoolean(PySmi::Cast(*self).value() ==
+                                 PySmi::Cast(*other).value());
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.mod);
-  return klass()->vtable_.equal(this_handle, other);
+  assert(GetKlass(*self)->vtable_.mod);
+  return GetKlass(*self)->vtable_.equal(self, other);
 }
 
-PyBoolean* PyObject::NotEqual(Handle<PyObject> other) {
+Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Universe::ToPyBoolean(PySmi::Cast(this)->value() !=
-                                 PySmi::Cast(*other)->value());
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Universe::ToPyBoolean(PySmi::Cast(*self).value() !=
+                                 PySmi::Cast(*other).value());
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.not_equal);
-  return klass()->vtable_.not_equal(this_handle, other);
+  assert(GetKlass(*self)->vtable_.not_equal);
+  return GetKlass(*self)->vtable_.not_equal(self, other);
 }
 
-PyBoolean* PyObject::GreaterEqual(Handle<PyObject> other) {
+Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Universe::ToPyBoolean(PySmi::Cast(this)->value() >=
-                                 PySmi::Cast(*other)->value());
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Universe::ToPyBoolean(PySmi::Cast(*self).value() >=
+                                 PySmi::Cast(*other).value());
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.ge);
-  return klass()->vtable_.ge(this_handle, other);
+  assert(GetKlass(*self)->vtable_.ge);
+  return GetKlass(*self)->vtable_.ge(self, other);
 }
 
-PyBoolean* PyObject::LessEqual(Handle<PyObject> other) {
+Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi() && other->IsPySmi()) {
-    return Universe::ToPyBoolean(PySmi::Cast(this)->value() <=
-                                 PySmi::Cast(*other)->value());
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Universe::ToPyBoolean(PySmi::Cast(*self).value() <=
+                                 PySmi::Cast(*other).value());
   }
 
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.le);
-  return klass()->vtable_.le(this_handle, other);
+  assert(GetKlass(*self)->vtable_.le);
+  return GetKlass(*self)->vtable_.le(self, other);
 }
 
-Handle<PyObject> PyObject::GetAttr(Handle<PyObject> attr_name) {
+Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
+                                   Handle<PyObject> attr_name) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.getattr);
-  return klass()->vtable_.getattr(this_handle, attr_name).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.getattr);
+  return GetKlass(*self)->vtable_.getattr(self, attr_name).EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::SetAttr(Handle<PyObject> attr_name,
+Handle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
+                                   Handle<PyObject> attr_name,
                                    Handle<PyObject> attr_value) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.setattr);
-  return klass()
-      ->vtable_.setattr(this_handle, attr_name, attr_value)
+  assert(GetKlass(*self)->vtable_.setattr);
+  return GetKlass(*self)
+      ->vtable_.setattr(self, attr_name, attr_value)
       .EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::Subscr(Handle<PyObject> subscr_name) {
+Handle<PyObject> PyObject::Subscr(Handle<PyObject> self,
+                                  Handle<PyObject> subscr_name) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.subscr);
-  return klass()->vtable_.subscr(this_handle, subscr_name).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.subscr);
+  return GetKlass(*self)->vtable_.subscr(self, subscr_name).EscapeFrom(&scope);
 }
 
-void PyObject::StoreSubscr(Handle<PyObject> subscr_name,
+void PyObject::StoreSubscr(Handle<PyObject> self,
+                           Handle<PyObject> subscr_name,
                            Handle<PyObject> subscr_value) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.store_subscr);
-  klass()->vtable_.store_subscr(this_handle, subscr_name, subscr_value);
+  assert(GetKlass(*self)->vtable_.store_subscr);
+  GetKlass(*self)->vtable_.store_subscr(self, subscr_name, subscr_value);
 }
 
-PyBoolean* PyObject::Contains(Handle<PyObject> target) {
+Tagged<PyBoolean> PyObject::Contains(Handle<PyObject> self,
+                                     Handle<PyObject> target) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.contains);
-  return klass()->vtable_.contains(this_handle, target);
+  assert(GetKlass(*self)->vtable_.contains);
+  return GetKlass(*self)->vtable_.contains(self, target);
 }
 
-Handle<PyObject> PyObject::Iter() {
+Handle<PyObject> PyObject::Iter(Handle<PyObject> self) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.iter);
-  return klass()->vtable_.iter(this_handle).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.iter);
+  return GetKlass(*self)->vtable_.iter(self).EscapeFrom(&scope);
 }
 
-Handle<PyObject> PyObject::Next() {
+Handle<PyObject> PyObject::Next(Handle<PyObject> self) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.next);
-  return klass()->vtable_.next(this_handle).EscapeFrom(&scope);
+  assert(GetKlass(*self)->vtable_.next);
+  return GetKlass(*self)->vtable_.next(self).EscapeFrom(&scope);
 }
 
-void PyObject::DeletSubscr(Handle<PyObject> subscr_name) {
+void PyObject::DeletSubscr(Handle<PyObject> self,
+                           Handle<PyObject> subscr_name) {
   HandleScope scope;
-  Handle<PyObject> this_handle(this);
 
-  assert(klass()->vtable_.del_subscr);
-  klass()->vtable_.del_subscr(this_handle, subscr_name);
+  assert(GetKlass(*self)->vtable_.del_subscr);
+  GetKlass(*self)->vtable_.del_subscr(self, subscr_name);
 }
 
-size_t PyObject::GetInstanceSize() {
-  assert(klass()->vtable_.instance_size);
-  return klass()->vtable_.instance_size(this);
+size_t PyObject::GetInstanceSize(Handle<PyObject> self) {
+  assert(GetKlass(*self)->vtable_.instance_size);
+  return GetKlass(*self)->vtable_.instance_size(*self);
 }
 
 }  // namespace saauso::internal

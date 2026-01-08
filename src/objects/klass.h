@@ -19,7 +19,7 @@ class PyBoolean;
 /////////////////虚函数表 定义开始///////////////////////////
 
 struct VirtualTable {
-  using Oop = PyObject*;
+  using Oop = Tagged<PyObject>;
   using OopHandle = Handle<PyObject>;
 
   using VirtualFuncType_0_1 = void (*)(Oop);
@@ -38,11 +38,12 @@ struct VirtualTable {
                                                  OopHandle,
                                                  OopHandle);
 
-  using VirtualFuncType_1_1_SAFE_BOOL = PyBoolean* (*)(OopHandle);
-  using VirtualFuncType_1_2_SAFE_BOOL = PyBoolean* (*)(OopHandle, OopHandle);
-  using VirtualFuncType_1_3_SAFE_BOOL = PyBoolean* (*)(OopHandle,
-                                                       OopHandle,
-                                                       OopHandle);
+  using VirtualFuncType_1_1_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle);
+  using VirtualFuncType_1_2_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle,
+                                                              OopHandle);
+  using VirtualFuncType_1_3_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle,
+                                                              OopHandle,
+                                                              OopHandle);
 
   // PyObject* add(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE add{nullptr};
@@ -62,17 +63,17 @@ struct VirtualTable {
   // void store_subscr(PyObject* object, PyObject* subscr, PyObject* value);
   VirtualFuncType_0_3_SAFE store_subscr{nullptr};
 
-  // PyBoolean* greater(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> greater(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE_BOOL greater{nullptr};
-  // PyBoolean* less(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> less(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE_BOOL less{nullptr};
-  // PyBoolean* equal(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> equal(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE_BOOL equal{nullptr};
-  // PyBoolean* not_equal(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> not_equal(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE_BOOL not_equal{nullptr};
-  // PyBoolean* ge(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> ge(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE_BOOL ge{nullptr};
-  // PyBoolean* le(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> le(PyObject* a, PyObject* b);
   VirtualFuncType_1_2_SAFE_BOOL le{nullptr};
 
   // PyObject* mod(PyObject* a, PyObject* b);
@@ -113,7 +114,7 @@ class Klass : public Object {
   VirtualTable vtable_;
 
  private:
-  PyString* name_{nullptr};
+  Tagged<PyString> name_{nullptr};
 };
 
 }  // namespace saauso::internal

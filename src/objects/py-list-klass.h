@@ -37,10 +37,11 @@ class PyListKlass : public Klass {
                                   Handle<PyObject> subscr,
                                   Handle<PyObject> value);
   static void Virtual_DelSubscr(Handle<PyObject> self, Handle<PyObject> subscr);
-  static PyBoolean* Virtual_Less(Handle<PyObject> self, Handle<PyObject> other);
+  static Tagged<PyBoolean> Virtual_Less(Handle<PyObject> self,
+                                        Handle<PyObject> other);
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static PyBoolean* Virtual_Contains(Handle<PyObject> self,
-                                     Handle<PyObject> target);
+  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
+                                            Handle<PyObject> target);
   static size_t Virtual_InstanceSize(PyObject* self);
 };
 

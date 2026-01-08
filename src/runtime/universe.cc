@@ -17,9 +17,9 @@ namespace saauso::internal {
 
 Heap* Universe::heap_ = nullptr;
 
-PyNone* Universe::py_none_object_ = nullptr;
-PyBoolean* Universe::py_true_object_ = nullptr;
-PyBoolean* Universe::py_false_object_ = nullptr;
+Tagged<PyNone> Universe::py_none_object_(nullptr);
+Tagged<PyBoolean> Universe::py_true_object_(nullptr);
+Tagged<PyBoolean> Universe::py_false_object_(nullptr);
 
 // static
 void Universe::Genesis() {

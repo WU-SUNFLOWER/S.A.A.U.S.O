@@ -12,12 +12,12 @@ namespace saauso::internal {
 
 class PyBoolean : public PyObject {
  public:
-  static PyBoolean* NewInstance(bool value);
-  static PyBoolean* Cast(PyObject* object);
+  static Tagged<PyBoolean> NewInstance(bool value);
+  static Tagged<PyBoolean> Cast(Tagged<PyObject> object);
 
   bool value() const { return value_; }
 
-  PyBoolean* Reverse();
+  Tagged<PyBoolean> Reverse();
 
  private:
   bool value_;
@@ -25,8 +25,8 @@ class PyBoolean : public PyObject {
 
 class PyNone : public PyObject {
  public:
-  static PyNone* NewInstance();
-  static PyNone* Cast(PyObject* object);
+  static Tagged<PyNone> NewInstance();
+  static Tagged<PyNone> Cast(Tagged<PyObject> object);
 };
 
 }  // namespace saauso::internal

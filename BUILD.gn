@@ -25,6 +25,7 @@ source_set("saauso_sources") {
 
     # handles
     "//src/handles/handles.h",
+    "//src/handles/tagged.h",
 
     # heap (堆管理)
     "//src/heap/heap.cc",

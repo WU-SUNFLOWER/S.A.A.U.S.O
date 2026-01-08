@@ -52,43 +52,43 @@ Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
       PySmi::FromInt(Handle<PyString>::Cast(self)->length()));
 }
 
-PyBoolean* PyStringKlass::Virtual_Equal(Handle<PyObject> self,
-                                        Handle<PyObject> other) {
+Tagged<PyBoolean> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
+                                               Handle<PyObject> other) {
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(s1->IsEqualTo(*s2));
 }
 
-PyBoolean* PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+Tagged<PyBoolean> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                                  Handle<PyObject> other) {
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(!s1->IsEqualTo(*s2));
 }
 
-PyBoolean* PyStringKlass::Virtual_Less(Handle<PyObject> self,
-                                       Handle<PyObject> other) {
+Tagged<PyBoolean> PyStringKlass::Virtual_Less(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(s1->IsLessThan(*s2));
 }
 
-PyBoolean* PyStringKlass::Virtual_Greater(Handle<PyObject> self,
-                                          Handle<PyObject> other) {
+Tagged<PyBoolean> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(s1->IsGreaterThan(*s2));
 }
 
-PyBoolean* PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+Tagged<PyBoolean> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                                   Handle<PyObject> other) {
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
 }
 
-PyBoolean* PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                               Handle<PyObject> other) {
+Tagged<PyBoolean> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                                      Handle<PyObject> other) {
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));

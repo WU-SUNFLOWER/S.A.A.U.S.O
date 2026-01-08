@@ -8,32 +8,9 @@
 #include <cassert>
 #include <type_traits>
 
-#include "include/saauso-internal.h"
-#include "src/objects/objects.h"
+#include "src/handles/tagged.h"
 
 namespace saauso::internal {
-
-/////////////////////////////////// 魔法开始 ///////////////////////////////////
-// 参考：
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/tagged.h
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/handles/handles.h
-namespace anonymous {
-template <typename Derived, typename Base>
-struct is_simple_subtype
-    : std::is_same<std::remove_cv_t<Derived>, std::remove_cv_t<Base>> {};
-
-template <typename Derived, typename Base>
-struct is_complex_subtype : std::is_base_of<Base, Derived> {};
-}  // namespace anonymous
-
-template <typename Derived, typename Base>
-struct is_subtype
-    : std::disjunction<anonymous::is_simple_subtype<Derived, Base>,
-                       anonymous::is_complex_subtype<Derived, Base>> {};
-
-template <typename Derived, typename Base>
-static constexpr bool is_subtype_v = is_subtype<Derived, Base>::value;
-/////////////////////////////////// 魔法结束 ///////////////////////////////////
 
 class HandleScope;
 
@@ -41,7 +18,7 @@ template <typename T>
 class Handle {
  public:
   Handle() : address_(kNullAddress) {}
-  explicit Handle(T* address) : address_(reinterpret_cast<Address>(address)) {}
+  explicit Handle(Tagged<T> tagged) : address_(tagged.ptr()) {}
 
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>
@@ -52,12 +29,12 @@ class Handle {
 
   T* operator->() const {
     assert(!IsNull());
-    return reinterpret_cast<T*>(address_);
+    return Tagged<T>(address_).operator->();
   }
 
-  T* operator*() const {
+  Tagged<T> operator*() const {
     assert(!IsNull());
-    return reinterpret_cast<T*>(address_);
+    return Tagged<T>(address_);
   }
 
   template <class S>

@@ -5,6 +5,8 @@
 #ifndef SAAUSO_RUNTIME_UNIVERSE_H_
 #define SAAUSO_RUNTIME_UNIVERSE_H_
 
+#include "src/handles/tagged.h"
+
 namespace saauso::internal {
 
 class Heap;
@@ -17,14 +19,14 @@ class Universe {
  public:
   static Heap* heap_;
 
-  static PyNone* py_none_object_;
-  static PyBoolean* py_true_object_;
-  static PyBoolean* py_false_object_;
+  static Tagged<PyNone> py_none_object_;
+  static Tagged<PyBoolean> py_true_object_;
+  static Tagged<PyBoolean> py_false_object_;
 
   static void Genesis();
   static void Destroy();
 
-  static PyBoolean* ToPyBoolean(bool condition) {
+  static Tagged<PyBoolean> ToPyBoolean(bool condition) {
     return condition ? py_true_object_ : py_false_object_;
   }
 

@@ -22,18 +22,17 @@ class PySmi : public PyObject {
   void* operator new(size_t) = delete;
   void operator delete(void*) = delete;
 
-  static constexpr uintptr_t kSmiTagSize = 1;
-  static constexpr uintptr_t kSmiTagMask = 1;
-  static constexpr uintptr_t kSmiTag = 1;
+  // 判断一个Tagged<PyObject>是不是Smi
+  static bool IsSmi(Tagged<PyObject> object);
 
-  // 从Smi*中提取出整型
-  int64_t value();
+  // 从一个Tagged<PySmi>中提取出裸的int64_t
+  static int64_t ToInt(Tagged<PySmi> smi);
 
-  // 将一个整型转换成PySmi*
-  static PySmi* FromInt(int64_t value);
+  // 将一个整型转换成Tagged<PySmi>
+  static Tagged<PySmi> FromInt(int64_t value);
 
-  // 将裸的PyObject*指针转成PySmi*
-  static PySmi* Cast(PyObject* object);
+  // 将裸的Tagged<PyObject>指针转成Tagged<PySmi>
+  static Tagged<PySmi> Cast(Tagged<PyObject> object);
 };
 
 }  // namespace saauso::internal

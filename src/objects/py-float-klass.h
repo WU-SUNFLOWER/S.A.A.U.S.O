@@ -28,12 +28,14 @@ class PyFloatKlass : public Klass {
   static Handle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
   static Handle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
 
-  static PyBoolean* Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
-  static PyBoolean* Virtual_Less(Handle<PyObject>, Handle<PyObject>);
-  static PyBoolean* Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
-  static PyBoolean* Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
-  static PyBoolean* Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
-  static PyBoolean* Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
+  static Tagged<PyBoolean> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
+  static Tagged<PyBoolean> Virtual_Less(Handle<PyObject>, Handle<PyObject>);
+  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
+  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
+  static Tagged<PyBoolean> Virtual_GreaterEqual(Handle<PyObject>,
+                                                Handle<PyObject>);
+  static Tagged<PyBoolean> Virtual_LessEqual(Handle<PyObject>,
+                                             Handle<PyObject>);
 };
 
 }  // namespace saauso::internal

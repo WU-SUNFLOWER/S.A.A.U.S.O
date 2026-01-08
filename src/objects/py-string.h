@@ -18,7 +18,7 @@ class PyString : public PyObject {
   static Handle<PyString> NewInstance(const char* source);
   static Handle<PyString> NewInstance(const char* source, int64_t length);
 
-  static PyString* Cast(PyObject* object);
+  static Tagged<PyString> Cast(Tagged<PyObject> object);
 
   void Set(int64_t index, char value);
   char Get(int64_t index) const;

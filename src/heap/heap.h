@@ -7,6 +7,8 @@
 
 #include <cstddef>
 
+#include "src/handles/tagged.h"
+
 namespace saauso::internal {
 
 class Heap {
@@ -16,7 +18,7 @@ class Heap {
   void* AllocateRaw(size_t size_in_bytes, AllocationSpace space);
 
   template <typename T>
-  T* Allocate(AllocationSpace space) {
+  Tagged<T> Allocate(AllocationSpace space) {
     return static_cast<T*>(AllocateRaw(sizeof(T), space));
   }
 };

@@ -134,8 +134,8 @@ Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   assert(self->IsPyFloat());
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
@@ -143,8 +143,8 @@ PyBoolean* PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyFloatKlass::Virtual_Less(Handle<PyObject> self,
-                                      Handle<PyObject> other) {
+Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
   assert(self->IsPyFloat());
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
@@ -152,8 +152,8 @@ PyBoolean* PyFloatKlass::Virtual_Less(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
-                                       Handle<PyObject> other) {
+Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(self->IsPyFloat());
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
@@ -161,8 +161,8 @@ PyBoolean* PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                          Handle<PyObject> other) {
+Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
   assert(self->IsPyFloat());
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
@@ -170,8 +170,8 @@ PyBoolean* PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+Tagged<PyBoolean> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                                     Handle<PyObject> other) {
   assert(self->IsPySmi());
   bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
             Virtual_Equal(self, other)->IsPyTrue());
@@ -179,8 +179,8 @@ PyBoolean* PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
 }
 
 // static
-PyBoolean* PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                                  Handle<PyObject> other) {
   assert(self->IsPySmi());
   bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
             Virtual_Less(self, other)->IsPyFalse());

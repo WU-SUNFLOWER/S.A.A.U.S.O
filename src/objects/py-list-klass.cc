@@ -137,8 +137,8 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   list->Remove(decoded_subscr);
 }
 
-PyBoolean* PyListKlass::Virtual_Less(Handle<PyObject> self,
-                                     Handle<PyObject> other) {
+Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
   auto list_l = Handle<PyList>::Cast(self);
   auto list_r = Handle<PyList>::Cast(other);
   auto min_len = std::min(list_l->length(), list_r->length());
@@ -162,8 +162,8 @@ Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> self) {
   return Handle<PyObject>::Null();
 }
 
-PyBoolean* PyListKlass::Virtual_Contains(Handle<PyObject> self,
-                                         Handle<PyObject> target) {
+Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
+                                                Handle<PyObject> target) {
   auto list = Handle<PyList>::Cast(self);
   for (auto i = 0; i < list->length(); ++i) {
     if (list->Get(i)->Equal(target)) {

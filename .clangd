@@ -4,4 +4,4 @@ Diagnostics:
   UnusedIncludes: None
   MissingIncludes: None
 CompileFlags:
-  Add: ["/std:c++20", "-Wno-msvc-not-found"]
+  Add: ["/std:c++20", "-Wno-msvc-not-found", "-I../.."]

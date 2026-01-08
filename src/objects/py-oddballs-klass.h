@@ -21,10 +21,10 @@ class PyBooleanKlass : public Klass {
   static PyBooleanKlass* instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
-  static PyBoolean* Virtual_Equal(Handle<PyObject> self,
-                                  Handle<PyObject> other);
-  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self,
-                                     Handle<PyObject> other);
+  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
+                                         Handle<PyObject> other);
+  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other);
 };
 
 class PyNoneKlass : public Klass {
@@ -37,10 +37,10 @@ class PyNoneKlass : public Klass {
   static PyNoneKlass* instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
-  static PyBoolean* Virtual_Equal(Handle<PyObject> self,
-                                  Handle<PyObject> other);
-  static PyBoolean* Virtual_NotEqual(Handle<PyObject> self,
-                                     Handle<PyObject> other);
+  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
+                                         Handle<PyObject> other);
+  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other);
 };
 
 }  // namespace saauso::internal
