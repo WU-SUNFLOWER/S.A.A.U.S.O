@@ -91,12 +91,13 @@ config("asan") {
     cflags = [
       "/Od",
       "/Zi",
-      "/MT",
+      "/MD",
       "-fsanitize=address",
       "-fsanitize=undefined",
     ]
     ldflags = [
       "/LIBPATH:" + llvm_lib_path,
+      "/DEBUG:FULL",
       "clang_rt.asan_dynamic-x86_64.lib",
       "clang_rt.asan_dynamic_runtime_thunk-x86_64.lib",
     ]

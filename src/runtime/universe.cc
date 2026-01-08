@@ -38,6 +38,8 @@ void Universe::Genesis() {
 }
 
 // static
-void Universe::Destroy() {}
+void Universe::Destroy() {
+  heap_->DoGc();
+}
 
 }  // namespace saauso::internal

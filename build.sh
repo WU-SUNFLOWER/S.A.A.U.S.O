@@ -34,7 +34,7 @@ fi
 MODE=$1
 OUT_DIR=""
 GN_ARGS=""
-TARGET="saauso"
+TARGET="vm"
 
 case $MODE in
   release)
@@ -49,10 +49,10 @@ case $MODE in
         OUT_DIR="out/asan"
         GN_ARGS="is_asan=true"
         ;;
-    unittest)
-        OUT_DIR="out/unittest"
-        GN_ARGS="is_debug=true"
-        TARGET="saauso_unittests"
+    ut)
+        OUT_DIR="out/ut"
+        GN_ARGS="is_asan=true"
+        TARGET="ut"
         ;;
     *)
         echo "错误: 未知的模式 '$MODE'"

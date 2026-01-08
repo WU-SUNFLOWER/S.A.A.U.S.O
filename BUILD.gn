@@ -74,12 +74,12 @@ source_set("saauso_sources") {
   public_configs = [ ":saauso_includes" ]
 }
 
-executable("saauso") {
+executable("vm") {
   sources = [ "//src/main.cc" ]
   deps = [ ":saauso_sources" ]
 }
 
-executable("saauso_unittests") {
+executable("ut") {
   testonly = true  # 声明这只是一个测试目标
 
   sources = [

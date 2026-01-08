@@ -201,7 +201,7 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
 
   HandleScope scope;
 
-  assert(GetKlass(*self)->vtable_.mod);
+  assert(GetKlass(*self)->vtable_.equal);
   return GetKlass(*self)->vtable_.equal(self, other);
 }
 

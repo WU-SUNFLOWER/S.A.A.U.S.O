@@ -46,5 +46,5 @@ int main() {
     std::putchar('\n');
   }
 
-  Universe::heap_->DoGc();
+  Universe::Destroy();
 }
