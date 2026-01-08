@@ -24,9 +24,11 @@ class PySmi : public PyObject {
 
   // 判断一个Tagged<PyObject>是不是Smi
   static bool IsSmi(Tagged<PyObject> object);
+  static bool IsSmi(Handle<PyObject> object);
 
-  // 从一个Tagged<PySmi>中提取出裸的int64_t
+  // 提取出裸的int64_t
   static int64_t ToInt(Tagged<PySmi> smi);
+  static int64_t ToInt(Handle<PySmi> smi);
 
   // 将一个整型转换成Tagged<PySmi>
   static Tagged<PySmi> FromInt(int64_t value);

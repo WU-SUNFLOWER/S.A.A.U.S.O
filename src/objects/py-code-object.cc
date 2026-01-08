@@ -32,7 +32,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
                                                Handle<PyString> no_table) {
   Handle<PyCodeObject> object(Universe::heap_->Allocate<PyCodeObject>(
       Heap::AllocationSpace::kNewSpace));
-  object->set_klass(PyCodeObjectKlass::GetInstance());
+  PyObject::SetKlass(object, PyCodeObjectKlass::GetInstance());
 
   object->arg_count_ = arg_count;
   object->posonly_arg_count_ = posonly_arg_count;
@@ -59,9 +59,9 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
 }
 
 // static
-PyCodeObject* PyCodeObject::Cast(PyObject* object) {
-  assert(object->IsPyCodeObject());
-  return reinterpret_cast<PyCodeObject*>(object);
+Tagged<PyCodeObject> PyCodeObject::Cast(Tagged<PyObject> object) {
+  assert(IsPyCodeObject(object));
+  return Tagged<PyCodeObject>::Cast(object);
 }
 
 };  // namespace saauso::internal

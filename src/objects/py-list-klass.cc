@@ -8,6 +8,7 @@
 
 #include "src/code/pyc-file-parser.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
@@ -17,11 +18,11 @@
 
 namespace saauso::internal {
 
-PyListKlass* PyListKlass::instance_ = nullptr;
+Tagged<PyListKlass> PyListKlass::instance_(nullptr);
 
 // static
-PyListKlass* PyListKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PyListKlass> PyListKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyListKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -58,12 +59,12 @@ void PyListKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("[");
 
   if (list->length() > 0) {
-    list->Get(0)->Print();
+    PyObject::Print(list->Get(0));
   }
 
   for (auto i = 1; i < list->length(); ++i) {
     std::printf(", ");
-    list->Get(i)->Print();
+    PyObject::Print(list->Get(i));
   }
 
   std::printf("]");
@@ -76,11 +77,11 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
 
   auto new_result = PyList::NewInstance(list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
-    new_result->Append(list1->Get(i));
+    PyList::Append(new_result, list1->Get(i));
   }
 
   for (auto i = 0; i < list2->length(); ++i) {
-    new_result->Append(list2->Get(i));
+    PyList::Append(new_result, list2->Get(i));
   }
 
   return new_result;
@@ -88,14 +89,21 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
 
 Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
                                           Handle<PyObject> coeff) {
+  if (!IsPySmi(coeff)) {
+    std::printf("can't multiply sequence by non-int of type '%.*s'",
+                static_cast<int>(PyObject::GetKlass(coeff)->name()->length()),
+                PyObject::GetKlass(coeff)->name()->buffer());
+    std::exit(1);
+  }
+
   auto list = Handle<PyList>::Cast(self);
-  auto decoded_coeff =
-      std::max(static_cast<int64_t>(0), Handle<PySmi>::Cast(coeff)->value());
+  auto decoded_coeff = std::max(static_cast<int64_t>(0),
+                                PySmi::ToInt(Handle<PySmi>::Cast(coeff)));
 
   auto result = PyList::NewInstance(list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
     for (int i = 0; i < list->length(); ++i) {
-      result->Append(list->Get(i));
+      PyList::Append(result, list->Get(i));
     }
   }
 
@@ -104,7 +112,14 @@ Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
 
 Handle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
-  auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
+  if (!IsPySmi(subscr)) {
+    std::printf("list indices must be integers or slices, not %.*s",
+                static_cast<int>(PyObject::GetKlass(subscr)->name()->length()),
+                PyObject::GetKlass(subscr)->name()->buffer());
+    std::exit(1);
+  }
+
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
   return Handle<PyList>::Cast(self)->Get(decoded_subscr);
 }
 
@@ -113,7 +128,7 @@ void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                       Handle<PyObject> value) {
   auto list = Handle<PyList>::Cast(self);
 
-  auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
     std::printf("IndexError: list assignment index out of range");
@@ -127,7 +142,7 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
                                     Handle<PyObject> subscr) {
   auto list = Handle<PyList>::Cast(self);
 
-  auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
     std::printf("IndexError: list assignment index out of range");
@@ -146,10 +161,14 @@ Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
   for (auto i = 0; i < min_len; ++i) {
     auto l = list_l->Get(i);
     auto r = list_r->Get(i);
-    if (l->Less(r)) {
+
+    bool result = IsPyTrue(PyObject::Less(l, r));
+    if (result) {
       return Universe::py_true_object_;
     }
-    if (l->Greater(r)) {
+
+    result = IsPyTrue(PyObject::Greater(l, r));
+    if (result) {
       return Universe::py_false_object_;
     }
   }
@@ -166,7 +185,8 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
                                                 Handle<PyObject> target) {
   auto list = Handle<PyList>::Cast(self);
   for (auto i = 0; i < list->length(); ++i) {
-    if (list->Get(i)->Equal(target)) {
+    auto result = PyObject::Equal(list->Get(i), target);
+    if (IsPyTrue(result)) {
       return Universe::py_true_object_;
     }
   }
@@ -174,7 +194,7 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
   return Universe::py_false_object_;
 }
 
-size_t PyListKlass::Virtual_InstanceSize(PyObject* self) {
+size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   return sizeof(PyList);
 }
 

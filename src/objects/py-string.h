@@ -26,9 +26,9 @@ class PyString : public PyObject {
   uint64_t GetHash();
   bool HasHashCache() const;
 
-  bool IsLessThan(PyString* other);
-  bool IsEqualTo(PyString* other);
-  bool IsGreaterThan(PyString* other);
+  bool IsLessThan(Tagged<PyString> other);
+  bool IsEqualTo(Tagged<PyString> other);
+  bool IsGreaterThan(Tagged<PyString> other);
 
   int64_t length() const { return length_; }
   const char* buffer() const { return buffer_; }
@@ -36,8 +36,11 @@ class PyString : public PyObject {
   // 特别提醒：
   // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
   // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
-  Handle<PyString> Slice(int64_t from, int64_t to);
-  Handle<PyString> Append(Handle<PyString> other);
+
+  static Handle<PyString> Slice(Handle<PyString> self,
+                                int64_t from,
+                                int64_t to);
+  static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);
 
  private:
   // TODO: 实现Visitor入口函数，将PyString和缓冲区拷贝到survivor区

@@ -79,7 +79,7 @@ Handle<PyCodeObject> PycFileParser::Parse() {
   if (ref_flag) {
     // 先在cache中占个位
     index = cache->length();
-    cache->Append(Handle<PyObject>::Null());
+    PyList::Append(cache, Handle<PyObject>::Null());
   }
 
   Handle<PyCodeObject> code_object = ParseCodeObject(string_table, cache);
@@ -130,7 +130,7 @@ Handle<PyString> PycFileParser::ParseByteCodes(Handle<PyList> string_table,
 
   Handle<PyString> s = ParseString(true);
   if (HAS_REF_FLAG(object_type)) {
-    cache->Append(s);
+    PyList::Append(cache, s);
   }
 
   return s;
@@ -193,7 +193,7 @@ Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
     case kTupleFlag: {
       int cache_index = cache->length();
       if (HAS_REF_FLAG(object_type)) {
-        cache->Append(Handle<PyObject>::Null());
+        PyList::Append(cache, Handle<PyObject>::Null());
       }
 
       tuple = ParseTupleImpl(string_table, cache);
@@ -229,7 +229,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
     int index = 0;
     if (HAS_REF_FLAG(raw_object_type)) {
       index = cache->length();
-      cache->Append(Handle<PyObject>::Null());
+      PyList::Append(cache, Handle<PyObject>::Null());
     }
 
     Handle<PyObject> object;
@@ -315,7 +315,7 @@ Handle<PyString> PycFileParser::ParseName(Handle<PyList> string_table,
   }
 
   if (HAS_REF_FLAG(object_type)) {
-    cache->Append(s);
+    PyList::Append(cache, s);
   }
 
   return s;
@@ -343,7 +343,7 @@ Handle<PyString> PycFileParser::ParseNoTable(Handle<PyList> string_table,
   }
 
   if (HAS_REF_FLAG(object_type)) {
-    cache->Append(cache);
+    PyList::Append(cache, s);
   }
 
   return s;

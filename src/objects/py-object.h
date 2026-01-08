@@ -52,8 +52,11 @@ DEFINE_PY_CHECKER(GcAbleObject)
 
 class PyObject : public Object {
  public:
-  static Klass* GetKlass(Tagged<PyObject> object);
-  static void SetKlass(Tagged<PyObject> object, Klass* klass);
+  static Tagged<Klass> GetKlass(Tagged<PyObject> object);
+  static Tagged<Klass> GetKlass(Handle<PyObject> object);
+
+  static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
+  static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
 
   ////////////////// 多态函数 开始 //////////////////
   // 特别提醒：
@@ -100,7 +103,7 @@ class PyObject : public Object {
   ////////////////// 多态函数 结束 //////////////////
 
  private:
-  Klass* klass_;
+  Tagged<Klass> klass_;
 };
 
 }  // namespace saauso::internal

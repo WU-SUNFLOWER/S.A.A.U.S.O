@@ -45,61 +45,64 @@ struct VirtualTable {
                                                               OopHandle,
                                                               OopHandle);
 
-  // PyObject* add(PyObject* a, PyObject* b);
+  // Tagged<PyObject> add(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE add{nullptr};
-  // PyObject* sub(PyObject* a, PyObject* b);
+  // Tagged<PyObject> sub(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE sub{nullptr};
-  // PyObject* mul(PyObject* a, PyObject* b);
+  // Tagged<PyObject> mul(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE mul{nullptr};
-  // PyObject* div(PyObject* a, PyObject* b);
+  // Tagged<PyObject> div(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE div{nullptr};
 
-  // PyObject* getattr(PyObject* object, PyObject* key);
+  // Tagged<PyObject> getattr(Tagged<PyObject> object, Tagged<PyObject> key);
   VirtualFuncType_1_2_SAFE getattr{nullptr};
-  // PyObject* setattr(PyObject* object, PyObject* key, PyObject* value);
+  // Tagged<PyObject> setattr(Tagged<PyObject> object, Tagged<PyObject> key,
+  // Tagged<PyObject> value);
   VirtualFuncType_1_3_SAFE setattr{nullptr};
-  // PyObject* subscr(PyObject* object, PyObject* subscr);
+  // Tagged<PyObject> subscr(Tagged<PyObject> object, Tagged<PyObject> subscr);
   VirtualFuncType_1_2_SAFE subscr{nullptr};
-  // void store_subscr(PyObject* object, PyObject* subscr, PyObject* value);
+  // void store_subscr(Tagged<PyObject> object, Tagged<PyObject> subscr,
+  // Tagged<PyObject> value);
   VirtualFuncType_0_3_SAFE store_subscr{nullptr};
 
-  // Tagged<PyBoolean> greater(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> greater(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE_BOOL greater{nullptr};
-  // Tagged<PyBoolean> less(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> less(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE_BOOL less{nullptr};
-  // Tagged<PyBoolean> equal(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> equal(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE_BOOL equal{nullptr};
-  // Tagged<PyBoolean> not_equal(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> not_equal(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE_BOOL not_equal{nullptr};
-  // Tagged<PyBoolean> ge(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> ge(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE_BOOL ge{nullptr};
-  // Tagged<PyBoolean> le(PyObject* a, PyObject* b);
+  // Tagged<PyBoolean> le(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE_BOOL le{nullptr};
 
-  // PyObject* mod(PyObject* a, PyObject* b);
+  // Tagged<PyObject> mod(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE mod{nullptr};
 
-  // PyObject* iter(PyObject* object);
+  // Tagged<PyObject> iter(Tagged<PyObject> object);
   VirtualFuncType_1_1_SAFE iter{nullptr};
-  // PyObject* next(PyObject* object);
+  // Tagged<PyObject> next(Tagged<PyObject> object);
   VirtualFuncType_1_1_SAFE next{nullptr};
-  // PyObject* call(PyObject* object, PyList* args, PyDict* kwargs);
+  // Tagged<PyObject> call(Tagged<PyObject> object, Tagged<PyList> args, PyDict*
+  // kwargs);
   VirtualFuncType_1_3_SAFE call{nullptr};
-  // PyObject* len(PyObject* object);
+  // Tagged<PyObject> len(Tagged<PyObject> object);
   VirtualFuncType_1_1_SAFE len{nullptr};
 
-  // PyObject* contains(PyObject* object);
+  // Tagged<PyObject> contains(Tagged<PyObject> object);
   VirtualFuncType_1_2_SAFE_BOOL contains{nullptr};
 
-  // void print(PyObject* object);
+  // void print(Tagged<PyObject> object);
   VirtualFuncType_0_1_SAFE print{nullptr};
-  // PyObject* repr(PyObject* object);
+  // Tagged<PyObject> repr(Tagged<PyObject> object);
   VirtualFuncType_1_1_SAFE repr{nullptr};
-  // void del_subscr(PyObject* object, PyObject* subscr);
+  // void del_subscr(Tagged<PyObject> object, Tagged<PyObject> subscr);
   VirtualFuncType_0_2_SAFE del_subscr{nullptr};
 
   // 获取实例对象大小，调用该函数绝对不允许触发GC
-  // size_t instance_object(PyObject*);
+  // size_t instance_object(Tagged<PyObject>);
   size_t (*instance_size)(Oop){nullptr};
 };
 /////////////////虚函数表 定义结束///////////////////////////

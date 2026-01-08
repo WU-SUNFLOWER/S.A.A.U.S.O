@@ -20,15 +20,15 @@ Handle<PyFloat> PyFloat::NewInstance(double value) {
   object->value_ = value;
 
   // 绑定klass
-  object->set_klass(PyFloatKlass::GetInstance());
+  PyObject::SetKlass(object, PyFloatKlass::GetInstance());
 
   return object;
 }
 
 // static
-PyFloat* PyFloat::Cast(PyObject* object) {
-  assert(object->IsPyFloat());
-  return reinterpret_cast<PyFloat*>(object);
+Tagged<PyFloat> PyFloat::Cast(Tagged<PyObject> object) {
+  assert(IsPyFloat(object));
+  return Tagged<PyFloat>::Cast(object);
 }
 
 }  // namespace saauso::internal

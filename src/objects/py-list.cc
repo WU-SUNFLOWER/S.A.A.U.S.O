@@ -8,6 +8,7 @@
 
 #include "src/code/pyc-file-parser.h"
 #include "src/handles/handles.h"
+#include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object.h"
@@ -17,9 +18,9 @@ namespace saauso::internal {
 
 namespace {
 
-PyObject** AllocateArray(int size) {
-  return static_cast<PyObject**>(Universe::heap_->AllocateRaw(
-      size * sizeof(PyObject*), Heap::AllocationSpace::kNewSpace));
+Tagged<PyObject>* AllocateArray(int size) {
+  return static_cast<Tagged<PyObject>*>(Universe::heap_->AllocateRaw(
+      size * sizeof(Tagged<PyObject>), Heap::AllocationSpace::kNewSpace));
 }
 
 }  // namespace
@@ -39,15 +40,15 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   }
 
   // 绑定klass
-  object->set_klass(PyListKlass::GetInstance());
+  PyObject::SetKlass(object, PyListKlass::GetInstance());
 
   return object;
 }
 
 // static
-PyList* PyList::Cast(PyObject* object) {
-  assert(object->IsPyList());
-  return reinterpret_cast<PyList*>(object);
+Tagged<PyList> PyList::Cast(Tagged<PyObject> object) {
+  assert(IsPyList(object));
+  return Tagged<PyList>::Cast(object);
 }
 
 /////////////////////////////////////////////////////////////
@@ -91,42 +92,40 @@ void PyList::Clear() {
   length_ = 0;
 }
 
-void PyList::Append(Handle<PyObject> value) {
+void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
   HandleScope scope;
-  Handle<PyList> this_handle(this);
 
-  if (this_handle->IsFull()) {
-    ExpandImpl(this_handle);
+  if (self->IsFull()) {
+    ExpandImpl(self);
   }
 
-  this_handle->array_[this_handle->length_++] =
-      value.IsNull() ? nullptr : *value;
+  self->array_[self->length_++] =
+      value.IsNull() ? Tagged<PyObject>::Null() : *value;
   WRITE_BARRIER;
 }
 
-void PyList::Insert(int64_t index, Handle<PyObject> value) {
-  assert(0 <= index && index < length_);
+void PyList::Insert(Handle<PyList> self, int64_t index, Handle<PyObject> value) {
+  assert(0 <= index && index < self->length_);
 
   HandleScope scope;
-  Handle<PyList> this_handle(this);
 
-  if (this_handle->IsFull()) {
-    ExpandImpl(this_handle);
+  if (self->IsFull()) {
+    ExpandImpl(self);
   }
-  ++this_handle->length_;
+  ++self->length_;
 
-  for (auto i = this_handle->length_; i > index; --i) {
-    this_handle->array_[i] = this_handle->array_[i - 1];
+  for (auto i = self->length_; i > index; --i) {
+    self->array_[i] = self->array_[i - 1];
   }
 
-  this_handle->array_[index] = value.IsNull() ? nullptr : *value;
+  self->array_[index] = value.IsNull() ? Tagged<PyObject>::Null() : *value;
   WRITE_BARRIER;
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
   int64_t new_capacity =
       std::max(kDefaultInitialCapacity, list->capacity_ << 1);
-  PyObject** new_array = AllocateArray(new_capacity);
+  Tagged<PyObject>* new_array = AllocateArray(new_capacity);
 
   for (auto i = 0; i < list->length_; ++i) {
     new_array[i] = list->array_[i];

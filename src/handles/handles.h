@@ -33,21 +33,20 @@ class Handle {
   }
 
   Tagged<T> operator*() const {
-    assert(!IsNull());
     return Tagged<T>(address_);
   }
 
   template <class S>
   static Handle<T> Cast(Handle<S> that) {
     T::Cast(*that);  // 这行代码起到断言的作用
-    return Handle<T>(reinterpret_cast<T*>(*that));
+    return Handle<T>(Tagged<T>::Cast(*that));
   }
 
   bool IsNull() const { return address_ == kNullAddress; }
   static Handle<T> Null() { return Handle<T>(); }
 
   Handle<T> EscapeFrom(HandleScope* scope) {
-    return Handle<T>(reinterpret_cast<T*>(address_));
+    return Handle<T>(Tagged<T>(address_));
   }
 
  private:

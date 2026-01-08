@@ -14,11 +14,11 @@
 
 namespace saauso::internal {
 
-PyCodeObjectKlass* PyCodeObjectKlass::instance_ = nullptr;
+Tagged<PyCodeObjectKlass> PyCodeObjectKlass::instance_(nullptr);
 
 // static
-PyCodeObjectKlass* PyCodeObjectKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyCodeObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -37,7 +37,7 @@ void PyCodeObjectKlass::Initialize() {
 void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto code = Handle<PyCodeObject>::Cast(self);
   std::printf("<code object greet at 0x%p, file \"%.*s\", line %d>",
-              static_cast<void*>(*code),
+              reinterpret_cast<void*>((*code).ptr()),
               static_cast<int>(code->file_name_->length()),
               code->file_name_->buffer(), code->line_no_);
 }

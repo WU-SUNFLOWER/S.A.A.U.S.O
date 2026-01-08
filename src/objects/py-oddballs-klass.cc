@@ -17,15 +17,15 @@
 
 namespace saauso::internal {
 
-PyBooleanKlass* PyBooleanKlass::instance_ = nullptr;
-PyNoneKlass* PyNoneKlass::instance_ = nullptr;
+Tagged<PyBooleanKlass> PyBooleanKlass::instance_(nullptr);
+Tagged<PyNoneKlass> PyNoneKlass::instance_(nullptr);
 
 ///////////////////////////////////////////////////////////////
 // PyBooleanKlass
 
 // static
-PyBooleanKlass* PyBooleanKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyBooleanKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -53,11 +53,11 @@ Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
   bool v = Handle<PyBoolean>::Cast(self)->value();
 
   bool result = false;
-  if (other->IsPySmi()) {
-    result = Handle<PySmi>::Cast(other)->value() == v;
-  } else if (other->IsPyFloat()) {
+  if (IsPySmi(other)) {
+    result = PySmi::ToInt(Handle<PySmi>::Cast(other)) == v;
+  } else if (IsPyFloat(other)) {
     result = Handle<PyFloat>::Cast(other)->value() == v;
-  } else if (other->IsPyBoolean()) {
+  } else if (IsPyBoolean(other)) {
     result = Handle<PyBoolean>::Cast(other)->value() == v;
   }
 
@@ -74,8 +74,8 @@ Tagged<PyBoolean> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
 // PyNoneKlass
 
 // static
-PyNoneKlass* PyNoneKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyNoneKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -100,8 +100,8 @@ void PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
 // static
 Tagged<PyBoolean> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  assert(self->IsPyNone());
-  return Universe::ToPyBoolean(*self == *other);
+  assert(IsPyNone(self));
+  return Universe::ToPyBoolean((*self).ptr() == (*other).ptr());
 }
 
 // static

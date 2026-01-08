@@ -14,10 +14,18 @@ bool PySmi::IsSmi(Tagged<PyObject> object) {
   return object.IsSmi();
 }
 
+bool PySmi::IsSmi(Handle<PyObject> object) {
+  return IsSmi(*object);
+}
+
 // 从一个Tagged<PySmi>中提取出裸的int64_t
 int64_t PySmi::ToInt(Tagged<PySmi> smi) {
   assert(smi.IsSmi());
-  return smi.ptr() >> kSmiTagSize;
+  return AddressToSmi(smi.ptr());
+}
+
+int64_t PySmi::ToInt(Handle<PySmi> smi) {
+  return ToInt(*smi);
 }
 
 // 将一个整型转换成Tagged<PySmi>

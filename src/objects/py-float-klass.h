@@ -12,13 +12,13 @@ namespace saauso::internal {
 
 class PyFloatKlass : public Klass {
  public:
-  static PyFloatKlass* GetInstance();
+  static Tagged<PyFloatKlass> GetInstance();
 
   void Initialize();
 
  private:
   PyFloatKlass();
-  static PyFloatKlass* instance_;
+  static Tagged<PyFloatKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject>);
 

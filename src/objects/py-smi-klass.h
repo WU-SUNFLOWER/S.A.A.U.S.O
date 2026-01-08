@@ -15,13 +15,13 @@ class PyBoolean;
 
 class PySmiKlass : public Klass {
  public:
-  static PySmiKlass* GetInstance();
+  static Tagged<PySmiKlass> GetInstance();
 
   void Initialize();
 
  private:
   PySmiKlass();
-  static PySmiKlass* instance_;
+  static Tagged<PySmiKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject>);
 

@@ -21,18 +21,18 @@ namespace saauso::internal {
 namespace {
 
 double ExtractValue(Handle<PyObject> object) {
-  if (object->IsPyFloat()) {
+  if (IsPyFloat(object)) {
     return Handle<PyFloat>::Cast(object)->value();
   }
 
-  if (object->IsPySmi()) {
-    return Handle<PySmi>::Cast(object)->value();
+  if (IsPySmi(object)) {
+    return PySmi::ToInt(Handle<PySmi>::Cast(object));
   }
 
   std::printf(
       "TypeError: unsupported operand type(s) for +: 'float' and '%.*s'",
-      static_cast<int>(object->klass()->name()->length()),
-      object->klass()->name()->buffer());
+      static_cast<int>(PyObject::GetKlass(object)->name()->length()),
+      PyObject::GetKlass(object)->name()->buffer());
   std::exit(1);
 
   return 0;
@@ -42,11 +42,11 @@ double ExtractValue(Handle<PyObject> object) {
 
 ////////////////////////////////////////////////////////////////////
 
-PyFloatKlass* PyFloatKlass::instance_ = nullptr;
+Tagged<PyFloatKlass> PyFloatKlass::instance_(nullptr);
 
 // static
-PyFloatKlass* PyFloatKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyFloatKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -83,7 +83,7 @@ void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
 // static
 Handle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value + other_value);
@@ -92,7 +92,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
 // static
 Handle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value - other_value);
@@ -101,7 +101,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
 // static
 Handle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value * other_value);
@@ -110,7 +110,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
 // static
 Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
@@ -123,7 +123,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
 // static
 Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
@@ -136,7 +136,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value > other_value);
@@ -145,7 +145,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value < other_value);
@@ -154,7 +154,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
                                               Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value == other_value);
@@ -163,7 +163,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                  Handle<PyObject> other) {
-  assert(self->IsPyFloat());
+  assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::Cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value != other_value);
@@ -172,18 +172,18 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                                      Handle<PyObject> other) {
-  assert(self->IsPySmi());
-  bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
-            Virtual_Equal(self, other)->IsPyTrue());
+  assert(IsPySmi(self));
+  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
+            IsPyTrue(Virtual_Equal(self, other)));
   return Universe::ToPyBoolean(v);
 }
 
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  assert(self->IsPySmi());
-  bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
-            Virtual_Less(self, other)->IsPyFalse());
+  assert(IsPySmi(self));
+  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
+            IsPyFalse(Virtual_Less(self, other)));
   return Universe::ToPyBoolean(v);
 }
 

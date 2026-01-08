@@ -38,7 +38,7 @@ Handle<PyString> PyString::NewInstance(int64_t length) {
       sizeof(char) * length, Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass
-  object->set_klass(PyStringKlass::GetInstance());
+  PyObject::SetKlass(*object, PyStringKlass::GetInstance());
 
   return object;
 }
@@ -58,9 +58,9 @@ Handle<PyString> PyString::NewInstance(const char* source) {
 }
 
 // static
-PyString* PyString::Cast(PyObject* object) {
-  assert(object->IsPyString());
-  return reinterpret_cast<PyString*>(object);
+Tagged<PyString> PyString::Cast(Tagged<PyObject> object) {
+  assert(IsPyString(object));
+  return Tagged<PyString>::Cast(object);
 }
 
 ////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ bool PyString::HasHashCache() const {
   return hash_ != kInvalidHashCache;
 }
 
-bool PyString::IsEqualTo(PyString* other) {
+bool PyString::IsEqualTo(Tagged<PyString> other) {
   if (length_ != other->length()) {
     return false;
   }
@@ -105,7 +105,7 @@ bool PyString::IsEqualTo(PyString* other) {
   return std::memcmp(buffer_, other->buffer(), length_) == 0;
 }
 
-bool PyString::IsLessThan(PyString* other) {
+bool PyString::IsLessThan(Tagged<PyString> other) {
   // 比较长度取较小值，避免越界
   int min_len = std::min(length_, other->length());
 
@@ -121,7 +121,7 @@ bool PyString::IsLessThan(PyString* other) {
   return length_ < other->length();
 }
 
-bool PyString::IsGreaterThan(PyString* other) {
+bool PyString::IsGreaterThan(Tagged<PyString> other) {
   int min_len = std::min(length_, other->length());
   int cmp = std::memcmp(buffer_, other->buffer(), min_len);
 
@@ -133,28 +133,26 @@ bool PyString::IsGreaterThan(PyString* other) {
   return length_ > other->length();
 }
 
-Handle<PyString> PyString::Slice(int64_t from, int64_t to) {
+Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from, int64_t to) {
   HandleScope scope;
-  Handle<PyString> this_handle(this);
 
-  assert(0 <= from && from <= to && to < this_handle->length_);
+  assert(0 <= from && from <= to && to < self->length_);
 
   int sliced_length = to - from + 1;
   Handle<PyString> result = PyString::NewInstance(sliced_length);
 
-  std::memcpy(result->buffer_, this_handle->buffer_ + from, sliced_length);
+  std::memcpy(result->buffer_, self->buffer_ + from, sliced_length);
   return result;
 }
 
-Handle<PyString> PyString::Append(Handle<PyString> other) {
+Handle<PyString> PyString::Append(Handle<PyString> self, Handle<PyString> other) {
   HandleScope scope;
-  Handle<PyString> this_handle(this);
 
-  int new_length = this_handle->length_ + other->length();
+  int new_length = self->length_ + other->length();
   Handle<PyString> new_object(PyString::NewInstance(new_length));
 
-  std::memcpy(new_object->buffer_, this_handle->buffer_, this_handle->length_);
-  std::memcpy(new_object->buffer_ + this_handle->length_, other->buffer(),
+  std::memcpy(new_object->buffer_, self->buffer_, self->length_);
+  std::memcpy(new_object->buffer_ + self->length_, other->buffer(),
               other->length());
 
   return new_object;

@@ -5,9 +5,11 @@
 #ifndef SAAUSO_HANDLES_TAGGED_H_
 #define SAAUSO_HANDLES_TAGGED_H_
 
+#include <cassert>
 #include <type_traits>
 
 #include "include/saauso-internal.h"
+
 
 namespace saauso::internal {
 
@@ -65,7 +67,7 @@ class Tagged : public TaggedBase<T> {
     requires(is_subtype_v<S, T>)
       : TaggedBase<T>(other.ptr()) {}
 
-  bool IsSmi() const { return IsSmi(this->ptr()); }
+  bool IsSmi() const { return AddressIsSmi(this->ptr()); }
 
   T* operator->() const {
     assert(!IsSmi());
@@ -92,16 +94,28 @@ class Tagged : public TaggedBase<T> {
 };
 
 class PySmi;
+class PyObject;
 
 template <>
 class Tagged<PySmi> : public TaggedBase<PySmi> {
  public:
   Tagged() : TaggedBase<PySmi>(kNullAddress) {}
   explicit Tagged(int64_t value) : TaggedBase<PySmi>(SmiToAddress(value)) {}
-  explicit Tagged(Address address) : TaggedBase<PySmi>(address) {}
+  explicit Tagged(Address address) : TaggedBase<PySmi>(address) {
+    assert(AddressIsSmi(address));
+  }
 
   bool IsSmi() const { return true; }
   int64_t value() const { return AddressToSmi(this->ptr()); }
+
+  // 只允许Tagged<PySmi>::Cast(Tagged<PyObject>)
+  static Tagged<PySmi> Cast(Tagged<PyObject> that) {
+    return Tagged<PySmi>(that.ptr());
+  }
+
+  // 封禁掉其他的Tagged<PySmi>::Cast(Tagged<xxxx>)
+  template <typename T>
+  static Tagged<PySmi> Cast(Tagged<T>) = delete;
 
   // 禁用指针操作，因为 Smi 不是指针
   PySmi* operator->() const = delete;

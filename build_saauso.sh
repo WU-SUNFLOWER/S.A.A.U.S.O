@@ -71,6 +71,8 @@ else
 fi
 
 # 2. 执行编译
+$NINJA_EXE -C "$OUT_DIR" -t clean
+
 $NINJA_EXE -C "$OUT_DIR" "$TARGET"
 
 # 3. 导出编译命令 (用于 IDE 补全)

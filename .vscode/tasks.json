@@ -24,7 +24,8 @@
             "command": "ninja",
             "args": [
                 "-C",
-                "${workspaceFolder}/out/debug"
+                "${workspaceFolder}/out/debug",
+                "saauso"
             ],
             "group": {
                 "kind": "build",

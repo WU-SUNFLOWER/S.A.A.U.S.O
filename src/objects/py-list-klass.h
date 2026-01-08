@@ -15,13 +15,13 @@ class PyBoolean;
 
 class PyListKlass : public Klass {
  public:
-  static PyListKlass* GetInstance();
+  static Tagged<PyListKlass> GetInstance();
 
   void Initialize();
 
  private:
   PyListKlass();
-  static PyListKlass* instance_;
+  static Tagged<PyListKlass> instance_;
 
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static void Virtual_Print(Handle<PyObject> self);
@@ -42,7 +42,7 @@ class PyListKlass : public Klass {
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
                                             Handle<PyObject> target);
-  static size_t Virtual_InstanceSize(PyObject* self);
+  static size_t Virtual_InstanceSize(Tagged<PyObject> self);
 };
 
 }  // namespace saauso::internal

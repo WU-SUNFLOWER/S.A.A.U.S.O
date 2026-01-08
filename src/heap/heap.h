@@ -19,8 +19,10 @@ class Heap {
 
   template <typename T>
   Tagged<T> Allocate(AllocationSpace space) {
-    return static_cast<T*>(AllocateRaw(sizeof(T), space));
+    return Tagged<T>(static_cast<T*>(AllocateRaw(sizeof(T), space)));
   }
+
+  void DoGc();
 };
 
 #define WRITE_BARRIER

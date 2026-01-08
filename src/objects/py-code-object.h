@@ -32,7 +32,7 @@ class PyCodeObject : public PyObject {
                                           int line_no,
                                           Handle<PyString> no_table);
 
-  static PyCodeObject* Cast(PyObject* object);
+  static Tagged<PyCodeObject> Cast(Tagged<PyObject> object);
 
   int arg_count_;          // 参数个数
   int posonly_arg_count_;  // 位置参数个数
@@ -41,19 +41,19 @@ class PyCodeObject : public PyObject {
   int stack_size_;         // 操作数栈深度的最大值
   int flags_;
 
-  PyString* bytecodes_;
-  PyList* names_;
-  PyList* consts_;
-  PyList* var_names_;
+  Tagged<PyString> bytecodes_;
+  Tagged<PyList> names_;
+  Tagged<PyList> consts_;
+  Tagged<PyList> var_names_;
 
-  PyList* free_vars_;
-  PyList* cell_vars_;
+  Tagged<PyList> free_vars_;
+  Tagged<PyList> cell_vars_;
 
-  PyString* file_name_;
-  PyString* co_name_;
+  Tagged<PyString> file_name_;
+  Tagged<PyString> co_name_;
 
   int line_no_;
-  PyString* no_table_;
+  Tagged<PyString> no_table_;
 };
 
 }  // namespace saauso::internal

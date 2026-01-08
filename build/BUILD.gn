@@ -70,18 +70,15 @@ config("release") {
     ]
   } else if (is_linux) {
     cflags = [
-      "-O1",  # 最大优化
-      #"-flto=thin",  # 开启 ThinLTO
+      "-O3",  # 最大优化
+      "-flto=thin",  # 开启 ThinLTO
       "-g",
-      "-fsanitize=undefined",
     ]
     ldflags = [
-      "-O1",  # 链接器优化级别
-      #"-flto=thin",  # 链接器 LTO 处理
-      #"-Wl,--gc-sections",  # 移除未使用的段 (类似 Windows 的
-                            # /OPT:REF)
+      "-O3",  # 链接器优化级别
+      "-flto=thin",  # 链接器 LTO 处理
+      "-Wl,--gc-sections",  # 移除未使用的段 (类似 Windows 的/OPT:REF)
       "-g",
-      "-fsanitize=undefined",
     ]
   }
 
@@ -94,8 +91,9 @@ config("asan") {
     cflags = [
       "/Od",
       "/Zi",
-      "/MD",
+      "/MT",
       "-fsanitize=address",
+      "-fsanitize=undefined",
     ]
     ldflags = [
       "/LIBPATH:" + llvm_lib_path,
@@ -110,10 +108,12 @@ config("asan") {
       "-g",  # 需要调试信息
       "-fno-omit-frame-pointer",  # 保留帧指针，获得准确的堆栈
       "-fsanitize=address",
+      "-fsanitize=undefined",
     ]
 
     ldflags = [
       "-fsanitize=address",  # 驱动程序会自动链接 libclang_rt.asan...
+      "-fsanitize=undefined",
     ]
   }
 

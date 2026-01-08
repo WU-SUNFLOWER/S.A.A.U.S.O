@@ -22,22 +22,30 @@
 
 namespace saauso::internal {
 
-Klass* PyObject::GetKlass(Tagged<PyObject> object) {
+Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
   if (IsPySmi(object)) {
     return PySmiKlass::GetInstance();
   }
 
   assert(IsHeapObject(object));
-  assert(object->klass_ != nullptr);
+  assert(!object->klass_.IsNull());
 
   return object->klass_;
 }
 
-void PyObject::SetKlass(Tagged<PyObject> object, Klass* klass) {
-  assert(klass != nullptr);
+Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
+  return GetKlass(*object);
+}
+
+void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
+  assert(!klass.IsNull());
   assert(IsHeapObject(object));
   object->klass_ = klass;
+}
+
+void PyObject::SetKlass(Handle<PyObject> object, Tagged<Klass> klass) {
+  SetKlass(*object, klass);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -48,10 +56,11 @@ void PyObject::SetKlass(Tagged<PyObject> object, Klass* klass) {
     return Is##name(*object);                 \
   }
 
-#define IMPL_PY_CHECKER_BY_KLASS(name)                               \
-  bool Is##name(Tagged<PyObject> object) {                           \
-    return PyObject::GetKlass(object) == name##Klass::GetInstance(); \
-  }                                                                  \
+#define IMPL_PY_CHECKER_BY_KLASS(name)         \
+  bool Is##name(Tagged<PyObject> object) {     \
+    return PyObject::GetKlass(object).ptr() == \
+           name##Klass::GetInstance().ptr();   \
+  }                                            \
   IMPL_PY_CHECKER_WITH_HANDLE_ARG(name)
 
 // 实现IsPyFloat、IsPyString、IsPyList等一系列函数
@@ -90,10 +99,8 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 void PyObject::Print(Handle<PyObject> self) {
   HandleScope scope;
 
-  auto* klass = PyObject::GetKlass(*self);
-  assert(klass);
-
-  klass->vtable_.print(self);
+  assert(GetKlass(*self)->vtable_.print);
+  GetKlass(*self)->vtable_.print(self);
 }
 
 Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {

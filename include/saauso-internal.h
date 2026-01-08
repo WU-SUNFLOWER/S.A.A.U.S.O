@@ -13,11 +13,11 @@ typedef uintptr_t Address;
 inline constexpr Address kNullAddress = 0;
 
 // Tag information for Smi.
-inline constexpr int kSmiTag = 0;
+inline constexpr int kSmiTag = 1;
 inline constexpr int kSmiTagSize = 1;
 inline constexpr intptr_t kSmiTagMask = (1 << kSmiTagSize) - 1;
 
-inline bool IsSmi(Address addr) {
+inline bool AddressIsSmi(Address addr) {
   return (addr & kSmiTagMask) == kSmiTag;
 }
 

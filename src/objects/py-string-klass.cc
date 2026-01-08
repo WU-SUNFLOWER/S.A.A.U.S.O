@@ -16,11 +16,11 @@
 
 namespace saauso::internal {
 
-PyStringKlass* PyStringKlass::instance_ = nullptr;
+Tagged<PyStringKlass> PyStringKlass::instance_(nullptr);
 
 // static
-PyStringKlass* PyStringKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PyStringKlass> PyStringKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PyStringKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -98,7 +98,7 @@ Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
   auto s = Handle<PyString>::Cast(self);
 
-  auto decoded_subscr = Handle<PySmi>::Cast(subscr)->value();
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             s->length())) [[unlikely]] {
     std::printf("IndexError: string index out of range");
@@ -110,16 +110,17 @@ Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
 
 Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  if (!other->IsPyString()) [[unlikely]] {
+  if (!IsPyString(other)) [[unlikely]] {
+    auto other_klass = PyObject::GetKlass(other);
     std::printf("TypeError: can only concatenate str (not \"%.*s\") to str",
-                static_cast<int>(other->klass()->name()->length()),
-                other->klass()->name()->buffer());
+                static_cast<int>(other_klass->name()->length()),
+                other_klass->name()->buffer());
     std::exit(1);
   }
 
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
-  return s1->Append(s2);
+  return PyString::Append(s1, s2);
 }
 
 void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
@@ -127,8 +128,8 @@ void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%.*s", static_cast<int>(s->length()), s->buffer());
 }
 
-size_t PyStringKlass::Virtual_InstanceSize(PyObject* self) {
-  assert(self->IsPyString());
+size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
+  assert(IsPyString(self));
   return sizeof(PyString);
 }
 

@@ -13,12 +13,12 @@ class PyBoolean;
 
 class PyBooleanKlass : public Klass {
  public:
-  static PyBooleanKlass* GetInstance();
+  static Tagged<PyBooleanKlass> GetInstance();
   void Initialize();
 
  private:
   PyBooleanKlass();
-  static PyBooleanKlass* instance_;
+  static Tagged<PyBooleanKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
@@ -29,12 +29,12 @@ class PyBooleanKlass : public Klass {
 
 class PyNoneKlass : public Klass {
  public:
-  static PyNoneKlass* GetInstance();
+  static Tagged<PyNoneKlass> GetInstance();
   void Initialize();
 
  private:
   PyNoneKlass();
-  static PyNoneKlass* instance_;
+  static Tagged<PyNoneKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,

@@ -19,11 +19,11 @@
 
 namespace saauso::internal {
 
-PySmiKlass* PySmiKlass::instance_ = nullptr;
+Tagged<PySmiKlass> PySmiKlass::instance_(nullptr);
 
 // static
-PySmiKlass* PySmiKlass::GetInstance() {
-  if (instance_ == nullptr) [[unlikely]] {
+Tagged<PySmiKlass> PySmiKlass::GetInstance() {
+  if (instance_.IsNull()) [[unlikely]] {
     instance_ = Universe::heap_->Allocate<PySmiKlass>(
         Heap::AllocationSpace::kMetaSpace);
   }
@@ -54,21 +54,24 @@ void PySmiKlass::Initialize() {
 ////////////////////////////////////////////////////////////////////
 
 void PySmiKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("%" PRId64, PySmi::Cast(*self)->value());
+  std::printf("%" PRId64, PySmi::Cast(*self).value());
 }
 
 // static
 Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double value = self_value + Handle<PyFloat>::Cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
+  std::printf("TypeError: unsupported operand type(s) for +: 'int' and '%.*s'",
+              static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+              PyObject::GetKlass(other)->name()->buffer());
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
@@ -78,15 +81,18 @@ Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
 // static
 Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double value = self_value - Handle<PyFloat>::Cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
+  std::printf("TypeError: unsupported operand type(s) for -: 'int' and '%.*s'",
+              static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+              PyObject::GetKlass(other)->name()->buffer());
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
@@ -96,15 +102,18 @@ Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
 // static
 Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double value = self_value * Handle<PyFloat>::Cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
+  std::printf("TypeError: unsupported operand type(s) for *: 'int' and '%.*s'",
+              static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+              PyObject::GetKlass(other)->name()->buffer());
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
@@ -114,16 +123,19 @@ Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
 // static
 Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double value =
         static_cast<double>(self_value) / Handle<PyFloat>::Cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
+  std::printf("TypeError: unsupported operand type(s) for /: 'int' and '%.*s'",
+              static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+              PyObject::GetKlass(other)->name()->buffer());
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
@@ -133,15 +145,19 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
 // static
 Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::Cast(other)->value();
     double value = PythonMod(self_value, other_value);
     return PyFloat::NewInstance(value);
   }
+
+  std::printf("TypeError: unsupported operand type(s) for %%: 'int' and '%.*s'",
+              static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+              PyObject::GetKlass(other)->name()->buffer());
 
   // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
@@ -152,80 +168,73 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
                                               Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::Cast(other)->value();
     return Universe::ToPyBoolean(self_value > other_value);
   }
 
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  std::exit(1);
-  return nullptr;
+  return Universe::py_false_object_;
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::Cast(other)->value();
     return Universe::ToPyBoolean(self_value < other_value);
   }
 
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  std::exit(1);
-
-  return nullptr;
+  return Universe::py_false_object_;
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self)->value();
+  int64_t self_value = PySmi::Cast(*self).value();
 
-  if (other->IsPyFloat()) {
+  if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::Cast(other)->value();
     return Universe::ToPyBoolean(self_value == other_value);
   }
 
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
-  std::exit(1);
-  return nullptr;
+  return Universe::py_false_object_;
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  return Universe::ToPyBoolean(!Virtual_Equal(self, other)->IsPyTrue());
+  return Virtual_Equal(self, other)->Reverse();
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                                    Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
-            Virtual_Equal(self, other)->IsPyTrue());
+  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
+            IsPyTrue(Virtual_Equal(self, other)));
   return Universe::ToPyBoolean(v);
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
-  assert(self->IsPySmi());
+  assert(IsPySmi(self));
 
-  bool v = (Virtual_Greater(self, other)->IsPyTrue() ||
-            Virtual_Less(self, other)->IsPyFalse());
+  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
+            IsPyFalse(Virtual_Less(self, other)));
 
   return Universe::ToPyBoolean(v);
 }

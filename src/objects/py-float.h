@@ -14,7 +14,7 @@ class PyFloat : public PyObject {
  public:
   static Handle<PyFloat> NewInstance(double value);
 
-  static PyFloat* Cast(PyObject* object);
+  static Tagged<PyFloat> Cast(Tagged<PyObject> object);
 
   double value() const { return value_; }
   void set_value(double value) { value_ = value; }

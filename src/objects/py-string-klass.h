@@ -15,13 +15,13 @@ class PyBoolean;
 
 class PyStringKlass : public Klass {
  public:
-  static PyStringKlass* GetInstance();
+  static Tagged<PyStringKlass> GetInstance();
 
   void Initialize();
 
  private:
   PyStringKlass();
-  static PyStringKlass* instance_;
+  static Tagged<PyStringKlass> instance_;
 
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
 
@@ -43,7 +43,7 @@ class PyStringKlass : public Klass {
   static Handle<PyObject> Virtual_Add(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static void Virtual_Print(Handle<PyObject> self);
-  static size_t Virtual_InstanceSize(PyObject* self);
+  static size_t Virtual_InstanceSize(Tagged<PyObject> self);
 };
 
 }  // namespace saauso::internal
