@@ -6,6 +6,7 @@
 
 #include <cstdio>
 
+#include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-object.h"
@@ -40,6 +41,11 @@ void PyBooleanKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("bool"));
+}
+
+// static
+void PyBooleanKlass::Finalize() {
+  instance_ = Tagged<PyBooleanKlass>::Null();
 }
 
 // static
@@ -90,6 +96,10 @@ void PyNoneKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("NoneType"));
+}
+
+void PyNoneKlass::Finalize() {
+  instance_ = Tagged<PyNoneKlass>::Null();
 }
 
 // static

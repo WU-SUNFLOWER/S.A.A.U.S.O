@@ -11,8 +11,7 @@
 #include "src/runtime/universe.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-namespace saauso {
-namespace internal {
+namespace saauso::internal {
 
 // 1. 定义一个测试夹具 (Test Fixture)
 // 夹具的作用是为每个测试提供统一的环境初始化。
@@ -20,19 +19,18 @@ class PyObjectTest : public testing::Test {
  protected:
   // SetUpTestSuite 会在当前文件中所有测试运行前执行一次
   // 适合做全局初始化，比如 Universe::Genesis()
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {  }
+  static void TearDownTestSuite() { }
 
-  // SetUp 会在每个 TEST_F 运行前执行
-  void SetUp() override {
-    // 如果需要每个测试都在干净的环境运行，可以在这里做逻辑
-  }
+  void SetUp() override {}
+  void TearDown() override { Universe::Destroy(); }
 };
 
 // 2. 测试基本数据类型的创建
 // 使用 TEST_F 宏，第一个参数填上面的夹具类名 PyObjectTest
 TEST_F(PyObjectTest, BasicObjectCreation) {
   HandleScope scope;  // 作用域管理
+  Universe::Genesis();
 
   // 测试字符串
   Handle<PyObject> str_obj = PyString::NewInstance("Hello World");
@@ -53,6 +51,7 @@ TEST_F(PyObjectTest, BasicObjectCreation) {
 // 3. 测试 Smi (小整数) 及其运算
 TEST_F(PyObjectTest, SmiOperations) {
   HandleScope scope;
+  Universe::Genesis();
 
   Handle<PyObject> num1(PySmi::FromInt(1234));
   Handle<PyObject> num2(PySmi::FromInt(3));
@@ -70,6 +69,7 @@ TEST_F(PyObjectTest, SmiOperations) {
 
 TEST_F(PyObjectTest, FloatOperations) {
   HandleScope scope;
+  Universe::Genesis();
 
   Handle<PyObject> num1(PySmi::FromInt(1234));
   Handle<PyObject> num2(PyFloat::NewInstance(3.14));
@@ -89,6 +89,7 @@ TEST_F(PyObjectTest, FloatOperations) {
 // 4. 测试 List 的操作
 TEST_F(PyObjectTest, ListManipulation) {
   HandleScope scope;
+  Universe::Genesis();
 
   Handle<PyList> list = PyList::NewInstance(1);
   EXPECT_EQ(list->length(), 0);  // 刚创建时长度应为0（假设语义如此）
@@ -117,6 +118,7 @@ TEST_F(PyObjectTest, ListManipulation) {
 // 5. 测试 List 的合并 (Add)
 TEST_F(PyObjectTest, ListAddition) {
   HandleScope scope;
+  Universe::Genesis();
 
   Handle<PyList> list = PyList::NewInstance(0);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
@@ -133,5 +135,4 @@ TEST_F(PyObjectTest, ListAddition) {
   EXPECT_EQ(list->length(), 2);
 }
 
-}  // namespace internal
-}  // namespace saauso
+}  // namespace saauso::internal

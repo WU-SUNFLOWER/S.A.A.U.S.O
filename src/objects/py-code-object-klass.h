@@ -13,6 +13,7 @@ class PyCodeObjectKlass : public Klass {
  public:
   static Tagged<PyCodeObjectKlass> GetInstance();
   void Initialize();
+  void Finalize();
 
  private:
   PyCodeObjectKlass();

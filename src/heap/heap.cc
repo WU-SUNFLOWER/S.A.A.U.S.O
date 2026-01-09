@@ -23,6 +23,7 @@ void Heap::DoGc() {
   for (auto addr : temp_addrs) {
     std::free(addr);
   }
+  temp_addrs.clear();
 }
 
 }  // namespace saauso::internal

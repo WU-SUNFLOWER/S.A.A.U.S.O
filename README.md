@@ -23,3 +23,9 @@ gn gen out/unittest --args="is_asan=true"
 ninja -C out/asan saauso_unittests
 gn gen out/unittest --export-compile-commands
 ```
+
+```shell
+$env:ASAN_SYMBOLIZER_PATH = "D\LLVM\bin\llvm-symbolizer.exe"
+$env:ASAN_OPTIONS = "symbolize=1"
+.\out\unittest\saauso_unittests.exe
+```

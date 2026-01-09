@@ -8,9 +8,9 @@
 
 #include "src/code/pyc-file-parser.h"
 #include "src/heap/heap.h"
-#include "src/objects/py-oddballs.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/universe.h"
@@ -47,6 +47,10 @@ void PyListKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("list"));
+}
+
+void PyListKlass::Finalize() {
+  instance_ = Tagged<PyListKlass>::Null();
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

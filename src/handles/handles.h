@@ -12,29 +12,61 @@
 
 namespace saauso::internal {
 
-class HandleScope;
+class HandleScopeImplementer;
+
+class [[maybe_unused]] HandleScope {
+ public:
+  struct State {
+    Address* next{nullptr};
+    Address* limit{nullptr};
+    int extension{-1};  // 进入该scope后额外申请的block数量
+  };
+
+  HandleScope();
+  ~HandleScope();
+
+ private:
+  static void Extend();
+
+  void Close();
+
+  static State current_;
+
+  State previous_;
+  bool is_closed_{false};
+
+  friend class HandleScopeImplementer;
+
+  template <typename>
+  friend class Handle;
+
+  static Address* CreateHandle(Address ptr);
+
+  Address* EscapeFromSelf(Address ptr);
+};
 
 template <typename T>
 class Handle {
  public:
-  Handle() : address_(kNullAddress) {}
-  explicit Handle(Tagged<T> tagged) : address_(tagged.ptr()) {}
+  Handle() = default;
+  explicit Handle(Address* location) : location_(location) {}
+  explicit Handle(Tagged<T> tagged) {
+    location_ = HandleScope::CreateHandle(tagged.ptr());
+  }
 
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>
   template <typename S>
   Handle(Handle<S> other)  // NOLINT
     requires(is_subtype_v<S, T>)
-      : address_(other.address_) {}
+      : Handle(*other) {}
 
   T* operator->() const {
     assert(!IsNull());
-    return Tagged<T>(address_).operator->();
+    return Tagged<T>(*location_).operator->();
   }
 
-  Tagged<T> operator*() const {
-    return Tagged<T>(address_);
-  }
+  Tagged<T> operator*() const { return Tagged<T>(*location_); }
 
   template <class S>
   static Handle<T> Cast(Handle<S> that) {
@@ -42,11 +74,11 @@ class Handle {
     return Handle<T>(Tagged<T>::Cast(*that));
   }
 
-  bool IsNull() const { return address_ == kNullAddress; }
+  bool IsNull() const { return location_ == nullptr; }
   static Handle<T> Null() { return Handle<T>(); }
 
   Handle<T> EscapeFrom(HandleScope* scope) {
-    return Handle<T>(Tagged<T>(address_));
+    return Handle<T>(scope->EscapeFromSelf(*location_));
   }
 
  private:
@@ -55,10 +87,8 @@ class Handle {
   template <typename>
   friend class Handle;
 
-  Address address_;
+  Address* location_{nullptr};
 };
-
-class [[maybe_unused]] HandleScope {};
 
 }  // namespace saauso::internal
 

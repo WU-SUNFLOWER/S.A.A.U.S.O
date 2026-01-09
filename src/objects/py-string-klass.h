@@ -18,6 +18,7 @@ class PyStringKlass : public Klass {
   static Tagged<PyStringKlass> GetInstance();
 
   void Initialize();
+  void Finalize();
 
  private:
   PyStringKlass();

@@ -74,6 +74,10 @@ void PyFloatKlass::Initialize() {
   set_name(PyString::NewInstance("float"));
 }
 
+void PyFloatKlass::Finalize() {
+  instance_ = Tagged<PyFloatKlass>::Null();
+}
+
 ////////////////////////////////////////////////////////////////////
 
 void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {

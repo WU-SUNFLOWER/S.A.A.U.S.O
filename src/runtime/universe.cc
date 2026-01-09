@@ -4,8 +4,10 @@
 
 #include "src/runtime/universe.h"
 
+#include "src/handles/handle_scope_implementer.h"
 #include "src/heap/heap.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-oddballs-klass.h"
@@ -16,6 +18,7 @@
 namespace saauso::internal {
 
 Heap* Universe::heap_ = nullptr;
+HandleScopeImplementer* Universe::handle_scope_implementer_ = nullptr;
 
 Tagged<PyNone> Universe::py_none_object_(nullptr);
 Tagged<PyBoolean> Universe::py_true_object_(nullptr);
@@ -25,21 +28,27 @@ Tagged<PyBoolean> Universe::py_false_object_(nullptr);
 void Universe::Genesis() {
   heap_ = new Heap();
 
+  handle_scope_implementer_ = new HandleScopeImplementer();
+
   py_none_object_ = PyNone::NewInstance();
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
 
-  PyNoneKlass::GetInstance()->Initialize();
-  PyBooleanKlass::GetInstance()->Initialize();
-  PyFloatKlass::GetInstance()->Initialize();
-  PySmiKlass::GetInstance()->Initialize();
-  PyStringKlass::GetInstance()->Initialize();
-  PyListKlass::GetInstance()->Initialize();
+#define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
+  PY_TYPE_LIST(INIT_PY_KLASS)
+#undef INIT_PY_KLASS
 }
 
 // static
 void Universe::Destroy() {
+#define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
+  PY_TYPE_LIST(FINALIZE_PY_KLASS)
+#undef FINALIZE_PY_KLASS
+
   heap_->DoGc();
+
+  delete heap_;
+  // delete handle_scope_implementer_;
 }
 
 }  // namespace saauso::internal

@@ -17,6 +17,11 @@ source_set("saauso_sources") {
     "//src/build/build_config.h",
     "//src/build/buildflag.h",
 
+    # utils
+    "//src/utils/allocation.h",
+    "//src/utils/utils.h",
+    "//src/utils/vector.h",
+
     # code (代码解析相关)
     "//src/code/binary-file-reader.cc",
     "//src/code/binary-file-reader.h",
@@ -24,6 +29,9 @@ source_set("saauso_sources") {
     "//src/code/pyc-file-parser.h",
 
     # handles
+    "//src/handles/handle_scope_implementer.cc",
+    "//src/handles/handle_scope_implementer.h",
+    "//src/handles/handles.cc",
     "//src/handles/handles.h",
     "//src/handles/tagged.h",
 
@@ -84,6 +92,7 @@ executable("ut") {
 
   sources = [
     # 在这里添加你的测试文件
+    "//test/unittests/handle-unittest.cc",
     "//test/unittests/py-objects-unittest.cc",
   ]
 

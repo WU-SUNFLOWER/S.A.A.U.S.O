@@ -14,6 +14,7 @@ class Klass;
 class PyObject;
 class PyBoolean;
 class PyNone;
+class HandleScopeImplementer;
 
 class Universe {
  public:
@@ -22,6 +23,8 @@ class Universe {
   static Tagged<PyNone> py_none_object_;
   static Tagged<PyBoolean> py_true_object_;
   static Tagged<PyBoolean> py_false_object_;
+
+  static HandleScopeImplementer* handle_scope_implementer_;
 
   static void Genesis();
   static void Destroy();

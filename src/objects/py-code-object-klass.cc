@@ -42,4 +42,8 @@ void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
               code->file_name_->buffer(), code->line_no_);
 }
 
+void PyCodeObjectKlass::Finalize() {
+  instance_ = Tagged<PyCodeObjectKlass>::Null();
+}
+
 }  // namespace saauso::internal

@@ -47,6 +47,10 @@ void PyStringKlass::Initialize() {
   set_name(PyString::NewInstance("str"));
 }
 
+void PyStringKlass::Finalize() {
+  instance_ = Tagged<PyStringKlass>::Null();
+}
+
 Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
       PySmi::FromInt(Handle<PyString>::Cast(self)->length()));

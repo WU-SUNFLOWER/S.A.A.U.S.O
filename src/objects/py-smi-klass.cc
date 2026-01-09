@@ -51,6 +51,10 @@ void PySmiKlass::Initialize() {
   set_name(PyString::NewInstance("int"));
 }
 
+void PySmiKlass::Finalize() {
+  instance_ = Tagged<PySmiKlass>::Null();
+}
+
 ////////////////////////////////////////////////////////////////////
 
 void PySmiKlass::Virtual_Print(Handle<PyObject> self) {

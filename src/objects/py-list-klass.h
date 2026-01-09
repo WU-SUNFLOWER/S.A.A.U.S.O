@@ -18,6 +18,7 @@ class PyListKlass : public Klass {
   static Tagged<PyListKlass> GetInstance();
 
   void Initialize();
+  void Finalize();
 
  private:
   PyListKlass();
