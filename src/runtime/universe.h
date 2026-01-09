@@ -18,13 +18,14 @@ class HandleScopeImplementer;
 
 class Universe {
  public:
+  // 基础设施
   static Heap* heap_;
+  static HandleScopeImplementer* handle_scope_implementer_;
 
+  // 供VM使用的、永久生存在meta area上的全局单例
   static Tagged<PyNone> py_none_object_;
   static Tagged<PyBoolean> py_true_object_;
   static Tagged<PyBoolean> py_false_object_;
-
-  static HandleScopeImplementer* handle_scope_implementer_;
 
   static void Genesis();
   static void Destroy();
@@ -34,6 +35,7 @@ class Universe {
   }
 
  private:
+  static void InitMetaArea();
 };
 
 }  // namespace saauso::internal

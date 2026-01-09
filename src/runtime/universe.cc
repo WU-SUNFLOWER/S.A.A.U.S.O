@@ -27,8 +27,14 @@ Tagged<PyBoolean> Universe::py_false_object_(nullptr);
 // static
 void Universe::Genesis() {
   heap_ = new Heap();
-
   handle_scope_implementer_ = new HandleScopeImplementer();
+
+  InitMetaArea();
+}
+
+// static
+void Universe::InitMetaArea() {
+  HandleScope scope;  // 为了避免污染根scope，这里我们创建一个内部的scope
 
   py_none_object_ = PyNone::NewInstance();
   py_true_object_ = PyBoolean::NewInstance(true);
@@ -47,8 +53,8 @@ void Universe::Destroy() {
 
   heap_->DoGc();
 
+  delete handle_scope_implementer_;
   delete heap_;
-  // delete handle_scope_implementer_;
 }
 
 }  // namespace saauso::internal
