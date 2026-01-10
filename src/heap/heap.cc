@@ -44,13 +44,15 @@ void Heap::TearDown() {
 
 Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
   Address result = AllocateRawImpl(size_in_bytes, space);
-  if (result == kNullAddress) {
+  // TODO: 实现对老生代的回收
+  if (result == kNullAddress && space == AllocationSpace::kNewSpace) {
     CollectGarbage();
     result = AllocateRawImpl(size_in_bytes, space);
   }
 
   if (result == kNullAddress) {
-    std::printf("OOM: Failed to allocate %zu bytes\n", size_in_bytes);
+    std::printf("OOM: Failed to allocate %zu bytes in space %d\n",
+                size_in_bytes, space);
     std::exit(1);
   }
 
@@ -65,13 +67,17 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
   switch (space) {
     case AllocationSpace::kNewSpace:
       result = new_space_.AllocateRaw(size_in_bytes);
+      break;
     case AllocationSpace::kOldSpace:
       result = old_space_.AllocateRaw(size_in_bytes);
+      break;
     case AllocationSpace::kMetaSpace:
       result = meta_space_.AllocateRaw(size_in_bytes);
+      break;
     default:
       assert(0 && "unknown heap space!!!");
   }
+
   return result;
 }
 
