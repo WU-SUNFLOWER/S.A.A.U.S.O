@@ -11,10 +11,20 @@
 namespace saauso::internal {
 
 class ObjectVisitor;
+class VirtualMemory;
 
 class Heap {
  public:
+  static constexpr size_t kDefaultYoungGenerationSize = 1 * 1024 * 1024;
+  static constexpr size_t kDefaultOldGenerationSize = 5 * 1024 * 1024;
+  static constexpr size_t kDefaultMetaSpaceSize = 5 * 1024 * 1024;
+
   enum class AllocationSpace { kNewSpace, kOldSpace, kMetaSpace };
+
+  void Setup(size_t young_generation_size = kDefaultYoungGenerationSize,
+             size_t old_generation_size = kDefaultOldGenerationSize,
+             size_t meta_space_size = kDefaultMetaSpaceSize);
+  void TearDown();
 
   Address AllocateRaw(size_t size_in_bytes, AllocationSpace space);
 
@@ -45,6 +55,10 @@ class Heap {
 
   enum class GcState { kNotInGc, kScavenage, kMarkCompact };
   GcState gc_state_{GcState::kNotInGc};
+
+  // TODO: 实现大块虚拟内存的灵活生长和收缩
+  size_t initial_size_;
+  VirtualMemory* initial_chunk_;
 };
 
 #define WRITE_BARRIER

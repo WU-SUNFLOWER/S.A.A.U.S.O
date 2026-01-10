@@ -18,6 +18,7 @@ source_set("saauso_sources") {
     "//src/build/buildflag.h",
 
     # utils
+    "//src/utils/allocation.cc",
     "//src/utils/allocation.h",
     "//src/utils/utils.h",
     "//src/utils/vector.h",

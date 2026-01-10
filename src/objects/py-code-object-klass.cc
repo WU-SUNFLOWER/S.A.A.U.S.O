@@ -27,6 +27,9 @@ Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
 }
 
 void PyCodeObjectKlass::Initialize() {
+  // 将自己注册到universe
+  Universe::klass_list_.PushBack(this);
+
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.instance_size = &Virtual_InstanceSize;

@@ -34,7 +34,7 @@ Handle<PyString> PyString::NewInstance(int64_t length) {
 
   // 在虚拟机堆上分配一块空间，用于存放实际的字符串
   object->buffer_ = nullptr;
-  object->buffer_ = static_cast<char*>(Universe::heap_->AllocateRaw(
+  object->buffer_ = reinterpret_cast<char*>(Universe::heap_->AllocateRaw(
       sizeof(char) * length, Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass
@@ -133,7 +133,9 @@ bool PyString::IsGreaterThan(Tagged<PyString> other) {
   return length_ > other->length();
 }
 
-Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from, int64_t to) {
+Handle<PyString> PyString::Slice(Handle<PyString> self,
+                                 int64_t from,
+                                 int64_t to) {
   HandleScope scope;
 
   assert(0 <= from && from <= to && to < self->length_);
@@ -145,7 +147,8 @@ Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from, int64_t to
   return result;
 }
 
-Handle<PyString> PyString::Append(Handle<PyString> self, Handle<PyString> other) {
+Handle<PyString> PyString::Append(Handle<PyString> self,
+                                  Handle<PyString> other) {
   HandleScope scope;
 
   int new_length = self->length_ + other->length();

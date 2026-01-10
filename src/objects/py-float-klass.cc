@@ -57,6 +57,9 @@ Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
 ////////////////////////////////////////////////////////////////////
 
 void PyFloatKlass::Initialize() {
+  // 将自己注册到universe
+  Universe::klass_list_.PushBack(this);
+
   // 初始化虚函数表
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;

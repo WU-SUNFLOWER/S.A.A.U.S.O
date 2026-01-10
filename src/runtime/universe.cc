@@ -27,6 +27,8 @@ Tagged<PyBoolean> Universe::py_false_object_(nullptr);
 // static
 void Universe::Genesis() {
   heap_ = new Heap();
+  heap_->Setup();
+
   handle_scope_implementer_ = new HandleScopeImplementer();
 
   InitMetaArea();
@@ -51,9 +53,9 @@ void Universe::Destroy() {
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 
-  heap_->DoGc();
-
   delete handle_scope_implementer_;
+
+  heap_->TearDown();
   delete heap_;
 }
 

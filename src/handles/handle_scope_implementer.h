@@ -10,6 +10,8 @@
 
 namespace saauso::internal {
 
+class ObjectVisitor;
+
 class HandleScopeImplementer {
  public:
   // 一个block可以装载的Address数量
@@ -24,6 +26,8 @@ class HandleScopeImplementer {
 
   Address* AllocateSpareOrNewBlock();
   void ReleaseSpareAndExtendedBlocks(int n);
+
+  void Iterate(ObjectVisitor* v);
 
   Vector<Address*>& blocks() { return blocks_; }
 

@@ -10,6 +10,10 @@
 namespace saauso::internal {
 
 class Space {
+ public:
+  virtual void Setup(Address start, size_t size);
+  virtual void TearDown();
+
   virtual Address AllocateRaw(size_t size_in_bytes) = 0;
   virtual bool Contains(Address) = 0;
 };
@@ -18,11 +22,17 @@ class SemiSpace : public Space {
  public:
   SemiSpace() = default;
 
-  void Setup(Address start, size_t size);
-  void TearDown();
+  void Setup(Address start, size_t size) override;
+  void TearDown() override;
 
   Address AllocateRaw(size_t size_in_bytes) override;
   bool Contains(Address addr) override;
+
+  Address base() { return base_; }
+  Address top() { return top_; }
+  Address end() { return end_; }
+
+  void Reset() { top_ = base_; }
 
  private:
   Address base_;
@@ -34,11 +44,17 @@ class NewSpace : public Space {
  public:
   NewSpace() = default;
 
-  void Setup(Address star, size_t size);
-  void TearDown();
+  void Setup(Address start, size_t size) override;
+  void TearDown() override;
 
   Address AllocateRaw(size_t size_in_bytes) override;
   bool Contains(Address addr) override;
+
+  Address EdenSpaceBase() { return eden_space_.base(); }
+  Address EdenSpaceTop() { return eden_space_.top(); }
+
+  Address SurvivorSpaceBase() { return survivor_space_.base(); }
+  Address SurvivorSpaceTop() { return survivor_space_.top(); }
 
   void Flip();
 
@@ -55,6 +71,9 @@ class MetaSpace : public SemiSpace {};
 // TODO: 实现分代式GC
 class OldSpace : public Space {
  public:
+  void Setup(Address start, size_t size) override;
+  void TearDown() override;
+
   Address AllocateRaw(size_t size_in_bytes) override;
   bool Contains(Address) override;
 };

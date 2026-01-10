@@ -32,6 +32,9 @@ Tagged<PyStringKlass> PyStringKlass::GetInstance() {
 ////////////////////////////////////////////////////////////////////
 
 void PyStringKlass::Initialize() {
+  // 将自己注册到universe
+  Universe::klass_list_.PushBack(this);
+
   // 初始化虚函数表
   vtable_.len = &Virtual_Len;
   vtable_.equal = &Virtual_Equal;

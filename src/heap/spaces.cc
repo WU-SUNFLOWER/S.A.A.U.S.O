@@ -13,6 +13,16 @@ namespace saauso::internal {
 ////////////////////////////////////////////////////////////
 // SemiSpace相关实现
 
+void SemiSpace::Setup(Address start, size_t size) {
+  base_ = start;
+  top_ = start;
+  end_ = start + size;
+}
+
+void SemiSpace::TearDown() {
+  // do nothing.
+}
+
 Address SemiSpace::AllocateRaw(size_t size_in_bytes) {
   Address result = top_;
   Address new_top = top_ + size_in_bytes;
@@ -30,6 +40,19 @@ bool SemiSpace::Contains(Address addr) {
 ////////////////////////////////////////////////////////////
 // NewSpace相关实现
 
+void NewSpace::Setup(Address start, size_t size) {
+  assert((size & 1) == 0 && "the size of new space must be a multiple of two");
+
+  size_t semi_space_size = size >> 1;
+  eden_space_.Setup(start, semi_space_size);
+  survivor_space_.Setup(start + semi_space_size, semi_space_size);
+}
+
+void NewSpace::TearDown() {
+  eden_space_.TearDown();
+  survivor_space_.TearDown();
+}
+
 Address NewSpace::AllocateRaw(size_t size_in_bytes) {
   return eden_space_.AllocateRaw(size_in_bytes);
 }
@@ -42,6 +65,9 @@ void NewSpace::Flip() {
 
 ////////////////////////////////////////////////////////////
 // OldSpace相关实现
+
+void OldSpace::Setup(Address start, size_t size) {}
+void OldSpace::TearDown() {}
 
 Address OldSpace::AllocateRaw(size_t size_in_bytes) {
   assert(0);

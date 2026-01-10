@@ -34,6 +34,9 @@ Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
 }
 
 void PyBooleanKlass::Initialize() {
+  // 将自己注册到universe
+  Universe::klass_list_.PushBack(this);
+
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.equal = &Virtual_Equal;
@@ -89,6 +92,9 @@ Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
 }
 
 void PyNoneKlass::Initialize() {
+  // 将自己注册到universe
+  Universe::klass_list_.PushBack(this);
+
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.equal = &Virtual_Equal;

@@ -33,8 +33,8 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
                                      Tagged<PyObject>* end) {
   for (Tagged<PyObject>* p = start; p < end; ++p) {
     Tagged<PyObject> object = *p;
-    // 跳过Smi、指向meta space和不指向new space的指针
-    if (!IsGcAbleObject(object) ||
+    // 跳过空指针、Smi、指向meta space和不指向new space的指针
+    if (!object.IsNull() || !IsGcAbleObject(object) ||
         !Universe::heap_->InNewSpaceEden(object.ptr())) {
       continue;
     }
@@ -45,7 +45,12 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
 }
 
 void ScavenageVisitor::VisitRawMemory(void** mem, size_t size_in_bytes) {
-  assert(mem != nullptr && *mem != nullptr);
+  assert(mem != nullptr);
+
+  if (*mem == nullptr) {
+    return;
+  }
+
   // 在Survivor Space分配空间
   Address target_addr = AllocateInSurvivorSpace(size_in_bytes);
   // 执行拷贝
@@ -55,7 +60,10 @@ void ScavenageVisitor::VisitRawMemory(void** mem, size_t size_in_bytes) {
 }
 
 void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
-  assert(p != nullptr && !p->IsNull());
+  assert(p != nullptr);
+  if (p->IsNull()) {
+    return;
+  }
   (*p)->Iterate(this);
 }
 

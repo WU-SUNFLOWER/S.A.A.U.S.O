@@ -6,6 +6,7 @@
 #define SAAUSO_RUNTIME_UNIVERSE_H_
 
 #include "src/handles/tagged.h"
+#include "src/utils/vector.h"
 
 namespace saauso::internal {
 
@@ -21,6 +22,7 @@ class Universe {
   // 基础设施
   static Heap* heap_;
   static HandleScopeImplementer* handle_scope_implementer_;
+  static Vector<Klass*> klass_list_;
 
   // 供VM使用的、永久生存在meta area上的全局单例
   static Tagged<PyNone> py_none_object_;

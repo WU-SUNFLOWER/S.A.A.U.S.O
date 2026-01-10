@@ -6,6 +6,7 @@
 
 #include "include/saauso-internal.h"
 #include "src/handles/handles.h"
+#include "src/objects/visitors.h"
 #include "src/utils/allocation.h"
 
 namespace saauso::internal {
@@ -25,7 +26,8 @@ int HandleScopeImplementer::NumberOfHandles() {
 
   size_t block_size = HandleScopeImplementer::kHandleBlockSize;
   Address* last_block_base_addr = blocks().GetBack();
-  int nr_handles_in_last_block = CurrentHandleScopeState()->next - last_block_base_addr;
+  int nr_handles_in_last_block =
+      CurrentHandleScopeState()->next - last_block_base_addr;
   return ((nr_blocks - 1) * block_size) + nr_handles_in_last_block;
 }
 
@@ -63,6 +65,26 @@ void HandleScopeImplementer::ReleaseSpareAndExtendedBlocks(int n) {
   } else {
     DeleteArray<Address>(blocks_.PopBack());
   }
+}
+
+void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
+  // 遍历所有填充完整的block
+  for (auto i = 0; i < blocks_.length() - 1; ++i) {
+    Address* block_begin = blocks_.Get(i);
+    Address* block_end = block_begin + kHandleBlockSize;
+    v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
+                     reinterpret_cast<Tagged<PyObject>*>(block_end));
+  }
+
+  // 遍历最后一个block
+  if (!blocks_.IsEmpty()) {
+    Address* block_begin = blocks_.GetBack();
+    Address* block_end = HandleScope::current_.next;
+    v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
+                     reinterpret_cast<Tagged<PyObject>*>(block_end));
+  }
+
+  // spare_指向的block没有被分配出来，因此不需要遍历！！！
 }
 
 }  // namespace saauso::internal
