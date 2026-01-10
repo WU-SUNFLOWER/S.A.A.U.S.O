@@ -199,7 +199,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
 
 // static
 size_t PyFloatKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyFloat);
+  return ObjectSizeAlign(sizeof(PyFloat));
 }
 
 // static

@@ -204,7 +204,7 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyList);
+  return ObjectSizeAlign(sizeof(PyList));
 }
 
 void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {

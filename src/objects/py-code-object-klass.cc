@@ -56,7 +56,7 @@ void PyCodeObjectKlass::Finalize() {
 /////////////////////////////////////////////////////////////////////////
 
 size_t PyCodeObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyCodeObject);
+  return ObjectSizeAlign(sizeof(PyCodeObject));
 }
 
 void PyCodeObjectKlass::Virtual_Iterate(Tagged<PyObject> self,

@@ -39,6 +39,7 @@ source_set("saauso_sources") {
     # heap (堆管理)
     "//src/heap/heap.cc",
     "//src/heap/heap.h",
+    "//src/heap/scavenge-visitor.cc",
     "//src/heap/scavenge-visitor.h",
     "//src/heap/spaces.cc",
     "//src/heap/spaces.h",

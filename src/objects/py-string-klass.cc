@@ -140,7 +140,7 @@ void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   assert(IsPyString(self));
-  return sizeof(PyString);
+  return ObjectSizeAlign(sizeof(PyString));
 }
 
 void PyStringKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {

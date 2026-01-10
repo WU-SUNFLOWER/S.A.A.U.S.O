@@ -11,8 +11,8 @@ namespace saauso::internal {
 
 class Space {
  public:
-  virtual void Setup(Address start, size_t size);
-  virtual void TearDown();
+  virtual void Setup(Address start, size_t size) = 0;
+  virtual void TearDown() = 0;
 
   virtual Address AllocateRaw(size_t size_in_bytes) = 0;
   virtual bool Contains(Address) = 0;

@@ -19,7 +19,7 @@ namespace saauso::internal {
 namespace {
 
 Tagged<PyObject>* AllocateArray(int size) {
-  return static_cast<Tagged<PyObject>*>(Universe::heap_->AllocateRaw(
+  return reinterpret_cast<Tagged<PyObject>*>(Universe::heap_->AllocateRaw(
       size * sizeof(Tagged<PyObject>), Heap::AllocationSpace::kNewSpace));
 }
 
@@ -104,7 +104,9 @@ void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
   WRITE_BARRIER;
 }
 
-void PyList::Insert(Handle<PyList> self, int64_t index, Handle<PyObject> value) {
+void PyList::Insert(Handle<PyList> self,
+                    int64_t index,
+                    Handle<PyObject> value) {
   assert(0 <= index && index < self->length_);
 
   HandleScope scope;

@@ -19,6 +19,7 @@ namespace saauso::internal {
 
 Heap* Universe::heap_ = nullptr;
 HandleScopeImplementer* Universe::handle_scope_implementer_ = nullptr;
+Vector<Klass*> Universe::klass_list_;
 
 Tagged<PyNone> Universe::py_none_object_(nullptr);
 Tagged<PyBoolean> Universe::py_true_object_(nullptr);

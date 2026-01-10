@@ -25,7 +25,8 @@ void SemiSpace::TearDown() {
 
 Address SemiSpace::AllocateRaw(size_t size_in_bytes) {
   Address result = top_;
-  Address new_top = top_ + size_in_bytes;
+  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
+  Address new_top = top_ + aligned_size;
   if (new_top <= end_) {
     top_ = new_top;
     return result;
@@ -55,6 +56,10 @@ void NewSpace::TearDown() {
 
 Address NewSpace::AllocateRaw(size_t size_in_bytes) {
   return eden_space_.AllocateRaw(size_in_bytes);
+}
+
+bool NewSpace::Contains(Address addr) {
+  return eden_space_.Contains(addr);
 }
 
 void NewSpace::Flip() {

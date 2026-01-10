@@ -37,6 +37,15 @@ inline Address SmiToAddress(int64_t smi) {
   return (smi << kSmiTagSize) | kSmiTag;
 }
 
+// Desired alignment for tagged pointers.
+constexpr int kObjectAlignmentBits = 3;
+constexpr intptr_t kObjectAlignment = 1 << kObjectAlignmentBits;
+constexpr intptr_t kObjectAlignmentMask = kObjectAlignment - 1;
+
+inline size_t ObjectSizeAlign(size_t size) {
+  return (size + kObjectAlignmentMask) & ~kObjectAlignmentMask;
+}
+
 }  // namespace saauso::internal
 
 #endif  // INCLUDE_SAAUSO_INTERNAL_H_
