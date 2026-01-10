@@ -41,6 +41,8 @@ source_set("saauso_sources") {
 
     # objects (对象系统)
     "//src/objects/klass.h",
+    "//src/objects/mark-word.cc",
+    "//src/objects/mark-word.h",
     "//src/objects/objects.h",
     "//src/objects/py-code-object-klass.cc",
     "//src/objects/py-code-object-klass.h",
@@ -68,6 +70,7 @@ source_set("saauso_sources") {
     "//src/objects/py-string-klass.h",
     "//src/objects/py-string.cc",
     "//src/objects/py-string.h",
+    "//src/objects/visitors.h",
 
     # runtime (运行时)
     "//src/runtime/factory.h",

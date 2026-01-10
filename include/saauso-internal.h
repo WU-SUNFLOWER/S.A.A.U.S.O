@@ -13,9 +13,16 @@ typedef uintptr_t Address;
 inline constexpr Address kNullAddress = 0;
 
 // Tag information for Smi.
+// 若Address以二进制位1结尾，则代表它是一个Smi
 inline constexpr int kSmiTag = 1;
 inline constexpr int kSmiTagSize = 1;
 inline constexpr intptr_t kSmiTagMask = (1 << kSmiTagSize) - 1;
+
+// Tag information for fowarding pointers stored in object headers.
+// 若MarkWord以二进制位10结尾，则代表它是一个forwarding指针
+inline constexpr int kForwardingTag = 0b10;
+inline constexpr int kForwardingTagSize = 2;
+inline constexpr intptr_t kForwardingTagMask = (1 << kForwardingTagSize) - 1;
 
 inline bool AddressIsSmi(Address addr) {
   return (addr & kSmiTagMask) == kSmiTag;

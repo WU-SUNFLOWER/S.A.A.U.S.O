@@ -14,6 +14,7 @@
 
 namespace saauso::internal {
 
+class ObjectVisitor;
 class PyBoolean;
 
 /////////////////虚函数表 定义开始///////////////////////////
@@ -104,6 +105,8 @@ struct VirtualTable {
   // 获取实例对象大小，调用该函数绝对不允许触发GC
   // size_t instance_object(Tagged<PyObject>);
   size_t (*instance_size)(Oop){nullptr};
+
+  void (*iterate)(OopHandle, ObjectVisitor*){nullptr};
 };
 /////////////////虚函数表 定义结束///////////////////////////
 

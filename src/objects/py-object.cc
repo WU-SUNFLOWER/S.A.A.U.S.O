@@ -9,6 +9,7 @@
 #include "py-object.h"
 #include "src/handles/handles.h"
 #include "src/objects/klass.h"
+#include "src/objects/mark-word.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-list-klass.h"
@@ -29,9 +30,9 @@ Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   }
 
   assert(IsHeapObject(object));
-  assert(!object->klass_.IsNull());
+  assert(!object->mark_word_.ToKlass().IsNull());
 
-  return object->klass_;
+  return object->mark_word_.ToKlass();
 }
 
 Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
@@ -41,7 +42,7 @@ Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
 void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
   assert(!klass.IsNull());
   assert(IsHeapObject(object));
-  object->klass_ = klass;
+  object->mark_word_ = MarkWord::FromKlass(klass);
 }
 
 void PyObject::SetKlass(Handle<PyObject> object, Tagged<Klass> klass) {
@@ -96,6 +97,7 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 ///////////////////////////////////////////////////////////////////
 // 多态虚方法入口 开始
 
+// python virtual function
 void PyObject::Print(Handle<PyObject> self) {
   HandleScope scope;
 
@@ -103,6 +105,7 @@ void PyObject::Print(Handle<PyObject> self) {
   GetKlass(*self)->vtable_.print(self);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*self)) {
@@ -116,6 +119,7 @@ Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
   return GetKlass(*self)->vtable_.add(self, other).EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -129,6 +133,7 @@ Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
   return GetKlass(*self)->vtable_.sub(self, other).EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Mul(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -142,6 +147,7 @@ Handle<PyObject> PyObject::Mul(Handle<PyObject> self, Handle<PyObject> other) {
   return GetKlass(*self)->vtable_.mul(self, other).EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Div(Handle<PyObject> self, Handle<PyObject> other) {
   HandleScope scope;
 
@@ -149,6 +155,7 @@ Handle<PyObject> PyObject::Div(Handle<PyObject> self, Handle<PyObject> other) {
   return GetKlass(*self)->vtable_.div(self, other).EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -163,6 +170,7 @@ Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
   return GetKlass(*self)->vtable_.mod(self, other).EscapeFrom(&scope);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
@@ -177,6 +185,7 @@ Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.greater(self, other);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
                                  Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
@@ -191,6 +200,7 @@ Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.less(self, other);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
                                   Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
@@ -205,6 +215,7 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.equal(self, other);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
                                      Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
@@ -219,6 +230,7 @@ Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.not_equal(self, other);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
@@ -233,6 +245,7 @@ Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.ge(self, other);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
@@ -247,6 +260,7 @@ Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.le(self, other);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
                                    Handle<PyObject> attr_name) {
   HandleScope scope;
@@ -255,6 +269,7 @@ Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.getattr(self, attr_name).EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
                                    Handle<PyObject> attr_name,
                                    Handle<PyObject> attr_value) {
@@ -266,6 +281,7 @@ Handle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
       .EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Subscr(Handle<PyObject> self,
                                   Handle<PyObject> subscr_name) {
   HandleScope scope;
@@ -274,6 +290,7 @@ Handle<PyObject> PyObject::Subscr(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.subscr(self, subscr_name).EscapeFrom(&scope);
 }
 
+// python virtual function
 void PyObject::StoreSubscr(Handle<PyObject> self,
                            Handle<PyObject> subscr_name,
                            Handle<PyObject> subscr_value) {
@@ -283,6 +300,7 @@ void PyObject::StoreSubscr(Handle<PyObject> self,
   GetKlass(*self)->vtable_.store_subscr(self, subscr_name, subscr_value);
 }
 
+// python virtual function
 Tagged<PyBoolean> PyObject::Contains(Handle<PyObject> self,
                                      Handle<PyObject> target) {
   HandleScope scope;
@@ -291,6 +309,7 @@ Tagged<PyBoolean> PyObject::Contains(Handle<PyObject> self,
   return GetKlass(*self)->vtable_.contains(self, target);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Iter(Handle<PyObject> self) {
   HandleScope scope;
 
@@ -298,6 +317,7 @@ Handle<PyObject> PyObject::Iter(Handle<PyObject> self) {
   return GetKlass(*self)->vtable_.iter(self).EscapeFrom(&scope);
 }
 
+// python virtual function
 Handle<PyObject> PyObject::Next(Handle<PyObject> self) {
   HandleScope scope;
 
@@ -305,6 +325,7 @@ Handle<PyObject> PyObject::Next(Handle<PyObject> self) {
   return GetKlass(*self)->vtable_.next(self).EscapeFrom(&scope);
 }
 
+// python virtual function
 void PyObject::DeletSubscr(Handle<PyObject> self,
                            Handle<PyObject> subscr_name) {
   HandleScope scope;
@@ -313,9 +334,18 @@ void PyObject::DeletSubscr(Handle<PyObject> self,
   GetKlass(*self)->vtable_.del_subscr(self, subscr_name);
 }
 
+// python virtual function
 size_t PyObject::GetInstanceSize(Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable_.instance_size);
   return GetKlass(*self)->vtable_.instance_size(*self);
+}
+
+// python virtual function
+void PyObject::Iterate(Handle<PyObject> self, ObjectVisitor* v) {
+  HandleScope scope;
+
+  assert(GetKlass(*self)->vtable_.iterate);
+  GetKlass(*self)->vtable_.iterate(self, v);
 }
 
 }  // namespace saauso::internal

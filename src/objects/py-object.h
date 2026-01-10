@@ -8,11 +8,13 @@
 #include <cstddef>
 
 #include "src/handles/handles.h"
+#include "src/objects/mark-word.h"
 #include "src/objects/objects.h"
 
 namespace saauso::internal {
 
 class Klass;
+class ObjectVisitor;
 class PyObject;
 
 #define PY_TYPE_IN_HEAP_LIST(V) \
@@ -58,10 +60,15 @@ class PyObject : public Object {
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
 
+  static MarkWord GetMarkWord(Tagged<PyObject> object);
+  static void SetMapWordForwarded(Tagged<PyObject> object);
+
   ////////////////// 多态函数 开始 //////////////////
   // 特别提醒：
-  // 调用 PyObject 的任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
-  // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
+  // 由于PyObject指针内部存储的可能是真正的对象指针，也有可能是一个Smi，
+  // 因此我们不能直接传递裸的PyObject*（如果里面实际存的是一个Smi，会导致C++编译器的UB行为）
+  // ，无论是显式的函数传参传递PyObject*，还是通过this指针隐式传递。
+  // 必须显式地传递包装后的Handle<PyObject>或Tagged<PyObject>！！！
   static void Print(Handle<PyObject> self);
 
   static Handle<PyObject> Add(Handle<PyObject> self, Handle<PyObject> other);
@@ -99,11 +106,14 @@ class PyObject : public Object {
   static Handle<PyObject> Next(Handle<PyObject> self);
   static void DeletSubscr(Handle<PyObject> self, Handle<PyObject> subscr_name);
 
+  // GC相关接口
   static size_t GetInstanceSize(Handle<PyObject> self);
+  static void Iterate(Handle<PyObject> self, ObjectVisitor* v);
   ////////////////// 多态函数 结束 //////////////////
 
  private:
-  Tagged<Klass> klass_;
+  // 特别提醒：MarkWord必须始终处于Python对象内存布局的开头！！！
+  MarkWord mark_word_;
 };
 
 }  // namespace saauso::internal
