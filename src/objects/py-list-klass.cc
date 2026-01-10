@@ -13,6 +13,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -44,6 +45,7 @@ void PyListKlass::Initialize() {
   vtable_.iter = &Virtual_Iter;
   vtable_.contains = &Virtual_Contains;
   vtable_.instance_size = &Virtual_InstanceSize;
+  vtable_.iterate = &Virtual_Iterate;
 
   // 设置类名
   set_name(PyString::NewInstance("list"));
@@ -200,6 +202,17 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   return sizeof(PyList);
+}
+
+void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
+  auto list = Tagged<PyList>::Cast(self);
+
+  for (auto i = 0; i < list->length(); ++i) {
+    v->VisitPointer(&list->array_[i]);
+  }
+
+  v->VisitRawMemory(list->data_slot_address(),
+                    list->length() * sizeof(Tagged<PyObject>));
 }
 
 }  // namespace saauso::internal

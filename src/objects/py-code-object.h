@@ -10,9 +10,6 @@
 
 namespace saauso::internal {
 
-class PyString;
-class PyList;
-
 class PyCodeObject : public PyObject {
  public:
   static Handle<PyCodeObject> NewInstance(int arg_count,
@@ -41,19 +38,28 @@ class PyCodeObject : public PyObject {
   int stack_size_;         // 操作数栈深度的最大值
   int flags_;
 
-  Tagged<PyString> bytecodes_;
-  Tagged<PyList> names_;
-  Tagged<PyList> consts_;
-  Tagged<PyList> var_names_;
+  // PyString*
+  Tagged<PyObject> bytecodes_;
+  // PyList*
+  Tagged<PyObject> names_;
+  // PyList*
+  Tagged<PyObject> consts_;
+  // PyList*
+  Tagged<PyObject> var_names_;
 
-  Tagged<PyList> free_vars_;
-  Tagged<PyList> cell_vars_;
+  // PyList*
+  Tagged<PyObject> free_vars_;
+  // PyList*
+  Tagged<PyObject> cell_vars_;
 
-  Tagged<PyString> file_name_;
-  Tagged<PyString> co_name_;
+  // PyString*
+  Tagged<PyObject> file_name_;
+  // PyString*
+  Tagged<PyObject> co_name_;
 
   int line_no_;
-  Tagged<PyString> no_table_;
+  // PyString*
+  Tagged<PyObject> no_table_;
 };
 
 }  // namespace saauso::internal

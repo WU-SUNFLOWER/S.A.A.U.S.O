@@ -42,13 +42,19 @@ class PyList : public PyObject {
     return length_ == capacity_;
   }
 
+  void** data_slot_address() { return reinterpret_cast<void**>(&array_); }
+
   // 特别提醒：
   // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
   // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
   static void Append(Handle<PyList> self, Handle<PyObject> value);
-  static void Insert(Handle<PyList> self, int64_t index, Handle<PyObject> value);
+  static void Insert(Handle<PyList> self,
+                     int64_t index,
+                     Handle<PyObject> value);
 
  private:
+  friend class PyListKlass;
+
   int64_t capacity_{0};
   int64_t length_{0};
   // TODO: 实现Visitor入口函数，将PyList和缓冲区拷贝到survivor区

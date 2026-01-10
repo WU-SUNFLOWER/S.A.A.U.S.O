@@ -37,6 +37,9 @@ class PyFloatKlass : public Klass {
                                                 Handle<PyObject>);
   static Tagged<PyBoolean> Virtual_LessEqual(Handle<PyObject>,
                                              Handle<PyObject>);
+
+  static size_t Virtual_InstanceSize(Tagged<PyObject> self);
+  static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
 
 }  // namespace saauso::internal

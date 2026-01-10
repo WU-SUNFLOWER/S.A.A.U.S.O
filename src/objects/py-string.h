@@ -32,6 +32,7 @@ class PyString : public PyObject {
 
   int64_t length() const { return length_; }
   const char* buffer() const { return buffer_; }
+  void** buffer_slot_address() { return reinterpret_cast<void**>(&buffer_); }
 
   // 特别提醒：
   // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
@@ -43,6 +44,8 @@ class PyString : public PyObject {
   static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);
 
  private:
+  friend class PyStringKlass;
+
   // TODO: 实现Visitor入口函数，将PyString和缓冲区拷贝到survivor区
   char* buffer_{nullptr};
   int64_t length_{0};

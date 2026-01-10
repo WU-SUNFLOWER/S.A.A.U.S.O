@@ -43,7 +43,9 @@ class PyListKlass : public Klass {
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
                                             Handle<PyObject> target);
+
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
+  static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
 
 }  // namespace saauso::internal

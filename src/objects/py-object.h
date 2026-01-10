@@ -110,7 +110,7 @@ class PyObject : public Object {
   // GC相关接口
   static size_t GetInstanceSize(Handle<PyObject> self);
   static size_t GetInstanceSize(Tagged<PyObject> self);
-  static void Iterate(Handle<PyObject> self, ObjectVisitor* v);
+  static void Iterate(Tagged<PyObject> self, ObjectVisitor* v);
   ////////////////// 多态函数 结束 //////////////////
 
  private:

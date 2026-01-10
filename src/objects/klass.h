@@ -106,7 +106,7 @@ struct VirtualTable {
   // size_t instance_object(Tagged<PyObject>);
   size_t (*instance_size)(Oop){nullptr};
 
-  void (*iterate)(OopHandle, ObjectVisitor*){nullptr};
+  void (*iterate)(Oop, ObjectVisitor*){nullptr};
 };
 /////////////////虚函数表 定义结束///////////////////////////
 

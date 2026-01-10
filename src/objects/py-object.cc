@@ -356,11 +356,12 @@ size_t PyObject::GetInstanceSize(Tagged<PyObject> self) {
 }
 
 // python virtual function
-void PyObject::Iterate(Handle<PyObject> self, ObjectVisitor* v) {
-  HandleScope scope;
+void PyObject::Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
+  // TODO: 回收对象的属性表
+  // v->Iterate(&self->properties);
 
-  assert(GetKlass(*self)->vtable_.iterate);
-  GetKlass(*self)->vtable_.iterate(self, v);
+  assert(GetKlass(self)->vtable_.iterate);
+  GetKlass(self)->vtable_.iterate(self, v);
 }
 
 }  // namespace saauso::internal

@@ -8,9 +8,11 @@
 #include <cstdlib>
 
 #include "src/handles/handles.h"
+#include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -42,6 +44,7 @@ void PyStringKlass::Initialize() {
   vtable_.add = &Virtual_Add;
   vtable_.print = &Virtual_Print;
   vtable_.instance_size = &Virtual_InstanceSize;
+  vtable_.iterate = &Virtual_Iterate;
 
   // 设置类名
   set_name(PyString::NewInstance("str"));
@@ -135,6 +138,11 @@ void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   assert(IsPyString(self));
   return sizeof(PyString);
+}
+
+void PyStringKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
+  auto string = Tagged<PyString>::Cast(self);
+  v->VisitRawMemory(string->buffer_slot_address(), string->length());
 }
 
 }  // namespace saauso::internal

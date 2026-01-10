@@ -44,7 +44,10 @@ class PyStringKlass : public Klass {
   static Handle<PyObject> Virtual_Add(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static void Virtual_Print(Handle<PyObject> self);
+
+  // GC相关接口
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
+  static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
 
 }  // namespace saauso::internal

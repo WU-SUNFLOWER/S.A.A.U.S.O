@@ -13,6 +13,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -69,6 +70,8 @@ void PyFloatKlass::Initialize() {
   vtable_.ge = &Virtual_GreaterEqual;
   vtable_.le = &Virtual_LessEqual;
   vtable_.print = &Virtual_Print;
+  vtable_.instance_size = &Virtual_InstanceSize;
+  vtable_.iterate = &Virtual_Iterate;
 
   // 设置类名
   set_name(PyString::NewInstance("float"));
@@ -189,6 +192,16 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
   bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
             IsPyFalse(Virtual_Less(self, other)));
   return Universe::ToPyBoolean(v);
+}
+
+// static
+size_t PyFloatKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
+  return sizeof(PyFloat);
+}
+
+// static
+void PyFloatKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
+  // PyFloat没有内部数据，什么都不用做
 }
 
 }  // namespace saauso::internal
