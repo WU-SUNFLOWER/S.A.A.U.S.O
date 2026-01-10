@@ -54,14 +54,15 @@ DEFINE_PY_CHECKER(GcAbleObject)
 
 class PyObject : public Object {
  public:
+  static MarkWord GetMarkWord(Tagged<PyObject> object);
+  static void SetMapWordForwarded(Tagged<PyObject> object,
+                                  Tagged<PyObject> target);
+
   static Tagged<Klass> GetKlass(Tagged<PyObject> object);
   static Tagged<Klass> GetKlass(Handle<PyObject> object);
 
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
-
-  static MarkWord GetMarkWord(Tagged<PyObject> object);
-  static void SetMapWordForwarded(Tagged<PyObject> object);
 
   ////////////////// 多态函数 开始 //////////////////
   // 特别提醒：
@@ -108,6 +109,7 @@ class PyObject : public Object {
 
   // GC相关接口
   static size_t GetInstanceSize(Handle<PyObject> self);
+  static size_t GetInstanceSize(Tagged<PyObject> self);
   static void Iterate(Handle<PyObject> self, ObjectVisitor* v);
   ////////////////// 多态函数 结束 //////////////////
 

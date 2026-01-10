@@ -114,13 +114,19 @@ class Klass : public Object {
  public:
   Klass() = default;
 
-  Handle<PyString> name() { return Handle<PyString>(name_); }
+  Handle<PyString> name() {
+    return Handle<PyString>(Tagged<PyString>::Cast(name_));
+  }
   void set_name(Handle<PyString> name) { name_ = *name; }
 
+  // Klass被视为一种GC ROOT，这是暴露给GC的接口
+  void Iterate(ObjectVisitor* v);
+
+  // Python对象虚函数表
   VirtualTable vtable_;
 
  private:
-  Tagged<PyString> name_{nullptr};
+  Tagged<PyObject> name_{nullptr};
 };
 
 }  // namespace saauso::internal

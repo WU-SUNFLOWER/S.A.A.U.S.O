@@ -38,8 +38,12 @@ source_set("saauso_sources") {
     # heap (堆管理)
     "//src/heap/heap.cc",
     "//src/heap/heap.h",
+    "//src/heap/scavenge-visitor.h",
+    "//src/heap/spaces.cc",
+    "//src/heap/spaces.h",
 
     # objects (对象系统)
+    "//src/objects/klass.cc",
     "//src/objects/klass.h",
     "//src/objects/mark-word.cc",
     "//src/objects/mark-word.h",

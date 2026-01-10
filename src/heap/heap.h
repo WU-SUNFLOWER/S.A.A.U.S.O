@@ -5,24 +5,46 @@
 #ifndef SAAUSO_HEAP_HEAP_H_
 #define SAAUSO_HEAP_HEAP_H_
 
-#include <cstddef>
-
 #include "src/handles/tagged.h"
+#include "src/heap/spaces.h"
 
 namespace saauso::internal {
+
+class ObjectVisitor;
 
 class Heap {
  public:
   enum class AllocationSpace { kNewSpace, kOldSpace, kMetaSpace };
 
-  void* AllocateRaw(size_t size_in_bytes, AllocationSpace space);
+  Address AllocateRaw(size_t size_in_bytes, AllocationSpace space);
 
   template <typename T>
   Tagged<T> Allocate(AllocationSpace space) {
-    return Tagged<T>(static_cast<T*>(AllocateRaw(sizeof(T), space)));
+    return Tagged<T>(AllocateRaw(sizeof(T), space));
   }
 
-  void DoGc();
+  bool InNewSpaceEden(Address raw_addr);
+  bool InNewSpaceSurvivor(Address raw_addr);
+
+  void CollectGarbage();
+
+  NewSpace& new_space() { return new_space_; }
+  OldSpace& old_space() { return old_space_; }
+  MetaSpace& meta_space() { return meta_space_; }
+
+ private:
+  Address AllocateRawImpl(size_t size_in_bytes, AllocationSpace space);
+
+  void IterateRoots(ObjectVisitor* v);
+
+  void DoScavenge();
+
+  NewSpace new_space_;
+  OldSpace old_space_;
+  MetaSpace meta_space_;
+
+  enum class GcState { kNotInGc, kScavenage, kMarkCompact };
+  GcState gc_state_{GcState::kNotInGc};
 };
 
 #define WRITE_BARRIER

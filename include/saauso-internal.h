@@ -5,6 +5,7 @@
 #ifndef INCLUDE_SAAUSO_INTERNAL_H_
 #define INCLUDE_SAAUSO_INTERNAL_H_
 
+#include <cstddef>
 #include <cstdint>
 
 namespace saauso::internal {

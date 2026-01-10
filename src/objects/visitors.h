@@ -9,6 +9,8 @@
 
 namespace saauso::internal {
 
+class Klass;
+
 class ObjectVisitor {
  public:
   virtual ~ObjectVisitor() {}
@@ -19,6 +21,10 @@ class ObjectVisitor {
                              Tagged<PyObject>* end) = 0;
 
   void VisitPointer(Tagged<PyObject>* p) { VisitPointers(p, p + 1); }
+
+  virtual void VisitRawMemory(void** mem, size_t size_in_bytes) = 0;
+
+  virtual void VisitKlass(Tagged<Klass>* p) = 0;
 };
 
 }  // namespace saauso::internal

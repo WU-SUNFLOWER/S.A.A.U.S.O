@@ -8,6 +8,7 @@
 
 #include "py-object.h"
 #include "src/handles/handles.h"
+#include "src/handles/tagged.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-code-object-klass.h"
@@ -22,6 +23,16 @@
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
+
+MarkWord PyObject::GetMarkWord(Tagged<PyObject> object) {
+  assert(IsHeapObject(object));
+  return object->mark_word_;
+}
+
+void PyObject::SetMapWordForwarded(Tagged<PyObject> object,
+                                   Tagged<PyObject> target) {
+  object->mark_word_ = MarkWord::FromForwardingAddress(target);
+}
 
 Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
@@ -336,8 +347,12 @@ void PyObject::DeletSubscr(Handle<PyObject> self,
 
 // python virtual function
 size_t PyObject::GetInstanceSize(Handle<PyObject> self) {
-  assert(GetKlass(*self)->vtable_.instance_size);
-  return GetKlass(*self)->vtable_.instance_size(*self);
+  return GetInstanceSize(*self);
+}
+
+// python virtual function
+size_t PyObject::GetInstanceSize(Tagged<PyObject> self) {
+  return GetKlass(self)->vtable_.instance_size(self);
 }
 
 // python virtual function
