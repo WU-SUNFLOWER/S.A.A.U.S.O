@@ -31,6 +31,24 @@ class HandleTest : public testing::Test {
   void TearDown() override {}
 };
 
+TEST_F(HandleTest, EscapeFromHandleScope) {
+  HandleScope scope;
+  Handle<PyObject> str1 = PyString::NewInstance("Hello World");
+
+  auto f = []() -> Handle<PyObject> {
+    HandleScope scope;
+    Handle<PyObject> object = PyString::NewInstance("Hello World");
+    return object.EscapeFrom(&scope);
+  };
+
+  Handle<PyObject> str2 = PyString::NewInstance("I love you");
+  Handle<PyObject> str3 = f();
+  Handle<PyObject> str4 = PyString::NewInstance("I love you");
+
+  EXPECT_TRUE(IsPyTrue(PyObject::Equal(str1, str3)));
+  EXPECT_TRUE(IsPyTrue(PyObject::Equal(str2, str4)));
+}
+
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   HandleScope scope;
 
