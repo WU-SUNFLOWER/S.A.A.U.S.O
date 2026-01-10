@@ -2,11 +2,12 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/utils/allocation.h"
+
 #include <cassert>
 
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
-#include "src/utils/allocation.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
@@ -15,9 +16,17 @@
 #if BUILDFLAG(IS_LINUX)
 #include <sys/mman.h>
 #include <sys/types.h>
-#endif  // BUILDFLAG(IS_WIN)
+#endif  // BUILDFLAG(IS_LINUX)
 
 namespace saauso::internal {
+
+namespace {
+#if BUILDFLAG(IS_LINUX)
+// Constants used for mmap.
+constexpr int kMmapFd = -1;
+constexpr int kMmapFdOffset = 0;
+#endif  // BUILDFLAG(IS_LINUX)
+}  // namespace
 
 void* VirtualMemory::address() {
   assert(IsReserved());

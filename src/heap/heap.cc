@@ -40,6 +40,7 @@ void Heap::Setup(size_t young_generation_size,
 
 void Heap::TearDown() {
   initial_chunk_->Uncommit(initial_chunk_->address(), initial_size_);
+  delete initial_chunk_;
 }
 
 Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
@@ -52,7 +53,7 @@ Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
 
   if (result == kNullAddress) {
     std::printf("OOM: Failed to allocate %zu bytes in space %d\n",
-                size_in_bytes, space);
+                size_in_bytes, static_cast<int>(space));
     std::exit(1);
   }
 
