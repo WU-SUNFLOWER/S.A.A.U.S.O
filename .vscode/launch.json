@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Launch MSVC",
+            "name": "(Windows) Debug VM",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/out/debug/vm.exe",
@@ -15,6 +15,21 @@
             "environment": [],
             "console": "externalTerminal",
             "preLaunchTask": "Ninja Build Debug"
+        },
+        {
+            "name": "(Windows) Debug Unittests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/out/ut/ut.exe",
+            "args": [
+                "--gtest_break_on_failure",
+                "--gtest_catch_exceptions=0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/out/ut",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "Ninja Build Unittests"
         }
     ]
 }

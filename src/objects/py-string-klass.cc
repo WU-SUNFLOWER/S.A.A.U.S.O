@@ -46,6 +46,7 @@ void PyStringKlass::Initialize() {
   vtable_.subscr = &Virtual_Subscr;
   vtable_.add = &Virtual_Add;
   vtable_.print = &Virtual_Print;
+  vtable_.hash = &Virtual_Hash;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 
@@ -136,6 +137,10 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
 void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
   auto s = Handle<PyString>::Cast(self);
   std::printf("%.*s", static_cast<int>(s->length()), s->buffer());
+}
+
+uint64_t PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
+  return Handle<PyString>::Cast(self)->GetHash();
 }
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

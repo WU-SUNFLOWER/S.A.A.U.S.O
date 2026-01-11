@@ -55,6 +55,8 @@ struct VirtualTable {
   // Tagged<PyObject> div(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE div{nullptr};
 
+  uint64_t (*hash)(OopHandle){nullptr};
+
   // Tagged<PyObject> getattr(Tagged<PyObject> object, Tagged<PyObject> key);
   VirtualFuncType_1_2_SAFE getattr{nullptr};
   // Tagged<PyObject> setattr(Tagged<PyObject> object, Tagged<PyObject> key,
@@ -106,6 +108,7 @@ struct VirtualTable {
   // size_t instance_object(Tagged<PyObject>);
   size_t (*instance_size)(Oop){nullptr};
 
+  // 扫描对象内部数据，用于GC
   void (*iterate)(Oop, ObjectVisitor*){nullptr};
 };
 /////////////////虚函数表 定义结束///////////////////////////

@@ -43,10 +43,7 @@ class PyList : public PyObject {
     assert(length_ <= capacity());
     return length_ == capacity();
   }
-
-  // 特别提醒：
-  // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
-  // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
+  
   static void Append(Handle<PyList> self, Handle<PyObject> value);
   static void Insert(Handle<PyList> self,
                      int64_t index,

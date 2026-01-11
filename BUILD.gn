@@ -58,6 +58,10 @@ source_set("saauso_sources") {
     "//src/objects/py-code-object-klass.h",
     "//src/objects/py-code-object.cc",
     "//src/objects/py-code-object.h",
+    "//src/objects/py-dict-klass.cc",
+    "//src/objects/py-dict-klass.h",
+    "//src/objects/py-dict.cc",
+    "//src/objects/py-dict.h",
     "//src/objects/py-float-klass.cc",
     "//src/objects/py-float-klass.h",
     "//src/objects/py-float.cc",
@@ -107,6 +111,7 @@ executable("ut") {
     # 在这里添加你的测试文件
     "//test/unittests/gc-unittest.cc",
     "//test/unittests/handle-unittest.cc",
+    "//test/unittests/py-dict-unittest.cc",
     "//test/unittests/py-objects-unittest.cc",
   ]
 

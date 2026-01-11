@@ -33,6 +33,36 @@
             },
             "dependsOn": "Gn Build Debug",
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Gn Build Unittests",
+            "type": "shell",
+            "command": "gn",
+            "args": [
+                "gen",
+                "${workspaceFolder}/out/ut",
+                "--args=is_debug=true"
+            ],
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Ninja Build Unittests",
+            "type": "shell",
+            "command": "ninja",
+            "args": [
+                "-C",
+                "${workspaceFolder}/out/ut",
+                "ut"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "Gn Build Unittests",
+            "problemMatcher": "$msCompile"
         }
     ]
 }

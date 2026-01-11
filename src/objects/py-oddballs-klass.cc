@@ -6,6 +6,7 @@
 
 #include <cstdio>
 
+#include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-float.h"
@@ -41,6 +42,7 @@ void PyBooleanKlass::Initialize() {
   vtable_.print = &Virtual_Print;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
+  vtable_.hash = &Virtual_Hash;
 
   // 设置类名
   set_name(PyString::NewInstance("bool"));
@@ -77,6 +79,11 @@ Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
 Tagged<PyBoolean> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                    Handle<PyObject> other) {
   return Virtual_Equal(self, other)->Reverse();
+}
+
+// static
+uint64_t PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
+  return Handle<PyBoolean>::Cast(self)->value();
 }
 
 ///////////////////////////////////////////////////////////////
@@ -124,6 +131,12 @@ Tagged<PyBoolean> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
 Tagged<PyBoolean> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   return Virtual_Equal(self, other)->Reverse();
+}
+
+// static
+uint64_t PyNoneKlass::Virtual_Hash(Handle<PyObject> self) {
+  assert(IsPyNone(self));
+  return (*self).ptr();  // None使用自己的地址作为哈希值
 }
 
 }  // namespace saauso::internal

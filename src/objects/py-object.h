@@ -24,6 +24,7 @@ class PyObject;
   V(PyCodeObject)               \
   V(PyString)                   \
   V(PyList)                     \
+  V(PyDict)                     \
   V(FixedArray)
 
 #define PY_TYPE_LIST(V)   \
@@ -107,6 +108,8 @@ class PyObject : public Object {
   static Handle<PyObject> Iter(Handle<PyObject> self);
   static Handle<PyObject> Next(Handle<PyObject> self);
   static void DeletSubscr(Handle<PyObject> self, Handle<PyObject> subscr_name);
+
+  static uint64_t Hash(Handle<PyObject> self);
 
   // GC相关接口
   static size_t GetInstanceSize(Tagged<PyObject> self);

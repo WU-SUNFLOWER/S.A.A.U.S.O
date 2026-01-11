@@ -81,6 +81,14 @@ class Handle {
     return Handle<T>(scope->EscapeFromSelf(*location_));
   }
 
+  Address* location() const { return location_; }
+
+  // 快速检测两个handle是否指向同一个对象
+  bool is_identical_to(const Handle<T> other) const {
+    return location() == other.location() ||
+           (operator*()).ptr() == (*other).ptr();
+  }
+
  private:
   // 为了便于隐式转换，
   // 我们允许任意类型的Handle<T>可以访问其他任意类型Handle<S>的内部指针

@@ -44,6 +44,7 @@ class PyStringKlass : public Klass {
   static Handle<PyObject> Virtual_Add(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static void Virtual_Print(Handle<PyObject> self);
+  static uint64_t Virtual_Hash(Handle<PyObject> self);
 
   // GC相关接口
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

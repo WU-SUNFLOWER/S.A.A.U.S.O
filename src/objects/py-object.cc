@@ -13,6 +13,7 @@
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-code-object-klass.h"
+#include "src/objects/py-dict-klass.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-oddballs-klass.h"
@@ -350,6 +351,14 @@ void PyObject::DeletSubscr(Handle<PyObject> self,
 
   assert(GetKlass(*self)->vtable_.del_subscr);
   GetKlass(*self)->vtable_.del_subscr(self, subscr_name);
+}
+
+// python virtual function
+uint64_t PyObject::Hash(Handle<PyObject> self) {
+  HandleScope scope;
+
+  assert(GetKlass(*self)->vtable_.hash);
+  return GetKlass(*self)->vtable_.hash(self);
 }
 
 // python virtual function

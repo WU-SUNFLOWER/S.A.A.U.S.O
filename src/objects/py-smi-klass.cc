@@ -42,6 +42,7 @@ void PySmiKlass::Initialize() {
   vtable_.mul = &Virtual_Mul;
   vtable_.div = &Virtual_Div;
   vtable_.mod = &Virtual_Mod;
+  vtable_.hash = &Virtual_Hash;
   vtable_.greater = &Virtual_Greater;
   vtable_.less = &Virtual_Less;
   vtable_.equal = &Virtual_Equal;
@@ -170,6 +171,12 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
   std::exit(1);
 
   return Handle<PyObject>::Null();
+}
+
+// static
+uint64_t PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
+  // 对于负数，会被hash成一个巨大的正数
+  return PySmi::Cast(*self).value();
 }
 
 // static

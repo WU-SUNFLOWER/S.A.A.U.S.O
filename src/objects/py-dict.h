@@ -1,0 +1,50 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#ifndef SAAUSO_OBJECTS_PY_DICT_H_
+#define SAAUSO_OBJECTS_PY_DICT_H_
+
+#include "src/objects/py-object.h"
+
+namespace saauso::internal {
+
+class PyDict : public PyObject {
+ public:
+  static constexpr int64_t kMinimumCapacity = 8;
+
+  static Handle<PyDict> NewInstance(int64_t init_capacity = kMinimumCapacity);
+  static Tagged<PyDict> Cast(Tagged<PyObject> object);
+
+  int64_t capacity() const;
+
+  Tagged<PyBoolean> Contains(Handle<PyObject> key) const;
+
+  Handle<PyObject> Get(Handle<PyObject> key) const;
+
+  void Remove(Handle<PyObject> key);
+
+  int64_t occupied() const { return occupied_; }
+
+  static void Put(Handle<PyObject> dict,
+                  Handle<PyObject> key,
+                  Handle<PyObject> value);
+
+ private:
+  friend class PyDictKlass;
+
+  static void ExpandImpl(Handle<PyDict> list);
+
+  Handle<FixedArray> data() const {
+    return Handle<FixedArray>(Tagged<FixedArray>::Cast(data_));
+  }
+
+  // FixedArray* data_
+  Tagged<PyObject> data_;
+
+  int64_t occupied_;  // 当前存储的键值对数目
+};
+
+}  // namespace saauso::internal
+
+#endif  // SAAUSO_OBJECTS_PY_DICT_H_
