@@ -140,12 +140,11 @@ void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   assert(IsPyString(self));
-  return ObjectSizeAlign(sizeof(PyString));
+  return PyString::ComputeObjectSize(Tagged<PyString>::Cast(self)->length());
 }
 
 void PyStringKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  auto string = Tagged<PyString>::Cast(self);
-  v->VisitRawMemory(string->buffer_slot_address(), string->length());
+  // 字符串数据直接内联在PyString结构体中，不需要处理额外的内部拷贝
 }
 
 }  // namespace saauso::internal

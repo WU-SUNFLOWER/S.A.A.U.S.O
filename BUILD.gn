@@ -45,6 +45,10 @@ source_set("saauso_sources") {
     "//src/heap/spaces.h",
 
     # objects (对象系统)
+    "//src/objects/fixed-array-klass.cc",
+    "//src/objects/fixed-array-klass.h",
+    "//src/objects/fixed-array.cc",
+    "//src/objects/fixed-array.h",
     "//src/objects/klass.cc",
     "//src/objects/klass.h",
     "//src/objects/mark-word.cc",
@@ -101,6 +105,7 @@ executable("ut") {
 
   sources = [
     # 在这里添加你的测试文件
+    "//test/unittests/gc-unittest.cc",
     "//test/unittests/handle-unittest.cc",
     "//test/unittests/py-objects-unittest.cc",
   ]

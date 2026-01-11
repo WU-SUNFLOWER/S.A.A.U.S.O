@@ -12,7 +12,6 @@ namespace saauso::internal {
 class ScavenageVisitor : public ObjectVisitor {
  public:
   void VisitPointers(Tagged<PyObject>* start, Tagged<PyObject>* end) override;
-  void VisitRawMemory(void** mem, size_t size_in_bytes) override;
   void VisitKlass(Tagged<Klass>* p) override;
 
  private:

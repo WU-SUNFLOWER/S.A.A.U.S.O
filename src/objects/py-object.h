@@ -23,7 +23,8 @@ class PyObject;
   V(PyNone)                     \
   V(PyCodeObject)               \
   V(PyString)                   \
-  V(PyList)
+  V(PyList)                     \
+  V(FixedArray)
 
 #define PY_TYPE_LIST(V)   \
   PY_TYPE_IN_HEAP_LIST(V) \
@@ -108,7 +109,6 @@ class PyObject : public Object {
   static void DeletSubscr(Handle<PyObject> self, Handle<PyObject> subscr_name);
 
   // GC相关接口
-  static size_t GetInstanceSize(Handle<PyObject> self);
   static size_t GetInstanceSize(Tagged<PyObject> self);
   static void Iterate(Tagged<PyObject> self, ObjectVisitor* v);
   ////////////////// 多态函数 结束 //////////////////

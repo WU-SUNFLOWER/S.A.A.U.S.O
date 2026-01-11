@@ -14,11 +14,13 @@ namespace saauso::internal {
 
 class PyString : public PyObject {
  public:
-  static Handle<PyString> NewInstance(int64_t length);
+  static Handle<PyString> NewInstance(int64_t str_length);
   static Handle<PyString> NewInstance(const char* source);
-  static Handle<PyString> NewInstance(const char* source, int64_t length);
+  static Handle<PyString> NewInstance(const char* source, int64_t str_length);
 
   static Tagged<PyString> Cast(Tagged<PyObject> object);
+
+  static size_t ComputeObjectSize(int64_t str_length);
 
   void Set(int64_t index, char value);
   char Get(int64_t index) const;
@@ -31,12 +33,8 @@ class PyString : public PyObject {
   bool IsGreaterThan(Tagged<PyString> other);
 
   int64_t length() const { return length_; }
-  const char* buffer() const { return buffer_; }
-  void** buffer_slot_address() { return reinterpret_cast<void**>(&buffer_); }
 
-  // 特别提醒：
-  // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
-  // 必须通过 Handle 进行调用（即 -> 的左边必须是一个 Handle 对象）！！！
+  const char* buffer() const { return reinterpret_cast<const char*>(this + 1); }
 
   static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from,
@@ -46,11 +44,77 @@ class PyString : public PyObject {
  private:
   friend class PyStringKlass;
 
-  // TODO: 实现Visitor入口函数，将PyString和缓冲区拷贝到survivor区
-  char* buffer_{nullptr};
+  char* writable_buffer() { return reinterpret_cast<char*>(this + 1); }
+
   int64_t length_{0};
   uint64_t hash_{0};
 };
+
+/*
+TODO: 字符串优化
+
+```C++
+// 预留枚举，MVP版本可能只有 kSequential
+enum class StringRepresentation {
+  kSequential, // 内联 buffer (当前实现)
+  kSliced,     // 引用其他 string (未来实现)
+  kCons        // 拼接节点 (未来实现)
+};
+
+class PyString : public PyObject {
+ public:
+  // ... 通用接口 ...
+  int64_t length() const { return length_; }
+  uint64_t GetHash();
+
+  // 【关键点】：不要直接暴露 buffer_ 成员或无脑假设 buffer 在后面
+  // 改为提供一个“尝试获取”的接口
+  // 如果是 SlicedString，这个函数未来会返回 nullptr 或者触发 Flatten
+  const char* TryGetRawBuffer() const;
+
+  // 强制获取 buffer，如果当前是 Sliced/Cons，会触发内存规整（Flatten），
+  // 将复杂结构转化为内联结构。这是 V8 处理复杂字符串转 C-String 的标准做法。
+  const char* FlattenAndGetBuffer();
+
+ protected:
+  // PyString 只包含元数据
+  int64_t length_{0};
+  uint64_t hash_{0};
+};
+
+// 当前的 MVP 实现本质上是 PySeqString
+class PySeqString : public PyString {
+ public:
+  // 只有 SeqString 知道数据就在屁股后面
+  const char* raw_data() const {
+    return reinterpret_cast<const char*>(this + 1);
+  }
+
+  // 写数据时使用
+  char* raw_data_rw() {
+    return reinterpret_cast<char*>(this + 1);
+  }
+
+  static Handle<PySeqString> New(const char* data, int64_t len);
+};
+```
+
+```C++
+class PyStringKlass : public Klass {
+  // ...
+  // 添加一个标记位，或者针对不同 String 子类创建不同的 Klass 实例
+  // 方案 A: 所有 String 共用一个 Klass，但在 Klass 里查 flag
+  // 方案 B (推荐): PySeqStringKlass, PySlicedStringKlass 继承自 PyStringKlass
+
+  virtual size_t InstanceSize(Tagged<PyObject> obj) override {
+    // 这是一个虚函数（或通过 switch type 分发）
+    // 如果是 SeqString: return sizeof(PySeqString) + len
+    // 如果是 SlicedString: return sizeof(PySlicedString) (固定大小)
+  }
+};
+```
+
+*/
 
 }  // namespace saauso::internal
 

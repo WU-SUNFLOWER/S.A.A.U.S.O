@@ -69,11 +69,13 @@ void HandleScopeImplementer::ReleaseSpareAndExtendedBlocks(int n) {
 
 void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
   // 遍历所有填充完整的block
-  for (auto i = 0; i < blocks_.length() - 1; ++i) {
-    Address* block_begin = blocks_.Get(i);
-    Address* block_end = block_begin + kHandleBlockSize;
-    v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
-                     reinterpret_cast<Tagged<PyObject>*>(block_end));
+  if (blocks_.length() > 1) {
+    for (auto i = 0; i < blocks_.length() - 1; ++i) {
+      Address* block_begin = blocks_.Get(i);
+      Address* block_end = block_begin + kHandleBlockSize;
+      v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
+                       reinterpret_cast<Tagged<PyObject>*>(block_end));
+    }
   }
 
   // 遍历最后一个block

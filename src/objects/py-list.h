@@ -12,11 +12,13 @@
 
 namespace saauso::internal {
 
+class FixedArray;
+
 class PyList : public PyObject {
  public:
-  static constexpr int64_t kDefaultInitialCapacity = 4;
-  static Handle<PyList> NewInstance(
-      int64_t init_capacity = kDefaultInitialCapacity);
+  static constexpr int64_t kMinimumCapacity = 2;
+
+  static Handle<PyList> NewInstance(int64_t init_capacity = kMinimumCapacity);
   static Tagged<PyList> Cast(Tagged<PyObject> object);
 
   // 以下方法均不会触发GC
@@ -25,7 +27,7 @@ class PyList : public PyObject {
   // 这样可以强制调用方使用Handle持有堆上对象，缓解悬空指针风险。
   Handle<PyObject> Pop();
 
-  Handle<PyObject> Get(int index) const;
+  Handle<PyObject> Get(int64_t index) const;
   Handle<PyObject> GetLast() const;
 
   void Set(int64_t index, Handle<PyObject> value);
@@ -33,16 +35,14 @@ class PyList : public PyObject {
   void Remove(int64_t index);
   void Clear();
 
-  int64_t capacity() const { return capacity_; };
+  int64_t capacity() const;
   int64_t length() const { return length_; };
 
   bool IsEmpty() const { return length_ == 0; };
   bool IsFull() const {
-    assert(length_ <= capacity_);
-    return length_ == capacity_;
+    assert(length_ <= capacity());
+    return length_ == capacity();
   }
-
-  void** data_slot_address() { return reinterpret_cast<void**>(&array_); }
 
   // 特别提醒：
   // 调用任何可能会触发 GC（或者参数计算可能触发 GC）的虚函数时，
@@ -52,15 +52,16 @@ class PyList : public PyObject {
                      int64_t index,
                      Handle<PyObject> value);
 
+  Tagged<FixedArray> array() const { return Tagged<FixedArray>::Cast(array_); }
+
  private:
   friend class PyListKlass;
 
-  int64_t capacity_{0};
-  int64_t length_{0};
-  // TODO: 实现Visitor入口函数，将PyList和缓冲区拷贝到survivor区
-  Tagged<PyObject>* array_{nullptr};
-
   static void ExpandImpl(Handle<PyList> list);
+
+  int64_t length_{0};
+  // FixedArray* array_
+  Tagged<PyObject> array_;
 };
 
 }  // namespace saauso::internal

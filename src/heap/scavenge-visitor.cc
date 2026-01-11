@@ -5,6 +5,7 @@
 #include "src/heap/scavenge-visitor.h"
 
 #include <cstring>
+#include <iostream>
 
 #include "include/saauso-internal.h"
 #include "src/handles/tagged.h"
@@ -33,8 +34,9 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
                                      Tagged<PyObject>* end) {
   for (Tagged<PyObject>* p = start; p < end; ++p) {
     Tagged<PyObject> object = *p;
+
     // 跳过空指针、Smi、指向meta space和不指向new space的指针
-    if (!object.IsNull() || !IsGcAbleObject(object) ||
+    if (object.IsNull() || !IsGcAbleObject(object) ||
         !Universe::heap_->InNewSpaceEden(object.ptr())) {
       continue;
     }
@@ -42,21 +44,6 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
     // 移动对象，并更新槽位
     EvacuateObject(p);
   }
-}
-
-void ScavenageVisitor::VisitRawMemory(void** mem, size_t size_in_bytes) {
-  assert(mem != nullptr);
-
-  if (*mem == nullptr) {
-    return;
-  }
-
-  // 在Survivor Space分配空间
-  Address target_addr = AllocateInSurvivorSpace(size_in_bytes);
-  // 执行拷贝
-  std::memcpy(*mem, reinterpret_cast<void*>(target_addr), size_in_bytes);
-  // 在原对象所处的内存位置，安放forwarding pointer
-  *mem = reinterpret_cast<void*>(target_addr);
 }
 
 void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
@@ -73,6 +60,10 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   // 如果当前slot处指针指向的对象已经被转发
   MarkWord mark_word = PyObject::GetMarkWord(object);
   if (mark_word.IsForwardingAddress()) {
+#ifdef _DEBUG
+    std::cout << "find a forwarding pointer. target="
+              << mark_word.ToForwardingAddress().ptr() << std::endl;
+#endif
     *slot_ptr = mark_word.ToForwardingAddress();
     return;
   }
@@ -85,8 +76,16 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   std::memcpy(reinterpret_cast<void*>(target_addr),
               reinterpret_cast<void*>(object.ptr()), size);
 
+#ifdef _DEBUG
+  std::cout << "copy from " << object.ptr() << " to " << target_addr
+            << std::endl;
+#endif  // _DEBUG
+
   // 在原对象所处的内存位置，安放forwarding pointer
-  object->SetMapWordForwarded(object, Tagged<PyObject>(target_addr));
+  PyObject::SetMapWordForwarded(object, Tagged<PyObject>(target_addr));
+
+  // 更新存放PyObject*的slot
+  *slot_ptr = Tagged<PyObject>(target_addr);
 
   // 注意：我们这里并没有递归处理object的子引用
   // 这将在Scavenage算法的主循环中完成 (无递归)

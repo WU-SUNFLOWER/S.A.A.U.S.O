@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include "src/code/pyc-file-parser.h"
+#include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -47,6 +48,7 @@ void PyListKlass::Initialize() {
   vtable_.less = &Virtual_Less;
   vtable_.iter = &Virtual_Iter;
   vtable_.contains = &Virtual_Contains;
+  vtable_.equal = &Virtual_Equal;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 
@@ -203,19 +205,31 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
   return Universe::py_false_object_;
 }
 
+Tagged<PyBoolean> PyListKlass::Virtual_Equal(Handle<PyObject> self,
+                                             Handle<PyObject> target) {
+  auto list1 = Handle<PyList>::Cast(self);
+  auto list2 = Handle<PyList>::Cast(target);
+
+  if (list1->length() != list2->length()) {
+    return Universe::py_false_object_;
+  }
+
+  for (auto i = 0; i < list1->length(); ++i) {
+    if (IsPyFalse(PyObject::Equal(list1->Get(i), list2->Get(i)))) {
+      return Universe::py_false_object_;
+    }
+  }
+
+  return Universe::py_true_object_;
+}
+
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   return ObjectSizeAlign(sizeof(PyList));
 }
 
 void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  auto list = Tagged<PyList>::Cast(self);
-
-  for (auto i = 0; i < list->length(); ++i) {
-    v->VisitPointer(&list->array_[i]);
-  }
-
-  v->VisitRawMemory(list->data_slot_address(),
-                    list->length() * sizeof(Tagged<PyObject>));
+  assert(IsPyList(self));
+  v->VisitPointer(&Tagged<PyList>::Cast(self)->array_);
 }
 
 }  // namespace saauso::internal

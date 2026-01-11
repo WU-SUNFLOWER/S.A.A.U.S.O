@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <vector>
 
 #include "include/saauso-internal.h"
@@ -111,17 +112,45 @@ void Heap::IterateRoots(ObjectVisitor* v) {
 void Heap::DoScavenge() {
   ScavenageVisitor visitor;
 
+#ifdef _DEBUG
+  std::cout << "new_space_.SurvivorSpaceBase() = "
+            << new_space_.SurvivorSpaceBase() << std::endl;
+  std::cout << "new_space_.SurvivorSpaceTop() = "
+            << new_space_.SurvivorSpaceTop() << std::endl;
+
+  std::cout << "start to iterate root" << std::endl;
+#endif  //_DEBUG
+
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   IterateRoots(&visitor);
+
+#ifdef _DEBUG
+  std::cout << "finish to iterate root" << std::endl;
+#endif  //_DEBUG
 
   // 此时：
   // new_space_->SurvivorSpaceBase() 指向第一个被拷贝的root对象
   // new_space_->SurvivorSpaceTop() 指向最后一个被拷贝的root对象的末尾
-  Address scan_ptr = new_space_.SurvivorSpaceBase();
+  Address scan_ptr = ObjectSizeAlign(new_space_.SurvivorSpaceBase());
   Address threshold = new_space_.SurvivorSpaceTop();
+
+#ifdef _DEBUG
+  std::cout << "new_space_.SurvivorSpaceBase() = "
+            << new_space_.SurvivorSpaceBase() << std::endl;
+  std::cout << "ObjectSizeAlign(new_space_.SurvivorSpaceBase()) = "
+            << ObjectSizeAlign(new_space_.SurvivorSpaceBase()) << std::endl;
+  std::cout << "new_space_.SurvivorSpaceTop() = "
+            << new_space_.SurvivorSpaceTop() << std::endl;
+
+  std::cout << "start doing bfs" << std::endl;
+#endif  //_DEBUG
 
   // 只要scan_ptr还没追上threshold，说明还有对象没被扫描
   while (scan_ptr < threshold) {
+#ifdef _DEBUG
+    std::cout << "start visit object " << scan_ptr << std::endl;
+#endif  // _DEBUG
+
     // 获取当前要扫描的对象
     Tagged<PyObject> object(scan_ptr);
     size_t instance_size = PyObject::GetInstanceSize(object);
@@ -134,6 +163,11 @@ void Heap::DoScavenge() {
 
     // 可能又有新的对象被拷贝到survivor空间了，再次更新threshold
     threshold = new_space_.SurvivorSpaceTop();
+#ifdef _DEBUG
+    std::cout << "finish visit object " << scan_ptr << std::endl;
+    std::cout << "threshold " << threshold << " -> "
+              << new_space_.SurvivorSpaceTop() << std::endl;
+#endif  // _DEBUG
   }
 
   // 交换空间

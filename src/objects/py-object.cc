@@ -9,6 +9,7 @@
 #include "py-object.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-code-object-klass.h"
@@ -96,7 +97,13 @@ bool IsHeapObject(Tagged<PyObject> object) {
 }
 
 bool IsGcAbleObject(Tagged<PyObject> object) {
-  return !IsPySmi(object) && !IsPyBoolean(object) && !IsPyNone(object);
+  if (IsPySmi(object)) {
+    return false;
+  }
+  if (PyObject::GetMarkWord(object).IsForwardingAddress()) {
+    return true;
+  }
+  return !IsPyBoolean(object) && !IsPyNone(object);
 }
 
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PySmi)
@@ -343,11 +350,6 @@ void PyObject::DeletSubscr(Handle<PyObject> self,
 
   assert(GetKlass(*self)->vtable_.del_subscr);
   GetKlass(*self)->vtable_.del_subscr(self, subscr_name);
-}
-
-// python virtual function
-size_t PyObject::GetInstanceSize(Handle<PyObject> self) {
-  return GetInstanceSize(*self);
 }
 
 // python virtual function

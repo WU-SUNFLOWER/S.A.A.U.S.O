@@ -8,7 +8,7 @@
             "name": "(Windows) Launch MSVC",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/out/debug/saauso.exe",
+            "program": "${workspaceFolder}/out/debug/vm.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/out/debug",

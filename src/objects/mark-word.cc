@@ -6,9 +6,12 @@
 
 #include "include/saauso-internal.h"
 #include "src/handles/tagged.h"
+#include "src/heap/heap.h"
 #include "src/objects/klass.h"
 #include "src/objects/objects.h"
 #include "src/objects/py-object.h"
+#include "src/runtime/universe.h"
+
 
 namespace saauso::internal {
 
@@ -19,7 +22,8 @@ MarkWord MarkWord::FromKlass(const Tagged<Klass> klass) {
 
 // static
 MarkWord MarkWord::FromForwardingAddress(const Tagged<PyObject> target_object) {
-  assert(!IsHeapObject(target_object));
+  assert(IsHeapObject(target_object) &&
+         Universe::heap_->InNewSpaceSurvivor(target_object.ptr()));
   Address value = target_object.ptr() | kForwardingTag;
   return MarkWord(value);
 }
@@ -38,7 +42,7 @@ Tagged<Klass> MarkWord::ToKlass() const {
 }
 
 Tagged<PyObject> MarkWord::ToForwardingAddress() const {
-  assert(!IsForwardingAddress());
+  assert(IsForwardingAddress());
   Address value = value_ & (~kForwardingTagMask);
   assert(IsHeapObject(Tagged<PyObject>(value)));
   return Tagged<PyObject>(value);

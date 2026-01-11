@@ -14,7 +14,7 @@ namespace saauso::internal {
 
 class HandleScopeImplementer;
 
-class [[maybe_unused]] HandleScope {
+class HandleScope {
  public:
   struct State {
     Address* next{nullptr};

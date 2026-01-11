@@ -1,4 +1,5 @@
-#include <cstdio>
+#include <iostream>
+#include <string>
 
 #include "src/heap/heap.h"
 #include "src/objects/py-list.h"
@@ -11,39 +12,25 @@
 using namespace saauso::internal;
 
 int main() {
-  HandleScope scope;
-
   Universe::Genesis();
 
-  Handle<PyObject> object1 = PyString::NewInstance("Hello World");
-  Handle<PyObject> object2(PySmi::FromInt(1234));
-  Handle<PyBoolean> object3(Universe::py_true_object_);
-  Handle<PyBoolean> object4(Universe::py_false_object_);
-  Handle<PyNone> object5(Universe::py_none_object_);
-  Handle<PyObject> object6(PySmi::FromInt(3));
+  {
+    HandleScope scope;
+    constexpr int kLength = 5;
 
-  Handle<PyObject> object7 = PyObject::Mul(object2, object6);
+    Handle<PyList> list1 = PyList::NewInstance(kLength);
 
-  Handle<PyList> list = PyList::NewInstance(1);
-  PyList::Append(list, object1);
-  PyList::Append(list, object2);
-  PyList::Append(list, object3);
-  PyList::Append(list, object4);
-  PyList::Append(list, object5);
-  PyList::Append(list, object6);
-  PyList::Append(list, object7);
+    for (auto i = 0; i < kLength; ++i) {
+      HandleScope scope;
+      Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
+      PyList::Append(list1, elem);
+    }
 
-  for (auto i = 0; i < list->length(); ++i) {
-    PyObject::Print(list->Get(i));
-    std::putchar('\n');
-  }
+    Address a1 = (*list1).ptr();
+    Universe::heap_->CollectGarbage();
+    Address a2 = (*list1).ptr();
 
-  std::puts("----------------------------");
-
-  auto list2 = Handle<PyList>::Cast(PyObject::Add(list, list));
-  for (auto i = 0; i < list2->length(); ++i) {
-    PyObject::Print(list2->Get(i));
-    std::putchar('\n');
+    std::cout << "a1=" << a1 << ", a2=" << a2 << std::endl;
   }
 
   Universe::Destroy();

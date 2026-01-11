@@ -6,6 +6,7 @@
 
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/heap.h"
+#include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-float-klass.h"
