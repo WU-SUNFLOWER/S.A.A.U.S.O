@@ -41,14 +41,14 @@ void FixedArrayKlass::Finalize() {
 size_t FixedArrayKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   assert(IsFixedArray(self));
   return FixedArray::ComputeObjectSize(
-      Tagged<FixedArray>::Cast(self)->capacity());
+      Tagged<FixedArray>::cast(self)->capacity());
 }
 
 // static
 void FixedArrayKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
   assert(IsFixedArray(self));
 
-  auto fixed_array = Tagged<FixedArray>::Cast(self);
+  auto fixed_array = Tagged<FixedArray>::cast(self);
   // 扫描fixed array当中保存的数据
   v->VisitPointers(fixed_array->data(),
                    fixed_array->data() + fixed_array->capacity());

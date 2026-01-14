@@ -60,9 +60,9 @@ Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
 }
 
 // static
-Tagged<PyString> PyString::Cast(Tagged<PyObject> object) {
+Tagged<PyString> PyString::cast(Tagged<PyObject> object) {
   assert(IsPyString(object));
-  return Tagged<PyString>::Cast(object);
+  return Tagged<PyString>::cast(object);
 }
 
 // static

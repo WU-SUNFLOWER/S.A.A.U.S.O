@@ -66,6 +66,10 @@ source_set("saauso_sources") {
     "//src/objects/py-float-klass.h",
     "//src/objects/py-float.cc",
     "//src/objects/py-float.h",
+    "//src/objects/py-function-klass.cc",
+    "//src/objects/py-function-klass.h",
+    "//src/objects/py-function.cc",
+    "//src/objects/py-function.h",
     "//src/objects/py-list-klass.cc",
     "//src/objects/py-list-klass.h",
     "//src/objects/py-list.cc",
@@ -91,6 +95,8 @@ source_set("saauso_sources") {
     "//src/objects/py-type-object.cc",
     "//src/objects/py-type-object.h",
     "//src/objects/visitors.h",
+    "//src/runtime/native-functions.cc",
+    "//src/runtime/native-functions.h",
 
     # runtime (运行时)
     "//src/runtime/factory.h",

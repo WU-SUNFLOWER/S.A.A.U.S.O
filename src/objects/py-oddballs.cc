@@ -30,9 +30,9 @@ Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
 }
 
 // static
-Tagged<PyBoolean> PyBoolean::Cast(Tagged<PyObject> object) {
+Tagged<PyBoolean> PyBoolean::cast(Tagged<PyObject> object) {
   assert(IsPyBoolean(object));
-  return Tagged<PyBoolean>::Cast(object);
+  return Tagged<PyBoolean>::cast(object);
 }
 
 Tagged<PyBoolean> PyBoolean::Reverse() {
@@ -52,9 +52,9 @@ Tagged<PyNone> PyNone::NewInstance() {
 }
 
 // static
-Tagged<PyNone> PyNone::Cast(Tagged<PyObject> object) {
+Tagged<PyNone> PyNone::cast(Tagged<PyObject> object) {
   assert(IsPyNone(object));
-  return Tagged<PyNone>::Cast(object);
+  return Tagged<PyNone>::cast(object);
 }
 
 }  // namespace saauso::internal

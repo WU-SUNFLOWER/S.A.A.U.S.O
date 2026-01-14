@@ -46,8 +46,8 @@ void PyCodeObjectKlass::Initialize() {
 
 // static
 void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  auto code = Handle<PyCodeObject>::Cast(self);
-  auto file_name = Handle<PyString>(Tagged<PyString>::Cast(code->file_name_));
+  auto code = Handle<PyCodeObject>::cast(self);
+  auto file_name = Handle<PyString>(Tagged<PyString>::cast(code->file_name_));
   std::printf("<code object greet at 0x%p, file \"%.*s\", line %d>",
               reinterpret_cast<void*>((*code).ptr()),
               static_cast<int>(file_name->length()), file_name->buffer(),
@@ -66,7 +66,7 @@ size_t PyCodeObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 
 void PyCodeObjectKlass::Virtual_Iterate(Tagged<PyObject> self,
                                         ObjectVisitor* v) {
-  auto code = Tagged<PyCodeObject>::Cast(self);
+  auto code = Tagged<PyCodeObject>::cast(self);
   v->VisitPointer(&code->bytecodes_);
   v->VisitPointer(&code->names_);
   v->VisitPointer(&code->consts_);

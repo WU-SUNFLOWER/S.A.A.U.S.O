@@ -9,6 +9,8 @@
 #include "src/code/pyc-file-parser.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -20,6 +22,20 @@
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
+
+namespace {
+
+Handle<PyObject> NativeMethod_Append(Handle<PyList> args,
+                                     Handle<PyDict> kwargs) {
+  auto object = Handle<PyList>::cast(args->Get(0));
+  PyList::Append(object, args->Get(1));
+
+  return handle(Universe::py_none_object_);
+}
+
+}  // namespace
+
+////////////////////////////////////////////////////////////////////
 
 Tagged<PyListKlass> PyListKlass::instance_(nullptr);
 
@@ -56,6 +72,15 @@ void PyListKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
+  // 设置类属性
+  auto klass_properties = PyDict::NewInstance();
+
+  auto prop_name = PyString::NewInstance("append");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Append, prop_name));
+
+  set_klass_properties(klass_properties);
+
   // 设置类名
   set_name(PyString::NewInstance("list"));
 }
@@ -65,11 +90,11 @@ void PyListKlass::Finalize() {
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
-  return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::Cast(self)->length()));
+  return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
 }
 
 void PyListKlass::Virtual_Print(Handle<PyObject> self) {
-  auto list = Handle<PyList>::Cast(self);
+  auto list = Handle<PyList>::cast(self);
 
   std::printf("[");
 
@@ -87,8 +112,8 @@ void PyListKlass::Virtual_Print(Handle<PyObject> self) {
 
 Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
                                           Handle<PyObject> other) {
-  auto list1 = Handle<PyList>::Cast(self);
-  auto list2 = Handle<PyList>::Cast(other);
+  auto list1 = Handle<PyList>::cast(self);
+  auto list2 = Handle<PyList>::cast(other);
 
   auto new_result = PyList::NewInstance(list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
@@ -111,9 +136,9 @@ Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
     std::exit(1);
   }
 
-  auto list = Handle<PyList>::Cast(self);
+  auto list = Handle<PyList>::cast(self);
   auto decoded_coeff = std::max(static_cast<int64_t>(0),
-                                PySmi::ToInt(Handle<PySmi>::Cast(coeff)));
+                                PySmi::ToInt(Handle<PySmi>::cast(coeff)));
 
   auto result = PyList::NewInstance(list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
@@ -134,16 +159,16 @@ Handle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
     std::exit(1);
   }
 
-  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
-  return Handle<PyList>::Cast(self)->Get(decoded_subscr);
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
+  return Handle<PyList>::cast(self)->Get(decoded_subscr);
 }
 
 void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                       Handle<PyObject> subscr,
                                       Handle<PyObject> value) {
-  auto list = Handle<PyList>::Cast(self);
+  auto list = Handle<PyList>::cast(self);
 
-  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
     std::printf("IndexError: list assignment index out of range");
@@ -155,9 +180,9 @@ void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
 
 void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
                                     Handle<PyObject> subscr) {
-  auto list = Handle<PyList>::Cast(self);
+  auto list = Handle<PyList>::cast(self);
 
-  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::Cast(subscr));
+  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
     std::printf("IndexError: list assignment index out of range");
@@ -169,8 +194,8 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
 
 Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  auto list_l = Handle<PyList>::Cast(self);
-  auto list_r = Handle<PyList>::Cast(other);
+  auto list_l = Handle<PyList>::cast(self);
+  auto list_r = Handle<PyList>::cast(other);
   auto min_len = std::min(list_l->length(), list_r->length());
 
   for (auto i = 0; i < min_len; ++i) {
@@ -198,7 +223,7 @@ Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> self) {
 
 Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
                                                 Handle<PyObject> target) {
-  auto list = Handle<PyList>::Cast(self);
+  auto list = Handle<PyList>::cast(self);
   for (auto i = 0; i < list->length(); ++i) {
     auto result = PyObject::Equal(list->Get(i), target);
     if (IsPyTrue(result)) {
@@ -211,8 +236,8 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
 
 Tagged<PyBoolean> PyListKlass::Virtual_Equal(Handle<PyObject> self,
                                              Handle<PyObject> target) {
-  auto list1 = Handle<PyList>::Cast(self);
-  auto list2 = Handle<PyList>::Cast(target);
+  auto list1 = Handle<PyList>::cast(self);
+  auto list2 = Handle<PyList>::cast(target);
 
   if (list1->length() != list2->length()) {
     return Universe::py_false_object_;
@@ -233,7 +258,7 @@ size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 
 void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
   assert(IsPyList(self));
-  v->VisitPointer(&Tagged<PyList>::Cast(self)->array_);
+  v->VisitPointer(&Tagged<PyList>::cast(self)->array_);
 }
 
 }  // namespace saauso::internal

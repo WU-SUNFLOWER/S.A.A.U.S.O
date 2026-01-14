@@ -15,6 +15,7 @@ namespace saauso::internal {
 class PyObject;
 class PyString;
 class PyTypeObject;
+class PyDict;
 class PyBoolean;
 class ObjectVisitor;
 
@@ -126,6 +127,9 @@ class Klass : public Object {
   Handle<PyTypeObject> type_object();
   void set_type_object(Handle<PyTypeObject>);
 
+  Handle<PyDict> klass_properties();
+  void set_klass_properties(Handle<PyDict>);
+
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
 
@@ -156,6 +160,10 @@ class Klass : public Object {
                                               Handle<PyObject> other);
   static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
   static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
+
+ protected:
+  // PyDict* klass_properties_
+  Tagged<PyObject> klass_properties_{kNullAddress};
 
  private:
   // PyString* name_ 类型名，如"str"、"list"、"dict"等

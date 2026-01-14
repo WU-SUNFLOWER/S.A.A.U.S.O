@@ -84,7 +84,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
     Handle<PyObject> key(PySmi::FromInt(i));
     EXPECT_TRUE(IsPyTrue(dict->Contains(key)));
     Handle<PyObject> val = dict->Get(key);
-    EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(val)), i * 10);
+    EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
   }
 
   // Verify removed items are gone

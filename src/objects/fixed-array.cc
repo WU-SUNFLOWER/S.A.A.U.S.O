@@ -50,7 +50,7 @@ Handle<FixedArray> FixedArray::NewInstance(int64_t capacity,
 }
 
 // static
-Tagged<FixedArray> FixedArray::Cast(Tagged<PyObject> object) {
+Tagged<FixedArray> FixedArray::cast(Tagged<PyObject> object) {
   assert(IsFixedArray(object));
   return Tagged<FixedArray>(object.ptr());
 }

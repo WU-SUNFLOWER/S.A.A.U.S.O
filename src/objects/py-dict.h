@@ -14,7 +14,7 @@ class PyDict : public PyObject {
   static constexpr int64_t kMinimumCapacity = 8;
 
   static Handle<PyDict> NewInstance(int64_t init_capacity = kMinimumCapacity);
-  static Tagged<PyDict> Cast(Tagged<PyObject> object);
+  static Tagged<PyDict> cast(Tagged<PyObject> object);
 
   int64_t capacity() const;
 
@@ -36,7 +36,7 @@ class PyDict : public PyObject {
   static void ExpandImpl(Handle<PyDict> list);
 
   Handle<FixedArray> data() const {
-    return Handle<FixedArray>(Tagged<FixedArray>::Cast(data_));
+    return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
   }
 
   // FixedArray* data_

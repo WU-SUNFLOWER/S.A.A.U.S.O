@@ -11,6 +11,7 @@
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-float-klass.h"
+#include "src/objects/py-function-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
@@ -54,6 +55,10 @@ void Universe::InitMetaArea() {
   PY_TYPE_LIST(INIT_PY_KLASS)
 #undef INIT_PY_KLASS
 
+  // 特化klass初始化
+  NativeFunctionKlass::GetInstance()->Initialize();
+  MethodObjectKlass::GetInstance()->Initialize();
+
   string_table_ = new StringTable();
 }
 
@@ -62,6 +67,10 @@ void Universe::Destroy() {
 #define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
+
+  // 特化klass反初始化
+  NativeFunctionKlass::GetInstance()->Finalize();
+  MethodObjectKlass::GetInstance()->Finalize();
 
   delete string_table_;
 

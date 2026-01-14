@@ -206,7 +206,7 @@ Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
     }
     case kInCacheObjectFlag: {
       int index = reader_->ReadInt32();
-      tuple = Handle<PyList>::Cast(cache->Get(index));
+      tuple = Handle<PyList>::cast(cache->Get(index));
     }
     default:
       std::printf("unknown object type: %c\n", object_type);
@@ -304,12 +304,12 @@ Handle<PyString> PycFileParser::ParseName(Handle<PyList> string_table,
       break;
     case kInCacheObjectFlag: {
       int index = reader_->ReadInt32();
-      s = Handle<PyString>::Cast(string_table->Get(index));
+      s = Handle<PyString>::cast(string_table->Get(index));
       break;
     }
     case kInStringTableObjectFlag: {
       int index = reader_->ReadInt32();
-      s = Handle<PyString>::Cast(cache->Get(index));
+      s = Handle<PyString>::cast(cache->Get(index));
       break;
     }
   }
@@ -334,7 +334,7 @@ Handle<PyString> PycFileParser::ParseNoTable(Handle<PyList> string_table,
       break;
     case kInCacheObjectFlag: {
       int index = reader_->ReadInt32();
-      s = Handle<PyString>::Cast(cache->Get(index));
+      s = Handle<PyString>::cast(cache->Get(index));
       break;
     }
     default:

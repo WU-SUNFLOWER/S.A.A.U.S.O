@@ -59,9 +59,9 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
 }
 
 // static
-Tagged<PyCodeObject> PyCodeObject::Cast(Tagged<PyObject> object) {
+Tagged<PyCodeObject> PyCodeObject::cast(Tagged<PyObject> object) {
   assert(IsPyCodeObject(object));
-  return Tagged<PyCodeObject>::Cast(object);
+  return Tagged<PyCodeObject>::cast(object);
 }
 
 };  // namespace saauso::internal

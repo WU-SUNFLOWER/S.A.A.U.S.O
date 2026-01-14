@@ -29,7 +29,7 @@ class PyCodeObject : public PyObject {
                                           int line_no,
                                           Handle<PyString> no_table);
 
-  static Tagged<PyCodeObject> Cast(Tagged<PyObject> object);
+  static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 
   int arg_count_;          // 参数个数
   int posonly_arg_count_;  // 位置参数个数

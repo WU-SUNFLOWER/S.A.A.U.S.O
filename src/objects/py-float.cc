@@ -26,9 +26,9 @@ Handle<PyFloat> PyFloat::NewInstance(double value) {
 }
 
 // static
-Tagged<PyFloat> PyFloat::Cast(Tagged<PyObject> object) {
+Tagged<PyFloat> PyFloat::cast(Tagged<PyObject> object) {
   assert(IsPyFloat(object));
-  return Tagged<PyFloat>::Cast(object);
+  return Tagged<PyFloat>::cast(object);
 }
 
 }  // namespace saauso::internal

@@ -66,7 +66,7 @@ void PySmiKlass::Finalize() {
 ////////////////////////////////////////////////////////////////////
 
 void PySmiKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("%" PRId64, PySmi::Cast(*self).value());
+  std::printf("%" PRId64, PySmi::cast(*self).value());
 }
 
 // static
@@ -74,10 +74,10 @@ Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double value = self_value + Handle<PyFloat>::Cast(other)->value();
+    double value = self_value + Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
@@ -95,10 +95,10 @@ Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double value = self_value - Handle<PyFloat>::Cast(other)->value();
+    double value = self_value - Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
@@ -116,10 +116,10 @@ Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double value = self_value * Handle<PyFloat>::Cast(other)->value();
+    double value = self_value * Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
@@ -137,11 +137,11 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
     double value =
-        static_cast<double>(self_value) / Handle<PyFloat>::Cast(other)->value();
+        static_cast<double>(self_value) / Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
 
@@ -159,10 +159,10 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double other_value = Handle<PyFloat>::Cast(other)->value();
+    double other_value = Handle<PyFloat>::cast(other)->value();
     double value = PythonMod(self_value, other_value);
     return PyFloat::NewInstance(value);
   }
@@ -180,7 +180,7 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
 // static
 uint64_t PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
   // 对于负数，会被hash成一个巨大的正数
-  return PySmi::Cast(*self).value();
+  return PySmi::cast(*self).value();
 }
 
 // static
@@ -188,10 +188,10 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double other_value = Handle<PyFloat>::Cast(other)->value();
+    double other_value = Handle<PyFloat>::cast(other)->value();
     return Universe::ToPyBoolean(self_value > other_value);
   }
 
@@ -203,10 +203,10 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double other_value = Handle<PyFloat>::Cast(other)->value();
+    double other_value = Handle<PyFloat>::cast(other)->value();
     return Universe::ToPyBoolean(self_value < other_value);
   }
 
@@ -218,10 +218,10 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
                                             Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  int64_t self_value = PySmi::Cast(*self).value();
+  int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
-    double other_value = Handle<PyFloat>::Cast(other)->value();
+    double other_value = Handle<PyFloat>::cast(other)->value();
     return Universe::ToPyBoolean(self_value == other_value);
   }
 

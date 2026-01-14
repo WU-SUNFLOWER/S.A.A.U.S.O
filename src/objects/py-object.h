@@ -19,6 +19,7 @@ class PyObject;
 
 #define PY_TYPE_IN_HEAP_LIST(V) \
   V(PyTypeObject)               \
+  V(PyFunction)                 \
   V(PyFloat)                    \
   V(PyBoolean)                  \
   V(PyNone)                     \
@@ -89,6 +90,8 @@ class PyObject : public Object {
   static Handle<PyObject> Mul(Handle<PyObject> self, Handle<PyObject> other);
   static Handle<PyObject> Div(Handle<PyObject> self, Handle<PyObject> other);
   static Handle<PyObject> Mod(Handle<PyObject> self, Handle<PyObject> other);
+
+  static Handle<PyObject> Len(Handle<PyObject> self);
 
   // PyBoolean存活在永久区，不需要Handle进行保护，为了简单起见直接返回裸指针
   static Tagged<PyBoolean> Greater(Handle<PyObject> self,

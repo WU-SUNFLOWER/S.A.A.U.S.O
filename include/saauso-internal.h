@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-typedef uintptr_t Address;
+using Address =  uintptr_t;
 inline constexpr Address kNullAddress = 0;
 
 // Tag information for Smi.

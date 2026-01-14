@@ -4,12 +4,17 @@
 
 #include "src/runtime/interpreter.h"
 
+#include "native-functions.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-oddballs-klass.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
@@ -17,6 +22,8 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/native-functions.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
@@ -24,14 +31,36 @@ Interpreter::Interpreter() {
   HandleScope scope;
 
   Handle<PyDict> builtins = PyDict::NewInstance();
+
+  // 注册基础类型的klass
   PyDict::Put(builtins, PyString::NewInstance("int"),
               PySmiKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("str"),
               PyStringKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("list"),
               PyListKlass::GetInstance()->type_object());
+  PyDict::Put(builtins, PyString::NewInstance("bool"),
+              PyBooleanKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("dict"),
               PyDictKlass::GetInstance()->type_object());
+
+  // 注册oddballs
+  PyDict::Put(builtins, PyString::NewInstance("True"),
+              handle(Universe::py_true_object_));
+  PyDict::Put(builtins, PyString::NewInstance("False"),
+              handle(Universe::py_false_object_));
+  PyDict::Put(builtins, PyString::NewInstance("None"),
+              handle(Universe::py_none_object_));
+
+  // 注册native function
+  auto func_name = PyString::NewInstance("print");
+  PyDict::Put(builtins, func_name,
+              PyFunction::NewInstance(&Native_Print, func_name));
+  func_name = PyString::NewInstance("len");
+  PyDict::Put(builtins, func_name,
+              PyFunction::NewInstance(&Native_Len, func_name));
+
+  builtins_ = *builtins;
 }
 
 Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> func,

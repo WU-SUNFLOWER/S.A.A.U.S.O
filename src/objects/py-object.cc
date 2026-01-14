@@ -16,6 +16,8 @@
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
+#include "src/objects/py-function-klass.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
@@ -70,7 +72,7 @@ Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {
 
 Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
   assert(IsHeapObject(object));
-  return Handle<PyDict>(Tagged<PyDict>::Cast(object->properties_));
+  return Handle<PyDict>(Tagged<PyDict>::cast(object->properties_));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -139,8 +141,8 @@ void PyObject::Print(Handle<PyObject> self) {
 Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() +
-                                           PySmi::Cast(*other).value()));
+    return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() +
+                                           PySmi::cast(*other).value()));
   }
 
   HandleScope scope;
@@ -153,8 +155,8 @@ Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
 Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() -
-                                           PySmi::Cast(*other).value()));
+    return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() -
+                                           PySmi::cast(*other).value()));
   }
 
   HandleScope scope;
@@ -167,8 +169,8 @@ Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
 Handle<PyObject> PyObject::Mul(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() *
-                                           PySmi::Cast(*other).value()));
+    return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() *
+                                           PySmi::cast(*other).value()));
   }
 
   HandleScope scope;
@@ -190,7 +192,7 @@ Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     auto result =
-        PythonMod(PySmi::Cast(*self).value(), PySmi::Cast(*other).value());
+        PythonMod(PySmi::cast(*self).value(), PySmi::cast(*other).value());
     return Handle<PyObject>(PySmi::FromInt(result));
   }
 
@@ -201,12 +203,20 @@ Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
 }
 
 // python virtual function
+Handle<PyObject> PyObject::Len(Handle<PyObject> self) {
+  HandleScope scope;
+
+  assert(GetKlass(*self)->vtable_.len);
+  return GetKlass(*self)->vtable_.len(self).EscapeFrom(&scope);
+}
+
+// python virtual function
 Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::Cast(*self).value() >
-                                 PySmi::Cast(*other).value());
+    return Universe::ToPyBoolean(PySmi::cast(*self).value() >
+                                 PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -220,8 +230,8 @@ Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
                                  Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::Cast(*self).value() <
-                                 PySmi::Cast(*other).value());
+    return Universe::ToPyBoolean(PySmi::cast(*self).value() <
+                                 PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -235,8 +245,8 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
                                   Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::Cast(*self).value() ==
-                                 PySmi::Cast(*other).value());
+    return Universe::ToPyBoolean(PySmi::cast(*self).value() ==
+                                 PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -250,8 +260,8 @@ Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
                                      Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::Cast(*self).value() !=
-                                 PySmi::Cast(*other).value());
+    return Universe::ToPyBoolean(PySmi::cast(*self).value() !=
+                                 PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -265,8 +275,8 @@ Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::Cast(*self).value() >=
-                                 PySmi::Cast(*other).value());
+    return Universe::ToPyBoolean(PySmi::cast(*self).value() >=
+                                 PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -280,8 +290,8 @@ Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::Cast(*self).value() <=
-                                 PySmi::Cast(*other).value());
+    return Universe::ToPyBoolean(PySmi::cast(*self).value() <=
+                                 PySmi::cast(*other).value());
   }
 
   HandleScope scope;

@@ -40,9 +40,9 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
 }
 
 // static
-Tagged<PyList> PyList::Cast(Tagged<PyObject> object) {
+Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
   assert(IsPyList(object));
-  return Tagged<PyList>::Cast(object);
+  return Tagged<PyList>::cast(object);
 }
 
 /////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
   }
 
   self->array()->Set(self->length_++,
-                    value.IsNull() ? Tagged<PyObject>::Null() : *value);
+                     value.IsNull() ? Tagged<PyObject>::Null() : *value);
 
   WRITE_BARRIER;
 }
@@ -124,11 +124,11 @@ void PyList::Insert(Handle<PyList> self,
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
-  int64_t new_capacity =
-      std::max(kMinimumCapacity, list->capacity() << 1);
+  int64_t new_capacity = std::max(kMinimumCapacity, list->capacity() << 1);
 
   Handle<FixedArray> old_array(list->array());
-  Handle<FixedArray> new_array = FixedArray::NewInstance(new_capacity, old_array);
+  Handle<FixedArray> new_array =
+      FixedArray::NewInstance(new_capacity, old_array);
 
   list->array_ = *new_array;
   WRITE_BARRIER;

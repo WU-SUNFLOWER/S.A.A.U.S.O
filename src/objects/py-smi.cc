@@ -34,7 +34,7 @@ Tagged<PySmi> PySmi::FromInt(int64_t value) {
 }
 
 // 将裸的Tagged<PyObject>指针转成Tagged<PySmi>
-Tagged<PySmi> PySmi::Cast(Tagged<PyObject> object) {
+Tagged<PySmi> PySmi::cast(Tagged<PyObject> object) {
   assert(object.IsSmi());
   return Tagged<PySmi>(object.ptr());
 }

@@ -57,7 +57,7 @@ VirtualTable::VirtualTable()
 ///////////////////////////////////////////////////////////////////////
 
 Handle<PyString> Klass::name() {
-  return Handle<PyString>(Tagged<PyString>::Cast(name_));
+  return Handle<PyString>(Tagged<PyString>::cast(name_));
 }
 
 void Klass::set_name(Handle<PyString> name) {
@@ -65,16 +65,25 @@ void Klass::set_name(Handle<PyString> name) {
 }
 
 Handle<PyTypeObject> Klass::type_object() {
-  return Handle<PyTypeObject>(Tagged<PyTypeObject>::Cast(name_));
+  return Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(name_));
 }
 
 void Klass::set_type_object(Handle<PyTypeObject> type_object) {
   type_object_ = *type_object;
 }
 
+Handle<PyDict> Klass::klass_properties() {
+  return handle(Tagged<PyDict>::cast(klass_properties_));
+}
+
+void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
+  type_object_ = *klass_properties;
+}
+
 void Klass::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&name_);
   v->VisitPointer(&type_object_);
+  v->VisitPointer(&klass_properties_);
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -88,7 +97,7 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
   if (!IsPyNone(func)) {
     Handle<PyObject> s =
         Universe::interpreter_->CallVirtual(func, Handle<PyList>::Null());
-    PyObject::Print(Handle<PyString>::Cast(s));
+    PyObject::Print(Handle<PyString>::cast(s));
     return;
   }
 
@@ -114,7 +123,7 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
   }
 
   return Universe::interpreter_->CallVirtual(callable,
-                                             Handle<PyList>::Cast(args));
+                                             Handle<PyList>::cast(args));
 }
 
 Handle<PyObject> Klass::Virtual_Default_GetAttr(

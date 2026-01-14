@@ -35,9 +35,9 @@ TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
   ASSERT_TRUE(IsPySmi(v1));
   ASSERT_TRUE(IsPySmi(v2));
 
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v0)), 0);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v1)), 1234);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v2)), -5678);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 0);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 1234);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v2)), -5678);
 }
 
 TEST_F(PySmiTest, IsGcAbleObjectIsFalseForSmi) {
@@ -62,10 +62,10 @@ TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
   ASSERT_TRUE(IsPySmi(mul));
   ASSERT_TRUE(IsPySmi(mod));
 
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(add)), 10);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(sub)), 4);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(mul)), 21);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(mod)), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(add)), 10);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(sub)), 4);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(mul)), 21);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(mod)), 1);
 }
 
 TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
@@ -76,7 +76,7 @@ TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
   auto mod = PyObject::Mod(a, b);
 
   ASSERT_TRUE(IsPySmi(mod));
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(mod)), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(mod)), 2);
 }
 
 TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
@@ -113,11 +113,11 @@ TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
   ASSERT_TRUE(IsPyFloat(r4));
   ASSERT_TRUE(IsPyFloat(r5));
 
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r1)->value(), 10.25);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r2)->value(), 9.75);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r3)->value(), 2.5);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r4)->value(), 40.0);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r5)->value(), 0.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r1)->value(), 10.25);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r2)->value(), 9.75);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r3)->value(), 2.5);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r4)->value(), 40.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r5)->value(), 0.0);
 }
 
 TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {

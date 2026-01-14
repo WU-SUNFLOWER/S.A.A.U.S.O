@@ -59,21 +59,21 @@ void PyBooleanKlass::Finalize() {
 
 // static
 void PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf(Handle<PyBoolean>::Cast(self)->value() ? "True" : "False");
+  std::printf(Handle<PyBoolean>::cast(self)->value() ? "True" : "False");
 }
 
 // static
 Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
-  bool v = Handle<PyBoolean>::Cast(self)->value();
+  bool v = Handle<PyBoolean>::cast(self)->value();
 
   bool result = false;
   if (IsPySmi(other)) {
-    result = PySmi::ToInt(Handle<PySmi>::Cast(other)) == v;
+    result = PySmi::ToInt(Handle<PySmi>::cast(other)) == v;
   } else if (IsPyFloat(other)) {
-    result = Handle<PyFloat>::Cast(other)->value() == v;
+    result = Handle<PyFloat>::cast(other)->value() == v;
   } else if (IsPyBoolean(other)) {
-    result = Handle<PyBoolean>::Cast(other)->value() == v;
+    result = Handle<PyBoolean>::cast(other)->value() == v;
   }
 
   return Universe::ToPyBoolean(result);
@@ -87,7 +87,7 @@ Tagged<PyBoolean> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 // static
 uint64_t PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
-  return Handle<PyBoolean>::Cast(self)->value();
+  return Handle<PyBoolean>::cast(self)->value();
 }
 
 ///////////////////////////////////////////////////////////////

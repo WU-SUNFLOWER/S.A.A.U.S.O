@@ -131,7 +131,7 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
   Handle<PyObject> result = PyObject::Add(left, right);
 
   ASSERT_TRUE(IsPyString(result));
-  ExpectStringEquals(Handle<PyString>::Cast(result), "Hello World");
+  ExpectStringEquals(Handle<PyString>::cast(result), "Hello World");
 }
 
 TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
@@ -143,7 +143,7 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   Handle<PyObject> result = PyObject::Subscr(s, index);
   ASSERT_TRUE(IsPyString(result));
 
-  auto char_str = Handle<PyString>::Cast(result);
+  auto char_str = Handle<PyString>::cast(result);
   ASSERT_EQ(char_str->length(), 1);
   EXPECT_EQ(char_str->Get(0), 'b');
 }

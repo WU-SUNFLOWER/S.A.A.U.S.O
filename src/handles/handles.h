@@ -69,9 +69,9 @@ class Handle {
   Tagged<T> operator*() const { return Tagged<T>(*location_); }
 
   template <class S>
-  static Handle<T> Cast(Handle<S> that) {
-    T::Cast(*that);  // 这行代码起到断言的作用
-    return Handle<T>(Tagged<T>::Cast(*that));
+  static Handle<T> cast(Handle<S> that) {
+    T::cast(*that);  // 这行代码起到断言的作用
+    return Handle<T>(Tagged<T>::cast(*that));
   }
 
   bool IsNull() const { return location_ == nullptr; }

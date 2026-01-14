@@ -63,9 +63,9 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
 }
 
 // static
-Tagged<PyDict> PyDict::Cast(Tagged<PyObject> object) {
+Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
   assert(IsPyDict(object));
-  return Tagged<PyDict>::Cast(object);
+  return Tagged<PyDict>::cast(object);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ void PyDict::Put(Handle<PyObject> object,
   assert(!key.IsNull());
   assert(!value.IsNull());
 
-  auto dict = Handle<PyDict>::Cast(object);
+  auto dict = Handle<PyDict>::cast(object);
   // 超出装填因子系数，自动进行扩容
   if (dict->occupied_ + 1 > dict->capacity() * kMaxLoadFactor) {
     ExpandImpl(dict);

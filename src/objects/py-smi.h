@@ -34,7 +34,7 @@ class PySmi : public PyObject {
   static Tagged<PySmi> FromInt(int64_t value);
 
   // 将裸的Tagged<PyObject>指针转成Tagged<PySmi>
-  static Tagged<PySmi> Cast(Tagged<PyObject> object);
+  static Tagged<PySmi> cast(Tagged<PyObject> object);
 };
 
 }  // namespace saauso::internal

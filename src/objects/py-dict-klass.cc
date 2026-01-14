@@ -11,6 +11,8 @@
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
+#include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -19,6 +21,25 @@
 #include "src/runtime/universe.h"
 
 namespace saauso::internal {
+
+namespace {
+
+Handle<PyObject> NativeMethod_SetDefault(Handle<PyList> args,
+                                         Handle<PyDict> kwargs) {
+  auto object = Handle<PyDict>::cast(args->Get(0));
+  auto key = args->Get(1);
+  auto value = args->Get(2);
+
+  if (IsPyFalse(object->Contains(key))) {
+    PyDict::Put(object, key, value);
+  }
+
+  return handle(Universe::py_none_object_);
+}
+
+}  // namespace
+
+////////////////////////////////////////////////////////////////////
 
 Tagged<PyDictKlass> PyDictKlass::instance_(kNullAddress);
 
@@ -47,6 +68,14 @@ void PyDictKlass::Initialize() {
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 
+  auto klass_properties = PyDict::NewInstance();
+
+  auto prop_name = PyString::NewInstance("setdefault");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_SetDefault, prop_name));
+
+  set_klass_properties(klass_properties);
+
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -56,7 +85,7 @@ void PyDictKlass::Initialize() {
 
 // static
 void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
-  auto dict = Handle<PyDict>::Cast(self);
+  auto dict = Handle<PyDict>::cast(self);
   std::printf("{");
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
@@ -76,7 +105,7 @@ void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
 
 // static
 Handle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
-  auto value = Handle<PyDict>::Cast(self)->occupied();
+  auto value = Handle<PyDict>::cast(self)->occupied();
   return Handle<PyObject>(PySmi::FromInt(value));
 }
 
@@ -94,8 +123,8 @@ Tagged<PyBoolean> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
     return Universe::py_false_object_;
   }
 
-  auto d1 = Handle<PyDict>::Cast(self);
-  auto d2 = Handle<PyDict>::Cast(other);
+  auto d1 = Handle<PyDict>::cast(self);
+  auto d2 = Handle<PyDict>::cast(other);
 
   if (d1->occupied() != d2->occupied()) {
     return Universe::py_false_object_;
@@ -130,7 +159,7 @@ Tagged<PyBoolean> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
 // static
 Handle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
-  auto result = Handle<PyDict>::Cast(self)->Get(subscr);
+  auto result = Handle<PyDict>::cast(self)->Get(subscr);
   if (result.IsNull()) {
     std::printf("KeyError: ");
     PyObject::Print(subscr);
@@ -150,7 +179,7 @@ void PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
 // static
 void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
                                        Handle<PyObject> subscr) {
-  auto dict = Handle<PyDict>::Cast(self);
+  auto dict = Handle<PyDict>::cast(self);
   if (IsPyFalse(dict->Contains(subscr))) {
     std::printf("KeyError: ");
     PyObject::Print(subscr);
@@ -163,7 +192,7 @@ void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                                 Handle<PyObject> subscr) {
-  return Handle<PyDict>::Cast(self)->Contains(subscr);
+  return Handle<PyDict>::cast(self)->Contains(subscr);
 }
 
 // static
@@ -173,7 +202,7 @@ size_t PyDictKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 
 // static
 void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  auto dict = Tagged<PyDict>::Cast(self);
+  auto dict = Tagged<PyDict>::cast(self);
   v->VisitPointer(&dict->data_);
 }
 

@@ -10,7 +10,6 @@
 
 #include "include/saauso-internal.h"
 
-
 namespace saauso::internal {
 
 /////////////////////////////////// 魔法开始 ///////////////////////////////////
@@ -84,7 +83,7 @@ class Tagged : public TaggedBase<T> {
   // 警告：Tagged在语义上等价于C++中的裸指针
   // 对它执行Cast，语义相当于C++中的reinterpret_cast！！！
   template <class S>
-  static Tagged<T> Cast(Tagged<S> that) {
+  static Tagged<T> cast(Tagged<S> that) {
     return Tagged<T>(reinterpret_cast<T*>(that.ptr()));
   }
 
@@ -108,14 +107,14 @@ class Tagged<PySmi> : public TaggedBase<PySmi> {
   bool IsSmi() const { return true; }
   int64_t value() const { return AddressToSmi(this->ptr()); }
 
-  // 只允许Tagged<PySmi>::Cast(Tagged<PyObject>)
-  static Tagged<PySmi> Cast(Tagged<PyObject> that) {
+  // 只允许Tagged<PySmi>::cast(Tagged<PyObject>)
+  static Tagged<PySmi> cast(Tagged<PyObject> that) {
     return Tagged<PySmi>(that.ptr());
   }
 
-  // 封禁掉其他的Tagged<PySmi>::Cast(Tagged<xxxx>)
+  // 封禁掉其他的Tagged<PySmi>::cast(Tagged<xxxx>)
   template <typename T>
-  static Tagged<PySmi> Cast(Tagged<T>) = delete;
+  static Tagged<PySmi> cast(Tagged<T>) = delete;
 
   // 禁用指针操作，因为 Smi 不是指针
   PySmi* operator->() const = delete;

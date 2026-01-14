@@ -19,7 +19,7 @@ class PyList : public PyObject {
   static constexpr int64_t kMinimumCapacity = 2;
 
   static Handle<PyList> NewInstance(int64_t init_capacity = kMinimumCapacity);
-  static Tagged<PyList> Cast(Tagged<PyObject> object);
+  static Tagged<PyList> cast(Tagged<PyObject> object);
 
   // 以下方法均不会触发GC
   // 但为了避免调用方拿到Tagged<PyObject>裸指针后意外触发GC，导致裸指针变成悬空指针，
@@ -43,13 +43,13 @@ class PyList : public PyObject {
     assert(length_ <= capacity());
     return length_ == capacity();
   }
-  
+
   static void Append(Handle<PyList> self, Handle<PyObject> value);
   static void Insert(Handle<PyList> self,
                      int64_t index,
                      Handle<PyObject> value);
 
-  Tagged<FixedArray> array() const { return Tagged<FixedArray>::Cast(array_); }
+  Tagged<FixedArray> array() const { return Tagged<FixedArray>::cast(array_); }
 
  private:
   friend class PyListKlass;

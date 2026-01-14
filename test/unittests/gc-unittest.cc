@@ -222,7 +222,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
 
   auto payload = dict->Get(key);
   ASSERT_FALSE(payload.IsNull());
-  auto payload_list = Handle<PyList>::Cast(payload);
+  auto payload_list = Handle<PyList>::cast(payload);
   EXPECT_EQ(payload_list->length(), kCount);
 
   for (int i = 0; i < kCount; ++i) {
@@ -295,7 +295,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
     HandleScope inner_scope;
     auto v = list->Get(i);
     ASSERT_TRUE(IsPySmi(v));
-    EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v)), i);
+    EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v)), i);
   }
 }
 

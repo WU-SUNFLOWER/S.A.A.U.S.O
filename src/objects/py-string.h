@@ -22,7 +22,7 @@ class PyString : public PyObject {
                                       int64_t str_length,
                                       bool in_meta_space = false);
 
-  static Tagged<PyString> Cast(Tagged<PyObject> object);
+  static Tagged<PyString> cast(Tagged<PyObject> object);
 
   static size_t ComputeObjectSize(int64_t str_length);
 

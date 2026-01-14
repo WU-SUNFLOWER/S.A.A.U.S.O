@@ -51,11 +51,11 @@ TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
   ASSERT_TRUE(IsPyFloat(div));
   ASSERT_TRUE(IsPyFloat(mod));
 
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(add)->value(), 14.0);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(sub)->value(), 6.0);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(mul)->value(), 40.0);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(div)->value(), 2.5);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(mod)->value(), 2.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(add)->value(), 14.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(sub)->value(), 6.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(mul)->value(), 40.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(div)->value(), 2.5);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(mod)->value(), 2.0);
 }
 
 TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
@@ -79,12 +79,12 @@ TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
   ASSERT_TRUE(IsPyFloat(r5));
   ASSERT_TRUE(IsPyFloat(r6));
 
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r1)->value(), 5.5);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r2)->value(), 1.5);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r3)->value(), 7.0);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r4)->value(), 1.75);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r5)->value(), 5.5);
-  EXPECT_DOUBLE_EQ(Handle<PyFloat>::Cast(r6)->value(), 7.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r1)->value(), 5.5);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r2)->value(), 1.5);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r3)->value(), 7.0);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r4)->value(), 1.75);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r5)->value(), 5.5);
+  EXPECT_DOUBLE_EQ(Handle<PyFloat>::cast(r6)->value(), 7.0);
 }
 
 TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
@@ -95,12 +95,15 @@ TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
   Handle<PyObject> i10(PySmi::FromInt(10));
 
   EXPECT_EQ(PyObject::Equal(f10, i10).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::NotEqual(f11, i10).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::NotEqual(f11, i10).ptr(),
+            Universe::py_true_object_.ptr());
 
   EXPECT_EQ(PyObject::Less(f10, f11).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::LessEqual(f10, i10).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::LessEqual(f10, i10).ptr(),
+            Universe::py_true_object_.ptr());
   EXPECT_EQ(PyObject::Greater(f11, f10).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::GreaterEqual(f10, i10).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::GreaterEqual(f10, i10).ptr(),
+            Universe::py_true_object_.ptr());
 }
 
 }  // namespace saauso::internal

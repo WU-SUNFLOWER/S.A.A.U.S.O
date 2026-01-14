@@ -8,6 +8,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 
 namespace saauso::internal {
@@ -32,6 +33,8 @@ void PyTypeObjectKlass::Initialize() {
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
+  vtable_.instance_size = &Virtual_InstanceSize;
+  vtable_.iterate = &Virtual_Iterate;
 
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
@@ -40,17 +43,29 @@ void PyTypeObjectKlass::Initialize() {
   set_name(PyString::NewInstance("type"));
 }
 
-// static
 void PyTypeObjectKlass::Finalize() {
   instance_ = Tagged<PyTypeObjectKlass>::Null();
 }
 
+///////////////////////////////////////////////////////////////////////////
+
 // static
 void PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  auto type_object = Handle<PyTypeObject>::Cast(self);
+  auto type_object = Handle<PyTypeObject>::cast(self);
   auto type_name = type_object->own_klass()->name();
   std::printf("<class '%.*s'>", static_cast<int>(type_name->length()),
               type_name->buffer());
+}
+
+// static
+size_t PyTypeObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
+  return sizeof(PyTypeObject);
+}
+
+// static
+void PyTypeObjectKlass::Virtual_Iterate(Tagged<PyObject> self,
+                                        ObjectVisitor* v) {
+  // do nothing
 }
 
 }  // namespace saauso::internal

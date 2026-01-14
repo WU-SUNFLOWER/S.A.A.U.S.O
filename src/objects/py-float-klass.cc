@@ -24,11 +24,11 @@ namespace {
 
 double ExtractValue(Handle<PyObject> object) {
   if (IsPyFloat(object)) {
-    return Handle<PyFloat>::Cast(object)->value();
+    return Handle<PyFloat>::cast(object)->value();
   }
 
   if (IsPySmi(object)) {
-    return PySmi::ToInt(Handle<PySmi>::Cast(object));
+    return PySmi::ToInt(Handle<PySmi>::cast(object));
   }
 
   std::printf(
@@ -91,14 +91,14 @@ void PyFloatKlass::Finalize() {
 ////////////////////////////////////////////////////////////////////
 
 void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("%g", PyFloat::Cast(*self)->value());
+  std::printf("%g", PyFloat::cast(*self)->value());
 }
 
 // static
 Handle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value + other_value);
 }
@@ -107,7 +107,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
 Handle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value - other_value);
 }
@@ -116,7 +116,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
 Handle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value * other_value);
 }
@@ -125,7 +125,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
 Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
     std::printf("ZeroDivisionError: float division by zero");
@@ -138,7 +138,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
 Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
     std::printf("ZeroDivisionError: float modulo");
@@ -151,7 +151,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
 Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value > other_value);
 }
@@ -160,7 +160,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
 Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
                                              Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value < other_value);
 }
@@ -169,7 +169,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
 Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value == other_value);
 }
@@ -178,7 +178,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
 Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                  Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::Cast(self)->value();
+  double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return Universe::ToPyBoolean(self_value != other_value);
 }

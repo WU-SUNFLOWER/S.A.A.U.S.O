@@ -65,12 +65,15 @@ TEST_F(PyListTest, SetRemoveClearWork) {
   PyList::Append(list, c);
 
   list->Set(1, a);
-  EXPECT_EQ(PyObject::Equal(list->Get(1), a).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Equal(list->Get(1), a).ptr(),
+            Universe::py_true_object_.ptr());
 
   list->Remove(0);
   EXPECT_EQ(list->length(), 2);
-  EXPECT_EQ(PyObject::Equal(list->Get(0), a).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Equal(list->Get(1), c).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Equal(list->Get(0), a).ptr(),
+            Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Equal(list->Get(1), c).ptr(),
+            Universe::py_true_object_.ptr());
 
   list->Clear();
   EXPECT_EQ(list->length(), 0);
@@ -90,9 +93,9 @@ TEST_F(PyListTest, InsertWorksInTheMiddle) {
 
   PyList::Insert(list, 1, b);
   EXPECT_EQ(list->length(), 3);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(list->Get(0))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(list->Get(1))), 2);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(list->Get(2))), 3);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(0))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(1))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(2))), 3);
 }
 
 TEST_F(PyListTest, AppendTriggersExpand) {
@@ -121,7 +124,7 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
   auto combined = PyObject::Add(lhs, rhs);
 
   ASSERT_TRUE(IsPyList(combined));
-  auto combined_list = Handle<PyList>::Cast(combined);
+  auto combined_list = Handle<PyList>::cast(combined);
   EXPECT_EQ(combined_list->length(), 4);
   EXPECT_EQ(list->length(), 2);
 }
@@ -138,13 +141,13 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
   auto repeated = PyObject::Mul(lhs, coeff);
 
   ASSERT_TRUE(IsPyList(repeated));
-  auto repeated_list = Handle<PyList>::Cast(repeated);
+  auto repeated_list = Handle<PyList>::cast(repeated);
   ASSERT_EQ(repeated_list->length(), 6);
 
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(repeated_list->Get(0))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(repeated_list->Get(1))), 2);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(repeated_list->Get(2))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(repeated_list->Get(3))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(0))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(1))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(2))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(3))), 2);
 }
 
 TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
@@ -159,16 +162,16 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   Handle<PyObject> index1(PySmi::FromInt(1));
 
   auto v0 = PyObject::Subscr(obj, index0);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v0)), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
 
   PyObject::StoreSubscr(obj, index1, Handle<PyObject>(PySmi::FromInt(42)));
   auto v1 = PyObject::Subscr(obj, index1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v1)), 42);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 42);
 
   PyObject::DeletSubscr(obj, index0);
-  EXPECT_EQ(Handle<PyList>::Cast(obj)->length(), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(Handle<PyList>::Cast(obj)->Get(0))),
-            42);
+  EXPECT_EQ(Handle<PyList>::cast(obj)->length(), 1);
+  EXPECT_EQ(
+      PySmi::ToInt(Handle<PySmi>::cast(Handle<PyList>::cast(obj)->Get(0))), 42);
 }
 
 TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
@@ -188,8 +191,9 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
 
-  EXPECT_EQ(PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2)).ptr(),
-            Universe::py_true_object_.ptr());
+  EXPECT_EQ(
+      PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2)).ptr(),
+      Universe::py_true_object_.ptr());
 }
 
 TEST_F(PyListTest, PyObjectLessIsLexicographic) {

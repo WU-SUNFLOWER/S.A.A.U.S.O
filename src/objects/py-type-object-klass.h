@@ -9,6 +9,8 @@
 
 namespace saauso::internal {
 
+class ObjectVisitor;
+
 class PyTypeObjectKlass : public Klass {
  public:
   static Tagged<PyTypeObjectKlass> GetInstance();
@@ -22,6 +24,8 @@ class PyTypeObjectKlass : public Klass {
   static Tagged<PyTypeObjectKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
+  static size_t Virtual_InstanceSize(Tagged<PyObject> self);
+  static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
 
 }  // namespace saauso::internal
