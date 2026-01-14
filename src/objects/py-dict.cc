@@ -117,8 +117,8 @@ void PyDict::Remove(Handle<PyObject> key) {
       uint64_t hole = index;
       uint64_t next = GetProbe(hole, mask);
 
-      while (!(*GET_DICT_KEY(this, next)).IsNull()) {
-        Handle<PyObject> next_key = GET_DICT_KEY(this, next);
+      Handle<PyObject> next_key = GET_DICT_KEY(this, next);
+      while (!(*next_key).IsNull()) {
         uint64_t next_hash = PyObject::Hash(next_key);
         uint64_t ideal = next_hash & mask;
 
@@ -138,6 +138,7 @@ void PyDict::Remove(Handle<PyObject> key) {
         }
 
         next = GetProbe(next, mask);
+        next_key = GET_DICT_KEY(this, next);
       }
       return;
     }

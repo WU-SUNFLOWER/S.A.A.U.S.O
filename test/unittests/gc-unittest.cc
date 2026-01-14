@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 
 #include <cstring>
+#include <string>
 
 #include "gtest/gtest.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -104,6 +106,40 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
 
   EXPECT_PY_TRUE(PyObject::Equal(list1->Get(0), content));
   EXPECT_PY_TRUE(PyObject::Equal(list2->Get(0), content));
+}
+
+TEST_F(GcTest, CopyGcTestForPyDict) {
+  HandleScope scope;
+
+  Handle<PyDict> dict = PyDict::NewInstance();
+  Address dict_addr_before = (*dict).ptr();
+
+  constexpr int kCount = 32;
+  for (int i = 0; i < kCount; ++i) {
+    HandleScope inner_scope;
+    Handle<PyObject> key = PyString::NewInstance(
+        std::string("k").append(std::to_string(i)).c_str());
+    Handle<PyObject> value = PyString::NewInstance(
+        std::string("v").append(std::to_string(i)).c_str());
+    PyDict::Put(dict, key, value);
+  }
+
+  Universe::heap_->CollectGarbage();
+
+  EXPECT_NE(dict_addr_before, (*dict).ptr());
+  EXPECT_EQ(dict->occupied(), kCount);
+
+  for (int i = 0; i < kCount; ++i) {
+    HandleScope inner_scope;
+    Handle<PyObject> query_key = PyString::NewInstance(
+        std::string("k").append(std::to_string(i)).c_str());
+    Handle<PyObject> expected_value = PyString::NewInstance(
+        std::string("v").append(std::to_string(i)).c_str());
+
+    auto actual_value = dict->Get(query_key);
+    EXPECT_FALSE(actual_value.IsNull());
+    EXPECT_PY_TRUE(PyObject::Equal(actual_value, expected_value));
+  }
 }
 
 }  // namespace saauso::internal
