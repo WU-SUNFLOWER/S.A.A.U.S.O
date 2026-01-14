@@ -247,8 +247,8 @@ Tagged<PyBoolean> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
-            IsPyFalse(Virtual_Less(self, other)));
+  bool v = (IsPyTrue(Virtual_Less(self, other)) ||
+            IsPyTrue(Virtual_Equal(self, other)));
 
   return Universe::ToPyBoolean(v);
 }

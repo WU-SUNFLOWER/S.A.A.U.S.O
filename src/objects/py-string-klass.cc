@@ -65,6 +65,9 @@ Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
 
 Tagged<PyBoolean> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
                                                Handle<PyObject> other) {
+  if (!IsPyString(other)) {
+    return Universe::py_false_object_;
+  }
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(s1->IsEqualTo(*s2));
@@ -72,6 +75,9 @@ Tagged<PyBoolean> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
 
 Tagged<PyBoolean> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                   Handle<PyObject> other) {
+  if (!IsPyString(other)) {
+    return Universe::py_true_object_;
+  }
   auto s1 = Handle<PyString>::Cast(self);
   auto s2 = Handle<PyString>::Cast(other);
   return Universe::ToPyBoolean(!s1->IsEqualTo(*s2));

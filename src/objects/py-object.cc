@@ -127,7 +127,7 @@ void PyObject::Print(Handle<PyObject> self) {
 // python virtual function
 Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi(*self) && IsPySmi(*self)) {
+  if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::Cast(*self).value() +
                                            PySmi::Cast(*other).value()));
   }

@@ -112,7 +112,10 @@ executable("ut") {
     "//test/unittests/gc-unittest.cc",
     "//test/unittests/handle-unittest.cc",
     "//test/unittests/py-dict-unittest.cc",
-    "//test/unittests/py-objects-unittest.cc",
+    "//test/unittests/py-float-unittest.cc",
+    "//test/unittests/py-list-unittest.cc",
+    "//test/unittests/py-smi-unittest.cc",
+    "//test/unittests/py-string-unittest.cc",
   ]
 
   deps = [

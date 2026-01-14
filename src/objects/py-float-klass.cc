@@ -182,7 +182,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                                      Handle<PyObject> other) {
-  assert(IsPySmi(self));
+  assert(IsPyFloat(self));
   bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
             IsPyTrue(Virtual_Equal(self, other)));
   return Universe::ToPyBoolean(v);
@@ -191,9 +191,9 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  assert(IsPySmi(self));
-  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
-            IsPyFalse(Virtual_Less(self, other)));
+  assert(IsPyFloat(self));
+  bool v = (IsPyTrue(Virtual_Less(self, other)) ||
+            IsPyTrue(Virtual_Equal(self, other)));
   return Universe::ToPyBoolean(v);
 }
 
