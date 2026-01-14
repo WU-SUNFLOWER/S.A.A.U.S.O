@@ -1,0 +1,29 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#ifndef SAAUSO_OBJECTS_PY_TYPE_OBJECT_KLASS_H_
+#define SAAUSO_OBJECTS_PY_TYPE_OBJECT_KLASS_H_
+
+#include "src/objects/klass.h"
+
+namespace saauso::internal {
+
+class PyTypeObjectKlass : public Klass {
+ public:
+  static Tagged<PyTypeObjectKlass> GetInstance();
+
+  PyTypeObjectKlass() = delete;
+
+  void Initialize();
+  void Finalize();
+
+ private:
+  static Tagged<PyTypeObjectKlass> instance_;
+
+  static void Virtual_Print(Handle<PyObject> self);
+};
+
+}  // namespace saauso::internal
+
+#endif

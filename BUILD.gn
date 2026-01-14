@@ -70,6 +70,8 @@ source_set("saauso_sources") {
     "//src/objects/py-list-klass.h",
     "//src/objects/py-list.cc",
     "//src/objects/py-list.h",
+    "//src/objects/py-object-klass.cc",
+    "//src/objects/py-object-klass.h",
     "//src/objects/py-object.cc",
     "//src/objects/py-object.h",
     "//src/objects/py-oddballs-klass.cc",
@@ -84,10 +86,18 @@ source_set("saauso_sources") {
     "//src/objects/py-string-klass.h",
     "//src/objects/py-string.cc",
     "//src/objects/py-string.h",
+    "//src/objects/py-type-object-klass.cc",
+    "//src/objects/py-type-object-klass.h",
+    "//src/objects/py-type-object.cc",
+    "//src/objects/py-type-object.h",
     "//src/objects/visitors.h",
 
     # runtime (运行时)
     "//src/runtime/factory.h",
+    "//src/runtime/interpreter.cc",
+    "//src/runtime/interpreter.h",
+    "//src/runtime/string-table.cc",
+    "//src/runtime/string-table.h",
     "//src/runtime/universe.cc",
     "//src/runtime/universe.h",
 
