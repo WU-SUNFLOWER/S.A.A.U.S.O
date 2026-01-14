@@ -55,6 +55,17 @@ DEFINE_PY_CHECKER(GcAbleObject)
 #undef DEFINE_PY_CHECKER
 ///////////////////////对象类型检测结束///////////////////////
 
+// **特别提醒**
+// PyObject指针内部存储的可能是真正的对象指针，也有可能是一个Smi。
+// 如果里面实际存的是一个Smi，会导致C++编译器的UB行为，从而引发
+// 编译器胡乱优化而导致的莫名崩溃。
+//
+// 这意味着，为了规避C++层面的UB行为，我们不能直接传递裸的PyObject*。
+// 无论是显式的函数传参传递PyObject*，还是this指针隐式传递
+// （通过py_object_ptr->xxx()），都应当避免。
+//
+// 因此PyObject类当中的所有方法都以static函数的形式提供，
+// 并且函数参数为包装后的Handle<PyObject>或Tagged<PyObject>！！！
 class PyObject : public Object {
  public:
   static MarkWord GetMarkWord(Tagged<PyObject> object);
@@ -67,12 +78,10 @@ class PyObject : public Object {
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
 
+  static Handle<PyDict> GetProperties(Tagged<PyObject> object);
+  static Handle<PyDict> GetProperties(Handle<PyObject> object);
+
   ////////////////// 多态函数 开始 //////////////////
-  // 特别提醒：
-  // 由于PyObject指针内部存储的可能是真正的对象指针，也有可能是一个Smi，
-  // 因此我们不能直接传递裸的PyObject*（如果里面实际存的是一个Smi，会导致C++编译器的UB行为）
-  // ，无论是显式的函数传参传递PyObject*，还是通过this指针隐式传递。
-  // 必须显式地传递包装后的Handle<PyObject>或Tagged<PyObject>！！！
   static void Print(Handle<PyObject> self);
 
   static Handle<PyObject> Add(Handle<PyObject> self, Handle<PyObject> other);
@@ -95,9 +104,9 @@ class PyObject : public Object {
 
   static Handle<PyObject> GetAttr(Handle<PyObject> self,
                                   Handle<PyObject> attr_name);
-  static Handle<PyObject> SetAttr(Handle<PyObject> self,
-                                  Handle<PyObject> attr_name,
-                                  Handle<PyObject> attr_value);
+  static void SetAttr(Handle<PyObject> self,
+                      Handle<PyObject> attr_name,
+                      Handle<PyObject> attr_value);
   static Handle<PyObject> Subscr(Handle<PyObject> self,
                                  Handle<PyObject> subscr_name);
 
@@ -120,6 +129,9 @@ class PyObject : public Object {
  private:
   // 特别提醒：MarkWord必须始终处于Python对象内存布局的开头！！！
   MarkWord mark_word_;
+
+  // PyDict* properties_; python对象的属性容器
+  Tagged<PyObject> properties_;
 };
 
 }  // namespace saauso::internal

@@ -16,6 +16,8 @@ class PyObject;
 class PyBoolean;
 class PyNone;
 class HandleScopeImplementer;
+class Interpreter;
+class StringTable;
 
 class Universe {
  public:
@@ -23,6 +25,8 @@ class Universe {
   static Heap* heap_;
   static HandleScopeImplementer* handle_scope_implementer_;
   static Vector<Klass*> klass_list_;
+  static Interpreter* interpreter_;
+  static StringTable* string_table_;
 
   // 供VM使用的、永久生存在meta area上的全局单例
   static Tagged<PyNone> py_none_object_;

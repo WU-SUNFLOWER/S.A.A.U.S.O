@@ -98,6 +98,17 @@ class Handle {
   Address* location_{nullptr};
 };
 
+// 工具函数，用于方便地将一个裸指针或tagged提升为一个handle
+template <typename T>
+Handle<T> handle(Tagged<T> object) {
+  return Handle<T>(object);
+}
+
+template <typename T>
+Handle<T> handle(T object) {
+  return handle(Tagged<T>(object));
+}
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_HANDLES_HANDLES_H_

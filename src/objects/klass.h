@@ -47,6 +47,8 @@ struct VirtualTable {
                                                               OopHandle,
                                                               OopHandle);
 
+  VirtualTable();
+
   // Tagged<PyObject> add(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE add{nullptr};
   // Tagged<PyObject> sub(Tagged<PyObject> a, Tagged<PyObject> b);
@@ -62,7 +64,7 @@ struct VirtualTable {
   VirtualFuncType_1_2_SAFE getattr{nullptr};
   // Tagged<PyObject> setattr(Tagged<PyObject> object, Tagged<PyObject> key,
   // Tagged<PyObject> value);
-  VirtualFuncType_1_3_SAFE setattr{nullptr};
+  VirtualFuncType_0_3_SAFE setattr{nullptr};
   // Tagged<PyObject> subscr(Tagged<PyObject> object, Tagged<PyObject> subscr);
   VirtualFuncType_1_2_SAFE subscr{nullptr};
   // void store_subscr(Tagged<PyObject> object, Tagged<PyObject> subscr,
@@ -129,6 +131,31 @@ class Klass : public Object {
 
   // Python对象虚函数表
   VirtualTable vtable_;
+
+  // 默认虚函数
+  static void Virtual_Default_Print(Handle<PyObject> self);
+  static Handle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
+  static Handle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
+  static Handle<PyObject> Virtual_Default_Call(Handle<PyObject> self,
+                                               Handle<PyObject> args,
+                                               Handle<PyObject> kwargs);
+  static Handle<PyObject> Virtual_Default_GetAttr(
+      Handle<PyObject> self,
+      Handle<PyObject> property_name);
+  static void Virtual_Default_SetAttr(Handle<PyObject> self,
+                                      Handle<PyObject> property_name,
+                                      Handle<PyObject> property_value);
+  static Handle<PyObject> Virtual_Default_Subscr(Handle<PyObject> self,
+                                                 Handle<PyObject> subscr);
+  static void Virtual_Default_StoreSubscr(Handle<PyObject> self,
+                                          Handle<PyObject> subscr,
+                                          Handle<PyObject> value);
+  static void Virtual_Default_Delete_Subscr(Handle<PyObject> self,
+                                            Handle<PyObject> subscr);
+  static Handle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
+                                              Handle<PyObject> other);
+  static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
+  static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
 
  private:
   // PyString* name_ 类型名，如"str"、"list"、"dict"等

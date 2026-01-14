@@ -14,6 +14,7 @@
 #include "src/objects/mark-word.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict-klass.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-oddballs-klass.h"
@@ -21,6 +22,7 @@
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-type-object-klass.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -60,6 +62,15 @@ void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
 
 void PyObject::SetKlass(Handle<PyObject> object, Tagged<Klass> klass) {
   SetKlass(*object, klass);
+}
+
+Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {
+  return GetProperties(*object);
+}
+
+Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
+  assert(IsHeapObject(object));
+  return Handle<PyDict>(Tagged<PyDict>::Cast(object->properties_));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -289,15 +300,13 @@ Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
 }
 
 // python virtual function
-Handle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
-                                   Handle<PyObject> attr_name,
-                                   Handle<PyObject> attr_value) {
+void PyObject::SetAttr(Handle<PyObject> self,
+                       Handle<PyObject> attr_name,
+                       Handle<PyObject> attr_value) {
   HandleScope scope;
 
   assert(GetKlass(*self)->vtable_.setattr);
-  return GetKlass(*self)
-      ->vtable_.setattr(self, attr_name, attr_value)
-      .EscapeFrom(&scope);
+  GetKlass(*self)->vtable_.setattr(self, attr_name, attr_value);
 }
 
 // python virtual function

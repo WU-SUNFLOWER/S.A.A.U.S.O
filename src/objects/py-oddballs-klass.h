@@ -14,11 +14,13 @@ class PyBoolean;
 class PyBooleanKlass : public Klass {
  public:
   static Tagged<PyBooleanKlass> GetInstance();
+
+  PyBooleanKlass() = delete;
+  
   void Initialize();
   void Finalize();
 
  private:
-  PyBooleanKlass();
   static Tagged<PyBooleanKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);

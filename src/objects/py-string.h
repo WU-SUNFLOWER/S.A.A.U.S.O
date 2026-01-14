@@ -14,9 +14,13 @@ namespace saauso::internal {
 
 class PyString : public PyObject {
  public:
-  static Handle<PyString> NewInstance(int64_t str_length);
-  static Handle<PyString> NewInstance(const char* source);
-  static Handle<PyString> NewInstance(const char* source, int64_t str_length);
+  static Handle<PyString> NewInstance(int64_t str_length,
+                                      bool in_meta_space = false);
+  static Handle<PyString> NewInstance(const char* source,
+                                      bool in_meta_space = false);
+  static Handle<PyString> NewInstance(const char* source,
+                                      int64_t str_length,
+                                      bool in_meta_space = false);
 
   static Tagged<PyString> Cast(Tagged<PyObject> object);
 

@@ -25,12 +25,13 @@ constexpr uint64_t kFallbackHashCache = kInvalidHashCache + 1;
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::NewInstance(int64_t str_length) {
+Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   // 计算出PyString结构体+字符串数据区+对齐所需要的总长度
   size_t object_size = ComputeObjectSize(str_length);
 
   Tagged<PyString> object(Universe::heap_->AllocateRaw(
-      object_size, Heap::AllocationSpace::kNewSpace));
+      object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
+                                 : Heap::AllocationSpace::kNewSpace));
 
   // 初始化字段
   object->length_ = str_length;
@@ -43,8 +44,10 @@ Handle<PyString> PyString::NewInstance(int64_t str_length) {
 }
 
 // static
-Handle<PyString> PyString::NewInstance(const char* source, int64_t str_length) {
-  Handle<PyString> object = NewInstance(str_length);
+Handle<PyString> PyString::NewInstance(const char* source,
+                                       int64_t str_length,
+                                       bool in_meta_space) {
+  Handle<PyString> object = NewInstance(str_length, in_meta_space);
 
   std::memcpy(object->writable_buffer(), source, str_length);
 
@@ -52,8 +55,8 @@ Handle<PyString> PyString::NewInstance(const char* source, int64_t str_length) {
 }
 
 // static
-Handle<PyString> PyString::NewInstance(const char* source) {
-  return NewInstance(source, std::strlen(source));
+Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
+  return NewInstance(source, std::strlen(source), in_meta_space);
 }
 
 // static

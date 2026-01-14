@@ -17,12 +17,15 @@
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-type-object-klass.h"
+#include "src/runtime/interpreter.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
 Heap* Universe::heap_ = nullptr;
 HandleScopeImplementer* Universe::handle_scope_implementer_ = nullptr;
 Vector<Klass*> Universe::klass_list_;
+Interpreter* Universe::interpreter_ = nullptr;
 
 Tagged<PyNone> Universe::py_none_object_(nullptr);
 Tagged<PyBoolean> Universe::py_true_object_(nullptr);
@@ -30,18 +33,19 @@ Tagged<PyBoolean> Universe::py_false_object_(nullptr);
 
 // static
 void Universe::Genesis() {
+  HandleScope scope;  // 为了避免污染根scope，这里我们创建一个内部的scope
+
   heap_ = new Heap();
   heap_->Setup();
 
   handle_scope_implementer_ = new HandleScopeImplementer();
+  interpreter_ = new Interpreter();
 
   InitMetaArea();
 }
 
 // static
 void Universe::InitMetaArea() {
-  HandleScope scope;  // 为了避免污染根scope，这里我们创建一个内部的scope
-
   py_none_object_ = PyNone::NewInstance();
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
@@ -49,6 +53,8 @@ void Universe::InitMetaArea() {
 #define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
   PY_TYPE_LIST(INIT_PY_KLASS)
 #undef INIT_PY_KLASS
+
+  string_table_ = new StringTable();
 }
 
 // static
@@ -56,6 +62,10 @@ void Universe::Destroy() {
 #define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
+
+  delete string_table_;
+
+  delete interpreter_;
 
   delete handle_scope_implementer_;
 
