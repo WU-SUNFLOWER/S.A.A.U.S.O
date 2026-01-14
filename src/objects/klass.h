@@ -9,13 +9,14 @@
 
 #include "src/handles/handles.h"
 #include "src/objects/objects.h"
-#include "src/objects/py-object.h"
-#include "src/objects/py-string.h"
 
 namespace saauso::internal {
 
-class ObjectVisitor;
+class PyObject;
+class PyString;
+class PyTypeObject;
 class PyBoolean;
+class ObjectVisitor;
 
 /////////////////虚函数表 定义开始///////////////////////////
 
@@ -117,10 +118,11 @@ class Klass : public Object {
  public:
   Klass() = default;
 
-  Handle<PyString> name() {
-    return Handle<PyString>(Tagged<PyString>::Cast(name_));
-  }
-  void set_name(Handle<PyString> name) { name_ = *name; }
+  Handle<PyString> name();
+  void set_name(Handle<PyString> name);
+
+  Handle<PyTypeObject> type_object();
+  void set_type_object(Handle<PyTypeObject>);
 
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
@@ -129,7 +131,11 @@ class Klass : public Object {
   VirtualTable vtable_;
 
  private:
-  Tagged<PyObject> name_{nullptr};
+  // PyString* name_ 类型名，如"str"、"list"、"dict"等
+  Tagged<PyObject> name_{kNullAddress};
+
+  // PyTypeObject* klass类型在python世界对应的type对象
+  Tagged<PyObject> type_object_{kNullAddress};
 };
 
 }  // namespace saauso::internal

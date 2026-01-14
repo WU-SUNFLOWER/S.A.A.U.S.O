@@ -16,6 +16,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-type-object-klass.h"
 
 namespace saauso::internal {
 

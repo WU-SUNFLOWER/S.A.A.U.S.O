@@ -14,6 +14,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -50,6 +51,9 @@ void PySmiKlass::Initialize() {
   vtable_.ge = &Virtual_GreaterEqual;
   vtable_.le = &Virtual_LessEqual;
   vtable_.print = &Virtual_Print;
+
+  // 建立与type object的双向绑定
+  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置类名
   set_name(PyString::NewInstance("int"));

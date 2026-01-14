@@ -17,11 +17,12 @@ class PyStringKlass : public Klass {
  public:
   static Tagged<PyStringKlass> GetInstance();
 
+  PyStringKlass() = delete;
+
   void Initialize();
   void Finalize();
 
  private:
-  PyStringKlass();
   static Tagged<PyStringKlass> instance_;
 
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);

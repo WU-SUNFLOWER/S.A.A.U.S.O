@@ -13,6 +13,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
@@ -75,6 +76,9 @@ void PyFloatKlass::Initialize() {
   vtable_.print = &Virtual_Print;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+
+  // 建立与type object的双向绑定
+  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置类名
   set_name(PyString::NewInstance("float"));

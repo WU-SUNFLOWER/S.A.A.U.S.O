@@ -18,6 +18,7 @@ class ObjectVisitor;
 class PyObject;
 
 #define PY_TYPE_IN_HEAP_LIST(V) \
+  V(PyTypeObject)               \
   V(PyFloat)                    \
   V(PyBoolean)                  \
   V(PyNone)                     \

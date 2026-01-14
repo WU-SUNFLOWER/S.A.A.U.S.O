@@ -9,7 +9,9 @@
 
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 
@@ -30,10 +32,13 @@ void PyCodeObjectKlass::Initialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+
+  // 建立与type object的双向绑定
+  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置类名
   set_name(PyString::NewInstance("code"));

@@ -14,6 +14,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -43,6 +44,9 @@ void PyBooleanKlass::Initialize() {
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
   vtable_.hash = &Virtual_Hash;
+
+  // 建立与type object的双向绑定
+  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置类名
   set_name(PyString::NewInstance("bool"));
@@ -106,6 +110,9 @@ void PyNoneKlass::Initialize() {
   vtable_.print = &Virtual_Print;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
+
+  // 建立与type object的双向绑定
+  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置类名
   set_name(PyString::NewInstance("NoneType"));
