@@ -4,6 +4,7 @@
 
 #include "src/objects/klass.h"
 
+#include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -34,6 +35,75 @@ Handle<PyObject> FindAndCall(Handle<PyObject> object,
   std::exit(1);
 
   return handle(Universe::py_none_object_);
+}
+
+Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
+  Handle<PyList> result = PyList::NewInstance();
+  Handle<PyList> mro = type_object->mro();
+
+  // 在C3Impl_Merge中我们会不断地从super的mro序列中移除元素，
+  // 因此为了不影响父类的mro序列数据，我们这里需要手工（潜）拷贝
+  // 一份父类的mro序列。
+  for (auto i = 0; i < mro->length(); ++i) {
+    PyList::Append(result, mro->Get(0));
+  }
+
+  return result;
+}
+
+Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
+  // 递归出口：
+  // 如果所有的mro列表都被清空，这意味着完整的所求mro序列已经生成，退出递归即可
+  if (mro_of_each_super->IsEmpty()) {
+    return PyList::NewInstance();
+  }
+
+  for (auto i = 0; i < mro_of_each_super->length(); ++i) {
+    bool valid = true;
+
+    auto mro_of_curr_super = Handle<PyList>::cast(mro_of_each_super->Get(i));
+    auto head = Handle<PyTypeObject>::cast(mro_of_curr_super->Get(0));
+
+    for (auto j = 0; j < mro_of_each_super->length(); ++j) {
+      if (j == i) {
+        continue;
+      }
+
+      Handle<PyList> mro_of_another_super =
+          Handle<PyList>::cast(mro_of_each_super->Get(j));
+      // 如果发现head在其他mro序列的中间（而非开头或不存在），
+      // 则当前head不是所求mro序列中的下一个元素！
+      if (mro_of_another_super->IndexOf(head) > 0) {
+        valid = false;
+        break;
+      }
+    }
+
+    // mro_of_curr_super的开头不是我们想找的所求mro序列中的下一个元素，
+    // 再换一个super的mro列表试试看~
+    if (!valid) {
+      continue;
+    }
+
+    // 否则，head就是所求mro序列中的下一个元素，将它从所有mro列表中移除，
+    // 然后递归重复这个过程，直到所有mro列表被清空！
+    Handle<PyList> next_mro_of_each_super = PyList::NewInstance();
+    for (auto j = 0; j < mro_of_each_super->length(); ++j) {
+      auto mro_of_a_super = Handle<PyList>::cast(mro_of_each_super->Get(j));
+      mro_of_a_super->Remove(head);
+      if (!mro_of_a_super->IsEmpty()) {
+        PyList::Append(next_mro_of_each_super, mro_of_a_super);
+      }
+    }
+
+    Handle<PyList> result = C3Impl_Merge(next_mro_of_each_super);
+    PyList::Insert(result, 0, head);
+
+    return result;
+  }
+
+  assert(0 && "unreachable");
+  return Handle<PyList>::Null();
 }
 
 }  // namespace
@@ -80,10 +150,55 @@ void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
   type_object_ = *klass_properties;
 }
 
+Handle<PyList> Klass::supers() {
+  return handle(Tagged<PyList>::cast(supers_));
+}
+
+void Klass::set_supers(Handle<PyList> supers) {
+  supers_ = *supers;
+}
+
+Handle<PyList> Klass::mro() {
+  assert(!mro_.IsNull());
+  return handle(Tagged<PyList>::cast(mro_));
+}
+
 void Klass::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&name_);
   v->VisitPointer(&type_object_);
   v->VisitPointer(&klass_properties_);
+}
+
+void Klass::AddSuper(Klass* super) {
+  if (supers_.IsNull()) {
+    set_supers(PyList::NewInstance());
+  }
+  PyList::Append(supers(), super->type_object());
+}
+
+void Klass::OrderSupers() {
+  // 不允许重复执行C3算法
+  assert(mro_.IsNull());
+
+  HandleScope scope;
+  Handle<PyList> mro_result;
+
+  if (supers_.IsNull() || supers()->IsEmpty()) {
+    mro_result = PyList::NewInstance();
+  } else {
+    Handle<PyList> all = PyList::NewInstance(supers()->length());
+    for (auto i = 0; i < supers()->length(); ++i) {
+      auto super = Handle<PyTypeObject>::cast(supers()->Get(i));
+      PyList::Append(all, C3Impl_Linear(super));
+    }
+    mro_result = C3Impl_Merge(all);
+  }
+
+  // 把自己添加到mro序列的开头
+  PyList::Insert(mro_result, 0, type_object());
+  PyDict::Put(klass_properties(), ST(mro), mro_result);
+
+  mro_ = *mro_result;
 }
 
 ///////////////////////////////////////////////////////////////////////

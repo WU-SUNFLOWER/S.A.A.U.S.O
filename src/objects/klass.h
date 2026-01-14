@@ -9,6 +9,7 @@
 
 #include "src/handles/handles.h"
 #include "src/objects/objects.h"
+#include "src/utils/vector.h"
 
 namespace saauso::internal {
 
@@ -16,6 +17,7 @@ class PyObject;
 class PyString;
 class PyTypeObject;
 class PyDict;
+class PyList;
 class PyBoolean;
 class ObjectVisitor;
 
@@ -130,8 +132,18 @@ class Klass : public Object {
   Handle<PyDict> klass_properties();
   void set_klass_properties(Handle<PyDict>);
 
+  Handle<PyList> supers();
+  void set_supers(Handle<PyList>);
+
+  Handle<PyList> mro();
+
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
+
+  // 添加父类
+  void AddSuper(Klass* super);
+  // 执行C3算法，执行结果保存在mro_
+  void OrderSupers();
 
   // Python对象虚函数表
   VirtualTable vtable_;
@@ -171,6 +183,12 @@ class Klass : public Object {
 
   // PyTypeObject* klass类型在python世界对应的type对象
   Tagged<PyObject> type_object_{kNullAddress};
+
+  // PyList* supers_
+  // 当前klass对应的python类型继承自哪几种类型
+  Tagged<PyObject> supers_{kNullAddress};
+  // C3算法的运行结果
+  Tagged<PyObject> mro_{kNullAddress};
 };
 
 }  // namespace saauso::internal

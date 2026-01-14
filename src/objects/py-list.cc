@@ -13,6 +13,7 @@
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/runtime/universe.h"
 
 namespace saauso::internal {
@@ -72,7 +73,7 @@ void PyList::Set(int64_t index, Handle<PyObject> value) {
   WRITE_BARRIER;
 }
 
-void PyList::Remove(int64_t index) {
+void PyList::RemoveByIndex(int64_t index) {
   assert(0 <= index && index < length_);
 
   for (auto i = index; i < length_ - 1; ++i) {
@@ -82,12 +83,28 @@ void PyList::Remove(int64_t index) {
   --length_;
 }
 
+void PyList::Remove(Handle<PyObject> target) {
+  auto index = IndexOf(target);
+  if (index >= 0) {
+    RemoveByIndex(index);
+  }
+}
+
 void PyList::Clear() {
   length_ = 0;
 }
 
 int64_t PyList::capacity() const {
   return array()->capacity();
+}
+
+int64_t PyList::IndexOf(Handle<PyObject> target) const {
+  for (auto i = 0; i < length(); ++i) {
+    if (IsPyTrue(PyObject::Equal(target, Get(i)))) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {

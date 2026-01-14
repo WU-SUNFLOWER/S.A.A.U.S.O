@@ -189,7 +189,7 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
     std::exit(1);
   }
 
-  list->Remove(decoded_subscr);
+  list->RemoveByIndex(decoded_subscr);
 }
 
 Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,

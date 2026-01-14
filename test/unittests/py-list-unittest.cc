@@ -68,7 +68,7 @@ TEST_F(PyListTest, SetRemoveClearWork) {
   EXPECT_EQ(PyObject::Equal(list->Get(1), a).ptr(),
             Universe::py_true_object_.ptr());
 
-  list->Remove(0);
+  list->RemoveByIndex(0);
   EXPECT_EQ(list->length(), 2);
   EXPECT_EQ(PyObject::Equal(list->Get(0), a).ptr(),
             Universe::py_true_object_.ptr());

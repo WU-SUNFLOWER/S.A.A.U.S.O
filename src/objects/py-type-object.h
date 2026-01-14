@@ -17,6 +17,8 @@ class PyTypeObject : public PyObject {
   void BindWithKlass(Tagged<Klass> klass);
   Tagged<Klass> own_klass() const { return own_klass_; };
 
+  Handle<PyList> mro() const;
+
  private:
   Tagged<Klass> own_klass_;
 };

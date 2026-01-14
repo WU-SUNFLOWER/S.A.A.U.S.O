@@ -32,7 +32,9 @@ class PyList : public PyObject {
 
   void Set(int64_t index, Handle<PyObject> value);
 
-  void Remove(int64_t index);
+  void RemoveByIndex(int64_t index);
+  // 删除**第一个**与target匹配的元素
+  void Remove(Handle<PyObject> target);
   void Clear();
 
   int64_t capacity() const;
@@ -43,6 +45,9 @@ class PyList : public PyObject {
     assert(length_ <= capacity());
     return length_ == capacity();
   }
+
+  // 查找**第一个**匹配数组元素的下标
+  int64_t IndexOf(Handle<PyObject> target) const;
 
   static void Append(Handle<PyList> self, Handle<PyObject> value);
   static void Insert(Handle<PyList> self,
