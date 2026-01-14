@@ -23,6 +23,33 @@ namespace saauso::internal {
 
 #define EXPECT_PY_TRUE(condition) EXPECT_TRUE(IsPyTrue(condition))
 
+namespace {
+
+void AllocateEphemeralStrings(int count) {
+  for (int i = 0; i < count; ++i) {
+    HandleScope inner_scope;
+    auto s = std::string("ephemeral-").append(std::to_string(i));
+    (void)PyString::NewInstance(s.c_str());
+  }
+}
+
+void AllocateEphemeralListsWithStrings(int list_count, int element_count) {
+  for (int i = 0; i < list_count; ++i) {
+    HandleScope inner_scope;
+    auto list = PyList::NewInstance();
+    for (int j = 0; j < element_count; ++j) {
+      HandleScope elem_scope;
+      auto s = std::string("l")
+                   .append(std::to_string(i))
+                   .append("-e")
+                   .append(std::to_string(j));
+      PyList::Append(list, PyString::NewInstance(s.c_str()));
+    }
+  }
+}
+
+}  // namespace
+
 // 1. 定义一个测试夹具 (Test Fixture)
 // 夹具的作用是为每个测试提供统一的环境初始化。
 class GcTest : public testing::Test {
@@ -139,6 +166,136 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     auto actual_value = dict->Get(query_key);
     EXPECT_FALSE(actual_value.IsNull());
     EXPECT_PY_TRUE(PyObject::Equal(actual_value, expected_value));
+  }
+}
+
+TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
+  HandleScope scope;
+
+  // 关键点：
+  // - None/True/False 属于 VM 的全局单例，分配在 meta space 上
+  // - 新生代 GC（Scavenge）只搬迁 eden -> survivor 的对象
+  //   因此 meta space 的对象地址必须保持稳定
+  Address none_addr_before = Universe::py_none_object_.ptr();
+  Address true_addr_before = Universe::py_true_object_.ptr();
+  Address false_addr_before = Universe::py_false_object_.ptr();
+
+  AllocateEphemeralStrings(2000);
+  Universe::heap_->CollectGarbage();
+  AllocateEphemeralListsWithStrings(200, 8);
+  Universe::heap_->CollectGarbage();
+
+  EXPECT_EQ(none_addr_before, Universe::py_none_object_.ptr());
+  EXPECT_EQ(true_addr_before, Universe::py_true_object_.ptr());
+  EXPECT_EQ(false_addr_before, Universe::py_false_object_.ptr());
+
+  EXPECT_TRUE(IsPyTrue(Universe::ToPyBoolean(true)));
+  EXPECT_TRUE(IsPyFalse(Universe::ToPyBoolean(false)));
+}
+
+TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
+  HandleScope scope;
+
+  // 这个用例主要验证“遍历约定（iterate）”是否正确：
+  // dict -> fixed_array (entries) -> (key/value) -> list -> fixed_array ->
+  // string
+  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyObject> key = PyString::NewInstance("payload");
+
+  Handle<PyList> list = PyList::NewInstance();
+  constexpr int kCount = 64;
+  for (int i = 0; i < kCount; ++i) {
+    HandleScope inner_scope;
+    PyList::Append(list, PyString::NewInstance(std::to_string(i).c_str()));
+  }
+  PyDict::Put(dict, key, Handle<PyObject>(list));
+
+  Address dict_addr_before = (*dict).ptr();
+  Address list_addr_before = (*list).ptr();
+
+  AllocateEphemeralListsWithStrings(120, 6);
+  Universe::heap_->CollectGarbage();
+
+  // dict/list 作为 GC ROOT（被 Handle 持有）应当在 minor GC 后存活且被搬迁。
+  EXPECT_NE(dict_addr_before, (*dict).ptr());
+  EXPECT_NE(list_addr_before, (*list).ptr());
+
+  auto payload = dict->Get(key);
+  ASSERT_FALSE(payload.IsNull());
+  auto payload_list = Handle<PyList>::Cast(payload);
+  EXPECT_EQ(payload_list->length(), kCount);
+
+  for (int i = 0; i < kCount; ++i) {
+    HandleScope inner_scope;
+    auto expected = PyString::NewInstance(std::to_string(i).c_str());
+    EXPECT_PY_TRUE(PyObject::Equal(payload_list->Get(i), expected));
+  }
+}
+
+TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
+  HandleScope scope;
+
+  // 关键点：
+  // - EscapeFrom 会把 inner scope 中的 handle “提升”到 outer scope
+  // - 在 minor GC 中，handle slot 会被更新为新地址
+  auto create_escaped_string = []() -> Handle<PyString> {
+    HandleScope inner_scope;
+    auto s = PyString::NewInstance("escaped-string");
+    return s.EscapeFrom(&inner_scope);
+  };
+
+  Handle<PyString> escaped = create_escaped_string();
+  Address addr_before = (*escaped).ptr();
+
+  AllocateEphemeralStrings(4000);
+  Universe::heap_->CollectGarbage();
+
+  EXPECT_NE(addr_before, (*escaped).ptr());
+  EXPECT_EQ(
+      std::strncmp(escaped->buffer(), "escaped-string", escaped->length()), 0);
+}
+
+TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
+  HandleScope scope;
+
+  // 这个用例验证“环形引用”在 Scavenge 下不会造成错误：
+  // list[0] 指向 list 本身，GC 需要正确更新该内部指针为新地址。
+  Handle<PyList> list = PyList::NewInstance();
+  PyList::Append(list, Handle<PyObject>(list));
+  PyList::Append(list, PyString::NewInstance("tail"));
+
+  Address before = (*list).ptr();
+  Universe::heap_->CollectGarbage();
+
+  EXPECT_NE(before, (*list).ptr());
+  EXPECT_EQ(list->length(), 2);
+
+  auto elem0 = list->Get(0);
+  ASSERT_FALSE(elem0.IsNull());
+  EXPECT_EQ((*list).ptr(), (*elem0).ptr());
+}
+
+TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
+  HandleScope scope;
+
+  // 关键点：
+  // - Smi 不是真正的堆对象，不应该被 Scavenge 搬迁
+  // - 同时它作为 list 元素被存储在 fixed array 中，需要保证读取解码正确
+  Handle<PyList> list = PyList::NewInstance();
+  constexpr int kCount = 50;
+  for (int i = 0; i < kCount; ++i) {
+    HandleScope inner_scope;
+    Handle<PySmi> smi(PySmi::FromInt(i));
+    PyList::Append(list, Handle<PyObject>(smi));
+  }
+
+  Universe::heap_->CollectGarbage();
+
+  for (int i = 0; i < kCount; ++i) {
+    HandleScope inner_scope;
+    auto v = list->Get(i);
+    ASSERT_TRUE(IsPySmi(v));
+    EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::Cast(v)), i);
   }
 }
 
