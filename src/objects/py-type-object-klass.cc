@@ -5,6 +5,8 @@
 #include "src/objects/py-type-object-klass.h"
 
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
@@ -39,6 +41,10 @@ void PyTypeObjectKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
+  // 设置父类并计算mro序列
+  AddSuper(PyObjectKlass::GetInstance());
+  OrderSupers();
+
   // 设置类名
   set_name(PyString::NewInstance("type"));
 }
@@ -55,6 +61,20 @@ void PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto type_name = type_object->own_klass()->name();
   std::printf("<class '%.*s'>", static_cast<int>(type_name->length()),
               type_name->buffer());
+}
+
+Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(
+    Handle<PyObject> self,
+    Handle<PyObject> prop_name) {
+  auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
+  return own_klass->klass_properties()->Get(prop_name);
+}
+
+void PyTypeObjectKlass::Virtual_SetAttr(Handle<PyObject> self,
+                                        Handle<PyObject> prop_name,
+                                        Handle<PyObject> prop_value) {
+  auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
+  PyDict::Put(own_klass->klass_properties(), prop_name, prop_value);
 }
 
 // static

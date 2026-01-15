@@ -13,6 +13,7 @@
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list-klass.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
@@ -51,6 +52,10 @@ void Universe::InitMetaArea() {
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
 
+  // PyObjectKlass对应的object类型，
+  // 是所有python类型的基类，需要首先初始化！
+  PyObjectKlass::GetInstance()->Initialize();
+
 #define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
   PY_TYPE_LIST(INIT_PY_KLASS)
 #undef INIT_PY_KLASS
@@ -64,13 +69,15 @@ void Universe::InitMetaArea() {
 
 // static
 void Universe::Destroy() {
+  // 特化klass反初始化
+  NativeFunctionKlass::GetInstance()->Finalize();
+  MethodObjectKlass::GetInstance()->Finalize();
+
 #define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 
-  // 特化klass反初始化
-  NativeFunctionKlass::GetInstance()->Finalize();
-  MethodObjectKlass::GetInstance()->Finalize();
+  PyObjectKlass::GetInstance()->Initialize();
 
   delete string_table_;
 

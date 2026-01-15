@@ -26,4 +26,21 @@ Handle<PyObject> Native_Len(Handle<PyList> args, Handle<PyDict> kwargs) {
   return PyObject::Len(args->Get(0));
 }
 
+Handle<PyObject> Native_IsInstance(Handle<PyList> args, Handle<PyDict> kwargs) {
+  HandleScope scope;
+
+  auto object = args->Get(0);
+  auto mro_of_object = PyObject::GetKlass(object)->mro();
+  auto target_type_object = args->Get(1);
+
+  for (auto i = 0; i < mro_of_object->length(); ++i) {
+    auto curr_type_object = mro_of_object->Get(i);
+    if (IsPyTrue(PyObject::Equal(curr_type_object, target_type_object))) {
+      return handle(Universe::py_true_object_);
+    }
+  }
+
+  return handle(Universe::py_false_object_);
+}
+
 }  // namespace saauso::internal

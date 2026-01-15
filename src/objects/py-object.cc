@@ -110,6 +110,11 @@ bool IsHeapObject(Tagged<PyObject> object) {
   return !IsPySmi(object);
 }
 
+bool IsPyNativeFunction(Tagged<PyObject> object) {
+  return PyObject::GetKlass(object).ptr() ==
+         NativeFunctionKlass::GetInstance().ptr();
+}
+
 bool IsGcAbleObject(Tagged<PyObject> object) {
   if (IsPySmi(object)) {
     return false;
@@ -123,6 +128,8 @@ bool IsGcAbleObject(Tagged<PyObject> object) {
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PySmi)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTrue)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFalse)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(HeapObject)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyNativeFunction)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 #undef IMPL_PY_CHECKER_WITH_HANDLE_ARG
 
@@ -247,6 +254,11 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Universe::ToPyBoolean(PySmi::cast(*self).value() ==
                                  PySmi::cast(*other).value());
+  }
+
+  // 内联Fast Path：直接比较内存地址
+  if ((*self).ptr() == (*other).ptr()) {
+    return Universe::py_true_object_;
   }
 
   HandleScope scope;

@@ -10,6 +10,7 @@
 
 #include "src/heap/heap.h"
 #include "src/objects/py-float.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
@@ -54,6 +55,10 @@ void PySmiKlass::Initialize() {
 
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 设置父类并计算mro序列
+  AddSuper(PyObjectKlass::GetInstance());
+  OrderSupers();
 
   // 设置类名
   set_name(PyString::NewInstance("int"));

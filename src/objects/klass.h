@@ -141,7 +141,7 @@ class Klass : public Object {
   void Iterate(ObjectVisitor* v);
 
   // 添加父类
-  void AddSuper(Klass* super);
+  void AddSuper(Tagged<Klass> super);
   // 执行C3算法，执行结果保存在mro_
   void OrderSupers();
 

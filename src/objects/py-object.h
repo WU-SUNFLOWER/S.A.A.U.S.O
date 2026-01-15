@@ -29,9 +29,9 @@ class PyObject;
   V(PyDict)                     \
   V(FixedArray)
 
-#define PY_TYPE_LIST(V)   \
-  PY_TYPE_IN_HEAP_LIST(V) \
-  V(PySmi)
+#define PY_TYPE_LIST(V) \
+  V(PySmi)              \
+  PY_TYPE_IN_HEAP_LIST(V)
 
 #define DEFINE_PY_TYPE(name) class name;
 PY_TYPE_LIST(DEFINE_PY_TYPE)
@@ -45,6 +45,7 @@ PY_TYPE_LIST(DEFINE_PY_TYPE)
 PY_TYPE_LIST(DEFINE_PY_CHECKER)
 DEFINE_PY_CHECKER(PyTrue)
 DEFINE_PY_CHECKER(PyFalse)
+DEFINE_PY_CHECKER(PyNativeFunction)
 
 // 是否在堆区有实体
 DEFINE_PY_CHECKER(HeapObject)

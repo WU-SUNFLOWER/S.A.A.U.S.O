@@ -20,6 +20,8 @@ class PyTypeObject : public PyObject {
   Handle<PyList> mro() const;
 
  private:
+  friend class PyTypeObjectKlass;
+
   Tagged<Klass> own_klass_;
 };
 

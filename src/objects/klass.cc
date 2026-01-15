@@ -7,6 +7,7 @@
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -35,6 +36,21 @@ Handle<PyObject> FindAndCall(Handle<PyObject> object,
   std::exit(1);
 
   return handle(Universe::py_none_object_);
+}
+
+Handle<PyObject> FindPropertyInMro(Handle<PyObject> object,
+                                   Handle<PyObject> prop_name) {
+  // 沿着mro序列进行查找
+  Handle<PyList> mro_of_object = PyObject::GetKlass(object)->mro();
+  for (auto i = 0; i < mro_of_object->length(); ++i) {
+    auto type_object = Handle<PyTypeObject>::cast(mro_of_object->Get(0));
+    auto result = type_object->own_klass()->klass_properties()->Get(prop_name);
+    if (!result.IsNull()) {
+      return result;
+    }
+  }
+
+  return Handle<PyObject>::Null();
 }
 
 Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
@@ -159,7 +175,7 @@ void Klass::set_supers(Handle<PyList> supers) {
 }
 
 Handle<PyList> Klass::mro() {
-  assert(!mro_.IsNull());
+  assert(!mro_.IsNull());  // mro序列初始化完毕前禁止获取
   return handle(Tagged<PyList>::cast(mro_));
 }
 
@@ -169,7 +185,7 @@ void Klass::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&klass_properties_);
 }
 
-void Klass::AddSuper(Klass* super) {
+void Klass::AddSuper(Tagged<Klass> super) {
   if (supers_.IsNull()) {
     set_supers(PyList::NewInstance());
   }
@@ -241,10 +257,49 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
                                              Handle<PyList>::cast(args));
 }
 
-Handle<PyObject> Klass::Virtual_Default_GetAttr(
-    Handle<PyObject> self,
-    Handle<PyObject> property_name) {
-  // TODO: 实现getattr逻辑
+Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
+                                                Handle<PyObject> prop_name) {
+  assert(IsPyString(prop_name));
+
+  Handle<PyObject> getattr_func = FindPropertyInMro(self, prop_name);
+
+  // 如果父类或者祖先类当中定义了__getattr__方法，就先调用这个方法
+  if (!getattr_func.IsNull()) {
+    getattr_func =
+        MethodObject::NewInstance(Handle<PyFunction>::cast(getattr_func), self);
+    Handle<PyList> args = PyList::NewInstance(1);
+    PyList::Append(args, prop_name);
+    return Universe::interpreter_->CallVirtual(getattr_func, args);
+  }
+
+  // 如果没有定义 __getattr__方法，就去对象字典里找
+  Handle<PyObject> result;
+  if (IsHeapObject(self)) {
+    result = PyObject::GetProperties(self)->Get(prop_name);
+    if (!result.IsNull()) {
+      return result;
+    }
+  }
+
+  // 如果对象字典里也没有，就去自己的类里找
+  result = FindPropertyInMro(self, prop_name);
+  if (!result.IsNull()) {
+    if (IsPyFunction(result) || IsPyNativeFunction(result)) {
+      result =
+          MethodObject::NewInstance(Handle<PyFunction>::cast(result), self);
+    }
+    return result;
+  }
+
+  // 还没找到，抛出错误并崩溃
+  // AttributeError: 'A' object has no attribute 'xxx'
+  std::printf("AttributeError: '");
+  PyObject::Print(PyObject::GetKlass(self)->name());
+  std::printf("' object has no attribute '");
+  PyObject::Print(prop_name);
+  std::printf("'\n");
+
+  return Handle<PyObject>::Null();
 }
 
 void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,

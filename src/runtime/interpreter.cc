@@ -12,6 +12,7 @@
 #include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
@@ -33,6 +34,8 @@ Interpreter::Interpreter() {
   Handle<PyDict> builtins = PyDict::NewInstance();
 
   // 注册基础类型的klass
+  PyDict::Put(builtins, PyString::NewInstance("object"),
+              PyObjectKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("int"),
               PySmiKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("str"),

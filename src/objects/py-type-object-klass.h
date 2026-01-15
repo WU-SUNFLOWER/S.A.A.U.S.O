@@ -24,6 +24,13 @@ class PyTypeObjectKlass : public Klass {
   static Tagged<PyTypeObjectKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
+
+  static Handle<PyObject> Virtual_GetAttr(Handle<PyObject> self,
+                                          Handle<PyObject> prop_name);
+  static void Virtual_SetAttr(Handle<PyObject> self,
+                              Handle<PyObject> prop_name,
+                              Handle<PyObject> prop_value);
+
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };

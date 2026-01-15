@@ -8,6 +8,7 @@
 #include "src/heap/heap.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
@@ -39,6 +40,10 @@ void PyFunctionKlass::Initialize() {
 
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 设置父类并计算mro序列
+  AddSuper(PyObjectKlass::GetInstance());
+  OrderSupers();
 
   // 设置类名
   set_name(PyString::NewInstance("function"));
@@ -122,7 +127,6 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&func->func_name_);
 }
 
-
 ///////////////////////////////////////////////////////////////
 // MethodKlass
 
@@ -159,7 +163,7 @@ size_t MethodObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 }
 
 void MethodObjectKlass::Virtual_Iterate(Tagged<PyObject> self,
-                                          ObjectVisitor* v) {
+                                        ObjectVisitor* v) {
   auto object = Tagged<MethodObject>::cast(self);
   // TODO: 完善iterate
   v->VisitPointer(&object->func_);
