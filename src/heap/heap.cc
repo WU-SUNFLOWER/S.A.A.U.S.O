@@ -15,6 +15,7 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
 #include "src/runtime/interpreter.h"
+#include "src/runtime/string-table.h"
 #include "src/runtime/universe.h"
 #include "src/utils/allocation.h"
 
@@ -80,6 +81,10 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
       break;
     default:
       assert(0 && "unknown heap space!!!");
+  }
+
+  if (result != kNullAddress) {
+    std::memset(reinterpret_cast<void*>(result), 0, size_in_bytes);
   }
 
   return result;
@@ -168,11 +173,15 @@ void Heap::IterateRoots(ObjectVisitor* v) {
     Universe::interpreter_->Iterate(v);
   }
 
+  if (Universe::string_table_ != nullptr) {
+    Universe::string_table_->Iterate(v);
+  }
+
   // TODO: 遍历python运行时的GC ROOT
 
   // TODO: 实现分代式GC
   // 遍历记忆集 (Remembered Set)，处理跨代引用
-  // IterateRememberedSet(v);
+  IterateRememberedSet(v);
 }
 
 void Heap::DoScavenge() {

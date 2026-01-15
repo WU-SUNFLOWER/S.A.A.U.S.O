@@ -37,6 +37,8 @@ class PyFunction : public PyObject {
   friend class PyFunctionKlass;
   friend class NativeFunctionKlass;
 
+  static Handle<PyFunction> NewInstanceInternal();
+
   // PyCodeObject* func_code_
   Tagged<PyObject> func_code_{kNullAddress};
   // PyString* func_name_
@@ -52,7 +54,7 @@ class PyFunction : public PyObject {
 
 class MethodObject : public PyObject {
  public:
-  static Handle<MethodObject> NewInstance(Handle<PyFunction> func,
+  static Handle<MethodObject> NewInstance(Handle<PyObject> func,
                                           Handle<PyObject> owner);
   static Tagged<MethodObject> cast(Tagged<PyObject> object);
 

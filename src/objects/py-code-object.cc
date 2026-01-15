@@ -55,6 +55,8 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
   object->line_no_ = line_no;
   object->no_table_ = *no_table;
 
+  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+
   return object;
 }
 

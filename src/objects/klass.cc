@@ -127,21 +127,20 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
 
 ///////////////////////////////////////////////////////////////////////
 
-VirtualTable::VirtualTable()
-    : add(&Klass::Virtual_Default_Add),
-      getattr(&Klass::Virtual_Default_GetAttr),
-      setattr(&Klass::Virtual_Default_SetAttr),
-      subscr(&Klass::Virtual_Default_Subscr),
-      store_subscr(&Klass::Virtual_Default_StoreSubscr),
-      next(&Klass::Virtual_Default_Next),
-      call(&Klass::Virtual_Default_Call),
-      len(&Klass::Virtual_Default_Len),
-      print(&Klass::Virtual_Default_Print),
-      repr(&Klass::Virtual_Default_Repr),
-      del_subscr(&Klass::Virtual_Default_Delete_Subscr),
-      instance_size(&Klass::Virtual_Default_InstanceSize) {}
-
-///////////////////////////////////////////////////////////////////////
+void Klass::InitializeVTable() {
+  vtable_.add = &Klass::Virtual_Default_Add;
+  vtable_.getattr = &Klass::Virtual_Default_GetAttr;
+  vtable_.setattr = &Klass::Virtual_Default_SetAttr;
+  vtable_.subscr = &Klass::Virtual_Default_Subscr;
+  vtable_.store_subscr = &Klass::Virtual_Default_StoreSubscr;
+  vtable_.next = &Klass::Virtual_Default_Next;
+  vtable_.call = &Klass::Virtual_Default_Call;
+  vtable_.len = &Klass::Virtual_Default_Len;
+  vtable_.print = &Klass::Virtual_Default_Print;
+  vtable_.repr = &Klass::Virtual_Default_Repr;
+  vtable_.del_subscr = &Klass::Virtual_Default_Delete_Subscr;
+  vtable_.instance_size = &Klass::Virtual_Default_InstanceSize;
+}
 
 Handle<PyString> Klass::name() {
   return Handle<PyString>(Tagged<PyString>::cast(name_));
@@ -264,29 +263,25 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
                                                 Handle<PyObject> prop_name) {
   assert(IsPyString(prop_name));
 
-  Handle<PyObject> getattr_func = FindPropertyInMro(self, prop_name);
-
-  // 如果父类或者祖先类当中定义了__getattr__方法，就先调用这个方法
-  if (!getattr_func.IsNull()) {
-    getattr_func = MethodObject::NewInstance(
-        handle(Tagged<PyFunction>::cast(*getattr_func)), self);
-    Handle<PyList> args = PyList::NewInstance(1);
-    PyList::Append(args, prop_name);
-    return Universe::interpreter_->CallVirtual(getattr_func, args);
-  }
-
-  // 如果没有定义 __getattr__方法，就去对象字典里找
+  // 1. 如果对象存在实例字典（__dict__），
+  //    尝试直接在实例字典中查找prop_name
   Handle<PyObject> result;
   if (IsHeapObject(self)) {
-    result = PyObject::GetProperties(self)->Get(prop_name);
-    if (!result.IsNull()) {
-      return result;
+    Handle<PyDict> properties = PyObject::GetProperties(self);
+    if (!properties.IsNull()) {
+      result = properties->Get(prop_name);
+      if (!result.IsNull()) {
+        return result;
+      }
     }
   }
 
-  // 如果对象字典里也没有，就去自己的类里找
+  // 2. 沿着 MRO 序列在类字典中查找prop_name
   result = FindPropertyInMro(self, prop_name);
   if (!result.IsNull()) {
+    // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
+    //   （这样调用时 self 才会自动传入）。
+    // 2. 如果该值是普通数据，直接返回。
     if (IsPyFunction(result) || IsPyNativeFunction(result)) {
       result = MethodObject::NewInstance(
           handle(Tagged<PyFunction>::cast(*result)), self);
@@ -294,7 +289,17 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
     return result;
   }
 
-  // 还没找到，抛出错误并崩溃
+  // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
+  //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
+  Handle<PyObject> getattr_func = FindPropertyInMro(self, ST(getattr));
+  if (!getattr_func.IsNull()) {
+    getattr_func = MethodObject::NewInstance(getattr_func, self);
+    Handle<PyList> args = PyList::NewInstance(1);
+    PyList::Append(args, prop_name);
+    return Universe::interpreter_->CallVirtual(getattr_func, args);
+  }
+
+  // 4. 还没找到，抛出错误并崩溃
   // AttributeError: 'A' object has no attribute 'xxx'
   std::printf("AttributeError: '");
   PyObject::Print(PyObject::GetKlass(self)->name());
@@ -309,6 +314,17 @@ void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
                                     Handle<PyObject> property_name,
                                     Handle<PyObject> property_value) {
   auto properties = PyObject::GetProperties(self);
+
+  if (properties.IsNull()) {
+    // 对齐cpython: 对于不存在__dict__的对象，直接抛错误
+    std::printf("AttributeError: '");
+    PyObject::Print(PyObject::GetKlass(self)->name());
+    std::printf("' object has no attribute '");
+    PyObject::Print(property_name);
+    std::printf("'\n");
+    std::exit(1);
+  }
+
   PyDict::Put(properties, property_name, property_value);
 }
 

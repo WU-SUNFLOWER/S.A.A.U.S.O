@@ -37,6 +37,14 @@ Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   object->length_ = str_length;
   object->hash_ = kInvalidHashCache;
 
+  // str类型没有__dict__，不需要初始化properties
+  // >>> s = "ABC"
+  // >>> s.__dict__
+  // Traceback (most recent call last):
+  //   File "<stdin>", line 1, in <module>
+  // AttributeError: 'str' object has no attribute '__dict__'
+  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+
   // 绑定klass
   PyObject::SetKlass(object, PyStringKlass::GetInstance());
 
@@ -151,7 +159,7 @@ Handle<PyString> PyString::Slice(Handle<PyString> self,
   Handle<PyString> result = PyString::NewInstance(sliced_length);
 
   std::memcpy(result->writable_buffer(), self->buffer() + from, sliced_length);
-  return result;
+  return result.EscapeFrom(&scope);
 }
 
 Handle<PyString> PyString::Append(Handle<PyString> self,
@@ -165,7 +173,7 @@ Handle<PyString> PyString::Append(Handle<PyString> self,
   std::memcpy(new_object->writable_buffer() + self->length_, other->buffer(),
               other->length());
 
-  return new_object;
+  return new_object.EscapeFrom(&scope);
 }
 
 }  // namespace saauso::internal

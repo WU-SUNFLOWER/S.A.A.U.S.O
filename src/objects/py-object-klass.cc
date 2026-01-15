@@ -8,6 +8,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 
 namespace saauso::internal {
@@ -26,6 +27,9 @@ Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
 void PyObjectKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
+
+  vtable_.instance_size = &Virtual_InstanceSize;
+  vtable_.iterate = &Virtual_Iterate;
 }
 
 void PyObjectKlass::Initialize() {
@@ -47,5 +51,11 @@ void PyObjectKlass::Initialize() {
 void PyObjectKlass::Finalize() {
   instance_ = Tagged<PyObjectKlass>::Null();
 }
+
+size_t PyObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
+  return sizeof(PyObject);
+}
+
+void PyObjectKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {}
 
 }  // namespace saauso::internal

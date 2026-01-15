@@ -125,6 +125,7 @@ executable("ut") {
 
   sources = [
     # 在这里添加你的测试文件
+    "//test/unittests/attribute-unittest.cc",
     "//test/unittests/gc-unittest.cc",
     "//test/unittests/handle-unittest.cc",
     "//test/unittests/py-dict-unittest.cc",

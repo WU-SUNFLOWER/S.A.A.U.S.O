@@ -37,6 +37,13 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   // 绑定klass
   PyObject::SetKlass(object, PyListKlass::GetInstance());
 
+  // list类型没有__dict__，不需要初始化properties
+  // >>> [].__dict__
+  // Traceback (most recent call last):
+  //   File "<stdin>", line 1, in <module>
+  // AttributeError: 'list' object has no attribute '__dict__'
+  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+
   return object.EscapeFrom(&scope);
 }
 

@@ -131,8 +131,9 @@ size_t NativeFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
                                           ObjectVisitor* v) {
   auto func = Tagged<PyFunction>::cast(self);
-  // TODO: 完善iterate
   v->VisitPointer(&func->func_name_);
+  v->VisitPointer(&func->default_args_);
+  v->VisitPointer(&func->func_code_);
 }
 
 ///////////////////////////////////////////////////////////////

@@ -4,6 +4,8 @@
 
 #include "src/runtime/string-table.h"
 
+#include "src/objects/visitors.h"
+
 namespace saauso::internal {
 
 StringTable::StringTable() {
@@ -12,6 +14,14 @@ StringTable::StringTable() {
   STRING_IN_TABLE_LIST(INIT_STR_FIELD);
   PY_OBJECT_MAGIC_ATTR_LIST(INIT_STR_FIELD);
 #undef INIT_STR_FIELD
+}
+
+void StringTable::Iterate(ObjectVisitor* v) {
+#define VISIT_STR_FIELD(name, _) \
+  v->VisitPointer(reinterpret_cast<Tagged<PyObject>*>(&name##_str_));
+  STRING_IN_TABLE_LIST(VISIT_STR_FIELD);
+  PY_OBJECT_MAGIC_ATTR_LIST(VISIT_STR_FIELD);
+#undef VISIT_STR_FIELD
 }
 
 }  // namespace saauso::internal

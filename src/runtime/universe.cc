@@ -48,13 +48,17 @@ void Universe::Genesis() {
 
 // static
 void Universe::InitMetaArea() {
-  PyObjectKlass::GetInstance()->PreInitialize();
-
-#define PREINIT_PY_KLASS(name) name##Klass::GetInstance()->PreInitialize();
+#define PREINIT_PY_KLASS(name)               \
+  do {                                       \
+    auto klass = name##Klass::GetInstance(); \
+    klass->InitializeVTable();               \
+    klass->PreInitialize();                  \
+  } while (false);
   PY_TYPE_LIST(PREINIT_PY_KLASS)
+  // 特化klass初始化
+  PREINIT_PY_KLASS(PyObject)
+  PREINIT_PY_KLASS(NativeFunction)
 #undef PREINIT_PY_KLASS
-
-  NativeFunctionKlass::GetInstance()->PreInitialize();
 
   string_table_ = new StringTable();
 
@@ -62,26 +66,23 @@ void Universe::InitMetaArea() {
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
 
-  PyObjectKlass::GetInstance()->Initialize();
-
 #define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
+  // PyObjectKlass是其他klass计算mro的基础，必须首先初始化！
+  INIT_PY_KLASS(PyObject)
   PY_TYPE_LIST(INIT_PY_KLASS)
-#undef INIT_PY_KLASS
-
   // 特化klass初始化
-  NativeFunctionKlass::GetInstance()->Initialize();
+  INIT_PY_KLASS(NativeFunction)
+#undef INIT_PY_KLASS
 }
 
 // static
 void Universe::Destroy() {
-  // 特化klass反初始化
-  NativeFunctionKlass::GetInstance()->Finalize();
-
 #define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
+  // 特化klass反初始化
+  FINALIZE_PY_KLASS(PyObject)
+  FINALIZE_PY_KLASS(NativeFunction)
 #undef FINALIZE_PY_KLASS
-
-  PyObjectKlass::GetInstance()->Finalize();
 
   delete string_table_;
   string_table_ = nullptr;

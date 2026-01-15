@@ -9,6 +9,7 @@
 #include "py-object.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/heap/heap.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
@@ -25,6 +26,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-type-object-klass.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/universe.h"
 #include "src/utils/utils.h"
 
@@ -71,8 +73,18 @@ Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {
 }
 
 Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
-  assert(IsHeapObject(object));
-  return Handle<PyDict>(Tagged<PyDict>::cast(object->properties_));
+  if (!IsHeapObject(object) || object->properties_.IsNull()) {
+    return Handle<PyDict>::Null();
+  }
+  return handle(Tagged<PyDict>::cast(object->properties_));
+}
+
+void PyObject::SetProperties(Tagged<PyObject> object,
+                             Tagged<PyDict> properties) {
+  assert(IsHeapObject(properties));
+
+  object->properties_ = properties;
+  WRITE_BARRIER(object, &object->properties_, properties);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -398,7 +410,7 @@ Handle<PyObject> PyObject::Call(Handle<PyObject> self,
   HandleScope scope;
 
   assert(GetKlass(*self)->vtable_.call);
-  return GetKlass(*self)->vtable_.call(self, args, kwargs);
+  return GetKlass(*self)->vtable_.call(self, args, kwargs).EscapeFrom(&scope);
 }
 
 // python virtual function
@@ -408,8 +420,7 @@ size_t PyObject::GetInstanceSize(Tagged<PyObject> self) {
 
 // python virtual function
 void PyObject::Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  // TODO: 回收对象的属性表
-  // v->Iterate(&self->properties);
+  v->VisitPointer(&self->properties_);
 
   assert(GetKlass(self)->vtable_.iterate);
   GetKlass(self)->vtable_.iterate(self, v);

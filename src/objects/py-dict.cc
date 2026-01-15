@@ -59,6 +59,13 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
   // 绑定klass
   SetKlass(object, PyDictKlass::GetInstance());
 
+  // float类型没有__dict__，不需要初始化properties
+  // >>> dict().__dict__
+  // Traceback (most recent call last):
+  //   File "<stdin>", line 1, in <module>
+  // AttributeError: 'dict' object has no attribute '__dict__'
+  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+
   return object.EscapeFrom(&scope);
 }
 
@@ -88,7 +95,7 @@ Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {
   auto curr_key = GET_DICT_KEY(this, index);
   while (!(*curr_key).IsNull()) {
     if (PyObject::Equal(curr_key, key)->value()) {
-      return GET_DICT_VAL(this, index);
+      return GET_DICT_VAL(this, index).EscapeFrom(&scope);
     }
     index = GetProbe(index, mask);
     curr_key = GET_DICT_KEY(this, index);

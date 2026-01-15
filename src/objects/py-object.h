@@ -83,6 +83,7 @@ class PyObject : public Object {
 
   static Handle<PyDict> GetProperties(Tagged<PyObject> object);
   static Handle<PyDict> GetProperties(Handle<PyObject> object);
+  static void SetProperties(Tagged<PyObject> object, Tagged<PyDict> properties);
 
   ////////////////// 多态函数 开始 //////////////////
   static void Print(Handle<PyObject> self);
@@ -142,7 +143,7 @@ class PyObject : public Object {
   MarkWord mark_word_;
 
   // PyDict* properties_; python对象的属性容器
-  Tagged<PyObject> properties_;
+  Tagged<PyObject> properties_{nullptr};
 };
 
 class PyObjectLayoutChecker {

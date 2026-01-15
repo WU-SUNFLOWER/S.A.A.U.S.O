@@ -50,7 +50,7 @@ struct VirtualTable {
                                                               OopHandle,
                                                               OopHandle);
 
-  VirtualTable();
+  VirtualTable() = delete;
 
   // Tagged<PyObject> add(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE add{nullptr};
@@ -121,7 +121,9 @@ struct VirtualTable {
 
 class Klass : public Object {
  public:
-  Klass() = default;
+  Klass() = delete;
+
+  void InitializeVTable();
 
   Handle<PyString> name();
   void set_name(Handle<PyString> name);

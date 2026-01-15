@@ -6,6 +6,7 @@
 #define SAAUSO_OBJECTS_PY_OBJECT_KLASS_H_
 
 #include "src/objects/klass.h"
+#include "src/objects/py-object.h"
 
 namespace saauso::internal {
 
@@ -21,6 +22,9 @@ class PyObjectKlass : public Klass {
 
  private:
   static Tagged<PyObjectKlass> instance_;
+
+  static size_t Virtual_InstanceSize(Tagged<PyObject> self);
+  static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
 
 }  // namespace saauso::internal

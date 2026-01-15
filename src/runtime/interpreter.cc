@@ -80,21 +80,26 @@ Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> callable,
   Handle<PyList> actual_args = args.IsNull() ? PyList::NewInstance() : args;
 
   if (IsPyNativeFunction(callable)) {
-    return PyObject::Call(callable, args, Handle<PyObject>::Null());
+    return PyObject::Call(callable, args, Handle<PyObject>::Null()).EscapeFrom(&scope);
   }
 
   if (IsPyFunction(callable)) {
     // TODO: 创建新的虚拟机栈帧，执行python代码
-    return handle(Universe::py_none_object_);
+    return handle(Universe::py_none_object_).EscapeFrom(&scope);
   }
 
   if (IsMethodObject(callable)) {
     auto method = Handle<MethodObject>::cast(callable);
     PyList::Insert(actual_args, 0, method->owner());
-    return CallVirtual(method->func(), actual_args);
+    return CallVirtual(method->func(), actual_args).EscapeFrom(&scope);
   }
 
-  assert(0 && "unreachable");
+  // TypeError: 'int' object is not callable
+  std::printf("TypeError: '");
+  PyObject::Print(PyObject::GetKlass(callable)->name());
+  std::printf("' object is not callable\n");
+  std::exit(1);
+
   return Handle<PyObject>::Null();
 }
 

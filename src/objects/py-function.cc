@@ -7,6 +7,7 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -17,28 +18,46 @@ namespace saauso::internal {
 
 // static
 Handle<PyFunction> PyFunction::NewInstance(Handle<PyCodeObject> code_object) {
-  Handle<PyFunction> object(
-      Universe::heap_->Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
+  HandleScope scope;
+  Handle<PyFunction> object = NewInstanceInternal();
+
   object->func_code_ = *code_object;
   object->func_name_ = code_object->co_name_;
   object->flags_ = code_object->flags_;
 
-  // 绑定klass
-  SetKlass(object, PyFunctionKlass::GetInstance());
-
-  return object;
+  return object.EscapeFrom(&scope);
 }
 
 // static
 Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
                                            Handle<PyString> func_name) {
-  Handle<PyFunction> object(
-      Universe::heap_->Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
+  HandleScope scope;
+  Handle<PyFunction> object = NewInstanceInternal();
+
   object->native_func_ = native_func;
   object->func_name_ = *func_name;
 
+  return object.EscapeFrom(&scope);
+}
+
+Handle<PyFunction> PyFunction::NewInstanceInternal() {
+  Handle<PyFunction> object(
+      Universe::heap_->Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
+
   // 绑定klass
   SetKlass(object, NativeFunctionKlass::GetInstance());
+
+  // 初始化properties
+  auto properties = PyDict::NewInstance();
+  PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  PyObject::SetProperties(*object, *properties);
+
+  // 初始化字段
+  object->func_code_ = Tagged<PyObject>::Null();
+  object->func_name_ = Tagged<PyObject>::Null();
+  object->default_args_ = Tagged<PyObject>::Null();
+  object->flags_ = 0;
+  object->native_func_ = nullptr;
 
   return object;
 }
@@ -66,7 +85,7 @@ void PyFunction::set_default_args(Handle<PyList> default_args) {
 }
 
 // static
-Handle<MethodObject> MethodObject::NewInstance(Handle<PyFunction> func,
+Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
                                                Handle<PyObject> owner) {
   Handle<MethodObject> object(Universe::heap_->Allocate<MethodObject>(
       Heap::AllocationSpace::kNewSpace));

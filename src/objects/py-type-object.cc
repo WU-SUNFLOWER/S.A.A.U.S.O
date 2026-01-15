@@ -4,8 +4,11 @@
 
 #include "src/objects/py-type-object.h"
 
+#include "include/saauso-internal.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-string.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/runtime/universe.h"
 
@@ -13,13 +16,23 @@ namespace saauso::internal {
 
 // static
 Handle<PyTypeObject> PyTypeObject::NewInstance() {
-  auto object =
-      Universe::heap_->Allocate<PyTypeObject>(Heap::AllocationSpace::kNewSpace);
+  HandleScope scope;
+
+  Handle<PyTypeObject> object(Universe::heap_->Allocate<PyTypeObject>(
+      Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass
   PyObject::SetKlass(object, PyTypeObjectKlass::GetInstance());
 
-  return Handle<PyTypeObject>(object);
+  // 初始化properties
+  auto properties = PyDict::NewInstance();
+  PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  PyObject::SetProperties(*object, *properties);
+
+  // 初始化对象字段
+  object->own_klass_ = Tagged<Klass>::Null();
+
+  return object.EscapeFrom(&scope);
 }
 
 // static

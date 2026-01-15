@@ -8,6 +8,7 @@
 #include "src/handles/tagged.h"
 #include "src/heap/spaces.h"
 #include "src/utils/vector.h"
+#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
@@ -76,12 +77,13 @@ class Heap {
   VirtualMemory* initial_chunk_;
 };
 
-// TODO: 实现分代式垃圾回收
-// #define WRITE_BARRIER(object, slot_address, value) \
-//   Universe::heap_->RecordWrite(                    \
-//       object, reinterpret_cast<Address*>(slot_address), value)
-
-#define WRITE_BARRIER(object, slot_address, value)
+#define WRITE_BARRIER(object, slot_address, value)                         \
+  do {                                                                     \
+    if (Universe::heap_ != nullptr) {                                      \
+      Universe::heap_->RecordWrite(                                        \
+          object, reinterpret_cast<Address*>(slot_address), value);        \
+    }                                                                      \
+  } while (false)
 
 }  // namespace saauso::internal
 

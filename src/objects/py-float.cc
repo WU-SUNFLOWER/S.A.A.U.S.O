@@ -22,6 +22,13 @@ Handle<PyFloat> PyFloat::NewInstance(double value) {
   // 绑定klass
   PyObject::SetKlass(object, PyFloatKlass::GetInstance());
 
+  // float类型没有__dict__，不需要初始化properties
+  // >>> 1.234.__dict__
+  // Traceback (most recent call last):
+  //   File "<stdin>", line 1, in <module>
+  // AttributeError: 'float' object has no attribute '__dict__'
+  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+
   return object;
 }
 

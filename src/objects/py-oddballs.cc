@@ -26,6 +26,13 @@ Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
   object->value_ = value;
   PyObject::SetKlass(object, PyBooleanKlass::GetInstance());
 
+  // bool类型没有__dict__，不需要初始化properties
+  // >>> True.__dict__
+  // Traceback (most recent call last):
+  //   File "<stdin>", line 1, in <module>
+  // AttributeError: 'bool' object has no attribute '__dict__'
+  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+
   return object;
 }
 
@@ -48,6 +55,14 @@ Tagged<PyNone> PyNone::NewInstance() {
   auto object =
       Universe::heap_->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
   PyObject::SetKlass(object, PyNoneKlass::GetInstance());
+
+  // NoneType类型没有__dict__，不需要初始化properties
+  // >>> None.__dict__
+  // Traceback (most recent call last):
+  //   File "<stdin>", line 1, in <module>
+  // AttributeError: 'NoneType' object has no attribute '__dict__'
+  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+
   return object;
 }
 
