@@ -77,13 +77,16 @@ class Heap {
   VirtualMemory* initial_chunk_;
 };
 
-#define WRITE_BARRIER(object, slot_address, value)                         \
-  do {                                                                     \
-    if (Universe::heap_ != nullptr) {                                      \
-      Universe::heap_->RecordWrite(                                        \
-          object, reinterpret_cast<Address*>(slot_address), value);        \
-    }                                                                      \
-  } while (false)
+// TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
+// #define WRITE_BARRIER(object, slot_address, value)                         \
+//   do {                                                                     \
+//     if (Universe::heap_ != nullptr) {                                      \
+//       Universe::heap_->RecordWrite(                                        \
+//           object, reinterpret_cast<Address*>(slot_address), value);        \
+//     }                                                                      \
+//   } while (false)
+
+#define WRITE_BARRIER(object, slot_address, value)
 
 }  // namespace saauso::internal
 

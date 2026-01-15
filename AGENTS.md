@@ -72,7 +72,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - `Handle<T>` 是“会被 GC 移动/回收的对象”的栈上安全持有方式；`Tagged<T>` 更接近裸指针语义。
   - `HandleScope` 管理 handle 生命周期；跨 scope 返回时使用 `EscapeFrom`。
   - 永久区对象（例如 `Universe::py_none_object_` / `py_true_object_` / `py_false_object_`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
-- **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。
+- **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。**当前的目标是实现一个仅含有新生代scavenge gc的MVP版本**！
 
 ### 3.3. 运行时 (`src/runtime`)
 - **Universe**: 全局静态容器，包含堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable) 与全局单例（如 `None`, `True`, `False`）。

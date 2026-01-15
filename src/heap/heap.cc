@@ -83,9 +83,9 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
       assert(0 && "unknown heap space!!!");
   }
 
-  if (result != kNullAddress) {
-    std::memset(reinterpret_cast<void*>(result), 0, size_in_bytes);
-  }
+  // if (result != kNullAddress) {
+  //   std::memset(reinterpret_cast<void*>(result), 0, size_in_bytes);
+  // }
 
   return result;
 }
@@ -179,9 +179,9 @@ void Heap::IterateRoots(ObjectVisitor* v) {
 
   // TODO: 遍历python运行时的GC ROOT
 
-  // TODO: 实现分代式GC
+  // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
   // 遍历记忆集 (Remembered Set)，处理跨代引用
-  IterateRememberedSet(v);
+  // IterateRememberedSet(v);
 }
 
 void Heap::DoScavenge() {
