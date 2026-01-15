@@ -13,8 +13,6 @@
 
 namespace saauso::internal {
 
-class ObjectVisitor;
-
 #define ST(x) (handle(Universe::string_table_->x##_str_))
 
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
@@ -59,7 +57,6 @@ class ObjectVisitor;
 class StringTable {
  public:
   StringTable();
-  void Iterate(ObjectVisitor* v);
 
 #define DECLARE_STR_FIELD(name, _) Tagged<PyString> name##_str_{kNullAddress};
   PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD)
