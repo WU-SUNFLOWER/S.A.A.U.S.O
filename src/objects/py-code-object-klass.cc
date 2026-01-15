@@ -15,24 +15,25 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
-Tagged<PyCodeObjectKlass> PyCodeObjectKlass::instance_(nullptr);
-
 // static
 Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyCodeObjectKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyCodeObjectKlass> instance = isolate->py_code_object_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyCodeObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_code_object_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyCodeObjectKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -66,7 +67,7 @@ void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 void PyCodeObjectKlass::Finalize() {
-  instance_ = Tagged<PyCodeObjectKlass>::Null();
+  Isolate::Current()->set_py_code_object_klass(Tagged<PyCodeObjectKlass>::Null());
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,7 @@
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -24,7 +24,7 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
 
   // 分配对象本体
   Handle<PyList> object(
-      Universe::heap_->Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
+      Isolate::Current()->heap()->Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
 
   // 分配fixed array
   Handle<FixedArray> array =

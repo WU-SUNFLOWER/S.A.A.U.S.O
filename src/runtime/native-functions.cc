@@ -8,7 +8,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -19,7 +19,7 @@ Handle<PyObject> Native_Print(Handle<PyList> args, Handle<PyDict> kwargs) {
     std::printf(" ");
   }
   std::printf("\n");
-  return handle(Universe::py_none_object_);
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Handle<PyObject> Native_Len(Handle<PyList> args, Handle<PyDict> kwargs) {
@@ -36,11 +36,11 @@ Handle<PyObject> Native_IsInstance(Handle<PyList> args, Handle<PyDict> kwargs) {
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto curr_type_object = mro_of_object->Get(i);
     if (IsPyTrue(PyObject::Equal(curr_type_object, target_type_object))) {
-      return handle(Universe::py_true_object_).EscapeFrom(&scope);
+      return handle(Isolate::Current()->py_true_object()).EscapeFrom(&scope);
     }
   }
 
-  return handle(Universe::py_false_object_).EscapeFrom(&scope);
+  return handle(Isolate::Current()->py_false_object()).EscapeFrom(&scope);
 }
 
 }  // namespace saauso::internal

@@ -10,7 +10,7 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -21,7 +21,7 @@ namespace saauso::internal {
 Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
   // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
   auto object =
-      Universe::heap_->Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);
+      Isolate::Current()->heap()->Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);
 
   object->value_ = value;
   PyObject::SetKlass(object, PyBooleanKlass::GetInstance());
@@ -43,7 +43,7 @@ Tagged<PyBoolean> PyBoolean::cast(Tagged<PyObject> object) {
 }
 
 Tagged<PyBoolean> PyBoolean::Reverse() {
-  return Universe::ToPyBoolean(!value_);
+  return Isolate::ToPyBoolean(!value_);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ Tagged<PyBoolean> PyBoolean::Reverse() {
 Tagged<PyNone> PyNone::NewInstance() {
   // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
   auto object =
-      Universe::heap_->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
+      Isolate::Current()->heap()->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
   PyObject::SetKlass(object, PyNoneKlass::GetInstance());
 
   // NoneType类型没有__dict__，不需要初始化properties

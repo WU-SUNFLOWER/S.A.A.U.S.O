@@ -15,7 +15,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -246,13 +246,13 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = PyFloat::NewInstance(reader_->ReadDouble());
         break;
       case kNoneObjectFlag:
-        object = Handle<PyNone>(Universe::py_none_object_);
+        object = Handle<PyNone>(Isolate::Current()->py_none_object());
         break;
       case kTrueObjectFlag:
-        object = Handle<PyBoolean>(Universe::py_true_object_);
+        object = Handle<PyBoolean>(Isolate::Current()->py_true_object());
         break;
       case kFalseObjectFlag:
-        object = Handle<PyBoolean>(Universe::py_false_object_);
+        object = Handle<PyBoolean>(Isolate::Current()->py_false_object());
         break;
       case kInternedStringFlag:
         object = ParseString(true);

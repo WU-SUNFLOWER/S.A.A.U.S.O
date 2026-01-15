@@ -9,11 +9,13 @@
 #include "src/build/buildflag.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
-#define ST(x) (handle(Universe::string_table_->x##_str_))
+class ObjectVisitor;
+
+#define ST(x) (handle(Isolate::Current()->string_table()->x##_str_))
 
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
   V(add, "__add__")                  \
@@ -57,6 +59,7 @@ namespace saauso::internal {
 class StringTable {
  public:
   StringTable();
+  void Iterate(ObjectVisitor* v);
 
 #define DECLARE_STR_FIELD(name, _) Tagged<PyString> name##_str_{kNullAddress};
   PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD)

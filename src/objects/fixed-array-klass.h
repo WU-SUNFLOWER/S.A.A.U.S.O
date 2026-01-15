@@ -20,7 +20,6 @@ class FixedArrayKlass : public Klass {
 
  private:
   FixedArrayKlass();
-  static Tagged<FixedArrayKlass> instance_;
 
   // GC相关接口
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

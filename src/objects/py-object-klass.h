@@ -21,8 +21,6 @@ class PyObjectKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<PyObjectKlass> instance_;
-
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };

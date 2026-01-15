@@ -9,14 +9,14 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-float-klass.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
 // static
 Handle<PyFloat> PyFloat::NewInstance(double value) {
   Handle<PyFloat> object(
-      Universe::heap_->Allocate<PyFloat>(Heap::AllocationSpace::kNewSpace));
+      Isolate::Current()->heap()->Allocate<PyFloat>(Heap::AllocationSpace::kNewSpace));
   object->value_ = value;
 
   // 绑定klass

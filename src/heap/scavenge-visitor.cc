@@ -13,7 +13,7 @@
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-object.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -21,7 +21,7 @@ namespace {
 
 Address AllocateInSurvivorSpace(size_t size) {
   Address target_addr =
-      Universe::heap_->new_space().survivor_space().AllocateRaw(size);
+      Isolate::Current()->heap()->new_space().survivor_space().AllocateRaw(size);
   // survivor space中理论上一定有剩余的空间
   assert(target_addr != kNullAddress &&
          "survivor space must have enough space!!!");
@@ -37,7 +37,7 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
 
     // 跳过空指针、Smi、指向meta space和不指向new space的指针
     if (object.IsNull() || !IsGcAbleObject(object) ||
-        !Universe::heap_->InNewSpaceEden(object.ptr())) {
+        !Isolate::Current()->heap()->InNewSpaceEden(object.ptr())) {
       continue;
     }
 

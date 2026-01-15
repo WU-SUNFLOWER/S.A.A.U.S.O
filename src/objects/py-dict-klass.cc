@@ -19,7 +19,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -35,27 +35,28 @@ Handle<PyObject> NativeMethod_SetDefault(Handle<PyList> args,
     PyDict::Put(object, key, value);
   }
 
-  return handle(Universe::py_none_object_);
+  return handle(Isolate::Current()->py_none_object());
 }
 
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////
 
-Tagged<PyDictKlass> PyDictKlass::instance_(kNullAddress);
-
 // static
 Tagged<PyDictKlass> PyDictKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyDictKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyDictKlass> instance = isolate->py_dict_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyDictKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_dict_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyDictKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -124,18 +125,18 @@ Tagged<PyBoolean> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
 
   // fast path
   if (self.is_identical_to(other)) {
-    return Universe::py_true_object_;
+    return Isolate::Current()->py_true_object();
   }
 
   if (!IsPyDict(other)) {
-    return Universe::py_false_object_;
+    return Isolate::Current()->py_false_object();
   }
 
   auto d1 = Handle<PyDict>::cast(self);
   auto d2 = Handle<PyDict>::cast(other);
 
   if (d1->occupied() != d2->occupied()) {
-    return Universe::py_false_object_;
+    return Isolate::Current()->py_false_object();
   }
 
   for (int64_t i = 0; i < d1->capacity(); ++i) {
@@ -144,24 +145,24 @@ Tagged<PyBoolean> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
       auto v1 = d1->data()->Get((i << 1) + 1);
       auto v2_handle = d2->Get(Handle<PyObject>(k1));
       if (v2_handle.IsNull()) {
-        return Universe::py_false_object_;
+        return Isolate::Current()->py_false_object();
       }
 
       if (IsPyFalse(PyObject::Equal(Handle<PyObject>(v1), v2_handle))) {
-        return Universe::py_false_object_;
+        return Isolate::Current()->py_false_object();
       }
     }
   }
-  return Universe::py_true_object_;
+  return Isolate::Current()->py_true_object();
 }
 
 // static
 Tagged<PyBoolean> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   if (IsPyTrue(Virtual_Equal(self, other))) {
-    return Universe::py_false_object_;
+    return Isolate::Current()->py_false_object();
   }
-  return Universe::py_true_object_;
+  return Isolate::Current()->py_true_object();
 }
 
 // static
@@ -216,7 +217,7 @@ void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 
 // static
 void PyDictKlass::Finalize() {
-  instance_ = Tagged<PyDictKlass>::Null();
+  Isolate::Current()->set_py_dict_klass(Tagged<PyDictKlass>::Null());
 }
 
 }  // namespace saauso::internal

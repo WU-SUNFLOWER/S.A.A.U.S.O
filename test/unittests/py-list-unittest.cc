@@ -9,7 +9,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -20,9 +20,20 @@ namespace saauso::internal {
 // - 通过 PyObject 多态入口触发 list 的虚表行为（add/mul/subscr/contains 等）
 class PyListTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
+
+  static Isolate* isolate_;
 };
+
+Isolate* PyListTest::isolate_ = nullptr;
 
 TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
   HandleScope scope;
@@ -66,14 +77,14 @@ TEST_F(PyListTest, SetRemoveClearWork) {
 
   list->Set(1, a);
   EXPECT_EQ(PyObject::Equal(list->Get(1), a).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
 
   list->RemoveByIndex(0);
   EXPECT_EQ(list->length(), 2);
   EXPECT_EQ(PyObject::Equal(list->Get(0), a).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::Equal(list->Get(1), c).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
 
   list->Clear();
   EXPECT_EQ(list->length(), 0);
@@ -183,9 +194,10 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
 
   Handle<PyObject> obj(list);
-  EXPECT_EQ(PyObject::Contains(obj, s).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Contains(obj, s).ptr(),
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2))).ptr(),
-            Universe::py_false_object_.ptr());
+            Isolate::Current()->py_false_object().ptr());
 
   auto list2 = PyList::NewInstance(2);
   PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
@@ -193,7 +205,7 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
 
   EXPECT_EQ(
       PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2)).ptr(),
-      Universe::py_true_object_.ptr());
+      Isolate::Current()->py_true_object().ptr());
 }
 
 TEST_F(PyListTest, PyObjectLessIsLexicographic) {
@@ -208,7 +220,7 @@ TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)));
 
   EXPECT_EQ(PyObject::Less(Handle<PyObject>(a), Handle<PyObject>(b)).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
 }
 
 }  // namespace saauso::internal

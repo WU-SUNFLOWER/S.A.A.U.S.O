@@ -15,8 +15,9 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/interpreter.h"
+#include "src/runtime/isolate.h"
 #include "src/runtime/string-table.h"
-#include "src/runtime/universe.h"
+
 
 namespace saauso::internal {
 
@@ -27,7 +28,7 @@ Handle<PyObject> FindAndCall(Handle<PyObject> object,
                              Handle<PyObject> func_name) {
   Handle<PyObject> func = PyObject::GetAttr(object, func_name);
   if (!IsPyNone(func)) {
-    return Universe::interpreter_->CallVirtual(func, args);
+    return Isolate::Current()->interpreter()->CallVirtual(func, args);
   }
 
   std::printf("class ");
@@ -35,7 +36,7 @@ Handle<PyObject> FindAndCall(Handle<PyObject> object,
   std::printf(" Error : unsupport operation for class ");
   std::exit(1);
 
-  return handle(Universe::py_none_object_);
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Handle<PyObject> FindPropertyInMro(Handle<PyObject> object,
@@ -228,8 +229,8 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
   }
 
   if (!IsPyNone(func)) {
-    Handle<PyObject> s =
-        Universe::interpreter_->CallVirtual(func, Handle<PyList>::Null());
+    Handle<PyObject> s = Isolate::Current()->interpreter()->CallVirtual(
+        func, Handle<PyList>::Null());
     PyObject::Print(Handle<PyString>::cast(s));
     return;
   }
@@ -255,8 +256,8 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
     std::exit(1);
   }
 
-  return Universe::interpreter_->CallVirtual(callable,
-                                             Handle<PyList>::cast(args));
+  return Isolate::Current()->interpreter()->CallVirtual(
+      callable, Handle<PyList>::cast(args));
 }
 
 Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
@@ -296,7 +297,7 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
     getattr_func = MethodObject::NewInstance(getattr_func, self);
     Handle<PyList> args = PyList::NewInstance(1);
     PyList::Append(args, prop_name);
-    return Universe::interpreter_->CallVirtual(getattr_func, args);
+    return Isolate::Current()->interpreter()->CallVirtual(getattr_func, args);
   }
 
   // 4. 还没找到，抛出错误并崩溃

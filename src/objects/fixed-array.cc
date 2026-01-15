@@ -11,7 +11,7 @@
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/py-object.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -19,7 +19,7 @@ namespace saauso::internal {
 // static
 Handle<FixedArray> FixedArray::NewInstance(int64_t capacity) {
   size_t object_size = ComputeObjectSize(capacity);
-  Tagged<FixedArray> object(Universe::heap_->AllocateRaw(
+  Tagged<FixedArray> object(Isolate::Current()->heap()->AllocateRaw(
       object_size, Heap::AllocationSpace::kNewSpace));
 
   // 设置字段

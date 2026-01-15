@@ -19,7 +19,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -31,29 +31,30 @@ Handle<PyObject> NativeMethod_Append(Handle<PyList> args,
   auto object = Handle<PyList>::cast(args->Get(0));
   PyList::Append(object, args->Get(1));
 
-  return handle(Universe::py_none_object_);
+  return handle(Isolate::Current()->py_none_object());
 }
 
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////
 
-Tagged<PyListKlass> PyListKlass::instance_(nullptr);
-
 // static
 Tagged<PyListKlass> PyListKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyListKlass>(
-        Heap::AllocationSpace::kMetaSpace);
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyListKlass> instance = isolate->py_list_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance =
+        isolate->heap()->Allocate<PyListKlass>(Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_list_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void PyListKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.len = &Virtual_Len;
@@ -93,7 +94,7 @@ void PyListKlass::Initialize() {
 }
 
 void PyListKlass::Finalize() {
-  instance_ = Tagged<PyListKlass>::Null();
+  Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::Null());
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
@@ -211,16 +212,16 @@ Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
 
     bool result = IsPyTrue(PyObject::Less(l, r));
     if (result) {
-      return Universe::py_true_object_;
+      return Isolate::Current()->py_true_object();
     }
 
     result = IsPyTrue(PyObject::Greater(l, r));
     if (result) {
-      return Universe::py_false_object_;
+      return Isolate::Current()->py_false_object();
     }
   }
 
-  return Universe::ToPyBoolean(list_l->length() < list_r->length());
+  return Isolate::ToPyBoolean(list_l->length() < list_r->length());
 }
 
 Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -234,11 +235,11 @@ Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
   for (auto i = 0; i < list->length(); ++i) {
     auto result = PyObject::Equal(list->Get(i), target);
     if (IsPyTrue(result)) {
-      return Universe::py_true_object_;
+      return Isolate::Current()->py_true_object();
     }
   }
 
-  return Universe::py_false_object_;
+  return Isolate::Current()->py_false_object();
 }
 
 Tagged<PyBoolean> PyListKlass::Virtual_Equal(Handle<PyObject> self,
@@ -247,16 +248,16 @@ Tagged<PyBoolean> PyListKlass::Virtual_Equal(Handle<PyObject> self,
   auto list2 = Handle<PyList>::cast(target);
 
   if (list1->length() != list2->length()) {
-    return Universe::py_false_object_;
+    return Isolate::Current()->py_false_object();
   }
 
   for (auto i = 0; i < list1->length(); ++i) {
     if (IsPyFalse(PyObject::Equal(list1->Get(i), list2->Get(i)))) {
-      return Universe::py_false_object_;
+      return Isolate::Current()->py_false_object();
     }
   }
 
-  return Universe::py_true_object_;
+  return Isolate::Current()->py_true_object();
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

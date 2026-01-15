@@ -20,8 +20,6 @@ class PyFunctionKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<PyFunctionKlass> instance_;
-
   static void Virtual_Print(Handle<PyObject> self);
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -38,8 +36,6 @@ class NativeFunctionKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<NativeFunctionKlass> instance_;
-
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Call(Handle<PyObject> self,
                                        Handle<PyObject> args,
@@ -60,8 +56,6 @@ class MethodObjectKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<MethodObjectKlass> instance_;
-
   static void Virtual_Print(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

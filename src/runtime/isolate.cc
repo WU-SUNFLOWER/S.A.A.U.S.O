@@ -2,12 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-float-klass.h"
@@ -24,30 +25,59 @@
 
 namespace saauso::internal {
 
-Heap* Universe::heap_ = nullptr;
-HandleScopeImplementer* Universe::handle_scope_implementer_ = nullptr;
-Vector<Klass*> Universe::klass_list_;
-Interpreter* Universe::interpreter_ = nullptr;
-StringTable* Universe::string_table_ = nullptr;
+thread_local Isolate* Isolate::current_ = nullptr;
 
-Tagged<PyNone> Universe::py_none_object_(nullptr);
-Tagged<PyBoolean> Universe::py_true_object_(nullptr);
-Tagged<PyBoolean> Universe::py_false_object_(nullptr);
+Isolate::Scope::Scope(Isolate* isolate) : previous_(Isolate::Current()) {
+  Isolate::SetCurrent(isolate);
+}
 
-// static
-void Universe::Genesis() {
-  heap_ = new Heap();
+Isolate::Scope::~Scope() {
+  Isolate::SetCurrent(previous_);
+}
+
+Isolate* Isolate::Create() {
+  auto* isolate = new Isolate();
+  isolate->Init();
+  return isolate;
+}
+
+void Isolate::Dispose(Isolate* isolate) {
+  if (isolate == nullptr) {
+    return;
+  }
+  isolate->TearDown();
+  if (Isolate::Current() == isolate) {
+    Isolate::SetCurrent(nullptr);
+  }
+  delete isolate;
+}
+
+Isolate* Isolate::Current() {
+  return current_;
+}
+
+void Isolate::SetCurrent(Isolate* isolate) {
+  current_ = isolate;
+}
+
+Tagged<PyBoolean> Isolate::ToPyBoolean(bool condition) {
+  Isolate* isolate = Isolate::Current();
+  return condition ? isolate->py_true_object_ : isolate->py_false_object_;
+}
+
+void Isolate::Init() {
+  heap_ = new Heap(this);
   heap_->Setup();
 
   handle_scope_implementer_ = new HandleScopeImplementer();
 
+  Scope isolate_scope(this);
   HandleScope scope;
   InitMetaArea();
   interpreter_ = new Interpreter();
 }
 
-// static
-void Universe::InitMetaArea() {
+void Isolate::InitMetaArea() {
 #define PREINIT_PY_KLASS(name)               \
   do {                                       \
     auto klass = name##Klass::GetInstance(); \
@@ -55,7 +85,6 @@ void Universe::InitMetaArea() {
     klass->PreInitialize();                  \
   } while (false);
   PY_TYPE_LIST(PREINIT_PY_KLASS)
-  // 特化klass初始化
   PREINIT_PY_KLASS(PyObject)
   PREINIT_PY_KLASS(NativeFunction)
 #undef PREINIT_PY_KLASS
@@ -67,19 +96,17 @@ void Universe::InitMetaArea() {
   py_false_object_ = PyBoolean::NewInstance(false);
 
 #define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
-  // PyObjectKlass是其他klass计算mro的基础，必须首先初始化！
   INIT_PY_KLASS(PyObject)
   PY_TYPE_LIST(INIT_PY_KLASS)
-  // 特化klass初始化
   INIT_PY_KLASS(NativeFunction)
 #undef INIT_PY_KLASS
 }
 
-// static
-void Universe::Destroy() {
+void Isolate::TearDown() {
+  Scope isolate_scope(this);
+
 #define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
-  // 特化klass反初始化
   FINALIZE_PY_KLASS(PyObject)
   FINALIZE_PY_KLASS(NativeFunction)
 #undef FINALIZE_PY_KLASS

@@ -16,7 +16,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -54,12 +54,23 @@ void AllocateEphemeralListsWithStrings(int list_count, int element_count) {
 // 夹具的作用是为每个测试提供统一的环境初始化。
 class GcTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
 
   void SetUp() override {}
   void TearDown() override {}
+
+  static Isolate* isolate_;
 };
+
+Isolate* GcTest::isolate_ = nullptr;
 
 // 测试针对字符串的copy gc
 TEST_F(GcTest, CopyGcTestForPyString) {
@@ -69,7 +80,7 @@ TEST_F(GcTest, CopyGcTestForPyString) {
 
   Handle<PyString> str1 = PyString::NewInstance(content);
   Address a1 = (*str1).ptr();
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
   Handle<PyString> str2 = PyString::NewInstance(content);
   Address a2 = (*str1).ptr();
 
@@ -98,7 +109,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   //////////////////////////////////////////
 
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   //////////////////////////////////////////
 
@@ -126,7 +137,7 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   PyList::Append(list1, content);
   PyList::Append(list2, content);
 
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   EXPECT_PY_TRUE(PyObject::Equal(list1, list2));
   EXPECT_PY_TRUE(PyObject::Equal(list1->Get(0), list2->Get(0)));
@@ -151,7 +162,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     PyDict::Put(dict, key, value);
   }
 
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   EXPECT_NE(dict_addr_before, (*dict).ptr());
   EXPECT_EQ(dict->occupied(), kCount);
@@ -176,21 +187,21 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
   // - None/True/False 属于 VM 的全局单例，分配在 meta space 上
   // - 新生代 GC（Scavenge）只搬迁 eden -> survivor 的对象
   //   因此 meta space 的对象地址必须保持稳定
-  Address none_addr_before = Universe::py_none_object_.ptr();
-  Address true_addr_before = Universe::py_true_object_.ptr();
-  Address false_addr_before = Universe::py_false_object_.ptr();
+  Address none_addr_before = Isolate::Current()->py_none_object().ptr();
+  Address true_addr_before = Isolate::Current()->py_true_object().ptr();
+  Address false_addr_before = Isolate::Current()->py_false_object().ptr();
 
   AllocateEphemeralStrings(2000);
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
   AllocateEphemeralListsWithStrings(200, 8);
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
-  EXPECT_EQ(none_addr_before, Universe::py_none_object_.ptr());
-  EXPECT_EQ(true_addr_before, Universe::py_true_object_.ptr());
-  EXPECT_EQ(false_addr_before, Universe::py_false_object_.ptr());
+  EXPECT_EQ(none_addr_before, Isolate::Current()->py_none_object().ptr());
+  EXPECT_EQ(true_addr_before, Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(false_addr_before, Isolate::Current()->py_false_object().ptr());
 
-  EXPECT_TRUE(IsPyTrue(Universe::ToPyBoolean(true)));
-  EXPECT_TRUE(IsPyFalse(Universe::ToPyBoolean(false)));
+  EXPECT_TRUE(IsPyTrue(Isolate::ToPyBoolean(true)));
+  EXPECT_TRUE(IsPyFalse(Isolate::ToPyBoolean(false)));
 }
 
 TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
@@ -214,7 +225,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   Address list_addr_before = (*list).ptr();
 
   AllocateEphemeralListsWithStrings(120, 6);
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   // dict/list 作为 GC ROOT（被 Handle 持有）应当在 minor GC 后存活且被搬迁。
   EXPECT_NE(dict_addr_before, (*dict).ptr());
@@ -248,7 +259,7 @@ TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
   Address addr_before = (*escaped).ptr();
 
   AllocateEphemeralStrings(4000);
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   EXPECT_NE(addr_before, (*escaped).ptr());
   EXPECT_EQ(
@@ -265,7 +276,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   PyList::Append(list, PyString::NewInstance("tail"));
 
   Address before = (*list).ptr();
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   EXPECT_NE(before, (*list).ptr());
   EXPECT_EQ(list->length(), 2);
@@ -289,7 +300,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
     PyList::Append(list, Handle<PyObject>(smi));
   }
 
-  Universe::heap_->CollectGarbage();
+  Isolate::Current()->heap()->CollectGarbage();
 
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;

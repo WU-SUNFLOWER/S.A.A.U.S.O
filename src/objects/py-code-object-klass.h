@@ -18,7 +18,6 @@ class PyCodeObjectKlass : public Klass {
 
  private:
   PyCodeObjectKlass();
-  static Tagged<PyCodeObjectKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
 

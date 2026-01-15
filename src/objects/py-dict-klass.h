@@ -40,8 +40,6 @@ class PyDictKlass : public Klass {
                                             Handle<PyObject> subscr);
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
-
-  static Tagged<PyDictKlass> instance_;
 };
 
 }  // namespace saauso::internal

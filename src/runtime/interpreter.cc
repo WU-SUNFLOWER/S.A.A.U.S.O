@@ -24,7 +24,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/native-functions.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -49,11 +49,11 @@ Interpreter::Interpreter() {
 
   // 注册oddballs
   PyDict::Put(builtins, PyString::NewInstance("True"),
-              handle(Universe::py_true_object_));
+              handle(Isolate::Current()->py_true_object()));
   PyDict::Put(builtins, PyString::NewInstance("False"),
-              handle(Universe::py_false_object_));
+              handle(Isolate::Current()->py_false_object()));
   PyDict::Put(builtins, PyString::NewInstance("None"),
-              handle(Universe::py_none_object_));
+              handle(Isolate::Current()->py_none_object()));
 
   // 注册native function
   auto func_name = PyString::NewInstance("print");
@@ -85,7 +85,7 @@ Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> callable,
 
   if (IsPyFunction(callable)) {
     // TODO: 创建新的虚拟机栈帧，执行python代码
-    return handle(Universe::py_none_object_).EscapeFrom(&scope);
+    return handle(Isolate::Current()->py_none_object()).EscapeFrom(&scope);
   }
 
   if (IsMethodObject(callable)) {

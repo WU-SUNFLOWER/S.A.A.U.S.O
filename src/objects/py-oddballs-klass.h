@@ -22,8 +22,6 @@ class PyBooleanKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<PyBooleanKlass> instance_;
-
   static void Virtual_Print(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
                                          Handle<PyObject> other);
@@ -41,7 +39,6 @@ class PyNoneKlass : public Klass {
 
  private:
   PyNoneKlass();
-  static Tagged<PyNoneKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,

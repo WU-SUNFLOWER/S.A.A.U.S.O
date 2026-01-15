@@ -9,7 +9,7 @@
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -30,7 +30,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
                                                Handle<PyString> co_name,
                                                int line_no,
                                                Handle<PyString> no_table) {
-  Handle<PyCodeObject> object(Universe::heap_->Allocate<PyCodeObject>(
+  Handle<PyCodeObject> object(Isolate::Current()->heap()->Allocate<PyCodeObject>(
       Heap::AllocationSpace::kNewSpace));
   PyObject::SetKlass(object, PyCodeObjectKlass::GetInstance());
 

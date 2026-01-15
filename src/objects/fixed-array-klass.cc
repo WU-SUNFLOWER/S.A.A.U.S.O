@@ -8,24 +8,25 @@
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
-Tagged<FixedArrayKlass> FixedArrayKlass::instance_(nullptr);
-
 // static
 Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<FixedArrayKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<FixedArrayKlass> instance = isolate->fixed_array_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<FixedArrayKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_fixed_array_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void FixedArrayKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.instance_size = &Virtual_InstanceSize;
@@ -36,7 +37,7 @@ void FixedArrayKlass::Initialize() {}
 
 // static
 void FixedArrayKlass::Finalize() {
-  instance_ = Tagged<FixedArrayKlass>::Null();
+  Isolate::Current()->set_fixed_array_klass(Tagged<FixedArrayKlass>::Null());
 }
 
 // static

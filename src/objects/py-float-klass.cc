@@ -17,7 +17,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -46,22 +46,23 @@ double ExtractValue(Handle<PyObject> object) {
 
 ////////////////////////////////////////////////////////////////////
 
-Tagged<PyFloatKlass> PyFloatKlass::instance_(nullptr);
-
 // static
 Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyFloatKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyFloatKlass> instance = isolate->py_float_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyFloatKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_float_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void PyFloatKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.add = &Virtual_Add;
@@ -96,7 +97,7 @@ void PyFloatKlass::Initialize() {
 }
 
 void PyFloatKlass::Finalize() {
-  instance_ = Tagged<PyFloatKlass>::Null();
+  Isolate::Current()->set_py_float_klass(Tagged<PyFloatKlass>::Null());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -164,7 +165,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Universe::ToPyBoolean(self_value > other_value);
+  return Isolate::ToPyBoolean(self_value > other_value);
 }
 
 // static
@@ -173,7 +174,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Universe::ToPyBoolean(self_value < other_value);
+  return Isolate::ToPyBoolean(self_value < other_value);
 }
 
 // static
@@ -182,7 +183,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Universe::ToPyBoolean(self_value == other_value);
+  return Isolate::ToPyBoolean(self_value == other_value);
 }
 
 // static
@@ -191,7 +192,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Universe::ToPyBoolean(self_value != other_value);
+  return Isolate::ToPyBoolean(self_value != other_value);
 }
 
 // static
@@ -200,7 +201,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
   assert(IsPyFloat(self));
   bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
             IsPyTrue(Virtual_Equal(self, other)));
-  return Universe::ToPyBoolean(v);
+  return Isolate::ToPyBoolean(v);
 }
 
 // static
@@ -209,7 +210,7 @@ Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
   assert(IsPyFloat(self));
   bool v = (IsPyTrue(Virtual_Less(self, other)) ||
             IsPyTrue(Virtual_Equal(self, other)));
-  return Universe::ToPyBoolean(v);
+  return Isolate::ToPyBoolean(v);
 }
 
 // static

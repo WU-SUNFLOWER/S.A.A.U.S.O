@@ -13,26 +13,27 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
 //////////////////////////////////////////////////////////////////////////
 // PyFunctionKlass实现
 
-Tagged<PyFunctionKlass> PyFunctionKlass::instance_(kNullAddress);
-
 Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyFunctionKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyFunctionKlass> instance = isolate->py_function_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyFunctionKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_function_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyFunctionKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -56,7 +57,7 @@ void PyFunctionKlass::Initialize() {
 }
 
 void PyFunctionKlass::Finalize() {
-  instance_ = Tagged<PyFunctionKlass>::Null();
+  Isolate::Current()->set_py_function_klass(Tagged<PyFunctionKlass>::Null());
 }
 
 void PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
@@ -81,19 +82,20 @@ void PyFunctionKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 ///////////////////////////////////////////////////////////////
 // NativeFunctionKlass
 
-Tagged<NativeFunctionKlass> NativeFunctionKlass::instance_(kNullAddress);
-
 Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<NativeFunctionKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<NativeFunctionKlass> instance = isolate->native_function_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<NativeFunctionKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_native_function_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void NativeFunctionKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -105,7 +107,8 @@ void NativeFunctionKlass::PreInitialize() {
 void NativeFunctionKlass::Initialize() {}
 
 void NativeFunctionKlass::Finalize() {
-  instance_ = Tagged<NativeFunctionKlass>::Null();
+  Isolate::Current()->set_native_function_klass(
+      Tagged<NativeFunctionKlass>::Null());
 }
 
 void NativeFunctionKlass::Virtual_Print(Handle<PyObject> self) {
@@ -139,19 +142,20 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
 ///////////////////////////////////////////////////////////////
 // MethodKlass
 
-Tagged<MethodObjectKlass> MethodObjectKlass::instance_(kNullAddress);
-
 Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<MethodObjectKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<MethodObjectKlass> instance = isolate->method_object_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<MethodObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_method_object_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void MethodObjectKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -162,7 +166,7 @@ void MethodObjectKlass::PreInitialize() {
 void MethodObjectKlass::Initialize() {}
 
 void MethodObjectKlass::Finalize() {
-  instance_ = Tagged<MethodObjectKlass>::Null();
+  Isolate::Current()->set_method_object_klass(Tagged<MethodObjectKlass>::Null());
 }
 
 void MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {

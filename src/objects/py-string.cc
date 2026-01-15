@@ -12,7 +12,7 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-string-klass.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "third_party/rapidhash/rapidhash.h"
 
 namespace saauso::internal {
@@ -29,7 +29,7 @@ Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   // 计算出PyString结构体+字符串数据区+对齐所需要的总长度
   size_t object_size = ComputeObjectSize(str_length);
 
-  Tagged<PyString> object(Universe::heap_->AllocateRaw(
+  Tagged<PyString> object(Isolate::Current()->heap()->AllocateRaw(
       object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
                                  : Heap::AllocationSpace::kNewSpace));
 

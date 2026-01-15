@@ -8,7 +8,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -17,9 +17,20 @@ namespace saauso::internal {
 // 这里主要验证与 Smi 的双向混合运算、比较，以及 GC-able 判定。
 class PyFloatTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
+
+  static Isolate* isolate_;
 };
+
+Isolate* PyFloatTest::isolate_ = nullptr;
 
 TEST_F(PyFloatTest, NewInstanceStoresValue) {
   HandleScope scope;
@@ -94,16 +105,19 @@ TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
   Handle<PyObject> f11(PyFloat::NewInstance(11.0));
   Handle<PyObject> i10(PySmi::FromInt(10));
 
-  EXPECT_EQ(PyObject::Equal(f10, i10).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Equal(f10, i10).ptr(),
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::NotEqual(f11, i10).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
 
-  EXPECT_EQ(PyObject::Less(f10, f11).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Less(f10, f11).ptr(),
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::LessEqual(f10, i10).ptr(),
-            Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Greater(f11, f10).ptr(), Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Greater(f11, f10).ptr(),
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::GreaterEqual(f10, i10).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
 }
 
 }  // namespace saauso::internal

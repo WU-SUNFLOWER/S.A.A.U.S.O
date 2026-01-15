@@ -20,7 +20,6 @@ class PyFloatKlass : public Klass {
 
  private:
   PyFloatKlass();
-  static Tagged<PyFloatKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject>);
 

@@ -7,12 +7,13 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 using namespace saauso::internal;
 
 int main() {
-  Universe::Genesis();
+  Isolate* isolate = Isolate::Create();
+  Isolate::Scope isolate_scope(isolate);
 
   {
     HandleScope scope;
@@ -27,11 +28,11 @@ int main() {
     }
 
     Address a1 = (*list1).ptr();
-    Universe::heap_->CollectGarbage();
+    isolate->heap()->CollectGarbage();
     Address a2 = (*list1).ptr();
 
     std::cout << "a1=" << a1 << ", a2=" << a2 << std::endl;
   }
 
-  Universe::Destroy();
+  Isolate::Dispose(isolate);
 }

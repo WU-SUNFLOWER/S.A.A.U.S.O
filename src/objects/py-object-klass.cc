@@ -9,24 +9,25 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
-Tagged<PyObjectKlass> PyObjectKlass::instance_(kNullAddress);
-
 // static
 Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyObjectKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyObjectKlass> instance = isolate->py_object_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_object_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyObjectKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
@@ -49,7 +50,7 @@ void PyObjectKlass::Initialize() {
 
 // static
 void PyObjectKlass::Finalize() {
-  instance_ = Tagged<PyObjectKlass>::Null();
+  Isolate::Current()->set_py_object_klass(Tagged<PyObjectKlass>::Null());
 }
 
 size_t PyObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

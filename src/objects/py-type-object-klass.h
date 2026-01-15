@@ -22,8 +22,6 @@ class PyTypeObjectKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<PyTypeObjectKlass> instance_;
-
   static void Virtual_Print(Handle<PyObject> self);
 
   static Handle<PyObject> Virtual_GetAttr(Handle<PyObject> self,

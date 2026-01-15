@@ -6,7 +6,7 @@
 
 #include "include/saauso-internal.h"
 #include "src/handles/handle_scope_implementer.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -23,7 +23,7 @@ HandleScope::~HandleScope() {
 
 void HandleScope::Close() {
   if (!is_closed_) {
-    Universe::handle_scope_implementer_->ReleaseSpareAndExtendedBlocks(
+    Isolate::Current()->handle_scope_implementer()->ReleaseSpareAndExtendedBlocks(
         current_.extension);
     current_ = previous_;  // 恢复父级scope的现场
     is_closed_ = true;
@@ -55,7 +55,7 @@ Address* HandleScope::CreateHandle(Address ptr) {
 
 // static
 void HandleScope::Extend() {
-  HandleScopeImplementer* impl = Universe::handle_scope_implementer_;
+  HandleScopeImplementer* impl = Isolate::Current()->handle_scope_implementer();
   Address* new_block = impl->AllocateSpareOrNewBlock();
   current_.extension++;
   current_.next = new_block;

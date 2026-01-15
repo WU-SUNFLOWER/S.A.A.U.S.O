@@ -10,7 +10,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object-klass.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -18,7 +18,7 @@ namespace saauso::internal {
 Handle<PyTypeObject> PyTypeObject::NewInstance() {
   HandleScope scope;
 
-  Handle<PyTypeObject> object(Universe::heap_->Allocate<PyTypeObject>(
+  Handle<PyTypeObject> object(Isolate::Current()->heap()->Allocate<PyTypeObject>(
       Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass

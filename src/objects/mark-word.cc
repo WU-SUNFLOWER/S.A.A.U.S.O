@@ -10,7 +10,7 @@
 #include "src/objects/klass.h"
 #include "src/objects/objects.h"
 #include "src/objects/py-object.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 
 namespace saauso::internal {
@@ -23,7 +23,7 @@ MarkWord MarkWord::FromKlass(const Tagged<Klass> klass) {
 // static
 MarkWord MarkWord::FromForwardingAddress(const Tagged<PyObject> target_object) {
   assert(IsHeapObject(target_object) &&
-         Universe::heap_->InNewSpaceSurvivor(target_object.ptr()));
+         Isolate::Current()->heap()->InNewSpaceSurvivor(target_object.ptr()));
   Address value = target_object.ptr() | kForwardingTag;
   return MarkWord(value);
 }

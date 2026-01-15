@@ -17,29 +17,28 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
 
-Tagged<PySmiKlass> PySmiKlass::instance_(nullptr);
-
 // static
 Tagged<PySmiKlass> PySmiKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PySmiKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PySmiKlass> instance = isolate->py_smi_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PySmiKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_smi_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void PySmiKlass::PreInitialize() {
-  // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
-  // 初始化虚函数表
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
@@ -56,22 +55,18 @@ void PySmiKlass::PreInitialize() {
 }
 
 void PySmiKlass::Initialize() {
-  // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
-  // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
 
-  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   OrderSupers();
 
-  // 设置类名
   set_name(PyString::NewInstance("int"));
 }
 
 void PySmiKlass::Finalize() {
-  instance_ = Tagged<PySmiKlass>::Null();
+  Isolate::Current()->set_py_smi_klass(Tagged<PySmiKlass>::Null());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -95,7 +90,6 @@ Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
   std::printf("TypeError: unsupported operand type(s) for +: 'int' and '%.*s'",
               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
               PyObject::GetKlass(other)->name()->buffer());
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
   return Handle<PyObject>::Null();
@@ -116,7 +110,6 @@ Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
   std::printf("TypeError: unsupported operand type(s) for -: 'int' and '%.*s'",
               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
               PyObject::GetKlass(other)->name()->buffer());
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
   return Handle<PyObject>::Null();
@@ -137,7 +130,6 @@ Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
   std::printf("TypeError: unsupported operand type(s) for *: 'int' and '%.*s'",
               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
               PyObject::GetKlass(other)->name()->buffer());
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
   return Handle<PyObject>::Null();
@@ -159,7 +151,6 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
   std::printf("TypeError: unsupported operand type(s) for /: 'int' and '%.*s'",
               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
               PyObject::GetKlass(other)->name()->buffer());
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
   return Handle<PyObject>::Null();
@@ -181,8 +172,6 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
   std::printf("TypeError: unsupported operand type(s) for %%: 'int' and '%.*s'",
               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
               PyObject::GetKlass(other)->name()->buffer());
-
-  // TODO: 现在虚拟机里还没有错误处理系统，我们先暂时让它直接崩溃掉
   std::exit(1);
 
   return Handle<PyObject>::Null();
@@ -190,7 +179,6 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
 
 // static
 uint64_t PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
-  // 对于负数，会被hash成一个巨大的正数
   return PySmi::cast(*self).value();
 }
 
@@ -203,14 +191,27 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
 
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return Universe::ToPyBoolean(self_value > other_value);
+    return Isolate::ToPyBoolean(self_value > other_value);
   }
-
-  return Universe::py_false_object_;
+  return Isolate::Current()->py_false_object();
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
+  assert(IsPySmi(self));
+
+  int64_t self_value = PySmi::cast(*self).value();
+
+  if (IsPyFloat(other)) {
+    double other_value = Handle<PyFloat>::cast(other)->value();
+    return Isolate::ToPyBoolean(self_value < other_value);
+  }
+  return Isolate::Current()->py_false_object();
+}
+
+// static
+Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPySmi(self));
 
@@ -218,30 +219,14 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
 
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return Universe::ToPyBoolean(self_value < other_value);
+    return Isolate::ToPyBoolean(self_value == other_value);
   }
-
-  return Universe::py_false_object_;
-}
-
-// static
-Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
-  assert(IsPySmi(self));
-
-  int64_t self_value = PySmi::cast(*self).value();
-
-  if (IsPyFloat(other)) {
-    double other_value = Handle<PyFloat>::cast(other)->value();
-    return Universe::ToPyBoolean(self_value == other_value);
-  }
-
-  return Universe::py_false_object_;
+  return Isolate::Current()->py_false_object();
 }
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                               Handle<PyObject> other) {
+                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   return Virtual_Equal(self, other)->Reverse();
@@ -254,7 +239,7 @@ Tagged<PyBoolean> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
 
   bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
             IsPyTrue(Virtual_Equal(self, other)));
-  return Universe::ToPyBoolean(v);
+  return Isolate::ToPyBoolean(v);
 }
 
 // static
@@ -262,10 +247,10 @@ Tagged<PyBoolean> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  bool v = (IsPyTrue(Virtual_Less(self, other)) ||
-            IsPyTrue(Virtual_Equal(self, other)));
-
-  return Universe::ToPyBoolean(v);
+  bool v =
+      (IsPyTrue(Virtual_Less(self, other)) || IsPyTrue(Virtual_Equal(self, other)));
+  return Isolate::ToPyBoolean(v);
 }
 
 }  // namespace saauso::internal
+

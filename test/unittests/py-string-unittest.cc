@@ -9,19 +9,30 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
 // 说明：
-// - Universe::Genesis()/Destroy() 用于初始化/销毁虚拟机全局运行时。
+// - Isolate::Create()/Dispose() 用于初始化/销毁虚拟机运行时。
 // - 每个测试用例内部创建 HandleScope，避免 GC 触发时句柄失效。
 class PyStringTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
+
+  static Isolate* isolate_;
 };
+
+Isolate* PyStringTest::isolate_ = nullptr;
 
 static void ExpectStringEquals(Handle<PyString> s, const char* expected) {
   const int64_t len = static_cast<int64_t>(std::strlen(expected));
@@ -90,13 +101,18 @@ TEST_F(PyStringTest, PyObjectComparisonsWork) {
   Handle<PyObject> b(PyString::NewInstance("abd"));
   Handle<PyObject> a2(PyString::NewInstance("abc"));
 
-  EXPECT_EQ(PyObject::Less(a, b).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Greater(b, a).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Equal(a, a2).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::NotEqual(a, b).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::LessEqual(a, a2).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Less(a, b).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Greater(b, a).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Equal(a, a2).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::NotEqual(a, b).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::LessEqual(a, a2).ptr(),
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::GreaterEqual(a, a2).ptr(),
-            Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
 }
 
 TEST_F(PyStringTest, SliceWorks) {

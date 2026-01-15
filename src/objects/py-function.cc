@@ -12,7 +12,7 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -42,7 +42,7 @@ Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
 
 Handle<PyFunction> PyFunction::NewInstanceInternal() {
   Handle<PyFunction> object(
-      Universe::heap_->Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
+      Isolate::Current()->heap()->Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass
   SetKlass(object, NativeFunctionKlass::GetInstance());
@@ -87,7 +87,7 @@ void PyFunction::set_default_args(Handle<PyList> default_args) {
 // static
 Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
                                                Handle<PyObject> owner) {
-  Handle<MethodObject> object(Universe::heap_->Allocate<MethodObject>(
+  Handle<MethodObject> object(Isolate::Current()->heap()->Allocate<MethodObject>(
       Heap::AllocationSpace::kNewSpace));
   object->owner_ = *owner;
   object->func_ = *func;

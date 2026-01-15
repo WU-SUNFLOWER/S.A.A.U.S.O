@@ -7,16 +7,27 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-function.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
 class AttributeTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
+
+  static Isolate* isolate_;
 };
+
+Isolate* AttributeTest::isolate_ = nullptr;
 
 TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
   HandleScope scope;

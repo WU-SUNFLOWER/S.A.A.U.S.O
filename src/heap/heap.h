@@ -8,10 +8,10 @@
 #include "src/handles/tagged.h"
 #include "src/heap/spaces.h"
 #include "src/utils/vector.h"
-#include "src/runtime/universe.h"
 
 namespace saauso::internal {
 
+class Isolate;
 class ObjectVisitor;
 class VirtualMemory;
 
@@ -22,6 +22,9 @@ class Heap {
   static constexpr size_t kDefaultMetaSpaceSize = 5 * 1024 * 1024;
 
   enum class AllocationSpace { kNewSpace, kOldSpace, kMetaSpace };
+
+  explicit Heap(Isolate* isolate) : isolate_(isolate) {}
+  Heap() = delete;
 
   void Setup(size_t young_generation_size = kDefaultYoungGenerationSize,
              size_t old_generation_size = kDefaultOldGenerationSize,
@@ -75,13 +78,15 @@ class Heap {
   // TODO: 实现大块虚拟内存的灵活生长和收缩
   size_t initial_size_;
   VirtualMemory* initial_chunk_;
+
+  Isolate* isolate_{nullptr};
 };
 
 // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
 // #define WRITE_BARRIER(object, slot_address, value)                         \
 //   do {                                                                     \
-//     if (Universe::heap_ != nullptr) {                                      \
-//       Universe::heap_->RecordWrite(                                        \
+//     if (Isolate::Current() != nullptr) {                                   \
+//       Isolate::Current()->heap()->RecordWrite(                             \
 //           object, reinterpret_cast<Address*>(slot_address), value);        \
 //     }                                                                      \
 //   } while (false)

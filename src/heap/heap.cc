@@ -15,8 +15,8 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
 #include "src/runtime/interpreter.h"
+#include "src/runtime/isolate.h"
 #include "src/runtime/string-table.h"
-#include "src/runtime/universe.h"
 #include "src/utils/allocation.h"
 
 namespace saauso::internal {
@@ -159,22 +159,22 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
 void Heap::IterateRoots(ObjectVisitor* v) {
   // 遍历所有klass，处理klass内部持有引用的对象
-  for (auto i = 0; i < Universe::klass_list_.length(); ++i) {
-    Universe::klass_list_.Get(i)->Iterate(v);
+  for (auto i = 0; i < isolate_->klass_list().length(); ++i) {
+    isolate_->klass_list().Get(i)->Iterate(v);
   }
 
   // 遍历handle，处理所有handle scope block中持有引用的对象
-  if (Universe::handle_scope_implementer_) {
-    Universe::handle_scope_implementer_->Iterate(v);
+  if (isolate_->handle_scope_implementer() != nullptr) {
+    isolate_->handle_scope_implementer()->Iterate(v);
   }
 
   // 遍历字节码解释器中持有的引用
-  if (Universe::interpreter_ != nullptr) {
-    Universe::interpreter_->Iterate(v);
+  if (isolate_->interpreter() != nullptr) {
+    isolate_->interpreter()->Iterate(v);
   }
 
-  if (Universe::string_table_ != nullptr) {
-    Universe::string_table_->Iterate(v);
+  if (isolate_->string_table() != nullptr) {
+    isolate_->string_table()->Iterate(v);
   }
 
   // TODO: 遍历python运行时的GC ROOT

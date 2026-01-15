@@ -23,7 +23,6 @@ class PySmiKlass : public Klass {
 
  private:
   PySmiKlass();
-  static Tagged<PySmiKlass> instance_;
 
   static void Virtual_Print(Handle<PyObject>);
 

@@ -27,7 +27,7 @@
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -111,11 +111,13 @@ bool IsPySmi(Tagged<PyObject> object) {
 }
 
 bool IsPyTrue(Tagged<PyObject> object) {
-  return object.ptr() == Tagged<PyObject>(Universe::py_true_object_).ptr();
+  return object.ptr() ==
+         Tagged<PyObject>(Isolate::Current()->py_true_object()).ptr();
 }
 
 bool IsPyFalse(Tagged<PyObject> object) {
-  return object.ptr() == Tagged<PyObject>(Universe::py_false_object_).ptr();
+  return object.ptr() ==
+         Tagged<PyObject>(Isolate::Current()->py_false_object()).ptr();
 }
 
 bool IsHeapObject(Tagged<PyObject> object) {
@@ -234,8 +236,8 @@ Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::cast(*self).value() >
-                                 PySmi::cast(*other).value());
+    return Isolate::ToPyBoolean(PySmi::cast(*self).value() >
+                                PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -249,8 +251,8 @@ Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
                                  Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::cast(*self).value() <
-                                 PySmi::cast(*other).value());
+    return Isolate::ToPyBoolean(PySmi::cast(*self).value() <
+                                PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -264,13 +266,13 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
                                   Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::cast(*self).value() ==
-                                 PySmi::cast(*other).value());
+    return Isolate::ToPyBoolean(PySmi::cast(*self).value() ==
+                                PySmi::cast(*other).value());
   }
 
   // 内联Fast Path：直接比较内存地址
   if ((*self).ptr() == (*other).ptr()) {
-    return Universe::py_true_object_;
+    return Isolate::Current()->py_true_object();
   }
 
   HandleScope scope;
@@ -284,8 +286,8 @@ Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
                                      Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::cast(*self).value() !=
-                                 PySmi::cast(*other).value());
+    return Isolate::ToPyBoolean(PySmi::cast(*self).value() !=
+                                PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -299,8 +301,8 @@ Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::cast(*self).value() >=
-                                 PySmi::cast(*other).value());
+    return Isolate::ToPyBoolean(PySmi::cast(*self).value() >=
+                                PySmi::cast(*other).value());
   }
 
   HandleScope scope;
@@ -314,8 +316,8 @@ Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Universe::ToPyBoolean(PySmi::cast(*self).value() <=
-                                 PySmi::cast(*other).value());
+    return Isolate::ToPyBoolean(PySmi::cast(*self).value() <=
+                                PySmi::cast(*other).value());
   }
 
   HandleScope scope;

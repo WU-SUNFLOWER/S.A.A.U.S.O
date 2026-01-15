@@ -11,7 +11,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -24,12 +24,23 @@ namespace saauso::internal {
 // 夹具的作用是为每个测试提供统一的环境初始化。
 class HandleTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
 
   void SetUp() override {}
   void TearDown() override {}
+
+  static Isolate* isolate_;
 };
+
+Isolate* HandleTest::isolate_ = nullptr;
 
 TEST_F(HandleTest, EscapeFromHandleScope) {
   HandleScope scope;
@@ -52,8 +63,10 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   HandleScope scope;
 
-  int nr_base_block = Universe::handle_scope_implementer_->blocks().length();
-  int nr_base_handles = Universe::handle_scope_implementer_->NumberOfHandles();
+  int nr_base_block =
+      Isolate::Current()->handle_scope_implementer()->blocks().length();
+  int nr_base_handles =
+      Isolate::Current()->handle_scope_implementer()->NumberOfHandles();
 
   EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
 
@@ -67,18 +80,20 @@ TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   }
 
   int nr_expect_handles = nr_base_handles + kNumberOfHandles;
-  EXPECT_EQ(Universe::handle_scope_implementer_->NumberOfHandles(),
+  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
             nr_expect_handles);
 
-  EXPECT_EQ(Universe::handle_scope_implementer_->blocks().length(),
+  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
             NR_BLOCKS(nr_expect_handles));
 }
 
 TEST_F(HandleTest, NestedHandleScopes) {
   HandleScope scope;
 
-  int nr_base_block = Universe::handle_scope_implementer_->blocks().length();
-  int nr_base_handles = Universe::handle_scope_implementer_->NumberOfHandles();
+  int nr_base_block =
+      Isolate::Current()->handle_scope_implementer()->blocks().length();
+  int nr_base_handles =
+      Isolate::Current()->handle_scope_implementer()->NumberOfHandles();
 
   EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
 
@@ -89,9 +104,9 @@ TEST_F(HandleTest, NestedHandleScopes) {
   Handle<PySmi> object3(PySmi::FromInt(3));
 
   int outer_handles = nr_base_handles + 3;
-  EXPECT_EQ(Universe::handle_scope_implementer_->NumberOfHandles(),
+  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
             outer_handles);
-  EXPECT_EQ(Universe::handle_scope_implementer_->blocks().length(),
+  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
             NR_BLOCKS(outer_handles));
 
   //////////////////////////////////////////////////////////////////////////////
@@ -106,8 +121,9 @@ TEST_F(HandleTest, NestedHandleScopes) {
     }
 
     int n = outer_handles + kNumberOfHandles;
-    EXPECT_EQ(Universe::handle_scope_implementer_->NumberOfHandles(), n);
-    EXPECT_EQ(Universe::handle_scope_implementer_->blocks().length(),
+    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
+              n);
+    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
               NR_BLOCKS(n));
 
     {
@@ -120,22 +136,24 @@ TEST_F(HandleTest, NestedHandleScopes) {
       }
 
       n += kNestNumberOfHandles;
-      EXPECT_EQ(Universe::handle_scope_implementer_->NumberOfHandles(), n);
-      EXPECT_EQ(Universe::handle_scope_implementer_->blocks().length(),
+      EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
+                n);
+      EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
                 NR_BLOCKS(n));
       n -= kNestNumberOfHandles;
     }
 
-    EXPECT_EQ(Universe::handle_scope_implementer_->NumberOfHandles(), n);
-    EXPECT_EQ(Universe::handle_scope_implementer_->blocks().length(),
+    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
+              n);
+    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
               NR_BLOCKS(n));
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  EXPECT_EQ(Universe::handle_scope_implementer_->NumberOfHandles(),
+  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
             outer_handles);
-  EXPECT_EQ(Universe::handle_scope_implementer_->blocks().length(),
+  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
             NR_BLOCKS(outer_handles));
 }
 

@@ -102,10 +102,10 @@ source_set("saauso_sources") {
     "//src/runtime/factory.h",
     "//src/runtime/interpreter.cc",
     "//src/runtime/interpreter.h",
+    "//src/runtime/isolate.cc",
+    "//src/runtime/isolate.h",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
-    "//src/runtime/universe.cc",
-    "//src/runtime/universe.h",
 
     # third_party (第三方库)
     "//third_party/rapidhash/rapidhash.h",

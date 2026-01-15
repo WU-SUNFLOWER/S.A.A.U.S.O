@@ -8,7 +8,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -20,9 +20,20 @@ namespace saauso::internal {
 // - 与 float 的混合运算分发正确
 class PySmiTest : public testing::Test {
  protected:
-  static void SetUpTestSuite() { Universe::Genesis(); }
-  static void TearDownTestSuite() { Universe::Destroy(); }
+  static void SetUpTestSuite() {
+    isolate_ = Isolate::Create();
+    Isolate::SetCurrent(isolate_);
+  }
+  static void TearDownTestSuite() {
+    Isolate::SetCurrent(nullptr);
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+  }
+
+  static Isolate* isolate_;
 };
+
+Isolate* PySmiTest::isolate_ = nullptr;
 
 TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
   HandleScope scope;
@@ -86,13 +97,18 @@ TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
   Handle<PyObject> b(PySmi::FromInt(3));
   Handle<PyObject> c(PySmi::FromInt(7));
 
-  EXPECT_EQ(PyObject::Greater(a, b).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Greater(a, b).ptr(),
+            Isolate::Current()->py_true_object().ptr());
   EXPECT_EQ(PyObject::GreaterEqual(a, b).ptr(),
-            Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Less(b, a).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::LessEqual(a, c).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Equal(a, c).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::NotEqual(a, b).ptr(), Universe::py_true_object_.ptr());
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Less(b, a).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::LessEqual(a, c).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Equal(a, c).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::NotEqual(a, b).ptr(),
+            Isolate::Current()->py_true_object().ptr());
 }
 
 TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
@@ -127,10 +143,14 @@ TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
   Handle<PyObject> f1(PyFloat::NewInstance(10.0));
   Handle<PyObject> f2(PyFloat::NewInstance(11.0));
 
-  EXPECT_EQ(PyObject::Equal(i, f1).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Less(i, f2).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::LessEqual(i, f2).ptr(), Universe::py_true_object_.ptr());
-  EXPECT_EQ(PyObject::Greater(f2, i).ptr(), Universe::py_true_object_.ptr());
+  EXPECT_EQ(PyObject::Equal(i, f1).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Less(i, f2).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::LessEqual(i, f2).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Greater(f2, i).ptr(),
+            Isolate::Current()->py_true_object().ptr());
 }
 
 }  // namespace saauso::internal

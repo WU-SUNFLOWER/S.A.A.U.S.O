@@ -13,27 +13,28 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
-
-Tagged<PyTypeObjectKlass> PyTypeObjectKlass::instance_(nullptr);
 
 ///////////////////////////////////////////////////////////////
 // PyTypeObjectKlass
 
 // static
 Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyTypeObjectKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyTypeObjectKlass> instance = isolate->py_type_object_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyTypeObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_type_object_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyTypeObjectKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -62,7 +63,7 @@ void PyTypeObjectKlass::Initialize() {
 }
 
 void PyTypeObjectKlass::Finalize() {
-  instance_ = Tagged<PyTypeObjectKlass>::Null();
+  Isolate::Current()->set_py_type_object_klass(Tagged<PyTypeObjectKlass>::Null());
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -96,9 +97,9 @@ uint64_t PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {
 Tagged<PyBoolean> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
                                                    Handle<PyObject> other) {
   if (!IsPyTypeObject(other)) {
-    return Universe::py_false_object_;
+    return Isolate::Current()->py_false_object();
   }
-  return Universe::ToPyBoolean((*self).ptr() == (*other).ptr());
+  return Isolate::ToPyBoolean((*self).ptr() == (*other).ptr());
 }
 
 Tagged<PyBoolean> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,

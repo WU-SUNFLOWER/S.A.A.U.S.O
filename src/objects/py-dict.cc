@@ -11,7 +11,7 @@
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
@@ -47,7 +47,7 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
 
   // 创建对象
   Handle<PyDict> object(
-      Universe::heap_->Allocate<PyDict>(Heap::AllocationSpace::kNewSpace));
+      Isolate::Current()->heap()->Allocate<PyDict>(Heap::AllocationSpace::kNewSpace));
   // 创建数据区
   // 因为dict中同时要储存key和value，所以init_capacity要乘2
   Handle<FixedArray> data = FixedArray::NewInstance(init_capacity * 2);
@@ -82,7 +82,7 @@ int64_t PyDict::capacity() const {
 }
 
 Tagged<PyBoolean> PyDict::Contains(Handle<PyObject> key) const {
-  return Universe::ToPyBoolean(!Get(key).IsNull());
+  return Isolate::ToPyBoolean(!Get(key).IsNull());
 }
 
 Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {

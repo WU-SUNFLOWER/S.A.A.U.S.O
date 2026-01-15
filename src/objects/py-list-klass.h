@@ -23,7 +23,6 @@ class PyListKlass : public Klass {
 
  private:
   PyListKlass();
-  static Tagged<PyListKlass> instance_;
 
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static void Virtual_Print(Handle<PyObject> self);

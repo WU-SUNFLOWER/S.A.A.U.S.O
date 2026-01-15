@@ -18,29 +18,29 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
-
-Tagged<PyBooleanKlass> PyBooleanKlass::instance_(nullptr);
-Tagged<PyNoneKlass> PyNoneKlass::instance_(nullptr);
 
 ///////////////////////////////////////////////////////////////
 // PyBooleanKlass
 
 // static
 Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyBooleanKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyBooleanKlass> instance = isolate->py_boolean_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyBooleanKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_boolean_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyBooleanKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -66,7 +66,7 @@ void PyBooleanKlass::Initialize() {
 
 // static
 void PyBooleanKlass::Finalize() {
-  instance_ = Tagged<PyBooleanKlass>::Null();
+  Isolate::Current()->set_py_boolean_klass(Tagged<PyBooleanKlass>::Null());
 }
 
 // static
@@ -88,7 +88,7 @@ Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
     result = Handle<PyBoolean>::cast(other)->value() == v;
   }
 
-  return Universe::ToPyBoolean(result);
+  return Isolate::ToPyBoolean(result);
 }
 
 // static
@@ -107,16 +107,19 @@ uint64_t PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
 
 // static
 Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyNoneKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyNoneKlass> instance = isolate->py_none_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyNoneKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_none_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 void PyNoneKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -141,7 +144,7 @@ void PyNoneKlass::Initialize() {
 }
 
 void PyNoneKlass::Finalize() {
-  instance_ = Tagged<PyNoneKlass>::Null();
+  Isolate::Current()->set_py_none_klass(Tagged<PyNoneKlass>::Null());
 }
 
 // static
@@ -153,7 +156,7 @@ void PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
 Tagged<PyBoolean> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
                                              Handle<PyObject> other) {
   assert(IsPyNone(self));
-  return Universe::ToPyBoolean((*self).ptr() == (*other).ptr());
+  return Isolate::ToPyBoolean((*self).ptr() == (*other).ptr());
 }
 
 // static

@@ -24,8 +24,6 @@ class PyStringKlass : public Klass {
   void Finalize();
 
  private:
-  static Tagged<PyStringKlass> instance_;
-
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
 
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,

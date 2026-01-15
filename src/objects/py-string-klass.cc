@@ -18,7 +18,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/universe.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -45,22 +45,23 @@ Handle<PyObject> NativeMethod_Upper(Handle<PyList> args,
 
 ////////////////////////////////////////////////////////////////////
 
-Tagged<PyStringKlass> PyStringKlass::instance_(nullptr);
-
 // static
 Tagged<PyStringKlass> PyStringKlass::GetInstance() {
-  if (instance_.IsNull()) [[unlikely]] {
-    instance_ = Universe::heap_->Allocate<PyStringKlass>(
+  Isolate* isolate = Isolate::Current();
+  Tagged<PyStringKlass> instance = isolate->py_string_klass();
+  if (instance.IsNull()) [[unlikely]] {
+    instance = isolate->heap()->Allocate<PyStringKlass>(
         Heap::AllocationSpace::kMetaSpace);
+    isolate->set_py_string_klass(instance);
   }
-  return instance_;
+  return instance;
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void PyStringKlass::PreInitialize() {
   // 将自己注册到universe
-  Universe::klass_list_.PushBack(this);
+  Isolate::Current()->klass_list().PushBack(this);
 
   // 初始化虚函数表
   vtable_.len = &Virtual_Len;
@@ -103,7 +104,7 @@ void PyStringKlass::Initialize() {
 }
 
 void PyStringKlass::Finalize() {
-  instance_ = Tagged<PyStringKlass>::Null();
+  Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::Null());
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
@@ -114,49 +115,49 @@ Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
 Tagged<PyBoolean> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
                                                Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    return Universe::py_false_object_;
+    return Isolate::Current()->py_false_object();
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Universe::ToPyBoolean(s1->IsEqualTo(*s2));
+  return Isolate::ToPyBoolean(s1->IsEqualTo(*s2));
 }
 
 Tagged<PyBoolean> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                   Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    return Universe::py_true_object_;
+    return Isolate::Current()->py_true_object();
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Universe::ToPyBoolean(!s1->IsEqualTo(*s2));
+  return Isolate::ToPyBoolean(!s1->IsEqualTo(*s2));
 }
 
 Tagged<PyBoolean> PyStringKlass::Virtual_Less(Handle<PyObject> self,
                                               Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Universe::ToPyBoolean(s1->IsLessThan(*s2));
+  return Isolate::ToPyBoolean(s1->IsLessThan(*s2));
 }
 
 Tagged<PyBoolean> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
                                                  Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Universe::ToPyBoolean(s1->IsGreaterThan(*s2));
+  return Isolate::ToPyBoolean(s1->IsGreaterThan(*s2));
 }
 
 Tagged<PyBoolean> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                    Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Universe::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
+  return Isolate::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
 }
 
 Tagged<PyBoolean> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                                       Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Universe::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
+  return Isolate::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
