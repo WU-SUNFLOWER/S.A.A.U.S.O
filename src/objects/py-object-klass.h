@@ -15,6 +15,7 @@ class PyObjectKlass : public Klass {
 
   PyObjectKlass() = delete;
 
+  void PreInitialize();
   void Initialize();
   void Finalize();
 

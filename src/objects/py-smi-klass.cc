@@ -9,6 +9,7 @@
 #include <cstdlib>
 
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -34,7 +35,7 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PySmiKlass::Initialize() {
+void PySmiKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -52,9 +53,14 @@ void PySmiKlass::Initialize() {
   vtable_.ge = &Virtual_GreaterEqual;
   vtable_.le = &Virtual_LessEqual;
   vtable_.print = &Virtual_Print;
+}
 
+void PySmiKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());

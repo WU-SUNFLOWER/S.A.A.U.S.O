@@ -5,9 +5,11 @@
 #include "src/objects/py-type-object-klass.h"
 
 #include "src/heap/heap.h"
+#include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
@@ -29,17 +31,27 @@ Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
   return instance_;
 }
 
-void PyTypeObjectKlass::Initialize() {
+void PyTypeObjectKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
   vtable_.print = &Virtual_Print;
+  vtable_.getattr = &Virtual_GetAttr;
+  vtable_.setattr = &Virtual_SetAttr;
+  vtable_.hash = &Virtual_Hash;
+  vtable_.equal = &Virtual_Equal;
+  vtable_.not_equal = &Virtual_NotEqual;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+}
 
+void PyTypeObjectKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
@@ -77,6 +89,23 @@ void PyTypeObjectKlass::Virtual_SetAttr(Handle<PyObject> self,
   PyDict::Put(own_klass->klass_properties(), prop_name, prop_value);
 }
 
+uint64_t PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {
+  return static_cast<uint64_t>((*self).ptr());
+}
+
+Tagged<PyBoolean> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
+                                                   Handle<PyObject> other) {
+  if (!IsPyTypeObject(other)) {
+    return Universe::py_false_object_;
+  }
+  return Universe::ToPyBoolean((*self).ptr() == (*other).ptr());
+}
+
+Tagged<PyBoolean> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                                      Handle<PyObject> other) {
+  return Virtual_Equal(self, other)->Reverse();
+}
+
 // static
 size_t PyTypeObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   return sizeof(PyTypeObject);
@@ -85,7 +114,9 @@ size_t PyTypeObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 // static
 void PyTypeObjectKlass::Virtual_Iterate(Tagged<PyObject> self,
                                         ObjectVisitor* v) {
-  // do nothing
+  // 虽然type object中有一个klass指针，
+  // 但是我们约定GC阶段对klass的扫描统一走Heap::IterateRoots。
+  // 因此这里不做任何事情！
 }
 
 }  // namespace saauso::internal

@@ -392,6 +392,15 @@ uint64_t PyObject::Hash(Handle<PyObject> self) {
   return GetKlass(*self)->vtable_.hash(self);
 }
 
+Handle<PyObject> PyObject::Call(Handle<PyObject> self,
+                                Handle<PyObject> args,
+                                Handle<PyObject> kwargs) {
+  HandleScope scope;
+
+  assert(GetKlass(*self)->vtable_.call);
+  return GetKlass(*self)->vtable_.call(self, args, kwargs);
+}
+
 // python virtual function
 size_t PyObject::GetInstanceSize(Tagged<PyObject> self) {
   return GetKlass(self)->vtable_.instance_size(self);

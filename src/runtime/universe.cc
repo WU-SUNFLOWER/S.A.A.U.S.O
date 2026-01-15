@@ -28,6 +28,7 @@ Heap* Universe::heap_ = nullptr;
 HandleScopeImplementer* Universe::handle_scope_implementer_ = nullptr;
 Vector<Klass*> Universe::klass_list_;
 Interpreter* Universe::interpreter_ = nullptr;
+StringTable* Universe::string_table_ = nullptr;
 
 Tagged<PyNone> Universe::py_none_object_(nullptr);
 Tagged<PyBoolean> Universe::py_true_object_(nullptr);
@@ -35,25 +36,32 @@ Tagged<PyBoolean> Universe::py_false_object_(nullptr);
 
 // static
 void Universe::Genesis() {
-  HandleScope scope;  // 为了避免污染根scope，这里我们创建一个内部的scope
-
   heap_ = new Heap();
   heap_->Setup();
 
   handle_scope_implementer_ = new HandleScopeImplementer();
-  interpreter_ = new Interpreter();
 
+  HandleScope scope;
   InitMetaArea();
+  interpreter_ = new Interpreter();
 }
 
 // static
 void Universe::InitMetaArea() {
+  PyObjectKlass::GetInstance()->PreInitialize();
+
+#define PREINIT_PY_KLASS(name) name##Klass::GetInstance()->PreInitialize();
+  PY_TYPE_LIST(PREINIT_PY_KLASS)
+#undef PREINIT_PY_KLASS
+
+  NativeFunctionKlass::GetInstance()->PreInitialize();
+
+  string_table_ = new StringTable();
+
   py_none_object_ = PyNone::NewInstance();
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
 
-  // PyObjectKlass对应的object类型，
-  // 是所有python类型的基类，需要首先初始化！
   PyObjectKlass::GetInstance()->Initialize();
 
 #define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
@@ -62,31 +70,37 @@ void Universe::InitMetaArea() {
 
   // 特化klass初始化
   NativeFunctionKlass::GetInstance()->Initialize();
-  MethodObjectKlass::GetInstance()->Initialize();
-
-  string_table_ = new StringTable();
 }
 
 // static
 void Universe::Destroy() {
   // 特化klass反初始化
   NativeFunctionKlass::GetInstance()->Finalize();
-  MethodObjectKlass::GetInstance()->Finalize();
 
 #define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
   PY_TYPE_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 
-  PyObjectKlass::GetInstance()->Initialize();
+  PyObjectKlass::GetInstance()->Finalize();
 
   delete string_table_;
+  string_table_ = nullptr;
 
   delete interpreter_;
+  interpreter_ = nullptr;
 
   delete handle_scope_implementer_;
+  handle_scope_implementer_ = nullptr;
+
+  klass_list_.Resize(0);
+
+  py_none_object_ = Tagged<PyNone>::Null();
+  py_true_object_ = Tagged<PyBoolean>::Null();
+  py_false_object_ = Tagged<PyBoolean>::Null();
 
   heap_->TearDown();
   delete heap_;
+  heap_ = nullptr;
 }
 
 }  // namespace saauso::internal

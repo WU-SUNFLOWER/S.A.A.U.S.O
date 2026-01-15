@@ -51,7 +51,7 @@ Tagged<PyListKlass> PyListKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PyListKlass::Initialize() {
+void PyListKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -69,7 +69,9 @@ void PyListKlass::Initialize() {
   vtable_.equal = &Virtual_Equal;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+}
 
+void PyListKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 

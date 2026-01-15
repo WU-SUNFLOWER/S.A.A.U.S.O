@@ -25,7 +25,7 @@ class Vector {
   void PushBack(T elem) {
     if (length_ == capacity_) {
       size_t new_capacity = std::max(kMinimumCapacity, capacity_ << 1);
-      Resize(new_capacity);
+      ChangeCapacity(new_capacity);
     }
     data_[length_++] = elem;
   }
@@ -53,7 +53,24 @@ class Vector {
   void ShrinkToFit() {
     size_t new_capacity = std::max(length_, kMinimumCapacity);
     if (new_capacity < (capacity_ >> 1)) {
-      Resize(new_capacity);
+      ChangeCapacity(new_capacity);
+    }
+  }
+
+  void Resize(size_t new_length) {
+    if (new_length <= length_) {
+      // 数组缩小很简单，直接更新length_即可
+      length_ = new_length;
+      // 在数组缩小的情况下，尝试对它的容量进行收缩
+      ShrinkToFit();
+      return;
+    }
+
+    // 如果new_length没有超出容量，那么直接更新length_即可
+    // 否则对动态数组进行扩容
+    length_ = new_length;
+    if (length_ > capacity_) {
+      ChangeCapacity(length_);
     }
   }
 
@@ -62,8 +79,10 @@ class Vector {
   bool IsEmpty() const { return length_ == 0; }
 
  private:
-  void Resize(size_t new_capacity) {
+  void ChangeCapacity(size_t new_capacity) {
     assert(length_ <= new_capacity);
+    assert(new_capacity >= kMinimumCapacity);
+
     T* new_data = NewArray<T>(new_capacity);
 
     std::copy(data_, data_ + length_, new_data);

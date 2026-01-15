@@ -43,7 +43,8 @@ Handle<PyObject> FindPropertyInMro(Handle<PyObject> object,
   // 沿着mro序列进行查找
   Handle<PyList> mro_of_object = PyObject::GetKlass(object)->mro();
   for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto type_object = Handle<PyTypeObject>::cast(mro_of_object->Get(0));
+    auto type_object =
+        handle(Tagged<PyTypeObject>::cast(*mro_of_object->Get(i)));
     auto result = type_object->own_klass()->klass_properties()->Get(prop_name);
     if (!result.IsNull()) {
       return result;
@@ -61,7 +62,7 @@ Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
   // 因此为了不影响父类的mro序列数据，我们这里需要手工（潜）拷贝
   // 一份父类的mro序列。
   for (auto i = 0; i < mro->length(); ++i) {
-    PyList::Append(result, mro->Get(0));
+    PyList::Append(result, mro->Get(i));
   }
 
   return result;
@@ -78,7 +79,7 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
     bool valid = true;
 
     auto mro_of_curr_super = Handle<PyList>::cast(mro_of_each_super->Get(i));
-    auto head = Handle<PyTypeObject>::cast(mro_of_curr_super->Get(0));
+    auto head = handle(Tagged<PyTypeObject>::cast(*mro_of_curr_super->Get(0)));
 
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
       if (j == i) {
@@ -151,7 +152,7 @@ void Klass::set_name(Handle<PyString> name) {
 }
 
 Handle<PyTypeObject> Klass::type_object() {
-  return Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(name_));
+  return Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(type_object_));
 }
 
 void Klass::set_type_object(Handle<PyTypeObject> type_object) {
@@ -163,7 +164,7 @@ Handle<PyDict> Klass::klass_properties() {
 }
 
 void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
-  type_object_ = *klass_properties;
+  klass_properties_ = *klass_properties;
 }
 
 Handle<PyList> Klass::supers() {
@@ -183,6 +184,8 @@ void Klass::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&name_);
   v->VisitPointer(&type_object_);
   v->VisitPointer(&klass_properties_);
+  v->VisitPointer(&supers_);
+  v->VisitPointer(&mro_);
 }
 
 void Klass::AddSuper(Tagged<Klass> super) {
@@ -204,7 +207,7 @@ void Klass::OrderSupers() {
   } else {
     Handle<PyList> all = PyList::NewInstance(supers()->length());
     for (auto i = 0; i < supers()->length(); ++i) {
-      auto super = Handle<PyTypeObject>::cast(supers()->Get(i));
+      auto super = handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)));
       PyList::Append(all, C3Impl_Linear(super));
     }
     mro_result = C3Impl_Merge(all);
@@ -265,8 +268,8 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
 
   // 如果父类或者祖先类当中定义了__getattr__方法，就先调用这个方法
   if (!getattr_func.IsNull()) {
-    getattr_func =
-        MethodObject::NewInstance(Handle<PyFunction>::cast(getattr_func), self);
+    getattr_func = MethodObject::NewInstance(
+        handle(Tagged<PyFunction>::cast(*getattr_func)), self);
     Handle<PyList> args = PyList::NewInstance(1);
     PyList::Append(args, prop_name);
     return Universe::interpreter_->CallVirtual(getattr_func, args);
@@ -285,8 +288,8 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   result = FindPropertyInMro(self, prop_name);
   if (!result.IsNull()) {
     if (IsPyFunction(result) || IsPyNativeFunction(result)) {
-      result =
-          MethodObject::NewInstance(Handle<PyFunction>::cast(result), self);
+      result = MethodObject::NewInstance(
+          handle(Tagged<PyFunction>::cast(*result)), self);
     }
     return result;
   }

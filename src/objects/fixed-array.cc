@@ -71,6 +71,7 @@ Tagged<PyObject> FixedArray::Get(int64_t index) {
 void FixedArray::Set(int64_t index, Tagged<PyObject> value) {
   assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), capacity_));
   data()[index] = value;
+  WRITE_BARRIER(Tagged<PyObject>(this), &data()[index], value);
 }
 
 }  // namespace saauso::internal

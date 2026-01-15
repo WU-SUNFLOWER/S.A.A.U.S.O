@@ -9,6 +9,7 @@
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/universe.h"
 
@@ -42,6 +43,14 @@ Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
   return object;
 }
 
+// static
+Tagged<PyFunction> PyFunction::cast(Tagged<PyObject> object) {
+  assert(IsPyFunction(object));
+  return Tagged<PyFunction>::cast(object);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void PyFunction::set_default_args(Handle<PyList> default_args) {
   if (default_args->IsFull()) {
     return;
@@ -54,6 +63,22 @@ void PyFunction::set_default_args(Handle<PyList> default_args) {
     copied_default_args->Set(i, default_args->Get(i));
   }
   default_args_ = *copied_default_args;
+}
+
+// static
+Handle<MethodObject> MethodObject::NewInstance(Handle<PyFunction> func,
+                                               Handle<PyObject> owner) {
+  Handle<MethodObject> object(Universe::heap_->Allocate<MethodObject>(
+      Heap::AllocationSpace::kNewSpace));
+  object->owner_ = *owner;
+  object->func_ = *func;
+  PyObject::SetKlass(object, MethodObjectKlass::GetInstance());
+  return object;
+}
+
+Tagged<MethodObject> MethodObject::cast(Tagged<PyObject> object) {
+  assert(IsMethodObject(object));
+  return Tagged<MethodObject>::cast(object);
 }
 
 }  // namespace saauso::internal

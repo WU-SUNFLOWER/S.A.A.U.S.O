@@ -13,7 +13,7 @@ namespace saauso::internal {
 
 HandleScopeImplementer::~HandleScopeImplementer() {
   while (!blocks_.IsEmpty()) {
-    blocks_.PopBack();
+    DeleteArray<Address>(blocks_.PopBack());
   }
   DeleteArray<Address>(spare_);
 }

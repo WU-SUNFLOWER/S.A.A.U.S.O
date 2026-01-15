@@ -17,6 +17,7 @@ class PyTypeObjectKlass : public Klass {
 
   PyTypeObjectKlass() = delete;
 
+  void PreInitialize();
   void Initialize();
   void Finalize();
 
@@ -30,6 +31,12 @@ class PyTypeObjectKlass : public Klass {
   static void Virtual_SetAttr(Handle<PyObject> self,
                               Handle<PyObject> prop_name,
                               Handle<PyObject> prop_value);
+
+  static uint64_t Virtual_Hash(Handle<PyObject> self);
+  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
+                                         Handle<PyObject> other);
+  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

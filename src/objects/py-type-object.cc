@@ -5,6 +5,7 @@
 #include "src/objects/py-type-object.h"
 
 #include "src/heap/heap.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/runtime/universe.h"
 
@@ -19,6 +20,12 @@ Handle<PyTypeObject> PyTypeObject::NewInstance() {
   PyObject::SetKlass(object, PyTypeObjectKlass::GetInstance());
 
   return Handle<PyTypeObject>(object);
+}
+
+// static
+Tagged<PyTypeObject> PyTypeObject::cast(Tagged<PyObject> object) {
+  assert(IsPyTypeObject(object));
+  return Tagged<PyTypeObject>::cast(object);
 }
 
 /////////////////////////////////////////////////////////////////////////////////

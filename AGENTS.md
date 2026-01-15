@@ -4,22 +4,32 @@
 
 ## 1. 项目概览
 S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码。
-- **贡献者**: WU-SUNFLOWER
+- **开发者**: WU-SUNFLOWER（Computer Science专业本科大四学生）
   - GitHub主页：https://github.com/WU-SUNFLOWER
   - 个人博客：https://juejin.cn/user/3544481220008744
+- **开发目的**：
+ - 这是WU-SUNFLOWER的本科毕业设计。
+ - 他希望通过开发这个项目，在顺利拿到CS专业学士学位的同时，帮助自己提升对编程语言虚拟机的理解和工程实现能力。为深入阅读和学习工业级虚拟机（如HotSpot JVM、V8、CPython）的源代码打下坚实的基础。
+ - 此外，WU-SUNFLOWER希望能够将本项目写进求职简历的"个人作品"栏目，增强他在未来通过社会招聘跳槽时的市场竞争力。
+- **距离WU-SUNFLOWER提交毕业设计作品的剩余时间**: 大约2个月不到
 - **语言**: C++ (Modern C++, likely C++20)。
 - **构建系统**: GN (Generate Ninja) + Ninja。
 - **测试框架**: Google Test。
+- **辅助调试工具**: LLDB、AddressSanitizer、UBSanitizer
 
 ## 2. 仓库结构速览
 - `include/`：对外/跨模块共享的基础定义（例如 `Address`、Smi/对齐等）。
+- `src/code/`：`.pyc` 等二进制代码文件解析（`BinaryFileReader` / `PycFileParser`）。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
 - `src/runtime/`：全局运行时容器（`Universe`）与隔离性探索（`isolate.h` 仍处于占位状态）。
+- `src/utils/`：通用工具（对齐/内存/小型容器等）。
 - `test/unittests/`：基于 GTest 的单元测试。
 - `BUILD.gn`：根目标定义（当前主要目标：`vm`、`ut`）。
 - `build/`：编译配置与工具链（Clang/LLD，支持 `is_debug`/`is_asan`）。
+- `testing/gtest/`：项目内置的 GTest GN 封装目标（供 `ut` 依赖）。
+- `third_party/`：第三方代码（例如 `googletest` 上游源码、`rapidhash`）。
 
 ## 3. 架构指南
 
@@ -28,6 +38,18 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 ### 3.1. 对象系统 (`src/objects`)
 - **PyObject**: 所有堆对象的基类。
 - **Klass**: 表示对象的类型/元信息（类似于 V8 的 Map 或 HotSpot 的 Klass）。数据（`PyObject`）与行为（`Klass`）严格分离。
+- **Object**: 仅作为 C++ 侧的轻量基类（见 `src/objects/objects.h`），不要与 Python 堆对象基类 `PyObject` 混淆。
+- **VirtualTable (slot 表)**:
+  - `Klass::vtable_` 保存各类操作的函数指针，优先使用以 `Handle<PyObject>` 为参数的 SAFE 版本，避免 GC 导致悬垂引用。
+  - 新增/重写 slot 时：要么显式指向默认实现，要么确保所有调用点在 `nullptr` 时可处理（否则会空函数指针调用崩溃）。
+  - `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内部所有 `Tagged<PyObject>` 引用字段。
+- **Klass 也是 GC Root**:
+  - `Klass::Iterate(ObjectVisitor*)` 负责把 `Klass` 自身持有的引用暴露给 GC；新增字段时必须同步更新。
+- **MRO/C3 与属性查找**:
+  - `Klass::supers_` 语义上保存父类 `PyTypeObject` 列表；`OrderSupers()` 用 C3 线性化生成 `mro_`，并通常同时写入 `klass_properties_["mro"]`。
+  - 默认 getattr 流程：先沿 MRO 查 `__getattr__`，再查实例 dict（仅 heap object），最后沿 MRO 查类 dict；命中函数时包装成 `MethodObject(func, self)`。
+- **Handle/Tagged 转换约定**:
+  - `Handle<T>::cast` 依赖 `T::cast(...)` 做断言；若某类型未提供该断言函数，需要在T类型的.h及.cc文件中分别补充`Tagged<T> T::cast(Tagged<PyObject> object)`方法的定义与实现。
 - **对象布局关键约束**:
   - `MarkWord` 必须位于对象内存布局起始位置（见 `PyObject` 的字段布局约束），GC 与类型信息读取依赖它。
   - `MarkWord` 语义：要么保存 `Klass` 指针，要么在 GC 期间保存 forwarding 地址（tag 为 `0b10`）。
@@ -45,15 +67,21 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **根集合 (Roots)**:
   - `Universe::klass_list_`：遍历各 `Klass` 内部引用。
   - `HandleScopeImplementer`：遍历所有 handle blocks 内引用。
-  - Python 运行时根（栈/帧/全局变量等）仍在 TODO。
+  - Python 运行时根（解释器/栈帧/全局变量等）仍在 TODO（见 `Heap::IterateRoots`）。
 - **句柄系统 (`src/handles`)**:
   - `Handle<T>` 是“会被 GC 移动/回收的对象”的栈上安全持有方式；`Tagged<T>` 更接近裸指针语义。
   - `HandleScope` 管理 handle 生命周期；跨 scope 返回时使用 `EscapeFrom`。
   - 永久区对象（例如 `Universe::py_none_object_` / `py_true_object_` / `py_false_object_`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
+- **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。
 
 ### 3.3. 运行时 (`src/runtime`)
-- **Universe**: 全局静态容器，包含堆 (Heap)、句柄作用域实现 (HandleScopeImplementer) 和全局单例（如 `None`, `True`, `False`）。
-- **隔离性**: 已存在 `isolate.h` 的雏形，但当前主路径仍依赖 `Universe` 静态全局，重构为多 Isolate 时需系统性清理静态状态。
+- **Universe**: 全局静态容器，包含堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable) 与全局单例（如 `None`, `True`, `False`）。
+- **Interpreter**: 当前字节码执行与内建函数注册入口（内建函数实现在 `native-functions.*`）。
+- **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
+- **隔离性**: `isolate.h` 目前仅为占位雏形；主路径仍依赖 `Universe` 静态全局，重构为多 Isolate 时需系统性清理静态状态。
+
+### 3.4. 代码加载 (`src/code`)
+- **PycFileParser**: 负责解析 `.pyc` 文件并构建 `PyCodeObject`（依赖 `BinaryFileReader`）。
 
 ## 4. 代码规范
 
@@ -137,4 +165,5 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 - 在 `src/objects/` 新增 `py-xxx.{h,cc}` 与 `py-xxx-klass.{h,cc}`（文件名使用 `kebab-case`）。
 - 如果对象在堆上有实体，加入 `PY_TYPE_IN_HEAP_LIST`（位于 `src/objects/py-object.h`），以便自动生成 `IsPyXxx(...)` 等检查器，并确保 `Universe::Genesis()` 初始化 `Klass`。
 - 在对应 `Klass::Initialize()` 填充 vtable（至少需要 `instance_size` 与 `iterate`），并在 `Finalize()` 做必要清理。
+- 若新增的 `Klass` 不在 `PY_TYPE_LIST` 的自动初始化流程中（例如 `NativeFunctionKlass` / `MethodObjectKlass` 这类特化类型），需要同步更新 `Universe::InitMetaArea()` 与 `Universe::Destroy()` 的手动初始化/反初始化路径。
 - 将新文件加入根 [BUILD.gn](file:///c:/Users/Administrator/Desktop/S.A.A.U.S.O/BUILD.gn) 的 `saauso_sources` 列表，保证目标可链接。

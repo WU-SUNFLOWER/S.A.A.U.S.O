@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #ifndef SAAUSO_OBJECTS_PY_FUNCTION_H_
+#define SAAUSO_OBJECTS_PY_FUNCTION_H_
 
 #include "src/objects/py-object.h"
 
@@ -20,6 +21,7 @@ class PyFunction : public PyObject {
   // 创建调用c++ native代码的函数对象
   static Handle<PyFunction> NewInstance(NativeFuncPointer native_func,
                                         Handle<PyString> func_name);
+  static Tagged<PyFunction> cast(Tagged<PyObject> object);
 
   Handle<PyString> func_name() const {
     return handle(Tagged<PyString>::cast(func_name_));
@@ -52,6 +54,7 @@ class MethodObject : public PyObject {
  public:
   static Handle<MethodObject> NewInstance(Handle<PyFunction> func,
                                           Handle<PyObject> owner);
+  static Tagged<MethodObject> cast(Tagged<PyObject> object);
 
   void set_owner(Handle<PyObject> owner) { owner_ = *owner; }
   Handle<PyObject> owner() { return handle(owner_); }

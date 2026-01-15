@@ -17,6 +17,7 @@ class PyBooleanKlass : public Klass {
 
   PyBooleanKlass() = delete;
   
+  void PreInitialize();
   void Initialize();
   void Finalize();
 
@@ -34,6 +35,7 @@ class PyBooleanKlass : public Klass {
 class PyNoneKlass : public Klass {
  public:
   static Tagged<PyNoneKlass> GetInstance();
+  void PreInitialize();
   void Initialize();
   void Finalize();
 

@@ -19,6 +19,7 @@ class PyStringKlass : public Klass {
 
   PyStringKlass() = delete;
 
+  void PreInitialize();
   void Initialize();
   void Finalize();
 

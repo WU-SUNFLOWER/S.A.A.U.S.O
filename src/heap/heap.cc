@@ -14,6 +14,7 @@
 #include "src/heap/scavenge-visitor.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
+#include "src/runtime/interpreter.h"
 #include "src/runtime/universe.h"
 #include "src/utils/allocation.h"
 
@@ -23,7 +24,8 @@ void Heap::Setup(size_t young_generation_size,
                  size_t old_generation_size,
                  size_t meta_space_size) {
   // TODO: 实现大块虚拟内存的灵活生长和收缩
-  initial_size_ = young_generation_size + old_generation_size + meta_space_size;
+  initial_size_ =
+      (young_generation_size * 2) + old_generation_size + meta_space_size;
   initial_chunk_ = new VirtualMemory(initial_size_);
   initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
 
@@ -97,6 +99,59 @@ void Heap::CollectGarbage() {
   gc_state_ = GcState::kNotInGc;
 }
 
+void Heap::RecordWrite(Tagged<PyObject> object,
+                       Address* slot,
+                       Tagged<PyObject> value) {
+  // 1. 如果写入的是Smi或NULL，忽略
+  if (value.IsNull() || value.IsSmi()) {
+    return;
+  }
+
+  // 2. 如果value不在NewSpace，忽略（OldSpace/MetaSpace对象不需要Scavenge）
+  // 注意：这里假设NewSpace的判断是准确的（包含Eden和Survivor）
+  if (!InNewSpaceEden(value.ptr()) && !InNewSpaceSurvivor(value.ptr())) {
+    return;
+  }
+
+  // 3. 如果host对象本身就在NewSpace，忽略（Scavenge会自动扫描整个NewSpace）
+  if (InNewSpaceEden(object.ptr()) || InNewSpaceSurvivor(object.ptr())) {
+    return;
+  }
+
+  // 4. 记录到记忆集 (Old -> New)
+  // 简单去重：这里暂不判重，依靠Scavenge时的清理
+  remembered_set_.PushBack(reinterpret_cast<Tagged<PyObject>*>(slot));
+}
+
+void Heap::IterateRememberedSet(ObjectVisitor* v) {
+  // 使用双指针法原地清理无效的记录
+  size_t new_size = 0;
+  for (size_t i = 0; i < remembered_set_.length(); ++i) {
+    Tagged<PyObject>* slot = remembered_set_.Get(i);
+    Tagged<PyObject> object = *slot;
+
+    // 再次检查：如果slot中的对象已经不是NewSpace对象了（可能被重写，或者晋升了）
+    // 则移除该记录
+    if (object.IsSmi() || object.IsNull() ||
+        (!InNewSpaceEden(object.ptr()) && !InNewSpaceSurvivor(object.ptr()))) {
+      continue;
+    }
+
+    // 通知GC访问该槽位
+    // 注意：v->VisitPointers可能会更新slot中的值（对象移动）
+    v->VisitPointers(slot, slot + 1);
+
+    // 访问后再次检查：如果更新后的对象还在NewSpace，保留记录；否则（晋升）移除
+    Tagged<PyObject> new_object = *slot;
+    if (!new_object.IsSmi() && !new_object.IsNull() &&
+        (InNewSpaceEden(new_object.ptr()) ||
+         InNewSpaceSurvivor(new_object.ptr()))) {
+      remembered_set_.Set(new_size++, slot);
+    }
+  }
+  remembered_set_.Resize(new_size);
+}
+
 void Heap::IterateRoots(ObjectVisitor* v) {
   // 遍历所有klass，处理klass内部持有引用的对象
   for (auto i = 0; i < Universe::klass_list_.length(); ++i) {
@@ -104,9 +159,20 @@ void Heap::IterateRoots(ObjectVisitor* v) {
   }
 
   // 遍历handle，处理所有handle scope block中持有引用的对象
-  Universe::handle_scope_implementer_->Iterate(v);
+  if (Universe::handle_scope_implementer_) {
+    Universe::handle_scope_implementer_->Iterate(v);
+  }
+
+  // 遍历字节码解释器中持有的引用
+  if (Universe::interpreter_ != nullptr) {
+    Universe::interpreter_->Iterate(v);
+  }
 
   // TODO: 遍历python运行时的GC ROOT
+
+  // TODO: 实现分代式GC
+  // 遍历记忆集 (Remembered Set)，处理跨代引用
+  // IterateRememberedSet(v);
 }
 
 void Heap::DoScavenge() {

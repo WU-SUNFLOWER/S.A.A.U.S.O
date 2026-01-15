@@ -58,7 +58,7 @@ Tagged<PyStringKlass> PyStringKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PyStringKlass::Initialize() {
+void PyStringKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -76,7 +76,9 @@ void PyStringKlass::Initialize() {
   vtable_.hash = &Virtual_Hash;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+}
 
+void PyStringKlass::Initialize() {
   // 初始化类属性表
   auto klass_properties = PyDict::NewInstance();
 
@@ -88,6 +90,9 @@ void PyStringKlass::Initialize() {
 
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());

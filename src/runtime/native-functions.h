@@ -13,6 +13,8 @@ Handle<PyObject> Native_Print(Handle<PyList> args, Handle<PyDict> kwargs);
 
 Handle<PyObject> Native_Len(Handle<PyList> args, Handle<PyDict> kwargs);
 
+Handle<PyObject> Native_IsInstance(Handle<PyList> args, Handle<PyDict> kwargs);
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_RUNTIME_NATIVE_FUNCTIONS_H_

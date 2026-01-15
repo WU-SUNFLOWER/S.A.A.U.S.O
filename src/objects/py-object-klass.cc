@@ -5,11 +5,14 @@
 #include "src/objects/py-object-klass.h"
 
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/universe.h"
 
 namespace saauso::internal {
+
+Tagged<PyObjectKlass> PyObjectKlass::instance_(kNullAddress);
 
 // static
 Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
@@ -20,12 +23,17 @@ Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
   return instance_;
 }
 
-void PyObjectKlass::Initialize() {
+void PyObjectKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
+}
 
+void PyObjectKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
 
   // Python中object类型之上没有父类。
   // 直接调用OrderSupers会得到一个仅含有自己的mro序列。

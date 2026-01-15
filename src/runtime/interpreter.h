@@ -19,7 +19,7 @@ class Interpreter {
 
   Handle<PyObject> builtins() const;
 
-  Handle<PyObject> CallVirtual(Handle<PyObject> func, Handle<PyList> args);
+  Handle<PyObject> CallVirtual(Handle<PyObject> callable, Handle<PyList> args);
 
   // GC接口
   void Iterate(ObjectVisitor* v);

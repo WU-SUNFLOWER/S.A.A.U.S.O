@@ -12,6 +12,7 @@ namespace saauso::internal {
 class PyTypeObject : public PyObject {
  public:
   static Handle<PyTypeObject> NewInstance();
+  static Tagged<PyTypeObject> cast(Tagged<PyObject> object);
 
   // 建立与klass的双向绑定
   void BindWithKlass(Tagged<Klass> klass);

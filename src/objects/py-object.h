@@ -19,15 +19,16 @@ class PyObject;
 
 #define PY_TYPE_IN_HEAP_LIST(V) \
   V(PyTypeObject)               \
+  V(PyString)                   \
   V(PyFunction)                 \
   V(PyFloat)                    \
   V(PyBoolean)                  \
   V(PyNone)                     \
   V(PyCodeObject)               \
-  V(PyString)                   \
   V(PyList)                     \
   V(PyDict)                     \
-  V(FixedArray)
+  V(FixedArray)                 \
+  V(MethodObject)
 
 #define PY_TYPE_LIST(V) \
   V(PySmi)              \
@@ -125,17 +126,33 @@ class PyObject : public Object {
 
   static uint64_t Hash(Handle<PyObject> self);
 
+  static Handle<PyObject> Call(Handle<PyObject> self,
+                               Handle<PyObject> args,
+                               Handle<PyObject> kwargs);
+
   // GC相关接口
   static size_t GetInstanceSize(Tagged<PyObject> self);
   static void Iterate(Tagged<PyObject> self, ObjectVisitor* v);
   ////////////////// 多态函数 结束 //////////////////
 
  private:
+  friend class PyObjectLayoutChecker;
+
   // 特别提醒：MarkWord必须始终处于Python对象内存布局的开头！！！
   MarkWord mark_word_;
 
   // PyDict* properties_; python对象的属性容器
   Tagged<PyObject> properties_;
+};
+
+class PyObjectLayoutChecker {
+  // 静态断言：确保PyObject符合虚拟机内存布局的要求
+  // 1. 必须是标准布局，保证C++成员变量顺序与内存顺序一致
+  static_assert(std::is_standard_layout_v<PyObject>);
+  // 2. 不能有虚函数（防止vptr破坏布局）
+  static_assert(!std::is_polymorphic_v<PyObject>);
+  // 3. MarkWord必须在偏移量0的位置
+  static_assert(offsetof(PyObject, mark_word_) == 0);
 };
 
 }  // namespace saauso::internal

@@ -2,6 +2,9 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#ifndef SAAUSO_RUNTIME_STRING_TABLE_H_
+#define SAAUSO_RUNTIME_STRING_TABLE_H_
+
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
 #include "src/handles/handles.h"
@@ -62,3 +65,5 @@ class StringTable {
 };
 
 }  // namespace saauso::internal
+
+#endif  // SAAUSO_RUNTIME_STRING_TABLE_H_

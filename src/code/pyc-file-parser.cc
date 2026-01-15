@@ -180,7 +180,8 @@ Handle<PyString> PycFileParser::ParseString(bool is_long_string) {
     str_value[i] = reader_->ReadByte();
   }
 
-  return PyString::NewInstance(str_value.get(), length);
+  return PyString::NewInstance(str_value.get(), static_cast<int64_t>(length),
+                               false);
 }
 
 Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,

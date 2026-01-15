@@ -53,7 +53,7 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
   return instance_;
 }
 
-void PyDictKlass::Initialize() {
+void PyDictKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -68,7 +68,10 @@ void PyDictKlass::Initialize() {
   vtable_.contains = &Virtual_Contains;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+}
 
+void PyDictKlass::Initialize() {
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
 
   auto prop_name = PyString::NewInstance("setdefault");

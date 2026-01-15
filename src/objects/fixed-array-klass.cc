@@ -23,7 +23,7 @@ Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance() {
   return instance_;
 }
 
-void FixedArrayKlass::Initialize() {
+void FixedArrayKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -31,6 +31,8 @@ void FixedArrayKlass::Initialize() {
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
+
+void FixedArrayKlass::Initialize() {}
 
 // static
 void FixedArrayKlass::Finalize() {

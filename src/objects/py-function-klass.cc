@@ -6,6 +6,7 @@
 
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
@@ -29,17 +30,22 @@ Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
   return instance_;
 }
 
-void PyFunctionKlass::Initialize() {
+void PyFunctionKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
+}
 
+void PyFunctionKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
@@ -85,16 +91,18 @@ Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
   return instance_;
 }
 
-void NativeFunctionKlass::Initialize() {
+void NativeFunctionKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.call = &Virtual_Call;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
+
+void NativeFunctionKlass::Initialize() {}
 
 void NativeFunctionKlass::Finalize() {
   instance_ = Tagged<NativeFunctionKlass>::Null();
@@ -140,7 +148,7 @@ Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
   return instance_;
 }
 
-void MethodObjectKlass::Initialize() {
+void MethodObjectKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -149,6 +157,8 @@ void MethodObjectKlass::Initialize() {
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
+
+void MethodObjectKlass::Initialize() {}
 
 void MethodObjectKlass::Finalize() {
   instance_ = Tagged<MethodObjectKlass>::Null();

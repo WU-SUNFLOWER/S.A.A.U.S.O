@@ -9,6 +9,7 @@
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -37,7 +38,7 @@ Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
   return instance_;
 }
 
-void PyBooleanKlass::Initialize() {
+void PyBooleanKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -46,9 +47,14 @@ void PyBooleanKlass::Initialize() {
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
   vtable_.hash = &Virtual_Hash;
+}
 
+void PyBooleanKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化klass_properties
+  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PySmiKlass::GetInstance());
@@ -108,7 +114,7 @@ Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
   return instance_;
 }
 
-void PyNoneKlass::Initialize() {
+void PyNoneKlass::PreInitialize() {
   // 将自己注册到universe
   Universe::klass_list_.PushBack(this);
 
@@ -116,9 +122,15 @@ void PyNoneKlass::Initialize() {
   vtable_.print = &Virtual_Print;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
+  vtable_.hash = &Virtual_Hash;
+}
 
+void PyNoneKlass::Initialize() {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());

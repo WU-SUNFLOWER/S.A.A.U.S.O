@@ -70,7 +70,6 @@ void PyList::Set(int64_t index, Handle<PyObject> value) {
   assert(0 <= index && index < length_);
 
   array()->Set(index, *value);
-  WRITE_BARRIER;
 }
 
 void PyList::RemoveByIndex(int64_t index) {
@@ -116,28 +115,26 @@ void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
 
   self->array()->Set(self->length_++,
                      value.IsNull() ? Tagged<PyObject>::Null() : *value);
-
-  WRITE_BARRIER;
 }
 
 void PyList::Insert(Handle<PyList> self,
                     int64_t index,
                     Handle<PyObject> value) {
-  assert(0 <= index && index < self->length_);
+  assert(0 <= index && index <= self->length_);
 
   HandleScope scope;
 
   if (self->IsFull()) {
     ExpandImpl(self);
   }
-  ++self->length_;
+  auto old_length = self->length_;
+  self->length_ = old_length + 1;
 
-  for (auto i = self->length_; i > index; --i) {
+  for (auto i = old_length; i > index; --i) {
     self->array()->Set(i, self->array()->Get(i - 1));
   }
 
   self->array()->Set(index, value.IsNull() ? Tagged<PyObject>::Null() : *value);
-  WRITE_BARRIER;
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
@@ -148,7 +145,6 @@ void PyList::ExpandImpl(Handle<PyList> list) {
       FixedArray::NewInstance(new_capacity, old_array);
 
   list->array_ = *new_array;
-  WRITE_BARRIER;
 }
 
 }  // namespace saauso::internal

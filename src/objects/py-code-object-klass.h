@@ -12,6 +12,7 @@ namespace saauso::internal {
 class PyCodeObjectKlass : public Klass {
  public:
   static Tagged<PyCodeObjectKlass> GetInstance();
+  void PreInitialize();
   void Initialize();
   void Finalize();
 

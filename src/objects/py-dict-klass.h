@@ -18,6 +18,7 @@ class PyDictKlass : public Klass {
 
   PyDictKlass() = delete;
 
+  void PreInitialize();
   void Initialize();
   void Finalize();
 

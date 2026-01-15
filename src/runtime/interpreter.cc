@@ -4,11 +4,11 @@
 
 #include "src/runtime/interpreter.h"
 
-#include "native-functions.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-list.h"
@@ -63,12 +63,38 @@ Interpreter::Interpreter() {
   PyDict::Put(builtins, func_name,
               PyFunction::NewInstance(&Native_Len, func_name));
 
+  func_name = PyString::NewInstance("isinstance");
+  PyDict::Put(builtins, func_name,
+              PyFunction::NewInstance(&Native_IsInstance, func_name));
+
   builtins_ = *builtins;
 }
 
-Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> func,
+Handle<PyObject> Interpreter::builtins() const {
+  return handle(builtins_);
+}
+
+Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> callable,
                                           Handle<PyList> args) {
-  // TODO: 实现call virtual
+  HandleScope scope;
+  Handle<PyList> actual_args = args.IsNull() ? PyList::NewInstance() : args;
+
+  if (IsPyNativeFunction(callable)) {
+    return PyObject::Call(callable, args, Handle<PyObject>::Null());
+  }
+
+  if (IsPyFunction(callable)) {
+    // TODO: 创建新的虚拟机栈帧，执行python代码
+    return handle(Universe::py_none_object_);
+  }
+
+  if (IsMethodObject(callable)) {
+    auto method = Handle<MethodObject>::cast(callable);
+    PyList::Insert(actual_args, 0, method->owner());
+    return CallVirtual(method->func(), actual_args);
+  }
+
+  assert(0 && "unreachable");
   return Handle<PyObject>::Null();
 }
 

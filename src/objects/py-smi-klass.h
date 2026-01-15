@@ -17,6 +17,7 @@ class PySmiKlass : public Klass {
  public:
   static Tagged<PySmiKlass> GetInstance();
 
+  void PreInitialize();
   void Initialize();
   void Finalize();
 
