@@ -8,13 +8,13 @@
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
-#include "src/objects/py-object.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object-klass.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
@@ -78,15 +78,13 @@ void Isolate::Init() {
 }
 
 void Isolate::InitMetaArea() {
-#define PREINIT_PY_KLASS(name)               \
-  do {                                       \
-    auto klass = name##Klass::GetInstance(); \
-    klass->InitializeVTable();               \
-    klass->PreInitialize();                  \
+#define PREINIT_PY_KLASS(_, Klass, __) \
+  do {                                 \
+    auto klass = Klass::GetInstance(); \
+    klass->InitializeVTable();         \
+    klass->PreInitialize();            \
   } while (false);
-  PY_TYPE_LIST(PREINIT_PY_KLASS)
-  PREINIT_PY_KLASS(PyObject)
-  PREINIT_PY_KLASS(NativeFunction)
+  ISOLATE_KLASS_LIST(PREINIT_PY_KLASS)
 #undef PREINIT_PY_KLASS
 
   string_table_ = new StringTable();
@@ -95,20 +93,16 @@ void Isolate::InitMetaArea() {
   py_true_object_ = PyBoolean::NewInstance(true);
   py_false_object_ = PyBoolean::NewInstance(false);
 
-#define INIT_PY_KLASS(name) name##Klass::GetInstance()->Initialize();
-  INIT_PY_KLASS(PyObject)
-  PY_TYPE_LIST(INIT_PY_KLASS)
-  INIT_PY_KLASS(NativeFunction)
+#define INIT_PY_KLASS(_, Klass, __) Klass::GetInstance()->Initialize();
+  ISOLATE_KLASS_LIST(INIT_PY_KLASS)
 #undef INIT_PY_KLASS
 }
 
 void Isolate::TearDown() {
   Scope isolate_scope(this);
 
-#define FINALIZE_PY_KLASS(name) name##Klass::GetInstance()->Finalize();
-  PY_TYPE_LIST(FINALIZE_PY_KLASS)
-  FINALIZE_PY_KLASS(PyObject)
-  FINALIZE_PY_KLASS(NativeFunction)
+#define FINALIZE_PY_KLASS(_, Klass, __) Klass::GetInstance()->Finalize();
+  ISOLATE_KLASS_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 
   delete string_table_;

@@ -6,6 +6,7 @@
 #define SAAUSO_RUNTIME_ISOLATE_H_
 
 #include "src/handles/tagged.h"
+#include "src/runtime/isolate-klass-list.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
@@ -15,22 +16,12 @@ class Klass;
 class HandleScopeImplementer;
 class Interpreter;
 class StringTable;
-class PyNone;
-class PyBoolean;
-class PyObjectKlass;
-class NativeFunctionKlass;
-class PySmiKlass;
-class PyTypeObjectKlass;
-class PyStringKlass;
-class PyFunctionKlass;
-class PyFloatKlass;
-class PyBooleanKlass;
-class PyNoneKlass;
-class PyCodeObjectKlass;
-class PyListKlass;
-class PyDictKlass;
-class FixedArrayKlass;
-class MethodObjectKlass;
+
+#define DECLARE_ISOLATE_KLASS_TYPES(Type, Klass, _) \
+  class Type;                                       \
+  class Klass;
+ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_TYPES)
+#undef DECLARE_ISOLATE_KLASS_TYPES
 
 class Isolate {
  public:
@@ -65,73 +56,11 @@ class Isolate {
 
   static Tagged<PyBoolean> ToPyBoolean(bool condition);
 
-  Tagged<PyObjectKlass> py_object_klass() const { return py_object_klass_; }
-  void set_py_object_klass(Tagged<PyObjectKlass> klass) {
-    py_object_klass_ = klass;
-  }
-
-  Tagged<NativeFunctionKlass> native_function_klass() const {
-    return native_function_klass_;
-  }
-  void set_native_function_klass(Tagged<NativeFunctionKlass> klass) {
-    native_function_klass_ = klass;
-  }
-
-  Tagged<PySmiKlass> py_smi_klass() const { return py_smi_klass_; }
-  void set_py_smi_klass(Tagged<PySmiKlass> klass) { py_smi_klass_ = klass; }
-
-  Tagged<PyTypeObjectKlass> py_type_object_klass() const {
-    return py_type_object_klass_;
-  }
-  void set_py_type_object_klass(Tagged<PyTypeObjectKlass> klass) {
-    py_type_object_klass_ = klass;
-  }
-
-  Tagged<PyStringKlass> py_string_klass() const { return py_string_klass_; }
-  void set_py_string_klass(Tagged<PyStringKlass> klass) {
-    py_string_klass_ = klass;
-  }
-
-  Tagged<PyFunctionKlass> py_function_klass() const { return py_function_klass_; }
-  void set_py_function_klass(Tagged<PyFunctionKlass> klass) {
-    py_function_klass_ = klass;
-  }
-
-  Tagged<PyFloatKlass> py_float_klass() const { return py_float_klass_; }
-  void set_py_float_klass(Tagged<PyFloatKlass> klass) { py_float_klass_ = klass; }
-
-  Tagged<PyBooleanKlass> py_boolean_klass() const { return py_boolean_klass_; }
-  void set_py_boolean_klass(Tagged<PyBooleanKlass> klass) {
-    py_boolean_klass_ = klass;
-  }
-
-  Tagged<PyNoneKlass> py_none_klass() const { return py_none_klass_; }
-  void set_py_none_klass(Tagged<PyNoneKlass> klass) { py_none_klass_ = klass; }
-
-  Tagged<PyCodeObjectKlass> py_code_object_klass() const {
-    return py_code_object_klass_;
-  }
-  void set_py_code_object_klass(Tagged<PyCodeObjectKlass> klass) {
-    py_code_object_klass_ = klass;
-  }
-
-  Tagged<PyListKlass> py_list_klass() const { return py_list_klass_; }
-  void set_py_list_klass(Tagged<PyListKlass> klass) { py_list_klass_ = klass; }
-
-  Tagged<PyDictKlass> py_dict_klass() const { return py_dict_klass_; }
-  void set_py_dict_klass(Tagged<PyDictKlass> klass) { py_dict_klass_ = klass; }
-
-  Tagged<FixedArrayKlass> fixed_array_klass() const { return fixed_array_klass_; }
-  void set_fixed_array_klass(Tagged<FixedArrayKlass> klass) {
-    fixed_array_klass_ = klass;
-  }
-
-  Tagged<MethodObjectKlass> method_object_klass() const {
-    return method_object_klass_;
-  }
-  void set_method_object_klass(Tagged<MethodObjectKlass> klass) {
-    method_object_klass_ = klass;
-  }
+#define DECLARE_ISOLATE_KLASS_ACCESSORS(_, Klass, slot)        \
+  Tagged<Klass> slot##_klass() const { return slot##_klass_; } \
+  void set_##slot##_klass(Tagged<Klass> klass) { slot##_klass_ = klass; }
+  ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_ACCESSORS)
+#undef DECLARE_ISOLATE_KLASS_ACCESSORS
 
  private:
   Isolate() = default;
@@ -154,21 +83,10 @@ class Isolate {
   Tagged<PyBoolean> py_true_object_;
   Tagged<PyBoolean> py_false_object_;
 
-  Tagged<PyObjectKlass> py_object_klass_;
-  Tagged<NativeFunctionKlass> native_function_klass_;
-
-  Tagged<PySmiKlass> py_smi_klass_;
-  Tagged<PyTypeObjectKlass> py_type_object_klass_;
-  Tagged<PyStringKlass> py_string_klass_;
-  Tagged<PyFunctionKlass> py_function_klass_;
-  Tagged<PyFloatKlass> py_float_klass_;
-  Tagged<PyBooleanKlass> py_boolean_klass_;
-  Tagged<PyNoneKlass> py_none_klass_;
-  Tagged<PyCodeObjectKlass> py_code_object_klass_;
-  Tagged<PyListKlass> py_list_klass_;
-  Tagged<PyDictKlass> py_dict_klass_;
-  Tagged<FixedArrayKlass> fixed_array_klass_;
-  Tagged<MethodObjectKlass> method_object_klass_;
+#define DECLARE_ISOLATE_KLASS_FIELDS(_, Klass, slot) \
+  Tagged<Klass> slot##_klass_;
+  ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_FIELDS)
+#undef DECLARE_ISOLATE_KLASS_FIELDS
 };
 
 }  // namespace saauso::internal
