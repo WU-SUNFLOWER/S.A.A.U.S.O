@@ -173,9 +173,10 @@ void Heap::IterateRoots(ObjectVisitor* v) {
     isolate_->interpreter()->Iterate(v);
   }
 
-  if (isolate_->string_table() != nullptr) {
-    isolate_->string_table()->Iterate(v);
-  }
+  // 现阶段string table中所有的字符串都保存在meta space，暂时不需要开放GC!
+  // if (isolate_->string_table() != nullptr) {
+  //   isolate_->string_table()->Iterate(v);
+  // }
 
   // TODO: 遍历python运行时的GC ROOT
 

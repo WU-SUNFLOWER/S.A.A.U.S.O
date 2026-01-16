@@ -42,6 +42,9 @@ class Isolate {
   static Isolate* Current();
   static void SetCurrent(Isolate* isolate);
 
+  Isolate(const Isolate&) = delete;
+  Isolate& operator=(const Isolate&) = delete;
+
   Heap* heap() const { return heap_; }
   HandleScopeImplementer* handle_scope_implementer() const {
     return handle_scope_implementer_;
@@ -64,8 +67,6 @@ class Isolate {
 
  private:
   Isolate() = default;
-  Isolate(const Isolate&) = delete;
-  Isolate& operator=(const Isolate&) = delete;
 
   void Init();
   void TearDown();

@@ -51,7 +51,7 @@ Tagged<PyBoolean> PyBoolean::Reverse() {
 
 // static
 Tagged<PyNone> PyNone::NewInstance() {
-  // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
+  // none生存在永久区，不会被垃圾回收，因此不需要Handle保护
   auto object =
       Isolate::Current()->heap()->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
   PyObject::SetKlass(object, PyNoneKlass::GetInstance());
