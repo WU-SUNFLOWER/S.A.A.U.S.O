@@ -49,7 +49,7 @@ Isolate* Isolate::Create() {
   if (!saauso::Saauso::IsInitialized()) {
     // 错误：S.A.A.U.S.O 虚拟机全局环境未初始化。
     // 在创建 Isolate 之前，必须先调用 saauso::Saauso::Initialize()。
-    std::abort();
+    assert(0);
   }
   auto* isolate = new Isolate();
   isolate->Init();
@@ -63,7 +63,7 @@ void Isolate::Dispose(Isolate* isolate) {
   if (isolate->entry_count_ != 0) {
     // 错误：试图销毁一个正在被使用的 Isolate。
     // 必须确保所有线程都已退出该 Isolate（即 entry_count_ 为 0）才能销毁它。
-    std::abort();
+    assert(0);
   }
   isolate->TearDown();
   delete isolate;
@@ -90,7 +90,7 @@ Isolate::Locker::Locker(Isolate* isolate) : isolate_(isolate) {
     // 错误：锁状态异常。
     // 当前线程获得了互斥锁，但 isolate 内部记录的 locker_thread_ 却是其他线程
     // ID。 这通常意味着锁的实现或状态维护出现了严重的逻辑错误。
-    std::abort();
+    assert(0);
   }
   ++isolate_->locker_count_;
 }
@@ -103,17 +103,20 @@ Isolate::Locker::~Locker() {
     // 错误：试图在仍有 Scope 进入的情况下释放锁。
     // 必须先退出所有 Scope (Exit)，才能释放 Locker。
     // 即 Scope 的生命周期必须完全包含在 Locker 的生命周期内。
-    std::abort();
+    assert(0);
   }
   if (isolate_->locker_thread_ != GetCurrentThreadId() ||
       isolate_->locker_count_ <= 0) {
     // 错误：解锁线程不匹配或锁计数异常。
     // 只有持有锁的线程才能释放锁，且锁计数必须大于 0。
-    std::abort();
+    assert(0);
   }
   --isolate_->locker_count_;
   if (isolate_->locker_count_ == 0) {
     isolate_->locker_thread_ = ThreadId{};
+    if (isolate_->entry_count_ == 0) {
+      isolate_->owner_thread_ = ThreadId{};
+    }
   }
   reinterpret_cast<std::recursive_mutex*>(isolate_->mutex_)->unlock();
 }
@@ -127,7 +130,7 @@ void Isolate::CheckThreadAccess() const {
     // 错误：线程访问违规。
     // 当前线程试图访问一个已被其他线程拥有的 Isolate，且未通过 Locker/Enter
     // 机制获得授权。
-    std::abort();
+    assert(0);
   }
 }
 
@@ -145,7 +148,7 @@ void Isolate::Enter() {
       // 当前 Isolate 已被其他线程拥有（owner_thread_ != tid），
       // 且当前线程没有持有锁（Locker），或者状态不满足重入条件。
       // 多线程访问必须先获取 Locker。
-      std::abort();
+      assert(0);
     }
     owner_thread_ = tid;
   }
@@ -166,7 +169,7 @@ void Isolate::Exit() {
     // 1. 当前线程不是 Isolate 的所有者。
     // 2. 退出顺序错误（未按栈顺序退出，current_ != this）。
     // 3. 进入计数已经为 0（重复退出）。
-    std::abort();
+    assert(0);
   }
   --entry_count_;
   // 恢复之前的 current_ Isolate

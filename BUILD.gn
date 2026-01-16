@@ -127,12 +127,15 @@ executable("ut") {
     # 在这里添加你的测试文件
     "//test/unittests/attribute-unittest.cc",
     "//test/unittests/gc-unittest.cc",
+    "//test/unittests/handle-thread-unittest.cc",
     "//test/unittests/handle-unittest.cc",
     "//test/unittests/py-dict-unittest.cc",
     "//test/unittests/py-float-unittest.cc",
     "//test/unittests/py-list-unittest.cc",
+    "//test/unittests/py-object-unittest.cc",
     "//test/unittests/py-smi-unittest.cc",
     "//test/unittests/py-string-unittest.cc",
+    "//test/unittests/pyc-file-parser-unittest.cc",
   ]
 
   deps = [

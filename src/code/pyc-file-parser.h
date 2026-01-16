@@ -19,6 +19,7 @@ class PyString;
 class PycFileParser {
  public:
   explicit PycFileParser(const char* filename);
+  ~PycFileParser();
 
   Handle<PyCodeObject> Parse();
 

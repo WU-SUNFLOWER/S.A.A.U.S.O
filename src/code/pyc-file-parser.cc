@@ -50,6 +50,8 @@ constexpr char kInStringTableObjectFlag = 'R';
 PycFileParser::PycFileParser(const char* filename)
     : reader_(std::make_unique<BinaryFileReader>(filename)) {}
 
+PycFileParser::~PycFileParser() = default;
+
 Handle<PyCodeObject> PycFileParser::Parse() {
   HandleScope scope;
 

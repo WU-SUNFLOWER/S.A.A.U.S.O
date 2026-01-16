@@ -9,7 +9,6 @@
         "--clang-tidy", // 开启静态分析
         "--background-index", // 后台建立索引
         "--completion-style=detailed",
-        "--header-insertion=iwyu", // 智能插入头文件 (Include What You Use)
     ],
     // 2. 启用保存时自动格式化
     "editor.formatOnSave": true,
