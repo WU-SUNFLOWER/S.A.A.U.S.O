@@ -9,8 +9,6 @@
 #include <string>
 #include <vector>
 
-#include <process.h>
-
 #include "include/saauso.h"
 #include "src/code/pyc-file-parser.h"
 #include "src/objects/py-code-object.h"
@@ -100,7 +98,7 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
 
   std::filesystem::path p =
       std::filesystem::temp_directory_path() /
-      ("saauso_pyc_test_" + std::to_string(_getpid()) + ".pyc");
+      ("saauso_pyc_test_ParseNameCanLoadFromCache.pyc");
   {
     std::ofstream os(p, std::ios::binary | std::ios::trunc);
     ASSERT_TRUE(os.is_open());
