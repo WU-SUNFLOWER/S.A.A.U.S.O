@@ -162,7 +162,10 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 
 ### 6.2. 分配与初始化
 - **堆对象分配**：不要对 `PyObject` 派生对象使用 `new`；应使用 `Isolate::Current()->heap()->Allocate<T>(Heap::AllocationSpace::kNewSpace / kOldSpace / kMetaSpace)` 获取 `Tagged<T>`，并显式写入字段与 `PyObject::SetKlass(...)`。
-- **分配不调用构造函数**：`Heap::Allocate/AllocateRaw` 只返回原始内存（通常已清零），不会执行 C++ 构造函数；不要依赖构造函数为对象/表结构写入默认值。
+- **分配不调用构造函数**：
+  - `Heap::Allocate/AllocateRaw` 只返回原始内存（不保证分配得到的内存块已清零），不会执行 C++ 构造函数
+  - 因此不要依赖构造函数为对象/表结构写入默认值。
+  - 一般地，写入默认值操作在对应对象的工厂函数`XXX::NewInstance(...)`（比如PyString::NewInstance、PyDict::NewInstance）中手工完成。
 - **永久区单例**：`None/True/False` 通过 `kMetaSpace` 分配并保存在 `Isolate`，通常不需要 `Handle` 保护。
 
 ### 6.3. GC 与遍历约定

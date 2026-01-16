@@ -30,7 +30,7 @@ class HandleScope {
 
   void Close();
 
-  static State current_;
+  static thread_local State current_;
 
   State previous_;
   bool is_closed_{false};

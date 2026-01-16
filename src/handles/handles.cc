@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-HandleScope::State HandleScope::current_;
+thread_local HandleScope::State HandleScope::current_;
 
 // 保存父级scope的现场
 HandleScope::HandleScope() : previous_(current_) {

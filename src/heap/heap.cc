@@ -83,6 +83,7 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
       assert(0 && "unknown heap space!!!");
   }
 
+  // 出于性能考虑，开发阶段我们约定手工初始化分配到的内存块，不执行分配函数中预清零的操作！
   // if (result != kNullAddress) {
   //   std::memset(reinterpret_cast<void*>(result), 0, size_in_bytes);
   // }

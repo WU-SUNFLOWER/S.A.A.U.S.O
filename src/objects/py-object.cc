@@ -81,7 +81,8 @@ Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
 
 void PyObject::SetProperties(Tagged<PyObject> object,
                              Tagged<PyDict> properties) {
-  assert(IsHeapObject(properties));
+  // properties不能是smi！
+  assert(properties.IsNull() || IsHeapObject(properties));
 
   object->properties_ = properties;
   WRITE_BARRIER(object, &object->properties_, properties);
@@ -121,7 +122,7 @@ bool IsPyFalse(Tagged<PyObject> object) {
 }
 
 bool IsHeapObject(Tagged<PyObject> object) {
-  return !IsPySmi(object);
+  return !object.IsNull() && !IsPySmi(object);
 }
 
 bool IsPyNativeFunction(Tagged<PyObject> object) {
