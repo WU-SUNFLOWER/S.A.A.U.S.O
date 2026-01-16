@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 
+#include "include/saauso.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -12,7 +13,8 @@
 using namespace saauso::internal;
 
 int main() {
-  Isolate* isolate = Isolate::Create();
+  saauso::Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
   Isolate::Scope isolate_scope(isolate);
 
   {
@@ -35,4 +37,5 @@ int main() {
   }
 
   Isolate::Dispose(isolate);
+  saauso::Saauso::Dispose();
 }

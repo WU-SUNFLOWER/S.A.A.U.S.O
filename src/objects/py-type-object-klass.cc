@@ -99,7 +99,7 @@ Tagged<PyBoolean> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
   if (!IsPyTypeObject(other)) {
     return Isolate::Current()->py_false_object();
   }
-  return Isolate::ToPyBoolean((*self).ptr() == (*other).ptr());
+  return Isolate::ToPyBoolean(self.is_identical_to(other));
 }
 
 Tagged<PyBoolean> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,

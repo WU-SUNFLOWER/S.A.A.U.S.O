@@ -2,11 +2,12 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "include/saauso.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/objects/py-function.h"
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -15,13 +16,15 @@ namespace saauso::internal {
 class AttributeTest : public testing::Test {
  protected:
   static void SetUpTestSuite() {
-    isolate_ = Isolate::Create();
-    Isolate::SetCurrent(isolate_);
+    saauso::Saauso::Initialize();
+    isolate_ = Isolate::New();
+    isolate_->Enter();
   }
   static void TearDownTestSuite() {
-    Isolate::SetCurrent(nullptr);
+    isolate_->Exit();
     Isolate::Dispose(isolate_);
     isolate_ = nullptr;
+    saauso::Saauso::Dispose();
   }
 
   static Isolate* isolate_;
@@ -40,8 +43,8 @@ TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
 
   PyObject::SetAttr(func, key, value);
   auto result = PyObject::GetAttr(func, key);
-  
-  EXPECT_EQ((*result).ptr(), (*value).ptr());
+
+  EXPECT_TRUE(result.is_identical_to(value));
 }
 
 TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {

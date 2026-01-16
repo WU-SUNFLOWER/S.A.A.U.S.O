@@ -4,6 +4,7 @@
 
 #include <cstdint>
 
+#include "include/saauso.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -21,13 +22,15 @@ namespace saauso::internal {
 class PyListTest : public testing::Test {
  protected:
   static void SetUpTestSuite() {
-    isolate_ = Isolate::Create();
-    Isolate::SetCurrent(isolate_);
+    saauso::Saauso::Initialize();
+    isolate_ = Isolate::New();
+    isolate_->Enter();
   }
   static void TearDownTestSuite() {
-    Isolate::SetCurrent(nullptr);
+    isolate_->Exit();
     Isolate::Dispose(isolate_);
     isolate_ = nullptr;
+    saauso::Saauso::Dispose();
   }
 
   static Isolate* isolate_;

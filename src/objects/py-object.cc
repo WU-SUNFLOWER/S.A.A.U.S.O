@@ -271,7 +271,7 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
   }
 
   // 内联Fast Path：直接比较内存地址
-  if ((*self).ptr() == (*other).ptr()) {
+  if (self.is_identical_to(other)) {
     return Isolate::Current()->py_true_object();
   }
 

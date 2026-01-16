@@ -61,12 +61,12 @@ class Handle {
     requires(is_subtype_v<S, T>)
       : Handle(*other) {}
 
-  T* operator->() const {
+  constexpr T* operator->() const {
     assert(!IsNull());
     return Tagged<T>(*location_).operator->();
   }
 
-  Tagged<T> operator*() const { return Tagged<T>(*location_); }
+  constexpr Tagged<T> operator*() const { return Tagged<T>(*location_); }
 
   template <class S>
   static Handle<T> cast(Handle<S> that) {
@@ -74,19 +74,18 @@ class Handle {
     return Handle<T>(Tagged<T>::cast(*that));
   }
 
-  bool IsNull() const { return location_ == nullptr; }
+  constexpr bool IsNull() const { return location_ == nullptr; }
   static Handle<T> Null() { return Handle<T>(); }
 
   Handle<T> EscapeFrom(HandleScope* scope) {
     return Handle<T>(scope->EscapeFromSelf(*location_));
   }
 
-  Address* location() const { return location_; }
+  constexpr Address* location() const { return location_; }
 
   // 快速检测两个handle是否指向同一个对象
-  bool is_identical_to(const Handle<T> other) const {
-    return location() == other.location() ||
-           (operator*()).ptr() == (*other).ptr();
+  constexpr bool is_identical_to(const Handle<T> other) const {
+    return location() == other.location() || operator*() == *other;
   }
 
  private:

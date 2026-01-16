@@ -156,7 +156,7 @@ void PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
 Tagged<PyBoolean> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
                                              Handle<PyObject> other) {
   assert(IsPyNone(self));
-  return Isolate::ToPyBoolean((*self).ptr() == (*other).ptr());
+  return Isolate::ToPyBoolean(self.is_identical_to(other));
 }
 
 // static

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "gtest/gtest.h"
+#include "include/saauso.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-float.h"
@@ -25,13 +26,15 @@ namespace saauso::internal {
 class HandleTest : public testing::Test {
  protected:
   static void SetUpTestSuite() {
-    isolate_ = Isolate::Create();
-    Isolate::SetCurrent(isolate_);
+    saauso::Saauso::Initialize();
+    isolate_ = Isolate::New();
+    isolate_->Enter();
   }
   static void TearDownTestSuite() {
-    Isolate::SetCurrent(nullptr);
+    isolate_->Exit();
     Isolate::Dispose(isolate_);
     isolate_ = nullptr;
+    saauso::Saauso::Dispose();
   }
 
   void SetUp() override {}
@@ -136,10 +139,11 @@ TEST_F(HandleTest, NestedHandleScopes) {
       }
 
       n += kNestNumberOfHandles;
-      EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
-                n);
-      EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
-                NR_BLOCKS(n));
+      EXPECT_EQ(
+          Isolate::Current()->handle_scope_implementer()->NumberOfHandles(), n);
+      EXPECT_EQ(
+          Isolate::Current()->handle_scope_implementer()->blocks().length(),
+          NR_BLOCKS(n));
       n -= kNestNumberOfHandles;
     }
 

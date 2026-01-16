@@ -39,9 +39,14 @@ class TaggedBase {
  public:
   explicit TaggedBase(Address address) : address_(address) {}
 
-  bool IsNull() const { return address_ == kNullAddress; }
+  constexpr bool IsNull() const { return address_ == kNullAddress; }
 
-  Address ptr() const { return address_; }
+  constexpr Address ptr() const { return address_; }
+
+  template<typename U>
+  constexpr bool operator==(TaggedBase<U> other) const {
+    return ptr() == other.ptr();
+  }
 
  protected:
   Address address_;
@@ -66,14 +71,14 @@ class Tagged : public TaggedBase<T> {
     requires(is_subtype_v<S, T>)
       : TaggedBase<T>(other.ptr()) {}
 
-  bool IsSmi() const { return AddressIsSmi(this->ptr()); }
+  constexpr bool IsSmi() const { return AddressIsSmi(this->ptr()); }
 
-  T* operator->() const {
+  constexpr T* operator->() const {
     assert(!IsSmi());
     return reinterpret_cast<T*>(this->ptr());
   }
 
-  T& operator*() const {
+  constexpr T& operator*() const {
     assert(!IsSmi());
     return reinterpret_cast<T*>(this->ptr());
   }
@@ -104,8 +109,8 @@ class Tagged<PySmi> : public TaggedBase<PySmi> {
     assert(AddressIsSmi(address));
   }
 
-  bool IsSmi() const { return true; }
-  int64_t value() const { return AddressToSmi(this->ptr()); }
+  constexpr bool IsSmi() const { return true; }
+  constexpr int64_t value() const { return AddressToSmi(this->ptr()); }
 
   // 只允许Tagged<PySmi>::cast(Tagged<PyObject>)
   static Tagged<PySmi> cast(Tagged<PyObject> that) {

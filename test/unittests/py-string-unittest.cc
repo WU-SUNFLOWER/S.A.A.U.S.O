@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "include/saauso.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
@@ -15,18 +16,20 @@
 namespace saauso::internal {
 
 // 说明：
-// - Isolate::Create()/Dispose() 用于初始化/销毁虚拟机运行时。
+// - Isolate::New()/Dispose() 用于初始化/销毁虚拟机运行时。
 // - 每个测试用例内部创建 HandleScope，避免 GC 触发时句柄失效。
 class PyStringTest : public testing::Test {
  protected:
   static void SetUpTestSuite() {
-    isolate_ = Isolate::Create();
-    Isolate::SetCurrent(isolate_);
+    saauso::Saauso::Initialize();
+    isolate_ = Isolate::New();
+    isolate_->Enter();
   }
   static void TearDownTestSuite() {
-    Isolate::SetCurrent(nullptr);
+    isolate_->Exit();
     Isolate::Dispose(isolate_);
     isolate_ = nullptr;
+    saauso::Saauso::Dispose();
   }
 
   static Isolate* isolate_;

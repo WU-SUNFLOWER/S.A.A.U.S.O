@@ -23,7 +23,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
-- `src/runtime/`：全局运行时容器（`Universe`）与隔离性探索（`isolate.h` 仍处于占位状态）。
+- `src/runtime/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`）。
 - `src/utils/`：通用工具（对齐/内存/小型容器等）。
 - `test/unittests/`：基于 GTest 的单元测试。
 - `BUILD.gn`：根目标定义（当前主要目标：`vm`、`ut`）。
@@ -65,20 +65,28 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - **OldSpace**: 已划分空间，但回收逻辑仍在 TODO（目前可能出现老生代 OOM 即退出）。
   - **MetaSpace**: 永久区（例如 `None/True/False` 等全局单例与 `Klass` 相关数据）。
 - **根集合 (Roots)**:
-  - `Universe::klass_list_`：遍历各 `Klass` 内部引用。
+  - `Isolate::klass_list_`：遍历各 `Klass` 内部引用（通常由各 `Klass::PreInitialize()` 注册）。
   - `HandleScopeImplementer`：遍历所有 handle blocks 内引用。
-  - Python 运行时根（解释器/栈帧/全局变量等）仍在 TODO（见 `Heap::IterateRoots`）。
+  - `Interpreter`：解释器内部持有的引用也会被遍历（见 `Heap::IterateRoots`）。
+  - Python 运行时根（栈帧/全局变量等）仍在 TODO（见 `Heap::IterateRoots`）。
 - **句柄系统 (`src/handles`)**:
   - `Handle<T>` 是“会被 GC 移动/回收的对象”的栈上安全持有方式；`Tagged<T>` 更接近裸指针语义。
   - `HandleScope` 管理 handle 生命周期；跨 scope 返回时使用 `EscapeFrom`。
-  - 永久区对象（例如 `Universe::py_none_object_` / `py_true_object_` / `py_false_object_`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
+  - 永久区对象（例如 `Isolate::py_none_object()` / `py_true_object()` / `py_false_object()`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
 - **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。**当前的目标是实现一个仅含有新生代scavenge gc的MVP版本**！
 
 ### 3.3. 运行时 (`src/runtime`)
-- **Universe**: 全局静态容器，包含堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable) 与全局单例（如 `None`, `True`, `False`）。
+- **Isolate**: 独立的虚拟机实例容器，封装堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable)、各内建 `Klass` 指针，以及全局单例（`None/True/False`）。
+- **Current 绑定模型**: `Isolate::Current()` 通过 `thread_local` 保存当前线程绑定的 Isolate；进入/退出必须使用 `Isolate::Scope`（或显式 `Enter/Exit`），禁止手动设置 Current。
+- **多线程访问控制**: `Isolate::Locker` 基于递归互斥锁保证同一时刻仅一个线程访问某个 Isolate（Isolate 级别的“GIL”语义）。
+- **初始化流程（关键）**:
+  - 预初始化所有 `Klass`：`InitializeVTable()` + `PreInitialize()`（完成 vtable 填充、把 Klass 注册到 `klass_list_` 等）。
+  - 初始化 `StringTable`。
+  - 创建全局单例 `None/True/False`（这些对象需要在大量初始化逻辑之前就可用）。
+  - 正式初始化所有 `Klass`：`Initialize()`（常见动作：创建类字典、C3/MRO、绑定 type object 等）。
 - **Interpreter**: 当前字节码执行与内建函数注册入口（内建函数实现在 `native-functions.*`）。
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
-- **隔离性**: `isolate.h` 目前仅为占位雏形；主路径仍依赖 `Universe` 静态全局，重构为多 Isolate 时需系统性清理静态状态。
+- **隔离性**: 主路径已迁移为 Isolate 架构；需要全局状态时，优先通过 `Isolate::Current()` 获取（而不是引入新的静态全局）。
 
 ### 3.4. 代码加载 (`src/code`)
 - **PycFileParser**: 负责解析 `.pyc` 文件并构建 `PyCodeObject`（依赖 `BinaryFileReader`）。
@@ -153,8 +161,9 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 - **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中。
 
 ### 6.2. 分配与初始化
-- **堆对象分配**：不要对 `PyObject` 派生对象使用 `new`；应使用 `Universe::heap_->Allocate<T>(Heap::AllocationSpace::kNewSpace / kOldSpace / kMetaSpace)` 获取 `Tagged<T>`，并显式写入字段与 `PyObject::SetKlass(...)`。
-- **永久区单例**：`None/True/False` 通过 `kMetaSpace` 分配并保存在 `Universe`，通常不需要 `Handle` 保护。
+- **堆对象分配**：不要对 `PyObject` 派生对象使用 `new`；应使用 `Isolate::Current()->heap()->Allocate<T>(Heap::AllocationSpace::kNewSpace / kOldSpace / kMetaSpace)` 获取 `Tagged<T>`，并显式写入字段与 `PyObject::SetKlass(...)`。
+- **分配不调用构造函数**：`Heap::Allocate/AllocateRaw` 只返回原始内存（通常已清零），不会执行 C++ 构造函数；不要依赖构造函数为对象/表结构写入默认值。
+- **永久区单例**：`None/True/False` 通过 `kMetaSpace` 分配并保存在 `Isolate`，通常不需要 `Handle` 保护。
 
 ### 6.3. GC 与遍历约定
 - **对象大小**：GC 扫描依赖 `Klass::vtable_.instance_size(self)` 返回正确实例大小。
@@ -163,7 +172,10 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 
 ### 6.4. 新增一个内建对象类型的最小步骤
 - 在 `src/objects/` 新增 `py-xxx.{h,cc}` 与 `py-xxx-klass.{h,cc}`（文件名使用 `kebab-case`）。
-- 如果对象在堆上有实体，加入 `PY_TYPE_IN_HEAP_LIST`（位于 `src/objects/py-object.h`），以便自动生成 `IsPyXxx(...)` 等检查器，并确保 `Universe::Genesis()` 初始化 `Klass`。
-- 在对应 `Klass::Initialize()` 填充 vtable（至少需要 `instance_size` 与 `iterate`），并在 `Finalize()` 做必要清理。
-- 若新增的 `Klass` 不在 `PY_TYPE_LIST` 的自动初始化流程中（例如 `NativeFunctionKlass` / `MethodObjectKlass` 这类特化类型），需要同步更新 `Universe::InitMetaArea()` 与 `Universe::Destroy()` 的手动初始化/反初始化路径。
+- 如果对象在堆上有实体，加入 `PY_TYPE_IN_HEAP_LIST`（位于 `src/objects/py-object.h`），以便自动生成 `IsPyXxx(...)` 等检查器。
+- 在对应 `Klass::PreInitialize()` 填充 vtable（至少需要 `instance_size` 与 `iterate`），并在 `Finalize()` 做必要清理。
+- 将该类型加入 `src/runtime/isolate-klass-list.h` 的 `ISOLATE_KLASS_LIST`，保证：
+  - `Isolate` 拥有对应的 `*_klass()` accessor 与字段；
+  - `Isolate::InitMetaArea()` 会自动执行该 Klass 的 `InitializeVTable/PreInitialize/Initialize`；
+  - `Isolate::TearDown()` 会自动执行该 Klass 的 `Finalize`。
 - 将新文件加入根 [BUILD.gn](file:///c:/Users/Administrator/Desktop/S.A.A.U.S.O/BUILD.gn) 的 `saauso_sources` 列表，保证目标可链接。

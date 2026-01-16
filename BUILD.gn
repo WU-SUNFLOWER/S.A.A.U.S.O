@@ -104,6 +104,7 @@ source_set("saauso_sources") {
     "//src/runtime/interpreter.h",
     "//src/runtime/isolate.cc",
     "//src/runtime/isolate.h",
+    "//src/runtime/saauso.cc",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
 
