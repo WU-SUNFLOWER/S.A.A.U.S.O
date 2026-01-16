@@ -7,8 +7,15 @@
 namespace saauso::internal {
 
 BinaryFileReader::BinaryFileReader(const char* filename) {
+  mode_ = Mode::kFile;
   file_ = fopen(filename, "rb");
   fread(buffer_, kBufferLength * sizeof(char), 1, file_);
+}
+
+BinaryFileReader::BinaryFileReader(std::span<const uint8_t> bytes) {
+  mode_ = Mode::kMemory;
+  bytes_ = bytes.data();
+  size_ = bytes.size();
 }
 
 BinaryFileReader::~BinaryFileReader() {
@@ -16,6 +23,13 @@ BinaryFileReader::~BinaryFileReader() {
 }
 
 char BinaryFileReader::ReadByte() {
+  if (mode_ == Mode::kMemory) {
+    if (pos_ >= size_) {
+      return 0;
+    }
+    return static_cast<char>(bytes_[pos_++]);
+  }
+
   if (index_ >= kBufferLength) {
     index_ = 0;
     fread(buffer_, kBufferLength * sizeof(char), 1, file_);
@@ -44,7 +58,15 @@ double BinaryFileReader::ReadDouble() {
 }
 
 void BinaryFileReader::Unread() {
-  --index_;
+  if (mode_ == Mode::kMemory) {
+    if (pos_ > 0) {
+      --pos_;
+    }
+    return;
+  }
+  if (index_ > 0) {
+    --index_;
+  }
 }
 
 void BinaryFileReader::Close() {

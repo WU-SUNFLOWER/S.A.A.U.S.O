@@ -6,10 +6,12 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <span>
 #include <string>
 #include <vector>
 
 #include "include/saauso.h"
+#include "src/code/cpython38-pyc-compiler.h"
 #include "src/code/pyc-file-parser.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-string.h"
@@ -96,17 +98,7 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   PutByte(bytes, static_cast<uint8_t>('s'));
   PutInt32LE(bytes, 0);
 
-  std::filesystem::path p =
-      std::filesystem::temp_directory_path() /
-      ("saauso_pyc_test_ParseNameCanLoadFromCache.pyc");
-  {
-    std::ofstream os(p, std::ios::binary | std::ios::trunc);
-    ASSERT_TRUE(os.is_open());
-    os.write(reinterpret_cast<const char*>(bytes.data()),
-             static_cast<std::streamsize>(bytes.size()));
-  }
-
-  PycFileParser parser(p.string().c_str());
+  PycFileParser parser(std::span<const uint8_t>(bytes.data(), bytes.size()));
   auto code = parser.Parse();
   ASSERT_FALSE(code.IsNull());
 
@@ -116,9 +108,24 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   ExpectStringEquals(co_name, "file.py");
 
   EXPECT_EQ((*file_name).ptr(), (*co_name).ptr());
+}
 
-  std::error_code ec;
-  std::filesystem::remove(p, ec);
+TEST_F(PycFileParserTest, CompileAndParseUsingCPython38) {
+  HandleScope scope;
+
+  constexpr std::string_view kFileName = "saauso_unittest_input.py";
+  constexpr std::string_view kSource = "x = 1\n";
+
+  std::vector<uint8_t> pyc =
+      CompilePythonSourceToPycBytes38(kSource, kFileName);
+  ASSERT_FALSE(pyc.empty());
+
+  PycFileParser parser(std::span<const uint8_t>(pyc.data(), pyc.size()));
+  auto code = parser.Parse();
+  ASSERT_FALSE(code.IsNull());
+
+  auto file_name = handle(Tagged<PyString>::cast((*code)->file_name_));
+  ExpectStringEquals(file_name, kFileName.data());
 }
 
 }  // namespace saauso::internal

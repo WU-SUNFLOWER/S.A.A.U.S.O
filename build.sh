@@ -71,7 +71,9 @@ else
 fi
 
 # 2. 执行编译
-$NINJA_EXE -C "$OUT_DIR" -t clean
+
+# 清理ninja缓存，会导致所有.cc文件重新编译
+# $NINJA_EXE -C "$OUT_DIR" -t clean
 
 $NINJA_EXE -C "$OUT_DIR" "$TARGET"
 

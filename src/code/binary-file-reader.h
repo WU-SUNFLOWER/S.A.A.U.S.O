@@ -5,13 +5,16 @@
 #ifndef SAAUSO_CODE_BINARY_FILE_READER_H_
 #define SAAUSO_CODE_BINARY_FILE_READER_H_
 
+#include <cstdint>
 #include <cstdio>
+#include <span>
 
 namespace saauso::internal {
 
 class BinaryFileReader {
  public:
   explicit BinaryFileReader(const char* filename);
+  explicit BinaryFileReader(std::span<const uint8_t> bytes);
 
   ~BinaryFileReader();
 
@@ -24,11 +27,22 @@ class BinaryFileReader {
   void Close();
 
  private:
+  enum class Mode {
+    kFile,
+    kMemory,
+  };
+
   static constexpr int kBufferLength = 256;
+
+  Mode mode_{Mode::kFile};
 
   FILE* file_{nullptr};
   size_t index_{0};
   char buffer_[kBufferLength];
+
+  const uint8_t* bytes_{nullptr};
+  size_t size_{0};
+  size_t pos_{0};
 };
 
 }  // namespace saauso::internal

@@ -5,7 +5,9 @@
 #ifndef SAAUSO_CODE_PYC_FILE_PARSER_H_
 #define SAAUSO_CODE_PYC_FILE_PARSER_H_
 
+#include <cstdint>
 #include <memory>
+#include <span>
 
 #include "src/handles/handles.h"
 
@@ -19,6 +21,7 @@ class PyString;
 class PycFileParser {
  public:
   explicit PycFileParser(const char* filename);
+  explicit PycFileParser(std::span<const uint8_t> bytes);
   ~PycFileParser();
 
   Handle<PyCodeObject> Parse();

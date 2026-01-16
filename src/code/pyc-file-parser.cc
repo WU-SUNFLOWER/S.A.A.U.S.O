@@ -50,6 +50,9 @@ constexpr char kInStringTableObjectFlag = 'R';
 PycFileParser::PycFileParser(const char* filename)
     : reader_(std::make_unique<BinaryFileReader>(filename)) {}
 
+PycFileParser::PycFileParser(std::span<const uint8_t> bytes)
+    : reader_(std::make_unique<BinaryFileReader>(bytes)) {}
+
 PycFileParser::~PycFileParser() = default;
 
 Handle<PyCodeObject> PycFileParser::Parse() {
@@ -281,7 +284,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         std::exit(1);
     }
 
-    list->Set(i, object);
+    PyList::Append(list, object);
 
     if (HAS_REF_FLAG(raw_object_type)) {
       cache->Set(index, object);

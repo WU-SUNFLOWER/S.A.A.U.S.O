@@ -124,7 +124,11 @@ executable("ut") {
   testonly = true  # 声明这只是一个测试目标
 
   sources = [
-    # 在这里添加你的测试文件
+    # 接入cpython38编译器前端
+    "//src/code/cpython38-pyc-compiler.cc",
+    "//src/code/cpython38-pyc-compiler.h",
+
+    # 单元测试文件
     "//test/unittests/attribute-unittest.cc",
     "//test/unittests/gc-unittest.cc",
     "//test/unittests/handle-thread-unittest.cc",
@@ -141,5 +145,6 @@ executable("ut") {
   deps = [
     ":saauso_sources",
     "//testing/gtest",
+    "//third_party/cpython38",
   ]
 }
