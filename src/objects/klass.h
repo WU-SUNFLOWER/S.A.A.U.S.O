@@ -27,6 +27,8 @@ struct VirtualTable {
   using Oop = Tagged<PyObject>;
   using OopHandle = Handle<PyObject>;
 
+  VirtualTable() = delete;
+
   using VirtualFuncType_0_1 = void (*)(Oop);
   using VirtualFuncType_1_1 = Oop (*)(Oop);
   using VirtualFuncType_0_2 = void (*)(Oop, Oop);
@@ -114,8 +116,6 @@ struct VirtualTable {
 
   // 扫描对象内部数据，用于GC
   void (*iterate)(Oop, ObjectVisitor*){nullptr};
-
-  VirtualTable() = delete;
 };
 /////////////////虚函数表 定义结束///////////////////////////
 

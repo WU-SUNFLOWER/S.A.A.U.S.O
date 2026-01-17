@@ -96,12 +96,14 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 ### 4.1. 风格
 - **标准**: 遵循 Google C++ Style Guide。
 - **命名空间**: 所有内部代码必须位于 `namespace saauso::internal` 中。
+- **头文件依赖**: 为降低编译期依赖复杂度，优先使用前置声明；仅在需要完整类型（例如按值成员、继承、`sizeof`/`alignof`、模板/内联实现）时才 `#include`。
 - **文件**:
   - C++ 源文件: `*.cc`
   - C++ 头文件: `*.h`
   - 文件名: `kebab-case` (例如 `py-code-object.cc`)。
 - **类**: `PascalCase`。
 - **变量**: `snake_case`，类成员变量以 `_` 结尾。
+- **类/结构体声明顺序（头文件）**: 访问控制段按 `public`→`protected`→`private`；每段内部按“types/aliases→constants→constructors/destructor→methods→data members”排列，数据成员集中放在末尾并尽量为 `private`（除非确有继承扩展需要）。
 
 ### 4.2. 版权头
 所有新文件必须包含标准的许可证头：

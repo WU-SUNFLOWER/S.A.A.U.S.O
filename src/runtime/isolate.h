@@ -74,15 +74,15 @@ class Isolate {
     Isolate* isolate_{nullptr};
   };
 
+  Isolate(const Isolate&) = delete;
+  Isolate& operator=(const Isolate&) = delete;
+
   // 创建一个新的 Isolate 实例。
   static Isolate* Create();
   // 销毁一个 Isolate 实例。
   static void Dispose(Isolate* isolate);
   static Isolate* New() { return Create(); }
   static void Delete(Isolate* isolate) { Dispose(isolate); }
-
-  Isolate(const Isolate&) = delete;
-  Isolate& operator=(const Isolate&) = delete;
 
   // 获取当前线程绑定的 Isolate 实例。
   static Isolate* Current();
