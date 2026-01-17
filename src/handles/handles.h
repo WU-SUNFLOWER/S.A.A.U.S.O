@@ -26,23 +26,23 @@ class HandleScope {
   ~HandleScope();
 
  private:
-  static void Extend();
-
-  void Close();
-
-  static thread_local State current_;
-
-  State previous_;
-  bool is_closed_{false};
-
   friend class HandleScopeImplementer;
 
   template <typename>
   friend class Handle;
 
+  static void Extend();
+
   static Address* CreateHandle(Address ptr);
 
+  void Close();
+
   Address* EscapeFromSelf(Address ptr);
+
+  static thread_local State current_;
+
+  State previous_;
+  bool is_closed_{false};
 };
 
 template <typename T>

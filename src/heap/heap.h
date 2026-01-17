@@ -17,11 +17,11 @@ class VirtualMemory;
 
 class Heap {
  public:
+  enum class AllocationSpace { kNewSpace, kOldSpace, kMetaSpace };
+
   static constexpr size_t kDefaultYoungGenerationSize = 1 * 1024 * 1024;
   static constexpr size_t kDefaultOldGenerationSize = 5 * 1024 * 1024;
   static constexpr size_t kDefaultMetaSpaceSize = 5 * 1024 * 1024;
-
-  enum class AllocationSpace { kNewSpace, kOldSpace, kMetaSpace };
 
   explicit Heap(Isolate* isolate) : isolate_(isolate) {}
   Heap() = delete;
@@ -56,6 +56,8 @@ class Heap {
                    Tagged<PyObject> value);
 
  private:
+  enum class GcState { kNotInGc, kScavenage, kMarkCompact };
+
   Address AllocateRawImpl(size_t size_in_bytes, AllocationSpace space);
 
   void IterateRoots(ObjectVisitor* v);
@@ -72,7 +74,6 @@ class Heap {
   // 优化TODO：改用Card Table以减少内存开销和重排开销
   Vector<Tagged<PyObject>*> remembered_set_;
 
-  enum class GcState { kNotInGc, kScavenage, kMarkCompact };
   GcState gc_state_{GcState::kNotInGc};
 
   // TODO: 实现大块虚拟内存的灵活生长和收缩

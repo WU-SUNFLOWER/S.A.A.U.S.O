@@ -50,8 +50,6 @@ struct VirtualTable {
                                                               OopHandle,
                                                               OopHandle);
 
-  VirtualTable() = delete;
-
   // Tagged<PyObject> add(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE add{nullptr};
   // Tagged<PyObject> sub(Tagged<PyObject> a, Tagged<PyObject> b);
@@ -116,6 +114,8 @@ struct VirtualTable {
 
   // 扫描对象内部数据，用于GC
   void (*iterate)(Oop, ObjectVisitor*){nullptr};
+
+  VirtualTable() = delete;
 };
 /////////////////虚函数表 定义结束///////////////////////////
 
@@ -148,7 +148,6 @@ class Klass : public Object {
   void OrderSupers();
 
   // Python对象虚函数表
-  VirtualTable vtable_;
 
   // 默认虚函数
   static void Virtual_Default_Print(Handle<PyObject> self);
@@ -174,6 +173,8 @@ class Klass : public Object {
                                               Handle<PyObject> other);
   static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
   static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
+
+  VirtualTable vtable_;
 
  protected:
   // PyDict* klass_properties_

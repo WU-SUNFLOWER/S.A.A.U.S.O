@@ -53,18 +53,6 @@ class Isolate {
     Isolate* isolate_{nullptr};
   };
 
-  // 创建一个新的 Isolate 实例。
-  static Isolate* Create();
-  // 销毁一个 Isolate 实例。
-  static void Dispose(Isolate* isolate);
-  static Isolate* New() { return Create(); }
-  static void Delete(Isolate* isolate) { Dispose(isolate); }
-
-  // 获取当前线程绑定的 Isolate 实例。
-  static Isolate* Current();
-  // 禁止直接设置 Current，必须通过 Scope 或 Enter/Exit 管理。
-  static void SetCurrent(Isolate* isolate) = delete;
-
   // Isolate::Locker 用于多线程环境下的同步。
   // 它确保在同一时刻只有一个线程可以访问该 Isolate（类似于 GIL 的作用范围，但在
   // Isolate 级别）。
@@ -86,13 +74,25 @@ class Isolate {
     Isolate* isolate_{nullptr};
   };
 
+  // 创建一个新的 Isolate 实例。
+  static Isolate* Create();
+  // 销毁一个 Isolate 实例。
+  static void Dispose(Isolate* isolate);
+  static Isolate* New() { return Create(); }
+  static void Delete(Isolate* isolate) { Dispose(isolate); }
+
+  Isolate(const Isolate&) = delete;
+  Isolate& operator=(const Isolate&) = delete;
+
+  // 获取当前线程绑定的 Isolate 实例。
+  static Isolate* Current();
+  // 禁止直接设置 Current，必须通过 Scope 或 Enter/Exit 管理。
+  static void SetCurrent(Isolate* isolate) = delete;
+
   // 进入 Isolate：将当前线程与此 Isolate 绑定。
   void Enter();
   // 退出 Isolate：解除当前线程与此 Isolate 的绑定。
   void Exit();
-
-  Isolate(const Isolate&) = delete;
-  Isolate& operator=(const Isolate&) = delete;
 
   // 获取虚拟机的核心组件
   Heap* heap() const { return heap_; }
@@ -124,8 +124,10 @@ class Isolate {
   void TearDown();
   void InitMetaArea();
 
-  static thread_local Isolate* current_;
   static ThreadId GetCurrentThreadId();
+  void CheckThreadAccess() const;
+
+  static thread_local Isolate* current_;
 
   Heap* heap_{nullptr};
   HandleScopeImplementer* handle_scope_implementer_{nullptr};
@@ -141,8 +143,6 @@ class Isolate {
   Tagged<Klass> slot##_klass_;
   ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_FIELDS)
 #undef DECLARE_ISOLATE_KLASS_FIELDS
-
-  void CheckThreadAccess() const;
 
   ThreadId owner_thread_{};
   int entry_count_{0};
