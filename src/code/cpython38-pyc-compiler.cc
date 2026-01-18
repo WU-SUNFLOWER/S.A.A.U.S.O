@@ -25,6 +25,8 @@
 
 namespace saauso::internal {
 
+void FinalizeEmbeddedPython38Runtime();
+
 namespace {
 
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
@@ -34,37 +36,53 @@ void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
   out.push_back(static_cast<uint8_t>((v >> 24) & 0xff));
 }
 
-void FinalizeEmbeddedPython38Runtime() {
-  if (!Py_IsInitialized()) {
-    return;
-  }
-  Py_FinalizeEx();
-}
+std::mutex g_python38_lifecycle_mutex;
+bool g_python38_atexit_registered = false;
 
 void EnsurePythonInitialized() {
-  static std::once_flag once;
-  std::call_once(once, []() {
-    // Configure CPython to use the standard malloc allocator.
-    // This is required to prevent false positive memory leak reports from
-    // LeakSanitizer (LSAN) because CPython's default pymalloc allocator
-    // does not release all memory arenas during Py_FinalizeEx.
-    PyPreConfig preconfig;
-    PyPreConfig_InitIsolatedConfig(&preconfig);
-    preconfig.allocator = PYMEM_ALLOCATOR_MALLOC;
+  std::lock_guard<std::mutex> lock(g_python38_lifecycle_mutex);
+  if (Py_IsInitialized()) {
+    return;
+  }
+  // Configure CPython to use the standard malloc allocator.
+  // This is required to prevent false positive memory leak reports from
+  // LeakSanitizer (LSAN) because CPython's default pymalloc allocator
+  // does not release all memory arenas during Py_FinalizeEx.
+  PyPreConfig preconfig;
+  PyPreConfig_InitIsolatedConfig(&preconfig);
+  preconfig.allocator = PYMEM_ALLOCATOR_MALLOC;
 
-    PyStatus status = Py_PreInitialize(&preconfig);
-    if (PyStatus_Exception(status)) {
-      Py_ExitStatusException(status);
-    }
+  PyStatus status = Py_PreInitialize(&preconfig);
+  if (PyStatus_Exception(status)) {
+    Py_ExitStatusException(status);
+  }
 
-    Py_IgnoreEnvironmentFlag = 1;
-    Py_NoSiteFlag = 1;
-    Py_InitializeEx(0);
+  Py_IgnoreEnvironmentFlag = 1;
+  Py_NoSiteFlag = 1;
+  Py_InitializeEx(0);
+  if (!g_python38_atexit_registered) {
     std::atexit(FinalizeEmbeddedPython38Runtime);
-  });
+    g_python38_atexit_registered = true;
+  }
 }
 
 }  // namespace
+
+void FinalizeEmbeddedPython38Runtime() {
+  std::lock_guard<std::mutex> lock(g_python38_lifecycle_mutex);
+  if (!Py_IsInitialized()) {
+    return;
+  }
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyGC_Collect();
+  PyGC_Collect();
+  PyGC_Collect();
+  PyType_ClearCache();
+  PyGILState_Release(gstate);
+
+  Py_FinalizeEx();
+}
 
 std::vector<uint8_t> CompilePythonSourceToPycBytes38(
     std::string_view source,

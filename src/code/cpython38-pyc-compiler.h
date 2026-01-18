@@ -14,6 +14,8 @@ namespace saauso::internal {
 std::vector<uint8_t> CompilePythonSourceToPycBytes38(std::string_view source,
                                                      std::string_view filename);
 
+void FinalizeEmbeddedPython38Runtime();
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_CODE_CPYTHON38_PYC_COMPILER_H_

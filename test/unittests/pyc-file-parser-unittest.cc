@@ -11,12 +11,20 @@
 #include <vector>
 
 #include "include/saauso.h"
+#include "src/build/buildflag.h"
+#include "src/build/build_config.h"
 #include "src/code/cpython312-pyc-compiler.h"
 #include "src/code/cpython312-pyc-file-parser.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
+#if BUILDFLAG(IS_LINUX)
+extern "C" const char* __lsan_default_suppressions() {
+  return "leak:PyUnicode_New\n";
+}
+#endif
 
 namespace saauso::internal {
 
@@ -32,6 +40,7 @@ class PycFileParserTest : public testing::Test {
     Isolate::Dispose(isolate_);
     isolate_ = nullptr;
     saauso::Saauso::Dispose();
+    FinalizeEmbeddedPython312Runtime();
   }
 
   static Isolate* isolate_;
