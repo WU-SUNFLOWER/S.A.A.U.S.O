@@ -28,4 +28,5 @@
         "editor.defaultFormatter": "Google.gn"
     },
     "explorer.copyRelativePathSeparator": "/",
+    "cmake.ignoreCMakeListsMissing": true,
 }
