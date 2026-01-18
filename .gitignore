@@ -24,8 +24,8 @@
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
 *.out
 *.app
+
