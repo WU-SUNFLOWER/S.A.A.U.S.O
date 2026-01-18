@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "include/saauso.h"
-#include "src/code/cpython38-pyc-compiler.h"
-#include "src/code/pyc-file-parser.h"
+#include "src/code/cpython312-pyc-compiler.h"
+#include "src/code/cpython312-pyc-file-parser.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
@@ -77,18 +77,26 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   PutInt32LE(bytes, 0);
   PutInt32LE(bytes, 0);
   PutInt32LE(bytes, 0);
-  PutInt32LE(bytes, 0);
 
   PutByte(bytes, static_cast<uint8_t>('s'));
   PutInt32LE(bytes, 0);
 
-  for (int i = 0; i < 5; ++i) {
-    PutByte(bytes, static_cast<uint8_t>(')'));
-    PutByte(bytes, 0);
-  }
+  PutByte(bytes, static_cast<uint8_t>(')'));
+  PutByte(bytes, 0);
+
+  PutByte(bytes, static_cast<uint8_t>(')'));
+  PutByte(bytes, 0);
+
+  PutByte(bytes, static_cast<uint8_t>(')'));
+  PutByte(bytes, 0);
+
+  PutByte(bytes, static_cast<uint8_t>('0'));
 
   PutByte(bytes, static_cast<uint8_t>(0x80 | static_cast<uint8_t>('s')));
   PutLongString(bytes, "file.py");
+
+  PutByte(bytes, static_cast<uint8_t>('r'));
+  PutInt32LE(bytes, 0);
 
   PutByte(bytes, static_cast<uint8_t>('r'));
   PutInt32LE(bytes, 0);
@@ -98,7 +106,11 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   PutByte(bytes, static_cast<uint8_t>('s'));
   PutInt32LE(bytes, 0);
 
-  PycFileParser parser(std::span<const uint8_t>(bytes.data(), bytes.size()));
+  PutByte(bytes, static_cast<uint8_t>('s'));
+  PutInt32LE(bytes, 0);
+
+  CPython312PycFileParser parser(
+      std::span<const uint8_t>(bytes.data(), bytes.size()));
   auto code = parser.Parse();
   ASSERT_FALSE(code.IsNull());
 
@@ -110,17 +122,17 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   EXPECT_EQ((*file_name).ptr(), (*co_name).ptr());
 }
 
-TEST_F(PycFileParserTest, CompileAndParseUsingCPython38) {
+TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   HandleScope scope;
 
   constexpr std::string_view kFileName = "saauso_unittest_input.py";
   constexpr std::string_view kSource = "x = 1\n";
 
   std::vector<uint8_t> pyc =
-      CompilePythonSourceToPycBytes38(kSource, kFileName);
+      CompilePythonSourceToPycBytes312(kSource, kFileName);
   ASSERT_FALSE(pyc.empty());
 
-  PycFileParser parser(std::span<const uint8_t>(pyc.data(), pyc.size()));
+  CPython312PycFileParser parser(std::span<const uint8_t>(pyc.data(), pyc.size()));
   auto code = parser.Parse();
   ASSERT_FALSE(code.IsNull());
 

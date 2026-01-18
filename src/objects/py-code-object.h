@@ -10,6 +10,9 @@
 
 namespace saauso::internal {
 
+class PyList;
+class PyString;
+
 class PyCodeObject : public PyObject {
  public:
   static Handle<PyCodeObject> NewInstance(int arg_count,
@@ -29,6 +32,26 @@ class PyCodeObject : public PyObject {
                                           int line_no,
                                           Handle<PyString> no_table);
 
+  static Handle<PyCodeObject> NewInstance312(int arg_count,
+                                             int posonly_arg_count,
+                                             int kwonly_arg_count,
+                                             int stack_size,
+                                             int flags,
+                                             Handle<PyString> bytecodes,
+                                             Handle<PyList> consts,
+                                             Handle<PyList> names,
+                                             Handle<PyList> localsplusnames,
+                                             Handle<PyString> localspluskinds,
+                                             Handle<PyList> var_names,
+                                             Handle<PyList> free_vars,
+                                             Handle<PyList> cell_vars,
+                                             Handle<PyString> file_name,
+                                             Handle<PyString> co_name,
+                                             Handle<PyString> qual_name,
+                                             int line_no,
+                                             Handle<PyString> line_table,
+                                             Handle<PyString> exception_table);
+
   static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 
   int arg_count_;          // 参数个数
@@ -45,6 +68,10 @@ class PyCodeObject : public PyObject {
   // PyList*
   Tagged<PyObject> consts_;
   // PyList*
+  Tagged<PyObject> localsplusnames_;
+  // PyString* (bytes)
+  Tagged<PyObject> localspluskinds_;
+  // PyList*
   Tagged<PyObject> var_names_;
 
   // PyList*
@@ -56,8 +83,14 @@ class PyCodeObject : public PyObject {
   Tagged<PyObject> file_name_;
   // PyString*
   Tagged<PyObject> co_name_;
+  // PyString*
+  Tagged<PyObject> qual_name_;
 
   int line_no_;
+  // PyString*
+  Tagged<PyObject> line_table_;
+  // PyString*
+  Tagged<PyObject> exception_table_;
   // PyString*
   Tagged<PyObject> no_table_;
 };

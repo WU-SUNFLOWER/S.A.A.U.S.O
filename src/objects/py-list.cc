@@ -6,7 +6,6 @@
 
 #include <cassert>
 
-#include "src/code/pyc-file-parser.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
@@ -23,8 +22,8 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   HandleScope scope;
 
   // 分配对象本体
-  Handle<PyList> object(
-      Isolate::Current()->heap()->Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
+  Handle<PyList> object(Isolate::Current()->heap()->Allocate<PyList>(
+      Heap::AllocationSpace::kNewSpace));
 
   // 分配fixed array
   Handle<FixedArray> array =

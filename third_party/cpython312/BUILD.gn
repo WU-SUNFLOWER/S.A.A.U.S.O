@@ -1,0 +1,56 @@
+# Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+# Use of this source code is governed by a GNU-style license that can be
+# found in the LICENSE file.
+
+declare_args() {
+  python312_root = "."
+  python312_extra_libs = []
+  python312_extra_ldflags = []
+}
+
+config("python312_config") {
+  if (is_win) {
+    _include_dir = "$python312_root/include_win"
+  } else if (is_linux) {
+    _include_dir = "$python312_root/include_linux"
+  }
+
+  if (is_win) {
+    _lib_dir = "$python312_root/lib_win"
+  } else if (is_linux) {
+    _lib_dir = "$python312_root/lib_linux"
+  }
+
+  include_dirs = [ _include_dir ]
+
+  if (is_win) {
+    _lib_name = "python312.lib"
+  } else if (is_linux) {
+    _lib_name = "python3.12"
+  }
+
+  libs = [ _lib_name ] + python312_extra_libs
+  if (is_win) {
+    ldflags = [ "/LIBPATH:" + rebase_path(_lib_dir, root_build_dir) ] +
+              python312_extra_ldflags
+  } else {
+    lib_dirs = [ _lib_dir ]
+    ldflags = python312_extra_ldflags + [ "-no-pie" ]
+    libs += [
+      "util",
+      "expat",
+      "dl",
+      "pthread",
+      "m",
+      "z",
+    ]
+  }
+  defines = [ "PY_SSIZE_T_CLEAN" ]
+  if (is_win) {
+    defines += [ "Py_NO_ENABLE_SHARED" ]
+  }
+}
+
+source_set("cpython312") {
+  public_configs = [ ":python312_config" ]
+}

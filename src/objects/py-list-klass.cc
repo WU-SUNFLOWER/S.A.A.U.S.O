@@ -6,7 +6,6 @@
 
 #include <cstdio>
 
-#include "src/code/pyc-file-parser.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -43,8 +42,8 @@ Tagged<PyListKlass> PyListKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyListKlass> instance = isolate->py_list_klass();
   if (instance.IsNull()) [[unlikely]] {
-    instance =
-        isolate->heap()->Allocate<PyListKlass>(Heap::AllocationSpace::kMetaSpace);
+    instance = isolate->heap()->Allocate<PyListKlass>(
+        Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_list_klass(instance);
   }
   return instance;

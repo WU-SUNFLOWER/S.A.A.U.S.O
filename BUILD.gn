@@ -26,8 +26,8 @@ source_set("saauso_sources") {
     # code (代码解析相关)
     "//src/code/binary-file-reader.cc",
     "//src/code/binary-file-reader.h",
-    "//src/code/pyc-file-parser.cc",
-    "//src/code/pyc-file-parser.h",
+    "//src/code/cpython312-pyc-file-parser.cc",
+    "//src/code/cpython312-pyc-file-parser.h",
 
     # handles
     "//src/handles/handle_scope_implementer.cc",
@@ -124,9 +124,9 @@ executable("ut") {
   testonly = true  # 声明这只是一个测试目标
 
   sources = [
-    # 接入cpython38编译器前端
-    "//src/code/cpython38-pyc-compiler.cc",
-    "//src/code/cpython38-pyc-compiler.h",
+    # 接入cpython312编译器前端
+    "//src/code/cpython312-pyc-compiler.cc",
+    "//src/code/cpython312-pyc-compiler.h",
 
     # 单元测试文件
     "//test/unittests/attribute-unittest.cc",
@@ -145,6 +145,6 @@ executable("ut") {
   deps = [
     ":saauso_sources",
     "//testing/gtest",
-    "//third_party/cpython38",
+    "//third_party/cpython312",
   ]
 }

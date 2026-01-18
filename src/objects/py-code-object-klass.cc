@@ -59,7 +59,14 @@ void PyCodeObjectKlass::Initialize() {
 // static
 void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto code = Handle<PyCodeObject>::cast(self);
-  auto file_name = Handle<PyString>(Tagged<PyString>::cast(code->file_name_));
+  Tagged<PyObject> file_name_obj = code->file_name_;
+  if (file_name_obj.IsNull() || !IsPyString(file_name_obj)) {
+    std::printf("<code object greet at 0x%p, file <unknown>, line %d>",
+                reinterpret_cast<void*>((*code).ptr()), code->line_no_);
+    return;
+  }
+
+  auto file_name = handle(Tagged<PyString>::cast(file_name_obj));
   std::printf("<code object greet at 0x%p, file \"%.*s\", line %d>",
               reinterpret_cast<void*>((*code).ptr()),
               static_cast<int>(file_name->length()), file_name->buffer(),
@@ -67,7 +74,8 @@ void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 void PyCodeObjectKlass::Finalize() {
-  Isolate::Current()->set_py_code_object_klass(Tagged<PyCodeObjectKlass>::Null());
+  Isolate::Current()->set_py_code_object_klass(
+      Tagged<PyCodeObjectKlass>::Null());
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -82,11 +90,16 @@ void PyCodeObjectKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&code->bytecodes_);
   v->VisitPointer(&code->names_);
   v->VisitPointer(&code->consts_);
+  v->VisitPointer(&code->localsplusnames_);
+  v->VisitPointer(&code->localspluskinds_);
   v->VisitPointer(&code->var_names_);
   v->VisitPointer(&code->free_vars_);
   v->VisitPointer(&code->cell_vars_);
   v->VisitPointer(&code->file_name_);
   v->VisitPointer(&code->co_name_);
+  v->VisitPointer(&code->qual_name_);
+  v->VisitPointer(&code->line_table_);
+  v->VisitPointer(&code->exception_table_);
   v->VisitPointer(&code->no_table_);
 }
 
