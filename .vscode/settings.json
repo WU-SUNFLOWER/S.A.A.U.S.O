@@ -29,4 +29,5 @@
     },
     "explorer.copyRelativePathSeparator": "/",
     "cmake.ignoreCMakeListsMissing": true,
+    "files.eol": "\n",
 }
