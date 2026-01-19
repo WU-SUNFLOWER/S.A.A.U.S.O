@@ -20,11 +20,13 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/native-functions.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/native-functions.h"
+
 
 namespace saauso::internal {
 
@@ -82,7 +84,8 @@ Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> callable,
   Handle<PyList> actual_args = args.IsNull() ? PyList::NewInstance() : args;
 
   if (IsPyNativeFunction(callable)) {
-    return PyObject::Call(callable, args, Handle<PyObject>::Null()).EscapeFrom(&scope);
+    return PyObject::Call(callable, args, Handle<PyObject>::Null())
+        .EscapeFrom(&scope);
   }
 
   if (IsPyFunction(callable)) {

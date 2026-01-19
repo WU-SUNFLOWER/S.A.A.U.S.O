@@ -20,6 +20,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 
 // CPython 3.12 .pyc 文件格式（高层概览）
@@ -96,7 +97,7 @@
 //
 // 5) 本解析器的落地策略（映射到 S.A.A.U.S.O 对象系统）
 //   - 统一使用 `Handle<T>` 构造临时对象，避免 GC 移动导致悬垂引用。
-//   - 将 marshal tuple/list 统一映射为 `PyList`（当前 VM 尚未实现 PyTuple）。
+//   - 将 marshal tuple 映射为 `PyTuple`，marshal list 映射为 `PyList`。
 //   - 将 marshal 的 int/long 在当前 MVP 里限制为 int32 范围，并用 `PySmi`
 //   表示。
 //   - code object 落地到 `PyCodeObject::NewInstance312(...)`，并补齐：
@@ -252,9 +253,10 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
   int flags = ReadInt32();
 
   auto bytecodes = Handle<PyString>::cast(ParseObject(string_table, cache));
-  auto consts = Handle<PyList>::cast(ParseObject(string_table, cache));
-  auto names = Handle<PyList>::cast(ParseObject(string_table, cache));
-  auto localsplusnames = Handle<PyList>::cast(ParseObject(string_table, cache));
+  auto consts = Handle<PyTuple>::cast(ParseObject(string_table, cache));
+  auto names = Handle<PyTuple>::cast(ParseObject(string_table, cache));
+  auto localsplusnames =
+      Handle<PyTuple>::cast(ParseObject(string_table, cache));
 
   Handle<PyString> localspluskinds;
   {
@@ -266,9 +268,9 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
     }
   }
 
-  Handle<PyList> var_names = localsplusnames;
-  Handle<PyList> free_vars = PyList::NewInstance();
-  Handle<PyList> cell_vars = PyList::NewInstance();
+  Handle<PyTuple> var_names = localsplusnames;
+  Handle<PyTuple> free_vars = PyTuple::NewInstance(0);
+  Handle<PyTuple> cell_vars = PyTuple::NewInstance(0);
 
   if (!localspluskinds.IsNull()) {
     const unsigned char* kinds =
@@ -276,13 +278,32 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
     int64_t n = localspluskinds->length();
     int64_t m = localsplusnames.IsNull() ? 0 : localsplusnames->length();
     int64_t limit = n < m ? n : m;
+
+    int64_t free_count = 0;
+    int64_t cell_count = 0;
+    for (int64_t i = 0; i < limit; ++i) {
+      unsigned char kind = kinds[i];
+      if ((kind & 0x80) != 0) {
+        ++free_count;
+      } else if ((kind & 0x40) != 0) {
+        ++cell_count;
+      }
+    }
+
+    free_vars = PyTuple::NewInstance(free_count);
+    cell_vars = PyTuple::NewInstance(cell_count);
+
+    int64_t free_i = 0;
+    int64_t cell_i = 0;
     for (int64_t i = 0; i < limit; ++i) {
       unsigned char kind = kinds[i];
       Handle<PyObject> name = localsplusnames->Get(i);
       if ((kind & 0x80) != 0) {
-        PyList::Append(free_vars, name);
+        free_vars->SetInternal(
+            free_i++, name.IsNull() ? Tagged<PyObject>::Null() : *name);
       } else if ((kind & 0x40) != 0) {
-        PyList::Append(cell_vars, name);
+        cell_vars->SetInternal(
+            cell_i++, name.IsNull() ? Tagged<PyObject>::Null() : *name);
       }
     }
   }
@@ -414,26 +435,30 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     case kSmallTupleFlag: {
       uint8_t length =
           static_cast<uint8_t>(static_cast<unsigned char>(reader_->ReadByte()));
-      auto list = PyList::NewInstance(length);
+      auto tuple = PyTuple::NewInstance(length);
       if (ref_flag) {
-        cache->Set(cache_index, list);
+        cache->Set(cache_index, tuple);
       }
       for (uint8_t i = 0; i < length; ++i) {
-        PyList::Append(list, ParseObject(string_table, cache));
+        auto value = ParseObject(string_table, cache);
+        tuple->SetInternal(i,
+                           value.IsNull() ? Tagged<PyObject>::Null() : *value);
       }
-      object = list;
+      object = tuple;
       break;
     }
     case kTupleFlag: {
       int length = ReadInt32();
-      auto list = PyList::NewInstance(length);
+      auto tuple = PyTuple::NewInstance(length);
       if (ref_flag) {
-        cache->Set(cache_index, list);
+        cache->Set(cache_index, tuple);
       }
       for (int i = 0; i < length; ++i) {
-        PyList::Append(list, ParseObject(string_table, cache));
+        auto value = ParseObject(string_table, cache);
+        tuple->SetInternal(i,
+                           value.IsNull() ? Tagged<PyObject>::Null() : *value);
       }
-      object = list;
+      object = tuple;
       break;
     }
     case kListFlag: {

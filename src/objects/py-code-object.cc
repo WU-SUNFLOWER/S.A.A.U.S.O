@@ -7,8 +7,8 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object-klass.h"
-#include "src/objects/py-list.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 
 namespace saauso::internal {
@@ -21,11 +21,11 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
                                                int stack_size,
                                                int flags,
                                                Handle<PyString> bytecodes,
-                                               Handle<PyList> names,
-                                               Handle<PyList> consts,
-                                               Handle<PyList> var_names,
-                                               Handle<PyList> free_vars,
-                                               Handle<PyList> cell_vars,
+                                               Handle<PyTuple> names,
+                                               Handle<PyTuple> consts,
+                                               Handle<PyTuple> var_names,
+                                               Handle<PyTuple> free_vars,
+                                               Handle<PyTuple> cell_vars,
                                                Handle<PyString> file_name,
                                                Handle<PyString> co_name,
                                                int line_no,
@@ -74,13 +74,13 @@ Handle<PyCodeObject> PyCodeObject::NewInstance312(
     int stack_size,
     int flags,
     Handle<PyString> bytecodes,
-    Handle<PyList> consts,
-    Handle<PyList> names,
-    Handle<PyList> localsplusnames,
+    Handle<PyTuple> consts,
+    Handle<PyTuple> names,
+    Handle<PyTuple> localsplusnames,
     Handle<PyString> localspluskinds,
-    Handle<PyList> var_names,
-    Handle<PyList> free_vars,
-    Handle<PyList> cell_vars,
+    Handle<PyTuple> var_names,
+    Handle<PyTuple> free_vars,
+    Handle<PyTuple> cell_vars,
     Handle<PyString> file_name,
     Handle<PyString> co_name,
     Handle<PyString> qual_name,

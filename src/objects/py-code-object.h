@@ -10,8 +10,8 @@
 
 namespace saauso::internal {
 
-class PyList;
 class PyString;
+class PyTuple;
 
 class PyCodeObject : public PyObject {
  public:
@@ -22,11 +22,11 @@ class PyCodeObject : public PyObject {
                                           int stack_size,
                                           int flags,
                                           Handle<PyString> bytecodes,
-                                          Handle<PyList> names,
-                                          Handle<PyList> consts,
-                                          Handle<PyList> var_names,
-                                          Handle<PyList> free_vars,
-                                          Handle<PyList> cell_vars,
+                                          Handle<PyTuple> names,
+                                          Handle<PyTuple> consts,
+                                          Handle<PyTuple> var_names,
+                                          Handle<PyTuple> free_vars,
+                                          Handle<PyTuple> cell_vars,
                                           Handle<PyString> file_name,
                                           Handle<PyString> co_name,
                                           int line_no,
@@ -38,13 +38,13 @@ class PyCodeObject : public PyObject {
                                              int stack_size,
                                              int flags,
                                              Handle<PyString> bytecodes,
-                                             Handle<PyList> consts,
-                                             Handle<PyList> names,
-                                             Handle<PyList> localsplusnames,
+                                             Handle<PyTuple> consts,
+                                             Handle<PyTuple> names,
+                                             Handle<PyTuple> localsplusnames,
                                              Handle<PyString> localspluskinds,
-                                             Handle<PyList> var_names,
-                                             Handle<PyList> free_vars,
-                                             Handle<PyList> cell_vars,
+                                             Handle<PyTuple> var_names,
+                                             Handle<PyTuple> free_vars,
+                                             Handle<PyTuple> cell_vars,
                                              Handle<PyString> file_name,
                                              Handle<PyString> co_name,
                                              Handle<PyString> qual_name,
@@ -63,20 +63,20 @@ class PyCodeObject : public PyObject {
 
   // PyString*
   Tagged<PyObject> bytecodes_;
-  // PyList*
+  // PyTuple*
   Tagged<PyObject> names_;
-  // PyList*
+  // PyTuple*
   Tagged<PyObject> consts_;
-  // PyList*
+  // PyTuple*
   Tagged<PyObject> localsplusnames_;
   // PyString* (bytes)
   Tagged<PyObject> localspluskinds_;
-  // PyList*
+  // PyTuple*
   Tagged<PyObject> var_names_;
 
-  // PyList*
+  // PyTuple*
   Tagged<PyObject> free_vars_;
-  // PyList*
+  // PyTuple*
   Tagged<PyObject> cell_vars_;
 
   // PyString*

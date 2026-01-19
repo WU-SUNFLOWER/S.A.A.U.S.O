@@ -13,6 +13,8 @@
 
 namespace saauso::internal {
 
+class CPython312PycFileParser;
+class PycFileParser;
 class PyList;
 
 class PyTuple : public PyObject {
@@ -28,6 +30,8 @@ class PyTuple : public PyObject {
   int64_t length() const { return length_; }
 
  private:
+  friend class CPython312PycFileParser;
+  friend class PycFileParser;
   friend class PyTupleKlass;
 
   Tagged<PyObject>* data() {
@@ -45,4 +49,3 @@ class PyTuple : public PyObject {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_OBJECTS_PY_TUPLE_H_
-

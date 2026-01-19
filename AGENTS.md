@@ -185,3 +185,6 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
   - `Isolate::InitMetaArea()` 会自动执行该 Klass 的 `InitializeVTable/PreInitialize/Initialize`；
   - `Isolate::TearDown()` 会自动执行该 Klass 的 `Finalize`。
 - 将新文件加入根 [BUILD.gn](file:///c:/Users/Administrator/Desktop/S.A.A.U.S.O/BUILD.gn) 的 `saauso_sources` 列表，保证目标可链接。
+- （可选）在 `src/runtime/interpreter.cc` 注册该类型的 `type_object()`，并加入 `builtins` 字典。
+  - 这步不是必须选项，只有当我们希望将这种类型泄露到 Python 语言中，允许用户代码中使用 `type(...)` 或 `isinstance(..., ...)` 等操作时才需要。
+  - 例如在Python中，NoneType这种类型就没有被泄漏到Python语言环境，因此它不需要注册到`builtins`字典中。
