@@ -74,10 +74,6 @@ source_set("saauso_sources") {
     "//src/objects/py-list-klass.h",
     "//src/objects/py-list.cc",
     "//src/objects/py-list.h",
-    "//src/objects/py-tuple-klass.cc",
-    "//src/objects/py-tuple-klass.h",
-    "//src/objects/py-tuple.cc",
-    "//src/objects/py-tuple.h",
     "//src/objects/py-object-klass.cc",
     "//src/objects/py-object-klass.h",
     "//src/objects/py-object.cc",
@@ -94,6 +90,10 @@ source_set("saauso_sources") {
     "//src/objects/py-string-klass.h",
     "//src/objects/py-string.cc",
     "//src/objects/py-string.h",
+    "//src/objects/py-tuple-klass.cc",
+    "//src/objects/py-tuple-klass.h",
+    "//src/objects/py-tuple.cc",
+    "//src/objects/py-tuple.h",
     "//src/objects/py-type-object-klass.cc",
     "//src/objects/py-type-object-klass.h",
     "//src/objects/py-type-object.cc",
@@ -102,9 +102,14 @@ source_set("saauso_sources") {
     "//src/runtime/native-functions.cc",
     "//src/runtime/native-functions.h",
 
+    # 解释器
+    "//src/interpreter/bytecodes.h",
+    "//src/interpreter/frame-object.cc",
+    "//src/interpreter/frame-object.h",
+    "//src/interpreter/interpreter.cc",
+    "//src/interpreter/interpreter.h",
+
     # runtime (运行时)
-    "//src/runtime/interpreter.cc",
-    "//src/runtime/interpreter.h",
     "//src/runtime/isolate.cc",
     "//src/runtime/isolate.h",
     "//src/runtime/saauso.cc",
@@ -140,10 +145,10 @@ executable("ut") {
     "//test/unittests/py-dict-unittest.cc",
     "//test/unittests/py-float-unittest.cc",
     "//test/unittests/py-list-unittest.cc",
-    "//test/unittests/py-tuple-unittest.cc",
     "//test/unittests/py-object-unittest.cc",
     "//test/unittests/py-smi-unittest.cc",
     "//test/unittests/py-string-unittest.cc",
+    "//test/unittests/py-tuple-unittest.cc",
     "//test/unittests/pyc-file-parser-unittest.cc",
   ]
 

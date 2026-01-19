@@ -6,6 +6,7 @@
 
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -14,10 +15,8 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/interpreter.h"
 #include "src/runtime/isolate.h"
 #include "src/runtime/string-table.h"
-
 
 namespace saauso::internal {
 

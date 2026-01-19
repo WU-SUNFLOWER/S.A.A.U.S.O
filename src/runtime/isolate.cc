@@ -11,6 +11,7 @@
 #include "include/saauso.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/heap.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-code-object-klass.h"
@@ -26,8 +27,8 @@
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-type-object-klass.h"
-#include "src/runtime/interpreter.h"
 #include "src/runtime/string-table.h"
+
 
 namespace saauso::internal {
 

@@ -132,4 +132,24 @@ Tagged<PyCodeObject> PyCodeObject::cast(Tagged<PyObject> object) {
   return Tagged<PyCodeObject>::cast(object);
 }
 
+Handle<PyString> PyCodeObject::bytecodes() const {
+  return handle(Tagged<PyString>::cast(bytecodes_));
+}
+
+Handle<PyTuple> PyCodeObject::names() const {
+  return handle(Tagged<PyTuple>::cast(names_));
+}
+
+Handle<PyTuple> PyCodeObject::consts() const {
+  return handle(Tagged<PyTuple>::cast(consts_));
+}
+
+Handle<PyString> PyCodeObject::co_name() const {
+  return handle(Tagged<PyString>::cast(co_name_));
+}
+
+Handle<PyString> PyCodeObject::file_name() const {
+  return handle(Tagged<PyString>::cast(file_name_));
+}
+
 };  // namespace saauso::internal

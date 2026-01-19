@@ -22,8 +22,8 @@ Handle<PyFunction> PyFunction::NewInstance(Handle<PyCodeObject> code_object) {
   Handle<PyFunction> object = NewInstanceInternal();
 
   object->func_code_ = *code_object;
-  object->func_name_ = code_object->co_name_;
-  object->flags_ = code_object->flags_;
+  object->func_name_ = *code_object->co_name();
+  object->flags_ = code_object->flags();
 
   return object.EscapeFrom(&scope);
 }
@@ -41,8 +41,8 @@ Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
 }
 
 Handle<PyFunction> PyFunction::NewInstanceInternal() {
-  Handle<PyFunction> object(
-      Isolate::Current()->heap()->Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
+  Handle<PyFunction> object(Isolate::Current()->heap()->Allocate<PyFunction>(
+      Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass
   SetKlass(object, NativeFunctionKlass::GetInstance());
@@ -87,8 +87,9 @@ void PyFunction::set_default_args(Handle<PyList> default_args) {
 // static
 Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
                                                Handle<PyObject> owner) {
-  Handle<MethodObject> object(Isolate::Current()->heap()->Allocate<MethodObject>(
-      Heap::AllocationSpace::kNewSpace));
+  Handle<MethodObject> object(
+      Isolate::Current()->heap()->Allocate<MethodObject>(
+          Heap::AllocationSpace::kNewSpace));
   object->owner_ = *owner;
   object->func_ = *func;
   PyObject::SetKlass(object, MethodObjectKlass::GetInstance());

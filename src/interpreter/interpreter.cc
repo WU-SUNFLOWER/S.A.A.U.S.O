@@ -2,10 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/interpreter.h"
+#include "src/interpreter/interpreter.h"
 
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/interpreter/bytecodes.h"
+#include "src/interpreter/frame-object.h"
+#include "src/objects/py-code-object.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function-klass.h"
@@ -21,12 +24,12 @@
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple-klass.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
 #include "src/runtime/native-functions.h"
-
 
 namespace saauso::internal {
 
@@ -76,6 +79,74 @@ Interpreter::Interpreter() {
 
 Handle<PyObject> Interpreter::builtins() const {
   return handle(builtins_);
+}
+
+void Interpreter::Run(Handle<PyCodeObject> code_object) {
+  frame_ = new FrameObject(code_object);
+
+  uint8_t op_code = 0;
+  int op_arg = 0;
+
+#define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
+
+#define Dispatch()                  \
+  do {                              \
+    if (!frame_->HasMoreCodes()) {  \
+      goto exit;                    \
+    }                               \
+    op_code = frame_->GetOpCode();  \
+    op_arg = frame_->GetOpArg();    \
+    goto* dispatch_table_[op_code]; \
+  } while (0)
+
+#define REGISTER_INTERPRETER_HANDLER(bytecode, _) \
+  dispatch_table_[bytecode] = &&handler_##bytecode;
+
+  if (dispatch_table_initialized_) {
+    BYTECODE_LIST(REGISTER_INTERPRETER_HANDLER);
+    dispatch_table_initialized_ = true;
+  }
+
+  // 取指执行入口
+  Dispatch();
+
+  INTERPRETER_HANDLER(PopTop) {
+    frame_->PopFromStack();
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(PushNull) {
+    // do nothing
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(LoadConst) {
+    frame_->PushToStack(frame_->code_object()->consts()->Get(op_arg));
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(LoadName) {
+    frame_->PushToStack(frame_->code_object()->names()->Get(op_arg));
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(ReturnConst) {
+    // todo
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(Resume) {
+    // do nothing
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(Call) {
+    // TODO
+    Dispatch();
+  }
+
+exit:
+  return;
 }
 
 Handle<PyObject> Interpreter::CallVirtual(Handle<PyObject> callable,

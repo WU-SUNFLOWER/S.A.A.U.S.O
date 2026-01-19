@@ -54,6 +54,18 @@ class PyCodeObject : public PyObject {
 
   static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 
+  Handle<PyString> bytecodes() const;
+  Handle<PyTuple> names() const;
+  Handle<PyTuple> consts() const;
+  Handle<PyString> co_name() const;
+  Handle<PyString> file_name() const;
+
+  int flags() const { return flags_; }
+
+ private:
+  friend class PyCodeObjectKlass;
+  friend class FrameObject;
+
   int arg_count_;          // 参数个数
   int posonly_arg_count_;  // 位置参数个数
   int kwonly_arg_count_;   // 键参数个数

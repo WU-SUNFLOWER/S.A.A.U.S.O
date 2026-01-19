@@ -1,0 +1,61 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#ifndef SAAUSO_INTERPRETER_FRAME_OBJECT_H_
+#define SAAUSO_INTERPRETER_FRAME_OBJECT_H_
+
+#include "src/handles/handles.h"
+#include "src/objects/objects.h"
+
+namespace saauso::internal {
+
+class PyObject;
+class PyCodeObject;
+class PyTuple;
+class PyDict;
+class FixedArray;
+
+class FrameObject : Object {
+ public:
+  explicit FrameObject(Handle<PyCodeObject> code);
+  ~FrameObject();
+
+  void PushToStack(Tagged<PyObject> object);
+  void PushToStack(Handle<PyObject> object);
+  Handle<PyObject> PopFromStack();
+
+  bool HasMoreCodes();
+  uint8_t GetOpCode();
+  int GetOpArg();
+
+  void set_pc(int pc) { pc_ = pc; }
+  int get_pc() const { return pc_; }
+
+  Handle<FixedArray> stack() const;
+  Handle<PyTuple> consts() const;
+  Handle<PyTuple> names() const;
+  Handle<PyDict> locals() const;
+  Handle<PyCodeObject> code_object() const;
+
+ private:
+  // FixedArray* stack_;
+  Tagged<PyObject> stack_{kNullAddress};
+  int stack_top_{0};  // stack_top_指向栈中下一个可以放置元素位置的下标
+
+  // PyTuple* consts;
+  Tagged<PyObject> consts_{kNullAddress};
+  // PyTuple* names;
+  Tagged<PyObject> names_{kNullAddress};
+
+  // PyDict* locals;
+  Tagged<PyObject> locals_{kNullAddress};
+
+  // PyCodeObject* code_object;
+  Tagged<PyObject> code_object_{kNullAddress};
+  int64_t pc_{0};
+};
+
+}  // namespace saauso::internal
+
+#endif  // SAAUSO_INTERPRETER_FRAME_OBJECT_H_

@@ -10,7 +10,11 @@
 
 namespace saauso::internal {
 
-using Address =  uintptr_t;
+inline constexpr int kByteSize = 1;
+inline constexpr intptr_t kByteMask = 0xFF;
+inline constexpr int kBitsPerByte = 8;
+
+using Address = uintptr_t;
 inline constexpr Address kNullAddress = 0;
 
 // Tag information for Smi.
@@ -38,9 +42,9 @@ inline Address SmiToAddress(int64_t smi) {
 }
 
 // Desired alignment for tagged pointers.
-constexpr int kObjectAlignmentBits = 3;
-constexpr intptr_t kObjectAlignment = 1 << kObjectAlignmentBits;
-constexpr intptr_t kObjectAlignmentMask = kObjectAlignment - 1;
+inline constexpr int kObjectAlignmentBits = 3;
+inline constexpr intptr_t kObjectAlignment = 1 << kObjectAlignmentBits;
+inline constexpr intptr_t kObjectAlignmentMask = kObjectAlignment - 1;
 
 inline size_t ObjectSizeAlign(size_t size) {
   return (size + kObjectAlignmentMask) & ~kObjectAlignmentMask;

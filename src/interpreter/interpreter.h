@@ -10,6 +10,8 @@
 namespace saauso::internal {
 
 class PyObject;
+class PyCodeObject;
+class FrameObject;
 class PyList;
 class ObjectVisitor;
 
@@ -21,12 +23,19 @@ class Interpreter {
 
   Handle<PyObject> CallVirtual(Handle<PyObject> callable, Handle<PyList> args);
 
+  void Run(Handle<PyCodeObject> code_object);
+
   // GC接口
   void Iterate(ObjectVisitor* v);
 
  private:
   // PyDict* builtins_;
   Tagged<PyObject> builtins_{kNullAddress};
+
+  FrameObject* frame_;
+
+  void* dispatch_table_[256];
+  bool dispatch_table_initialized_{false};
 };
 
 }  // namespace saauso::internal
