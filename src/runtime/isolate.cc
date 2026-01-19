@@ -24,6 +24,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/runtime/interpreter.h"
 #include "src/runtime/string-table.h"

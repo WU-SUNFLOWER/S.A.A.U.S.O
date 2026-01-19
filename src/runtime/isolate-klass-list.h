@@ -16,6 +16,7 @@
   V(PyNone, PyNoneKlass, py_none)       \
   V(PyCodeObject, PyCodeObjectKlass, py_code_object) \
   V(PyList, PyListKlass, py_list)       \
+  V(PyTuple, PyTupleKlass, py_tuple)    \
   V(PyDict, PyDictKlass, py_dict)       \
   V(FixedArray, FixedArrayKlass, fixed_array) \
   V(MethodObject, MethodObjectKlass, method_object) \

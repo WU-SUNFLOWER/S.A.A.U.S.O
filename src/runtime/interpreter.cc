@@ -46,6 +46,8 @@ Interpreter::Interpreter() {
               PyBooleanKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("dict"),
               PyDictKlass::GetInstance()->type_object());
+  PyDict::Put(builtins, PyString::NewInstance("tuple"),
+              PyTupleKlass::GetInstance()->type_object());
 
   // 注册oddballs
   PyDict::Put(builtins, PyString::NewInstance("True"),

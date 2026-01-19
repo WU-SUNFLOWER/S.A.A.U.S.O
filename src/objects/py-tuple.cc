@@ -1,0 +1,69 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#include "src/objects/py-tuple.h"
+
+#include <algorithm>
+
+#include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-tuple-klass.h"
+#include "src/runtime/isolate.h"
+#include "src/utils/utils.h"
+
+namespace saauso::internal {
+
+Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
+  HandleScope scope;
+
+  size_t object_size = ComputeObjectSize(length);
+  Tagged<PyTuple> object(Isolate::Current()->heap()->AllocateRaw(
+      object_size, Heap::AllocationSpace::kNewSpace));
+
+  object->length_ = length;
+  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+
+  for (auto i = 0; i < length; ++i) {
+    object->SetInternal(i, Tagged<PyObject>::Null());
+  }
+
+  PyObject::SetKlass(object, PyTupleKlass::GetInstance());
+
+  return Handle<PyTuple>(object).EscapeFrom(&scope);
+}
+
+Handle<PyTuple> PyTuple::NewInstance(Handle<PyList> elements) {
+  HandleScope scope;
+
+  auto length = elements->length();
+  auto tuple = NewInstance(length);
+  for (auto i = 0; i < length; ++i) {
+    tuple->SetInternal(i, *elements->Get(i));
+  }
+  return tuple.EscapeFrom(&scope);
+}
+
+Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {
+  assert(IsPyTuple(object));
+  return Tagged<PyTuple>(object.ptr());
+}
+
+size_t PyTuple::ComputeObjectSize(int64_t length) {
+  return ObjectSizeAlign(sizeof(PyTuple) + length * sizeof(Tagged<PyObject>));
+}
+
+Handle<PyObject> PyTuple::Get(int64_t index) const {
+  assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), length_));
+  return Handle<PyObject>(data()[index]);
+}
+
+void PyTuple::SetInternal(int64_t index, Tagged<PyObject> value) {
+  assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), length_));
+  data()[index] = value;
+  WRITE_BARRIER(Tagged<PyObject>(this), &data()[index], value);
+}
+
+}  // namespace saauso::internal
+

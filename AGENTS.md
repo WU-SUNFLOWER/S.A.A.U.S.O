@@ -12,7 +12,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
  - 他希望通过开发这个项目，在顺利拿到CS专业学士学位的同时，帮助自己提升对编程语言虚拟机的理解和工程实现能力。为深入阅读和学习工业级虚拟机（如HotSpot JVM、V8、CPython）的源代码打下坚实的基础。
  - 此外，WU-SUNFLOWER希望能够将本项目写进求职简历的"个人作品"栏目，增强他在未来通过社会招聘跳槽时的市场竞争力。
 - **距离WU-SUNFLOWER提交毕业设计作品的剩余时间**: 大约2个月不到
-- **语言**: C++ (Modern C++, likely C++20)。
+- **语言**: C++20。
 - **构建系统**: GN (Generate Ninja) + Ninja。
 - **测试框架**: Google Test。
 - **辅助调试工具**: LLDB、AddressSanitizer、UBSanitizer

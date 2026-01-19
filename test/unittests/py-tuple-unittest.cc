@@ -1,0 +1,100 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#include <cstdint>
+
+#include "include/saauso.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
+#include "src/runtime/isolate.h"
+#include "testing/gtest/include/gtest/gtest.h"
+
+namespace saauso::internal {
+
+class PyTupleTest : public testing::Test {
+ protected:
+  static void SetUpTestSuite() {
+    saauso::Saauso::Initialize();
+    isolate_ = Isolate::New();
+    isolate_->Enter();
+  }
+  static void TearDownTestSuite() {
+    isolate_->Exit();
+    Isolate::Dispose(isolate_);
+    isolate_ = nullptr;
+    saauso::Saauso::Dispose();
+  }
+
+  static Isolate* isolate_;
+};
+
+Isolate* PyTupleTest::isolate_ = nullptr;
+
+TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
+  HandleScope scope;
+
+  auto list = PyList::NewInstance(2);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+
+  auto tuple = PyTuple::NewInstance(list);
+  EXPECT_EQ(tuple->length(), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(1))), 2);
+
+  PyObject::StoreSubscr(Handle<PyObject>(list), Handle<PyObject>(PySmi::FromInt(0)),
+                        Handle<PyObject>(PySmi::FromInt(42)));
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
+}
+
+TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
+  HandleScope scope;
+
+  auto list = PyList::NewInstance(2);
+  PyList::Append(list, Handle<PyObject>(PyString::NewInstance("x")));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(7)));
+
+  auto tuple = PyTuple::NewInstance(list);
+  Handle<PyObject> obj(tuple);
+
+  auto len = PyObject::Len(obj);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(len)), 2);
+
+  auto v0 = PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(0)));
+  EXPECT_TRUE(IsPyString(*v0));
+
+  auto v1 = PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(1)));
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 7);
+}
+
+TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
+  HandleScope scope;
+
+  auto list1 = PyList::NewInstance(2);
+  auto s = Handle<PyObject>(PyString::NewInstance("x"));
+  PyList::Append(list1, s);
+  PyList::Append(list1, Handle<PyObject>(PySmi::FromInt(1)));
+  auto t1 = PyTuple::NewInstance(list1);
+
+  Handle<PyObject> obj(t1);
+  EXPECT_EQ(PyObject::Contains(obj, s).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2))).ptr(),
+            Isolate::Current()->py_false_object().ptr());
+
+  auto list2 = PyList::NewInstance(2);
+  PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
+  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
+  auto t2 = PyTuple::NewInstance(list2);
+
+  EXPECT_EQ(PyObject::Equal(Handle<PyObject>(t1), Handle<PyObject>(t2)).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+}
+
+}  // namespace saauso::internal
+

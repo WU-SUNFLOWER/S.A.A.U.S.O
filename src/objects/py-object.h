@@ -26,6 +26,7 @@ class PyObject;
   V(PyNone)                     \
   V(PyCodeObject)               \
   V(PyList)                     \
+  V(PyTuple)                    \
   V(PyDict)                     \
   V(FixedArray)                 \
   V(MethodObject)
