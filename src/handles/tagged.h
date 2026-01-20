@@ -43,7 +43,7 @@ class TaggedBase {
 
   constexpr Address ptr() const { return address_; }
 
-  template<typename U>
+  template <typename U>
   constexpr bool operator==(TaggedBase<U> other) const {
     return ptr() == other.ptr();
   }
@@ -111,6 +111,8 @@ class Tagged<PySmi> : public TaggedBase<PySmi> {
 
   constexpr bool IsSmi() const { return true; }
   constexpr int64_t value() const { return AddressToSmi(this->ptr()); }
+
+  static Tagged<PySmi> Null() { return Tagged<PySmi>(); }
 
   // 只允许Tagged<PySmi>::cast(Tagged<PyObject>)
   static Tagged<PySmi> cast(Tagged<PyObject> that) {

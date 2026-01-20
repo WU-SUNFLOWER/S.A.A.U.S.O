@@ -45,6 +45,8 @@ PY_TYPE_LIST(DEFINE_PY_TYPE)
   bool Is##name(Handle<PyObject> object);
 
 PY_TYPE_LIST(DEFINE_PY_CHECKER)
+DEFINE_PY_CHECKER(NormalPyFunction)
+DEFINE_PY_CHECKER(NativePyFunction)
 DEFINE_PY_CHECKER(PyTrue)
 DEFINE_PY_CHECKER(PyFalse)
 DEFINE_PY_CHECKER(PyNativeFunction)

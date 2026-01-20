@@ -26,6 +26,10 @@ class PyTuple : public PyObject {
 
   static size_t ComputeObjectSize(int64_t length);
 
+  // 仅供虚拟机内部使用，不得暴露给python语言层！
+  void SetInternal(int64_t index, Handle<PyObject> value);
+  void SetInternal(int64_t index, Tagged<PyObject> value);
+
   Handle<PyObject> Get(int64_t index) const;
   int64_t length() const { return length_; }
 
@@ -40,8 +44,6 @@ class PyTuple : public PyObject {
   const Tagged<PyObject>* data() const {
     return reinterpret_cast<const Tagged<PyObject>*>(this + 1);
   }
-
-  void SetInternal(int64_t index, Tagged<PyObject> value);
 
   int64_t length_{0};
 };

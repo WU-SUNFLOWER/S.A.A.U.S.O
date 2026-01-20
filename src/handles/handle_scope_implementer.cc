@@ -16,6 +16,10 @@ HandleScopeImplementer::~HandleScopeImplementer() {
     DeleteArray<Address>(blocks_.PopBack());
   }
   DeleteArray<Address>(spare_);
+
+  while (!global_blocks_.IsEmpty()) {
+    DeleteArray<Address>(global_blocks_.PopBack());
+  }
 }
 
 int HandleScopeImplementer::NumberOfHandles() {
@@ -67,6 +71,33 @@ void HandleScopeImplementer::ReleaseSpareAndExtendedBlocks(int n) {
   }
 }
 
+Address* HandleScopeImplementer::CreateGlobalHandle(Address ptr) {
+  Address* location = nullptr;
+  if (!global_free_slot_list_.IsEmpty()) {
+    location = global_free_slot_list_.PopBack();
+  } else {
+    if (global_next_ == global_limit_) {
+      Address* new_block = NewArray<Address>(kHandleBlockSize);
+      global_blocks_.PushBack(new_block);
+      global_next_ = new_block;
+      global_limit_ = new_block + kHandleBlockSize;
+    }
+    location = global_next_;
+    ++global_next_;
+  }
+
+  *location = ptr;
+  ++global_handle_count_;
+  return location;
+}
+
+void HandleScopeImplementer::DestroyGlobalHandle(Address* location) {
+  assert(location != nullptr);
+  *location = kNullAddress;  // 置空，避免GC扫描时候意外访问到
+  global_free_slot_list_.PushBack(location); // 回收当前global handle释放的槽位
+  --global_handle_count_;
+}
+
 void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
   // 遍历所有填充完整的block
   if (blocks_.length() > 1) {
@@ -87,6 +118,23 @@ void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
   }
 
   // spare_指向的block没有被分配出来，因此不需要遍历！！！
+
+  // 遍历global blocks
+  if (global_blocks_.length() > 1) {
+    for (auto i = 0; i < global_blocks_.length() - 1; ++i) {
+      Address* block_begin = global_blocks_.Get(i);
+      Address* block_end = block_begin + kHandleBlockSize;
+      v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
+                       reinterpret_cast<Tagged<PyObject>*>(block_end));
+    }
+  }
+
+  if (!global_blocks_.IsEmpty()) {
+    Address* block_begin = global_blocks_.GetBack();
+    Address* block_end = global_next_;
+    v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
+                     reinterpret_cast<Tagged<PyObject>*>(block_end));
+  }
 }
 
 }  // namespace saauso::internal

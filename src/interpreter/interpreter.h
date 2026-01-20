@@ -12,18 +12,28 @@ namespace saauso::internal {
 class PyObject;
 class PyCodeObject;
 class FrameObject;
+class PyFunction;
 class PyList;
+class PyDict;
+class PyTuple;
 class ObjectVisitor;
 
 class Interpreter {
  public:
   Interpreter();
 
-  Handle<PyObject> builtins() const;
-
-  Handle<PyObject> CallVirtual(Handle<PyObject> callable, Handle<PyList> args);
-
   void Run(Handle<PyCodeObject> code_object);
+
+  void InvokeCallable(Handle<PyObject> callable,
+                      Handle<PyTuple> args,
+                      Handle<PyDict> kwargs);
+  void BuildFrame(Handle<PyFunction> func);
+  void LeaveFrame();
+  void DestroyFrame();
+
+  Handle<PyObject> CallVirtual(Handle<PyObject> callable, Handle<PyTuple> args);
+
+  Handle<PyDict> builtins() const;
 
   // GC接口
   void Iterate(ObjectVisitor* v);
@@ -31,6 +41,9 @@ class Interpreter {
  private:
   // PyDict* builtins_;
   Tagged<PyObject> builtins_{kNullAddress};
+
+  // 栈帧上下文切换前，临时储存函数返回值结果
+  Tagged<PyObject> ret_value_{kNullAddress};
 
   FrameObject* frame_;
 

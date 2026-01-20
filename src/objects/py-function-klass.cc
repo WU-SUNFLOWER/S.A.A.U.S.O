@@ -10,7 +10,9 @@
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -122,8 +124,9 @@ void NativeFunctionKlass::Virtual_Print(Handle<PyObject> self) {
 Handle<PyObject> NativeFunctionKlass::Virtual_Call(Handle<PyObject> self,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs) {
+  assert(IsPyNativeFunction(self));
   auto func = Handle<PyFunction>::cast(self);
-  return func->native_func_(Handle<PyList>::cast(args),
+  return func->native_func_(Handle<PyTuple>::cast(args),
                             Handle<PyDict>::cast(kwargs));
 }
 
@@ -166,7 +169,8 @@ void MethodObjectKlass::PreInitialize() {
 void MethodObjectKlass::Initialize() {}
 
 void MethodObjectKlass::Finalize() {
-  Isolate::Current()->set_method_object_klass(Tagged<MethodObjectKlass>::Null());
+  Isolate::Current()->set_method_object_klass(
+      Tagged<MethodObjectKlass>::Null());
 }
 
 void MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {

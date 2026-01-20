@@ -105,8 +105,31 @@ void PyObject::SetProperties(Tagged<PyObject> object,
   IMPL_PY_CHECKER_WITH_HANDLE_ARG(name)
 
 // 实现IsPyFloat、IsPyString、IsPyList等一系列函数
-PY_TYPE_IN_HEAP_LIST(IMPL_PY_CHECKER_BY_KLASS)
+IMPL_PY_CHECKER_BY_KLASS(PyTypeObject)
+IMPL_PY_CHECKER_BY_KLASS(PyString)
+IMPL_PY_CHECKER_BY_KLASS(PyFloat)
+IMPL_PY_CHECKER_BY_KLASS(PyBoolean)
+IMPL_PY_CHECKER_BY_KLASS(PyNone)
+IMPL_PY_CHECKER_BY_KLASS(PyCodeObject)
+IMPL_PY_CHECKER_BY_KLASS(PyList)
+IMPL_PY_CHECKER_BY_KLASS(PyTuple)
+IMPL_PY_CHECKER_BY_KLASS(PyDict)
+IMPL_PY_CHECKER_BY_KLASS(FixedArray)
+IMPL_PY_CHECKER_BY_KLASS(MethodObject)
 #undef IMPL_PY_CHECKER_BY_KLASS
+
+bool IsPyFunction(Tagged<PyObject> object) {
+  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance() ||
+         PyObject::GetKlass(object) == NativeFunctionKlass::GetInstance();
+}
+
+bool IsNormalPyFunction(Tagged<PyObject> object) {
+  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance();
+}
+
+bool IsNativePyFunction(Tagged<PyObject> object) {
+  return PyObject::GetKlass(object) == NativeFunctionKlass::GetInstance();
+}
 
 bool IsPySmi(Tagged<PyObject> object) {
   return object.IsSmi();
@@ -141,6 +164,9 @@ bool IsGcAbleObject(Tagged<PyObject> object) {
   return !IsPyBoolean(object) && !IsPyNone(object);
 }
 
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFunction)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(NormalPyFunction)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(NativePyFunction)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PySmi)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTrue)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFalse)

@@ -25,6 +25,9 @@ Handle<PyFunction> PyFunction::NewInstance(Handle<PyCodeObject> code_object) {
   object->func_name_ = *code_object->co_name();
   object->flags_ = code_object->flags();
 
+  // 绑定klass
+  SetKlass(object, PyFunctionKlass::GetInstance());
+
   return object.EscapeFrom(&scope);
 }
 
@@ -37,15 +40,15 @@ Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
   object->native_func_ = native_func;
   object->func_name_ = *func_name;
 
+  // 绑定klass
+  SetKlass(object, NativeFunctionKlass::GetInstance());
+
   return object.EscapeFrom(&scope);
 }
 
 Handle<PyFunction> PyFunction::NewInstanceInternal() {
   Handle<PyFunction> object(Isolate::Current()->heap()->Allocate<PyFunction>(
       Heap::AllocationSpace::kNewSpace));
-
-  // 绑定klass
-  SetKlass(object, NativeFunctionKlass::GetInstance());
 
   // 初始化properties
   auto properties = PyDict::NewInstance();
@@ -69,6 +72,18 @@ Tagged<PyFunction> PyFunction::cast(Tagged<PyObject> object) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+Handle<PyDict> PyFunction::func_globals() const {
+  return handle(Tagged<PyDict>::cast(func_globals_));
+}
+
+void PyFunction::set_func_globals(Handle<PyDict> func_globals) {
+  set_func_globals(*func_globals);
+}
+
+void PyFunction::set_func_globals(Tagged<PyDict> func_globals) {
+  func_globals_ = func_globals;
+}
 
 void PyFunction::set_default_args(Handle<PyList> default_args) {
   if (default_args->IsFull()) {

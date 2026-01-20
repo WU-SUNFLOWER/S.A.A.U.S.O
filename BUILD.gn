@@ -8,7 +8,7 @@ config("saauso_includes") {
 
 # 将核心代码定义为 source_set 或 static_library
 # source_set 在 Chromium 中更常用，因为它只是逻辑上的分组，不生成 .a/.lib
-source_set("saauso_sources") {
+source_set("saauso_core") {
   sources = [
     # include
     "//include/saauso-internal.h",
@@ -30,6 +30,7 @@ source_set("saauso_sources") {
     "//src/code/cpython312-pyc-file-parser.h",
 
     # handles
+    "//src/handles/global-handles.h",
     "//src/handles/handle_scope_implementer.cc",
     "//src/handles/handle_scope_implementer.h",
     "//src/handles/handles.cc",
@@ -120,26 +121,38 @@ source_set("saauso_sources") {
     "//third_party/rapidhash/rapidhash.h",
   ]
 
-  # 加载基础配置
+  public_configs = [ ":saauso_includes" ]
+}
+
+# 接入cpython312编译器前端
+source_set("saauso_cpython312_compiler") {
+  sources = [
+    "//src/code/cpython312-pyc-compiler.cc",
+    "//src/code/cpython312-pyc-compiler.h",
+  ]
+
+  public_deps = [ "//third_party/cpython312" ]
+
   public_configs = [ ":saauso_includes" ]
 }
 
 executable("vm") {
   sources = [ "//src/main.cc" ]
-  deps = [ ":saauso_sources" ]
+  deps = [
+    ":saauso_core",
+    ":saauso_cpython312_compiler",
+  ]
 }
 
 executable("ut") {
   testonly = true  # 声明这只是一个测试目标
 
   sources = [
-    # 接入cpython312编译器前端
-    "//src/code/cpython312-pyc-compiler.cc",
-    "//src/code/cpython312-pyc-compiler.h",
-
     # 单元测试文件
     "//test/unittests/attribute-unittest.cc",
+    "//test/unittests/basic-interpreter-unittest.cc",
     "//test/unittests/gc-unittest.cc",
+    "//test/unittests/global-handle-unittest.cc",
     "//test/unittests/handle-thread-unittest.cc",
     "//test/unittests/handle-unittest.cc",
     "//test/unittests/py-dict-unittest.cc",
@@ -153,8 +166,8 @@ executable("ut") {
   ]
 
   deps = [
-    ":saauso_sources",
+    ":saauso_core",
+    ":saauso_cpython312_compiler",
     "//testing/gtest",
-    "//third_party/cpython312",
   ]
 }

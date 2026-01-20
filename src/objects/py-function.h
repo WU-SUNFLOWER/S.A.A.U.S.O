@@ -11,7 +11,7 @@ namespace saauso::internal {
 
 using PyFuncFlags = uint32_t;
 
-using NativeFuncPointer = Handle<PyObject> (*)(Handle<PyList> args,
+using NativeFuncPointer = Handle<PyObject> (*)(Handle<PyTuple> args,
                                                Handle<PyDict> kwargs);
 
 class PyFunction : public PyObject {
@@ -23,10 +23,18 @@ class PyFunction : public PyObject {
                                         Handle<PyString> func_name);
   static Tagged<PyFunction> cast(Tagged<PyObject> object);
 
+  Handle<PyCodeObject> func_code() const {
+    return handle(Tagged<PyCodeObject>::cast(func_code_));
+  }
+
   Handle<PyString> func_name() const {
     return handle(Tagged<PyString>::cast(func_name_));
   }
   PyFuncFlags flags() const { return flags_; }
+
+  Handle<PyDict> func_globals() const;
+  void set_func_globals(Handle<PyDict> func_globals);
+  void set_func_globals(Tagged<PyDict> func_globals);
 
   void set_default_args(Handle<PyList> default_args);
   Handle<PyList> default_args() const {
@@ -43,6 +51,10 @@ class PyFunction : public PyObject {
   Tagged<PyObject> func_code_{kNullAddress};
   // PyString* func_name_
   Tagged<PyObject> func_name_{kNullAddress};
+
+  // PyDict* func_globals_
+  // 与函数绑定的全局变量表，在函数被创建时确定
+  Tagged<PyObject> func_globals_{kNullAddress};
 
   // PyList* default_args_
   Tagged<PyObject> default_args_{kNullAddress};

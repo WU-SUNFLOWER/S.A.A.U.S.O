@@ -54,7 +54,8 @@ class ObjectVisitor;
   V(exc, "Exception")              \
   V(lib, "lib/")                   \
   V(pyc, ".pyc")                   \
-  V(so, LIB_EXT)
+  V(so, LIB_EXT)                   \
+  V(builtins, "__builtins__")
 
 class StringTable {
  public:

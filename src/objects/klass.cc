@@ -13,6 +13,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -23,7 +24,7 @@ namespace saauso::internal {
 namespace {
 
 Handle<PyObject> FindAndCall(Handle<PyObject> object,
-                             Handle<PyList> args,
+                             Handle<PyTuple> args,
                              Handle<PyObject> func_name) {
   Handle<PyObject> func = PyObject::GetAttr(object, func_name);
   if (!IsPyNone(func)) {
@@ -229,7 +230,7 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
 
   if (!IsPyNone(func)) {
     Handle<PyObject> s = Isolate::Current()->interpreter()->CallVirtual(
-        func, Handle<PyList>::Null());
+        func, Handle<PyTuple>::Null());
     PyObject::Print(Handle<PyString>::cast(s));
     return;
   }
@@ -238,11 +239,11 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
 }
 
 Handle<PyObject> Klass::Virtual_Default_Len(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyList>::Null(), ST(len));
+  return FindAndCall(self, Handle<PyTuple>::Null(), ST(len));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyList>::Null(), ST(repr));
+  return FindAndCall(self, Handle<PyTuple>::Null(), ST(repr));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
@@ -256,7 +257,7 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
   }
 
   return Isolate::Current()->interpreter()->CallVirtual(
-      callable, Handle<PyList>::cast(args));
+      callable, Handle<PyTuple>::cast(args));
 }
 
 Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
@@ -294,8 +295,8 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   Handle<PyObject> getattr_func = FindPropertyInMro(self, ST(getattr));
   if (!getattr_func.IsNull()) {
     getattr_func = MethodObject::NewInstance(getattr_func, self);
-    Handle<PyList> args = PyList::NewInstance(1);
-    PyList::Append(args, prop_name);
+    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    args->SetInternal(0, prop_name);
     return Isolate::Current()->interpreter()->CallVirtual(getattr_func, args);
   }
 
@@ -330,36 +331,36 @@ void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
 
 Handle<PyObject> Klass::Virtual_Default_Subscr(Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
-  Handle<PyList> args = PyList::NewInstance();
-  PyList::Append(args, subscr);
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, subscr);
   return FindAndCall(self, args, ST(getitem));
 }
 
 void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
                                         Handle<PyObject> subscr,
                                         Handle<PyObject> value) {
-  Handle<PyList> args = PyList::NewInstance();
-  PyList::Append(args, subscr);
-  PyList::Append(args, value);
+  Handle<PyTuple> args = PyTuple::NewInstance(2);
+  args->SetInternal(0, subscr);
+  args->SetInternal(0, value);
   FindAndCall(self, args, ST(setitem));
 }
 
 void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
-  Handle<PyList> args = PyList::NewInstance();
-  PyList::Append(args, subscr);
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, subscr);
   FindAndCall(self, args, ST(delitem));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  Handle<PyList> args = PyList::NewInstance();
-  PyList::Append(args, other);
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
   return FindAndCall(self, args, ST(add));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyList>::Null(), ST(getitem));
+  return FindAndCall(self, Handle<PyTuple>::Null(), ST(getitem));
 }
 
 size_t Klass::Virtual_Default_InstanceSize(Tagged<PyObject> self) {

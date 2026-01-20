@@ -59,17 +59,22 @@ class Handle {
   template <typename S>
   Handle(Handle<S> other)  // NOLINT
     requires(is_subtype_v<S, T>)
-      : Handle(*other) {}
+      : Handle(other.location()) {}
 
   constexpr T* operator->() const {
     assert(!IsNull());
     return Tagged<T>(*location_).operator->();
   }
 
-  constexpr Tagged<T> operator*() const { return Tagged<T>(*location_); }
+  constexpr Tagged<T> operator*() const {
+    return IsNull() ? Tagged<T>::Null() : Tagged<T>(*location_);
+  }
 
   template <class S>
   static Handle<T> cast(Handle<S> that) {
+    if (that.IsNull()) {
+      return Handle<T>::Null();
+    }
     T::cast(*that);  // 这行代码起到断言的作用
     return Handle<T>(Tagged<T>::cast(*that));
   }

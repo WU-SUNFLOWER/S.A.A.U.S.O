@@ -28,6 +28,7 @@
 *.out
 *.app
 
+__pycache__
 *.pyc
 
 /out/

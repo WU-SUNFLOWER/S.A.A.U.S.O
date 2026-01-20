@@ -8,11 +8,12 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 
-Handle<PyObject> Native_Print(Handle<PyList> args, Handle<PyDict> kwargs) {
+Handle<PyObject> Native_Print(Handle<PyTuple> args, Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
     PyObject::Print(args->Get(i));
@@ -22,11 +23,12 @@ Handle<PyObject> Native_Print(Handle<PyList> args, Handle<PyDict> kwargs) {
   return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> Native_Len(Handle<PyList> args, Handle<PyDict> kwargs) {
+Handle<PyObject> Native_Len(Handle<PyTuple> args, Handle<PyDict> kwargs) {
   return PyObject::Len(args->Get(0));
 }
 
-Handle<PyObject> Native_IsInstance(Handle<PyList> args, Handle<PyDict> kwargs) {
+Handle<PyObject> Native_IsInstance(Handle<PyTuple> args,
+                                   Handle<PyDict> kwargs) {
   HandleScope scope;
 
   auto object = args->Get(0);
@@ -42,5 +44,7 @@ Handle<PyObject> Native_IsInstance(Handle<PyList> args, Handle<PyDict> kwargs) {
 
   return handle(Isolate::Current()->py_false_object()).EscapeFrom(&scope);
 }
+
+
 
 }  // namespace saauso::internal

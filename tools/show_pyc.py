@@ -98,7 +98,7 @@ def _show_code(code: types.CodeType, *, indent: str = "") -> None:
 
     _show_hex("code", code.co_code, indent=indent2)
     try:
-        dis.disassemble(code)
+        dis.disassemble(code, show_caches=True)
     except Exception:
         dis.dis(code)
 

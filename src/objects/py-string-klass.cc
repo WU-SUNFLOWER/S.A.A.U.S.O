@@ -16,6 +16,7 @@
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -25,7 +26,7 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NativeMethod_Upper(Handle<PyList> args,
+Handle<PyObject> NativeMethod_Upper(Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   auto str_object = Handle<PyString>::cast(args->Get(0));
   auto result =

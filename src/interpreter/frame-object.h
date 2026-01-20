@@ -14,11 +14,13 @@ class PyObject;
 class PyCodeObject;
 class PyTuple;
 class PyDict;
+class PyFunction;
 class FixedArray;
 
 class FrameObject : Object {
  public:
   explicit FrameObject(Handle<PyCodeObject> code);
+  explicit FrameObject(Handle<PyFunction> func);
   ~FrameObject();
 
   void PushToStack(Tagged<PyObject> object);
@@ -29,13 +31,19 @@ class FrameObject : Object {
   uint8_t GetOpCode();
   int GetOpArg();
 
+  bool IsFirstFrame() { return caller_ == nullptr; };
+
   void set_pc(int pc) { pc_ = pc; }
   int get_pc() const { return pc_; }
+
+  FrameObject* caller() const { return caller_; }
+  void set_caller(FrameObject* caller) { caller_ = caller; }
 
   Handle<FixedArray> stack() const;
   Handle<PyTuple> consts() const;
   Handle<PyTuple> names() const;
   Handle<PyDict> locals() const;
+  Handle<PyDict> globals() const;
   Handle<PyCodeObject> code_object() const;
 
  private:
@@ -50,10 +58,14 @@ class FrameObject : Object {
 
   // PyDict* locals;
   Tagged<PyObject> locals_{kNullAddress};
+  // PyDict* globals;
+  Tagged<PyObject> globals_{kNullAddress};
 
   // PyCodeObject* code_object;
   Tagged<PyObject> code_object_{kNullAddress};
   int64_t pc_{0};
+
+  FrameObject* caller_{nullptr};
 };
 
 }  // namespace saauso::internal

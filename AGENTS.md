@@ -21,7 +21,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `include/`：对外/跨模块共享的基础定义（例如 `Address`、Smi/对齐等）。
 - `src/code/`：`.pyc` 等二进制代码文件解析（`BinaryFileReader` / `PycFileParser`）。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
-- `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）与 `Tagged<T>`。
+- `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
 - `src/runtime/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`）。
 - `src/utils/`：通用工具（对齐/内存/小型容器等）。
@@ -161,7 +161,39 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 - **禁止在接口上传递 `PyObject*`**：`PyObject` 语义上可能承载 Smi（并非真实对象指针），传裸指针会导致 C++ UB；对外暴露与内部调用都应使用 `Tagged<PyObject>` 或 `Handle<PyObject>`。
 - **栈上持有 GC-able 对象必须用 Handle**：只要对象可能在新生代中被复制移动，就必须用 `Handle<T>` 防止悬垂引用。
 - **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `HandleScope scope;`，然后 `return result.EscapeFrom(&scope);`。
-- **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中。
+- **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中；如果需要跨作用域/长期持有，请使用 `Global<T>`。
+
+#### Global（长期句柄，类似 v8::Global）
+`Global<T>` 用于长期持有 GC-able 的 Python 对象引用，它不受 `HandleScope` 生命周期影响，但自身遵循 C++ RAII：析构或 `Reset()` 时自动释放对对象的引用。
+
+- 头文件：`src/handles/global-handles.h`
+- 语义要点：
+  - `Global<T>` 是 move-only（不可拷贝），避免双重释放。
+  - `Global<T>` 会被纳入 GC roots，minor GC 后其内部 slot 会自动更新到新地址。
+  - `Global<T>::ToHandle()` 用于把全局句柄临时“降级”为栈上 `Handle<T>` 参与常规 API 调用；要求当前线程处于同一个 `Isolate::Current()`，且必须在某个 `HandleScope` 内调用。
+
+用法示例：
+```cpp
+#include "src/handles/global-handles.h"
+#include "src/handles/handles.h"
+
+using namespace saauso::internal;
+
+void Example() {
+  HandleScope scope;
+  Handle<PyString> s = PyString::NewInstance("hello");
+
+  Global<PyString> g(s);
+
+  {
+    HandleScope inner;
+    Handle<PyString> local = g.ToHandle();
+    (void)local;
+  }
+
+  g.Reset();
+}
+```
 
 ### 6.2. 分配与初始化
 - **堆对象分配**：不要对 `PyObject` 派生对象使用 `new`；应使用 `Isolate::Current()->heap()->Allocate<T>(Heap::AllocationSpace::kNewSpace / kOldSpace / kMetaSpace)` 获取 `Tagged<T>`，并显式写入字段与 `PyObject::SetKlass(...)`。

@@ -59,6 +59,10 @@ Handle<PyObject> PyTuple::Get(int64_t index) const {
   return Handle<PyObject>(data()[index]);
 }
 
+void PyTuple::SetInternal(int64_t index, Handle<PyObject> value) {
+  SetInternal(index, *value);
+}
+
 void PyTuple::SetInternal(int64_t index, Tagged<PyObject> value) {
   assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), length_));
   data()[index] = value;
@@ -66,4 +70,3 @@ void PyTuple::SetInternal(int64_t index, Tagged<PyObject> value) {
 }
 
 }  // namespace saauso::internal
-

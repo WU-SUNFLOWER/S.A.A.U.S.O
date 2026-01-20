@@ -23,9 +23,13 @@ class HandleScopeImplementer {
   HandleScope::State* CurrentHandleScopeState() const;
 
   int NumberOfHandles();
+  int NumberOfGlobalHandles() const { return global_handle_count_; }
 
   Address* AllocateSpareOrNewBlock();
   void ReleaseSpareAndExtendedBlocks(int n);
+
+  Address* CreateGlobalHandle(Address ptr);
+  void DestroyGlobalHandle(Address* location);
 
   void Iterate(ObjectVisitor* v);
 
@@ -34,6 +38,12 @@ class HandleScopeImplementer {
  private:
   Address* spare_{nullptr};
   Vector<Address*> blocks_;
+
+  int global_handle_count_{0};
+  Vector<Address*> global_blocks_;
+  Vector<Address*> global_free_slot_list_;
+  Address* global_next_{nullptr};
+  Address* global_limit_{nullptr};
 };
 
 }  // namespace saauso::internal

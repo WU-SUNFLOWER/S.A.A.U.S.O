@@ -16,6 +16,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -25,7 +26,7 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NativeMethod_Append(Handle<PyList> args,
+Handle<PyObject> NativeMethod_Append(Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
   auto object = Handle<PyList>::cast(args->Get(0));
   PyList::Append(object, args->Get(1));

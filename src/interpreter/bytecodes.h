@@ -6,17 +6,67 @@
 
 namespace saauso::internal {
 
+// 参见：\Include\opcode.h
+
 #define BYTECODE_LIST(V) \
+  V(Cache, 0)            \
   V(PopTop, 1)           \
   V(PushNull, 2)         \
+  V(StoreName, 90)       \
+  V(StoreGlobal, 97)     \
   V(LoadConst, 100)      \
   V(LoadName, 101)       \
+  V(CompareOp, 107)      \
+  V(JumpForward, 110)    \
+  V(JumpIfFalse, 114)    \
+  V(IsOp, 117)           \
+  V(LoadGlobal, 116)     \
   V(ReturnConst, 121)    \
+  V(BinaryOp, 122)       \
+  V(MakeFunction, 132)   \
   V(Resume, 151)         \
   V(Call, 171)
 
 #define DECL_BYTECODES(name, value) inline constexpr uint8_t name = value;
 BYTECODE_LIST(DECL_BYTECODES)
 #undef DECL_BYTECODES
+
+enum CompareOpType {
+  kLT = 0,  // <
+  kLE,      // <=
+  kEQ,      // ==
+  kNE,      // !=
+  kGT,      // >
+  kGE,      // >=
+};
+
+enum BinaryOpType {
+  kAdd = 0,                     // +
+  kAnd = 1,                     // &
+  kFloorDivide = 2,             // 向下整除//
+  kLshift = 3,                  // <<
+  kMatrixMultiply = 4,          // @
+  kMultiply = 5,                // *
+  kRemainder = 6,               // %
+  kOr = 7,                      // |
+  kPower = 8,                   // **
+  kRshift = 9,                  // >>
+  kSubtract = 10,               // -
+  kTrueDivide = 11,             // 除法/
+  kXor = 12,                    // ^
+  kInplaceAdd = 13,             // +=
+  kInplaceAnd = 14,             // &=
+  kInplaceFloorDivide = 15,     // 向下整除//=
+  kInplaceLshift = 16,          //<<=
+  kInplaceMatrixMultiply = 17,  //@=
+  kInplaceMultiply = 18,        //*=
+  kInplaceRemainder = 19,       //%=
+  kInplaceOr = 20,              //|=
+  kInplacePower = 21,           //**=
+  kInplaceRshift = 22,          //>>=
+  kInplaceSubtract = 23,        //-=
+  kInplaceTrueDivide = 24,      // 除法/=
+  kInplaceXor = 25,             //^=
+};
 
 }  // namespace saauso::internal
