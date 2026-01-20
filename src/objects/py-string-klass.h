@@ -39,6 +39,9 @@ class PyStringKlass : public Klass {
   static Tagged<PyBoolean> Virtual_GreaterEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other);
 
+  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
+                                            Handle<PyObject> target);
+
   static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
                                          Handle<PyObject> subscr);
   static Handle<PyObject> Virtual_Add(Handle<PyObject> self,

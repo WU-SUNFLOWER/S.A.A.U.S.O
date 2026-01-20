@@ -32,6 +32,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
 #include "src/runtime/native-functions.h"
+#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -137,6 +138,11 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(Nop) {
+    // do nothing
+    Dispatch();
+  }
+
   // 以names中的值为键，更新locals
   INTERPRETER_HANDLER(StoreName) {
     do {
@@ -232,14 +238,28 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
 
   INTERPRETER_HANDLER(JumpForward) {
     do {
-      // todo
+      frame_->set_pc(frame_->pc() + (op_arg << 1));
     } while (0);
     Dispatch();
   }
 
   INTERPRETER_HANDLER(JumpIfFalse) {
     do {
-      // todo
+      HandleScope scope;
+      if (!Runtime_PyObjectIsTrue(POP())) {
+        frame_->set_pc(frame_->pc() + (op_arg << 1));
+      }
+    } while (0);
+    Dispatch();
+  }
+
+
+  INTERPRETER_HANDLER(JumpIfTrue) {
+    do {
+      HandleScope scope;
+      if (Runtime_PyObjectIsTrue(POP())) {
+        frame_->set_pc(frame_->pc() + (op_arg << 1));
+      }
     } while (0);
     Dispatch();
   }
@@ -275,6 +295,19 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
       PyObject::Print(key);
       std::printf("' is not defined\n");
       std::exit(1);
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(ContainsOp) {
+    do {
+      HandleScope scope;
+      // l in r
+      Handle<PyObject> r = POP();
+      Handle<PyObject> l = POP();
+      // 注意这里的参数顺序，和一般的运算符正好是反的
+      bool result = PyObject::Contains(r, l)->value();
+      PUSH(Isolate::ToPyBoolean(result ^ op_arg));
     } while (0);
     Dispatch();
   }
@@ -332,6 +365,11 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
       func->set_func_globals(frame_->globals());
       PUSH(func);
     } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(JumpBackward) {
+    frame_->set_pc(frame_->pc() - (op_arg << 1));
     Dispatch();
   }
 

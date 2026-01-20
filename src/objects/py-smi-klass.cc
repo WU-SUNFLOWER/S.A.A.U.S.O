@@ -142,6 +142,11 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
 
   int64_t self_value = PySmi::cast(*self).value();
 
+  if (IsPySmi(other)) {
+    double value = static_cast<double>(self_value) / PySmi::cast(*other).value();
+    return PyFloat::NewInstance(value);
+  }
+
   if (IsPyFloat(other)) {
     double value =
         static_cast<double>(self_value) / Handle<PyFloat>::cast(other)->value();
@@ -198,7 +203,7 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
-                                          Handle<PyObject> other) {
+                                           Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   int64_t self_value = PySmi::cast(*self).value();
@@ -212,7 +217,7 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+                                            Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   int64_t self_value = PySmi::cast(*self).value();
@@ -226,7 +231,7 @@ Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
 
 // static
 Tagged<PyBoolean> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   return Virtual_Equal(self, other)->Reverse();
@@ -247,10 +252,9 @@ Tagged<PyBoolean> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  bool v =
-      (IsPyTrue(Virtual_Less(self, other)) || IsPyTrue(Virtual_Equal(self, other)));
+  bool v = (IsPyTrue(Virtual_Less(self, other)) ||
+            IsPyTrue(Virtual_Equal(self, other)));
   return Isolate::ToPyBoolean(v);
 }
 
 }  // namespace saauso::internal
-

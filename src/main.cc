@@ -1,3 +1,7 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -18,11 +22,12 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-def foo():
-  print("foo")
-print("before")
-foo()
-print("after")
+i = 0
+while i < 10:
+  if i < 2:
+    continue
+  print(i)
+  i = i + 1
 )";
 
 int main() {

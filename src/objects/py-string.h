@@ -36,6 +36,9 @@ class PyString : public PyObject {
   bool IsEqualTo(Tagged<PyString> other);
   bool IsGreaterThan(Tagged<PyString> other);
 
+  int64_t IndexOf(Handle<PyString> pattern) const;
+  bool Contains(Handle<PyString> pattern) const;
+
   int64_t length() const { return length_; }
 
   const char* buffer() const { return reinterpret_cast<const char*>(this + 1); }

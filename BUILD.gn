@@ -20,6 +20,8 @@ source_set("saauso_core") {
     # utils
     "//src/utils/allocation.cc",
     "//src/utils/allocation.h",
+    "//src/utils/string-search.cc",
+    "//src/utils/string-search.h",
     "//src/utils/utils.h",
     "//src/utils/vector.h",
 
@@ -113,6 +115,8 @@ source_set("saauso_core") {
     # runtime (运行时)
     "//src/runtime/isolate.cc",
     "//src/runtime/isolate.h",
+    "//src/runtime/runtime.cc",
+    "//src/runtime/runtime.h",
     "//src/runtime/saauso.cc",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
@@ -163,6 +167,7 @@ executable("ut") {
     "//test/unittests/py-string-unittest.cc",
     "//test/unittests/py-tuple-unittest.cc",
     "//test/unittests/pyc-file-parser-unittest.cc",
+    "//test/unittests/string-search-unittest.cc",
   ]
 
   deps = [

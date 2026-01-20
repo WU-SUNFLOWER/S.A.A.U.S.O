@@ -167,4 +167,40 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   EXPECT_EQ(char_str->Get(0), 'b');
 }
 
+TEST_F(PyStringTest, IndexOfAndContainsWork) {
+  HandleScope scope;
+
+  auto s = PyString::NewInstance("abcabcabcd");
+  auto pattern1 = PyString::NewInstance("abcabcd");
+  auto pattern2 = PyString::NewInstance("bca");
+  auto missing = PyString::NewInstance("xyz");
+  auto empty = PyString::NewInstance("");
+
+  EXPECT_EQ(s->IndexOf(pattern1), 3);
+  EXPECT_EQ(s->IndexOf(pattern2), 1);
+  EXPECT_EQ(s->IndexOf(missing), -1);
+  EXPECT_EQ(s->IndexOf(empty), 0);
+
+  EXPECT_TRUE(s->Contains(pattern1));
+  EXPECT_TRUE(s->Contains(pattern2));
+  EXPECT_FALSE(s->Contains(missing));
+  EXPECT_TRUE(s->Contains(empty));
+}
+
+TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
+  HandleScope scope;
+
+  Handle<PyObject> s(PyString::NewInstance("Hello World"));
+  Handle<PyObject> pat(PyString::NewInstance("World"));
+  Handle<PyObject> missing(PyString::NewInstance("planet"));
+  Handle<PyObject> not_a_string(PySmi::FromInt(1));
+
+  EXPECT_EQ(PyObject::Contains(s, pat).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Contains(s, missing).ptr(),
+            Isolate::Current()->py_false_object().ptr());
+  EXPECT_EQ(PyObject::Contains(s, not_a_string).ptr(),
+            Isolate::Current()->py_false_object().ptr());
+}
+
 }  // namespace saauso::internal

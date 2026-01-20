@@ -34,7 +34,7 @@ class FrameObject : Object {
   bool IsFirstFrame() { return caller_ == nullptr; };
 
   void set_pc(int pc) { pc_ = pc; }
-  int get_pc() const { return pc_; }
+  int pc() const { return pc_; }
 
   FrameObject* caller() const { return caller_; }
   void set_caller(FrameObject* caller) { caller_ = caller; }

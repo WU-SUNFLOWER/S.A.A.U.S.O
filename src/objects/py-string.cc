@@ -13,6 +13,7 @@
 #include "src/heap/heap.h"
 #include "src/objects/py-string-klass.h"
 #include "src/runtime/isolate.h"
+#include "src/utils/string-search.h"
 #include "third_party/rapidhash/rapidhash.h"
 
 namespace saauso::internal {
@@ -174,6 +175,17 @@ Handle<PyString> PyString::Append(Handle<PyString> self,
               other->length());
 
   return new_object.EscapeFrom(&scope);
+}
+
+int64_t PyString::IndexOf(Handle<PyString> pattern) const {
+  return IndexOfSubstring(
+      std::string_view(buffer(), static_cast<size_t>(length_)),
+      std::string_view(pattern->buffer(),
+                       static_cast<size_t>(pattern->length())));
+}
+
+bool PyString::Contains(Handle<PyString> pattern) const {
+  return IndexOf(pattern) != -1;
 }
 
 }  // namespace saauso::internal

@@ -72,6 +72,7 @@ void PyStringKlass::PreInitialize() {
   vtable_.greater = &Virtual_Greater;
   vtable_.le = &Virtual_LessEqual;
   vtable_.ge = &Virtual_GreaterEqual;
+  vtable_.contains = &Virtual_Contains;
   vtable_.subscr = &Virtual_Subscr;
   vtable_.add = &Virtual_Add;
   vtable_.print = &Virtual_Print;
@@ -159,6 +160,17 @@ Tagged<PyBoolean> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
   return Isolate::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
+}
+
+Tagged<PyBoolean> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
+                                                  Handle<PyObject> target) {
+  if (!IsPyString(target)) {
+    return Isolate::Current()->py_false_object();
+  }
+
+  auto s = Handle<PyString>::cast(self);
+  auto pattern = Handle<PyString>::cast(target);
+  return Isolate::ToPyBoolean(s->Contains(pattern));
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,

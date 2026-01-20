@@ -6,12 +6,13 @@
 
 namespace saauso::internal {
 
-// 参见：\Include\opcode.h
+// 参见CPython源代码中的Include/opcode.h
 
 #define BYTECODE_LIST(V) \
   V(Cache, 0)            \
   V(PopTop, 1)           \
   V(PushNull, 2)         \
+  V(Nop, 9)              \
   V(StoreName, 90)       \
   V(StoreGlobal, 97)     \
   V(LoadConst, 100)      \
@@ -19,11 +20,14 @@ namespace saauso::internal {
   V(CompareOp, 107)      \
   V(JumpForward, 110)    \
   V(JumpIfFalse, 114)    \
+  V(JumpIfTrue, 115)     \
   V(IsOp, 117)           \
   V(LoadGlobal, 116)     \
+  V(ContainsOp, 118)     \
   V(ReturnConst, 121)    \
   V(BinaryOp, 122)       \
   V(MakeFunction, 132)   \
+  V(JumpBackward, 140)   \
   V(Resume, 151)         \
   V(Call, 171)
 

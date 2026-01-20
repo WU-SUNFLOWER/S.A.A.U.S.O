@@ -17,6 +17,7 @@
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
+#include "src/objects/py-float.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
