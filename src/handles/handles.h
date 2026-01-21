@@ -51,7 +51,9 @@ class Handle {
   Handle() = default;
   explicit Handle(Address* location) : location_(location) {}
   explicit Handle(Tagged<T> tagged) {
-    location_ = HandleScope::CreateHandle(tagged.ptr());
+    if (!tagged.IsNull()) {
+      location_ = HandleScope::CreateHandle(tagged.ptr());
+    }
   }
 
   // 允许Handle的向下转换
@@ -72,10 +74,12 @@ class Handle {
 
   template <class S>
   static Handle<T> cast(Handle<S> that) {
+#if defined(_DEBUG) || defined(ASAN_BUILD)
     if (that.IsNull()) {
       return Handle<T>::Null();
     }
-    T::cast(*that);  // 这行代码起到断言的作用
+    T::cast(*that);
+#endif  // 这行代码起到断言的作用
     return Handle<T>(Tagged<T>::cast(*that));
   }
 
@@ -105,6 +109,11 @@ class Handle {
 // 工具函数，用于方便地将一个裸指针或tagged提升为一个handle
 template <typename T>
 Handle<T> handle(Tagged<T> object) {
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+  if (!object.IsNull()) {
+    T::cast(object);
+  }
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
   return Handle<T>(object);
 }
 

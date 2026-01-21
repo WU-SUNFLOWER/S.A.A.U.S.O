@@ -69,6 +69,10 @@ Tagged<PyObject> FixedArray::Get(int64_t index) {
   return data()[index];
 }
 
+void FixedArray::Set(int64_t index, Handle<PyObject> value) {
+  Set(index, *value);
+}
+
 void FixedArray::Set(int64_t index, Tagged<PyObject> value) {
   assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), capacity_));
   data()[index] = value;

@@ -1,12 +1,16 @@
 import argparse
 import binascii
+import compileall
 import dis
+import importlib.util
 import marshal
+import os
 import struct
 import sys
 import time
 import types
 import warnings
+from py_compile import PycInvalidationMode
 
 
 def _u32le(data: bytes) -> int:
@@ -176,6 +180,34 @@ def _read_pyc_header(f):
     return info
 
 
+def _compile_py_to_pyc(
+    source_path: str,
+    *,
+    optimize: int = 0,
+    invalidation_mode: PycInvalidationMode = PycInvalidationMode.TIMESTAMP,
+    force: bool = True,
+) -> str:
+    if optimize not in (0, 1, 2):
+        raise ValueError(f"invalid optimize level: {optimize!r}")
+
+    ok = compileall.compile_file(
+        source_path,
+        force=force,
+        quiet=1,
+        legacy=False,
+        optimize=optimize,
+        invalidation_mode=invalidation_mode,
+    )
+    if not ok:
+        raise RuntimeError("compileall failed")
+
+    optimization_tag = None if optimize == 0 else str(optimize)
+    pyc_path = importlib.util.cache_from_source(source_path, optimization=optimization_tag)
+    if not os.path.isfile(pyc_path):
+        raise FileNotFoundError(f"compiled .pyc not found: {pyc_path!r}")
+    return pyc_path
+
+
 def show_file(path: str) -> None:
     with open(path, "rb") as f:
         header = _read_pyc_header(f)
@@ -204,9 +236,53 @@ def show_file(path: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("pyc", help="path to .pyc file")
+    parser.add_argument("path", help="path to .py or .pyc file")
+    parser.add_argument(
+        "--optimize",
+        type=int,
+        choices=(0, 1, 2),
+        default=0,
+        help="optimization level used for compilation (0, 1, or 2)",
+    )
+    parser.add_argument(
+        "--invalidation-mode",
+        choices=("timestamp", "checked-hash", "unchecked-hash"),
+        default="timestamp",
+        help="pyc invalidation mode for compilation",
+    )
+    parser.add_argument(
+        "--no-force",
+        action="store_true",
+        help="do not force recompilation if a .pyc already exists",
+    )
     ns = parser.parse_args(argv)
-    show_file(ns.pyc)
+    input_path = ns.path
+    if not os.path.isfile(input_path):
+        raise SystemExit(f"file not found: {input_path!r}")
+
+    invalidation_mode = {
+        "timestamp": PycInvalidationMode.TIMESTAMP,
+        "checked-hash": PycInvalidationMode.CHECKED_HASH,
+        "unchecked-hash": PycInvalidationMode.UNCHECKED_HASH,
+    }[ns.invalidation_mode]
+
+    if input_path.lower().endswith(".py"):
+        pyc_path = _compile_py_to_pyc(
+            input_path,
+            optimize=ns.optimize,
+            invalidation_mode=invalidation_mode,
+            force=not ns.no_force,
+        )
+        print(f"compiled_from {input_path!r}")
+        print(f"compiled_to {pyc_path!r}")
+        show_file(pyc_path)
+        return 0
+
+    if input_path.lower().endswith(".pyc"):
+        show_file(input_path)
+        return 0
+
+    raise SystemExit(f"unsupported file type (expected .py or .pyc): {input_path!r}")
     return 0
 
 

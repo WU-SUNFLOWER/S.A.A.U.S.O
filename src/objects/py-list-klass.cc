@@ -8,6 +8,7 @@
 
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"

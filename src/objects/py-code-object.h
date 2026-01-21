@@ -63,6 +63,7 @@ class PyCodeObject : public PyObject {
   int flags() const { return flags_; }
   int stack_size() const { return stack_size_; }
   int nlocals() const { return nlocals_; }
+  int arg_count() const { return arg_count_; }
 
  private:
   friend class PyCodeObjectKlass;

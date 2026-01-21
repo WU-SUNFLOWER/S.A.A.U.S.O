@@ -35,9 +35,7 @@ class PyDict : public PyObject {
 
   static void ExpandImpl(Handle<PyDict> list);
 
-  Handle<FixedArray> data() const {
-    return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
-  }
+  Handle<FixedArray> data() const;
 
   // FixedArray* data_
   Tagged<PyObject> data_;

@@ -473,4 +473,24 @@ print(add(1, 2))
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, FunctionWithDefaultArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b = 1, c = 2):
+    return a + b + c
+
+print(foo(10)) # 13
+print(foo(100, 20, 30)) # 150
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(13)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(150)));
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal

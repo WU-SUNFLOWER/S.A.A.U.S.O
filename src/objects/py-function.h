@@ -23,23 +23,17 @@ class PyFunction : public PyObject {
                                         Handle<PyString> func_name);
   static Tagged<PyFunction> cast(Tagged<PyObject> object);
 
-  Handle<PyCodeObject> func_code() const {
-    return handle(Tagged<PyCodeObject>::cast(func_code_));
-  }
+  Handle<PyCodeObject> func_code() const;
 
-  Handle<PyString> func_name() const {
-    return handle(Tagged<PyString>::cast(func_name_));
-  }
+  Handle<PyString> func_name() const;
   PyFuncFlags flags() const { return flags_; }
 
   Handle<PyDict> func_globals() const;
   void set_func_globals(Handle<PyDict> func_globals);
   void set_func_globals(Tagged<PyDict> func_globals);
 
-  void set_default_args(Handle<PyList> default_args);
-  Handle<PyList> default_args() const {
-    return handle(Tagged<PyList>::cast(default_args_));
-  }
+  void set_default_args(Handle<PyTuple> default_args);
+  Handle<PyTuple> default_args() const;
 
  private:
   friend class PyFunctionKlass;

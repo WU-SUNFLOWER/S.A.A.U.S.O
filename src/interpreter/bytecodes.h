@@ -77,4 +77,11 @@ enum BinaryOpType {
   kInplaceXor = 25,             //^=
 };
 
+enum MakeFunctionOpArgMask {
+  kDefaults = 0x01,
+  kKwDefaults = 0x02,
+  kAnnotations = 0x04,
+  kClosure = 0x08,
+};
+
 }  // namespace saauso::internal

@@ -22,6 +22,7 @@ class FixedArray : public PyObject {
 
   // 获取/设置元素 (不做边界检查，追求极致性能，由调用者保证安全)
   Tagged<PyObject> Get(int64_t index);
+  void Set(int64_t index, Handle<PyObject> value);
   void Set(int64_t index, Tagged<PyObject> value);
 
   int64_t capacity() const { return capacity_; }

@@ -42,15 +42,32 @@ FrameObject::FrameObject(Handle<PyCodeObject> code_object) {
 // 创建一般的python栈帧
 FrameObject::FrameObject(Handle<PyFunction> func, Handle<PyTuple> args)
     : FrameObject(func->func_code()) {
+  HandleScope scope;
+
   globals_ = *func->func_globals();
 
   // 加载函数参数
   if (!args.IsNull()) {
     assert(args->length() <= fast_locals()->capacity());
     for (auto i = 0; i < args->length(); ++i) {
-      fast_locals()->Set(i, *args->Get(i));
+      fast_locals()->Set(i, args->Get(i));
     }
   }
+
+  // 使用默认值填装函数参数
+  if (!func->default_args().IsNull()) {
+    auto default_args = func->default_args();
+    auto default_arg_cnt = default_args->length();
+    auto arg_list_index = func->func_code()->arg_count() - 1;
+    while (default_arg_cnt > 0 && fast_locals()->Get(arg_list_index).IsNull()) {
+      fast_locals()->Set(arg_list_index,
+                         default_args->Get(default_arg_cnt - 1));
+      --default_arg_cnt;
+      --arg_list_index;
+    }
+  }
+
+  return;
 }
 
 FrameObject::~FrameObject() {}
@@ -86,7 +103,7 @@ Handle<PyDict> FrameObject::locals() const {
 }
 
 Handle<FixedArray> FrameObject::fast_locals() const {
-  return handle(Tagged<FixedArray>::cast(locals_));
+  return handle(Tagged<FixedArray>::cast(fast_locals_));
 }
 
 Handle<PyDict> FrameObject::globals() const {

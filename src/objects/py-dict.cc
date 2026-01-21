@@ -46,8 +46,8 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
   HandleScope scope;
 
   // 创建对象
-  Handle<PyDict> object(
-      Isolate::Current()->heap()->Allocate<PyDict>(Heap::AllocationSpace::kNewSpace));
+  Handle<PyDict> object(Isolate::Current()->heap()->Allocate<PyDict>(
+      Heap::AllocationSpace::kNewSpace));
   // 创建数据区
   // 因为dict中同时要储存key和value，所以init_capacity要乘2
   Handle<FixedArray> data = FixedArray::NewInstance(init_capacity * 2);
@@ -79,6 +79,10 @@ Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
 
 int64_t PyDict::capacity() const {
   return data()->capacity() >> 1;
+}
+
+Handle<FixedArray> PyDict::data() const {
+  return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }
 
 Tagged<PyBoolean> PyDict::Contains(Handle<PyObject> key) const {

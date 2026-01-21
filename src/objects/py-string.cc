@@ -180,8 +180,7 @@ Handle<PyString> PyString::Append(Handle<PyString> self,
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {
   return IndexOfSubstring(
       std::string_view(buffer(), static_cast<size_t>(length_)),
-      std::string_view(pattern->buffer(),
-                       static_cast<size_t>(pattern->length())));
+      std::string_view(pattern->buffer(), static_cast<size_t>(pattern->length())));
 }
 
 bool PyString::Contains(Handle<PyString> pattern) const {

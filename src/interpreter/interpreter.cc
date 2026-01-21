@@ -402,8 +402,15 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
       Handle<PyObject> code_object = POP();
       Handle<PyFunction> func =
           PyFunction::NewInstance(Handle<PyCodeObject>::cast(code_object));
+
       // 将当前栈帧的全局变量表绑定到新创建的函数体
       func->set_func_globals(frame_->globals());
+      
+      // 为函数体绑定默认参数
+      if (op_arg & MakeFunctionOpArgMask::kDefaults) {
+        func->set_default_args(Handle<PyTuple>::cast(POP()));
+      }
+      
       PUSH(func);
     } while (0);
     Dispatch();

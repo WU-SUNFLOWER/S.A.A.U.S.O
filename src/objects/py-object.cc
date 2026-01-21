@@ -27,6 +27,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-tuple-klass.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"

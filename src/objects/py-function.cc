@@ -12,6 +12,7 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 
 namespace saauso::internal {
@@ -73,6 +74,14 @@ Tagged<PyFunction> PyFunction::cast(Tagged<PyObject> object) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+Handle<PyCodeObject> PyFunction::func_code() const {
+  return handle(Tagged<PyCodeObject>::cast(func_code_));
+}
+
+Handle<PyString> PyFunction::func_name() const {
+  return handle(Tagged<PyString>::cast(func_name_));
+}
+
 Handle<PyDict> PyFunction::func_globals() const {
   return handle(Tagged<PyDict>::cast(func_globals_));
 }
@@ -85,18 +94,13 @@ void PyFunction::set_func_globals(Tagged<PyDict> func_globals) {
   func_globals_ = func_globals;
 }
 
-void PyFunction::set_default_args(Handle<PyList> default_args) {
-  if (default_args->IsFull()) {
-    return;
-  }
+Handle<PyTuple> PyFunction::default_args() const {
+  return handle(Tagged<PyTuple>::cast(default_args_));
+}
 
-  Handle<PyList> copied_default_args =
-      PyList::NewInstance(default_args->length());
-  for (auto i = 0; i < default_args->length(); ++i) {
-    HandleScope socpe;
-    copied_default_args->Set(i, default_args->Get(i));
-  }
-  default_args_ = *copied_default_args;
+void PyFunction::set_default_args(Handle<PyTuple> default_args) {
+  assert(default_args_.IsNull());
+  default_args_ = *default_args;
 }
 
 // static
