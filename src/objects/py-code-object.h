@@ -61,6 +61,8 @@ class PyCodeObject : public PyObject {
   Handle<PyString> file_name() const;
 
   int flags() const { return flags_; }
+  int stack_size() const { return stack_size_; }
+  int nlocals() const { return nlocals_; }
 
  private:
   friend class PyCodeObjectKlass;

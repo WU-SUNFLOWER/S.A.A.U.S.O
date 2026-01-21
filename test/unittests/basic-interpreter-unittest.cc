@@ -454,4 +454,23 @@ print(j)
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, FunctionWithArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def add(a, b): 
+    a += 233
+    return a + b 
+
+print(add(1, 2))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(236)));
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal

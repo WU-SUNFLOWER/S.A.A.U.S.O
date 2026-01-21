@@ -13,6 +13,7 @@ namespace saauso::internal {
   V(PopTop, 1)           \
   V(PushNull, 2)         \
   V(Nop, 9)              \
+  V(ReturnValue, 83)     \
   V(StoreName, 90)       \
   V(StoreGlobal, 97)     \
   V(LoadConst, 100)      \
@@ -26,6 +27,9 @@ namespace saauso::internal {
   V(ContainsOp, 118)     \
   V(ReturnConst, 121)    \
   V(BinaryOp, 122)       \
+  V(LoadFast, 124)       \
+  V(StoreFast, 125)      \
+  V(DeleteFast, 126)     \
   V(MakeFunction, 132)   \
   V(JumpBackward, 140)   \
   V(Resume, 151)         \

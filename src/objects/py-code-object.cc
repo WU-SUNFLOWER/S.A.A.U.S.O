@@ -4,6 +4,8 @@
 
 #include "src/objects/py-code-object.h"
 
+#include <cassert>
+
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object-klass.h"
@@ -106,6 +108,9 @@ Handle<PyCodeObject> PyCodeObject::NewInstance312(
   object->localspluskinds_ =
       localspluskinds.IsNull() ? Tagged<PyObject>::Null() : *localspluskinds;
   object->var_names_ = *var_names;
+
+  // var_names的长度一定等于nlocals的长度
+  assert(var_names->length() == object->nlocals_);
 
   object->free_vars_ = *free_vars;
   object->cell_vars_ = *cell_vars;

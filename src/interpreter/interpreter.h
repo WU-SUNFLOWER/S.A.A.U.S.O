@@ -27,7 +27,7 @@ class Interpreter {
   void InvokeCallable(Handle<PyObject> callable,
                       Handle<PyTuple> args,
                       Handle<PyDict> kwargs);
-  void BuildFrame(Handle<PyFunction> func);
+  void BuildFrame(Handle<PyFunction> func, Handle<PyTuple> args);
   void LeaveFrame();
   void DestroyFrame();
 

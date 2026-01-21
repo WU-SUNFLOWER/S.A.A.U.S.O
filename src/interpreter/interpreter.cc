@@ -10,6 +10,7 @@
 #include "src/handles/tagged.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/interpreter/frame-object.h"
+#include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
@@ -143,6 +144,21 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(ReturnValue) {
+    do {
+      {
+        HandleScope scope;
+        ret_value_ = *POP();
+      }
+      if (frame_->IsFirstFrame()) {
+        goto exit;
+      } else {
+        LeaveFrame();
+      }
+    } while (0);
+    Dispatch();
+  }
+
   // 以names中的值为键，更新locals
   INTERPRETER_HANDLER(StoreName) {
     do {
@@ -253,7 +269,6 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
     Dispatch();
   }
 
-
   INTERPRETER_HANDLER(JumpIfTrue) {
     do {
       HandleScope scope;
@@ -343,9 +358,35 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(LoadFast) {
+    do {
+      HandleScope scope;
+      PUSH(frame_->fast_locals()->Get(op_arg));
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(StoreFast) {
+    do {
+      HandleScope scope;
+      frame_->fast_locals()->Set(op_arg, *POP());
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(DeleteFast) {
+    do {
+      // todo
+    } while (0);
+    Dispatch();
+  }
+
   INTERPRETER_HANDLER(ReturnConst) {
     do {
-      ret_value_ = *frame_->code_object()->consts()->Get(op_arg);
+      {
+        HandleScope scope;
+        ret_value_ = *frame_->code_object()->consts()->Get(op_arg);
+      }
       if (frame_->IsFirstFrame()) {
         goto exit;
       } else {
@@ -405,15 +446,15 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (IsNormalPyFunction(callable)) {
-    BuildFrame(Handle<PyFunction>::cast(callable));
+    BuildFrame(Handle<PyFunction>::cast(callable), args);
   } else {
     Handle<PyObject> result = PyObject::Call(callable, args, kwargs);
     PUSH(result);
   }
 }
 
-void Interpreter::BuildFrame(Handle<PyFunction> func) {
-  FrameObject* frame = new FrameObject(func);
+void Interpreter::BuildFrame(Handle<PyFunction> func, Handle<PyTuple> args) {
+  FrameObject* frame = new FrameObject(func, args);
   frame->set_caller(frame_);
   frame_ = frame;
 }

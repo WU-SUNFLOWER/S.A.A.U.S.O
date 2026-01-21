@@ -14,13 +14,14 @@ class PyObject;
 class PyCodeObject;
 class PyTuple;
 class PyDict;
+class PyList;
 class PyFunction;
 class FixedArray;
 
 class FrameObject : Object {
  public:
   explicit FrameObject(Handle<PyCodeObject> code);
-  explicit FrameObject(Handle<PyFunction> func);
+  explicit FrameObject(Handle<PyFunction> func, Handle<PyTuple> args);
   ~FrameObject();
 
   void PushToStack(Tagged<PyObject> object);
@@ -43,6 +44,7 @@ class FrameObject : Object {
   Handle<PyTuple> consts() const;
   Handle<PyTuple> names() const;
   Handle<PyDict> locals() const;
+  Handle<FixedArray> fast_locals() const;
   Handle<PyDict> globals() const;
   Handle<PyCodeObject> code_object() const;
 
@@ -56,8 +58,10 @@ class FrameObject : Object {
   // PyTuple* names;
   Tagged<PyObject> names_{kNullAddress};
 
-  // PyDict* locals;
+  // PyDict* locals; 支持通过符号名称泄露给外部的变量表
   Tagged<PyObject> locals_{kNullAddress};
+  // FixedArray* fast_locals
+  Tagged<PyObject> fast_locals_{kNullAddress};
   // PyDict* globals;
   Tagged<PyObject> globals_{kNullAddress};
 
