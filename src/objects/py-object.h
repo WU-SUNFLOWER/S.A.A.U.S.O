@@ -133,6 +133,7 @@ class PyObject : public Object {
   static uint64_t Hash(Handle<PyObject> self);
 
   static Handle<PyObject> Call(Handle<PyObject> self,
+                               Handle<PyObject> host,
                                Handle<PyObject> args,
                                Handle<PyObject> kwargs);
 

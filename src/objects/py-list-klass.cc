@@ -27,10 +27,11 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NativeMethod_Append(Handle<PyTuple> args,
+Handle<PyObject> NativeMethod_Append(Handle<PyObject> host,
+                                     Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  auto object = Handle<PyList>::cast(args->Get(0));
-  PyList::Append(object, args->Get(1));
+  auto object = Handle<PyList>::cast(host);
+  PyList::Append(object, args->Get(0));
 
   return handle(Isolate::Current()->py_none_object());
 }

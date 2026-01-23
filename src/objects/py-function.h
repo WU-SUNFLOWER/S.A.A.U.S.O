@@ -11,7 +11,8 @@ namespace saauso::internal {
 
 using PyFuncFlags = uint32_t;
 
-using NativeFuncPointer = Handle<PyObject> (*)(Handle<PyTuple> args,
+using NativeFuncPointer = Handle<PyObject> (*)(Handle<PyObject> host,
+                                               Handle<PyTuple> args,
                                                Handle<PyDict> kwargs);
 
 class PyFunction : public PyObject {

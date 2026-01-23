@@ -18,6 +18,8 @@ namespace saauso::internal {
   V(StoreGlobal, 97)     \
   V(LoadConst, 100)      \
   V(LoadName, 101)       \
+  V(BuildTuple, 102)     \
+  V(LoadAttr, 106)       \
   V(CompareOp, 107)      \
   V(JumpForward, 110)    \
   V(JumpIfFalse, 114)    \

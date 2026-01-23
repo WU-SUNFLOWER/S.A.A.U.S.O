@@ -46,7 +46,9 @@ Handle<PyObject> FindPropertyInMro(Handle<PyObject> object,
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto type_object =
         handle(Tagged<PyTypeObject>::cast(*mro_of_object->Get(i)));
-    auto result = type_object->own_klass()->klass_properties()->Get(prop_name);
+    auto own_klass = type_object->own_klass();
+    auto klass_properties = own_klass->klass_properties();
+    auto result = klass_properties->Get(prop_name);
     if (!result.IsNull()) {
       return result;
     }
@@ -164,6 +166,7 @@ Handle<PyDict> Klass::klass_properties() {
 }
 
 void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
+  assert(klass_properties_.IsNull() && "can't reset klass's properties dict");
   klass_properties_ = *klass_properties;
 }
 
@@ -247,6 +250,7 @@ Handle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
 }
 
 Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
+                                             Handle<PyObject> host,
                                              Handle<PyObject> args,
                                              Handle<PyObject> kwargs) {
   Handle<PyObject> callable = PyObject::GetAttr(self, ST(call));

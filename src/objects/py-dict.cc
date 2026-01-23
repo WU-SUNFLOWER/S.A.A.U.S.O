@@ -11,6 +11,7 @@
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 
 namespace saauso::internal {
@@ -193,6 +194,28 @@ void PyDict::Put(Handle<PyObject> object,
 
   // 更新计数器
   ++dict->occupied_;
+}
+
+// static
+Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
+  HandleScope scope;
+  int64_t out_length = dict->occupied();
+  Handle<PyTuple> keys = PyTuple::NewInstance(out_length);
+
+  Handle<FixedArray> data = dict->data();
+  int64_t out_index = 0;
+  for (auto i = 0; i < dict->capacity(); ++i) {
+    Tagged<PyObject> key = data->Get(i << 1);
+    if (key.IsNull()) {
+      continue;
+    }
+    keys->SetInternal(out_index++, key);
+    if (out_index == out_length) {
+      break;
+    }
+  }
+  assert(out_index == out_length);
+  return keys.EscapeFrom(&scope);
 }
 
 // static

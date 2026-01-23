@@ -44,6 +44,10 @@ struct VirtualTable {
   using VirtualFuncType_1_3_SAFE = OopHandle (*)(OopHandle,
                                                  OopHandle,
                                                  OopHandle);
+  using VirtualFuncType_1_4_SAFE = OopHandle (*)(OopHandle,
+                                                 OopHandle,
+                                                 OopHandle,
+                                                 OopHandle);
 
   using VirtualFuncType_1_1_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle);
   using VirtualFuncType_1_2_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle,
@@ -96,7 +100,7 @@ struct VirtualTable {
   VirtualFuncType_1_1_SAFE next{nullptr};
   // Tagged<PyObject> call(Tagged<PyObject> object, Tagged<PyList> args, PyDict*
   // kwargs);
-  VirtualFuncType_1_3_SAFE call{nullptr};
+  VirtualFuncType_1_4_SAFE call{nullptr};
   // Tagged<PyObject> len(Tagged<PyObject> object);
   VirtualFuncType_1_1_SAFE len{nullptr};
 
@@ -154,6 +158,7 @@ class Klass : public Object {
   static Handle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Default_Call(Handle<PyObject> self,
+                                               Handle<PyObject> host,
                                                Handle<PyObject> args,
                                                Handle<PyObject> kwargs);
   static Handle<PyObject> Virtual_Default_GetAttr(

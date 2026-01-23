@@ -26,9 +26,10 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NativeMethod_SetDefault(Handle<PyTuple> args,
+Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
+                                         Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
-  auto object = Handle<PyDict>::cast(args->Get(0));
+  auto object = Handle<PyDict>::cast(self);
   auto key = args->Get(1);
   auto value = args->Get(2);
 

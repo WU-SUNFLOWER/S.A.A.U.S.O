@@ -29,6 +29,7 @@ class PyDict : public PyObject {
   static void Put(Handle<PyObject> dict,
                   Handle<PyObject> key,
                   Handle<PyObject> value);
+  static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict);
 
  private:
   friend class PyDictKlass;

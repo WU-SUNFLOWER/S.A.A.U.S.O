@@ -13,7 +13,9 @@
 
 namespace saauso::internal {
 
-Handle<PyObject> Native_Print(Handle<PyTuple> args, Handle<PyDict> kwargs) {
+Handle<PyObject> Native_Print(Handle<PyObject> host,
+                              Handle<PyTuple> args,
+                              Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
     PyObject::Print(args->Get(i));
@@ -23,11 +25,14 @@ Handle<PyObject> Native_Print(Handle<PyTuple> args, Handle<PyDict> kwargs) {
   return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> Native_Len(Handle<PyTuple> args, Handle<PyDict> kwargs) {
+Handle<PyObject> Native_Len(Handle<PyObject> host,
+                            Handle<PyTuple> args,
+                            Handle<PyDict> kwargs) {
   return PyObject::Len(args->Get(0));
 }
 
-Handle<PyObject> Native_IsInstance(Handle<PyTuple> args,
+Handle<PyObject> Native_IsInstance(Handle<PyObject> host,
+                                   Handle<PyTuple> args,
                                    Handle<PyDict> kwargs) {
   HandleScope scope;
 
@@ -44,7 +49,5 @@ Handle<PyObject> Native_IsInstance(Handle<PyTuple> args,
 
   return handle(Isolate::Current()->py_false_object()).EscapeFrom(&scope);
 }
-
-
 
 }  // namespace saauso::internal

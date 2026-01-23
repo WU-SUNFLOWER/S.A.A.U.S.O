@@ -21,7 +21,9 @@ class FixedArray;
 class FrameObject : Object {
  public:
   explicit FrameObject(Handle<PyCodeObject> code);
-  explicit FrameObject(Handle<PyFunction> func, Handle<PyTuple> args);
+  explicit FrameObject(Handle<PyFunction> func,
+                       Handle<PyObject> host,
+                       Handle<PyTuple> args);
   ~FrameObject();
 
   void PushToStack(Tagged<PyObject> object);

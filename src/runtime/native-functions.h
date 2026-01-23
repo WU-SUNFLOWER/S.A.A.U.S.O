@@ -9,11 +9,17 @@
 
 namespace saauso::internal {
 
-Handle<PyObject> Native_Print(Handle<PyTuple> args, Handle<PyDict> kwargs);
+Handle<PyObject> Native_Print(Handle<PyObject> host,
+                              Handle<PyTuple> args,
+                              Handle<PyDict> kwargs);
 
-Handle<PyObject> Native_Len(Handle<PyTuple> args, Handle<PyDict> kwargs);
+Handle<PyObject> Native_Len(Handle<PyObject> host,
+                            Handle<PyTuple> args,
+                            Handle<PyDict> kwargs);
 
-Handle<PyObject> Native_IsInstance(Handle<PyTuple> args, Handle<PyDict> kwargs);
+Handle<PyObject> Native_IsInstance(Handle<PyObject> host,
+                                   Handle<PyTuple> args,
+                                   Handle<PyDict> kwargs);
 
 }  // namespace saauso::internal
 

@@ -6,6 +6,7 @@
 
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -13,7 +14,6 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/objects/py-code-object.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -123,11 +123,12 @@ void NativeFunctionKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 Handle<PyObject> NativeFunctionKlass::Virtual_Call(Handle<PyObject> self,
+                                                   Handle<PyObject> host,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs) {
   assert(IsPyNativeFunction(self));
   auto func = Handle<PyFunction>::cast(self);
-  return func->native_func_(Handle<PyTuple>::cast(args),
+  return func->native_func_(host, Handle<PyTuple>::cast(args),
                             Handle<PyDict>::cast(kwargs));
 }
 
@@ -161,13 +162,26 @@ void MethodObjectKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(this);
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
   vtable_.print = &Virtual_Print;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void MethodObjectKlass::Initialize() {}
+void MethodObjectKlass::Initialize() {
+  // 建立与type object的双向绑定
+  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+
+  // 初始化类字典
+  set_klass_properties(PyDict::NewInstance());
+
+  // 设置父类并计算mro序列
+  AddSuper(PyObjectKlass::GetInstance());
+  OrderSupers();
+
+  // 设置类名
+  set_name(PyString::NewInstance("method"));
+}
 
 void MethodObjectKlass::Finalize() {
   Isolate::Current()->set_method_object_klass(

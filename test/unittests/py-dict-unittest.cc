@@ -8,6 +8,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -137,6 +138,61 @@ TEST_F(PyDictTest, Equality) {
   // d2 = {"b": 2} (Different size)
   d2->Remove(k1);
   EXPECT_TRUE(IsPyFalse(PyObject::Equal(d1, d2)));
+}
+
+TEST_F(PyDictTest, GetKeyTuple) {
+  HandleScope scope;
+
+  auto TupleContains = [](Handle<PyTuple> tuple, Handle<PyObject> key) -> bool {
+    for (auto i = 0; i < tuple->length(); ++i) {
+      if (PyObject::Equal(tuple->Get(i), key)->value()) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  Handle<PyDict> dict = PyDict::NewInstance();
+
+  int count = 20;
+  for (int i = 0; i < count; ++i) {
+    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> val(PySmi::FromInt(i * 10));
+    PyDict::Put(dict, key, val);
+  }
+
+  Handle<PyTuple> keys = PyDict::GetKeyTuple(dict);
+  EXPECT_EQ(keys->length(), dict->occupied());
+  EXPECT_EQ(keys->length(), count);
+
+  for (int i = 0; i < count; ++i) {
+    Handle<PyObject> key(PySmi::FromInt(i));
+    EXPECT_TRUE(TupleContains(keys, key));
+  }
+
+  for (auto i = 0; i < keys->length(); ++i) {
+    EXPECT_FALSE(keys->Get(i).IsNull());
+  }
+
+  for (auto i = 0; i < keys->length(); ++i) {
+    for (auto j = i + 1; j < keys->length(); ++j) {
+      EXPECT_FALSE(PyObject::Equal(keys->Get(i), keys->Get(j))->value());
+    }
+  }
+
+  for (int i = 0; i < count; i += 2) {
+    Handle<PyObject> key(PySmi::FromInt(i));
+    dict->Remove(key);
+  }
+
+  Handle<PyTuple> keys_after_remove = PyDict::GetKeyTuple(dict);
+  EXPECT_EQ(keys_after_remove->length(), dict->occupied());
+  EXPECT_EQ(keys_after_remove->length(), count / 2);
+
+  for (int i = 1; i < count; i += 2) {
+    Handle<PyObject> key(PySmi::FromInt(i));
+    EXPECT_TRUE(TupleContains(keys_after_remove, key));
+  }
 }
 
 }  // namespace saauso::internal

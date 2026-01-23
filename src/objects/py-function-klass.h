@@ -38,6 +38,7 @@ class NativeFunctionKlass : public Klass {
  private:
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Call(Handle<PyObject> self,
+                                       Handle<PyObject> host,
                                        Handle<PyObject> args,
                                        Handle<PyObject> kwargs);
 

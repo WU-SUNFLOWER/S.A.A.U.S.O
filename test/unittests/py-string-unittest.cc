@@ -6,10 +6,13 @@
 #include <cstring>
 
 #include "include/saauso.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
+#include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -201,6 +204,35 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
             Isolate::Current()->py_false_object().ptr());
   EXPECT_EQ(PyObject::Contains(s, not_a_string).ptr(),
             Isolate::Current()->py_false_object().ptr());
+}
+
+TEST_F(PyStringTest, StringUpperMethod) {
+  HandleScope scope;
+
+  Handle<PyObject> s(PyString::NewInstance("Hello World"));
+  Handle<PyObject> attr(PyString::NewInstance("upper"));
+
+  Handle<PyDict> attrs = PyStringKlass::GetInstance()->klass_properties();
+
+  bool flag = false;
+  Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs);
+  for (auto i = 0; i < attrs_tuple->length(); ++i) {
+    PyObject::Print(attrs_tuple->Get(i));
+    if (IsPyTrue(PyObject::Equal(attr, attrs_tuple->Get(i)))) {
+      flag = true;
+      break;
+    }
+  }
+
+  EXPECT_TRUE(flag);
+
+  EXPECT_TRUE(PyStringKlass::GetInstance()
+                  ->klass_properties()
+                  ->Contains(attr)
+                  ->value());
+
+  Handle<PyObject> upper_method = PyObject::GetAttr(s, attr);
+  EXPECT_FALSE(upper_method.IsNull());
 }
 
 }  // namespace saauso::internal

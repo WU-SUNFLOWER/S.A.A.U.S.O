@@ -94,7 +94,8 @@ class BasicInterpreterTest : public testing::Test {
     printv_result_ = PyList::NewInstance();
   }
 
-  static Handle<PyObject> Native_PrintV(Handle<PyTuple> args,
+  static Handle<PyObject> Native_PrintV(Handle<PyObject> host,
+                                        Handle<PyTuple> args,
                                         Handle<PyDict> kwargs) {
     for (auto i = 0; i < args->length(); ++i) {
       HandleScope scope;
@@ -490,6 +491,45 @@ print(foo(100, 20, 30)) # 150
 
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(13)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(150)));
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, FunctionWithDefaultArgs2) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def make_func(x):
+    def add(a, b = x): 
+        return a + b 
+    return add
+add5 = make_func(5)
+print(add5(10))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(15)));
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallMethodOfBuiltinType) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+s = "hello"
+t = s.upper()
+print(s)
+print(t)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("hello"));
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("HELLO"));
   CompareResultWithExpected(expected_printv_result);
 }
 

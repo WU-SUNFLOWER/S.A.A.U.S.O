@@ -437,12 +437,15 @@ uint64_t PyObject::Hash(Handle<PyObject> self) {
 }
 
 Handle<PyObject> PyObject::Call(Handle<PyObject> self,
+                                Handle<PyObject> host,
                                 Handle<PyObject> args,
                                 Handle<PyObject> kwargs) {
   HandleScope scope;
 
   assert(GetKlass(*self)->vtable_.call);
-  return GetKlass(*self)->vtable_.call(self, args, kwargs).EscapeFrom(&scope);
+  return GetKlass(*self)
+      ->vtable_.call(self, host, args, kwargs)
+      .EscapeFrom(&scope);
 }
 
 // python virtual function

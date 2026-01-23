@@ -26,9 +26,10 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NativeMethod_Upper(Handle<PyTuple> args,
+Handle<PyObject> NativeMethod_Upper(Handle<PyObject> self,
+                                    Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  auto str_object = Handle<PyString>::cast(args->Get(0));
+  auto str_object = Handle<PyString>::cast(self);
   auto result =
       PyString::NewInstance(str_object->buffer(), str_object->length());
 
@@ -89,13 +90,11 @@ void PyStringKlass::Initialize() {
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Upper, prop_name));
 
+  // 初始化类字典
   set_klass_properties(klass_properties);
 
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
-
-  // 初始化类字典
-  set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());

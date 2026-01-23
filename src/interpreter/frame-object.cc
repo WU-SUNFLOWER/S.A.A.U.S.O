@@ -40,17 +40,25 @@ FrameObject::FrameObject(Handle<PyCodeObject> code_object) {
 }
 
 // 创建一般的python栈帧
-FrameObject::FrameObject(Handle<PyFunction> func, Handle<PyTuple> args)
+FrameObject::FrameObject(Handle<PyFunction> func,
+                         Handle<PyObject> host,
+                         Handle<PyTuple> args)
     : FrameObject(func->func_code()) {
   HandleScope scope;
 
   globals_ = *func->func_globals();
 
-  // 加载函数参数
+  int fast_locals_idx = 0;
+  // 将host填充为首个函数参数
+  if (!host.IsNull()) {
+    fast_locals()->Set(fast_locals_idx++, host);
+  }
+
+  // 将函数参数加载到栈帧的fast_locals上去
   if (!args.IsNull()) {
     assert(args->length() <= fast_locals()->capacity());
     for (auto i = 0; i < args->length(); ++i) {
-      fast_locals()->Set(i, args->Get(i));
+      fast_locals()->Set(fast_locals_idx++, args->Get(i));
     }
   }
 

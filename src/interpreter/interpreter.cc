@@ -219,6 +219,28 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(BuildTuple) {
+    do {
+      HandleScope scope;
+      Handle<PyTuple> tuple = PyTuple::NewInstance(op_arg);
+      while (op_arg-- > 0) {
+        tuple->SetInternal(op_arg, POP());
+      }
+      PUSH(tuple);
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(LoadAttr) {
+    do {
+      HandleScope scope;
+      Handle<PyObject> object = POP();
+      Handle<PyObject> attr_name = frame_->names()->Get(op_arg >> 1);
+      PUSH(PyObject::GetAttr(object, attr_name));
+    } while (0);
+    Dispatch();
+  }
+
   INTERPRETER_HANDLER(CompareOp) {
     do {
       HandleScope scope;
@@ -405,12 +427,12 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
 
       // 将当前栈帧的全局变量表绑定到新创建的函数体
       func->set_func_globals(frame_->globals());
-      
+
       // 为函数体绑定默认参数
       if (op_arg & MakeFunctionOpArgMask::kDefaults) {
         func->set_default_args(Handle<PyTuple>::cast(POP()));
       }
-      
+
       PUSH(func);
     } while (0);
     Dispatch();
@@ -452,16 +474,28 @@ exit:
 void Interpreter::InvokeCallable(Handle<PyObject> callable,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
+  Handle<PyObject> host;
+
+  // 如果是对象方法，那么进行解包
+  if (IsMethodObject(callable)) {
+    auto method = Handle<MethodObject>::cast(callable);
+    callable = method->func();
+    host = method->owner();
+  }
+
+  // 分发callable
   if (IsNormalPyFunction(callable)) {
-    BuildFrame(Handle<PyFunction>::cast(callable), args);
+    BuildFrame(Handle<PyFunction>::cast(callable), host, args);
   } else {
-    Handle<PyObject> result = PyObject::Call(callable, args, kwargs);
+    Handle<PyObject> result = PyObject::Call(callable, host, args, kwargs);
     PUSH(result);
   }
 }
 
-void Interpreter::BuildFrame(Handle<PyFunction> func, Handle<PyTuple> args) {
-  FrameObject* frame = new FrameObject(func, args);
+void Interpreter::BuildFrame(Handle<PyFunction> func,
+                             Handle<PyObject> host,
+                             Handle<PyTuple> args) {
+  FrameObject* frame = new FrameObject(func, host, args);
   frame->set_caller(frame_);
   frame_ = frame;
 }
