@@ -50,6 +50,9 @@ class FrameObject : Object {
   Handle<PyDict> globals() const;
   Handle<PyCodeObject> code_object() const;
 
+  bool is_entry_frame() const { return is_entry_frame_; }
+  void set_is_entry_frame(bool value) { is_entry_frame_ = value; }
+
  private:
   // FixedArray* stack_;
   Tagged<PyObject> stack_{kNullAddress};
@@ -72,6 +75,8 @@ class FrameObject : Object {
   int64_t pc_{0};
 
   FrameObject* caller_{nullptr};
+
+  bool is_entry_frame_{false};
 };
 
 }  // namespace saauso::internal

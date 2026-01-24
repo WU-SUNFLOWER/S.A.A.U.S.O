@@ -24,16 +24,9 @@ class Interpreter {
 
   void Run(Handle<PyCodeObject> code_object);
 
-  void InvokeCallable(Handle<PyObject> callable,
-                      Handle<PyTuple> args,
-                      Handle<PyDict> kwargs);
-  void BuildFrame(Handle<PyFunction> func,
-                  Handle<PyObject> host,
-                  Handle<PyTuple> args);
-  void LeaveFrame();
-  void DestroyFrame();
-
-  Handle<PyObject> CallVirtual(Handle<PyObject> callable, Handle<PyTuple> args);
+  Handle<PyObject> CallPython(Handle<PyObject> callable,
+                              Handle<PyTuple> args,
+                              Handle<PyDict> kwargs);
 
   Handle<PyDict> builtins() const;
 
@@ -41,13 +34,29 @@ class Interpreter {
   void Iterate(ObjectVisitor* v);
 
  private:
+  void InvokeCallable(Handle<PyObject> callable,
+                      Handle<PyTuple> args,
+                      Handle<PyDict> kwargs);
+
+  void NormalizeCallable(Handle<PyObject>& callable,
+                         Handle<PyObject>& host,
+                         Handle<PyTuple>& args,
+                         Handle<PyDict>& kwargs);
+
+  void EnterFrame(FrameObject* frame);
+  void EvalCurrentFrame();
+  void LeaveCurrentFrame();
+  void DestroyCurrentFrame();
+
+  Handle<PyObject> ReleaseReturnValue();
+
   // PyDict* builtins_;
   Tagged<PyObject> builtins_{kNullAddress};
 
   // 栈帧上下文切换前，临时储存函数返回值结果
   Tagged<PyObject> ret_value_{kNullAddress};
 
-  FrameObject* frame_;
+  FrameObject* current_frame_{nullptr};
 
   void* dispatch_table_[256];
   bool dispatch_table_initialized_{false};

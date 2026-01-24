@@ -37,6 +37,8 @@ FrameObject::FrameObject(Handle<PyCodeObject> code_object) {
   pc_ = 0;
 
   caller_ = nullptr;
+
+  is_entry_frame_ = false;
 }
 
 // 创建一般的python栈帧

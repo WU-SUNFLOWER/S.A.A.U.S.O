@@ -25,10 +25,11 @@ namespace {
 
 Handle<PyObject> FindAndCall(Handle<PyObject> object,
                              Handle<PyTuple> args,
+                             Handle<PyDict> kwargs,
                              Handle<PyObject> func_name) {
   Handle<PyObject> func = PyObject::GetAttr(object, func_name);
   if (!IsPyNone(func)) {
-    return Isolate::Current()->interpreter()->CallVirtual(func, args);
+    return Isolate::Current()->interpreter()->CallPython(func, args, kwargs);
   }
 
   std::printf("class ");
@@ -232,8 +233,8 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
   }
 
   if (!IsPyNone(func)) {
-    Handle<PyObject> s = Isolate::Current()->interpreter()->CallVirtual(
-        func, Handle<PyTuple>::Null());
+    Handle<PyObject> s = Isolate::Current()->interpreter()->CallPython(
+        func, Handle<PyTuple>::Null(), Handle<PyDict>::Null());
     PyObject::Print(Handle<PyString>::cast(s));
     return;
   }
@@ -242,11 +243,13 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
 }
 
 Handle<PyObject> Klass::Virtual_Default_Len(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), ST(len));
+  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+                     ST(len));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), ST(repr));
+  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+                     ST(repr));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
@@ -260,8 +263,8 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
     std::exit(1);
   }
 
-  return Isolate::Current()->interpreter()->CallVirtual(
-      callable, Handle<PyTuple>::cast(args));
+  return Isolate::Current()->interpreter()->CallPython(
+      callable, Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs));
 }
 
 Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
@@ -301,7 +304,8 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
     getattr_func = MethodObject::NewInstance(getattr_func, self);
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, prop_name);
-    return Isolate::Current()->interpreter()->CallVirtual(getattr_func, args);
+    return Isolate::Current()->interpreter()->CallPython(
+        getattr_func, args, Handle<PyDict>::Null());
   }
 
   // 4. 还没找到，抛出错误并崩溃
@@ -337,7 +341,7 @@ Handle<PyObject> Klass::Virtual_Default_Subscr(Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
-  return FindAndCall(self, args, ST(getitem));
+  return FindAndCall(self, args, Handle<PyDict>::Null(), ST(getitem));
 }
 
 void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
@@ -346,25 +350,26 @@ void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(2);
   args->SetInternal(0, subscr);
   args->SetInternal(0, value);
-  FindAndCall(self, args, ST(setitem));
+  FindAndCall(self, args, Handle<PyDict>::Null(), ST(setitem));
 }
 
 void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
-  FindAndCall(self, args, ST(delitem));
+  FindAndCall(self, args, Handle<PyDict>::Null(), ST(delitem));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
                                             Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  return FindAndCall(self, args, ST(add));
+  return FindAndCall(self, args, Handle<PyDict>::Null(), ST(add));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), ST(getitem));
+  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+                     ST(getitem));
 }
 
 size_t Klass::Virtual_Default_InstanceSize(Tagged<PyObject> self) {

@@ -109,6 +109,7 @@ source_set("saauso_core") {
     "//src/interpreter/bytecodes.h",
     "//src/interpreter/frame-object.cc",
     "//src/interpreter/frame-object.h",
+    "//src/interpreter/interpreter-dispatcher.cc",
     "//src/interpreter/interpreter.cc",
     "//src/interpreter/interpreter.h",
 
