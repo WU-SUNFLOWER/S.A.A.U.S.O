@@ -78,6 +78,13 @@ void PyList::Set(int64_t index, Handle<PyObject> value) {
   array()->Set(index, *value);
 }
 
+void PyList::SetAndExtendLength(int64_t index, Handle<PyObject> value) {
+  assert(0 <= index && index < capacity());
+
+  array()->Set(index, *value);
+  length_ = std::max(length_, index + 1);
+}
+
 void PyList::RemoveByIndex(int64_t index) {
   assert(0 <= index && index < length_);
 

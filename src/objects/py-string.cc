@@ -28,7 +28,8 @@ constexpr uint64_t kFallbackHashCache = kInvalidHashCache + 1;
 // static
 Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   // 计算出PyString结构体+字符串数据区+对齐所需要的总长度
-  size_t object_size = ComputeObjectSize(str_length);
+  // 这里的+1是用来放置字符串末尾的哨兵的
+  size_t object_size = ComputeObjectSize(str_length + 1);
 
   Tagged<PyString> object(Isolate::Current()->heap()->AllocateRaw(
       object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
@@ -37,6 +38,9 @@ Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   // 初始化字段
   object->length_ = str_length;
   object->hash_ = kInvalidHashCache;
+
+  // 设置哨兵位
+  object->writable_buffer()[str_length] = '\0';
 
   // str类型没有__dict__，不需要初始化properties
   // >>> s = "ABC"
@@ -180,7 +184,8 @@ Handle<PyString> PyString::Append(Handle<PyString> self,
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {
   return IndexOfSubstring(
       std::string_view(buffer(), static_cast<size_t>(length_)),
-      std::string_view(pattern->buffer(), static_cast<size_t>(pattern->length())));
+      std::string_view(pattern->buffer(),
+                       static_cast<size_t>(pattern->length())));
 }
 
 bool PyString::Contains(Handle<PyString> pattern) const {

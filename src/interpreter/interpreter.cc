@@ -144,6 +144,27 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(BinarySubscr) {
+    do {
+      HandleScope scope;
+      Handle<PyObject> subscr = POP();
+      Handle<PyObject> object = POP();
+      PUSH(PyObject::Subscr(object, subscr));
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(StoreSubscr) {
+    do {
+        HandleScope scope;
+        Handle<PyObject> subscr = POP();
+        Handle<PyObject> object = POP();
+        Handle<PyObject> value = POP();
+        PyObject::StoreSubscr(object, subscr, value);
+    } while (0);
+    Dispatch();
+  }
+
   INTERPRETER_HANDLER(ReturnValue) {
     do {
       {
@@ -227,6 +248,18 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
         tuple->SetInternal(op_arg, POP());
       }
       PUSH(tuple);
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(BuildList) {
+    do {
+      HandleScope scope;
+      Handle<PyList> list = PyList::NewInstance(op_arg);
+      while (op_arg-- > 0) {
+        list->SetAndExtendLength(op_arg, POP());
+      }
+      PUSH(list);
     } while (0);
     Dispatch();
   }

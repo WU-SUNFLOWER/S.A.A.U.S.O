@@ -533,4 +533,207 @@ print(t)
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuildList) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+lst = [1, "hello"]
+print(lst)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  auto list = PyList::NewInstance(2);
+  PyList::Append(list, handle(PySmi::FromInt(1)));
+  PyList::Append(list, PyString::NewInstance("hello"));
+
+  PRINT_TO_EXPECT_LIST(list);
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListSubscrAccess) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+lst = [233, "world"]
+print(lst[0])
+print(lst[1])
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(233)));
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("world"));
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListContainOp) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l = ["hello", "world"]
+print("hello" in l)
+print("world" not in l)
+print("python" in l)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_false_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_false_object()));
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListAppend) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l = []
+l.append(123)
+l.append(3.14)
+l.append("python")
+print(len(l))
+print(l[0], l[1], l[2])
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(123)));
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(3.14));
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("python"));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListInsert) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l = [1, 2]
+l.insert(0, 3)
+print(l)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  auto list = PyList::NewInstance();
+  PyList::Append(list, handle(PySmi::FromInt(3)));
+  PyList::Append(list, handle(PySmi::FromInt(1)));
+  PyList::Append(list, handle(PySmi::FromInt(2)));
+
+  PRINT_TO_EXPECT_LIST(list);
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, IndexMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+s = "xxyyzz"
+print(s.index("yy"))
+
+l = [3,1]
+print(l.index(1))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(1)));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListPop) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l = []
+i = 0
+while i < 5:
+  l.append(i)
+  i += 1
+count = 0
+while len(l) > 0:
+  count += l.pop()
+print(count)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(10)));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListReverse) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l = []
+i = 0
+while i < 5:
+  l.append(i)
+  i += 1
+
+l.reverse()
+
+i = 0
+
+while i < 5:
+  print(l[i])
+  i += 1
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(1)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(0)));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ComputeListWithInt) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l1 = ["Hello", "World"]
+l2 = [3, 4]
+l3 = l1 + l2
+l4 = l2 * 3
+print(len(l3))
+print(len(l4))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal

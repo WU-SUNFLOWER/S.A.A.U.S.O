@@ -13,12 +13,15 @@ namespace saauso::internal {
   V(PopTop, 1)           \
   V(PushNull, 2)         \
   V(Nop, 9)              \
+  V(BinarySubscr, 25)    \
+  V(StoreSubscr, 60)     \
   V(ReturnValue, 83)     \
   V(StoreName, 90)       \
   V(StoreGlobal, 97)     \
   V(LoadConst, 100)      \
   V(LoadName, 101)       \
   V(BuildTuple, 102)     \
+  V(BuildList, 103)      \
   V(LoadAttr, 106)       \
   V(CompareOp, 107)      \
   V(JumpForward, 110)    \

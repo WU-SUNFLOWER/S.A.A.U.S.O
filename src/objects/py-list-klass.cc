@@ -27,11 +27,67 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NativeMethod_Append(Handle<PyObject> host,
+Handle<PyObject> NativeMethod_Append(Handle<PyObject> self,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  auto object = Handle<PyList>::cast(host);
+  HandleScope scope;
+  auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0));
+  return handle(Isolate::Current()->py_none_object());
+}
+
+Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
+                                  Handle<PyTuple> args,
+                                  Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto object = Handle<PyList>::cast(self);
+  if (object->IsEmpty()) {
+    std::printf("IndexError: pop from empty list\n");
+    std::exit(1);
+  }
+  return object->Pop();
+}
+
+Handle<PyObject> NativeMethod_Insert(Handle<PyObject> self,
+                                     Handle<PyTuple> args,
+                                     Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto object = Handle<PyList>::cast(self);
+  auto index = Handle<PySmi>::cast(args->Get(0));
+  PyList::Insert(object, PySmi::ToInt(index), args->Get(1));
+  return handle(Isolate::Current()->py_none_object());
+}
+
+Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto list = Handle<PyList>::cast(self);
+
+  auto target = args->Get(0);
+  auto result = list->IndexOf(target);
+  if (result == -1) {
+    std::printf("ValueError: ");
+    PyObject::Print(target);
+    std::printf(" is not in list");
+    std::exit(1);
+  }
+
+  return handle(PySmi::FromInt(result));
+}
+
+Handle<PyObject> NativeMethod_Reverse(Handle<PyObject> self,
+                                      Handle<PyTuple> args,
+                                      Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto list = Handle<PyList>::cast(self);
+
+  auto length = list->length();
+  for (auto i = 0; i < (length >> 1); ++i) {
+    Handle<PyObject> tmp = list->Get(i);
+    list->Set(i, list->Get(length - i - 1));
+    list->Set(length - i - 1, tmp);
+  }
 
   return handle(Isolate::Current()->py_none_object());
 }
@@ -84,6 +140,22 @@ void PyListKlass::Initialize() {
   auto prop_name = PyString::NewInstance("append");
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Append, prop_name));
+
+  prop_name = PyString::NewInstance("pop");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Pop, prop_name));
+
+  prop_name = PyString::NewInstance("insert");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Insert, prop_name));
+
+  prop_name = PyString::NewInstance("index");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Index, prop_name));
+
+  prop_name = PyString::NewInstance("reverse");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Reverse, prop_name));
 
   set_klass_properties(klass_properties);
 

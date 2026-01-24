@@ -14,6 +14,7 @@
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
@@ -29,6 +30,8 @@ namespace {
 Handle<PyObject> NativeMethod_Upper(Handle<PyObject> self,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
+  HandleScope scope;
+
   auto str_object = Handle<PyString>::cast(self);
   auto result =
       PyString::NewInstance(str_object->buffer(), str_object->length());
@@ -41,6 +44,29 @@ Handle<PyObject> NativeMethod_Upper(Handle<PyObject> self,
   }
 
   return result;
+}
+
+Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto str_object = Handle<PyString>::cast(self);
+
+  auto target = args->Get(0);
+  if (!IsPyString(target)) {
+    auto type_name = PyObject::GetKlass(target)->name();
+    std::printf("TypeError: must be str, not %s\n", type_name->buffer());
+    std::exit(1);
+  }
+
+  auto target_str = Handle<PyString>::cast(target);
+  auto result = str_object->IndexOf(target_str);
+  if (result == -1) {
+    std::printf("ValueError: substring not found");
+    std::exit(1);
+  }
+
+  return handle(PySmi::FromInt(result));
 }
 
 }  // namespace
@@ -89,6 +115,10 @@ void PyStringKlass::Initialize() {
   auto prop_name = PyString::NewInstance("upper");
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Upper, prop_name));
+
+  prop_name = PyString::NewInstance("index");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Index, prop_name));
 
   // 初始化类字典
   set_klass_properties(klass_properties);

@@ -30,7 +30,12 @@ class PyList : public PyObject {
   Handle<PyObject> Get(int64_t index) const;
   Handle<PyObject> GetLast() const;
 
+  // 常规的set操作，要求0<=index<length
   void Set(int64_t index, Handle<PyObject> value);
+  // 虚拟机内部的set操作，要求0<=index<capacity。
+  // 如果length<=index<capacity，会强制更新length（中间空洞的内容不确定，严禁访问！）
+  // 此操作仅限虚拟机内部使用，严禁泄露给上层python代码！
+  void SetAndExtendLength(int64_t index, Handle<PyObject> value);
 
   void RemoveByIndex(int64_t index);
   // 删除**第一个**与target匹配的元素
