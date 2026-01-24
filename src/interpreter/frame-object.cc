@@ -82,8 +82,8 @@ FrameObject::FrameObject(Handle<PyFunction> func,
 
 FrameObject::~FrameObject() {}
 
-int FrameObject::StackLevel() const {
-  return stack_top_ - 1;
+int FrameObject::StackSize() const {
+  return stack_top_;
 }
 
 Handle<PyObject> FrameObject::TopOfStack() const {

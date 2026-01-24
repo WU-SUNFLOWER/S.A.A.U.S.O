@@ -37,9 +37,7 @@ Tagged<PyListIterator> PyListIterator::cast(Tagged<PyObject> object) {
 }
 
 Handle<PyList> PyListIterator::owner() const {
-  if (owner_.IsNull()) {
-    return Handle<PyList>::Null();
-  }
+  assert(!owner_.IsNull());
   return handle(Tagged<PyList>::cast(owner_));
 }
 

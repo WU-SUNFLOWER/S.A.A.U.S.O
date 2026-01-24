@@ -739,7 +739,8 @@ TEST_F(BasicInterpreterTest, ListIterator) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
-l = [1,2,3,4]
+l = [1,2]
+l += [3, 4]
 for elem in l:
   print(elem)
 )";

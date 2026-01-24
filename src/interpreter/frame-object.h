@@ -26,7 +26,7 @@ class FrameObject : Object {
                        Handle<PyTuple> args);
   ~FrameObject();
 
-  int StackLevel() const;
+  int StackSize() const;
   Handle<PyObject> TopOfStack() const;
   void PushToStack(Tagged<PyObject> object);
   void PushToStack(Handle<PyObject> object);

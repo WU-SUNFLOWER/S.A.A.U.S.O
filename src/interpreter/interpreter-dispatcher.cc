@@ -21,7 +21,7 @@
 
 namespace saauso::internal {
 
-#define STACK_LEVEL() (current_frame_->StackLevel())
+#define STACK_SIZE() (current_frame_->StackSize())
 #define TOP() (current_frame_->TopOfStack())
 #define PUSH(elem) (current_frame_->PushToStack(elem))
 #define POP(elem) (current_frame_->PopFromStack())
@@ -69,6 +69,11 @@ void Interpreter::EvalCurrentFrame() {
   }
 
   INTERPRETER_HANDLER(PushNull) {
+    // do nothing
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(EndFor) {
     // do nothing
     Dispatch();
   }
@@ -448,7 +453,7 @@ void Interpreter::EvalCurrentFrame() {
     do {
       HandleScope scope;
       Handle<PyObject> source = POP();
-      Handle<PyObject> list = PEEK(STACK_LEVEL() - op_arg);
+      Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
 
       Handle<PyTuple> args = PyTuple::NewInstance(1);
       args->SetInternal(0, source);

@@ -87,6 +87,9 @@ class Handle {
   static Handle<T> Null() { return Handle<T>(); }
 
   Handle<T> EscapeFrom(HandleScope* scope) {
+    if (IsNull()) {
+      return Handle<T>::Null();
+    }
     return Handle<T>(scope->EscapeFromSelf(*location_));
   }
 

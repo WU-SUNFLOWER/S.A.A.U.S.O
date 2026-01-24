@@ -12,6 +12,7 @@ namespace saauso::internal {
   V(Cache, 0)            \
   V(PopTop, 1)           \
   V(PushNull, 2)         \
+  V(EndFor, 4)           \
   V(Nop, 9)              \
   V(BinarySubscr, 25)    \
   V(StoreSubscr, 60)     \
