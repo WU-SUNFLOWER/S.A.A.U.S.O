@@ -11,6 +11,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/py-tuple-iterator.h"
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -96,5 +97,27 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
             Isolate::Current()->py_true_object().ptr());
 }
 
-}  // namespace saauso::internal
+TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
+  HandleScope scope;
 
+  auto list = PyList::NewInstance(2);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+  auto tuple = PyTuple::NewInstance(list);
+
+  auto iterator = PyObject::Iter(Handle<PyObject>(tuple));
+  ASSERT_TRUE(IsPyTupleIterator(*iterator));
+
+  auto v0 = PyObject::Next(iterator);
+  ASSERT_TRUE(IsPySmi(*v0));
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
+
+  auto v1 = PyObject::Next(iterator);
+  ASSERT_TRUE(IsPySmi(*v1));
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 2);
+
+  auto end = PyObject::Next(iterator);
+  EXPECT_TRUE(end.IsNull());
+}
+
+}  // namespace saauso::internal

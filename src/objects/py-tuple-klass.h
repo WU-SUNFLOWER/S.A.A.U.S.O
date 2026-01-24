@@ -37,6 +37,8 @@ class PyTupleKlass : public Klass {
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
                                          Handle<PyObject> other);
 
+  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
+
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
@@ -44,4 +46,3 @@ class PyTupleKlass : public Klass {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_OBJECTS_PY_TUPLE_KLASS_H_
-

@@ -18,18 +18,18 @@
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"
-#include "src/objects/py-list-klass.h"
 #include "src/objects/py-list-iterator-klass.h"
+#include "src/objects/py-list-klass.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-tuple-iterator-klass.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/runtime/string-table.h"
-
 
 namespace saauso::internal {
 

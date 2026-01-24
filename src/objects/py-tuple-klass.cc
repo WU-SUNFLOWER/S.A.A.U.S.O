@@ -16,6 +16,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/py-tuple-iterator.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -44,6 +45,7 @@ void PyTupleKlass::PreInitialize() {
   vtable_.del_subscr = &Virtual_DelSubscr;
   vtable_.contains = &Virtual_Contains;
   vtable_.equal = &Virtual_Equal;
+  vtable_.iter = &Virtual_Iter;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
@@ -148,6 +150,10 @@ Tagged<PyBoolean> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
   }
 
   return Isolate::Current()->py_true_object();
+}
+
+Handle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
+  return PyTupleIterator::NewInstance(Handle<PyTuple>::cast(self));
 }
 
 size_t PyTupleKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

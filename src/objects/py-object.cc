@@ -20,19 +20,21 @@
 #include "src/objects/py-float.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
-#include "src/objects/py-list-klass.h"
 #include "src/objects/py-list-iterator-klass.h"
+#include "src/objects/py-list-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-tuple-iterator-klass.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 
@@ -117,6 +119,7 @@ IMPL_PY_CHECKER_BY_KLASS(PyCodeObject)
 IMPL_PY_CHECKER_BY_KLASS(PyList)
 IMPL_PY_CHECKER_BY_KLASS(PyListIterator)
 IMPL_PY_CHECKER_BY_KLASS(PyTuple)
+IMPL_PY_CHECKER_BY_KLASS(PyTupleIterator)
 IMPL_PY_CHECKER_BY_KLASS(PyDict)
 IMPL_PY_CHECKER_BY_KLASS(FixedArray)
 IMPL_PY_CHECKER_BY_KLASS(MethodObject)
