@@ -137,12 +137,14 @@ void Klass::InitializeVTable() {
   vtable_.setattr = &Klass::Virtual_Default_SetAttr;
   vtable_.subscr = &Klass::Virtual_Default_Subscr;
   vtable_.store_subscr = &Klass::Virtual_Default_StoreSubscr;
-  vtable_.next = &Klass::Virtual_Default_Next;
   vtable_.call = &Klass::Virtual_Default_Call;
   vtable_.len = &Klass::Virtual_Default_Len;
   vtable_.print = &Klass::Virtual_Default_Print;
   vtable_.repr = &Klass::Virtual_Default_Repr;
   vtable_.del_subscr = &Klass::Virtual_Default_Delete_Subscr;
+  vtable_.iter = &Klass::Virtual_Default_Iter;
+  vtable_.next = &Klass::Virtual_Default_Next;
+  vtable_.iterate = &Klass::Virtual_Default_Iterate;
   vtable_.instance_size = &Klass::Virtual_Default_InstanceSize;
 }
 
@@ -369,7 +371,16 @@ Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
   return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
-                     ST(getitem));
+                     ST(next));
+}
+
+Handle<PyObject> Klass::Virtual_Default_Iter(Handle<PyObject> self) {
+  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+                     ST(iter));
+}
+
+void Klass::Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*) {
+  // 对象的GC扫描逻辑在各个类型的iterate虚函数和PyObject::Iterate当中实现！
 }
 
 size_t Klass::Virtual_Default_InstanceSize(Tagged<PyObject> self) {

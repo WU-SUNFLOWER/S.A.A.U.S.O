@@ -1,3 +1,7 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/interpreter/bytecodes.h"
@@ -7,7 +11,9 @@
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-list-klass.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
@@ -15,8 +21,12 @@
 
 namespace saauso::internal {
 
+#define STACK_LEVEL() (current_frame_->StackLevel())
+#define TOP() (current_frame_->TopOfStack())
 #define PUSH(elem) (current_frame_->PushToStack(elem))
 #define POP(elem) (current_frame_->PopFromStack())
+#define PEEK(x) (handle(current_frame_->stack()->Get((x))))
+#define EMPTY() (STACK_LEVEL() == 0)
 
 void Interpreter::EvalCurrentFrame() {
   uint8_t op_code = 0;
@@ -89,6 +99,14 @@ void Interpreter::EvalCurrentFrame() {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(GetIter) {
+    do {
+      HandleScope scope;
+      PUSH(PyObject::Iter(POP()));
+    } while (0);
+    Dispatch();
+  }
+
   INTERPRETER_HANDLER(ReturnValue) {
     do {
       {
@@ -117,6 +135,21 @@ void Interpreter::EvalCurrentFrame() {
       // 从符号表中取出符号
       Handle<PyObject> key = current_frame_->names()->Get(op_arg);
       PyDict::Put(current_frame_->locals(), key, POP());
+    } while (0);
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(ForIter) {
+    do {
+      HandleScope scope;
+      Handle<PyObject> iterator = TOP();
+      Handle<PyObject> next_result = PyObject::Next(iterator);
+      if (next_result.IsNull()) {
+        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
+        POP();  // 弹出iterator
+        break;
+      }
+      PUSH(next_result);
     } while (0);
     Dispatch();
   }
@@ -408,6 +441,20 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER(Resume) {
     // do nothing
+    Dispatch();
+  }
+
+  INTERPRETER_HANDLER(ListExtend) {
+    do {
+      HandleScope scope;
+      Handle<PyObject> source = POP();
+      Handle<PyObject> list = PEEK(STACK_LEVEL() - op_arg);
+
+      Handle<PyTuple> args = PyTuple::NewInstance(1);
+      args->SetInternal(0, source);
+      
+      PyListKlass::NativeMethod_Extend(list, args, Handle<PyDict>::Null());
+    } while (0);
     Dispatch();
   }
 

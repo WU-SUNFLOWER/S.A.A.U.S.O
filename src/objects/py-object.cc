@@ -21,6 +21,7 @@
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
+#include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
@@ -114,6 +115,7 @@ IMPL_PY_CHECKER_BY_KLASS(PyBoolean)
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
 IMPL_PY_CHECKER_BY_KLASS(PyCodeObject)
 IMPL_PY_CHECKER_BY_KLASS(PyList)
+IMPL_PY_CHECKER_BY_KLASS(PyListIterator)
 IMPL_PY_CHECKER_BY_KLASS(PyTuple)
 IMPL_PY_CHECKER_BY_KLASS(PyDict)
 IMPL_PY_CHECKER_BY_KLASS(FixedArray)

@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "include/saauso.h"
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
@@ -732,6 +731,27 @@ print(len(l4))
 
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ListIterator) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+l = [1,2,3,4]
+for elem in l:
+  print(elem)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(1)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
   
   CompareResultWithExpected(expected_printv_result);
 }

@@ -82,6 +82,15 @@ FrameObject::FrameObject(Handle<PyFunction> func,
 
 FrameObject::~FrameObject() {}
 
+int FrameObject::StackLevel() const {
+  return stack_top_ - 1;
+}
+
+Handle<PyObject> FrameObject::TopOfStack() const {
+  assert(0 < stack_top_);
+  return handle(stack()->Get(stack_top_ - 1));
+}
+
 void FrameObject::PushToStack(Handle<PyObject> object) {
   PushToStack(*object);
 }

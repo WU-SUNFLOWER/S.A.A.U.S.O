@@ -32,6 +32,7 @@ class ObjectVisitor;
   V(classcell, "__classcell__")      \
   V(class, "__class__")              \
   V(next, "__next__")                \
+  V(iter, "__iter__")                \
   V(repr, "__repr__")                \
   V(setitem, "__setitem__")          \
   V(setattr, "__setattr__")          \

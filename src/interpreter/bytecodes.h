@@ -15,8 +15,10 @@ namespace saauso::internal {
   V(Nop, 9)              \
   V(BinarySubscr, 25)    \
   V(StoreSubscr, 60)     \
+  V(GetIter, 68)         \
   V(ReturnValue, 83)     \
   V(StoreName, 90)       \
+  V(ForIter, 93)         \
   V(StoreGlobal, 97)     \
   V(LoadConst, 100)      \
   V(LoadName, 101)       \
@@ -38,6 +40,7 @@ namespace saauso::internal {
   V(MakeFunction, 132)   \
   V(JumpBackward, 140)   \
   V(Resume, 151)         \
+  V(ListExtend, 162)     \
   V(Call, 171)
 
 #define DECL_BYTECODES(name, value) inline constexpr uint8_t name = value;

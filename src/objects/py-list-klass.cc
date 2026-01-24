@@ -8,9 +8,11 @@
 
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-list-iterator.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -21,6 +23,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -157,6 +160,10 @@ void PyListKlass::Initialize() {
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Reverse, prop_name));
 
+  prop_name = PyString::NewInstance("extend");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Extend, prop_name));
+
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
@@ -169,6 +176,31 @@ void PyListKlass::Initialize() {
 
 void PyListKlass::Finalize() {
   Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::Null());
+}
+
+Handle<PyObject> PyListKlass::NativeMethod_Extend(Handle<PyObject> self,
+                                                  Handle<PyTuple> args,
+                                                  Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto list = Handle<PyList>::cast(self);
+
+  auto source = args->Get(0);
+  auto source_iterator = PyObject::Iter(source);
+  auto iterator_next_func = PyObject::GetAttr(source_iterator, ST(next));
+
+#define CALL_NEXT_FUNC()                         \
+  Isolate::Current()->interpreter()->CallPython( \
+      iterator_next_func, Handle<PyTuple>::Null(), Handle<PyDict>::Null())
+
+  auto elem = CALL_NEXT_FUNC();
+  while (!elem.IsNull()) {
+    PyList::Append(list, elem);
+    elem = CALL_NEXT_FUNC();
+  }
+
+#undef CALL_NEXT_FUNC
+
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
@@ -298,11 +330,6 @@ Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
   return Isolate::ToPyBoolean(list_l->length() < list_r->length());
 }
 
-Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> self) {
-  // TODO: 生成迭代器
-  return Handle<PyObject>::Null();
-}
-
 Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
                                                 Handle<PyObject> target) {
   auto list = Handle<PyList>::cast(self);
@@ -332,6 +359,10 @@ Tagged<PyBoolean> PyListKlass::Virtual_Equal(Handle<PyObject> self,
   }
 
   return Isolate::Current()->py_true_object();
+}
+
+Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {
+  return PyListIterator::NewInstance(Handle<PyList>::cast(object));
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

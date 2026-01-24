@@ -177,6 +177,8 @@ class Klass : public Object {
   static Handle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
                                               Handle<PyObject> other);
   static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
+  static Handle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);
+  static void Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*);
   static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
 
   VirtualTable vtable_;

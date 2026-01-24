@@ -19,6 +19,7 @@
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list-klass.h"
+#include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"

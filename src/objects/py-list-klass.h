@@ -12,18 +12,23 @@ namespace saauso::internal {
 
 class PyObject;
 class PyBoolean;
+class PyTuple;
 
 class PyListKlass : public Klass {
  public:
+  PyListKlass() = delete;
+
   static Tagged<PyListKlass> GetInstance();
 
   void PreInitialize();
   void Initialize();
   void Finalize();
 
- private:
-  PyListKlass();
+  static Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
+                                              Handle<PyTuple> args,
+                                              Handle<PyDict> kwargs);
 
+ private:
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static void Virtual_Print(Handle<PyObject> self);
 
@@ -40,12 +45,13 @@ class PyListKlass : public Klass {
   static void Virtual_DelSubscr(Handle<PyObject> self, Handle<PyObject> subscr);
   static Tagged<PyBoolean> Virtual_Less(Handle<PyObject> self,
                                         Handle<PyObject> other);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
                                             Handle<PyObject> target);
 
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
                                          Handle<PyObject> target);
+
+  static Handle<PyObject> Virtual_Iter(Handle<PyObject> object);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
