@@ -956,4 +956,22 @@ print(("q", 1) in d.items())
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuildTuple) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = (1,2,3,4)
+print(d[2])
+print(len(d))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal
