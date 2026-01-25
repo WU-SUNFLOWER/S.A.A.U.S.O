@@ -22,7 +22,9 @@
   V(PyDict, PyDictKlass, py_dict)                                         \
   V(PyDictKeys, PyDictKeysKlass, py_dict_keys)                            \
   V(PyDictValues, PyDictValuesKlass, py_dict_values)                      \
+  V(PyDictItems, PyDictItemsKlass, py_dict_items)                         \
   V(PyDictKeyIterator, PyDictKeyIteratorKlass, py_dict_keyiterator)       \
+  V(PyDictItemIterator, PyDictItemIteratorKlass, py_dict_itemiterator)    \
   V(PyDictValueIterator, PyDictValueIteratorKlass, py_dict_valueiterator) \
   V(FixedArray, FixedArrayKlass, fixed_array)                             \
   V(MethodObject, MethodObjectKlass, method_object)                       \

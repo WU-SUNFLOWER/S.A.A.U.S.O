@@ -927,4 +927,33 @@ print(42 in d.values())
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, DictItemsView) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {"x": 1, "y": 2, "z": 3}
+print(len(d.items()))
+
+sum = 0
+for it in d.items():
+  sum += it[1]
+print(sum)
+
+print(("x", 1) in d.items())
+print(("x", 2) in d.items())
+print(("q", 1) in d.items())
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_false_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_false_object()));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal

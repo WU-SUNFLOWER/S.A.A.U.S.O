@@ -32,7 +32,9 @@ class PyObject;
   V(PyDict)                     \
   V(PyDictKeys)                 \
   V(PyDictValues)               \
+  V(PyDictItems)                \
   V(PyDictKeyIterator)          \
+  V(PyDictItemIterator)         \
   V(PyDictValueIterator)        \
   V(FixedArray)                 \
   V(MethodObject)
