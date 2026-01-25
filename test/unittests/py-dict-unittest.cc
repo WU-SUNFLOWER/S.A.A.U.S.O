@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <set>
+
 #include "include/saauso.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
@@ -12,7 +14,6 @@
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-#include <set>
 
 namespace saauso::internal {
 
@@ -209,7 +210,7 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
   }
 
   Handle<PyObject> iterator = PyObject::Iter(dict);
-  ASSERT_TRUE(IsPyDictIterator(iterator));
+  ASSERT_TRUE(IsPyDictKeyIterator(iterator));
 
   std::set<int> seen;
   for (;;) {

@@ -11,7 +11,7 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
-#include "src/objects/py-dict-iterator.h"
+#include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -85,6 +85,20 @@ Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
   std::exit(1);
 }
 
+Handle<PyObject> NativeMethod_Keys(Handle<PyObject> self,
+                                   Handle<PyTuple> args,
+                                   Handle<PyDict> kwargs) {
+  HandleScope scope;
+  return PyDictKeys::NewInstance(self).EscapeFrom(&scope);
+}
+
+Handle<PyObject> NativeMethod_Values(Handle<PyObject> self,
+                                     Handle<PyTuple> args,
+                                     Handle<PyDict> kwargs) {
+  HandleScope scope;
+  return PyDictValues::NewInstance(self).EscapeFrom(&scope);
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////
@@ -131,6 +145,14 @@ void PyDictKlass::Initialize() {
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Pop, prop_name));
 
+  prop_name = PyString::NewInstance("keys");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Keys, prop_name));
+
+  prop_name = PyString::NewInstance("values");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Values, prop_name));
+
   set_klass_properties(klass_properties);
 
   // 建立与type object的双向绑定
@@ -166,7 +188,7 @@ void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
 
 // static
 Handle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyDictIterator::NewInstance(self);
+  return PyDictKeyIterator::NewInstance(self);
 }
 
 // static

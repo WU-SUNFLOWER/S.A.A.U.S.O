@@ -710,7 +710,7 @@ while i < 5:
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(1)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(0)));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -732,7 +732,7 @@ print(len(l4))
 
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -753,7 +753,7 @@ for elem in l:
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -772,7 +772,7 @@ print(d["world"])
 
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("hello"));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -793,7 +793,7 @@ print(d[b])
 
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("hello"));
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("world"));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -812,7 +812,7 @@ print(d[x])
 
   auto expected_printv_result = PyList::NewInstance();
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("world"));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -840,7 +840,7 @@ print(d["k"] is v)
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("x"));
   PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
   PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
-  
+
   CompareResultWithExpected(expected_printv_result);
 }
 
@@ -861,7 +861,8 @@ print(d)
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("x"));
 
   auto expected_dict = PyDict::NewInstance();
-  PyDict::Put(expected_dict, handle(PySmi::FromInt(2)), PyString::NewInstance("y"));
+  PyDict::Put(expected_dict, handle(PySmi::FromInt(2)),
+              PyString::NewInstance("y"));
   PRINT_TO_EXPECT_LIST(expected_dict);
 
   PRINT_TO_EXPECT_LIST(PyString::NewInstance("z"));
@@ -885,7 +886,44 @@ print(sum)
 
   auto expected_printv_result = PyList::NewInstance();
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
-  
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictKeysAndValuesView) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {"x": 1, "y": 2, "z": 3}
+print(len(d.keys()))
+print(len(d.values()))
+
+sum = 0
+for v in d.values():
+  sum += v
+print(sum)
+
+cnt = 0
+for k in d.keys():
+  cnt += 1
+print(cnt)
+
+print("x" in d.keys())
+print(2 in d.values())
+print(42 in d.values())
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_false_object()));
+
   CompareResultWithExpected(expected_printv_result);
 }
 

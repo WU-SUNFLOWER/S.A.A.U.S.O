@@ -14,8 +14,8 @@
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-code-object-klass.h"
-#include "src/objects/py-dict-iterator-klass.h"
 #include "src/objects/py-dict-klass.h"
+#include "src/objects/py-dict-views-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-float.h"
@@ -121,7 +121,10 @@ IMPL_PY_CHECKER_BY_KLASS(PyListIterator)
 IMPL_PY_CHECKER_BY_KLASS(PyTuple)
 IMPL_PY_CHECKER_BY_KLASS(PyTupleIterator)
 IMPL_PY_CHECKER_BY_KLASS(PyDict)
-IMPL_PY_CHECKER_BY_KLASS(PyDictIterator)
+IMPL_PY_CHECKER_BY_KLASS(PyDictKeys)
+IMPL_PY_CHECKER_BY_KLASS(PyDictValues)
+IMPL_PY_CHECKER_BY_KLASS(PyDictKeyIterator)
+IMPL_PY_CHECKER_BY_KLASS(PyDictValueIterator)
 IMPL_PY_CHECKER_BY_KLASS(FixedArray)
 IMPL_PY_CHECKER_BY_KLASS(MethodObject)
 #undef IMPL_PY_CHECKER_BY_KLASS
