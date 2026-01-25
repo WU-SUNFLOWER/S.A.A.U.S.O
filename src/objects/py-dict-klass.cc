@@ -8,13 +8,15 @@
 #include <cstdlib>
 
 #include "include/saauso-internal.h"
+#include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
-#include "src/objects/py-dict.h"
 #include "src/objects/py-dict-iterator.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -30,15 +32,57 @@ namespace {
 Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
                                          Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
-  auto object = Handle<PyDict>::cast(self);
-  auto key = args->Get(1);
-  auto value = args->Get(2);
+  HandleScope scope;
 
-  if (IsPyFalse(object->Contains(key))) {
-    PyDict::Put(object, key, value);
+  auto dict = Handle<PyDict>::cast(self);
+  auto key = args->Get(0);
+
+  auto value = dict->Get(key);
+  // 如果dict中已经有目标key，直接返回对应的value
+  if (!value.IsNull()) {
+    return value;
   }
 
-  return handle(Isolate::Current()->py_none_object());
+  // 确定默认值。
+  // 如果args中没有有效的value值，就取None进行填充。
+  value = handle(Isolate::Current()->py_none_object());
+  if (args->length() > 1) {
+    value = args->Get(1);
+  }
+
+  // 填充默认值
+  PyDict::Put(dict, key, value);
+
+  return value;
+}
+
+Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
+                                  Handle<PyTuple> args,
+                                  Handle<PyDict> kwargs) {
+  HandleScope scope;
+
+  if (args->length() < 1 || args->length() > 2) {
+    std::printf("TypeError: pop expected at most 2 arguments, got %lld\n",
+                static_cast<long long>(args->length()));
+    std::exit(1);
+  }
+
+  auto dict = Handle<PyDict>::cast(self);
+  auto key = args->Get(0);
+  auto value = dict->Get(key);
+  if (!value.IsNull()) {
+    dict->Remove(key);
+    return value.EscapeFrom(&scope);
+  }
+
+  if (args->length() == 2) {
+    return args->Get(1).EscapeFrom(&scope);
+  }
+
+  std::printf("KeyError: ");
+  PyObject::Print(key);
+  std::printf("\n");
+  std::exit(1);
 }
 
 }  // namespace
@@ -82,6 +126,10 @@ void PyDictKlass::Initialize() {
   auto prop_name = PyString::NewInstance("setdefault");
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_SetDefault, prop_name));
+
+  prop_name = PyString::NewInstance("pop");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Pop, prop_name));
 
   set_klass_properties(klass_properties);
 

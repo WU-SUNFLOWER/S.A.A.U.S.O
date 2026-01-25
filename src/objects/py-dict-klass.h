@@ -10,6 +10,7 @@
 namespace saauso::internal {
 
 class PyBoolean;
+class PyTuple;
 class ObjectVisitor;
 
 class PyDictKlass : public Klass {

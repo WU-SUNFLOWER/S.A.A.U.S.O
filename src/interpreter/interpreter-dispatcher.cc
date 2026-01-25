@@ -8,6 +8,7 @@
 #include "src/interpreter/frame-object.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/fixed-array.h"
+#include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -232,6 +233,20 @@ void Interpreter::EvalCurrentFrame() {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(BuildMap) {
+    do {
+      HandleScope scope;
+      auto result = PyDict::NewInstance();
+      for (auto i = 0; i < op_arg; ++i) {
+        auto value = POP();
+        auto key = POP();
+        PyDict::Put(result, key, value);
+      }
+      PUSH(result);
+    } while (0);
+    Dispatch();
+  }
+
   INTERPRETER_HANDLER(LoadAttr) {
     do {
       HandleScope scope;
@@ -449,6 +464,19 @@ void Interpreter::EvalCurrentFrame() {
     Dispatch();
   }
 
+  INTERPRETER_HANDLER(BuildConstKeyMap) {
+    do {
+      HandleScope scope;
+      auto keys = Handle<PyTuple>::cast(POP());
+      auto result = PyDict::NewInstance();
+      for (auto i = keys->length() - 1; 0 <= i; --i) {
+        PyDict::Put(result, keys->Get(i), POP());
+      }
+      PUSH(result);
+    } while (0);
+    Dispatch();
+  }
+
   INTERPRETER_HANDLER(ListExtend) {
     do {
       HandleScope scope;
@@ -457,7 +485,7 @@ void Interpreter::EvalCurrentFrame() {
 
       Handle<PyTuple> args = PyTuple::NewInstance(1);
       args->SetInternal(0, source);
-      
+
       PyListKlass::NativeMethod_Extend(list, args, Handle<PyDict>::Null());
     } while (0);
     Dispatch();

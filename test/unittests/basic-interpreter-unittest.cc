@@ -18,6 +18,7 @@
 #include "src/code/cpython312-pyc-compiler.h"
 #include "src/code/cpython312-pyc-file-parser.h"
 #include "src/handles/global-handles.h"
+#include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
@@ -753,6 +754,119 @@ for elem in l:
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(3)));
   PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(4)));
   
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuildDict) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {1 : "hello", "world" : 2}
+print(d[1])
+print(d["world"])
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("hello"));
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(2)));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuildDict2) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+a = 1
+b = 2
+d = {a : "hello", b : "world"}
+print(d[a])
+print(d[b])
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("hello"));
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("world"));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, StoreValueToDict) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+x = "hello"
+y = "world"
+d = {}
+d[x] = y
+print(d[x])
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("world"));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictSetDefaultMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.setdefault(1))
+
+d = {1: "x"}
+print(d.setdefault(1, 2))
+
+d = {}
+v = [1]
+r = d.setdefault("k", v)
+print(r is v)
+print(d["k"] is v)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_none_object()));
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("x"));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
+  PRINT_TO_EXPECT_LIST(handle(isolate_->py_true_object()));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictPopMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {1: "x", 2: "y"}
+print(d.pop(1))
+print(d)
+print(d.pop(42, "z"))
+print(d)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("x"));
+
+  auto expected_dict = PyDict::NewInstance();
+  PyDict::Put(expected_dict, handle(PySmi::FromInt(2)), PyString::NewInstance("y"));
+  PRINT_TO_EXPECT_LIST(expected_dict);
+
+  PRINT_TO_EXPECT_LIST(PyString::NewInstance("z"));
+  PRINT_TO_EXPECT_LIST(expected_dict);
+
   CompareResultWithExpected(expected_printv_result);
 }
 

@@ -300,13 +300,8 @@ Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
                                   Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Isolate::ToPyBoolean(PySmi::cast(*self).value() ==
-                                PySmi::cast(*other).value());
-  }
-
   // 内联Fast Path：直接比较内存地址
+  // 两个Smi之间相等的情况已经包括在其中了。
   if (self.is_identical_to(other)) {
     return Isolate::Current()->py_true_object();
   }
