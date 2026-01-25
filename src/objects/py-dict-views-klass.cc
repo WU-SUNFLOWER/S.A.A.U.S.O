@@ -48,6 +48,12 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
   return Handle<PyObject>::Null();
 }
 
+template <typename ViewType>
+Handle<PyObject> DictViewLen(Handle<PyObject> self) {
+  auto dict = Handle<ViewType>::cast(self)->owner();
+  return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
+}
+
 Handle<PyObject> Native_KeyIteratorNext(Handle<PyObject> self,
                                         Handle<PyTuple> args,
                                         Handle<PyDict> kwargs) {
@@ -143,8 +149,7 @@ Handle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
 }
 
 Handle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
-  auto dict = Handle<PyDictKeys>::cast(self)->owner();
-  return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
+  return DictViewLen<PyDictKeys>(self);
 }
 
 Tagged<PyBoolean> PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
@@ -227,8 +232,7 @@ Handle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
 }
 
 Handle<PyObject> PyDictValuesKlass::Virtual_Len(Handle<PyObject> self) {
-  auto dict = Handle<PyDictValues>::cast(self)->owner();
-  return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
+  return DictViewLen<PyDictValues>(self);
 }
 
 Tagged<PyBoolean> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
@@ -323,8 +327,7 @@ Handle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
 }
 
 Handle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
-  auto dict = Handle<PyDictItems>::cast(self)->owner();
-  return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
+  return DictViewLen<PyDictItems>(self);
 }
 
 Tagged<PyBoolean> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
