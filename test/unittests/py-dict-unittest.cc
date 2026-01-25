@@ -12,6 +12,8 @@
 #include "src/runtime/isolate.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
+#include <set>
+
 namespace saauso::internal {
 
 class PyDictTest : public testing::Test {
@@ -192,6 +194,36 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (int i = 1; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     EXPECT_TRUE(TupleContains(keys_after_remove, key));
+  }
+}
+
+TEST_F(PyDictTest, IteratorIteratesKeys) {
+  HandleScope scope;
+
+  Handle<PyDict> dict = PyDict::NewInstance();
+  int count = 50;
+  for (int i = 0; i < count; ++i) {
+    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> val(PySmi::FromInt(i * 10));
+    PyDict::Put(dict, key, val);
+  }
+
+  Handle<PyObject> iterator = PyObject::Iter(dict);
+  ASSERT_TRUE(IsPyDictIterator(iterator));
+
+  std::set<int> seen;
+  for (;;) {
+    Handle<PyObject> key = PyObject::Next(iterator);
+    if (key.IsNull()) {
+      break;
+    }
+    int v = PySmi::ToInt(Handle<PySmi>::cast(key));
+    seen.insert(v);
+  }
+
+  EXPECT_EQ(static_cast<int>(seen.size()), count);
+  for (int i = 0; i < count; ++i) {
+    EXPECT_NE(seen.count(i), 0);
   }
 }
 

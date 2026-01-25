@@ -30,6 +30,7 @@ class PyObject;
   V(PyTuple)                    \
   V(PyTupleIterator)            \
   V(PyDict)                     \
+  V(PyDictIterator)             \
   V(FixedArray)                 \
   V(MethodObject)
 

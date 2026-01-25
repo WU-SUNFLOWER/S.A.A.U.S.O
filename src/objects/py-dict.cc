@@ -82,6 +82,14 @@ int64_t PyDict::capacity() const {
   return data()->capacity() >> 1;
 }
 
+Tagged<PyObject> PyDict::KeyAtIndex(int64_t index) const {
+  return data()->Get(index << 1);
+}
+
+Tagged<PyObject> PyDict::ValueAtIndex(int64_t index) const {
+  return data()->Get((index << 1) + 1);
+}
+
 Handle<FixedArray> PyDict::data() const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }

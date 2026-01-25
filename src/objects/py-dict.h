@@ -17,6 +17,8 @@ class PyDict : public PyObject {
   static Tagged<PyDict> cast(Tagged<PyObject> object);
 
   int64_t capacity() const;
+  Tagged<PyObject> KeyAtIndex(int64_t index) const;
+  Tagged<PyObject> ValueAtIndex(int64_t index) const;
 
   Tagged<PyBoolean> Contains(Handle<PyObject> key) const;
 

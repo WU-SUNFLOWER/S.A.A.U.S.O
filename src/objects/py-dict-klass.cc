@@ -11,6 +11,7 @@
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-dict-iterator.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
@@ -69,6 +70,7 @@ void PyDictKlass::PreInitialize() {
   vtable_.store_subscr = &Virtual_StoreSubscr;
   vtable_.del_subscr = &Virtual_DeleteSubscr;
   vtable_.contains = &Virtual_Contains;
+  vtable_.iter = &Virtual_Iter;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
@@ -112,6 +114,11 @@ void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
     }
   }
   std::printf("}");
+}
+
+// static
+Handle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
+  return PyDictIterator::NewInstance(self);
 }
 
 // static

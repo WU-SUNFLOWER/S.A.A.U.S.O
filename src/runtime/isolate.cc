@@ -15,6 +15,7 @@
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-code-object-klass.h"
+#include "src/objects/py-dict-iterator-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"

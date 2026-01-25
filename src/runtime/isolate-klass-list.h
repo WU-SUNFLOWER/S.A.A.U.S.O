@@ -20,6 +20,7 @@
   V(PyTuple, PyTupleKlass, py_tuple)                          \
   V(PyTupleIterator, PyTupleIteratorKlass, py_tuple_iterator) \
   V(PyDict, PyDictKlass, py_dict)                             \
+  V(PyDictIterator, PyDictIteratorKlass, py_dict_iterator)    \
   V(FixedArray, FixedArrayKlass, fixed_array)                 \
   V(MethodObject, MethodObjectKlass, method_object)           \
   V(NativeFunction, NativeFunctionKlass, native_function)

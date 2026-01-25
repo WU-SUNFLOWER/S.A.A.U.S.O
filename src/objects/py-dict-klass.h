@@ -24,6 +24,7 @@ class PyDictKlass : public Klass {
 
  private:
   static void Virtual_Print(Handle<PyObject> self);
+  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
                                          Handle<PyObject> other);
