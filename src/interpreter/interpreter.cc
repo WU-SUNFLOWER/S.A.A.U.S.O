@@ -151,6 +151,13 @@ Handle<PyObject> Interpreter::ReleaseReturnValue() {
 // public
 void Interpreter::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&builtins_);
+  v->VisitPointer(&ret_value_);
+  
+  FrameObject* frame = current_frame_;
+  while (frame != nullptr) {
+    frame->Iterate(v);
+    frame = current_frame_->caller();
+  }
 }
 
 }  // namespace saauso::internal

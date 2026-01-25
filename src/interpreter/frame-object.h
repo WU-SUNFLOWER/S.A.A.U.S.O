@@ -16,6 +16,7 @@ class PyTuple;
 class PyDict;
 class PyList;
 class PyFunction;
+class ObjectVisitor;
 class FixedArray;
 
 class FrameObject : Object {
@@ -28,9 +29,12 @@ class FrameObject : Object {
 
   int StackSize() const;
   Handle<PyObject> TopOfStack() const;
+  Tagged<PyObject> TopOfStackTagged() const;
   void PushToStack(Tagged<PyObject> object);
   void PushToStack(Handle<PyObject> object);
   Handle<PyObject> PopFromStack();
+  Tagged<PyObject> PopFromStackTagged();
+  Tagged<PyObject> StackGetTagged(int index) const;
 
   bool HasMoreCodes();
   uint8_t GetOpCode();
@@ -54,6 +58,8 @@ class FrameObject : Object {
 
   bool is_entry_frame() const { return is_entry_frame_; }
   void set_is_entry_frame(bool value) { is_entry_frame_ = value; }
+
+  void Iterate(ObjectVisitor* v);
 
  private:
   // FixedArray* stack_;

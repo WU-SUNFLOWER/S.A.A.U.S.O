@@ -279,7 +279,7 @@ void PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
 void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
                                        Handle<PyObject> subscr) {
   auto dict = Handle<PyDict>::cast(self);
-  if (IsPyFalse(dict->Contains(subscr))) {
+  if (!dict->Contains(subscr)) {
     std::printf("KeyError: ");
     PyObject::Print(subscr);
     std::printf("\n");
@@ -291,7 +291,7 @@ void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
 // static
 Tagged<PyBoolean> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                                 Handle<PyObject> subscr) {
-  return Handle<PyDict>::cast(self)->Contains(subscr);
+  return Isolate::ToPyBoolean(Handle<PyDict>::cast(self)->Contains(subscr));
 }
 
 // static

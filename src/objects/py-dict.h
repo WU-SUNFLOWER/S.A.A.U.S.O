@@ -21,7 +21,7 @@ class PyDict : public PyObject {
   Handle<PyObject> ValueAtIndex(int64_t index) const;
   Handle<PyObject> ItemAtIndex(int64_t index) const;
 
-  Tagged<PyBoolean> Contains(Handle<PyObject> key) const;
+  bool Contains(Handle<PyObject> key) const;
 
   Handle<PyObject> Get(Handle<PyObject> key) const;
 

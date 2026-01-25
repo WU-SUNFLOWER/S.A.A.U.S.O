@@ -55,9 +55,9 @@ TEST_F(PyDictTest, BasicOperations) {
   EXPECT_TRUE(PyObject::Equal(res1, val1)->value());
 
   // Contains
-  EXPECT_TRUE(IsPyTrue(dict->Contains(key1)));
+  EXPECT_TRUE(dict->Contains(key1));
   Handle<PyObject> key2 = PyString::NewInstance("key2");
-  EXPECT_TRUE(IsPyFalse(dict->Contains(key2)));
+  EXPECT_TRUE(!dict->Contains(key2));
 
   // Update
   Handle<PyObject> val2(PySmi::FromInt(200));
@@ -69,7 +69,7 @@ TEST_F(PyDictTest, BasicOperations) {
   // Remove
   dict->Remove(key1);
   EXPECT_EQ(dict->occupied(), 0);
-  EXPECT_TRUE(IsPyFalse(dict->Contains(key1)));
+  EXPECT_TRUE(!dict->Contains(key1));
   EXPECT_TRUE(dict->Get(key1).IsNull());
 }
 
@@ -100,7 +100,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   // Verify remaining items
   for (int i = 1; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
-    EXPECT_TRUE(IsPyTrue(dict->Contains(key)));
+    EXPECT_TRUE(dict->Contains(key));
     Handle<PyObject> val = dict->Get(key);
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
   }
@@ -108,7 +108,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   // Verify removed items are gone
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
-    EXPECT_TRUE(IsPyFalse(dict->Contains(key)));
+    EXPECT_TRUE(!dict->Contains(key));
   }
 }
 

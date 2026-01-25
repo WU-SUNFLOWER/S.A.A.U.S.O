@@ -24,8 +24,10 @@ namespace saauso::internal {
 
 #define STACK_SIZE() (current_frame_->StackSize())
 #define TOP() (current_frame_->TopOfStack())
+#define TOP_TAGGED() (current_frame_->TopOfStackTagged())
 #define PUSH(elem) (current_frame_->PushToStack(elem))
-#define POP(elem) (current_frame_->PopFromStack())
+#define POP() (current_frame_->PopFromStack())
+#define POP_TAGGED() (current_frame_->PopFromStackTagged())
 #define PEEK(x) (handle(current_frame_->stack()->Get((x))))
 #define EMPTY() (STACK_LEVEL() == 0)
 
@@ -35,7 +37,7 @@ void Interpreter::EvalCurrentFrame() {
 
 #define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
 
-#define Dispatch()                         \
+#define DISPATCH()                         \
   do {                                     \
     if (!current_frame_->HasMoreCodes()) { \
       goto exit_interpreter;               \
@@ -45,331 +47,235 @@ void Interpreter::EvalCurrentFrame() {
     goto* dispatch_table_[op_code];        \
   } while (0)
 
-#define REGISTER_INTERPRETER_HANDLER(bytecode, _) \
-  dispatch_table_[bytecode] = &&handler_##bytecode;
+#define INTERPRETER_HANDLER_DISPATCH(bytecode, ...) \
+  INTERPRETER_HANDLER(bytecode) {                   \
+    do {                                            \
+      __VA_ARGS__                                   \
+    } while (0);                                    \
+    DISPATCH();                                     \
+  }
+
+#define INTERPRETER_HANDLER_WITH_SCOPE(bytecode, ...) \
+  INTERPRETER_HANDLER_DISPATCH(bytecode, HandleScope scope; __VA_ARGS__)
+
+#define INTERPRETER_HANDLER_NOOP(bytecode) \
+  INTERPRETER_HANDLER(bytecode) {          \
+    DISPATCH();                            \
+  }
 
   if (!dispatch_table_initialized_) {
     for (auto i = 0; i < 256; ++i) {
       dispatch_table_[i] = &&unknown_bytecode;
     }
+#define REGISTER_INTERPRETER_HANDLER(bytecode, _) \
+  dispatch_table_[bytecode] = &&handler_##bytecode;
     BYTECODE_LIST(REGISTER_INTERPRETER_HANDLER);
+#undef REGISTER_INTERPRETER_HANDLER
     dispatch_table_initialized_ = true;
   }
 
   // 取指执行入口
-  Dispatch();
+  DISPATCH();
 
-  INTERPRETER_HANDLER(Cache) {
-    // do nothing
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_NOOP(Cache)
 
-  INTERPRETER_HANDLER(PopTop) {
-    current_frame_->PopFromStack();
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_DISPATCH(PopTop, POP_TAGGED();)
 
-  INTERPRETER_HANDLER(PushNull) {
-    // do nothing
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_NOOP(PushNull)
 
-  INTERPRETER_HANDLER(EndFor) {
-    // do nothing
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_NOOP(EndFor)
 
-  INTERPRETER_HANDLER(Nop) {
-    // do nothing
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_NOOP(Nop)
 
-  INTERPRETER_HANDLER(BinarySubscr) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> subscr = POP();
-      Handle<PyObject> object = POP();
-      PUSH(PyObject::Subscr(object, subscr));
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(BinarySubscr, {
+    Handle<PyObject> subscr = POP();
+    Handle<PyObject> object = POP();
+    PUSH(PyObject::Subscr(object, subscr));
+  })
 
-  INTERPRETER_HANDLER(StoreSubscr) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> subscr = POP();
-      Handle<PyObject> object = POP();
-      Handle<PyObject> value = POP();
-      PyObject::StoreSubscr(object, subscr, value);
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(StoreSubscr, {
+    Handle<PyObject> subscr = POP();
+    Handle<PyObject> object = POP();
+    Handle<PyObject> value = POP();
+    PyObject::StoreSubscr(object, subscr, value);
+  })
 
-  INTERPRETER_HANDLER(GetIter) {
-    do {
-      HandleScope scope;
-      PUSH(PyObject::Iter(POP()));
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
 
-  INTERPRETER_HANDLER(ReturnValue) {
-    do {
-      {
-        HandleScope scope;
-        ret_value_ = *POP();
-      }
-      if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
-        // 如果是根栈帧或者是C++栈帧请求的第一个python栈帧，
-        // 那么直接退出解释器。
-        // 考虑到创建python栈帧的C++栈帧可能需要前者的计算结果（即返回值），
-        // 这里我们不去调用LeaveCurrentFrame销毁python栈帧，
-        // 而是约定由之前的C++栈帧取出返回值后手动进行销毁！！！
-        goto exit_interpreter;
-      } else {
-        // 否则走正常的栈帧退出路径，退回到上一个python栈帧
-        LeaveCurrentFrame();
-      }
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
+    ret_value_ = POP_TAGGED();
+    if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
+      goto exit_interpreter;
+    }
+    LeaveCurrentFrame();
+  })
 
-  // 以names中的值为键，更新locals
-  INTERPRETER_HANDLER(StoreName) {
-    do {
-      HandleScope scope;
-      // 从符号表中取出符号
-      Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-      PyDict::Put(current_frame_->locals(), key, POP());
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
+    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
+    PyDict::Put(current_frame_->locals(), key, POP());
+  })
 
-  INTERPRETER_HANDLER(ForIter) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> iterator = TOP();
-      Handle<PyObject> next_result = PyObject::Next(iterator);
-      if (next_result.IsNull()) {
-        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
-        POP();  // 弹出iterator
+  INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
+    Handle<PyObject> iterator = TOP();
+    Handle<PyObject> next_result = PyObject::Next(iterator);
+    if (next_result.IsNull()) {
+      current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
+      POP();
+      break;
+    }
+    PUSH(next_result);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
+    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
+    PyDict::Put(current_frame_->globals(), key, POP());
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(
+      LoadConst, { PUSH(current_frame_->consts()->Get(op_arg)); })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
+    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
+
+    Handle<PyObject> value = current_frame_->locals()->Get(key);
+    if (!value.IsNull()) {
+      PUSH(value);
+      break;
+    }
+
+    value = current_frame_->globals()->Get(key);
+    if (!value.IsNull()) {
+      PUSH(value);
+      break;
+    }
+
+    value = builtins()->Get(key);
+    if (!value.IsNull()) {
+      PUSH(value);
+      break;
+    }
+
+    std::printf("NameError: name '");
+    PyObject::Print(key);
+    std::printf("' is not defined\n");
+    std::exit(1);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(BuildTuple, {
+    Handle<PyTuple> tuple = PyTuple::NewInstance(op_arg);
+    while (op_arg-- > 0) {
+      tuple->SetInternal(op_arg, POP());
+    }
+    PUSH(tuple);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(BuildList, {
+    Handle<PyList> list = PyList::NewInstance(op_arg);
+    while (op_arg-- > 0) {
+      list->SetAndExtendLength(op_arg, POP());
+    }
+    PUSH(list);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(BuildMap, {
+    auto result = PyDict::NewInstance();
+    for (auto i = 0; i < op_arg; ++i) {
+      auto value = POP();
+      auto key = POP();
+      PyDict::Put(result, key, value);
+    }
+    PUSH(result);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {
+    Handle<PyObject> object = POP();
+    Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg >> 1);
+    PUSH(PyObject::GetAttr(object, attr_name));
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(CompareOp, {
+    Handle<PyObject> r = POP();
+    Handle<PyObject> l = POP();
+    int compare_op_type = op_arg >> 4;
+    switch (compare_op_type) {
+      case CompareOpType::kLT:
+        PUSH(PyObject::Less(l, r));
         break;
-      }
-      PUSH(next_result);
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(StoreGlobal) {
-    do {
-      HandleScope scope;
-      // 从符号表中取出符号
-      Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-      PyDict::Put(current_frame_->globals(), key, POP());
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(LoadConst) {
-    do {
-      HandleScope scope;
-      PUSH(current_frame_->consts()->Get(op_arg));
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(LoadName) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-
-      Handle<PyObject> value = current_frame_->locals()->Get(key);
-      if (!value.IsNull()) {
-        PUSH(value);
+      case CompareOpType::kLE:
+        PUSH(PyObject::LessEqual(l, r));
         break;
-      }
-
-      value = current_frame_->globals()->Get(key);
-      if (!value.IsNull()) {
-        PUSH(value);
+      case CompareOpType::kEQ:
+        PUSH(PyObject::Equal(l, r));
         break;
-      }
-
-      value = builtins()->Get(key);
-      if (!value.IsNull()) {
-        PUSH(value);
+      case CompareOpType::kNE:
+        PUSH(PyObject::NotEqual(l, r));
         break;
-      }
+      case CompareOpType::kGT:
+        PUSH(PyObject::Greater(l, r));
+        break;
+      case CompareOpType::kGE:
+        PUSH(PyObject::GreaterEqual(l, r));
+        break;
+      default:
+        std::printf("unknown compare op type: %d\n", compare_op_type);
+        std::exit(1);
+    }
+  })
 
-      std::printf("NameError: name '");
-      PyObject::Print(key);
-      std::printf("' is not defined\n");
-      std::exit(1);
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_DISPATCH(JumpForward, {
+    current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
+  })
 
-  INTERPRETER_HANDLER(BuildTuple) {
-    do {
-      HandleScope scope;
-      Handle<PyTuple> tuple = PyTuple::NewInstance(op_arg);
-      while (op_arg-- > 0) {
-        tuple->SetInternal(op_arg, POP());
-      }
-      PUSH(tuple);
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(BuildList) {
-    do {
-      HandleScope scope;
-      Handle<PyList> list = PyList::NewInstance(op_arg);
-      while (op_arg-- > 0) {
-        list->SetAndExtendLength(op_arg, POP());
-      }
-      PUSH(list);
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(BuildMap) {
-    do {
-      HandleScope scope;
-      auto result = PyDict::NewInstance();
-      for (auto i = 0; i < op_arg; ++i) {
-        auto value = POP();
-        auto key = POP();
-        PyDict::Put(result, key, value);
-      }
-      PUSH(result);
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(LoadAttr) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> object = POP();
-      Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg >> 1);
-      PUSH(PyObject::GetAttr(object, attr_name));
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(CompareOp) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> r = POP();
-      Handle<PyObject> l = POP();
-      int compare_op_type = op_arg >> 4;
-      switch (compare_op_type) {
-        case CompareOpType::kLT:
-          PUSH(PyObject::Less(l, r));
-          break;
-        case CompareOpType::kLE:
-          PUSH(PyObject::LessEqual(l, r));
-          break;
-        case CompareOpType::kEQ:
-          PUSH(PyObject::Equal(l, r));
-          break;
-        case CompareOpType::kNE:
-          PUSH(PyObject::NotEqual(l, r));
-          break;
-        case CompareOpType::kGT:
-          PUSH(PyObject::Greater(l, r));
-          break;
-        case CompareOpType::kGE:
-          PUSH(PyObject::GreaterEqual(l, r));
-          break;
-        default:
-          std::printf("unknown compare op type: %d\n", compare_op_type);
-          std::exit(1);
-      }
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(JumpForward) {
-    do {
+  INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
+    Tagged<PyObject> condition = POP_TAGGED();
+    if (!Runtime_PyObjectIsTrue(condition)) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
-    } while (0);
-    Dispatch();
-  }
+    }
+  })
 
-  INTERPRETER_HANDLER(JumpIfFalse) {
-    do {
-      HandleScope scope;
-      if (!Runtime_PyObjectIsTrue(POP())) {
-        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
-      }
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_DISPATCH(JumpIfTrue, {
+    Tagged<PyObject> condition = POP_TAGGED();
+    if (Runtime_PyObjectIsTrue(condition)) {
+      current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
+    }
+  })
 
-  INTERPRETER_HANDLER(JumpIfTrue) {
-    do {
-      HandleScope scope;
-      if (Runtime_PyObjectIsTrue(POP())) {
-        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
-      }
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_DISPATCH(IsOp, {
+    Tagged<PyObject> r = POP_TAGGED();
+    Tagged<PyObject> l = POP_TAGGED();
+    PUSH(Isolate::ToPyBoolean((l == r) ^ op_arg));
+  })
 
-  INTERPRETER_HANDLER(IsOp) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> r = POP();
-      Handle<PyObject> l = POP();
-      PUSH(Isolate::ToPyBoolean(l.is_identical_to(r) ^ op_arg));
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
+    Handle<PyObject> key = current_frame_->names()->Get(op_arg >> 1);
 
-  INTERPRETER_HANDLER(LoadGlobal) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> key = current_frame_->names()->Get(op_arg >> 1);
+    Handle<PyObject> value = current_frame_->globals()->Get(key);
+    if (!value.IsNull()) {
+      PUSH(value);
+      break;
+    }
 
-      Handle<PyObject> value = current_frame_->globals()->Get(key);
-      if (!value.IsNull()) {
-        PUSH(value);
-        break;
-      }
+    value = builtins()->Get(key);
+    if (!value.IsNull()) {
+      PUSH(value);
+      break;
+    }
 
-      value = builtins()->Get(key);
-      if (!value.IsNull()) {
-        PUSH(value);
-        break;
-      }
+    std::printf("NameError: name '");
+    PyObject::Print(key);
+    std::printf("' is not defined\n");
+    std::exit(1);
+  })
 
-      std::printf("NameError: name '");
-      PyObject::Print(key);
-      std::printf("' is not defined\n");
-      std::exit(1);
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {
+    Handle<PyObject> r = POP();
+    Handle<PyObject> l = POP();
+    bool result = PyObject::Contains(r, l)->value();
+    PUSH(Isolate::ToPyBoolean(result ^ op_arg));
+  })
 
-  INTERPRETER_HANDLER(ContainsOp) {
-    do {
-      HandleScope scope;
-      // l in r
-      Handle<PyObject> r = POP();
-      Handle<PyObject> l = POP();
-      // 注意这里的参数顺序，和一般的运算符正好是反的
-      bool result = PyObject::Contains(r, l)->value();
-      PUSH(Isolate::ToPyBoolean(result ^ op_arg));
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(BinaryOp) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> r = POP();
-      Handle<PyObject> l = POP();
+  INTERPRETER_HANDLER_WITH_SCOPE(
+      BinaryOp, Handle<PyObject> r = POP(); Handle<PyObject> l = POP();
       switch (op_arg) {
         case BinaryOpType::kAdd:
         case BinaryOpType::kInplaceAdd:
@@ -391,120 +297,79 @@ void Interpreter::EvalCurrentFrame() {
         case BinaryOpType::kInplaceRemainder:
           PUSH(PyObject::Mod(l, r));
           break;
-      }
-    } while (0);
-    Dispatch();
-  }
+      })
 
-  INTERPRETER_HANDLER(LoadFast) {
-    do {
+  INTERPRETER_HANDLER_WITH_SCOPE(
+      LoadFast, PUSH(current_frame_->fast_locals()->Get(op_arg));)
+
+  INTERPRETER_HANDLER_WITH_SCOPE(
+      StoreFast, current_frame_->fast_locals()->Set(op_arg, *POP());)
+
+  INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, )
+
+  INTERPRETER_HANDLER_DISPATCH(ReturnConst, {
+    {
       HandleScope scope;
-      PUSH(current_frame_->fast_locals()->Get(op_arg));
-    } while (0);
-    Dispatch();
-  }
+      ret_value_ = *current_frame_->code_object()->consts()->Get(op_arg);
+    }
+    if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
+      goto exit_interpreter;
+    }
+    LeaveCurrentFrame();
+  })
 
-  INTERPRETER_HANDLER(StoreFast) {
-    do {
-      HandleScope scope;
-      current_frame_->fast_locals()->Set(op_arg, *POP());
-    } while (0);
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
+    Handle<PyObject> code_object = POP();
+    Handle<PyFunction> func =
+        PyFunction::NewInstance(Handle<PyCodeObject>::cast(code_object));
+    func->set_func_globals(current_frame_->globals());
+    if (op_arg & MakeFunctionOpArgMask::kDefaults) {
+      func->set_default_args(Handle<PyTuple>::cast(POP()));
+    }
+    PUSH(func);
+  })
 
-  INTERPRETER_HANDLER(DeleteFast) {
-    do {
-      // todo
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(ReturnConst) {
-    do {
-      {
-        HandleScope scope;
-        ret_value_ = *current_frame_->code_object()->consts()->Get(op_arg);
-      }
-      if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
-        goto exit_interpreter;
-      } else {
-        LeaveCurrentFrame();
-      }
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(MakeFunction) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> code_object = POP();
-      Handle<PyFunction> func =
-          PyFunction::NewInstance(Handle<PyCodeObject>::cast(code_object));
-
-      // 将当前栈帧的全局变量表绑定到新创建的函数体
-      func->set_func_globals(current_frame_->globals());
-
-      // 为函数体绑定默认参数
-      if (op_arg & MakeFunctionOpArgMask::kDefaults) {
-        func->set_default_args(Handle<PyTuple>::cast(POP()));
-      }
-
-      PUSH(func);
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(JumpBackward) {
+  INTERPRETER_HANDLER_DISPATCH(JumpBackward, {
     current_frame_->set_pc(current_frame_->pc() - (op_arg << 1));
-    Dispatch();
-  }
+  })
 
-  INTERPRETER_HANDLER(Resume) {
-    // do nothing
-    Dispatch();
-  }
+  INTERPRETER_HANDLER_NOOP(Resume)
 
-  INTERPRETER_HANDLER(BuildConstKeyMap) {
-    do {
-      HandleScope scope;
-      auto keys = Handle<PyTuple>::cast(POP());
-      auto result = PyDict::NewInstance();
-      for (auto i = keys->length() - 1; 0 <= i; --i) {
-        PyDict::Put(result, keys->Get(i), POP());
+  INTERPRETER_HANDLER_WITH_SCOPE(BuildConstKeyMap, {
+    auto keys = Handle<PyTuple>::cast(POP());
+    auto result = PyDict::NewInstance();
+    for (auto i = keys->length() - 1; 0 <= i; --i) {
+      PyDict::Put(result, keys->Get(i), POP());
+    }
+    PUSH(result);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(ListExtend, {
+    Handle<PyObject> source = POP();
+    Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
+
+    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    args->SetInternal(0, source);
+
+    PyListKlass::NativeMethod_Extend(list, args, Handle<PyDict>::Null());
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(Call, {
+    Handle<PyTuple> args;
+    if (op_arg > 0) {
+      args = PyTuple::NewInstance(op_arg);
+      while (op_arg-- > 0) {
+        args->SetInternal(op_arg, POP());
       }
-      PUSH(result);
-    } while (0);
-    Dispatch();
-  }
+    }
+    InvokeCallable(POP(), args, Handle<PyDict>::Null());
+  })
 
-  INTERPRETER_HANDLER(ListExtend) {
-    do {
-      HandleScope scope;
-      Handle<PyObject> source = POP();
-      Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
-
-      Handle<PyTuple> args = PyTuple::NewInstance(1);
-      args->SetInternal(0, source);
-
-      PyListKlass::NativeMethod_Extend(list, args, Handle<PyDict>::Null());
-    } while (0);
-    Dispatch();
-  }
-
-  INTERPRETER_HANDLER(Call) {
-    do {
-      HandleScope scope;
-      Handle<PyTuple> args;
-      if (op_arg > 0) {
-        args = PyTuple::NewInstance(op_arg);
-        while (op_arg-- > 0) {
-          args->SetInternal(op_arg, POP());
-        }
-      }
-      InvokeCallable(POP(), args, Handle<PyDict>::Null());
-    } while (0);
-    Dispatch();
-  }
+#undef INTERPRETER_HANDLER_NOOP
+#undef INTERPRETER_HANDLER_WITH_SCOPE
+#undef INTERPRETER_HANDLER_DISPATCH
+#undef DISPATCH
+#undef INTERPRETER_HANDLER
 
 unknown_bytecode:
   std::printf("unknown bytecode %d, arguments %d\n", op_code, op_arg);
@@ -542,7 +407,8 @@ void Interpreter::LeaveCurrentFrame() {
   DestroyCurrentFrame();
 
   // 将被弹出栈帧当中的返回值压入被恢复栈帧的堆栈中
-  PUSH(ReleaseReturnValue());
+  PUSH(ret_value_);
+  ret_value_ = Tagged<PyObject>::Null();
 }
 
 void Interpreter::DestroyCurrentFrame() {

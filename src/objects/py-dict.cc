@@ -107,8 +107,8 @@ Handle<FixedArray> PyDict::data() const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }
 
-Tagged<PyBoolean> PyDict::Contains(Handle<PyObject> key) const {
-  return Isolate::ToPyBoolean(!Get(key).IsNull());
+bool PyDict::Contains(Handle<PyObject> key) const {
+  return !Get(key).IsNull();
 }
 
 Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {

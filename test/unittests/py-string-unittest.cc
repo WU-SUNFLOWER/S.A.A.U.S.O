@@ -226,10 +226,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
 
   EXPECT_TRUE(flag);
 
-  EXPECT_TRUE(PyStringKlass::GetInstance()
-                  ->klass_properties()
-                  ->Contains(attr)
-                  ->value());
+  EXPECT_TRUE(PyStringKlass::GetInstance()->klass_properties()->Contains(attr));
 
   Handle<PyObject> upper_method = PyObject::GetAttr(s, attr);
   EXPECT_FALSE(upper_method.IsNull());

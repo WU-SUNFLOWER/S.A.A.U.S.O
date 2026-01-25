@@ -155,7 +155,7 @@ Handle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
 Tagged<PyBoolean> PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
                                                     Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner();
-  return dict->Contains(subscr);
+  return Isolate::ToPyBoolean(dict->Contains(subscr));
 }
 
 size_t PyDictKeysKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

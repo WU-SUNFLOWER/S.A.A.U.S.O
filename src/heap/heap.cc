@@ -180,7 +180,8 @@ void Heap::IterateRoots(ObjectVisitor* v) {
   //   isolate_->string_table()->Iterate(v);
   // }
 
-  // TODO: 遍历python运行时的GC ROOT
+  // 遍历python解释器的GC ROOT
+  isolate_->interpreter()->Iterate(v);
 
   // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
   // 遍历记忆集 (Remembered Set)，处理跨代引用

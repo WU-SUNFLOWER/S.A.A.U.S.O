@@ -16,6 +16,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/visitors.h"
 
 namespace saauso::internal {
 
@@ -91,6 +92,11 @@ Handle<PyObject> FrameObject::TopOfStack() const {
   return handle(stack()->Get(stack_top_ - 1));
 }
 
+Tagged<PyObject> FrameObject::TopOfStackTagged() const {
+  assert(0 < stack_top_);
+  return Tagged<FixedArray>::cast(stack_)->Get(stack_top_ - 1);
+}
+
 void FrameObject::PushToStack(Handle<PyObject> object) {
   PushToStack(*object);
 }
@@ -103,6 +109,15 @@ void FrameObject::PushToStack(Tagged<PyObject> object) {
 Handle<PyObject> FrameObject::PopFromStack() {
   assert(stack_top_ > 0);
   return handle(stack()->Get(--stack_top_));
+}
+
+Tagged<PyObject> FrameObject::PopFromStackTagged() {
+  assert(stack_top_ > 0);
+  return Tagged<FixedArray>::cast(stack_)->Get(--stack_top_);
+}
+
+Tagged<PyObject> FrameObject::StackGetTagged(int index) const {
+  return Tagged<FixedArray>::cast(stack_)->Get(index);
 }
 
 Handle<FixedArray> FrameObject::stack() const {
@@ -143,6 +158,16 @@ uint8_t FrameObject::GetOpCode() {
 
 bool FrameObject::HasMoreCodes() {
   return pc_ < code_object()->bytecodes()->length();
+}
+
+void FrameObject::Iterate(ObjectVisitor* v) {
+  v->VisitPointer(&stack_);
+  v->VisitPointer(&consts_);
+  v->VisitPointer(&names_);
+  v->VisitPointer(&locals_);
+  v->VisitPointer(&fast_locals_);
+  v->VisitPointer(&globals_);
+  v->VisitPointer(&code_object_);
 }
 
 }  // namespace saauso::internal
