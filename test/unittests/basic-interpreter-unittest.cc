@@ -870,4 +870,23 @@ print(d)
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, DictIterator) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {"x": 1, "y": 2, "z": 3}
+sum = 0
+for key in d:
+  sum += d[key]
+print(sum)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(handle(PySmi::FromInt(6)));
+  
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal

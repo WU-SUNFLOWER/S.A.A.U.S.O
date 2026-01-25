@@ -82,12 +82,25 @@ int64_t PyDict::capacity() const {
   return data()->capacity() >> 1;
 }
 
-Tagged<PyObject> PyDict::KeyAtIndex(int64_t index) const {
-  return data()->Get(index << 1);
+Handle<PyObject> PyDict::KeyAtIndex(int64_t index) const {
+  return handle(data()->Get(index << 1));
 }
 
-Tagged<PyObject> PyDict::ValueAtIndex(int64_t index) const {
-  return data()->Get((index << 1) + 1);
+Handle<PyObject> PyDict::ValueAtIndex(int64_t index) const {
+  return handle(data()->Get((index << 1) + 1));
+}
+
+Handle<PyObject> PyDict::ItemAtIndex(int64_t index) const {
+  auto key = KeyAtIndex(index);
+  // 如果当前槽位没有有效的键值对，直接返回null
+  if (key.IsNull()) {
+    return Handle<PyObject>::Null();
+  }
+  auto result = PyTuple::NewInstance(2);
+  auto value = ValueAtIndex(index);
+  result->SetInternal(0, key);
+  result->SetInternal(1, value);
+  return result;
 }
 
 Handle<FixedArray> PyDict::data() const {

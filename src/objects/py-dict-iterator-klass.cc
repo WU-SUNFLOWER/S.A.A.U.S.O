@@ -22,6 +22,7 @@
 namespace saauso::internal {
 
 namespace {
+
 Handle<PyObject> NextImpl(Handle<PyObject> self) {
   HandleScope scope;
   auto iterator = Handle<PyDictIterator>::cast(self);
@@ -30,25 +31,26 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
 
   int64_t index = iterator->iter_index();
   for (; index < dict->capacity(); ++index) {
-    Tagged<PyObject> key = dict->KeyAtIndex(index);
-    if (key.IsNull()) {
+    Handle<PyObject> result = dict->KeyAtIndex(index);
+    if (result.IsNull()) {
       continue;
     }
     iterator->set_iter_index(index + 1);
-    return Handle<PyObject>(key).EscapeFrom(&scope);
+    return result.EscapeFrom(&scope);
   }
 
   iterator->set_iter_index(dict->capacity());
   return Handle<PyObject>::Null();
 }
 
-Handle<PyObject> Native_Next(Handle<PyObject> self,
-                             Handle<PyTuple> args,
-                             Handle<PyDict> kwargs) {
+}  // namespace
+
+Handle<PyObject> PyDictIteratorKlass::Native_Next(Handle<PyObject> self,
+                                                  Handle<PyTuple> args,
+                                                  Handle<PyDict> kwargs) {
   HandleScope scope;
   return NextImpl(self).EscapeFrom(&scope);
 }
-}  // namespace
 
 Tagged<PyDictIteratorKlass> PyDictIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();

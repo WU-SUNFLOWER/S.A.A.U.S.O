@@ -9,6 +9,8 @@
 
 namespace saauso::internal {
 
+class PyTuple;
+
 class PyDictIteratorKlass : public Klass {
  public:
   static Tagged<PyDictIteratorKlass> GetInstance();
@@ -18,6 +20,10 @@ class PyDictIteratorKlass : public Klass {
   void PreInitialize();
   void Initialize();
   void Finalize();
+
+  static Handle<PyObject> Native_Next(Handle<PyObject> self,
+                                      Handle<PyTuple> args,
+                                      Handle<PyDict> kwargs);
 
  private:
   static void Virtual_Print(Handle<PyObject> self);
