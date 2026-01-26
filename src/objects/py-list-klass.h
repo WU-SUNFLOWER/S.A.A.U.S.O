@@ -24,10 +24,6 @@ class PyListKlass : public Klass {
   void Initialize();
   void Finalize();
 
-  static Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
-                                              Handle<PyTuple> args,
-                                              Handle<PyDict> kwargs);
-
  private:
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static void Virtual_Print(Handle<PyObject> self);

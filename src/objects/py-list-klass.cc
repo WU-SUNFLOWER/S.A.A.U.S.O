@@ -23,6 +23,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
@@ -92,6 +93,13 @@ Handle<PyObject> NativeMethod_Reverse(Handle<PyObject> self,
     list->Set(length - i - 1, tmp);
   }
 
+  return handle(Isolate::Current()->py_none_object());
+}
+
+Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
+                                     Handle<PyTuple> args,
+                                     Handle<PyDict> kwargs) {
+  Runtime_ExtendListByItratableObject(Handle<PyList>::cast(self), args->Get(0));
   return handle(Isolate::Current()->py_none_object());
 }
 
@@ -176,31 +184,6 @@ void PyListKlass::Initialize() {
 
 void PyListKlass::Finalize() {
   Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::Null());
-}
-
-Handle<PyObject> PyListKlass::NativeMethod_Extend(Handle<PyObject> self,
-                                                  Handle<PyTuple> args,
-                                                  Handle<PyDict> kwargs) {
-  HandleScope scope;
-  auto list = Handle<PyList>::cast(self);
-
-  auto source = args->Get(0);
-  auto source_iterator = PyObject::Iter(source);
-  auto iterator_next_func = PyObject::GetAttr(source_iterator, ST(next));
-
-#define CALL_NEXT_FUNC()                         \
-  Isolate::Current()->interpreter()->CallPython( \
-      iterator_next_func, Handle<PyTuple>::Null(), Handle<PyDict>::Null())
-
-  auto elem = CALL_NEXT_FUNC();
-  while (!elem.IsNull()) {
-    PyList::Append(list, elem);
-    elem = CALL_NEXT_FUNC();
-  }
-
-#undef CALL_NEXT_FUNC
-
-  return handle(Isolate::Current()->py_none_object());
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

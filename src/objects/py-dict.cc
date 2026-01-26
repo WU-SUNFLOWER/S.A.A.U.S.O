@@ -20,10 +20,8 @@ namespace {
 
 constexpr double kMaxLoadFactor = 0.75;
 
-#define GET_DICT_KEY(dict, index) \
-  (Handle<PyObject>(dict->data()->Get(index << 1)))
-#define GET_DICT_VAL(dict, index) \
-  (Handle<PyObject>(dict->data()->Get((index << 1) + 1)))
+#define GET_DICT_KEY(dict, index) (dict->data()->Get(index << 1))
+#define GET_DICT_VAL(dict, index) (dict->data()->Get((index << 1) + 1))
 
 #define SET_DICT_KEY(dict, index, key) dict->data()->Set(index << 1, key)
 #define SET_DICT_VAL(dict, index, value) \
@@ -112,22 +110,39 @@ bool PyDict::Contains(Handle<PyObject> key) const {
 }
 
 Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {
-  HandleScope scope;
+  return Get(*key);
+}
 
-  uint64_t hash = PyObject::Hash(key);
+Handle<PyObject> PyDict::Get(Tagged<PyObject> key) const {
+  return handle(GetImpl(key));
+}
+
+Tagged<PyObject> PyDict::GetTagged(Handle<PyObject> key) const {
+  return GetTagged(*key);
+}
+
+Tagged<PyObject> PyDict::GetTagged(Tagged<PyObject> key) const {
+  return GetImpl(key);
+}
+
+Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
+  HandleScope scope;
+  Handle<PyObject> handle_key(key);
+
+  uint64_t hash = PyObject::Hash(handle_key);
   uint64_t mask = capacity() - 1;
   uint64_t index = hash & mask;
 
   auto curr_key = GET_DICT_KEY(this, index);
-  while (!(*curr_key).IsNull()) {
-    if (PyObject::Equal(curr_key, key)->value()) {
-      return GET_DICT_VAL(this, index).EscapeFrom(&scope);
+  while (!curr_key.IsNull()) {
+    if (PyObject::Equal(handle(curr_key), handle_key)->value()) {
+      return GET_DICT_VAL(this, index);
     }
     index = GetProbe(index, mask);
     curr_key = GET_DICT_KEY(this, index);
   }
 
-  return Handle<PyObject>::Null();
+  return Tagged<PyObject>::Null();
 }
 
 void PyDict::Remove(Handle<PyObject> key) {
@@ -138,8 +153,8 @@ void PyDict::Remove(Handle<PyObject> key) {
   uint64_t index = hash & mask;
 
   auto curr_key = GET_DICT_KEY(this, index);
-  while (!(*curr_key).IsNull()) {
-    if (PyObject::Equal(curr_key, key)->value()) {
+  while (!curr_key.IsNull()) {
+    if (PyObject::Equal(handle(curr_key), key)->value()) {
       // 找到目标，进行删除
       // 1. 将当前位置置空
       SET_DICT_KEY(this, index, Tagged<PyObject>::Null());
@@ -150,7 +165,7 @@ void PyDict::Remove(Handle<PyObject> key) {
       uint64_t hole = index;
       uint64_t next = GetProbe(hole, mask);
 
-      Handle<PyObject> next_key = GET_DICT_KEY(this, next);
+      Handle<PyObject> next_key = handle(GET_DICT_KEY(this, next));
       while (!(*next_key).IsNull()) {
         uint64_t next_hash = PyObject::Hash(next_key);
         uint64_t ideal = next_hash & mask;
@@ -162,7 +177,7 @@ void PyDict::Remove(Handle<PyObject> key) {
         // 如果hole更接近ideal，则移动next到hole
         if (dist_hole < dist_next) {
           SET_DICT_KEY(this, hole, *next_key);
-          SET_DICT_VAL(this, hole, *GET_DICT_VAL(this, next));
+          SET_DICT_VAL(this, hole, GET_DICT_VAL(this, next));
 
           SET_DICT_KEY(this, next, Tagged<PyObject>::Null());
           SET_DICT_VAL(this, next, Tagged<PyObject>::Null());
@@ -171,7 +186,7 @@ void PyDict::Remove(Handle<PyObject> key) {
         }
 
         next = GetProbe(next, mask);
-        next_key = GET_DICT_KEY(this, next);
+        next_key = handle(GET_DICT_KEY(this, next));
       }
       return;
     }
@@ -199,14 +214,14 @@ void PyDict::Put(Handle<PyObject> object,
   uint64_t mask = dict->capacity() - 1;
   uint64_t index = hash & mask;
 
-  auto curr_key = GET_DICT_KEY(dict, index);
-  while (!(*curr_key).IsNull()) {
+  Handle<PyObject> curr_key(GET_DICT_KEY(dict, index));
+  while (!curr_key.IsNull()) {
     if (PyObject::Equal(curr_key, key)->value()) {
       SET_DICT_VAL(dict, index, *value);
       return;
     }
     index = GetProbe(index, mask);
-    curr_key = GET_DICT_KEY(dict, index);
+    curr_key = handle(GET_DICT_KEY(dict, index));
   }
 
   // 插入新元素
@@ -249,11 +264,11 @@ void PyDict::ExpandImpl(Handle<PyDict> dict) {
 
   // rehash所有旧数据
   for (auto index = 0; index < dict->capacity(); ++index) {
-    if ((*GET_DICT_KEY(dict, index)).IsNull()) {
+    if (GET_DICT_KEY(dict, index).IsNull()) {
       continue;
     }
 
-    Handle<PyObject> key = GET_DICT_KEY(dict, index);
+    Handle<PyObject> key(GET_DICT_KEY(dict, index));
     uint64_t hash = PyObject::Hash(key);
     uint64_t new_index = hash & new_mask;
 
@@ -263,7 +278,7 @@ void PyDict::ExpandImpl(Handle<PyDict> dict) {
     }
 
     new_data->Set(new_index << 1, *key);
-    new_data->Set((new_index << 1) + 1, *GET_DICT_VAL(dict, index));
+    new_data->Set((new_index << 1) + 1, GET_DICT_VAL(dict, index));
   }
 
   dict->data_ = *new_data;

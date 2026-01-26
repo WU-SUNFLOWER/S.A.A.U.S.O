@@ -55,8 +55,12 @@ size_t PyTuple::ComputeObjectSize(int64_t length) {
 }
 
 Handle<PyObject> PyTuple::Get(int64_t index) const {
+  return handle(GetTagged(index));
+}
+
+Tagged<PyObject> PyTuple::GetTagged(int64_t index) const {
   assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), length_));
-  return Handle<PyObject>(data()[index]);
+  return data()[index];
 }
 
 void PyTuple::SetInternal(int64_t index, Handle<PyObject> value) {

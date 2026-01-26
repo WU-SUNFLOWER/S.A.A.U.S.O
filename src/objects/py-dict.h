@@ -24,6 +24,10 @@ class PyDict : public PyObject {
   bool Contains(Handle<PyObject> key) const;
 
   Handle<PyObject> Get(Handle<PyObject> key) const;
+  Handle<PyObject> Get(Tagged<PyObject> key) const;
+
+  Tagged<PyObject> GetTagged(Handle<PyObject> key) const;
+  Tagged<PyObject> GetTagged(Tagged<PyObject> key) const;
 
   void Remove(Handle<PyObject> key);
 
@@ -38,6 +42,8 @@ class PyDict : public PyObject {
   friend class PyDictKlass;
 
   static void ExpandImpl(Handle<PyDict> list);
+
+  Tagged<PyObject> GetImpl(Tagged<PyObject> key) const;
 
   Handle<FixedArray> data() const;
 

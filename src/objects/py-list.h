@@ -61,6 +61,9 @@ class PyList : public PyObject {
 
   Tagged<FixedArray> array() const { return Tagged<FixedArray>::cast(array_); }
 
+  static void ExtendByItratableObject(Handle<PyList> list,
+                                      Handle<PyObject> source);
+
  private:
   friend class PyListKlass;
 

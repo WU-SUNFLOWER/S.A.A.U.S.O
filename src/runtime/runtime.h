@@ -10,9 +10,14 @@
 namespace saauso::internal {
 
 class PyObject;
+class PyList;
 
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
+
 bool Runtime_PyObjectIsTrue(Tagged<PyObject> object);
+
+void Runtime_ExtendListByItratableObject(Handle<PyList> list,
+                                         Handle<PyObject> iteratable);
 
 }  // namespace saauso::internal
 

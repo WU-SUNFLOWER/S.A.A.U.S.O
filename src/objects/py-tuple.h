@@ -31,6 +31,8 @@ class PyTuple : public PyObject {
   void SetInternal(int64_t index, Tagged<PyObject> value);
 
   Handle<PyObject> Get(int64_t index) const;
+  Tagged<PyObject> GetTagged(int64_t index) const;
+
   int64_t length() const { return length_; }
 
  private:

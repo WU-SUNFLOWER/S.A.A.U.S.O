@@ -16,6 +16,7 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
+#include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
@@ -29,6 +30,7 @@ namespace saauso::internal {
 #define POP() (current_frame_->PopFromStack())
 #define POP_TAGGED() (current_frame_->PopFromStackTagged())
 #define PEEK(x) (handle(current_frame_->stack()->Get((x))))
+#define PEEK_TAGGED(x) (current_frame_->stack()->Get((x)))
 #define EMPTY() (STACK_LEVEL() == 0)
 
 void Interpreter::EvalCurrentFrame() {
@@ -132,32 +134,30 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
-      LoadConst, { PUSH(current_frame_->consts()->Get(op_arg)); })
+      LoadConst, { PUSH(current_frame_->consts()->GetTagged(op_arg)); })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
-    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-
-    Handle<PyObject> value = current_frame_->locals()->Get(key);
+    Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
+    Tagged<PyObject> value = current_frame_->locals()->GetTagged(key);
     if (!value.IsNull()) {
       PUSH(value);
       break;
     }
 
-    value = current_frame_->globals()->Get(key);
+    value = current_frame_->globals()->GetTagged(key);
     if (!value.IsNull()) {
       PUSH(value);
       break;
     }
 
-    value = builtins()->Get(key);
+    value = builtins()->GetTagged(key);
     if (!value.IsNull()) {
       PUSH(value);
       break;
     }
 
-    std::printf("NameError: name '");
-    PyObject::Print(key);
-    std::printf("' is not defined\n");
+    std::printf("NameError: name '%s' is not defined\n",
+                Tagged<PyString>::cast(key)->buffer());
     std::exit(1);
   })
 
@@ -308,10 +308,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, )
 
   INTERPRETER_HANDLER_DISPATCH(ReturnConst, {
-    {
-      HandleScope scope;
-      ret_value_ = *current_frame_->code_object()->consts()->Get(op_arg);
-    }
+    ret_value_ = current_frame_->code_object()->consts()->GetTagged(op_arg);
     if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
       goto exit_interpreter;
     }
@@ -347,11 +344,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ListExtend, {
     Handle<PyObject> source = POP();
     Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
-
-    Handle<PyTuple> args = PyTuple::NewInstance(1);
-    args->SetInternal(0, source);
-
-    PyListKlass::NativeMethod_Extend(list, args, Handle<PyDict>::Null());
+    Runtime_ExtendListByItratableObject(Handle<PyList>::cast(list), source);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {

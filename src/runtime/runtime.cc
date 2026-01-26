@@ -4,6 +4,7 @@
 
 #include "src/runtime/runtime.h"
 
+#include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -13,6 +14,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -46,6 +48,26 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
     return Tagged<PyDict>::cast(object)->occupied() != 0;
   }
   return true;
+}
+
+void Runtime_ExtendListByItratableObject(Handle<PyList> list,
+                                         Handle<PyObject> iteratable) {
+  HandleScope scope;
+
+  auto source_iterator = PyObject::Iter(iteratable);
+  auto iterator_next_func = PyObject::GetAttr(source_iterator, ST(next));
+
+#define CALL_NEXT_FUNC()                         \
+  Isolate::Current()->interpreter()->CallPython( \
+      iterator_next_func, Handle<PyTuple>::Null(), Handle<PyDict>::Null())
+
+  auto elem = CALL_NEXT_FUNC();
+  while (!elem.IsNull()) {
+    PyList::Append(list, elem);
+    elem = CALL_NEXT_FUNC();
+  }
+
+#undef CALL_NEXT_FUNC
 }
 
 }  // namespace saauso::internal
