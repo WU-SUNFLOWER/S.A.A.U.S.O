@@ -44,7 +44,8 @@ namespace saauso::internal {
   V(Resume, 151)           \
   V(BuildConstKeyMap, 156) \
   V(ListExtend, 162)       \
-  V(Call, 171)
+  V(Call, 171)             \
+  V(KwNames, 172)
 
 #define DECL_BYTECODES(name, value) inline constexpr uint8_t name = value;
 BYTECODE_LIST(DECL_BYTECODES)

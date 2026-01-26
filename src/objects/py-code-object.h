@@ -15,6 +15,15 @@ class PyTuple;
 
 class PyCodeObject : public PyObject {
  public:
+  enum Flag {
+    kOptimized = 0x0001,    // 我们的虚拟机当中不关心
+    kNewLocals = 0x0002,    // 我们的虚拟机当中不关心
+    kVarArgs = 0x0004,      // 标记一个函数带有扩展位置参数
+    kVarKeywords = 0x0008,  // 标记一个函数带有扩展键值对参数
+    kNested = 0x0010,
+    kGenerator = 0x0020,
+  };
+
   static Handle<PyCodeObject> NewInstance(int arg_count,
                                           int posonly_arg_count,
                                           int kwonly_arg_count,

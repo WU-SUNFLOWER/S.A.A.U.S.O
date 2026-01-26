@@ -21,10 +21,14 @@ class FixedArray;
 
 class FrameObject : Object {
  public:
-  explicit FrameObject(Handle<PyCodeObject> code);
-  explicit FrameObject(Handle<PyFunction> func,
-                       Handle<PyObject> host,
-                       Handle<PyTuple> args);
+  static FrameObject* NewInstance(Handle<PyCodeObject> code);
+  static FrameObject* NewInstance(Handle<PyFunction> func,
+                                  Handle<PyObject> host,
+                                  Handle<PyTuple> args);
+
+  FrameObject(const FrameObject&) = delete;
+  FrameObject operator=(const FrameObject&) = delete;
+
   ~FrameObject();
 
   int StackSize() const;
@@ -62,6 +66,16 @@ class FrameObject : Object {
   void Iterate(ObjectVisitor* v);
 
  private:
+  FrameObject() = default;
+
+  static FrameObject* NewInstanceImpl(Tagged<PyObject> consts,
+                                      Tagged<PyObject> names,
+                                      Tagged<PyObject> locals,
+                                      Tagged<PyObject> globals,
+                                      Tagged<PyObject> fast_locals,
+                                      Tagged<PyObject> stack,
+                                      Tagged<PyObject> code_object);
+
   // FixedArray* stack_;
   Tagged<PyObject> stack_{kNullAddress};
   int stack_top_{0};  // stack_top_指向栈中下一个可以放置元素位置的下标

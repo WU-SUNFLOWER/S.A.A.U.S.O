@@ -56,6 +56,9 @@ class Interpreter {
   // 栈帧上下文切换前，临时储存函数返回值结果
   Tagged<PyObject> ret_value_{kNullAddress};
 
+  // 临时储存函数调用的kwargs
+  Tagged<PyObject> kwargs_{kNullAddress};
+
   FrameObject* current_frame_{nullptr};
 
   void* dispatch_table_[256];

@@ -358,6 +358,9 @@ void Interpreter::EvalCurrentFrame() {
     InvokeCallable(POP(), args, Handle<PyDict>::Null());
   })
 
+  INTERPRETER_HANDLER_DISPATCH(
+      KwNames, { kwargs_ = current_frame_->consts()->GetTagged(op_arg); })
+
 #undef INTERPRETER_HANDLER_NOOP
 #undef INTERPRETER_HANDLER_WITH_SCOPE
 #undef INTERPRETER_HANDLER_DISPATCH
@@ -380,8 +383,8 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
 
   // 如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame =
-        new FrameObject(Handle<PyFunction>::cast(callable), host, args);
+    FrameObject* frame = FrameObject::NewInstance(
+        Handle<PyFunction>::cast(callable), host, args);
     EnterFrame(frame);
     return;
   }

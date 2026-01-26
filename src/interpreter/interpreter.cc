@@ -89,7 +89,7 @@ Handle<PyDict> Interpreter::builtins() const {
 }
 
 void Interpreter::Run(Handle<PyCodeObject> code_object) {
-  EnterFrame(new FrameObject(code_object));
+  EnterFrame(FrameObject::NewInstance(code_object));
   EvalCurrentFrame();
   DestroyCurrentFrame();
 }
@@ -107,8 +107,8 @@ Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
 
   // 如果是普通的python函数，那么请求解释器进行处理
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame =
-        new FrameObject(Handle<PyFunction>::cast(callable), host, args);
+    FrameObject* frame = FrameObject::NewInstance(
+        Handle<PyFunction>::cast(callable), host, args);
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);
 
@@ -152,7 +152,8 @@ Handle<PyObject> Interpreter::ReleaseReturnValue() {
 void Interpreter::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&builtins_);
   v->VisitPointer(&ret_value_);
-  
+  v->VisitPointer(&kwargs_);
+
   FrameObject* frame = current_frame_;
   while (frame != nullptr) {
     frame->Iterate(v);
