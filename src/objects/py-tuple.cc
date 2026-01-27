@@ -9,6 +9,7 @@
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
@@ -71,6 +72,20 @@ void PyTuple::SetInternal(int64_t index, Tagged<PyObject> value) {
   assert(InRangeWithRightOpen(index, static_cast<int64_t>(0), length_));
   data()[index] = value;
   WRITE_BARRIER(Tagged<PyObject>(this), &data()[index], value);
+}
+
+void PyTuple::ShrinkInternal(int64_t new_length) {
+  assert(InRangeWithRightOpen(new_length, static_cast<int64_t>(0), length_));
+  length_ = new_length;
+}
+
+int64_t PyTuple::IndexOf(Handle<PyObject> target) const {
+  for (auto i = 0; i < length(); ++i) {
+    if (IsPyTrue(PyObject::Equal(target, Get(i)))) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 }  // namespace saauso::internal

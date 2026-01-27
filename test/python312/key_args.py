@@ -32,7 +32,7 @@ print(foo(b = 2, a = 6))
 #              28 CACHE                    0
 #              30 CALL                     1
 #              32 CACHE                    0 (counter: 0)
-#              34 CACHE                    0 (func_version: 0)
+#              234 CACHE                    0 (func_version: 0)
 #              36 CACHE                    0
 #              38 POP_TOP
 #              40 RETURN_CONST             4 (None)

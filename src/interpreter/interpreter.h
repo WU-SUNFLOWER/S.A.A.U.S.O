@@ -29,19 +29,21 @@ class Interpreter {
                               Handle<PyDict> kwargs);
 
   Handle<PyDict> builtins() const;
+  Handle<PyTuple> kwarg_keys() const;
 
   // GC接口
   void Iterate(ObjectVisitor* v);
 
  private:
   void InvokeCallable(Handle<PyObject> callable,
-                      Handle<PyTuple> args,
-                      Handle<PyDict> kwargs);
+                      Handle<PyTuple> actual_args,
+                      Handle<PyTuple> kwarg_keys);
 
-  void NormalizeCallable(Handle<PyObject>& callable,
-                         Handle<PyObject>& host,
-                         Handle<PyTuple>& args,
-                         Handle<PyDict>& kwargs);
+  void NormalizeCallable(Handle<PyObject>& callable, Handle<PyObject>& host);
+  void NormalizeArguments(Handle<PyTuple> actual_args,
+                          Handle<PyTuple> kwarg_keys,
+                          Handle<PyTuple>& pos_args,
+                          Handle<PyDict>& kw_args);
 
   void EnterFrame(FrameObject* frame);
   void EvalCurrentFrame();
@@ -49,6 +51,7 @@ class Interpreter {
   void DestroyCurrentFrame();
 
   Handle<PyObject> ReleaseReturnValue();
+  Handle<PyTuple> ReleaseKwArgKeys();
 
   // PyDict* builtins_;
   Tagged<PyObject> builtins_{kNullAddress};
@@ -56,8 +59,8 @@ class Interpreter {
   // 栈帧上下文切换前，临时储存函数返回值结果
   Tagged<PyObject> ret_value_{kNullAddress};
 
-  // 临时储存函数调用的kwargs
-  Tagged<PyObject> kwargs_{kNullAddress};
+  // 临时储存发起函数调用时传入的实际键值对参数的所有键
+  Tagged<PyObject> kwarg_keys_{kNullAddress};
 
   FrameObject* current_frame_{nullptr};
 

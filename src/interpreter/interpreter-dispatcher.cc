@@ -274,30 +274,32 @@ void Interpreter::EvalCurrentFrame() {
     PUSH(Isolate::ToPyBoolean(result ^ op_arg));
   })
 
-  INTERPRETER_HANDLER_WITH_SCOPE(
-      BinaryOp, Handle<PyObject> r = POP(); Handle<PyObject> l = POP();
-      switch (op_arg) {
-        case BinaryOpType::kAdd:
-        case BinaryOpType::kInplaceAdd:
-          PUSH(PyObject::Add(l, r));
-          break;
-        case BinaryOpType::kSubtract:
-        case BinaryOpType::kInplaceSubtract:
-          PUSH(PyObject::Sub(l, r));
-          break;
-        case BinaryOpType::kMultiply:
-        case BinaryOpType::kInplaceMultiply:
-          PUSH(PyObject::Mul(l, r));
-          break;
-        case BinaryOpType::kTrueDivide:
-        case BinaryOpType::kInplaceTrueDivide:
-          PUSH(PyObject::Div(l, r));
-          break;
-        case BinaryOpType::kRemainder:
-        case BinaryOpType::kInplaceRemainder:
-          PUSH(PyObject::Mod(l, r));
-          break;
-      })
+  INTERPRETER_HANDLER_WITH_SCOPE(BinaryOp, {
+    Handle<PyObject> r = POP();
+    Handle<PyObject> l = POP();
+    switch (op_arg) {
+      case BinaryOpType::kAdd:
+      case BinaryOpType::kInplaceAdd:
+        PUSH(PyObject::Add(l, r));
+        break;
+      case BinaryOpType::kSubtract:
+      case BinaryOpType::kInplaceSubtract:
+        PUSH(PyObject::Sub(l, r));
+        break;
+      case BinaryOpType::kMultiply:
+      case BinaryOpType::kInplaceMultiply:
+        PUSH(PyObject::Mul(l, r));
+        break;
+      case BinaryOpType::kTrueDivide:
+      case BinaryOpType::kInplaceTrueDivide:
+        PUSH(PyObject::Div(l, r));
+        break;
+      case BinaryOpType::kRemainder:
+      case BinaryOpType::kInplaceRemainder:
+        PUSH(PyObject::Mod(l, r));
+        break;
+    }
+  })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
       LoadFast, PUSH(current_frame_->fast_locals()->Get(op_arg));)
@@ -305,7 +307,9 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(
       StoreFast, current_frame_->fast_locals()->Set(op_arg, *POP());)
 
-  INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, )
+  INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, {
+                                                 // todo
+                                             })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnConst, {
     ret_value_ = current_frame_->code_object()->consts()->GetTagged(op_arg);
@@ -355,11 +359,11 @@ void Interpreter::EvalCurrentFrame() {
         args->SetInternal(op_arg, POP());
       }
     }
-    InvokeCallable(POP(), args, Handle<PyDict>::Null());
+    InvokeCallable(POP(), args, ReleaseKwArgKeys());
   })
 
   INTERPRETER_HANDLER_DISPATCH(
-      KwNames, { kwargs_ = current_frame_->consts()->GetTagged(op_arg); })
+      KwNames, { kwarg_keys_ = current_frame_->consts()->GetTagged(op_arg); })
 
 #undef INTERPRETER_HANDLER_NOOP
 #undef INTERPRETER_HANDLER_WITH_SCOPE
@@ -376,21 +380,24 @@ exit_interpreter:
 }
 
 void Interpreter::InvokeCallable(Handle<PyObject> callable,
-                                 Handle<PyTuple> args,
-                                 Handle<PyDict> kwargs) {
+                                 Handle<PyTuple> actual_args,
+                                 Handle<PyTuple> kwarg_keys) {
   Handle<PyObject> host;
-  NormalizeCallable(callable, host, args, kwargs);
+  Handle<PyTuple> pos_args;
+  Handle<PyDict> kw_args;
+  NormalizeCallable(callable, host);
+  NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
 
   // 如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObject::NewInstance(
-        Handle<PyFunction>::cast(callable), host, args);
+        Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
     EnterFrame(frame);
     return;
   }
 
   // 兜底：尝试调用callable的call虚方法
-  Handle<PyObject> result = PyObject::Call(callable, host, args, kwargs);
+  Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
   PUSH(result);
 }
 

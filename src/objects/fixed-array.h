@@ -15,6 +15,7 @@ class FixedArray : public PyObject {
   static Handle<FixedArray> NewInstance(int64_t capacity);
   static Handle<FixedArray> NewInstance(int64_t capacity,
                                         Handle<FixedArray> copied_source);
+  static Handle<FixedArray> Clone(Handle<FixedArray> other);
 
   static Tagged<FixedArray> cast(Tagged<PyObject> object);
 

@@ -51,6 +51,11 @@ Handle<FixedArray> FixedArray::NewInstance(int64_t capacity,
 }
 
 // static
+Handle<FixedArray> FixedArray::Clone(Handle<FixedArray> other) {
+  return NewInstance(other->capacity(), other);
+}
+
+// static
 Tagged<FixedArray> FixedArray::cast(Tagged<PyObject> object) {
   assert(IsFixedArray(object));
   return Tagged<FixedArray>(object.ptr());

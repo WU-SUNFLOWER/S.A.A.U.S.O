@@ -14,12 +14,14 @@ class PyDict : public PyObject {
   static constexpr int64_t kMinimumCapacity = 8;
 
   static Handle<PyDict> NewInstance(int64_t init_capacity = kMinimumCapacity);
+  static Handle<PyDict> Clone(Handle<PyDict> other);
+
   static Tagged<PyDict> cast(Tagged<PyObject> object);
 
   int64_t capacity() const;
   Handle<PyObject> KeyAtIndex(int64_t index) const;
   Handle<PyObject> ValueAtIndex(int64_t index) const;
-  Handle<PyObject> ItemAtIndex(int64_t index) const;
+  Handle<PyTuple> ItemAtIndex(int64_t index) const;
 
   bool Contains(Handle<PyObject> key) const;
 
@@ -40,6 +42,8 @@ class PyDict : public PyObject {
 
  private:
   friend class PyDictKlass;
+
+  static Handle<PyDict> NewInstanceWithoutAllocateData();
 
   static void ExpandImpl(Handle<PyDict> list);
 

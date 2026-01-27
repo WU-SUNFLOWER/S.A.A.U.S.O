@@ -88,6 +88,10 @@ Handle<PyDict> Interpreter::builtins() const {
   return handle(Tagged<PyDict>::cast(builtins_));
 }
 
+Handle<PyTuple> Interpreter::kwarg_keys() const {
+  return handle(Tagged<PyTuple>::cast(kwarg_keys_));
+}
+
 void Interpreter::Run(Handle<PyCodeObject> code_object) {
   EnterFrame(FrameObject::NewInstance(code_object));
   EvalCurrentFrame();
@@ -96,19 +100,19 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
 
 // public
 Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
-                                         Handle<PyTuple> args,
-                                         Handle<PyDict> kwargs) {
+                                         Handle<PyTuple> pos_args,
+                                         Handle<PyDict> kw_args) {
   HandleScope scope;
 
   Handle<PyObject> host;
-  NormalizeCallable(callable, host, args, kwargs);
+  NormalizeCallable(callable, host);
 
   Handle<PyObject> result;
 
   // 如果是普通的python函数，那么请求解释器进行处理
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObject::NewInstance(
-        Handle<PyFunction>::cast(callable), host, args);
+        Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);
 
@@ -124,20 +128,43 @@ Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
   }
 
   // 兜底：尝试调用callable的call虚方法
-  result = PyObject::Call(callable, host, args, kwargs);
+  result = PyObject::Call(callable, host, pos_args, kw_args);
   return result;
 }
 
 // private
 void Interpreter::NormalizeCallable(Handle<PyObject>& callable,
-                                    Handle<PyObject>& host,
-                                    Handle<PyTuple>& args,
-                                    Handle<PyDict>& kwargs) {
+                                    Handle<PyObject>& host) {
   // 如果是对象方法，那么进行解包
   if (IsMethodObject(callable)) {
     auto method = Handle<MethodObject>::cast(callable);
     callable = method->func();
     host = method->owner();
+  }
+}
+
+// private
+void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
+                                     Handle<PyTuple> kwarg_keys,
+                                     Handle<PyTuple>& pos_args,
+                                     Handle<PyDict>& kw_args) {
+  // 如果有有效的键值对参数，从全体args当中单独提取出来
+  if (!kwarg_keys.IsNull()) {
+    kw_args = PyDict::NewInstance();
+
+    assert(!actual_args.IsNull());
+    auto actual_args_size = actual_args->length();
+
+    for (auto i = kwarg_keys->length(); 0 <= i; --i) {
+      PyDict::Put(kw_args, kwarg_keys->Get(i),
+                  pos_args->Get(actual_args_size - i - 1));
+    }
+
+    // 从actual_args尾部截去提取出来的参数，剩余部分作为pos_args
+    actual_args->ShrinkInternal(actual_args->length() - kwarg_keys->length());
+    pos_args = actual_args;
+  } else {
+    pos_args = actual_args;
   }
 }
 
@@ -148,11 +175,19 @@ Handle<PyObject> Interpreter::ReleaseReturnValue() {
   return result;
 }
 
+
+// private
+Handle<PyTuple> Interpreter::ReleaseKwArgKeys() {
+  auto result = Handle<PyTuple>::cast(handle(kwarg_keys_));
+  kwarg_keys_ = Tagged<PyObject>::Null();
+  return result;
+}
+
 // public
 void Interpreter::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&builtins_);
   v->VisitPointer(&ret_value_);
-  v->VisitPointer(&kwargs_);
+  v->VisitPointer(&kwarg_keys_);
 
   FrameObject* frame = current_frame_;
   while (frame != nullptr) {

@@ -64,8 +64,11 @@ class PyCodeObject : public PyObject {
   static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 
   Handle<PyString> bytecodes() const;
+
   Handle<PyTuple> names() const;
+  Handle<PyTuple> var_names() const;
   Handle<PyTuple> consts() const;
+
   Handle<PyString> co_name() const;
   Handle<PyString> file_name() const;
 

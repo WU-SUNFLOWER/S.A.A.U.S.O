@@ -29,9 +29,12 @@ class PyTuple : public PyObject {
   // 仅供虚拟机内部使用，不得暴露给python语言层！
   void SetInternal(int64_t index, Handle<PyObject> value);
   void SetInternal(int64_t index, Tagged<PyObject> value);
+  void ShrinkInternal(int64_t new_length);
 
   Handle<PyObject> Get(int64_t index) const;
   Tagged<PyObject> GetTagged(int64_t index) const;
+
+  int64_t IndexOf(Handle<PyObject> target) const;
 
   int64_t length() const { return length_; }
 

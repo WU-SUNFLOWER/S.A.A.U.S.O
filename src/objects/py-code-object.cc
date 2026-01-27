@@ -145,6 +145,10 @@ Handle<PyTuple> PyCodeObject::names() const {
   return handle(Tagged<PyTuple>::cast(names_));
 }
 
+Handle<PyTuple> PyCodeObject::var_names() const {
+  return handle(Tagged<PyTuple>::cast(var_names_));
+}
+
 Handle<PyTuple> PyCodeObject::consts() const {
   return handle(Tagged<PyTuple>::cast(consts_));
 }

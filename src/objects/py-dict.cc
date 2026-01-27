@@ -4,6 +4,8 @@
 
 #include "src/objects/py-dict.h"
 
+#include <cstring>
+
 #include "include/saauso-internal.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
@@ -45,14 +47,35 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
   HandleScope scope;
 
   // 创建对象
-  Handle<PyDict> object(Isolate::Current()->heap()->Allocate<PyDict>(
-      Heap::AllocationSpace::kNewSpace));
+  Handle<PyDict> object = NewInstanceWithoutAllocateData();
+
   // 创建数据区
   // 因为dict中同时要储存key和value，所以init_capacity要乘2
   Handle<FixedArray> data = FixedArray::NewInstance(init_capacity * 2);
+  object->data_ = *data;
+
+  return object.EscapeFrom(&scope);
+}
+
+// static
+Handle<PyDict> PyDict::Clone(Handle<PyDict> other) {
+  HandleScope scope;
+
+  Handle<PyDict> result = NewInstanceWithoutAllocateData();
+  Handle<FixedArray> data = FixedArray::Clone(other->data());
+  result->occupied_ = other->occupied();
+  result->data_ = *data;
+
+  return result.EscapeFrom(&scope);
+}
+
+// static
+Handle<PyDict> PyDict::NewInstanceWithoutAllocateData() {
+  // 创建对象
+  Handle<PyDict> object(Isolate::Current()->heap()->Allocate<PyDict>(
+      Heap::AllocationSpace::kNewSpace));
 
   // 设置字段
-  object->data_ = *data;
   object->occupied_ = 0;
 
   // 绑定klass
@@ -65,7 +88,7 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
   // AttributeError: 'dict' object has no attribute '__dict__'
   PyObject::SetProperties(*object, Tagged<PyDict>::Null());
 
-  return object.EscapeFrom(&scope);
+  return object;
 }
 
 // static
@@ -88,11 +111,11 @@ Handle<PyObject> PyDict::ValueAtIndex(int64_t index) const {
   return handle(data()->Get((index << 1) + 1));
 }
 
-Handle<PyObject> PyDict::ItemAtIndex(int64_t index) const {
+Handle<PyTuple> PyDict::ItemAtIndex(int64_t index) const {
   auto key = KeyAtIndex(index);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.IsNull()) {
-    return Handle<PyObject>::Null();
+    return Handle<PyTuple>::Null();
   }
   auto result = PyTuple::NewInstance(2);
   auto value = ValueAtIndex(index);
