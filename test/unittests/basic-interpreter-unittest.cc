@@ -974,4 +974,90 @@ print(len(d))
   CompareResultWithExpected(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, FunctionKeyArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    print(a)
+    print(b)
+    print(c)
+foo(c = 10, b = 2, a = 6)
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(6));   // a
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(2));   // b
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(10));  // c
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ExtendPosArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def sum(*args):
+    t = 0
+    for i in args:
+        t += i
+    return t
+print(sum(1, 2, 3, 4))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(10));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ExtendKwArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(**kwargs):
+    sum = 0
+    for k, v in kwargs.items():
+        if kwargs[k] is not v:
+            print("fail")
+        sum += v
+    return sum
+print(foo(a = 1, b = 4, c = 5))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(10));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ExtendPosAndKwArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def calc(a, b, c = 89, *args, **kwargs):
+    coeff = kwargs.get("coeff")
+    if coeff is None:
+        return 0
+    t = a + b + c
+    for i in args:
+        t += i
+    return coeff * t
+print(calc(1, 2, 3, 4, coeff = 2))
+)";
+
+  isolate_->interpreter()->Run(CompileScript(kSource, kTestFileName));
+
+  auto expected_printv_result = PyList::NewInstance();
+  PRINT_TO_EXPECT_LIST(PyFloat::NewInstance(20));
+
+  CompareResultWithExpected(expected_printv_result);
+}
+
 }  // namespace saauso::internal

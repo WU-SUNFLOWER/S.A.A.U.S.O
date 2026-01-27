@@ -155,9 +155,9 @@ void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
     assert(!actual_args.IsNull());
     auto actual_args_size = actual_args->length();
 
-    for (auto i = kwarg_keys->length(); 0 <= i; --i) {
-      PyDict::Put(kw_args, kwarg_keys->Get(i),
-                  pos_args->Get(actual_args_size - i - 1));
+    for (auto i = 0; i < kwarg_keys->length(); ++i) {
+      PyDict::Put(kw_args, kwarg_keys->Get(kwarg_keys->length() - i - 1),
+                  actual_args->Get(actual_args_size - i - 1));
     }
 
     // 从actual_args尾部截去提取出来的参数，剩余部分作为pos_args
@@ -174,7 +174,6 @@ Handle<PyObject> Interpreter::ReleaseReturnValue() {
   ret_value_ = Tagged<PyObject>::Null();
   return result;
 }
-
 
 // private
 Handle<PyTuple> Interpreter::ReleaseKwArgKeys() {

@@ -106,6 +106,21 @@ Handle<PyObject> NativeMethod_Items(Handle<PyObject> self,
   return PyDictItems::NewInstance(self).EscapeFrom(&scope);
 }
 
+Handle<PyObject> NativeMethod_Get(Handle<PyObject> self,
+                                  Handle<PyTuple> args,
+                                  Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto dict = Handle<PyDict>::cast(self);
+  auto key = args->Get(0);
+
+  Handle<PyObject> result = dict->Get(key);
+  if (result.IsNull()) {
+    result = handle(Isolate::Current()->py_none_object());
+  }
+
+  return result.EscapeFrom(&scope);
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////
@@ -163,6 +178,10 @@ void PyDictKlass::Initialize() {
   prop_name = PyString::NewInstance("items");
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Items, prop_name));
+
+  prop_name = PyString::NewInstance("get");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Get, prop_name));
 
   set_klass_properties(klass_properties);
 

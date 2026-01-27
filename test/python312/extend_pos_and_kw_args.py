@@ -1,10 +1,10 @@
-def calc(a, b, *args, **kwargs):
+def calc(a, b, c = 89, *args, **kwargs):
     coeff = kwargs.get("coeff")
 
     if coeff is None:
         return 0
 
-    t = a + b
+    t = a + b + c
     for i in args:
         t += i
 

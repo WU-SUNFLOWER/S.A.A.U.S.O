@@ -41,6 +41,9 @@ class FrameObject : Object {
   Tagged<PyObject> PopFromStackTagged();
   Tagged<PyObject> StackGetTagged(int index) const;
 
+  int stack_top() { return stack_top_; }
+  void set_stack_top(int new_stack_top) { stack_top_ = new_stack_top; }
+
   bool HasMoreCodes();
   uint8_t GetOpCode();
   int GetOpArg();

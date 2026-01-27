@@ -117,6 +117,17 @@ void Interpreter::EvalCurrentFrame() {
     PyDict::Put(current_frame_->locals(), key, POP());
   })
 
+  INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
+    Handle<PyObject> sequence = POP();
+    Handle<PyObject> iterator = PyObject::Iter(sequence);
+    auto old_stack_top = current_frame_->stack_top();
+    current_frame_->set_stack_top(current_frame_->stack_top() + op_arg);
+    while (op_arg-- > 0) {
+      current_frame_->stack()->Set(old_stack_top + op_arg,
+                                   PyObject::Next(iterator));
+    }
+  })
+
   INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
     Handle<PyObject> iterator = TOP();
     Handle<PyObject> next_result = PyObject::Next(iterator);
@@ -310,6 +321,18 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, {
                                                  // todo
                                              })
+
+  INTERPRETER_HANDLER_DISPATCH(PopJumpIfNotNone, {
+    if (POP_TAGGED() != Isolate::Current()->py_none_object()) {
+      current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
+    }
+  })
+
+  INTERPRETER_HANDLER_DISPATCH(PopJumpIfNone, {
+    if (POP_TAGGED() == Isolate::Current()->py_none_object()) {
+      current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
+    }
+  })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnConst, {
     ret_value_ = current_frame_->code_object()->consts()->GetTagged(op_arg);

@@ -1,9 +1,11 @@
 def foo(**kwargs):
+    sum = 0
     for k, v in kwargs.items():
-        print(k)
-        print(v)
-
-foo(a = 1, b = 2)
+        if kwargs[k] is not v:
+            print("fail")
+        sum += v
+    return sum
+print(foo(a = 1, b = 4, c = 5))
 
 # code
 #    argcount 0

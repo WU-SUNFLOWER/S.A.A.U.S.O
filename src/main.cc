@@ -22,12 +22,16 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-i = 0
-while i < 10:
-  if i < 2:
-    continue
-  print(i)
-  i = i + 1
+def foo(**kwargs):
+    sum = 0
+    for k, v in kwargs.items():
+        print(k, v)
+        if kwargs[k] is not v:
+            print("fail")
+        sum += v
+    print(kwargs)
+    return sum
+print(foo(a = 1, b = 4, c = 5))
 )";
 
 int main() {

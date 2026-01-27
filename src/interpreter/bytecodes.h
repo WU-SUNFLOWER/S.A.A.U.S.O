@@ -19,6 +19,7 @@ namespace saauso::internal {
   V(GetIter, 68)           \
   V(ReturnValue, 83)       \
   V(StoreName, 90)         \
+  V(UnpackSequence, 92)    \
   V(ForIter, 93)           \
   V(StoreGlobal, 97)       \
   V(LoadConst, 100)        \
@@ -39,6 +40,8 @@ namespace saauso::internal {
   V(LoadFast, 124)         \
   V(StoreFast, 125)        \
   V(DeleteFast, 126)       \
+  V(PopJumpIfNotNone, 128) \
+  V(PopJumpIfNone, 129)    \
   V(MakeFunction, 132)     \
   V(JumpBackward, 140)     \
   V(Resume, 151)           \

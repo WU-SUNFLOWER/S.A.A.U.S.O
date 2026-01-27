@@ -63,12 +63,12 @@ class Handle {
     requires(is_subtype_v<S, T>)
       : Handle(other.location()) {}
 
-  constexpr T* operator->() const {
+  T* operator->() const {
     assert(!IsNull());
     return Tagged<T>(*location_).operator->();
   }
 
-  constexpr Tagged<T> operator*() const {
+  Tagged<T> operator*() const {
     return IsNull() ? Tagged<T>::Null() : Tagged<T>(*location_);
   }
 
@@ -93,10 +93,10 @@ class Handle {
     return Handle<T>(scope->EscapeFromSelf(*location_));
   }
 
-  constexpr Address* location() const { return location_; }
+  Address* location() const { return location_; }
 
   // 快速检测两个handle是否指向同一个对象
-  constexpr bool is_identical_to(const Handle<T> other) const {
+  bool is_identical_to(const Handle<T> other) const {
     return location() == other.location() || operator*() == *other;
   }
 

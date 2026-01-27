@@ -106,6 +106,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
         if (!fast_locals->Get(index_in_var_args).IsNull()) {
           std::printf("TypeError: %s() got multiple values for argument '%s'\n",
                       func_name->buffer(), key->buffer());
+          PyObject::Print(value);
           std::exit(1);
         }
 
@@ -119,6 +120,9 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
         // 因此让fast_locals_idx游标在逻辑上向右移动一下
         ++fast_locals_idx;
       }
+
+      // 刷新迭代器
+      item = Handle<PyTuple>::cast(PyObject::Next(iter));
     }
   }
 
