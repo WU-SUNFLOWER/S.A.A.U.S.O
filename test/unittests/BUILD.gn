@@ -1,0 +1,35 @@
+executable("ut") {
+  testonly = true
+
+  sources = [
+    "./code/pyc-file-parser-unittest.cc",
+    "./handles/global-handle-unittest.cc",
+    "./handles/handle-thread-unittest.cc",
+    "./handles/handle-unittest.cc",
+    "./heap/gc-unittest.cc",
+    "./interpreter/interpreter-builtins-seq-unittest.cc",
+    "./interpreter/interpreter-controlflow-unittest.cc",
+    "./interpreter/interpreter-dict-unittest.cc",
+    "./interpreter/interpreter-functions-unittest.cc",
+    "./interpreter/interpreter-ops-unittest.cc",
+    "./interpreter/interpreter-smoke-unittest.cc",
+    "./lsan-suppressions.cc",
+    "./objects/attribute-unittest.cc",
+    "./objects/py-dict-unittest.cc",
+    "./objects/py-float-unittest.cc",
+    "./objects/py-list-unittest.cc",
+    "./objects/py-object-unittest.cc",
+    "./objects/py-smi-unittest.cc",
+    "./objects/py-string-unittest.cc",
+    "./objects/py-tuple-unittest.cc",
+    "./test-helpers.cc",
+    "./test-utils.cc",
+    "./utils/string-search-unittest.cc",
+  ]
+
+  deps = [
+    "//:saauso_core",
+    "//:saauso_cpython312_compiler",
+    "//testing/gtest",
+  ]
+}

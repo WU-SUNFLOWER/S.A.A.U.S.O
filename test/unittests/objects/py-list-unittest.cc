@@ -4,39 +4,18 @@
 
 #include <cstdint>
 
-#include "include/saauso.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
-// list 是典型的“堆对象 + 内部引用（FixedArray）”组合，测试重点放在：
-// - 元素读写/删除/清空
-// - 扩容逻辑是否正确
-// - 通过 PyObject 多态入口触发 list 的虚表行为（add/mul/subscr/contains 等）
-class PyListTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* PyListTest::isolate_ = nullptr;
+class PyListTest : public VmTestBase {};
 
 TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
   HandleScope scope;

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "gtest/gtest.h"
-#include "include/saauso.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
@@ -12,29 +11,12 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
-class GlobalHandleTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* GlobalHandleTest::isolate_ = nullptr;
+class GlobalHandleTest : public VmTestBase {};
 
 TEST_F(GlobalHandleTest, GlobalHandleShouldBeReleasedByDestructor) {
   int base =

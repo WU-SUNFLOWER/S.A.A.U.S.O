@@ -4,36 +4,17 @@
 
 #include <cstdint>
 
-#include "include/saauso.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
-// float 是堆对象，会参与 GC（与 Smi 不同）。
-// 这里主要验证与 Smi 的双向混合运算、比较，以及 GC-able 判定。
-class PyFloatTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* PyFloatTest::isolate_ = nullptr;
+class PyFloatTest : public VmTestBase {};
 
 TEST_F(PyFloatTest, NewInstanceStoresValue) {
   HandleScope scope;

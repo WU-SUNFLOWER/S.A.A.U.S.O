@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "include/saauso.h"
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
 #include "src/code/cpython312-pyc-compiler.h"
@@ -18,57 +17,13 @@
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
+#include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
-
-#if BUILDFLAG(IS_LINUX)
-extern "C" const char* __lsan_default_suppressions() {
-  return "leak:PyUnicode_New\n";
-}
-#endif
 
 namespace saauso::internal {
 
-class PycFileParserTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-    FinalizeEmbeddedPython312Runtime();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* PycFileParserTest::isolate_ = nullptr;
-
-static void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
-  out.push_back(static_cast<uint8_t>(v & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 8) & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 16) & 0xff));
-  out.push_back(static_cast<uint8_t>((v >> 24) & 0xff));
-}
-
-static void PutByte(std::vector<uint8_t>& out, uint8_t v) {
-  out.push_back(v);
-}
-
-static void PutLongString(std::vector<uint8_t>& out, const std::string& s) {
-  PutInt32LE(out, static_cast<int32_t>(s.size()));
-  out.insert(out.end(), s.begin(), s.end());
-}
-
-static void ExpectStringEquals(Handle<PyString> s, const char* expected) {
-  const int64_t len = static_cast<int64_t>(std::strlen(expected));
-  ASSERT_EQ(s->length(), len);
-  ASSERT_EQ(std::memcmp(s->buffer(), expected, len), 0);
-}
+class PycFileParserTest : public EmbeddedPython312VmTestBase {};
 
 TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   HandleScope scope;
@@ -125,8 +80,8 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
 
   auto file_name = (*code)->file_name();
   auto co_name = (*code)->co_name();
-  ExpectStringEquals(file_name, "file.py");
-  ExpectStringEquals(co_name, "file.py");
+  EXPECT_TRUE(IsPyStringEqual(file_name, "file.py"));
+  EXPECT_TRUE(IsPyStringEqual(co_name, "file.py"));
 
   EXPECT_EQ((*file_name).ptr(), (*co_name).ptr());
 }
@@ -147,7 +102,7 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   ASSERT_FALSE(code.IsNull());
 
   auto file_name = code->file_name();
-  ExpectStringEquals(file_name, kFileName.data());
+  EXPECT_TRUE(IsPyStringEqual(file_name, kFileName));
 }
 
 }  // namespace saauso::internal

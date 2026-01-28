@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <cstring>
 
-#include "include/saauso.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -14,44 +13,20 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
+#include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
-// 说明：
-// - Isolate::New()/Dispose() 用于初始化/销毁虚拟机运行时。
-// - 每个测试用例内部创建 HandleScope，避免 GC 触发时句柄失效。
-class PyStringTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* PyStringTest::isolate_ = nullptr;
-
-static void ExpectStringEquals(Handle<PyString> s, const char* expected) {
-  const int64_t len = static_cast<int64_t>(std::strlen(expected));
-  ASSERT_EQ(s->length(), len);
-  ASSERT_EQ(std::memcmp(s->buffer(), expected, len), 0);
-}
+class PyStringTest : public VmTestBase {};
 
 TEST_F(PyStringTest, NewInstanceFromCString) {
   HandleScope scope;
 
   auto s = PyString::NewInstance("Hello World");
   EXPECT_FALSE(s.IsNull());
-  ExpectStringEquals(s, "Hello World");
+  EXPECT_TRUE(IsPyStringEqual(s, "Hello World"));
 }
 
 TEST_F(PyStringTest, NewInstanceWithLengthAndSetGet) {
@@ -126,10 +101,10 @@ TEST_F(PyStringTest, SliceWorks) {
 
   auto s = PyString::NewInstance("Hello World");
   auto sub = PyString::Slice(s, 0, 4);
-  ExpectStringEquals(sub, "Hello");
+  EXPECT_TRUE(IsPyStringEqual(sub, "Hello"));
 
   auto tail = PyString::Slice(s, 6, 10);
-  ExpectStringEquals(tail, "World");
+  EXPECT_TRUE(IsPyStringEqual(tail, "World"));
 }
 
 TEST_F(PyStringTest, AppendWorksAndDoesNotMutateInputs) {
@@ -139,10 +114,10 @@ TEST_F(PyStringTest, AppendWorksAndDoesNotMutateInputs) {
   auto right = PyString::NewInstance(" World");
 
   auto appended = PyString::Append(left, right);
-  ExpectStringEquals(appended, "Hello World");
+  EXPECT_TRUE(IsPyStringEqual(appended, "Hello World"));
 
-  ExpectStringEquals(left, "Hello");
-  ExpectStringEquals(right, " World");
+  EXPECT_TRUE(IsPyStringEqual(left, "Hello"));
+  EXPECT_TRUE(IsPyStringEqual(right, " World"));
 }
 
 TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
@@ -153,7 +128,7 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
   Handle<PyObject> result = PyObject::Add(left, right);
 
   ASSERT_TRUE(IsPyString(result));
-  ExpectStringEquals(Handle<PyString>::cast(result), "Hello World");
+  EXPECT_TRUE(IsPyStringEqual(Handle<PyString>::cast(result), "Hello World"));
 }
 
 TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {

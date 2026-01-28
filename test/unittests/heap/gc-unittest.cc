@@ -6,7 +6,6 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "include/saauso.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
@@ -18,6 +17,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -51,29 +51,7 @@ void AllocateEphemeralListsWithStrings(int list_count, int element_count) {
 
 }  // namespace
 
-// 1. 定义一个测试夹具 (Test Fixture)
-// 夹具的作用是为每个测试提供统一的环境初始化。
-class GcTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  void SetUp() override {}
-  void TearDown() override {}
-
-  static Isolate* isolate_;
-};
-
-Isolate* GcTest::isolate_ = nullptr;
+class GcTest : public VmTestBase {};
 
 // 测试针对字符串的copy gc
 TEST_F(GcTest, CopyGcTestForPyString) {

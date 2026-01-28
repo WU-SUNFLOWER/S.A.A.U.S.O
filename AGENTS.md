@@ -156,6 +156,31 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 .\out\ut\ut.exe
 ```
 
+### 5.3. 单元测试架构（最新）
+- **公共代码拆分**：
+  - `test/unittests/common/test-helpers.{h,cc}`：提供带生命周期的测试夹具基类（负责 `Saauso::Initialize/Dispose`、`Isolate` 创建与 Enter/Exit 等）与解释器输出捕获夹具。
+  - `test/unittests/common/test-utils.{h,cc}`：提供无状态的小工具与断言谓词（例如 `IsPyStringEqual`、`AppendExpected`、`CompileScript312`、pyc 字节构造器等）。
+  - 兼容性：保留 `test/unittests/test-helpers.h`、`test/unittests/test-utils.h` 作为转发头，避免大规模改 include 路径。
+- **测试目录分层（按模块分类）**：
+  - `test/unittests/interpreter/`：解释器端到端用例（`interpreter-*-unittest.cc`）。
+  - `test/unittests/objects/`：对象系统与容器/属性相关用例（`py-*-unittest.cc`、`attribute-unittest.cc`）。
+  - `test/unittests/heap/`：GC/堆相关用例（如 `gc-unittest.cc`）。
+  - `test/unittests/handles/`：句柄与并发相关用例（如 `handle-*-unittest.cc`、`global-handle-unittest.cc`）。
+  - `test/unittests/code/`：pyc 解析/编译前端相关用例（如 `pyc-file-parser-unittest.cc`）。
+  - `test/unittests/utils/`：纯工具/算法相关用例（如 `string-search-unittest.cc`）。
+- **统一夹具基类**：
+  - `VmTestBase`：适用于绝大多数“需要完整虚拟机环境”的单测。
+  - `EmbeddedPython312VmTestBase`：在 `VmTestBase` 基础上额外负责 `FinalizeEmbeddedPython312Runtime()`，用于需要 CPython312 编译/解析前端的单测。
+  - `IsolateOnlyTestBase`：仅创建/销毁 `Isolate`（不 Enter），用于线程隔离类测试。
+- **解释器端到端测试**：
+  - 统一使用 `BasicInterpreterTest` 夹具（print 注入 + 输出捕获）。
+  - 用例按主题拆分到 `interpreter-*-unittest.cc`，避免单文件职责膨胀。
+- **LSan 抑制**：
+  - `__lsan_default_suppressions()` 统一放在 `test/unittests/common/lsan-suppressions.cc`，避免多处重复定义。
+- **新增测试文件的接入点**：
+  - 新增 `test/unittests/**/**.cc` 后，需要同步将其加入 `test/unittests/BUILD.gn` 的 `ut` 目标 `sources` 列表。
+  - 根 `BUILD.gn` 仅保留 `group(\"ut\")` 作为入口（转发到 `//test/unittests:ut`），避免测试 sources 污染根构建文件。
+
 ## 6. 给 AI Agent 的关键实现细节
 ### 6.1. Handle / Tagged 使用规则（非常重要）
 - **禁止在接口上传递 `PyObject*`**：`PyObject` 语义上可能承载 Smi（并非真实对象指针），传裸指针会导致 C++ UB；对外暴露与内部调用都应使用 `Tagged<PyObject>` 或 `Handle<PyObject>`。

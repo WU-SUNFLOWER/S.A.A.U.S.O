@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "gtest/gtest.h"
-#include "include/saauso.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-float.h"
@@ -13,6 +12,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -21,29 +21,7 @@ namespace saauso::internal {
   ((nr_handles / HandleScopeImplementer::kHandleBlockSize) + \
    !!((nr_handles % HandleScopeImplementer::kHandleBlockSize)))
 
-// 1. 定义一个测试夹具 (Test Fixture)
-// 夹具的作用是为每个测试提供统一的环境初始化。
-class HandleTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  void SetUp() override {}
-  void TearDown() override {}
-
-  static Isolate* isolate_;
-};
-
-Isolate* HandleTest::isolate_ = nullptr;
+class HandleTest : public VmTestBase {};
 
 TEST_F(HandleTest, EscapeFromHandleScope) {
   HandleScope scope;

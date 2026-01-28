@@ -4,7 +4,6 @@
 
 #include <set>
 
-#include "include/saauso.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -12,29 +11,13 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 
 namespace saauso::internal {
 
-class PyDictTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* PyDictTest::isolate_ = nullptr;
+class PyDictTest : public VmTestBase {};
 
 TEST_F(PyDictTest, BasicOperations) {
   HandleScope scope;

@@ -4,39 +4,17 @@
 
 #include <cstdint>
 
-#include "include/saauso.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
-// Smi（小整数）是一种 Tagged 编码，并不在堆上分配对象实体。
-// 这里重点验证：
-// - 编码/解码正确
-// - PyObject 快速路径（Smi-Smi）运算正确
-// - 与 float 的混合运算分发正确
-class PySmiTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-    isolate_->Enter();
-  }
-  static void TearDownTestSuite() {
-    isolate_->Exit();
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* PySmiTest::isolate_ = nullptr;
+class PySmiTest : public VmTestBase {};
 
 TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
   HandleScope scope;

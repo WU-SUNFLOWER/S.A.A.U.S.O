@@ -4,31 +4,16 @@
 
 #include <thread>
 
-#include "include/saauso.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-smi.h"
 #include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
 
-class HandleThreadTest : public testing::Test {
- protected:
-  static void SetUpTestSuite() {
-    saauso::Saauso::Initialize();
-    isolate_ = Isolate::New();
-  }
-  static void TearDownTestSuite() {
-    Isolate::Dispose(isolate_);
-    isolate_ = nullptr;
-    saauso::Saauso::Dispose();
-  }
-
-  static Isolate* isolate_;
-};
-
-Isolate* HandleThreadTest::isolate_ = nullptr;
+class HandleThreadTest : public IsolateOnlyTestBase {};
 
 TEST_F(HandleThreadTest, HandleScopeStateIsThreadLocalAndCleansUpAfterThread) {
   int base_blocks = 0;

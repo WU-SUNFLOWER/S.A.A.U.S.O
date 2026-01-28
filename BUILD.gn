@@ -161,31 +161,7 @@ executable("vm") {
   ]
 }
 
-executable("ut") {
-  testonly = true  # 声明这只是一个测试目标
-
-  sources = [
-    # 单元测试文件
-    "//test/unittests/attribute-unittest.cc",
-    "//test/unittests/basic-interpreter-unittest.cc",
-    "//test/unittests/gc-unittest.cc",
-    "//test/unittests/global-handle-unittest.cc",
-    "//test/unittests/handle-thread-unittest.cc",
-    "//test/unittests/handle-unittest.cc",
-    "//test/unittests/py-dict-unittest.cc",
-    "//test/unittests/py-float-unittest.cc",
-    "//test/unittests/py-list-unittest.cc",
-    "//test/unittests/py-object-unittest.cc",
-    "//test/unittests/py-smi-unittest.cc",
-    "//test/unittests/py-string-unittest.cc",
-    "//test/unittests/py-tuple-unittest.cc",
-    "//test/unittests/pyc-file-parser-unittest.cc",
-    "//test/unittests/string-search-unittest.cc",
-  ]
-
-  deps = [
-    ":saauso_core",
-    ":saauso_cpython312_compiler",
-    "//testing/gtest",
-  ]
+group("ut") {
+  testonly = true
+  deps = [ "//test/unittests:ut" ]
 }
