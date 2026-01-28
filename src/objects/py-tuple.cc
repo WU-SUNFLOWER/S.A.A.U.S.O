@@ -17,6 +17,8 @@
 namespace saauso::internal {
 
 Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
+  assert(0 <= length);
+
   HandleScope scope;
 
   size_t object_size = ComputeObjectSize(length);

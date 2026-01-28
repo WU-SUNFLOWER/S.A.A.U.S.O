@@ -26,6 +26,10 @@ class FrameObject : Object {
                                   Handle<PyObject> host,
                                   Handle<PyTuple> actual_pos_args,
                                   Handle<PyDict> actual_kw_args);
+  static FrameObject* NewInstance(Handle<PyFunction> func,
+                                  Handle<PyObject> host,
+                                  Handle<PyTuple> actual_args,
+                                  Handle<PyTuple> kwarg_keys);
 
   FrameObject(const FrameObject&) = delete;
   FrameObject operator=(const FrameObject&) = delete;

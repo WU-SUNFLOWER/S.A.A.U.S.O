@@ -402,16 +402,40 @@ exit_interpreter:
   return;
 }
 
+/*
+void Interpreter::InvokeCallable(Handle<PyObject> callable,
+                                 Handle<PyTuple> actual_args,
+                                 Handle<PyTuple> kwarg_keys) {
+  Handle<PyObject> host;
+  NormalizeCallable(callable, host);
+
+  // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
+  if (IsNormalPyFunction(callable)) {
+    FrameObject* frame = FrameObject::NewInstance(
+        Handle<PyFunction>::cast(callable), host, actual_args, kwarg_keys);
+    EnterFrame(frame);
+    return;
+  }
+
+  // Slow Path：先对用户传入的实参进行归一化，再尝试调用callable的call虚方法
+  Handle<PyTuple> pos_args;
+  Handle<PyDict> kw_args;
+  NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
+  Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
+  PUSH(result);
+}
+*/
+
 void Interpreter::InvokeCallable(Handle<PyObject> callable,
                                  Handle<PyTuple> actual_args,
                                  Handle<PyTuple> kwarg_keys) {
   Handle<PyObject> host;
   Handle<PyTuple> pos_args;
   Handle<PyDict> kw_args;
-  NormalizeCallable(callable, host);
   NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
+  NormalizeCallable(callable, host);
 
-  // 如果是普通的python函数，那么直接创建并进入新的解释器栈帧
+  // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObject::NewInstance(
         Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
@@ -419,7 +443,7 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
     return;
   }
 
-  // 兜底：尝试调用callable的call虚方法
+  // Slow Path：先对用户传入的实参进行归一化，再尝试调用callable的call虚方法
   Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
   PUSH(result);
 }
