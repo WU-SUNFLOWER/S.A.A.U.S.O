@@ -70,4 +70,15 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
 #undef CALL_NEXT_FUNC
 }
 
+Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
+  HandleScope scope;
+  Handle<PyList> tmp = PyList::NewInstance();
+  Runtime_ExtendListByItratableObject(tmp, iterable);
+  Handle<PyTuple> tuple = PyTuple::NewInstance(tmp->length());
+  for (int64_t i = 0; i < tmp->length(); ++i) {
+    tuple->SetInternal(i, tmp->Get(i));
+  }
+  return tuple;
+}
+
 }  // namespace saauso::internal

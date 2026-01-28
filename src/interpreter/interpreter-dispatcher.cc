@@ -428,15 +428,10 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyTuple> pos_args;
     if (args_obj.IsNull()) {
       pos_args = PyTuple::NewInstance(0);
-    } else if (IsPyTuple(*args_obj)) {
+    } else if (IsPyTuple(args_obj)) {
       pos_args = Handle<PyTuple>::cast(args_obj);
     } else {
-      Handle<PyList> tmp = PyList::NewInstance();
-      Runtime_ExtendListByItratableObject(tmp, args_obj);
-      pos_args = PyTuple::NewInstance(tmp->length());
-      for (int64_t i = 0; i < tmp->length(); ++i) {
-        pos_args->SetInternal(i, tmp->Get(i));
-      }
+      pos_args = Runtime_UnpackIterableObjectToTuple(args_obj);
     }
 
     InvokeCallableNormalized(callable, pos_args, kw_args);

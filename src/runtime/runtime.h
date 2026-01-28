@@ -11,6 +11,7 @@ namespace saauso::internal {
 
 class PyObject;
 class PyList;
+class PyTuple;
 
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
 
@@ -18,6 +19,8 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object);
 
 void Runtime_ExtendListByItratableObject(Handle<PyList> list,
                                          Handle<PyObject> iteratable);
+
+Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 
 }  // namespace saauso::internal
 
