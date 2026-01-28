@@ -65,7 +65,7 @@ class BasicInterpreterTest : public EmbeddedPython312VmTestBase {
   static Global<PyList> printv_result_;
 };
 
-constexpr std::string_view kInterpreterTestFileName = "saauso_test.py";
+inline constexpr std::string_view kInterpreterTestFileName = "saauso_test.py";
 
 }  // namespace saauso::internal
 
