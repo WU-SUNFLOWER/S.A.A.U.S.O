@@ -46,7 +46,7 @@ Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
   HandleScope scope;
   auto object = Handle<PyList>::cast(self);
   if (object->IsEmpty()) {
-    std::printf("IndexError: pop from empty list\n");
+    std::fprintf(stderr, "IndexError: pop from empty list\n");
     std::exit(1);
   }
   return object->Pop();
@@ -227,9 +227,9 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
                                           Handle<PyObject> coeff) {
   if (!IsPySmi(coeff)) {
-    std::printf("can't multiply sequence by non-int of type '%.*s'",
-                static_cast<int>(PyObject::GetKlass(coeff)->name()->length()),
-                PyObject::GetKlass(coeff)->name()->buffer());
+    std::fprintf(stderr, "can't multiply sequence by non-int of type '%.*s'",
+                 static_cast<int>(PyObject::GetKlass(coeff)->name()->length()),
+                 PyObject::GetKlass(coeff)->name()->buffer());
     std::exit(1);
   }
 
@@ -250,9 +250,9 @@ Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
   if (!IsPySmi(subscr)) {
-    std::printf("list indices must be integers or slices, not %.*s",
-                static_cast<int>(PyObject::GetKlass(subscr)->name()->length()),
-                PyObject::GetKlass(subscr)->name()->buffer());
+    std::fprintf(stderr, "list indices must be integers or slices, not %.*s",
+                 static_cast<int>(PyObject::GetKlass(subscr)->name()->length()),
+                 PyObject::GetKlass(subscr)->name()->buffer());
     std::exit(1);
   }
 
@@ -268,7 +268,7 @@ void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
-    std::printf("IndexError: list assignment index out of range");
+    std::fprintf(stderr, "IndexError: list assignment index out of range");
     std::exit(1);
   }
 
@@ -282,7 +282,7 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
-    std::printf("IndexError: list assignment index out of range");
+    std::fprintf(stderr, "IndexError: list assignment index out of range");
     std::exit(1);
   }
 

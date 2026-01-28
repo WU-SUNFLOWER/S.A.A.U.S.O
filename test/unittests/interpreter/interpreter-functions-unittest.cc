@@ -8,6 +8,7 @@
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -76,6 +77,27 @@ print(add5(10))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, FunctionWithDefaultArgsWithKwOverride) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b = 1, c = 2):
+    return a + b + c
+
+print(foo(10, c = 30))     # 41
+print(foo(a = 10, c = 30)) # 41
+print(foo(10, b = 20))     # 32
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(41)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(41)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(32)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, FunctionKeyArgs) {
   HandleScope scope;
 
@@ -112,6 +134,23 @@ print(sum(1, 2, 3, 4))
 
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, PyFloat::NewInstance(10));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, FunctionMixedPosAndKwArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def bar(a, b, c):
+    return a * 100 + b * 10 + c
+
+print(bar(1, c = 3, b = 2))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(123));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -158,5 +197,136 @@ print(calc(1, 2, 3, 4, coeff = 2))
   ExpectPrintResult(expected_printv_result);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, ExtendArgsEmptyPack) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+def f(a, *args):
+    return a + len(args)
+
+def g(**kwargs):
+    return len(kwargs)
+
+def h(a, *args, **kwargs):
+    return a + len(args) + len(kwargs)
+
+print(f(10))
+print(g())
+print(h(1))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(10)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, MethodCallInjectSelf) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+a = "hello world"
+print(a.upper())
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("HELLO WORLD"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallWithStarArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a + b + c
+
+t = (1, 2, 3)
+print(foo(*t))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallWithStarKwArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a + b + c
+
+d = {"a": 1, "b": 2, "c": 3}
+print(foo(**d))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, FunctionCallErrors) {
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def foo(a, b = 1, c = 2):
+    return a + b + c
+
+foo()
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def bar(a, b, c):
+    return a + b + c
+
+bar(1, 2, 3, 4)
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def bar(a, b, c):
+    return a + b + c
+
+bar(1, a = 2, b = 3, c = 4)
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def bar(a, b, c):
+    return a + b + c
+
+bar(d = 1, a = 2, b = 3, c = 4)
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+}
+
+}  // namespace saauso::internal

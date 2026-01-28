@@ -19,7 +19,6 @@
 #include "src/runtime/string-table.h"
 #include "src/utils/allocation.h"
 
-
 namespace saauso::internal {
 
 void Heap::Setup(size_t young_generation_size,
@@ -57,8 +56,8 @@ Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
   }
 
   if (result == kNullAddress) {
-    std::printf("OOM: Failed to allocate %zu bytes in space %d\n",
-                size_in_bytes, static_cast<int>(space));
+    std::fprintf(stderr, "OOM: Failed to allocate %zu bytes in space %d\n",
+                 size_in_bytes, static_cast<int>(space));
     std::exit(1);
   }
 

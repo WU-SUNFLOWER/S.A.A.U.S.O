@@ -11,27 +11,24 @@
 #include "src/code/cpython312-pyc-file-parser.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
+#include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 
 using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-def foo(**kwargs):
-    sum = 0
-    for k, v in kwargs.items():
-        print(k, v)
-        if kwargs[k] is not v:
-            print("fail")
-        sum += v
-    print(kwargs)
-    return sum
-print(foo(a = 1, b = 4, c = 5))
+def bar(a, b, c):
+    return a + b + c
+
+bar(1, a = 2, b = 3, c = 4)
 )";
 
 int main() {

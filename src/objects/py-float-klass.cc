@@ -33,7 +33,8 @@ double ExtractValue(Handle<PyObject> object) {
     return PySmi::ToInt(Handle<PySmi>::cast(object));
   }
 
-  std::printf(
+  std::fprintf(
+      stderr,
       "TypeError: unsupported operand type(s) for +: 'float' and '%.*s'",
       static_cast<int>(PyObject::GetKlass(object)->name()->length()),
       PyObject::GetKlass(object)->name()->buffer());
@@ -140,7 +141,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
-    std::printf("ZeroDivisionError: float division by zero");
+    std::fprintf(stderr, "ZeroDivisionError: float division by zero");
     std::exit(1);
   }
   return PyFloat::NewInstance(self_value / other_value);
@@ -153,7 +154,7 @@ Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
-    std::printf("ZeroDivisionError: float modulo");
+    std::fprintf(stderr, "ZeroDivisionError: float modulo");
     std::exit(1);
   }
   return PyFloat::NewInstance(PythonMod(self_value, other_value));

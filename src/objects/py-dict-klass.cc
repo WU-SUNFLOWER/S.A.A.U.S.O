@@ -62,8 +62,9 @@ Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
   HandleScope scope;
 
   if (args->length() < 1 || args->length() > 2) {
-    std::printf("TypeError: pop expected at most 2 arguments, got %lld\n",
-                static_cast<long long>(args->length()));
+    std::fprintf(stderr,
+                 "TypeError: pop expected at most 2 arguments, got %lld\n",
+                 static_cast<long long>(args->length()));
     std::exit(1);
   }
 

@@ -10,6 +10,7 @@
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-code-object.h"
+#include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
@@ -167,8 +168,8 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    std::printf("NameError: name '%s' is not defined\n",
-                Tagged<PyString>::cast(key)->buffer());
+    std::fprintf(stderr, "NameError: name '%s' is not defined\n",
+                 Tagged<PyString>::cast(key)->buffer());
     std::exit(1);
   })
 
@@ -196,6 +197,41 @@ void Interpreter::EvalCurrentFrame() {
       PyDict::Put(result, key, value);
     }
     PUSH(result);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(DictMerge, {
+    Handle<PyObject> update = POP();
+    Handle<PyObject> target = TOP();
+    if (!IsPyDict(*target) || !IsPyDict(*update)) {
+      std::fprintf(stderr, "TypeError: DICT_MERGE expected dict operands\n");
+      std::exit(1);
+    }
+
+    auto target_dict = Handle<PyDict>::cast(target);
+    auto update_dict = Handle<PyDict>::cast(update);
+
+    auto iter = PyDictItemIterator::NewInstance(update_dict);
+    auto item = Handle<PyTuple>::cast(PyObject::Next(iter));
+    while (!item.IsNull()) {
+      auto key = item->Get(0);
+      auto value = item->Get(1);
+
+      if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
+        if (IsPyString(*key)) {
+          std::fprintf(
+              stderr,
+              "TypeError: got multiple values for keyword argument '%s'\n",
+              Handle<PyString>::cast(key)->buffer());
+        } else {
+          std::fprintf(stderr,
+                       "TypeError: got multiple values for keyword argument\n");
+        }
+        std::exit(1);
+      }
+
+      PyDict::Put(target_dict, key, value);
+      item = Handle<PyTuple>::cast(PyObject::Next(iter));
+    }
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {
@@ -228,7 +264,7 @@ void Interpreter::EvalCurrentFrame() {
         PUSH(PyObject::GreaterEqual(l, r));
         break;
       default:
-        std::printf("unknown compare op type: %d\n", compare_op_type);
+        std::fprintf(stderr, "unknown compare op type: %d\n", compare_op_type);
         std::exit(1);
     }
   })
@@ -272,9 +308,8 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    std::printf("NameError: name '");
-    PyObject::Print(key);
-    std::printf("' is not defined\n");
+    std::fprintf(stderr, "NameError: name '%s' is not defined\n",
+                 Handle<PyString>::cast(key)->buffer());
     std::exit(1);
   })
 
@@ -374,6 +409,39 @@ void Interpreter::EvalCurrentFrame() {
     Runtime_ExtendListByItratableObject(Handle<PyList>::cast(list), source);
   })
 
+  INTERPRETER_HANDLER_WITH_SCOPE(CallFunctionEx, {
+    Handle<PyDict> kw_args;
+    if ((op_arg & 1) != 0) {
+      Handle<PyObject> kw = POP();
+      if (!IsPyDict(*kw)) {
+        std::fprintf(
+            stderr,
+            "TypeError: CALL_FUNCTION_EX expected a dict for **kwargs\n");
+        std::exit(1);
+      }
+      kw_args = Handle<PyDict>::cast(kw);
+    }
+
+    Handle<PyObject> args_obj = POP();
+    Handle<PyObject> callable = POP();
+
+    Handle<PyTuple> pos_args;
+    if (args_obj.IsNull()) {
+      pos_args = PyTuple::NewInstance(0);
+    } else if (IsPyTuple(*args_obj)) {
+      pos_args = Handle<PyTuple>::cast(args_obj);
+    } else {
+      Handle<PyList> tmp = PyList::NewInstance();
+      Runtime_ExtendListByItratableObject(tmp, args_obj);
+      pos_args = PyTuple::NewInstance(tmp->length());
+      for (int64_t i = 0; i < tmp->length(); ++i) {
+        pos_args->SetInternal(i, tmp->Get(i));
+      }
+    }
+
+    InvokeCallableNormalized(callable, pos_args, kw_args);
+  })
+
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {
     Handle<PyTuple> args;
     if (op_arg > 0) {
@@ -395,7 +463,7 @@ void Interpreter::EvalCurrentFrame() {
 #undef INTERPRETER_HANDLER
 
 unknown_bytecode:
-  std::printf("unknown bytecode %d, arguments %d\n", op_code, op_arg);
+  std::fprintf(stderr, "unknown bytecode %d, arguments %d\n", op_code, op_arg);
   std::exit(1);
 
 exit_interpreter:
@@ -429,13 +497,18 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
 void Interpreter::InvokeCallable(Handle<PyObject> callable,
                                  Handle<PyTuple> actual_args,
                                  Handle<PyTuple> kwarg_keys) {
-  Handle<PyObject> host;
   Handle<PyTuple> pos_args;
   Handle<PyDict> kw_args;
   NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
+  InvokeCallableNormalized(callable, pos_args, kw_args);
+}
+
+void Interpreter::InvokeCallableNormalized(Handle<PyObject> callable,
+                                           Handle<PyTuple> pos_args,
+                                           Handle<PyDict> kw_args) {
+  Handle<PyObject> host;
   NormalizeCallable(callable, host);
 
-  // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObject::NewInstance(
         Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
@@ -443,7 +516,6 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
     return;
   }
 
-  // Slow Path：先对用户传入的实参进行归一化，再尝试调用callable的call虚方法
   Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
   PUSH(result);
 }

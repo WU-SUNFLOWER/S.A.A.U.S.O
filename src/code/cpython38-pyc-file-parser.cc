@@ -2,11 +2,10 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/code/pyc-file-parser.h"
-
 #include <cassert>
 
 #include "src/code/binary-file-reader.h"
+#include "src/code/pyc-file-parser.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-float.h"
@@ -216,7 +215,7 @@ Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
       break;
     }
     default:
-      std::printf("unknown object type: %c\n", object_type);
+      std::fprintf(stderr, "unknown object type: %c\n", object_type);
       std::exit(1);
   }
 
@@ -280,7 +279,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
         object = ParseTuple(string_table, cache);
         break;
       default:
-        std::printf("unknown object type: %c\n", object_type);
+        std::fprintf(stderr, "unknown object type: %c\n", object_type);
         std::exit(1);
     }
 
@@ -345,7 +344,8 @@ Handle<PyString> PycFileParser::ParseNoTable(Handle<PyList> string_table,
       break;
     }
     default:
-      std::printf("expect a string for no table, but got %c\n", object_type);
+      std::fprintf(stderr, "expect a string for no table, but got %c\n",
+                   object_type);
       std::exit(1);
   }
 

@@ -107,9 +107,9 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
                                real_formal_pos_arg_cnt)) {
         // 不允许重复对形参赋值
         if (!fast_locals->Get(index_in_var_args).IsNull()) {
-          std::printf("TypeError: %s() got multiple values for argument '%s'\n",
-                      func_name->buffer(), key->buffer());
-          PyObject::Print(value);
+          std::fprintf(
+              stderr, "TypeError: %s() got multiple values for argument '%s'\n",
+              func_name->buffer(), key->buffer());
           std::exit(1);
         }
 
@@ -128,8 +128,9 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
         PyDict::Put(kw_args, key, value);
       } else {
         // 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误
-        std::printf("TypeError: %s() got an unexpected keyword argument '%s'\n",
-                    func_name->buffer(), key->buffer());
+        std::fprintf(
+            stderr, "TypeError: %s() got an unexpected keyword argument '%s'\n",
+            func_name->buffer(), key->buffer());
         std::exit(1);
       }
 
@@ -139,24 +140,29 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   }
 
   // 使用默认值填装尚未被赋值的函数形参
+  // 使用默认值填充fast_locals中的空洞
   auto default_args = func->default_args();
   if (!default_args.IsNull()) {
     auto default_arg_cnt = default_args->length();
     auto arg_list_index = real_formal_pos_arg_cnt - 1;
-    while (default_arg_cnt > 0 && fast_locals->Get(arg_list_index).IsNull()) {
-      fast_locals->Set(arg_list_index, default_args->Get(default_arg_cnt - 1));
+    while (default_arg_cnt > 0) {
+      if (fast_locals->Get(arg_list_index).IsNull()) {
+        fast_locals->Set(arg_list_index,
+                         default_args->Get(default_arg_cnt - 1));
+        // 同理，让fast_locals_idx游标在逻辑上向右移动一下
+        ++fast_locals_idx;
+      }
       --default_arg_cnt;
       --arg_list_index;
-      // 同理，让fast_locals_idx游标在逻辑上向右移动一下
-      ++fast_locals_idx;
     }
   }
 
   // 如果还有形参没有有效值，那么抛出错误
   if (fast_locals_idx < real_formal_pos_arg_cnt) {
-    std::printf("TypeError: %s() missing %" PRId64
-                " required positional argument",
-                func_name->buffer(), real_formal_pos_arg_cnt - fast_locals_idx);
+    std::fprintf(
+        stderr,
+        "TypeError: %s() missing %" PRId64 " required positional argument",
+        func_name->buffer(), real_formal_pos_arg_cnt - fast_locals_idx);
     std::exit(1);
   }
 
@@ -174,10 +180,11 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   if (!actual_pos_args.IsNull() && extend_pos_arg_cnt > 0) {
     // 如果函数不接受扩展参数，直接报错
     if (extend_pos_args.IsNull()) {
-      std::printf("TypeError: %s() takes %" PRId64
-                  " positional arguments but %" PRId64 " were given",
-                  func_name->buffer(), real_formal_pos_arg_cnt,
-                  actual_pos_args->length() + self_arg_cnt);
+      std::fprintf(stderr,
+                   "TypeError: %s() takes %" PRId64
+                   " positional arguments but %" PRId64 " were given",
+                   func_name->buffer(), real_formal_pos_arg_cnt,
+                   actual_pos_args->length() + self_arg_cnt);
       std::exit(1);
     }
 
@@ -270,8 +277,9 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
                              real_formal_pos_arg_cnt)) {
       // 不允许重复对形参赋值
       if (!fast_locals->Get(index_in_var_args).IsNull()) {
-        std::printf("TypeError: %s() got multiple values for argument '%s'\n",
-                    func_name->buffer(), key->buffer());
+        std::fprintf(stderr,
+                     "TypeError: %s() got multiple values for argument '%s'\n",
+                     func_name->buffer(), key->buffer());
         PyObject::Print(value);
         std::exit(1);
       }
@@ -292,30 +300,35 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
     }
 
     // 3. 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误
-    std::printf("TypeError: %s() got an unexpected keyword argument '%s'\n",
-                func_name->buffer(), key->buffer());
+    std::fprintf(stderr,
+                 "TypeError: %s() got an unexpected keyword argument '%s'\n",
+                 func_name->buffer(), key->buffer());
     std::exit(1);
   }
 
-  // 使用默认值填装尚未被赋值的函数形参
+  // 使用默认值填充fast_locals中的空洞
   auto default_args = func->default_args();
   if (!default_args.IsNull()) {
     auto default_arg_cnt = default_args->length();
     auto arg_list_index = real_formal_pos_arg_cnt - 1;
-    while (default_arg_cnt > 0 && fast_locals->Get(arg_list_index).IsNull()) {
-      fast_locals->Set(arg_list_index, default_args->Get(default_arg_cnt - 1));
+    while (default_arg_cnt > 0) {
+      if (fast_locals->Get(arg_list_index).IsNull()) {
+        fast_locals->Set(arg_list_index,
+                         default_args->Get(default_arg_cnt - 1));
+        // 同理，让fast_locals_idx游标在逻辑上向右移动一下
+        ++fast_locals_idx;
+      }
       --default_arg_cnt;
       --arg_list_index;
-      // 同理，让fast_locals_idx游标在逻辑上向右移动一下
-      ++fast_locals_idx;
     }
   }
 
   // 如果还有形参没有有效值，那么抛出错误
   if (fast_locals_idx < real_formal_pos_arg_cnt) {
-    std::printf("TypeError: %s() missing %" PRId64
-                " required positional argument",
-                func_name->buffer(), real_formal_pos_arg_cnt - fast_locals_idx);
+    std::fprintf(
+        stderr,
+        "TypeError: %s() missing %" PRId64 " required positional argument",
+        func_name->buffer(), real_formal_pos_arg_cnt - fast_locals_idx);
     std::exit(1);
   }
 
@@ -328,10 +341,11 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   if (actual_extend_pos_arg_cnt > 0) {
     // 如果函数不接受扩展参数，直接报错
     if (extend_pos_args.IsNull()) {
-      std::printf("TypeError: %s() takes %" PRId64
-                  " positional arguments but %" PRId64 " were given",
-                  func_name->buffer(), real_formal_pos_arg_cnt,
-                  actual_arg_cnt + self_arg_cnt);
+      std::fprintf(stderr,
+                   "TypeError: %s() takes %" PRId64
+                   " positional arguments but %" PRId64 " were given",
+                   func_name->buffer(), real_formal_pos_arg_cnt,
+                   actual_arg_cnt + self_arg_cnt);
       std::exit(1);
     }
 

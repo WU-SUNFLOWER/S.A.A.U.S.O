@@ -55,14 +55,15 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
   auto target = args->Get(0);
   if (!IsPyString(target)) {
     auto type_name = PyObject::GetKlass(target)->name();
-    std::printf("TypeError: must be str, not %s\n", type_name->buffer());
+    std::fprintf(stderr, "TypeError: must be str, not %s\n",
+                 type_name->buffer());
     std::exit(1);
   }
 
   auto target_str = Handle<PyString>::cast(target);
   auto result = str_object->IndexOf(target_str);
   if (result == -1) {
-    std::printf("ValueError: substring not found");
+    std::fprintf(stderr, "ValueError: substring not found");
     std::exit(1);
   }
 
@@ -209,7 +210,7 @@ Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             s->length())) [[unlikely]] {
-    std::printf("IndexError: string index out of range");
+    std::fprintf(stderr, "IndexError: string index out of range");
     std::exit(1);
   }
 
@@ -221,9 +222,10 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
                                             Handle<PyObject> other) {
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
-    std::printf("TypeError: can only concatenate str (not \"%.*s\") to str",
-                static_cast<int>(other_klass->name()->length()),
-                other_klass->name()->buffer());
+    std::fprintf(stderr,
+                 "TypeError: can only concatenate str (not \"%.*s\") to str",
+                 static_cast<int>(other_klass->name()->length()),
+                 other_klass->name()->buffer());
     std::exit(1);
   }
 

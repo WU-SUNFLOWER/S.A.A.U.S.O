@@ -385,8 +385,8 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       }
       value *= sign;
       if (value > INT32_MAX || value < INT32_MIN) {
-        std::printf("marshal long out of int32 range: %lld\n",
-                    static_cast<long long>(value));
+        std::fprintf(stderr, "marshal long out of int32 range: %lld\n",
+                     static_cast<long long>(value));
         std::exit(1);
       }
       object = Handle<PyObject>(PySmi::FromInt(static_cast<int>(value)));
@@ -493,7 +493,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = Handle<PyObject>::Null();
       break;
     default:
-      std::printf("marshal parser: unrecognized type : %c\n", object_type);
+      std::fprintf(stderr, "marshal parser: unrecognized type : %c\n", object_type);
       std::exit(1);
   }
 

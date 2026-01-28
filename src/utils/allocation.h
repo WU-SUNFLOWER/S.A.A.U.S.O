@@ -18,7 +18,7 @@ template <typename T>
 T* NewArray(size_t length) {
   T* result = new (std::nothrow) T[length];
   if (result == nullptr) [[unlikely]] {
-    std::printf("VM OOM\n");
+    std::fprintf(stderr, "VM OOM\n");
     std::exit(1);
   }
   return result;

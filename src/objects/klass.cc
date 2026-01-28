@@ -32,9 +32,8 @@ Handle<PyObject> FindAndCall(Handle<PyObject> object,
     return Isolate::Current()->interpreter()->CallPython(func, args, kwargs);
   }
 
-  std::printf("class ");
-  PyObject::Print(PyObject::GetKlass(object)->name());
-  std::printf(" Error : unsupport operation for class ");
+  std::fprintf(stderr, "class %s Error : unsupport operation for class",
+               PyObject::GetKlass(object)->name()->buffer());
   std::exit(1);
 
   return handle(Isolate::Current()->py_none_object());
@@ -260,8 +259,9 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
                                              Handle<PyObject> kwargs) {
   Handle<PyObject> callable = PyObject::GetAttr(self, ST(call));
   if (IsPyNone(callable)) {
-    PyObject::Print(callable);
-    std::printf(" is non-callable\n");
+    // TypeError: 'str' object is not callable
+    std::fprintf(stderr, "TypeError: '%s' object is not callable\n",
+                 PyObject::GetKlass(callable)->name()->buffer());
     std::exit(1);
   }
 
@@ -312,11 +312,9 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
 
   // 4. 还没找到，抛出错误并崩溃
   // AttributeError: 'A' object has no attribute 'xxx'
-  std::printf("AttributeError: '");
-  PyObject::Print(PyObject::GetKlass(self)->name());
-  std::printf("' object has no attribute '");
-  PyObject::Print(prop_name);
-  std::printf("'\n");
+  std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
+               PyObject::GetKlass(self)->name()->buffer(),
+               Handle<PyString>::cast(prop_name)->buffer());
 
   return Handle<PyObject>::Null();
 }
@@ -328,11 +326,9 @@ void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
 
   if (properties.IsNull()) {
     // 对齐cpython: 对于不存在__dict__的对象，直接抛错误
-    std::printf("AttributeError: '");
-    PyObject::Print(PyObject::GetKlass(self)->name());
-    std::printf("' object has no attribute '");
-    PyObject::Print(property_name);
-    std::printf("'\n");
+    std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
+                 PyObject::GetKlass(self)->name()->buffer(),
+                 Handle<PyString>::cast(property_name)->buffer());
     std::exit(1);
   }
 

@@ -47,6 +47,8 @@ namespace saauso::internal {
   V(Resume, 151)           \
   V(BuildConstKeyMap, 156) \
   V(ListExtend, 162)       \
+  V(DictMerge, 164)        \
+  V(CallFunctionEx, 142)   \
   V(Call, 171)             \
   V(KwNames, 172)
 
