@@ -5,6 +5,8 @@
 #include "src/objects/py-object.h"
 
 #include <cassert>
+#include <cstdio>
+#include <cstdlib>
 
 #include "py-object.h"
 #include "src/handles/handles.h"
@@ -28,6 +30,7 @@
 #include "src/objects/py-smi-klass.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-string.h"
 #include "src/objects/py-tuple-iterator-klass.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-tuple.h"
@@ -249,10 +252,37 @@ Handle<PyObject> PyObject::Div(Handle<PyObject> self, Handle<PyObject> other) {
   return GetKlass(*self)->vtable_.div(self, other).EscapeFrom(&scope);
 }
 
+Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
+  int64_t other_value;
+  if (IsPySmi(self) && IsPySmi(other) &&
+      (other_value = PySmi::cast(*other).value()) != 0) {
+    int64_t self_value = PySmi::cast(*self).value();
+    return Handle<PyObject>(
+        PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
+  }
+
+  HandleScope scope;
+
+  auto floor_div = GetKlass(*self)->vtable_.floor_div;
+  if (floor_div == nullptr) [[unlikely]] {
+    auto self_name = GetKlass(self)->name();
+    auto other_name = GetKlass(other)->name();
+    std::fprintf(
+        stderr,
+        "TypeError: unsupported operand type(s) for //: '%.*s' and '%.*s'",
+        static_cast<int>(self_name->length()), self_name->buffer(),
+        static_cast<int>(other_name->length()), other_name->buffer());
+    std::exit(1);
+  }
+
+  return floor_div(self, other).EscapeFrom(&scope);
+}
+
 // python virtual function
 Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi(*self) && IsPySmi(*other)) {
+  if (IsPySmi(self) && IsPySmi(other)) {
     auto result =
         PythonMod(PySmi::cast(*self).value(), PySmi::cast(*other).value());
     return Handle<PyObject>(PySmi::FromInt(result));

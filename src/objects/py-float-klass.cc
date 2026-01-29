@@ -70,6 +70,7 @@ void PyFloatKlass::PreInitialize() {
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
   vtable_.div = &Virtual_Div;
+  vtable_.floor_div = &Virtual_FloorDiv;
   vtable_.mod = &Virtual_Mod;
   vtable_.greater = &Virtual_Greater;
   vtable_.less = &Virtual_Less;
@@ -145,6 +146,19 @@ Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
     std::exit(1);
   }
   return PyFloat::NewInstance(self_value / other_value);
+}
+
+// static
+Handle<PyObject> PyFloatKlass::Virtual_FloorDiv(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
+  assert(IsPyFloat(self));
+  double self_value = Handle<PyFloat>::cast(self)->value();
+  double other_value = ExtractValue(other);
+  if (other_value == 0) {
+    std::fprintf(stderr, "ZeroDivisionError: float floor division by zero");
+    std::exit(1);
+  }
+  return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
 }
 
 // static

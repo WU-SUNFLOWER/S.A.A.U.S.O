@@ -105,6 +105,8 @@ class PyObject : public Object {
   static Handle<PyObject> Sub(Handle<PyObject> self, Handle<PyObject> other);
   static Handle<PyObject> Mul(Handle<PyObject> self, Handle<PyObject> other);
   static Handle<PyObject> Div(Handle<PyObject> self, Handle<PyObject> other);
+  static Handle<PyObject> FloorDiv(Handle<PyObject> self,
+                                   Handle<PyObject> other);
   static Handle<PyObject> Mod(Handle<PyObject> self, Handle<PyObject> other);
 
   static Handle<PyObject> Len(Handle<PyObject> self);

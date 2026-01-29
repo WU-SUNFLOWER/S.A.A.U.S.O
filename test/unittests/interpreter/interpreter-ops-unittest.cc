@@ -5,7 +5,9 @@
 #include <string_view>
 
 #include "src/handles/handles.h"
+#include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
@@ -56,6 +58,33 @@ print(1 != 6)
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyFalseObject());
   AppendExpected(expected_printv_result, PyTrueObject());
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, FloorDivideOpTest) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+print(7 // 2)
+print((0 - 7) // 2)
+print(7 // (0 - 2))
+print((0 - 7) // (0 - 2))
+
+print(7.0 // 2)
+print(7 // 2.0)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-4)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-4)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(3.0));
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(3.0));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -129,4 +158,3 @@ print(x not in z)
 }
 
 }  // namespace saauso::internal
-

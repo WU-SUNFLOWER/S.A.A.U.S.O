@@ -333,6 +333,10 @@ void Interpreter::EvalCurrentFrame() {
       case BinaryOpType::kInplaceTrueDivide:
         PUSH(PyObject::Div(l, r));
         break;
+      case BinaryOpType::kFloorDivide:
+      case BinaryOpType::kInplaceFloorDivide:
+        PUSH(PyObject::FloorDiv(l, r));
+        break;
       case BinaryOpType::kRemainder:
       case BinaryOpType::kInplaceRemainder:
         PUSH(PyObject::Mod(l, r));

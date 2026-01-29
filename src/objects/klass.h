@@ -64,6 +64,8 @@ struct VirtualTable {
   VirtualFuncType_1_2_SAFE mul{nullptr};
   // Tagged<PyObject> div(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE div{nullptr};
+  // Tagged<PyObject> floor_div(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE floor_div{nullptr};
 
   uint64_t (*hash)(OopHandle){nullptr};
 

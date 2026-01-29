@@ -43,6 +43,7 @@ void PySmiKlass::PreInitialize() {
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
   vtable_.div = &Virtual_Div;
+  vtable_.floor_div = &Virtual_FloorDiv;
   vtable_.mod = &Virtual_Mod;
   vtable_.hash = &Virtual_Hash;
   vtable_.greater = &Virtual_Greater;
@@ -159,6 +160,41 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
 
   std::fprintf(stderr,
                "TypeError: unsupported operand type(s) for /: 'int' and '%.*s'",
+               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+               PyObject::GetKlass(other)->name()->buffer());
+  std::exit(1);
+
+  return Handle<PyObject>::null();
+}
+
+// static
+Handle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
+  assert(IsPySmi(self));
+
+  int64_t self_value = PySmi::cast(*self).value();
+
+  if (IsPySmi(other)) {
+    int64_t other_value = PySmi::cast(*other).value();
+    if (other_value == 0) {
+      std::fprintf(stderr,
+                   "ZeroDivisionError: integer division or modulo by zero");
+      std::exit(1);
+    }
+    return handle(PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
+  }
+
+  if (IsPyFloat(other)) {
+    double other_value = Handle<PyFloat>::cast(other)->value();
+    if (other_value == 0) {
+      std::fprintf(stderr, "ZeroDivisionError: float floor division by zero");
+      std::exit(1);
+    }
+    return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
+  }
+
+  std::fprintf(stderr,
+               "TypeError: unsupported operand type(s) for //: 'int' and '%.*s'",
                static_cast<int>(PyObject::GetKlass(other)->name()->length()),
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);

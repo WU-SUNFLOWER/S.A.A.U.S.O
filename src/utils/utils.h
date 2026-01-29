@@ -21,6 +21,16 @@ auto PythonMod(T1 a, T2 b) {
   }
 }
 
+template <typename T1, typename T2>
+auto PythonFloorDivide(T1 a, T2 b) {
+  if constexpr (std::is_integral_v<T1> && std::is_integral_v<T2>) {
+    auto r = PythonMod(a, b);
+    return (a - r) / b;
+  } else {
+    return std::floor(static_cast<double>(a) / static_cast<double>(b));
+  }
+}
+
 template <typename T>
 bool InRangeWithRightOpen(T v, T l, T r) {
   return l <= v && v < r;

@@ -30,6 +30,7 @@ class PySmiKlass : public Klass {
   static Handle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
   static Handle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
   static Handle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
+  static Handle<PyObject> Virtual_FloorDiv(Handle<PyObject>, Handle<PyObject>);
   static Handle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
 
   static uint64_t Virtual_Hash(Handle<PyObject> self);
