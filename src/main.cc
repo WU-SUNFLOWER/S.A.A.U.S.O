@@ -25,10 +25,14 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-def bar(a, b, c):
-    return a + b + c
-
-bar(1, a = 2, b = 3, c = 4)
+def foo(**kwargs):
+    sum = 0
+    for k, v in kwargs.items():
+        if kwargs[k] is not v:
+            print("fail")
+        sum += v
+    return sum
+print(foo(a = 1, b = 4, c = 5))
 )";
 
 int main() {

@@ -241,20 +241,22 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   // 不算self、*args和**kwargs的形参个数
   const int64_t formal_pos_arg_cnt = real_formal_pos_arg_cnt - self_arg_cnt;
 
-  // 全体用户传入的实参个数
+  // 用户传入的全体实参个数
   const int64_t actual_arg_cnt =
       actual_args.IsNull() ? 0 : actual_args->length();
   // 用户通过键值对形式传入的实参个数
   const int64_t actual_kw_arg_cnt =
       kwarg_keys.IsNull() ? 0 : kwarg_keys->length();
   // 打包进*args的实参个数
-  const int64_t actual_extend_pos_arg_cnt = actual_arg_cnt - actual_kw_arg_cnt;
+  const int64_t actual_extend_pos_arg_cnt =
+      actual_arg_cnt - formal_pos_arg_cnt - actual_kw_arg_cnt;
 
   // 函数局部变量（包含函数形参）符号表
   const Handle<PyTuple> var_args = code_object->var_names();
 
   // 将与形参对应的函数实参加载到栈帧的fast_locals上去
-  auto valid_pos_args_cnt = std::min(actual_arg_cnt, formal_pos_arg_cnt);
+  auto valid_pos_args_cnt =
+      std::min(actual_arg_cnt - actual_kw_arg_cnt, formal_pos_arg_cnt);
   for (auto i = 0; i < valid_pos_args_cnt; ++i) {
     fast_locals->Set(fast_locals_idx++, actual_args->Get(i));
   }
@@ -280,7 +282,6 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
         std::fprintf(stderr,
                      "TypeError: %s() got multiple values for argument '%s'\n",
                      func_name->buffer(), key->buffer());
-        PyObject::Print(value);
         std::exit(1);
       }
 
@@ -297,6 +298,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
     //    将键值对参数注入进**kwargs当中。
     if (!kw_args.IsNull()) {
       PyDict::Put(kw_args, key, value);
+      continue;
     }
 
     // 3. 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误

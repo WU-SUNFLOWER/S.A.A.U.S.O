@@ -39,9 +39,9 @@ class Interpreter {
                       Handle<PyTuple> actual_args,
                       Handle<PyTuple> kwarg_keys);
 
-  void InvokeCallableNormalized(Handle<PyObject> callable,
-                                Handle<PyTuple> pos_args,
-                                Handle<PyDict> kw_args);
+  void InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
+                                        Handle<PyTuple> pos_args,
+                                        Handle<PyDict> kw_args);
 
   void NormalizeCallable(Handle<PyObject>& callable, Handle<PyObject>& host);
   void NormalizeArguments(Handle<PyTuple> actual_args,

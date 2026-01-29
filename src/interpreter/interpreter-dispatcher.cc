@@ -434,7 +434,7 @@ void Interpreter::EvalCurrentFrame() {
       pos_args = Runtime_UnpackIterableObjectToTuple(args_obj);
     }
 
-    InvokeCallableNormalized(callable, pos_args, kw_args);
+    InvokeCallableWithNormalizedArgs(callable, pos_args, kw_args);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {
@@ -465,7 +465,6 @@ exit_interpreter:
   return;
 }
 
-/*
 void Interpreter::InvokeCallable(Handle<PyObject> callable,
                                  Handle<PyTuple> actual_args,
                                  Handle<PyTuple> kwarg_keys) {
@@ -487,20 +486,10 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
   Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
   PUSH(result);
 }
-*/
 
-void Interpreter::InvokeCallable(Handle<PyObject> callable,
-                                 Handle<PyTuple> actual_args,
-                                 Handle<PyTuple> kwarg_keys) {
-  Handle<PyTuple> pos_args;
-  Handle<PyDict> kw_args;
-  NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
-  InvokeCallableNormalized(callable, pos_args, kw_args);
-}
-
-void Interpreter::InvokeCallableNormalized(Handle<PyObject> callable,
-                                           Handle<PyTuple> pos_args,
-                                           Handle<PyDict> kw_args) {
+void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
+                                                   Handle<PyTuple> pos_args,
+                                                   Handle<PyDict> kw_args) {
   Handle<PyObject> host;
   NormalizeCallable(callable, host);
 
