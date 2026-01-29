@@ -275,6 +275,46 @@ print(foo(**d))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, CallWithStarArgsAndStarKwArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a * 100 + b * 10 + c
+
+t = (1,)
+d = {"b": 2, "c": 3}
+print(foo(*t, **d))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(123));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallWithMultiStarKwArgsMerge) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a * 100 + b * 10 + c
+
+d1 = {"b": 2}
+d2 = {"c": 3}
+print(foo(1, **d1, **d2))
+print(foo(1, c = 3, **d1))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(123));
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(123));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, FunctionCallErrors) {
   ASSERT_DEATH(
       {
@@ -284,6 +324,21 @@ def foo(a, b = 1, c = 2):
     return a + b + c
 
 foo()
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a + b + c
+
+d1 = {"b": 2}
+d2 = {"b": 3}
+foo(1, **d1, **d2, c = 4)
 )";
         RunScript(kSource, kTestFileName);
       },
