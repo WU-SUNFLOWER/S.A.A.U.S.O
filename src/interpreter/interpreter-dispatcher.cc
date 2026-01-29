@@ -217,15 +217,8 @@ void Interpreter::EvalCurrentFrame() {
       auto value = item->Get(1);
 
       if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
-        if (IsPyString(*key)) {
-          std::fprintf(
-              stderr,
-              "TypeError: got multiple values for keyword argument '%s'\n",
-              Handle<PyString>::cast(key)->buffer());
-        } else {
-          std::fprintf(stderr,
-                       "TypeError: got multiple values for keyword argument\n");
-        }
+        std::fprintf(stderr,
+                     "TypeError: got multiple values for keyword argument\n");
         std::exit(1);
       }
 
@@ -450,6 +443,20 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_DISPATCH(
       KwNames, { kwarg_keys_ = current_frame_->consts()->GetTagged(op_arg); })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(CallIntrinsic1, {
+    Handle<PyObject> arg = POP();
+    switch (op_arg) {
+      case UnaryIntrinsic::kListToTuple: {
+        PUSH(Runtime_IntrinsicListToTuple(arg));
+        break;
+      }
+      default:
+        std::fprintf(stderr, "unsupported intrinsic for CALL_INTRINSIC_1: %d\n",
+                     op_arg);
+        std::exit(1);
+    }
+  })
 
 #undef INTERPRETER_HANDLER_NOOP
 #undef INTERPRETER_HANDLER_WITH_SCOPE

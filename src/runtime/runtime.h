@@ -22,6 +22,8 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
 
 Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 
+Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_RUNTIME_RUNTIME_H_

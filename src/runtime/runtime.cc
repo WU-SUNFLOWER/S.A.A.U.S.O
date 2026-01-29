@@ -4,6 +4,7 @@
 
 #include "src/runtime/runtime.h"
 
+#include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -75,10 +76,27 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
   Handle<PyList> tmp = PyList::NewInstance();
   Runtime_ExtendListByItratableObject(tmp, iterable);
   Handle<PyTuple> tuple = PyTuple::NewInstance(tmp->length());
-  for (int64_t i = 0; i < tmp->length(); ++i) {
+  for (auto i = 0; i < tmp->length(); ++i) {
     tuple->SetInternal(i, tmp->Get(i));
   }
-  return tuple;
+  return tuple.EscapeFrom(&scope);
+}
+
+Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
+  HandleScope scope;
+
+  if (!IsPyList(object)) {
+    std::fprintf(stderr,
+                 "TypeError: INTRINSIC_LIST_TO_TUPLE expected a list\n");
+    std::exit(1);
+  }
+
+  auto list = Handle<PyList>::cast(object);
+  auto tuple = PyTuple::NewInstance(list->length());
+  for (auto i = 0; i < list->length(); ++i) {
+    tuple->SetInternal(i, list->Get(i));
+  }
+  return tuple.EscapeFrom(&scope);
 }
 
 }  // namespace saauso::internal

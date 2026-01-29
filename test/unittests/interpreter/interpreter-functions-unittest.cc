@@ -224,6 +224,52 @@ print(h(1))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, ExtendArgsPackBehavior) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def f(a, *args):
+    return a + len(args)
+
+def g(a, **kwargs):
+    return a + len(kwargs)
+
+def h(a, *args, **kwargs):
+    return a * 100 + len(args) * 10 + len(kwargs)
+
+print(f(10, 1, 2))
+print(g(7, x = 1, y = 2))
+print(h(1, 2, 3, k = 4))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(12)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(9)));
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(121));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ExtendKwArgsWithNamedParams) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b = 2, **kwargs):
+    return a * 100 + b * 10 + len(kwargs)
+
+print(foo(1, x = 7, y = 8))
+print(foo(1, b = 3, x = 7))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(122));
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(131));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, MethodCallInjectSelf) {
   HandleScope scope;
 
@@ -236,6 +282,25 @@ print(a.upper())
 
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, PyString::NewInstance("HELLO WORLD"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallWithEmptyStarArgsAndStarKwArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a + b + c
+
+print(foo(*(1, 2, 3), **{}))
+print(foo(1, 2, 3, *(), **{}))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -336,9 +401,37 @@ foo()
 def foo(a, b, c):
     return a + b + c
 
+d = {"a": 2}
+foo(1, 2, 3, **d)
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a + b + c
+
 d1 = {"b": 2}
 d2 = {"b": 3}
 foo(1, **d1, **d2, c = 4)
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def foo(a, b, c):
+    return a + b + c
+
+d = {"b": 2}
+foo(1, b = 3, c = 4, **d)
 )";
         RunScript(kSource, kTestFileName);
       },
@@ -365,6 +458,20 @@ def bar(a, b, c):
     return a + b + c
 
 bar(1, a = 2, b = 3, c = 4)
+)";
+        RunScript(kSource, kTestFileName);
+      },
+      "TypeError");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def bar(a, b, c):
+    return a + b + c
+
+t = (1, 2, 3)
+bar(*t, b = 2, c = 3)
 )";
         RunScript(kSource, kTestFileName);
       },

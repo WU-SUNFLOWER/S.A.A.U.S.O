@@ -50,7 +50,8 @@ namespace saauso::internal {
   V(DictMerge, 164)        \
   V(CallFunctionEx, 142)   \
   V(Call, 171)             \
-  V(KwNames, 172)
+  V(KwNames, 172)          \
+  V(CallIntrinsic1, 173)
 
 #define DECL_BYTECODES(name, value) inline constexpr uint8_t name = value;
 BYTECODE_LIST(DECL_BYTECODES)
@@ -99,6 +100,21 @@ enum MakeFunctionOpArgMask {
   kKwDefaults = 0x02,
   kAnnotations = 0x04,
   kClosure = 0x08,
+};
+
+enum UnaryIntrinsic {
+  kInvalid = 0,             // 对应 INTRINSIC_1_INVALID
+  kPrint = 1,               // 对应 INTRINSIC_PRINT
+  kImportStar = 2,          // 对应 INTRINSIC_IMPORT_STAR
+  kStopIterationError = 3,  // 对应 INTRINSIC_STOPITERATION_ERROR
+  kAsyncGenWrap = 4,        // 对应 INTRINSIC_ASYNC_GEN_WRAP
+  kUnaryPositive = 5,       // 对应 INTRINSIC_UNARY_POSITIVE
+  kListToTuple = 6,         // 对应 INTRINSIC_LIST_TO_TUPLE
+  kTypeVar = 7,             // 对应 INTRINSIC_TYPEVAR
+  kParamSpec = 8,           // 对应 INTRINSIC_PARAMSPEC
+  kTypeVarTuple = 9,        // 对应 INTRINSIC_TYPEVARTUPLE
+  kSubscriptGeneric = 10,   // 对应 INTRINSIC_SUBSCRIPT_GENERIC
+  kTypeAlias = 11,          // 对应 INTRINSIC_TYPEALIAS
 };
 
 }  // namespace saauso::internal
