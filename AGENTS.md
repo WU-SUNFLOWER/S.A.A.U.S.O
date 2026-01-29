@@ -17,9 +17,22 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **测试框架**: Google Test。
 - **辅助调试工具**: LLDB、AddressSanitizer、UBSanitizer
 
+### 1.1. 当前实现进度（以仓库现状为准）
+- **已具备**：
+  - 基础对象系统：`PyObject/Klass/VTable`、`PyTypeObject`，以及若干内建类型（`int(Smi)`/`float`/`str`/`list`/`tuple`/`dict`/`bool`/`None`）。
+  - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
+  - 堆与 GC：按 `NewSpace/OldSpace/MetaSpace` 分区；MVP 以新生代 scavenge 为主（老生代回收仍在 TODO）。
+  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance` 等）。
+  - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
+- **尚未重点覆盖/仍在 TODO（非穷尽）**：
+  - 异常体系（当前大量错误以 `stderr + exit(1)` 方式处理）。
+  - 老生代回收、写屏障/remembered set（目前 write barrier 处于禁用/空实现状态）。
+  - 更完整的 Python 语义：import/module、class 语义细节、生成器/协程等。
+
 ## 2. 仓库结构速览
 - `include/`：对外/跨模块共享的基础定义（例如 `Address`、Smi/对齐等）。
-- `src/code/`：`.pyc` 等二进制代码文件解析（`BinaryFileReader` / `PycFileParser`）。
+- `src/code/`：`.pyc` 解析与前端工具（`BinaryFileReader`、`cpython312-pyc-file-parser`、`cpython312-pyc-compiler` 等）。
+- `src/interpreter/`：字节码解释器（bytecode dispatcher、`FrameObject` 栈帧、参数归一化与调用入口）。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
@@ -88,8 +101,20 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
 - **隔离性**: 主路径已迁移为 Isolate 架构；需要全局状态时，优先通过 `Isolate::Current()` 获取（而不是引入新的静态全局）。
 
-### 3.4. 代码加载 (`src/code`)
-- **PycFileParser**: 负责解析 `.pyc` 文件并构建 `PyCodeObject`（依赖 `BinaryFileReader`）。
+### 3.4. 字节码解释器 (`src/interpreter`)
+- **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。
+- **computed-goto dispatcher**：`Interpreter::EvalCurrentFrame()` 使用 256 槽 dispatch table（未知 opcode 默认跳到 `unknown_bytecode`），每个 handler 内优先创建 `HandleScope`，避免 GC 移动导致悬垂引用。
+- **FrameObject（栈帧）**：
+  - 保存 `stack/fast_locals/locals/globals/consts/names/code_object` 等字段，并在 `Iterate(ObjectVisitor*)` 中暴露为 GC roots。
+  - **参数绑定与默认值**：函数调用的形参绑定主要在 `FrameObject::NewInstance(...)` 中完成；支持位置参数、关键字参数、默认参数回填，以及 `*args/**kwargs` 的打包与注入。
+- **调用约定（面向实现而非语义保证）**：
+  - `CALL + KW_NAMES`：先构造 `actual_args` 与 `kwarg_keys`，再归一化为 `pos_args + kw_args`；`CALL_FUNCTION_EX` 处理 `f(*args, **kwargs)`；`DICT_MERGE` 处理 kwargs dict 合并。
+  - 当前大量错误处理为 `stderr + exit(1)`，尚未形成完整异常传播体系。
+
+### 3.5. 代码加载 / 前端 (`src/code`)
+- **BinaryFileReader**：二进制读取工具。
+- **cpython312-pyc-file-parser**：解析 CPython 3.12 `.pyc` 并构建 `PyCodeObject`。
+- **cpython312-pyc-compiler（可选）**：通过嵌入式 CPython 3.12 生成 `.pyc`（对应 GN 目标 `saauso_cpython312_compiler`）。
 
 ## 4. 代码规范
 
@@ -117,9 +142,11 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 ## 5. 开发工作流
 
 ### 5.1. 构建
-根 `BUILD.gn` 当前主要提供两个可执行目标：
+根 `BUILD.gn` 当前主要提供：
+- `saauso_core`：核心实现 `source_set`（虚拟机主体）。
+- `saauso_cpython312_compiler`：嵌入式 CPython 3.12 编译器前端 `source_set`（可选）。
 - `vm`：示例入口（见 `src/main.cc`）。
-- `ut`：单元测试入口（聚合 `test/unittests/*.cc`）。
+- `ut`：单元测试入口（转发到 `//test/unittests:ut`）。
 
 项目本地包含了 `depot_tools`（Windows/Linux amd64），可直接调用其中的 `gn`/`ninja`。
 
@@ -132,6 +159,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ./build.sh asan
 ./build.sh ut
 ```
+注：`build.sh` 的 usage 文案仍写 `unittest`，但实际参数为 `ut`。
 
 在 Windows PowerShell 下可直接手动执行（注意目标名为 `vm`/`ut`）：
 ```powershell
@@ -157,10 +185,9 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ```
 
 ### 5.3. 单元测试架构（最新）
-- **公共代码拆分**：
-  - `test/unittests/common/test-helpers.{h,cc}`：提供带生命周期的测试夹具基类（负责 `Saauso::Initialize/Dispose`、`Isolate` 创建与 Enter/Exit 等）与解释器输出捕获夹具。
-  - `test/unittests/common/test-utils.{h,cc}`：提供无状态的小工具与断言谓词（例如 `IsPyStringEqual`、`AppendExpected`、`CompileScript312`、pyc 字节构造器等）。
-  - 兼容性：保留 `test/unittests/test-helpers.h`、`test/unittests/test-utils.h` 作为转发头，避免大规模改 include 路径。
+- **公共测试代码（当前布局）**：
+  - `test/unittests/test-helpers.{h,cc}`：提供带生命周期的测试夹具基类（负责 `Saauso::Initialize/Dispose`、`Isolate` 创建与 Enter/Exit 等）与解释器输出捕获夹具。
+  - `test/unittests/test-utils.{h,cc}`：提供无状态的小工具与断言谓词（例如 `IsPyStringEqual`、`AppendExpected`、`CompileScript312`、pyc 字节构造器等）。
 - **测试目录分层（按模块分类）**：
   - `test/unittests/interpreter/`：解释器端到端用例（`interpreter-*-unittest.cc`）。
   - `test/unittests/objects/`：对象系统与容器/属性相关用例（`py-*-unittest.cc`、`attribute-unittest.cc`）。
@@ -176,7 +203,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
   - 统一使用 `BasicInterpreterTest` 夹具（print 注入 + 输出捕获）。
   - 用例按主题拆分到 `interpreter-*-unittest.cc`，避免单文件职责膨胀。
 - **LSan 抑制**：
-  - `__lsan_default_suppressions()` 统一放在 `test/unittests/common/lsan-suppressions.cc`，避免多处重复定义。
+  - `__lsan_default_suppressions()` 统一放在 `test/unittests/lsan-suppressions.cc`，避免多处重复定义。
 - **新增测试文件的接入点**：
   - 新增 `test/unittests/**/**.cc` 后，需要同步将其加入 `test/unittests/BUILD.gn` 的 `ut` 目标 `sources` 列表。
   - 根 `BUILD.gn` 仅保留 `group(\"ut\")` 作为入口（转发到 `//test/unittests:ut`），避免测试 sources 污染根构建文件。
@@ -195,7 +222,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 - 语义要点：
   - `Global<T>` 是 move-only（不可拷贝），避免双重释放。
   - `Global<T>` 会被纳入 GC roots，minor GC 后其内部 slot 会自动更新到新地址。
-  - `Global<T>::ToHandle()` 用于把全局句柄临时“降级”为栈上 `Handle<T>` 参与常规 API 调用；要求当前线程处于同一个 `Isolate::Current()`，且必须在某个 `HandleScope` 内调用。
+  - `Global<T>::Get()` 用于把全局句柄临时“降级”为栈上 `Handle<T>` 参与常规 API 调用；要求当前线程处于同一个 `Isolate::Current()`，且必须在某个 `HandleScope` 内调用。
 
 用法示例：
 ```cpp
@@ -212,7 +239,7 @@ void Example() {
 
   {
     HandleScope inner;
-    Handle<PyString> local = g.ToHandle();
+    Handle<PyString> local = g.Get();
     (void)local;
   }
 
@@ -241,7 +268,7 @@ void Example() {
   - `Isolate` 拥有对应的 `*_klass()` accessor 与字段；
   - `Isolate::InitMetaArea()` 会自动执行该 Klass 的 `InitializeVTable/PreInitialize/Initialize`；
   - `Isolate::TearDown()` 会自动执行该 Klass 的 `Finalize`。
-- 将新文件加入根 [BUILD.gn](file:///c:/Users/Administrator/Desktop/S.A.A.U.S.O/BUILD.gn) 的 `saauso_sources` 列表，保证目标可链接。
+- 将新文件加入根 [BUILD.gn](file:///e:/MyProject/S.A.A.U.S.O/BUILD.gn) 的 `saauso_core.sources` 列表，保证目标可链接。
 - （可选）在 `src/interpreter/interpreter.cc` 注册该类型的 `type_object()`，并加入 `builtins` 字典。
   - 这步不是必须选项，只有当我们希望将这种类型泄露到 Python 语言中，允许用户代码中使用 `type(...)` 或 `isinstance(..., ...)` 等操作时才需要。
   - 例如在Python中，NoneType这种类型就没有被泄漏到Python语言环境，因此它不需要注册到`builtins`字典中。

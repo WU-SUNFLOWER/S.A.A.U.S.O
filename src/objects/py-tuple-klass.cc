@@ -15,8 +15,8 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/objects/py-tuple.h"
 #include "src/objects/py-tuple-iterator.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
@@ -27,7 +27,7 @@ namespace saauso::internal {
 Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyTupleKlass> instance = isolate->py_tuple_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyTupleKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_tuple_klass(instance);
@@ -62,11 +62,12 @@ void PyTupleKlass::Initialize() {
 }
 
 void PyTupleKlass::Finalize() {
-  Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::Null());
+  Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
 }
 
 Handle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
-  return Handle<PyObject>(PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
+  return Handle<PyObject>(
+      PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
 }
 
 void PyTupleKlass::Virtual_Print(Handle<PyObject> self) {

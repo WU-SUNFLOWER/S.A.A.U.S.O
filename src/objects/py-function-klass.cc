@@ -26,7 +26,7 @@ namespace saauso::internal {
 Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyFunctionKlass> instance = isolate->py_function_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyFunctionKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_function_klass(instance);
@@ -60,7 +60,7 @@ void PyFunctionKlass::Initialize() {
 }
 
 void PyFunctionKlass::Finalize() {
-  Isolate::Current()->set_py_function_klass(Tagged<PyFunctionKlass>::Null());
+  Isolate::Current()->set_py_function_klass(Tagged<PyFunctionKlass>::null());
 }
 
 void PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
@@ -88,7 +88,7 @@ void PyFunctionKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<NativeFunctionKlass> instance = isolate->native_function_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<NativeFunctionKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_native_function_klass(instance);
@@ -111,7 +111,7 @@ void NativeFunctionKlass::Initialize() {}
 
 void NativeFunctionKlass::Finalize() {
   Isolate::Current()->set_native_function_klass(
-      Tagged<NativeFunctionKlass>::Null());
+      Tagged<NativeFunctionKlass>::null());
 }
 
 void NativeFunctionKlass::Virtual_Print(Handle<PyObject> self) {
@@ -150,7 +150,7 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
 Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<MethodObjectKlass> instance = isolate->method_object_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<MethodObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_method_object_klass(instance);
@@ -185,7 +185,7 @@ void MethodObjectKlass::Initialize() {
 
 void MethodObjectKlass::Finalize() {
   Isolate::Current()->set_method_object_klass(
-      Tagged<MethodObjectKlass>::Null());
+      Tagged<MethodObjectKlass>::null());
 }
 
 void MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {

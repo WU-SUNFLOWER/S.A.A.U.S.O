@@ -16,7 +16,7 @@ namespace saauso::internal {
 Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<FixedArrayKlass> instance = isolate->fixed_array_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<FixedArrayKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_fixed_array_klass(instance);
@@ -37,7 +37,7 @@ void FixedArrayKlass::Initialize() {}
 
 // static
 void FixedArrayKlass::Finalize() {
-  Isolate::Current()->set_fixed_array_klass(Tagged<FixedArrayKlass>::Null());
+  Isolate::Current()->set_fixed_array_klass(Tagged<FixedArrayKlass>::null());
 }
 
 // static

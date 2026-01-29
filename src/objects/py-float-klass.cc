@@ -51,7 +51,7 @@ double ExtractValue(Handle<PyObject> object) {
 Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyFloatKlass> instance = isolate->py_float_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyFloatKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_float_klass(instance);
@@ -98,7 +98,7 @@ void PyFloatKlass::Initialize() {
 }
 
 void PyFloatKlass::Finalize() {
-  Isolate::Current()->set_py_float_klass(Tagged<PyFloatKlass>::Null());
+  Isolate::Current()->set_py_float_klass(Tagged<PyFloatKlass>::null());
 }
 
 ////////////////////////////////////////////////////////////////////

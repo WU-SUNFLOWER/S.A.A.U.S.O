@@ -26,10 +26,10 @@ Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
       object_size, Heap::AllocationSpace::kNewSpace));
 
   object->length_ = length;
-  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(object, Tagged<PyDict>::null());
 
   for (auto i = 0; i < length; ++i) {
-    object->SetInternal(i, Tagged<PyObject>::Null());
+    object->SetInternal(i, Tagged<PyObject>::null());
   }
 
   PyObject::SetKlass(object, PyTupleKlass::GetInstance());

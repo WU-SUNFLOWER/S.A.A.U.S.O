@@ -48,7 +48,7 @@ Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   // Traceback (most recent call last):
   //   File "<stdin>", line 1, in <module>
   // AttributeError: 'str' object has no attribute '__dict__'
-  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(object, Tagged<PyDict>::null());
 
   // 绑定klass
   PyObject::SetKlass(object, PyStringKlass::GetInstance());

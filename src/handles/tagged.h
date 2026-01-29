@@ -39,7 +39,7 @@ class TaggedBase {
  public:
   explicit TaggedBase(Address address) : address_(address) {}
 
-  constexpr bool IsNull() const { return address_ == kNullAddress; }
+  constexpr bool is_null() const { return address_ == kNullAddress; }
 
   constexpr Address ptr() const { return address_; }
 
@@ -83,7 +83,7 @@ class Tagged : public TaggedBase<T> {
     return reinterpret_cast<T*>(this->ptr());
   }
 
-  static Tagged<T> Null() { return Tagged<T>(); }
+  static Tagged<T> null() { return Tagged<T>(); }
 
   // 警告：Tagged在语义上等价于C++中的裸指针
   // 对它执行Cast，语义相当于C++中的reinterpret_cast！！！
@@ -112,7 +112,7 @@ class Tagged<PySmi> : public TaggedBase<PySmi> {
   constexpr bool IsSmi() const { return true; }
   constexpr int64_t value() const { return AddressToSmi(this->ptr()); }
 
-  static Tagged<PySmi> Null() { return Tagged<PySmi>(); }
+  static Tagged<PySmi> null() { return Tagged<PySmi>(); }
 
   // 只允许Tagged<PySmi>::cast(Tagged<PyObject>)
   static Tagged<PySmi> cast(Tagged<PyObject> that) {

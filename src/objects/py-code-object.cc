@@ -48,7 +48,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
   object->names_ = *names;
   object->consts_ = *consts;
   object->localsplusnames_ = *var_names;
-  object->localspluskinds_ = Tagged<PyObject>::Null();
+  object->localspluskinds_ = Tagged<PyObject>::null();
   object->var_names_ = *var_names;
 
   object->free_vars_ = *free_vars;
@@ -60,10 +60,10 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
 
   object->line_no_ = line_no;
   object->line_table_ = *no_table;
-  object->exception_table_ = Tagged<PyObject>::Null();
+  object->exception_table_ = Tagged<PyObject>::null();
   object->no_table_ = *no_table;
 
-  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
   return object;
 }
@@ -106,7 +106,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance312(
   object->consts_ = *consts;
   object->localsplusnames_ = *localsplusnames;
   object->localspluskinds_ =
-      localspluskinds.IsNull() ? Tagged<PyObject>::Null() : *localspluskinds;
+      localspluskinds.is_null() ? Tagged<PyObject>::null() : *localspluskinds;
   object->var_names_ = *var_names;
 
   // var_names的长度一定等于nlocals的长度
@@ -121,12 +121,12 @@ Handle<PyCodeObject> PyCodeObject::NewInstance312(
 
   object->line_no_ = line_no;
   object->line_table_ =
-      line_table.IsNull() ? Tagged<PyObject>::Null() : *line_table;
+      line_table.is_null() ? Tagged<PyObject>::null() : *line_table;
   object->exception_table_ =
-      exception_table.IsNull() ? Tagged<PyObject>::Null() : *exception_table;
+      exception_table.is_null() ? Tagged<PyObject>::null() : *exception_table;
   object->no_table_ = object->line_table_;
 
-  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
   return object;
 }

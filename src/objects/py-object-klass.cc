@@ -17,7 +17,7 @@ namespace saauso::internal {
 Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyObjectKlass> instance = isolate->py_object_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_object_klass(instance);
@@ -50,7 +50,7 @@ void PyObjectKlass::Initialize() {
 
 // static
 void PyObjectKlass::Finalize() {
-  Isolate::Current()->set_py_object_klass(Tagged<PyObjectKlass>::Null());
+  Isolate::Current()->set_py_object_klass(Tagged<PyObjectKlass>::null());
 }
 
 size_t PyObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

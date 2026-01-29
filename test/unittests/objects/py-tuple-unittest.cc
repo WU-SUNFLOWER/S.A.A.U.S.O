@@ -9,8 +9,8 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/objects/py-tuple.h"
 #include "src/objects/py-tuple-iterator.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -31,7 +31,8 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(1))), 2);
 
-  PyObject::StoreSubscr(Handle<PyObject>(list), Handle<PyObject>(PySmi::FromInt(0)),
+  PyObject::StoreSubscr(Handle<PyObject>(list),
+                        Handle<PyObject>(PySmi::FromInt(0)),
                         Handle<PyObject>(PySmi::FromInt(42)));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
 }
@@ -100,7 +101,7 @@ TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 2);
 
   auto end = PyObject::Next(iterator);
-  EXPECT_TRUE(end.IsNull());
+  EXPECT_TRUE(end.is_null());
 }
 
 }  // namespace saauso::internal

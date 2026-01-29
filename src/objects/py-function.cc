@@ -57,9 +57,9 @@ Handle<PyFunction> PyFunction::NewInstanceInternal() {
   PyObject::SetProperties(*object, *properties);
 
   // 初始化字段
-  object->func_code_ = Tagged<PyObject>::Null();
-  object->func_name_ = Tagged<PyObject>::Null();
-  object->default_args_ = Tagged<PyObject>::Null();
+  object->func_code_ = Tagged<PyObject>::null();
+  object->func_name_ = Tagged<PyObject>::null();
+  object->default_args_ = Tagged<PyObject>::null();
   object->flags_ = 0;
   object->native_func_ = nullptr;
 
@@ -99,7 +99,7 @@ Handle<PyTuple> PyFunction::default_args() const {
 }
 
 void PyFunction::set_default_args(Handle<PyTuple> default_args) {
-  assert(default_args_.IsNull());
+  assert(default_args_.is_null());
   default_args_ = *default_args;
 }
 

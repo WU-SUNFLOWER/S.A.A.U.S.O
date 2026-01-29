@@ -19,11 +19,11 @@ TEST_F(PyObjectTest, GetPropertiesReturnsNullByDefaultAndAcceptsNullSet) {
 
   auto list = PyList::NewInstance();
   auto props = PyObject::GetProperties(Handle<PyObject>(list));
-  EXPECT_TRUE(props.IsNull());
+  EXPECT_TRUE(props.is_null());
 
-  PyObject::SetProperties(*Handle<PyObject>(list), Tagged<PyDict>::Null());
+  PyObject::SetProperties(*Handle<PyObject>(list), Tagged<PyDict>::null());
   auto props_after = PyObject::GetProperties(Handle<PyObject>(list));
-  EXPECT_TRUE(props_after.IsNull());
+  EXPECT_TRUE(props_after.is_null());
 }
 
 TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
@@ -35,14 +35,14 @@ TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
   PyObject::SetProperties(*Handle<PyObject>(list), *dict);
   auto props = PyObject::GetProperties(Handle<PyObject>(list));
 
-  ASSERT_FALSE(props.IsNull());
+  ASSERT_FALSE(props.is_null());
   EXPECT_TRUE(props.is_identical_to(dict));
 }
 
 TEST_F(PyObjectTest, IsHeapObjectReturnsFalseForNullAndSmi) {
   HandleScope scope;
 
-  Tagged<PyObject> null = Tagged<PyObject>::Null();
+  Tagged<PyObject> null = Tagged<PyObject>::null();
   EXPECT_FALSE(IsHeapObject(null));
 
   Tagged<PyObject> smi = Tagged<PyObject>(PySmi::FromInt(123));

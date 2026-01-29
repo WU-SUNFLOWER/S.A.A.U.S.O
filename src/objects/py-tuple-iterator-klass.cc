@@ -28,7 +28,7 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
   HandleScope scope;
   auto iterator = Handle<PyTupleIterator>::cast(self);
   auto tuple = iterator->owner();
-  assert(!tuple.IsNull());
+  assert(!tuple.is_null());
 
   auto iter_cnt = iterator->iter_cnt();
   if (iter_cnt < tuple->length()) {
@@ -36,7 +36,7 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
     iterator->increase_iter_cnt();
     return result.EscapeFrom(&scope);
   }
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 Handle<PyObject> Native_Next(Handle<PyObject> self,
@@ -51,7 +51,7 @@ Handle<PyObject> Native_Next(Handle<PyObject> self,
 Tagged<PyTupleIteratorKlass> PyTupleIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyTupleIteratorKlass> instance = isolate->py_tuple_iterator_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyTupleIteratorKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_tuple_iterator_klass(instance);
@@ -85,7 +85,7 @@ void PyTupleIteratorKlass::Initialize() {
 
 void PyTupleIteratorKlass::Finalize() {
   Isolate::Current()->set_py_tuple_iterator_klass(
-      Tagged<PyTupleIteratorKlass>::Null());
+      Tagged<PyTupleIteratorKlass>::null());
 }
 
 void PyTupleIteratorKlass::Virtual_Print(Handle<PyObject> self) {

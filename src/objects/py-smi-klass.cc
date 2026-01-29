@@ -26,7 +26,7 @@ namespace saauso::internal {
 Tagged<PySmiKlass> PySmiKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PySmiKlass> instance = isolate->py_smi_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PySmiKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_smi_klass(instance);
@@ -66,7 +66,7 @@ void PySmiKlass::Initialize() {
 }
 
 void PySmiKlass::Finalize() {
-  Isolate::Current()->set_py_smi_klass(Tagged<PySmiKlass>::Null());
+  Isolate::Current()->set_py_smi_klass(Tagged<PySmiKlass>::null());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 // static
@@ -114,7 +114,7 @@ Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 // static
@@ -135,7 +135,7 @@ Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 // static
@@ -163,7 +163,7 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 // static
@@ -185,7 +185,7 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
       PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 // static

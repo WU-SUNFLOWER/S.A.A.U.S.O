@@ -51,7 +51,7 @@ class Handle {
   Handle() = default;
   explicit Handle(Address* location) : location_(location) {}
   explicit Handle(Tagged<T> tagged) {
-    if (!tagged.IsNull()) {
+    if (!tagged.is_null()) {
       location_ = HandleScope::CreateHandle(tagged.ptr());
     }
   }
@@ -64,31 +64,31 @@ class Handle {
       : Handle(other.location()) {}
 
   T* operator->() const {
-    assert(!IsNull());
+    assert(!is_null());
     return Tagged<T>(*location_).operator->();
   }
 
   Tagged<T> operator*() const {
-    return IsNull() ? Tagged<T>::Null() : Tagged<T>(*location_);
+    return is_null() ? Tagged<T>::null() : Tagged<T>(*location_);
   }
 
   template <class S>
   static Handle<T> cast(Handle<S> that) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    if (that.IsNull()) {
-      return Handle<T>::Null();
+    if (that.is_null()) {
+      return Handle<T>::null();
     }
     T::cast(*that);
 #endif  // 这行代码起到断言的作用
     return Handle<T>(Tagged<T>::cast(*that));
   }
 
-  constexpr bool IsNull() const { return location_ == nullptr; }
-  static Handle<T> Null() { return Handle<T>(); }
+  constexpr bool is_null() const { return location_ == nullptr; }
+  static Handle<T> null() { return Handle<T>(); }
 
   Handle<T> EscapeFrom(HandleScope* scope) {
-    if (IsNull()) {
-      return Handle<T>::Null();
+    if (is_null()) {
+      return Handle<T>::null();
     }
     return Handle<T>(scope->EscapeFromSelf(*location_));
   }
@@ -113,7 +113,7 @@ class Handle {
 template <typename T>
 Handle<T> handle(Tagged<T> object) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-  if (!object.IsNull()) {
+  if (!object.is_null()) {
     T::cast(object);
   }
 #endif  // defined(_DEBUG) || defined(ASAN_BUILD)

@@ -59,10 +59,10 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
 
 #define CALL_NEXT_FUNC()                         \
   Isolate::Current()->interpreter()->CallPython( \
-      iterator_next_func, Handle<PyTuple>::Null(), Handle<PyDict>::Null())
+      iterator_next_func, Handle<PyTuple>::null(), Handle<PyDict>::null())
 
   auto elem = CALL_NEXT_FUNC();
-  while (!elem.IsNull()) {
+  while (!elem.is_null()) {
     PyList::Append(list, elem);
     elem = CALL_NEXT_FUNC();
   }

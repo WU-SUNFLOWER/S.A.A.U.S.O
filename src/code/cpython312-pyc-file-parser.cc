@@ -63,7 +63,7 @@
 //       后续若再次出现同一个对象，会用 'r' + index
 //       复用，避免重复序列化与支持自引用。
 //     - 解析时必须支持“先占位、后回填”的语义：遇到 ref_flag 的对象，先在 cache
-//       里 append 一个 placeholder（Null），等对象真正解析完成后再 set 回去。
+//       里 append 一个 placeholder（null），等对象真正解析完成后再 set 回去。
 //
 // 3) 字符串表 string_table（interned strings）
 //   marshal 对“被 intern 的字符串”会进入一个独立的 string_table：
@@ -103,7 +103,7 @@
 //   - code object 落地到 `PyCodeObject::NewInstance312(...)`，并补齐：
 //       * nlocals_（由 localsplusnames 长度推导）
 //       * free_vars_ / cell_vars_（由 localspluskinds 推导）
-//       * 可空字段（localspluskinds/linetable/exceptiontable）用 Null 表示
+//       * 可空字段（localspluskinds/linetable/exceptiontable）用 null 表示
 //
 namespace saauso::internal {
 
@@ -216,7 +216,7 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
 
   // marshal payload 的第一个对象应当是 'c'（code object）。
   if (object_type != kCodeObjectFlag) {
-    return Handle<PyCodeObject>::Null();
+    return Handle<PyCodeObject>::null();
   }
 
   // marshal 的两个核心表：
@@ -228,7 +228,7 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
   int index = 0;
   if (ref_flag) {
     index = static_cast<int>(cache->length());
-    PyList::Append(cache, Handle<PyObject>::Null());
+    PyList::Append(cache, Handle<PyObject>::null());
   }
 
   Handle<PyCodeObject> code_object = ParseCodeObject(string_table, cache);
@@ -261,10 +261,10 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
   Handle<PyString> localspluskinds;
   {
     auto kinds_obj = ParseObject(string_table, cache);
-    if (!kinds_obj.IsNull()) {
+    if (!kinds_obj.is_null()) {
       localspluskinds = Handle<PyString>::cast(kinds_obj);
     } else {
-      localspluskinds = Handle<PyString>::Null();
+      localspluskinds = Handle<PyString>::null();
     }
   }
 
@@ -272,11 +272,11 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
   Handle<PyTuple> free_vars = PyTuple::NewInstance(0);
   Handle<PyTuple> cell_vars = PyTuple::NewInstance(0);
 
-  if (!localspluskinds.IsNull()) {
+  if (!localspluskinds.is_null()) {
     const unsigned char* kinds =
         reinterpret_cast<const unsigned char*>(localspluskinds->buffer());
     int64_t n = localspluskinds->length();
-    int64_t m = localsplusnames.IsNull() ? 0 : localsplusnames->length();
+    int64_t m = localsplusnames.is_null() ? 0 : localsplusnames->length();
     int64_t limit = n < m ? n : m;
 
     int64_t free_count = 0;
@@ -300,10 +300,10 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
       Handle<PyObject> name = localsplusnames->Get(i);
       if ((kind & 0x80) != 0) {
         free_vars->SetInternal(
-            free_i++, name.IsNull() ? Tagged<PyObject>::Null() : *name);
+            free_i++, name.is_null() ? Tagged<PyObject>::null() : *name);
       } else if ((kind & 0x40) != 0) {
         cell_vars->SetInternal(
-            cell_i++, name.IsNull() ? Tagged<PyObject>::Null() : *name);
+            cell_i++, name.is_null() ? Tagged<PyObject>::null() : *name);
       }
     }
   }
@@ -316,20 +316,20 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
   Handle<PyString> line_table;
   {
     auto obj = ParseObject(string_table, cache);
-    if (!obj.IsNull()) {
+    if (!obj.is_null()) {
       line_table = Handle<PyString>::cast(obj);
     } else {
-      line_table = Handle<PyString>::Null();
+      line_table = Handle<PyString>::null();
     }
   }
 
   Handle<PyString> exception_table;
   {
     auto obj = ParseObject(string_table, cache);
-    if (!obj.IsNull()) {
+    if (!obj.is_null()) {
       exception_table = Handle<PyString>::cast(obj);
     } else {
-      exception_table = Handle<PyString>::Null();
+      exception_table = Handle<PyString>::null();
     }
   }
 
@@ -357,7 +357,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
   int cache_index = 0;
   if (ref_flag) {
     cache_index = static_cast<int>(cache->length());
-    PyList::Append(cache, Handle<PyObject>::Null());
+    PyList::Append(cache, Handle<PyObject>::null());
   }
 
   Handle<PyObject> object;
@@ -442,7 +442,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       for (uint8_t i = 0; i < length; ++i) {
         auto value = ParseObject(string_table, cache);
         tuple->SetInternal(i,
-                           value.IsNull() ? Tagged<PyObject>::Null() : *value);
+                           value.is_null() ? Tagged<PyObject>::null() : *value);
       }
       object = tuple;
       break;
@@ -456,7 +456,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       for (int i = 0; i < length; ++i) {
         auto value = ParseObject(string_table, cache);
         tuple->SetInternal(i,
-                           value.IsNull() ? Tagged<PyObject>::Null() : *value);
+                           value.is_null() ? Tagged<PyObject>::null() : *value);
       }
       object = tuple;
       break;
@@ -480,7 +480,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       }
       while (true) {
         auto key = ParseObject(string_table, cache);
-        if (key.IsNull()) {
+        if (key.is_null()) {
           break;
         }
         auto value = ParseObject(string_table, cache);
@@ -490,10 +490,11 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       break;
     }
     case kNullObjectFlag:
-      object = Handle<PyObject>::Null();
+      object = Handle<PyObject>::null();
       break;
     default:
-      std::fprintf(stderr, "marshal parser: unrecognized type : %c\n", object_type);
+      std::fprintf(stderr, "marshal parser: unrecognized type : %c\n",
+                   object_type);
       std::exit(1);
   }
 
@@ -501,8 +502,8 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     cache->Set(cache_index, object);
   }
 
-  if (object.IsNull()) {
-    return Handle<PyObject>::Null();
+  if (object.is_null()) {
+    return Handle<PyObject>::null();
   }
   return object.EscapeFrom(&scope);
 }

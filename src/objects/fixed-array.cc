@@ -24,7 +24,7 @@ Handle<FixedArray> FixedArray::NewInstance(int64_t capacity) {
 
   // 设置字段
   object->capacity_ = capacity;
-  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(object, Tagged<PyDict>::null());
 
   // 清空数据区
   for (auto i = 0; i < capacity; ++i) {

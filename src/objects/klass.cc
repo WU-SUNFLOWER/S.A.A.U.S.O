@@ -49,12 +49,12 @@ Handle<PyObject> FindPropertyInMro(Handle<PyObject> object,
     auto own_klass = type_object->own_klass();
     auto klass_properties = own_klass->klass_properties();
     auto result = klass_properties->Get(prop_name);
-    if (!result.IsNull()) {
+    if (!result.is_null()) {
       return result;
     }
   }
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
@@ -123,7 +123,7 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
   }
 
   assert(0 && "unreachable");
-  return Handle<PyList>::Null();
+  return Handle<PyList>::null();
 }
 
 }  // namespace
@@ -168,7 +168,7 @@ Handle<PyDict> Klass::klass_properties() {
 }
 
 void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
-  assert(klass_properties_.IsNull() && "can't reset klass's properties dict");
+  assert(klass_properties_.is_null() && "can't reset klass's properties dict");
   klass_properties_ = *klass_properties;
 }
 
@@ -181,7 +181,7 @@ void Klass::set_supers(Handle<PyList> supers) {
 }
 
 Handle<PyList> Klass::mro() {
-  assert(!mro_.IsNull());  // mro序列初始化完毕前禁止获取
+  assert(!mro_.is_null());  // mro序列初始化完毕前禁止获取
   return handle(Tagged<PyList>::cast(mro_));
 }
 
@@ -194,7 +194,7 @@ void Klass::Iterate(ObjectVisitor* v) {
 }
 
 void Klass::AddSuper(Tagged<Klass> super) {
-  if (supers_.IsNull()) {
+  if (supers_.is_null()) {
     set_supers(PyList::NewInstance());
   }
   PyList::Append(supers(), super->type_object());
@@ -202,12 +202,12 @@ void Klass::AddSuper(Tagged<Klass> super) {
 
 void Klass::OrderSupers() {
   // 不允许重复执行C3算法
-  assert(mro_.IsNull());
+  assert(mro_.is_null());
 
   HandleScope scope;
   Handle<PyList> mro_result;
 
-  if (supers_.IsNull() || supers()->IsEmpty()) {
+  if (supers_.is_null() || supers()->IsEmpty()) {
     mro_result = PyList::NewInstance();
   } else {
     Handle<PyList> all = PyList::NewInstance(supers()->length());
@@ -235,7 +235,7 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
 
   if (!IsPyNone(func)) {
     Handle<PyObject> s = Isolate::Current()->interpreter()->CallPython(
-        func, Handle<PyTuple>::Null(), Handle<PyDict>::Null());
+        func, Handle<PyTuple>::null(), Handle<PyDict>::null());
     PyObject::Print(Handle<PyString>::cast(s));
     return;
   }
@@ -244,12 +244,12 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
 }
 
 Handle<PyObject> Klass::Virtual_Default_Len(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+  return FindAndCall(self, Handle<PyTuple>::null(), Handle<PyDict>::null(),
                      ST(len));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+  return FindAndCall(self, Handle<PyTuple>::null(), Handle<PyDict>::null(),
                      ST(repr));
 }
 
@@ -278,9 +278,9 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   Handle<PyObject> result;
   if (IsHeapObject(self)) {
     Handle<PyDict> properties = PyObject::GetProperties(self);
-    if (!properties.IsNull()) {
+    if (!properties.is_null()) {
       result = properties->Get(prop_name);
-      if (!result.IsNull()) {
+      if (!result.is_null()) {
         return result;
       }
     }
@@ -288,7 +288,7 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
 
   // 2. 沿着 MRO 序列在类字典中查找prop_name
   result = FindPropertyInMro(self, prop_name);
-  if (!result.IsNull()) {
+  if (!result.is_null()) {
     // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
     //   （这样调用时 self 才会自动传入）。
     // 2. 如果该值是普通数据，直接返回。
@@ -302,12 +302,12 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
   Handle<PyObject> getattr_func = FindPropertyInMro(self, ST(getattr));
-  if (!getattr_func.IsNull()) {
+  if (!getattr_func.is_null()) {
     getattr_func = MethodObject::NewInstance(getattr_func, self);
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, prop_name);
     return Isolate::Current()->interpreter()->CallPython(
-        getattr_func, args, Handle<PyDict>::Null());
+        getattr_func, args, Handle<PyDict>::null());
   }
 
   // 4. 还没找到，抛出错误并崩溃
@@ -316,7 +316,7 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
                PyObject::GetKlass(self)->name()->buffer(),
                Handle<PyString>::cast(prop_name)->buffer());
 
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
@@ -324,7 +324,7 @@ void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
                                     Handle<PyObject> property_value) {
   auto properties = PyObject::GetProperties(self);
 
-  if (properties.IsNull()) {
+  if (properties.is_null()) {
     // 对齐cpython: 对于不存在__dict__的对象，直接抛错误
     std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
                  PyObject::GetKlass(self)->name()->buffer(),
@@ -339,7 +339,7 @@ Handle<PyObject> Klass::Virtual_Default_Subscr(Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
-  return FindAndCall(self, args, Handle<PyDict>::Null(), ST(getitem));
+  return FindAndCall(self, args, Handle<PyDict>::null(), ST(getitem));
 }
 
 void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
@@ -348,30 +348,30 @@ void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(2);
   args->SetInternal(0, subscr);
   args->SetInternal(0, value);
-  FindAndCall(self, args, Handle<PyDict>::Null(), ST(setitem));
+  FindAndCall(self, args, Handle<PyDict>::null(), ST(setitem));
 }
 
 void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
-  FindAndCall(self, args, Handle<PyDict>::Null(), ST(delitem));
+  FindAndCall(self, args, Handle<PyDict>::null(), ST(delitem));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
                                             Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  return FindAndCall(self, args, Handle<PyDict>::Null(), ST(add));
+  return FindAndCall(self, args, Handle<PyDict>::null(), ST(add));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+  return FindAndCall(self, Handle<PyTuple>::null(), Handle<PyDict>::null(),
                      ST(next));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Iter(Handle<PyObject> self) {
-  return FindAndCall(self, Handle<PyTuple>::Null(), Handle<PyDict>::Null(),
+  return FindAndCall(self, Handle<PyTuple>::null(), Handle<PyDict>::null(),
                      ST(iter));
 }
 

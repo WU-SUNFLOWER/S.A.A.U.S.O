@@ -98,8 +98,8 @@ void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
   HandleScope scope;
   Handle<PyList> actual = printv_result_.Get();
 
-  ASSERT_FALSE(expected.IsNull());
-  ASSERT_FALSE(actual.IsNull());
+  ASSERT_FALSE(expected.is_null());
+  ASSERT_FALSE(actual.is_null());
 
   ASSERT_EQ(actual->length(), expected->length());
 

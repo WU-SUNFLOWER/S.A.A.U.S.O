@@ -262,9 +262,9 @@ void Isolate::TearDown() {
   klass_list_.Resize(0);
 
   // 清空单例引用
-  py_none_object_ = Tagged<PyNone>::Null();
-  py_true_object_ = Tagged<PyBoolean>::Null();
-  py_false_object_ = Tagged<PyBoolean>::Null();
+  py_none_object_ = Tagged<PyNone>::null();
+  py_true_object_ = Tagged<PyBoolean>::null();
+  py_false_object_ = Tagged<PyBoolean>::null();
 
   // 销毁堆
   heap_->TearDown();

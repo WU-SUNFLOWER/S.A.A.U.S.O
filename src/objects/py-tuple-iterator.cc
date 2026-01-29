@@ -19,14 +19,15 @@ namespace saauso::internal {
 Handle<PyTupleIterator> PyTupleIterator::NewInstance(Handle<PyObject> owner) {
   HandleScope scope;
 
-  Handle<PyTupleIterator> iterator(Isolate::Current()->heap()->Allocate<
-                                   PyTupleIterator>(Heap::AllocationSpace::kNewSpace));
+  Handle<PyTupleIterator> iterator(
+      Isolate::Current()->heap()->Allocate<PyTupleIterator>(
+          Heap::AllocationSpace::kNewSpace));
 
-  iterator->owner_ = owner.IsNull() ? Tagged<PyObject>::Null() : *owner;
+  iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
   iterator->iter_cnt_ = 0;
 
   PyObject::SetKlass(iterator, PyTupleIteratorKlass::GetInstance());
-  PyObject::SetProperties(*iterator, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
 
   return iterator.EscapeFrom(&scope);
 }
@@ -37,7 +38,7 @@ Tagged<PyTupleIterator> PyTupleIterator::cast(Tagged<PyObject> object) {
 }
 
 Handle<PyTuple> PyTupleIterator::owner() const {
-  assert(!owner_.IsNull());
+  assert(!owner_.is_null());
   return handle(Tagged<PyTuple>::cast(owner_));
 }
 

@@ -20,8 +20,8 @@ namespace saauso::internal {
 // static
 Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
   // 布尔值生存在永久区，不会被垃圾回收，因此不需要Handle保护
-  auto object =
-      Isolate::Current()->heap()->Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);
+  auto object = Isolate::Current()->heap()->Allocate<PyBoolean>(
+      Heap::AllocationSpace::kMetaSpace);
 
   object->value_ = value;
   PyObject::SetKlass(object, PyBooleanKlass::GetInstance());
@@ -31,7 +31,7 @@ Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
   // Traceback (most recent call last):
   //   File "<stdin>", line 1, in <module>
   // AttributeError: 'bool' object has no attribute '__dict__'
-  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(object, Tagged<PyDict>::null());
 
   return object;
 }
@@ -52,8 +52,8 @@ Tagged<PyBoolean> PyBoolean::Reverse() {
 // static
 Tagged<PyNone> PyNone::NewInstance() {
   // none生存在永久区，不会被垃圾回收，因此不需要Handle保护
-  auto object =
-      Isolate::Current()->heap()->Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
+  auto object = Isolate::Current()->heap()->Allocate<PyNone>(
+      Heap::AllocationSpace::kMetaSpace);
   PyObject::SetKlass(object, PyNoneKlass::GetInstance());
 
   // NoneType类型没有__dict__，不需要初始化properties
@@ -61,7 +61,7 @@ Tagged<PyNone> PyNone::NewInstance() {
   // Traceback (most recent call last):
   //   File "<stdin>", line 1, in <module>
   // AttributeError: 'NoneType' object has no attribute '__dict__'
-  PyObject::SetProperties(object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(object, Tagged<PyDict>::null());
 
   return object;
 }

@@ -19,14 +19,15 @@ namespace saauso::internal {
 Handle<PyListIterator> PyListIterator::NewInstance(Handle<PyObject> owner) {
   HandleScope scope;
 
-  Handle<PyListIterator> iterator(Isolate::Current()->heap()->Allocate<
-                                  PyListIterator>(Heap::AllocationSpace::kNewSpace));
+  Handle<PyListIterator> iterator(
+      Isolate::Current()->heap()->Allocate<PyListIterator>(
+          Heap::AllocationSpace::kNewSpace));
 
-  iterator->owner_ = owner.IsNull() ? Tagged<PyObject>::Null() : *owner;
+  iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
   iterator->iter_cnt_ = 0;
 
   PyObject::SetKlass(iterator, PyListIteratorKlass::GetInstance());
-  PyObject::SetProperties(*iterator, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
 
   return iterator.EscapeFrom(&scope);
 }
@@ -37,7 +38,7 @@ Tagged<PyListIterator> PyListIterator::cast(Tagged<PyObject> object) {
 }
 
 Handle<PyList> PyListIterator::owner() const {
-  assert(!owner_.IsNull());
+  assert(!owner_.is_null());
   return handle(Tagged<PyList>::cast(owner_));
 }
 

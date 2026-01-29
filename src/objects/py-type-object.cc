@@ -18,8 +18,9 @@ namespace saauso::internal {
 Handle<PyTypeObject> PyTypeObject::NewInstance() {
   HandleScope scope;
 
-  Handle<PyTypeObject> object(Isolate::Current()->heap()->Allocate<PyTypeObject>(
-      Heap::AllocationSpace::kNewSpace));
+  Handle<PyTypeObject> object(
+      Isolate::Current()->heap()->Allocate<PyTypeObject>(
+          Heap::AllocationSpace::kNewSpace));
 
   // 绑定klass
   PyObject::SetKlass(object, PyTypeObjectKlass::GetInstance());
@@ -30,7 +31,7 @@ Handle<PyTypeObject> PyTypeObject::NewInstance() {
   PyObject::SetProperties(*object, *properties);
 
   // 初始化对象字段
-  object->own_klass_ = Tagged<Klass>::Null();
+  object->own_klass_ = Tagged<Klass>::null();
 
   return object.EscapeFrom(&scope);
 }

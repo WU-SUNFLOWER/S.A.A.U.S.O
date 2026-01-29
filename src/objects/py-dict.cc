@@ -86,7 +86,7 @@ Handle<PyDict> PyDict::NewInstanceWithoutAllocateData() {
   // Traceback (most recent call last):
   //   File "<stdin>", line 1, in <module>
   // AttributeError: 'dict' object has no attribute '__dict__'
-  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
   return object;
 }
@@ -114,8 +114,8 @@ Handle<PyObject> PyDict::ValueAtIndex(int64_t index) const {
 Handle<PyTuple> PyDict::ItemAtIndex(int64_t index) const {
   auto key = KeyAtIndex(index);
   // 如果当前槽位没有有效的键值对，直接返回null
-  if (key.IsNull()) {
-    return Handle<PyTuple>::Null();
+  if (key.is_null()) {
+    return Handle<PyTuple>::null();
   }
   auto result = PyTuple::NewInstance(2);
   auto value = ValueAtIndex(index);
@@ -129,7 +129,7 @@ Handle<FixedArray> PyDict::data() const {
 }
 
 bool PyDict::Contains(Handle<PyObject> key) const {
-  return !Get(key).IsNull();
+  return !Get(key).is_null();
 }
 
 Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {
@@ -157,7 +157,7 @@ Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
   uint64_t index = hash & mask;
 
   auto curr_key = GET_DICT_KEY(this, index);
-  while (!curr_key.IsNull()) {
+  while (!curr_key.is_null()) {
     if (PyObject::Equal(handle(curr_key), handle_key)->value()) {
       return GET_DICT_VAL(this, index);
     }
@@ -165,7 +165,7 @@ Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
     curr_key = GET_DICT_KEY(this, index);
   }
 
-  return Tagged<PyObject>::Null();
+  return Tagged<PyObject>::null();
 }
 
 void PyDict::Remove(Handle<PyObject> key) {
@@ -176,12 +176,12 @@ void PyDict::Remove(Handle<PyObject> key) {
   uint64_t index = hash & mask;
 
   auto curr_key = GET_DICT_KEY(this, index);
-  while (!curr_key.IsNull()) {
+  while (!curr_key.is_null()) {
     if (PyObject::Equal(handle(curr_key), key)->value()) {
       // 找到目标，进行删除
       // 1. 将当前位置置空
-      SET_DICT_KEY(this, index, Tagged<PyObject>::Null());
-      SET_DICT_VAL(this, index, Tagged<PyObject>::Null());
+      SET_DICT_KEY(this, index, Tagged<PyObject>::null());
+      SET_DICT_VAL(this, index, Tagged<PyObject>::null());
       --occupied_;
 
       // 2. 整理后续元素（backward shift deletion）
@@ -189,7 +189,7 @@ void PyDict::Remove(Handle<PyObject> key) {
       uint64_t next = GetProbe(hole, mask);
 
       Handle<PyObject> next_key = handle(GET_DICT_KEY(this, next));
-      while (!(*next_key).IsNull()) {
+      while (!(*next_key).is_null()) {
         uint64_t next_hash = PyObject::Hash(next_key);
         uint64_t ideal = next_hash & mask;
 
@@ -202,8 +202,8 @@ void PyDict::Remove(Handle<PyObject> key) {
           SET_DICT_KEY(this, hole, *next_key);
           SET_DICT_VAL(this, hole, GET_DICT_VAL(this, next));
 
-          SET_DICT_KEY(this, next, Tagged<PyObject>::Null());
-          SET_DICT_VAL(this, next, Tagged<PyObject>::Null());
+          SET_DICT_KEY(this, next, Tagged<PyObject>::null());
+          SET_DICT_VAL(this, next, Tagged<PyObject>::null());
 
           hole = next;
         }
@@ -224,8 +224,8 @@ void PyDict::Put(Handle<PyObject> object,
                  Handle<PyObject> value) {
   HandleScope scope;
 
-  assert(!key.IsNull());
-  assert(!value.IsNull());
+  assert(!key.is_null());
+  assert(!value.is_null());
 
   auto dict = Handle<PyDict>::cast(object);
   // 超出装填因子系数，自动进行扩容
@@ -238,7 +238,7 @@ void PyDict::Put(Handle<PyObject> object,
   uint64_t index = hash & mask;
 
   Handle<PyObject> curr_key(GET_DICT_KEY(dict, index));
-  while (!curr_key.IsNull()) {
+  while (!curr_key.is_null()) {
     if (PyObject::Equal(curr_key, key)->value()) {
       SET_DICT_VAL(dict, index, *value);
       return;
@@ -265,7 +265,7 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
   int64_t out_index = 0;
   for (auto i = 0; i < dict->capacity(); ++i) {
     Tagged<PyObject> key = data->Get(i << 1);
-    if (key.IsNull()) {
+    if (key.is_null()) {
       continue;
     }
     keys->SetInternal(out_index++, key);
@@ -287,7 +287,7 @@ void PyDict::ExpandImpl(Handle<PyDict> dict) {
 
   // rehash所有旧数据
   for (auto index = 0; index < dict->capacity(); ++index) {
-    if (GET_DICT_KEY(dict, index).IsNull()) {
+    if (GET_DICT_KEY(dict, index).is_null()) {
       continue;
     }
 
@@ -296,7 +296,7 @@ void PyDict::ExpandImpl(Handle<PyDict> dict) {
     uint64_t new_index = hash & new_mask;
 
     // 在new_data中寻找一个合适的位置放置键值对
-    while (!new_data->Get(new_index << 1).IsNull()) {
+    while (!new_data->Get(new_index << 1).is_null()) {
       new_index = GetProbe(new_index, new_mask);
     }
 

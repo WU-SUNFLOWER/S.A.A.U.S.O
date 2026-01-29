@@ -27,7 +27,7 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
   HandleScope scope;
   auto iterator = Handle<PyListIterator>::cast(self);
   auto list = iterator->owner();
-  assert(!list.IsNull());
+  assert(!list.is_null());
 
   auto iter_cnt = iterator->iter_cnt();
   if (iter_cnt < list->length()) {
@@ -35,7 +35,7 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
     iterator->increase_iter_cnt();
     return result.EscapeFrom(&scope);
   }
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 Handle<PyObject> Native_Next(Handle<PyObject> self,
@@ -49,7 +49,7 @@ Handle<PyObject> Native_Next(Handle<PyObject> self,
 Tagged<PyListIteratorKlass> PyListIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyListIteratorKlass> instance = isolate->py_list_iterator_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyListIteratorKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_list_iterator_klass(instance);
@@ -89,7 +89,7 @@ void PyListIteratorKlass::Initialize() {
 
 void PyListIteratorKlass::Finalize() {
   Isolate::Current()->set_py_list_iterator_klass(
-      Tagged<PyListIteratorKlass>::Null());
+      Tagged<PyListIteratorKlass>::null());
 }
 
 void PyListIteratorKlass::Virtual_Print(Handle<PyObject> self) {

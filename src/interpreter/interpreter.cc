@@ -149,10 +149,10 @@ void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
                                      Handle<PyTuple>& pos_args,
                                      Handle<PyDict>& kw_args) {
   // 如果有有效的键值对参数，从全体args当中单独提取出来
-  if (!kwarg_keys.IsNull()) {
+  if (!kwarg_keys.is_null()) {
     kw_args = PyDict::NewInstance();
 
-    assert(!actual_args.IsNull());
+    assert(!actual_args.is_null());
     auto actual_args_size = actual_args->length();
 
     for (auto i = 0; i < kwarg_keys->length(); ++i) {
@@ -171,14 +171,14 @@ void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
 // private
 Handle<PyObject> Interpreter::ReleaseReturnValue() {
   auto result = handle(ret_value_);
-  ret_value_ = Tagged<PyObject>::Null();
+  ret_value_ = Tagged<PyObject>::null();
   return result;
 }
 
 // private
 Handle<PyTuple> Interpreter::ReleaseKwArgKeys() {
   auto result = Handle<PyTuple>::cast(handle(kwarg_keys_));
-  kwarg_keys_ = Tagged<PyObject>::Null();
+  kwarg_keys_ = Tagged<PyObject>::null();
   return result;
 }
 

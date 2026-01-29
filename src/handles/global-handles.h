@@ -83,7 +83,7 @@ class Global {
 
   Handle<T> Get() const {
     if (IsEmpty()) {
-      return Handle<T>::Null();
+      return Handle<T>::null();
     }
     assert(isolate_ == Isolate::Current());
     return Handle<T>(GetDirectionPtr());
@@ -104,7 +104,7 @@ class Global {
 
   Tagged<T> GetDirectionPtr() const {
     if (IsEmpty()) {
-      return Tagged<T>::Null();
+      return Tagged<T>::null();
     }
     return Tagged<T>(*location_);
   }

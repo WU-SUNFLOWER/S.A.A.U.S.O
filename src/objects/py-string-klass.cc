@@ -78,7 +78,7 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
 Tagged<PyStringKlass> PyStringKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyStringKlass> instance = isolate->py_string_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyStringKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_string_klass(instance);
@@ -136,7 +136,7 @@ void PyStringKlass::Initialize() {
 }
 
 void PyStringKlass::Finalize() {
-  Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::Null());
+  Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {

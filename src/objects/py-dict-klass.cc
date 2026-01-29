@@ -39,7 +39,7 @@ Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
 
   auto value = dict->Get(key);
   // 如果dict中已经有目标key，直接返回对应的value
-  if (!value.IsNull()) {
+  if (!value.is_null()) {
     return value;
   }
 
@@ -71,7 +71,7 @@ Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
   auto value = dict->Get(key);
-  if (!value.IsNull()) {
+  if (!value.is_null()) {
     dict->Remove(key);
     return value.EscapeFrom(&scope);
   }
@@ -115,7 +115,7 @@ Handle<PyObject> NativeMethod_Get(Handle<PyObject> self,
   auto key = args->Get(0);
 
   Handle<PyObject> result = dict->Get(key);
-  if (result.IsNull()) {
+  if (result.is_null()) {
     result = handle(Isolate::Current()->py_none_object());
   }
 
@@ -130,7 +130,7 @@ Handle<PyObject> NativeMethod_Get(Handle<PyObject> self,
 Tagged<PyDictKlass> PyDictKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictKlass> instance = isolate->py_dict_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_klass(instance);
@@ -204,7 +204,7 @@ void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     auto key = dict->data()->Get(i << 1);
-    if (!key.IsNull()) {
+    if (!key.is_null()) {
       if (!first) {
         std::printf(", ");
       }
@@ -251,10 +251,10 @@ Tagged<PyBoolean> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
 
   for (int64_t i = 0; i < d1->capacity(); ++i) {
     auto k1 = d1->data()->Get(i << 1);
-    if (!k1.IsNull()) {
+    if (!k1.is_null()) {
       auto v1 = d1->data()->Get((i << 1) + 1);
       auto v2_handle = d2->Get(Handle<PyObject>(k1));
-      if (v2_handle.IsNull()) {
+      if (v2_handle.is_null()) {
         return Isolate::Current()->py_false_object();
       }
 
@@ -279,7 +279,7 @@ Tagged<PyBoolean> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
 Handle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
   auto result = Handle<PyDict>::cast(self)->Get(subscr);
-  if (result.IsNull()) {
+  if (result.is_null()) {
     std::printf("KeyError: ");
     PyObject::Print(subscr);
     std::printf("\n");
@@ -327,7 +327,7 @@ void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 
 // static
 void PyDictKlass::Finalize() {
-  Isolate::Current()->set_py_dict_klass(Tagged<PyDictKlass>::Null());
+  Isolate::Current()->set_py_dict_klass(Tagged<PyDictKlass>::null());
 }
 
 }  // namespace saauso::internal

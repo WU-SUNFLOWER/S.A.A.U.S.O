@@ -21,7 +21,8 @@ namespace {
 
 Address AllocateInSurvivorSpace(size_t size) {
   Address target_addr =
-      Isolate::Current()->heap()->new_space().survivor_space().AllocateRaw(size);
+      Isolate::Current()->heap()->new_space().survivor_space().AllocateRaw(
+          size);
   // survivor space中理论上一定有剩余的空间
   assert(target_addr != kNullAddress &&
          "survivor space must have enough space!!!");
@@ -36,7 +37,7 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
     Tagged<PyObject> object = *p;
 
     // 跳过空指针、Smi、指向meta space和不指向new space的指针
-    if (object.IsNull() || !IsGcAbleObject(object) ||
+    if (object.is_null() || !IsGcAbleObject(object) ||
         !Isolate::Current()->heap()->InNewSpaceEden(object.ptr())) {
       continue;
     }
@@ -48,7 +49,7 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
 
 void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
   assert(p != nullptr);
-  if (p->IsNull()) {
+  if (p->is_null()) {
     return;
   }
   (*p)->Iterate(this);

@@ -132,7 +132,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
     Handle<PyObject> iterator = TOP();
     Handle<PyObject> next_result = PyObject::Next(iterator);
-    if (next_result.IsNull()) {
+    if (next_result.is_null()) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
       POP();
       break;
@@ -151,19 +151,19 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
     Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
     Tagged<PyObject> value = current_frame_->locals()->GetTagged(key);
-    if (!value.IsNull()) {
+    if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
     value = current_frame_->globals()->GetTagged(key);
-    if (!value.IsNull()) {
+    if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
     value = builtins()->GetTagged(key);
-    if (!value.IsNull()) {
+    if (!value.is_null()) {
       PUSH(value);
       break;
     }
@@ -212,7 +212,7 @@ void Interpreter::EvalCurrentFrame() {
 
     auto iter = PyDictItemIterator::NewInstance(update_dict);
     auto item = Handle<PyTuple>::cast(PyObject::Next(iter));
-    while (!item.IsNull()) {
+    while (!item.is_null()) {
       auto key = item->Get(0);
       auto value = item->Get(1);
 
@@ -297,13 +297,13 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> key = current_frame_->names()->Get(op_arg >> 1);
 
     Handle<PyObject> value = current_frame_->globals()->Get(key);
-    if (!value.IsNull()) {
+    if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
     value = builtins()->Get(key);
-    if (!value.IsNull()) {
+    if (!value.is_null()) {
       PUSH(value);
       break;
     }
@@ -426,7 +426,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> callable = POP();
 
     Handle<PyTuple> pos_args;
-    if (args_obj.IsNull()) {
+    if (args_obj.is_null()) {
       pos_args = PyTuple::NewInstance(0);
     } else if (IsPyTuple(args_obj)) {
       pos_args = Handle<PyTuple>::cast(args_obj);
@@ -514,7 +514,7 @@ void Interpreter::LeaveCurrentFrame() {
 
   // 将被弹出栈帧当中的返回值压入被恢复栈帧的堆栈中
   PUSH(ret_value_);
-  ret_value_ = Tagged<PyObject>::Null();
+  ret_value_ = Tagged<PyObject>::null();
 }
 
 void Interpreter::DestroyCurrentFrame() {

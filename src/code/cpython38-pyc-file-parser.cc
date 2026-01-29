@@ -73,7 +73,7 @@ Handle<PyCodeObject> PycFileParser::Parse() {
   object_type &= 0x7f;
 
   if (object_type != 'c') {
-    return Handle<PyCodeObject>::Null();
+    return Handle<PyCodeObject>::null();
   }
 
   Handle<PyList> string_table = PyList::NewInstance();
@@ -83,7 +83,7 @@ Handle<PyCodeObject> PycFileParser::Parse() {
   if (ref_flag) {
     // 先在cache中占个位
     index = cache->length();
-    PyList::Append(cache, Handle<PyObject>::Null());
+    PyList::Append(cache, Handle<PyObject>::null());
   }
 
   Handle<PyCodeObject> code_object = ParseCodeObject(string_table, cache);
@@ -198,7 +198,7 @@ Handle<PyList> PycFileParser::ParseTuple(Handle<PyList> string_table,
     case kTupleFlag: {
       int cache_index = cache->length();
       if (HAS_REF_FLAG(raw_object_type)) {
-        PyList::Append(cache, Handle<PyObject>::Null());
+        PyList::Append(cache, Handle<PyObject>::null());
       }
 
       tuple = ParseTupleImpl(string_table, cache);
@@ -235,7 +235,7 @@ Handle<PyList> PycFileParser::ParseTupleImpl(Handle<PyList> string_table,
     int index = 0;
     if (HAS_REF_FLAG(raw_object_type)) {
       index = cache->length();
-      PyList::Append(cache, Handle<PyObject>::Null());
+      PyList::Append(cache, Handle<PyObject>::null());
     }
 
     Handle<PyObject> object;

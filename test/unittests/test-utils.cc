@@ -33,7 +33,7 @@ Handle<PyObject> PyFalseObject() {
 
 ::testing::AssertionResult IsPyStringEqual(Handle<PyString> s,
                                            std::string_view expected) {
-  if (s.IsNull()) {
+  if (s.is_null()) {
     return ::testing::AssertionFailure() << "PyString is null";
   }
 
@@ -53,10 +53,10 @@ Handle<PyObject> PyFalseObject() {
 
 ::testing::AssertionResult IsPyObjectEqual(Handle<PyObject> x,
                                            Handle<PyObject> y) {
-  if (x.IsNull() || y.IsNull()) {
+  if (x.is_null() || y.is_null()) {
     return ::testing::AssertionFailure()
-           << "null input: x=" << (x.IsNull() ? "null" : "non-null")
-           << " y=" << (y.IsNull() ? "null" : "non-null");
+           << "null input: x=" << (x.is_null() ? "null" : "non-null")
+           << " y=" << (y.is_null() ? "null" : "non-null");
   }
 
   auto result = PyObject::Equal(x, y);
@@ -67,7 +67,7 @@ Handle<PyObject> PyFalseObject() {
 }
 
 ::testing::AssertionResult IsPyTrueCondition(Handle<PyObject> condition) {
-  if (condition.IsNull()) {
+  if (condition.is_null()) {
     return ::testing::AssertionFailure() << "condition is null";
   }
   if (!IsPyTrue(condition)) {

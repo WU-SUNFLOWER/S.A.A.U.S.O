@@ -23,7 +23,7 @@ namespace saauso::internal {
 Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyCodeObjectKlass> instance = isolate->py_code_object_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyCodeObjectKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_code_object_klass(instance);
@@ -60,7 +60,7 @@ void PyCodeObjectKlass::Initialize() {
 void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto code = Handle<PyCodeObject>::cast(self);
   Tagged<PyObject> file_name_obj = code->file_name_;
-  if (file_name_obj.IsNull() || !IsPyString(file_name_obj)) {
+  if (file_name_obj.is_null() || !IsPyString(file_name_obj)) {
     std::printf("<code object greet at 0x%p, file <unknown>, line %d>",
                 reinterpret_cast<void*>((*code).ptr()), code->line_no_);
     return;
@@ -75,7 +75,7 @@ void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
 
 void PyCodeObjectKlass::Finalize() {
   Isolate::Current()->set_py_code_object_klass(
-      Tagged<PyCodeObjectKlass>::Null());
+      Tagged<PyCodeObjectKlass>::null());
 }
 
 /////////////////////////////////////////////////////////////////////////

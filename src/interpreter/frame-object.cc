@@ -62,7 +62,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   int fast_locals_idx = 0;
   int self_arg_cnt = 0;
   // 将host填充为首个函数参数
-  if (!host.IsNull()) {
+  if (!host.is_null()) {
     fast_locals->Set(fast_locals_idx++, host);
     self_arg_cnt = 1;
   }
@@ -73,7 +73,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   const int64_t formal_pos_arg_cnt = real_formal_pos_arg_cnt - self_arg_cnt;
 
   // 将与形参对应的函数实参加载到栈帧的fast_locals上去
-  if (!actual_pos_args.IsNull()) {
+  if (!actual_pos_args.is_null()) {
     auto valid_pos_args_cnt =
         std::min(actual_pos_args->length(), formal_pos_arg_cnt);
     for (auto i = 0; i < valid_pos_args_cnt; ++i) {
@@ -88,7 +88,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   }
 
   // 尝试使用actual_kw_args填充没有通过位置实参赋值的形参
-  if (!actual_kw_args.IsNull()) {
+  if (!actual_kw_args.is_null()) {
     // 遍历actual_kw_args，看看是否是对函数的形参进行赋值
     // 1. 如果是，那么注入到形参
     // 2. 如果不是
@@ -97,7 +97,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
     auto iter = PyDictItemIterator::NewInstance(actual_kw_args);
     auto item = Handle<PyTuple>::cast(PyObject::Next(iter));
     auto var_args = code_object->var_names();
-    while (!item.IsNull()) {
+    while (!item.is_null()) {
       auto key = Handle<PyString>::cast(item->Get(0));
       auto value = item->Get(1);
       auto index_in_var_args = var_args->IndexOf(key);
@@ -106,7 +106,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
       if (InRangeWithRightOpen(index_in_var_args, static_cast<int64_t>(0),
                                real_formal_pos_arg_cnt)) {
         // 不允许重复对形参赋值
-        if (!fast_locals->Get(index_in_var_args).IsNull()) {
+        if (!fast_locals->Get(index_in_var_args).is_null()) {
           std::fprintf(
               stderr, "TypeError: %s() got multiple values for argument '%s'\n",
               func_name->buffer(), key->buffer());
@@ -116,13 +116,13 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
         // 给形参赋值
         fast_locals->Set(index_in_var_args, value);
         // 从kw_args中消去该键值对
-        if (!kw_args.IsNull()) {
+        if (!kw_args.is_null()) {
           kw_args->Remove(key);
         }
         // 现在有新的形参被填充进fast_locals了，
         // 因此让fast_locals_idx游标在逻辑上向右移动一下
         ++fast_locals_idx;
-      } else if (!kw_args.IsNull()) {
+      } else if (!kw_args.is_null()) {
         // key没有命中特定的形参，如果当前函数支持键值对参数包，
         // 将键值对参数注入进**kwargs当中。
         PyDict::Put(kw_args, key, value);
@@ -142,11 +142,11 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   // 使用默认值填装尚未被赋值的函数形参
   // 使用默认值填充fast_locals中的空洞
   auto default_args = func->default_args();
-  if (!default_args.IsNull()) {
+  if (!default_args.is_null()) {
     auto default_arg_cnt = default_args->length();
     auto arg_list_index = real_formal_pos_arg_cnt - 1;
     while (default_arg_cnt > 0) {
-      if (fast_locals->Get(arg_list_index).IsNull()) {
+      if (fast_locals->Get(arg_list_index).is_null()) {
         fast_locals->Set(arg_list_index,
                          default_args->Get(default_arg_cnt - 1));
         // 同理，让fast_locals_idx游标在逻辑上向右移动一下
@@ -167,7 +167,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   }
 
   auto extend_pos_arg_cnt = 0;
-  if (!actual_pos_args.IsNull()) {
+  if (!actual_pos_args.is_null()) {
     extend_pos_arg_cnt = actual_pos_args->length() - formal_pos_arg_cnt;
   }
 
@@ -177,9 +177,9 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   }
 
   // 打包拓展参数
-  if (!actual_pos_args.IsNull() && extend_pos_arg_cnt > 0) {
+  if (!actual_pos_args.is_null() && extend_pos_arg_cnt > 0) {
     // 如果函数不接受扩展参数，直接报错
-    if (extend_pos_args.IsNull()) {
+    if (extend_pos_args.is_null()) {
       std::fprintf(stderr,
                    "TypeError: %s() takes %" PRId64
                    " positional arguments but %" PRId64 " were given",
@@ -197,12 +197,12 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   }
 
   // 向fast_locals中注入extend_pos_args
-  if (!extend_pos_args.IsNull()) {
+  if (!extend_pos_args.is_null()) {
     fast_locals->Set(fast_locals_idx++, extend_pos_args);
   }
 
   // 向fast_locals中注入kw_args
-  if (!kw_args.IsNull()) {
+  if (!kw_args.is_null()) {
     fast_locals->Set(fast_locals_idx++, kw_args);
   }
 
@@ -231,7 +231,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   int fast_locals_idx = 0;
   int self_arg_cnt = 0;
   // 将host填充为首个函数参数
-  if (!host.IsNull()) {
+  if (!host.is_null()) {
     fast_locals->Set(fast_locals_idx++, host);
     self_arg_cnt = 1;
   }
@@ -243,10 +243,10 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
 
   // 用户传入的全体实参个数
   const int64_t actual_arg_cnt =
-      actual_args.IsNull() ? 0 : actual_args->length();
+      actual_args.is_null() ? 0 : actual_args->length();
   // 用户通过键值对形式传入的实参个数
   const int64_t actual_kw_arg_cnt =
-      kwarg_keys.IsNull() ? 0 : kwarg_keys->length();
+      kwarg_keys.is_null() ? 0 : kwarg_keys->length();
   // 打包进*args的实参个数
   const int64_t actual_extend_pos_arg_cnt =
       actual_arg_cnt - formal_pos_arg_cnt - actual_kw_arg_cnt;
@@ -278,7 +278,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
     if (InRangeWithRightOpen(index_in_var_args, static_cast<int64_t>(0),
                              real_formal_pos_arg_cnt)) {
       // 不允许重复对形参赋值
-      if (!fast_locals->Get(index_in_var_args).IsNull()) {
+      if (!fast_locals->Get(index_in_var_args).is_null()) {
         std::fprintf(stderr,
                      "TypeError: %s() got multiple values for argument '%s'\n",
                      func_name->buffer(), key->buffer());
@@ -296,7 +296,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
 
     // 2. 没有命中特定的形参，如果当前函数支持键值对参数包，
     //    将键值对参数注入进**kwargs当中。
-    if (!kw_args.IsNull()) {
+    if (!kw_args.is_null()) {
       PyDict::Put(kw_args, key, value);
       continue;
     }
@@ -310,11 +310,11 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
 
   // 使用默认值填充fast_locals中的空洞
   auto default_args = func->default_args();
-  if (!default_args.IsNull()) {
+  if (!default_args.is_null()) {
     auto default_arg_cnt = default_args->length();
     auto arg_list_index = real_formal_pos_arg_cnt - 1;
     while (default_arg_cnt > 0) {
-      if (fast_locals->Get(arg_list_index).IsNull()) {
+      if (fast_locals->Get(arg_list_index).is_null()) {
         fast_locals->Set(arg_list_index,
                          default_args->Get(default_arg_cnt - 1));
         // 同理，让fast_locals_idx游标在逻辑上向右移动一下
@@ -342,7 +342,7 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   // 打包拓展参数
   if (actual_extend_pos_arg_cnt > 0) {
     // 如果函数不接受扩展参数，直接报错
-    if (extend_pos_args.IsNull()) {
+    if (extend_pos_args.is_null()) {
       std::fprintf(stderr,
                    "TypeError: %s() takes %" PRId64
                    " positional arguments but %" PRId64 " were given",
@@ -360,12 +360,12 @@ FrameObject* FrameObject::NewInstance(Handle<PyFunction> func,
   }
 
   // 向fast_locals中注入extend_pos_args
-  if (!extend_pos_args.IsNull()) {
+  if (!extend_pos_args.is_null()) {
     fast_locals->Set(fast_locals_idx++, extend_pos_args);
   }
 
   // 向fast_locals中注入kw_args
-  if (!kw_args.IsNull()) {
+  if (!kw_args.is_null()) {
     fast_locals->Set(fast_locals_idx++, kw_args);
   }
 

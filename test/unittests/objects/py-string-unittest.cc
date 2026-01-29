@@ -25,7 +25,7 @@ TEST_F(PyStringTest, NewInstanceFromCString) {
   HandleScope scope;
 
   auto s = PyString::NewInstance("Hello World");
-  EXPECT_FALSE(s.IsNull());
+  EXPECT_FALSE(s.is_null());
   EXPECT_TRUE(IsPyStringEqual(s, "Hello World"));
 }
 
@@ -203,7 +203,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
   EXPECT_TRUE(PyStringKlass::GetInstance()->klass_properties()->Contains(attr));
 
   Handle<PyObject> upper_method = PyObject::GetAttr(s, attr);
-  EXPECT_FALSE(upper_method.IsNull());
+  EXPECT_FALSE(upper_method.is_null());
 }
 
 }  // namespace saauso::internal

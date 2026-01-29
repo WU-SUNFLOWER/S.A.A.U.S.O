@@ -40,7 +40,7 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
       PyObject::GetAttr(Handle<PyObject>(list),
                         Handle<PyObject>(PyString::NewInstance("append")));
 
-  ASSERT_FALSE(append.IsNull());
+  ASSERT_FALSE(append.is_null());
   EXPECT_TRUE(IsMethodObject(append));
   EXPECT_EQ(list->length(), 0);
 }

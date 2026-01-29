@@ -109,7 +109,7 @@ void Heap::RecordWrite(Tagged<PyObject> object,
                        Address* slot,
                        Tagged<PyObject> value) {
   // 1. 如果写入的是Smi或NULL，忽略
-  if (value.IsNull() || value.IsSmi()) {
+  if (value.is_null() || value.IsSmi()) {
     return;
   }
 
@@ -138,7 +138,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 再次检查：如果slot中的对象已经不是NewSpace对象了（可能被重写，或者晋升了）
     // 则移除该记录
-    if (object.IsSmi() || object.IsNull() ||
+    if (object.IsSmi() || object.is_null() ||
         (!InNewSpaceEden(object.ptr()) && !InNewSpaceSurvivor(object.ptr()))) {
       continue;
     }
@@ -149,7 +149,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 访问后再次检查：如果更新后的对象还在NewSpace，保留记录；否则（晋升）移除
     Tagged<PyObject> new_object = *slot;
-    if (!new_object.IsSmi() && !new_object.IsNull() &&
+    if (!new_object.IsSmi() && !new_object.is_null() &&
         (InNewSpaceEden(new_object.ptr()) ||
          InNewSpaceSurvivor(new_object.ptr()))) {
       remembered_set_.Set(new_size++, slot);

@@ -41,7 +41,7 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   // Traceback (most recent call last):
   //   File "<stdin>", line 1, in <module>
   // AttributeError: 'list' object has no attribute '__dict__'
-  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
   return object.EscapeFrom(&scope);
 }
@@ -127,7 +127,7 @@ void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
   }
 
   self->array()->Set(self->length_++,
-                     value.IsNull() ? Tagged<PyObject>::Null() : *value);
+                     value.is_null() ? Tagged<PyObject>::null() : *value);
 }
 
 void PyList::Insert(Handle<PyList> self,
@@ -147,7 +147,8 @@ void PyList::Insert(Handle<PyList> self,
     self->array()->Set(i, self->array()->Get(i - 1));
   }
 
-  self->array()->Set(index, value.IsNull() ? Tagged<PyObject>::Null() : *value);
+  self->array()->Set(index,
+                     value.is_null() ? Tagged<PyObject>::null() : *value);
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {

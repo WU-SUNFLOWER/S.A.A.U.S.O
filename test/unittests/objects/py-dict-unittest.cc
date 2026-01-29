@@ -14,7 +14,6 @@
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-
 namespace saauso::internal {
 
 class PyDictTest : public VmTestBase {};
@@ -34,7 +33,7 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Get
   Handle<PyObject> res1 = dict->Get(key1);
-  EXPECT_FALSE(res1.IsNull());
+  EXPECT_FALSE(res1.is_null());
   EXPECT_TRUE(PyObject::Equal(res1, val1)->value());
 
   // Contains
@@ -53,7 +52,7 @@ TEST_F(PyDictTest, BasicOperations) {
   dict->Remove(key1);
   EXPECT_EQ(dict->occupied(), 0);
   EXPECT_TRUE(!dict->Contains(key1));
-  EXPECT_TRUE(dict->Get(key1).IsNull());
+  EXPECT_TRUE(dict->Get(key1).is_null());
 }
 
 TEST_F(PyDictTest, CollisionAndShift) {
@@ -157,7 +156,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   }
 
   for (auto i = 0; i < keys->length(); ++i) {
-    EXPECT_FALSE(keys->Get(i).IsNull());
+    EXPECT_FALSE(keys->Get(i).is_null());
   }
 
   for (auto i = 0; i < keys->length(); ++i) {
@@ -198,7 +197,7 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
   std::set<int> seen;
   for (;;) {
     Handle<PyObject> key = PyObject::Next(iterator);
-    if (key.IsNull()) {
+    if (key.is_null()) {
       break;
     }
     int v = PySmi::ToInt(Handle<PySmi>::cast(key));

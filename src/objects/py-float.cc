@@ -15,8 +15,8 @@ namespace saauso::internal {
 
 // static
 Handle<PyFloat> PyFloat::NewInstance(double value) {
-  Handle<PyFloat> object(
-      Isolate::Current()->heap()->Allocate<PyFloat>(Heap::AllocationSpace::kNewSpace));
+  Handle<PyFloat> object(Isolate::Current()->heap()->Allocate<PyFloat>(
+      Heap::AllocationSpace::kNewSpace));
   object->value_ = value;
 
   // 绑定klass
@@ -27,7 +27,7 @@ Handle<PyFloat> PyFloat::NewInstance(double value) {
   // Traceback (most recent call last):
   //   File "<stdin>", line 1, in <module>
   // AttributeError: 'float' object has no attribute '__dict__'
-  PyObject::SetProperties(*object, Tagged<PyDict>::Null());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
   return object;
 }

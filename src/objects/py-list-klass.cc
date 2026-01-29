@@ -111,7 +111,7 @@ Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
 Tagged<PyListKlass> PyListKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyListKlass> instance = isolate->py_list_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyListKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_list_klass(instance);
@@ -183,7 +183,7 @@ void PyListKlass::Initialize() {
 }
 
 void PyListKlass::Finalize() {
-  Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::Null());
+  Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::null());
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

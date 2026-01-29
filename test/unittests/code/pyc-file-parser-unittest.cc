@@ -76,7 +76,7 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   CPython312PycFileParser parser(
       std::span<const uint8_t>(bytes.data(), bytes.size()));
   auto code = parser.Parse();
-  ASSERT_FALSE(code.IsNull());
+  ASSERT_FALSE(code.is_null());
 
   auto file_name = (*code)->file_name();
   auto co_name = (*code)->co_name();
@@ -99,7 +99,7 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   CPython312PycFileParser parser(
       std::span<const uint8_t>(pyc.data(), pyc.size()));
   auto code = parser.Parse();
-  ASSERT_FALSE(code.IsNull());
+  ASSERT_FALSE(code.is_null());
 
   auto file_name = code->file_name();
   EXPECT_TRUE(IsPyStringEqual(file_name, kFileName));

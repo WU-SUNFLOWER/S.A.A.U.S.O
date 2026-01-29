@@ -55,7 +55,7 @@ Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   }
 
   assert(IsHeapObject(object));
-  assert(!object->mark_word_.ToKlass().IsNull());
+  assert(!object->mark_word_.ToKlass().is_null());
 
   return object->mark_word_.ToKlass();
 }
@@ -65,7 +65,7 @@ Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
 }
 
 void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
-  assert(!klass.IsNull());
+  assert(!klass.is_null());
   assert(IsHeapObject(object));
   object->mark_word_ = MarkWord::FromKlass(klass);
 }
@@ -79,8 +79,8 @@ Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {
 }
 
 Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
-  if (!IsHeapObject(object) || object->properties_.IsNull()) {
-    return Handle<PyDict>::Null();
+  if (!IsHeapObject(object) || object->properties_.is_null()) {
+    return Handle<PyDict>::null();
   }
   return handle(Tagged<PyDict>::cast(object->properties_));
 }
@@ -88,7 +88,7 @@ Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
 void PyObject::SetProperties(Tagged<PyObject> object,
                              Tagged<PyDict> properties) {
   // properties不能是smi！
-  assert(properties.IsNull() || IsHeapObject(properties));
+  assert(properties.is_null() || IsHeapObject(properties));
 
   object->properties_ = properties;
   WRITE_BARRIER(object, &object->properties_, properties);
@@ -159,7 +159,7 @@ bool IsPyFalse(Tagged<PyObject> object) {
 }
 
 bool IsHeapObject(Tagged<PyObject> object) {
-  return !object.IsNull() && !IsPySmi(object);
+  return !object.is_null() && !IsPySmi(object);
 }
 
 bool IsPyNativeFunction(Tagged<PyObject> object) {

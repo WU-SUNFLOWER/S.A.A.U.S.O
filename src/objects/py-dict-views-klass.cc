@@ -32,12 +32,12 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
 
   auto iterator = Handle<IteratorType>::cast(self);
   auto dict = iterator->owner();
-  assert(!dict.IsNull());
+  assert(!dict.is_null());
 
   int64_t index = iterator->iter_index();
   for (; index < dict->capacity(); ++index) {
     Handle<PyObject> result = getter(dict, index);
-    if (result.IsNull()) {
+    if (result.is_null()) {
       continue;
     }
     iterator->set_iter_index(index + 1);
@@ -45,7 +45,7 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
   }
 
   iterator->set_iter_index(dict->capacity());
-  return Handle<PyObject>::Null();
+  return Handle<PyObject>::null();
 }
 
 template <typename ViewType>
@@ -89,7 +89,7 @@ Handle<PyObject> Native_ItemIteratorNext(Handle<PyObject> self,
 Tagged<PyDictKeysKlass> PyDictKeysKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictKeysKlass> instance = isolate->py_dict_keys_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictKeysKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_keys_klass(instance);
@@ -120,7 +120,7 @@ void PyDictKeysKlass::Initialize() {
 }
 
 void PyDictKeysKlass::Finalize() {
-  Isolate::Current()->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::Null());
+  Isolate::Current()->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::null());
 }
 
 void PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
@@ -131,7 +131,7 @@ void PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     Handle<PyObject> key = dict->KeyAtIndex(i);
-    if (key.IsNull()) {
+    if (key.is_null()) {
       continue;
     }
     if (!first) {
@@ -171,7 +171,7 @@ void PyDictKeysKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 Tagged<PyDictValuesKlass> PyDictValuesKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictValuesKlass> instance = isolate->py_dict_values_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictValuesKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_values_klass(instance);
@@ -203,7 +203,7 @@ void PyDictValuesKlass::Initialize() {
 
 void PyDictValuesKlass::Finalize() {
   Isolate::Current()->set_py_dict_values_klass(
-      Tagged<PyDictValuesKlass>::Null());
+      Tagged<PyDictValuesKlass>::null());
 }
 
 void PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
@@ -214,7 +214,7 @@ void PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     Handle<PyObject> value = dict->ValueAtIndex(i);
-    if (value.IsNull()) {
+    if (value.is_null()) {
       continue;
     }
     if (!first) {
@@ -242,7 +242,7 @@ Tagged<PyBoolean> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
   auto dict = Handle<PyDictValues>::cast(self)->owner();
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     Handle<PyObject> value = dict->ValueAtIndex(i);
-    if (value.IsNull()) {
+    if (value.is_null()) {
       continue;
     }
     if (PyObject::Equal(value, subscr) ==
@@ -267,7 +267,7 @@ void PyDictValuesKlass::Virtual_Iterate(Tagged<PyObject> self,
 Tagged<PyDictItemsKlass> PyDictItemsKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictItemsKlass> instance = isolate->py_dict_items_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictItemsKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_items_klass(instance);
@@ -298,7 +298,7 @@ void PyDictItemsKlass::Initialize() {
 }
 
 void PyDictItemsKlass::Finalize() {
-  Isolate::Current()->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::Null());
+  Isolate::Current()->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::null());
 }
 
 void PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
@@ -309,7 +309,7 @@ void PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     Handle<PyObject> item = dict->ItemAtIndex(i);
-    if (item.IsNull()) {
+    if (item.is_null()) {
       continue;
     }
     if (!first) {
@@ -348,7 +348,7 @@ Tagged<PyBoolean> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
   auto value = item->Get(1);
 
   auto found = dict->Get(key);
-  if (found.IsNull()) {
+  if (found.is_null()) {
     return Isolate::Current()->py_false_object();
   }
 
@@ -379,7 +379,7 @@ Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictKeyIteratorKlass> instance =
       isolate->py_dict_keyiterator_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictKeyIteratorKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_keyiterator_klass(instance);
@@ -413,7 +413,7 @@ void PyDictKeyIteratorKlass::Initialize() {
 
 void PyDictKeyIteratorKlass::Finalize() {
   Isolate::Current()->set_py_dict_keyiterator_klass(
-      Tagged<PyDictKeyIteratorKlass>::Null());
+      Tagged<PyDictKeyIteratorKlass>::null());
 }
 
 void PyDictKeyIteratorKlass::Virtual_Print(Handle<PyObject> self) {
@@ -453,7 +453,7 @@ Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictItemIteratorKlass> instance =
       isolate->py_dict_itemiterator_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictItemIteratorKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_itemiterator_klass(instance);
@@ -487,7 +487,7 @@ void PyDictItemIteratorKlass::Initialize() {
 
 void PyDictItemIteratorKlass::Finalize() {
   Isolate::Current()->set_py_dict_itemiterator_klass(
-      Tagged<PyDictItemIteratorKlass>::Null());
+      Tagged<PyDictItemIteratorKlass>::null());
 }
 
 void PyDictItemIteratorKlass::Virtual_Print(Handle<PyObject> self) {
@@ -527,7 +527,7 @@ Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictValueIteratorKlass> instance =
       isolate->py_dict_valueiterator_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictValueIteratorKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_dict_valueiterator_klass(instance);
@@ -561,7 +561,7 @@ void PyDictValueIteratorKlass::Initialize() {
 
 void PyDictValueIteratorKlass::Finalize() {
   Isolate::Current()->set_py_dict_valueiterator_klass(
-      Tagged<PyDictValueIteratorKlass>::Null());
+      Tagged<PyDictValueIteratorKlass>::null());
 }
 
 void PyDictValueIteratorKlass::Virtual_Print(Handle<PyObject> self) {

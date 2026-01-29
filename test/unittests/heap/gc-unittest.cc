@@ -156,7 +156,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
         std::string("v").append(std::to_string(i)).c_str());
 
     auto actual_value = dict->Get(query_key);
-    EXPECT_FALSE(actual_value.IsNull());
+    EXPECT_FALSE(actual_value.is_null());
     EXPECT_PY_TRUE(PyObject::Equal(actual_value, expected_value));
   }
 }
@@ -213,7 +213,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   EXPECT_NE(list_addr_before, (*list).ptr());
 
   auto payload = dict->Get(key);
-  ASSERT_FALSE(payload.IsNull());
+  ASSERT_FALSE(payload.is_null());
   auto payload_list = Handle<PyList>::cast(payload);
   EXPECT_EQ(payload_list->length(), kCount);
 
@@ -263,7 +263,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   EXPECT_EQ(list->length(), 2);
 
   auto elem0 = list->Get(0);
-  ASSERT_FALSE(elem0.IsNull());
+  ASSERT_FALSE(elem0.is_null());
   EXPECT_EQ((*list).ptr(), (*elem0).ptr());
 }
 

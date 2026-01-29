@@ -30,7 +30,7 @@ namespace saauso::internal {
 Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyBooleanKlass> instance = isolate->py_boolean_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyBooleanKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_boolean_klass(instance);
@@ -66,7 +66,7 @@ void PyBooleanKlass::Initialize() {
 
 // static
 void PyBooleanKlass::Finalize() {
-  Isolate::Current()->set_py_boolean_klass(Tagged<PyBooleanKlass>::Null());
+  Isolate::Current()->set_py_boolean_klass(Tagged<PyBooleanKlass>::null());
 }
 
 // static
@@ -109,7 +109,7 @@ uint64_t PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
 Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyNoneKlass> instance = isolate->py_none_klass();
-  if (instance.IsNull()) [[unlikely]] {
+  if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyNoneKlass>(
         Heap::AllocationSpace::kMetaSpace);
     isolate->set_py_none_klass(instance);
@@ -144,7 +144,7 @@ void PyNoneKlass::Initialize() {
 }
 
 void PyNoneKlass::Finalize() {
-  Isolate::Current()->set_py_none_klass(Tagged<PyNoneKlass>::Null());
+  Isolate::Current()->set_py_none_klass(Tagged<PyNoneKlass>::null());
 }
 
 // static
