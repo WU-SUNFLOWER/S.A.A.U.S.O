@@ -106,7 +106,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **computed-goto dispatcher**：`Interpreter::EvalCurrentFrame()` 使用 256 槽 dispatch table（未知 opcode 默认跳到 `unknown_bytecode`），每个 handler 内优先创建 `HandleScope`，避免 GC 移动导致悬垂引用。
 - **FrameObject（栈帧）**：
   - 保存 `stack/fast_locals/locals/globals/consts/names/code_object` 等字段，并在 `Iterate(ObjectVisitor*)` 中暴露为 GC roots。
-  - **参数绑定与默认值**：函数调用的形参绑定主要在 `FrameObject::NewInstance(...)` 中完成；支持位置参数、关键字参数、默认参数回填，以及 `*args/**kwargs` 的打包与注入。
+  - **参数绑定与默认值**：函数调用的形参绑定主要在 `FrameObjectBuilder::BuildSlowPath/BuildFastPath` 中完成；支持位置参数、关键字参数、默认参数回填，以及 `*args/**kwargs` 的打包与注入。根栈帧由 `FrameObjectBuilder::BuildRootFrame` 创建。
 - **调用约定（面向实现而非语义保证）**：
   - `CALL + KW_NAMES`：先构造 `actual_args` 与 `kwarg_keys`，再归一化为 `pos_args + kw_args`；`CALL_FUNCTION_EX` 处理 `f(*args, **kwargs)`；`DICT_MERGE` 处理 kwargs dict 合并。
   - 当前大量错误处理为 `stderr + exit(1)`，尚未形成完整异常传播体系。

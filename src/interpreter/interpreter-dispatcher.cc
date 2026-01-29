@@ -5,6 +5,7 @@
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/fixed-array.h"
@@ -484,7 +485,7 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame = FrameObject::NewInstance(
+    FrameObject* frame = FrameObjectBuilder::BuildFastPath(
         Handle<PyFunction>::cast(callable), host, actual_args, kwarg_keys);
     EnterFrame(frame);
     return;
@@ -505,7 +506,7 @@ void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
   NormalizeCallable(callable, host);
 
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame = FrameObject::NewInstance(
+    FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
         Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
     EnterFrame(frame);
     return;

@@ -8,6 +8,7 @@
 
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object.h"
@@ -93,7 +94,7 @@ Handle<PyTuple> Interpreter::kwarg_keys() const {
 }
 
 void Interpreter::Run(Handle<PyCodeObject> code_object) {
-  EnterFrame(FrameObject::NewInstance(code_object));
+  EnterFrame(FrameObjectBuilder::BuildRootFrame(code_object));
   EvalCurrentFrame();
   DestroyCurrentFrame();
 }
@@ -111,7 +112,7 @@ Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
 
   // 如果是普通的python函数，那么请求解释器进行处理
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame = FrameObject::NewInstance(
+    FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
         Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);

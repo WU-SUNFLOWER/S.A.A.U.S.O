@@ -21,16 +21,6 @@ class FixedArray;
 
 class FrameObject : Object {
  public:
-  static FrameObject* NewInstance(Handle<PyCodeObject> code);
-  static FrameObject* NewInstance(Handle<PyFunction> func,
-                                  Handle<PyObject> host,
-                                  Handle<PyTuple> actual_pos_args,
-                                  Handle<PyDict> actual_kw_args);
-  static FrameObject* NewInstance(Handle<PyFunction> func,
-                                  Handle<PyObject> host,
-                                  Handle<PyTuple> actual_args,
-                                  Handle<PyTuple> kwarg_keys);
-
   FrameObject(const FrameObject&) = delete;
   FrameObject operator=(const FrameObject&) = delete;
 
@@ -74,15 +64,17 @@ class FrameObject : Object {
   void Iterate(ObjectVisitor* v);
 
  private:
+  friend class FrameObjectBuilder;
+
   FrameObject() = default;
 
-  static FrameObject* NewInstanceImpl(Tagged<PyObject> consts,
-                                      Tagged<PyObject> names,
-                                      Tagged<PyObject> locals,
-                                      Tagged<PyObject> globals,
-                                      Tagged<PyObject> fast_locals,
-                                      Tagged<PyObject> stack,
-                                      Tagged<PyObject> code_object);
+  static FrameObject* Create(Tagged<PyObject> consts,
+                             Tagged<PyObject> names,
+                             Tagged<PyObject> locals,
+                             Tagged<PyObject> globals,
+                             Tagged<PyObject> fast_locals,
+                             Tagged<PyObject> stack,
+                             Tagged<PyObject> code_object);
 
   // FixedArray* stack_;
   Tagged<PyObject> stack_{kNullAddress};

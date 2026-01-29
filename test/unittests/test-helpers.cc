@@ -38,6 +38,8 @@ void VmTestBase::TearDownTestSuite() {
   saauso::Saauso::Dispose();
 }
 
+//////////////////////////////////////////////////////////////
+
 Isolate* IsolateOnlyTestBase::isolate_ = nullptr;
 
 void IsolateOnlyTestBase::SetUpTestSuite() {
@@ -53,10 +55,14 @@ void IsolateOnlyTestBase::TearDownTestSuite() {
   saauso::Saauso::Dispose();
 }
 
+//////////////////////////////////////////////////////////////
+
 void EmbeddedPython312VmTestBase::TearDownTestSuite() {
   VmTestBase::TearDownTestSuite();
   FinalizeEmbeddedPython312Runtime();
 }
+
+//////////////////////////////////////////////////////////////
 
 Global<PyList> BasicInterpreterTest::printv_result_;
 

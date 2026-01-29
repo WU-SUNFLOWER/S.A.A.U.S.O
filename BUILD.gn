@@ -119,6 +119,8 @@ source_set("saauso_core") {
 
     # 解释器
     "//src/interpreter/bytecodes.h",
+    "//src/interpreter/frame-object-builder.cc",
+    "//src/interpreter/frame-object-builder.h",
     "//src/interpreter/frame-object.cc",
     "//src/interpreter/frame-object.h",
     "//src/interpreter/interpreter-dispatcher.cc",
