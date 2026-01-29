@@ -380,6 +380,73 @@ print(foo(1, c = 3, **d1))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, MergeSortRecursion) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def merge(left, right):
+    result = []
+    i = 0
+    j = 0
+    while i < len(left):
+        if j >= len(right):
+            break
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    while i < len(left):
+        result.append(left[i])
+        i += 1
+    while j < len(right):
+        result.append(right[j])
+        j += 1
+    return result
+
+def merge_sort(a):
+    n = len(a)
+    if n <= 1:
+        return a
+    mid = 0
+    t = n
+    while t > 1:
+        t -= 2
+        mid += 1
+    left = []
+    right = []
+    i = 0
+    while i < mid:
+        left.append(a[i])
+        i += 1
+    while i < n:
+        right.append(a[i])
+        i += 1
+    return merge(merge_sort(left), merge_sort(right))
+
+data = [7, 3, 5, 2, 9, 1, 4, 8, 6, 0]
+print(merge_sort(data))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  auto expected_sorted = PyList::NewInstance();
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(0)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(1)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(2)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(3)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(4)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(5)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(6)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(7)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(8)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(9)));
+  AppendExpected(expected_printv_result, expected_sorted);
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, FunctionCallErrors) {
   ASSERT_DEATH(
       {
