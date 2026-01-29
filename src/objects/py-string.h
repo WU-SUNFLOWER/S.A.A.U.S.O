@@ -9,11 +9,14 @@
 
 #include "src/handles/handles.h"
 #include "src/objects/py-object.h"
+#include "src/utils/string-search.h"
 
 namespace saauso::internal {
 
 class PyString : public PyObject {
  public:
+  static constexpr int kNotFound = StringSearch::kNotFound;
+
   static Handle<PyString> NewInstance(int64_t str_length,
                                       bool in_meta_space = false);
   static Handle<PyString> NewInstance(const char* source,

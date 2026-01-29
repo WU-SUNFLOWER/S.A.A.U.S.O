@@ -62,7 +62,7 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
 
   auto target_str = Handle<PyString>::cast(target);
   auto result = str_object->IndexOf(target_str);
-  if (result == -1) {
+  if (result == PyString::kNotFound) {
     std::fprintf(stderr, "ValueError: substring not found");
     std::exit(1);
   }

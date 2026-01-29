@@ -156,7 +156,7 @@ TEST_F(PyStringTest, IndexOfAndContainsWork) {
 
   EXPECT_EQ(s->IndexOf(pattern1), 3);
   EXPECT_EQ(s->IndexOf(pattern2), 1);
-  EXPECT_EQ(s->IndexOf(missing), -1);
+  EXPECT_EQ(s->IndexOf(missing), PyString::kNotFound);
   EXPECT_EQ(s->IndexOf(empty), 0);
 
   EXPECT_TRUE(s->Contains(pattern1));

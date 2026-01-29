@@ -10,15 +10,20 @@
 
 namespace saauso::internal {
 
-inline constexpr int64_t kBMMinPatternLength = 8;
+class StringSearch {
+ public:
+  static constexpr int64_t kBMMinPatternLength = 8;
+  static constexpr int kNotFound = -1;
 
-int64_t IndexOfSubstring(std::string_view subject, std::string_view pattern);
+  static int64_t IndexOfSubstring(std::string_view subject,
+                                  std::string_view pattern);
 
-inline bool ContainsSubstring(std::string_view subject, std::string_view pattern) {
-  return IndexOfSubstring(subject, pattern) != -1;
-}
+  static bool ContainsSubstring(std::string_view subject,
+                                std::string_view pattern) {
+    return IndexOfSubstring(subject, pattern) != kNotFound;
+  }
+};
 
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_UTILS_STRING_SEARCH_H_
-

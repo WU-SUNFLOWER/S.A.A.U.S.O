@@ -128,7 +128,17 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 文件名: `kebab-case` (例如 `py-code-object.cc`)。
 - **类**: `PascalCase`。
 - **变量**: `snake_case`，类成员变量以 `_` 结尾。
-- **类/结构体声明顺序（头文件）**: 访问控制段按 `public`→`protected`→`private`；每段内部按“types/aliases→constants→constructors/destructor→methods→data members”排列，数据成员集中放在末尾并尽量为 `private`（除非确有继承扩展需要）。
+- **类/结构体声明（头文件）**: 
+  1. 访问控制段按 `public`→`protected`→`private`
+  1. 数据成员集中放在末尾并尽量为 `private`（除非确有继承扩展需要）。
+  2. 每段内部按以下顺序排列：
+    - 类型与类型别名（例如typedef、using、enum、嵌套struct/class、友元类型）
+    - 静态常量
+    - 工厂函数
+    - 构造函数与赋值运算符
+    - 析构函数
+    - 其他所有函数（静态与非静态成员函数，以及友元函数）
+    - 其他所有数据成员（静态与非静态）
 - **注释**: 关键代码需添加
 
 ### 4.2. 版权头

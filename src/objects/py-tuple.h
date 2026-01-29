@@ -19,6 +19,8 @@ class PyList;
 
 class PyTuple : public PyObject {
  public:
+  static constexpr int kNotFound = -1;
+
   static Handle<PyTuple> NewInstance(int64_t length);
   static Handle<PyTuple> NewInstance(Handle<PyList> elements);
 

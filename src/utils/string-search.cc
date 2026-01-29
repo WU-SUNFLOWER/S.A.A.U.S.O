@@ -21,7 +21,7 @@ int64_t IndexOfNaive(std::string_view subject, std::string_view pattern) {
     return 0;
   }
   if (m > n) {
-    return -1;
+    return StringSearch::kNotFound;
   }
 
   const char* const s = subject.data();
@@ -31,7 +31,7 @@ int64_t IndexOfNaive(std::string_view subject, std::string_view pattern) {
       return i;
     }
   }
-  return -1;
+  return StringSearch::kNotFound;
 }
 
 void PreprocessGoodSuffix(const uint8_t* pattern,
@@ -74,16 +74,14 @@ int64_t IndexOfBoyerMoore(std::string_view subject, std::string_view pattern) {
     return 0;
   }
   if (m > n) {
-    return -1;
+    return StringSearch::kNotFound;
   }
 
-  const uint8_t* const txt =
-      reinterpret_cast<const uint8_t*>(subject.data());
-  const uint8_t* const pat =
-      reinterpret_cast<const uint8_t*>(pattern.data());
+  const uint8_t* const txt = reinterpret_cast<const uint8_t*>(subject.data());
+  const uint8_t* const pat = reinterpret_cast<const uint8_t*>(pattern.data());
 
   std::array<int64_t, 256> last{};
-  last.fill(-1);
+  last.fill(StringSearch::kNotFound);
   for (int64_t i = 0; i < m; ++i) {
     last[pat[i]] = i;
   }
@@ -112,12 +110,13 @@ int64_t IndexOfBoyerMoore(std::string_view subject, std::string_view pattern) {
     s += std::max(bc_shift, gs_shift);
   }
 
-  return -1;
+  return StringSearch::kNotFound;
 }
 
 }  // namespace
 
-int64_t IndexOfSubstring(std::string_view subject, std::string_view pattern) {
+int64_t StringSearch::IndexOfSubstring(std::string_view subject,
+                                       std::string_view pattern) {
   if (static_cast<int64_t>(pattern.size()) < kBMMinPatternLength) {
     return IndexOfNaive(subject, pattern);
   }
@@ -125,4 +124,3 @@ int64_t IndexOfSubstring(std::string_view subject, std::string_view pattern) {
 }
 
 }  // namespace saauso::internal
-

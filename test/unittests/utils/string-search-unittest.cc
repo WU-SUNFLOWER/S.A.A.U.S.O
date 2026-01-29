@@ -12,25 +12,28 @@
 namespace saauso::internal {
 
 TEST(StringSearchTest, EmptyPattern) {
-  EXPECT_EQ(IndexOfSubstring("abc", ""), 0);
-  EXPECT_EQ(IndexOfSubstring("", ""), 0);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("abc", ""), 0);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("", ""), 0);
 }
 
 TEST(StringSearchTest, PatternLongerThanSubject) {
-  EXPECT_EQ(IndexOfSubstring("abc", "abcd"), -1);
-  EXPECT_EQ(IndexOfSubstring("", "a"), -1);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("abc", "abcd"),
+            StringSearch::kNotFound);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("", "a"), StringSearch::kNotFound);
 }
 
 TEST(StringSearchTest, FindsSmallPatternNaivePath) {
-  EXPECT_EQ(IndexOfSubstring("abcabc", "cab"), 2);
-  EXPECT_EQ(IndexOfSubstring("aaaaa", "aaa"), 0);
-  EXPECT_EQ(IndexOfSubstring("aaaaa", "aaaaaa"), -1);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("abcabc", "cab"), 2);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("aaaaa", "aaa"), 0);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("aaaaa", "aaaaaa"),
+            StringSearch::kNotFound);
 }
 
 TEST(StringSearchTest, FindsLargePatternBoyerMoorePath) {
-  EXPECT_EQ(IndexOfSubstring("0123456789abcdef", "56789abc"), 5);
-  EXPECT_EQ(IndexOfSubstring("0123456789abcdef", "89abcdef"), 8);
-  EXPECT_EQ(IndexOfSubstring("0123456789abcdef", "notfound!"), -1);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("0123456789abcdef", "56789abc"), 5);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("0123456789abcdef", "89abcdef"), 8);
+  EXPECT_EQ(StringSearch::IndexOfSubstring("0123456789abcdef", "notfound!"),
+            StringSearch::kNotFound);
 }
 
 TEST(StringSearchTest, BinarySafe) {
@@ -46,9 +49,9 @@ TEST(StringSearchTest, BinarySafe) {
   pattern.push_back('b');
   pattern.push_back('\0');
 
-  EXPECT_EQ(IndexOfSubstring(std::string_view(subject), std::string_view(pattern)),
+  EXPECT_EQ(StringSearch::IndexOfSubstring(std::string_view(subject),
+                                           std::string_view(pattern)),
             1);
 }
 
 }  // namespace saauso::internal
-

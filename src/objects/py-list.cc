@@ -116,7 +116,7 @@ int64_t PyList::IndexOf(Handle<PyObject> target) const {
       return i;
     }
   }
-  return -1;
+  return kNotFound;
 }
 
 void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {

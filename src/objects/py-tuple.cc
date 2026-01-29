@@ -87,7 +87,7 @@ int64_t PyTuple::IndexOf(Handle<PyObject> target) const {
       return i;
     }
   }
-  return -1;
+  return kNotFound;
 }
 
 }  // namespace saauso::internal

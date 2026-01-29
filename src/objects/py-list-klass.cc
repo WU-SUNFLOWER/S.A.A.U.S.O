@@ -70,7 +70,7 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
 
   auto target = args->Get(0);
   auto result = list->IndexOf(target);
-  if (result == -1) {
+  if (result == PyList::kNotFound) {
     std::printf("ValueError: ");
     PyObject::Print(target);
     std::printf(" is not in list");
