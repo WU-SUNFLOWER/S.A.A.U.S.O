@@ -255,11 +255,10 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
     while (!item.is_null()) {
       auto key = Handle<PyString>::cast(item->Get(0));
       auto value = item->Get(1);
-      int64_t index_in_var_args = ctx.var_names->IndexOf(key);
+      int64_t index_in_var_args = ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
 
       // 如果当前 key 对应于形参列表中的某个形参。
-      if (InRangeWithRightOpen(index_in_var_args, static_cast<int64_t>(0),
-                               ctx.real_formal_pos_arg_cnt)) {
+      if (index_in_var_args != PyTuple::kNotFound) {
         // 不允许重复对形参赋值。
         if (!ctx.fast_locals->Get(index_in_var_args).is_null()) {
           std::fprintf(
@@ -338,9 +337,8 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
     auto value = actual_args->Get(actual_arg_cnt - i - 1);
 
     // 1. 检查当前的键值对是否能够赋值给特定的形参。
-    int64_t index_in_var_args = ctx.var_names->IndexOf(key);
-    if (InRangeWithRightOpen(index_in_var_args, static_cast<int64_t>(0),
-                             ctx.real_formal_pos_arg_cnt)) {
+    int64_t index_in_var_args = ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+    if (index_in_var_args != PyTuple::kNotFound) {
       // 不允许重复对形参赋值。
       if (!ctx.fast_locals->Get(index_in_var_args).is_null()) {
         std::fprintf(stderr,

@@ -210,7 +210,7 @@ void Isolate::Init() {
   InitMetaArea();
 
   // 初始化解释器
-  interpreter_ = new Interpreter();
+  interpreter_ = new Interpreter(this);
 }
 
 void Isolate::InitMetaArea() {

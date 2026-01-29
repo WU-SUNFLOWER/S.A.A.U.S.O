@@ -38,7 +38,7 @@
 
 namespace saauso::internal {
 
-Interpreter::Interpreter() {
+Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   HandleScope scope;
 
   Handle<PyDict> builtins = PyDict::NewInstance();
@@ -61,11 +61,11 @@ Interpreter::Interpreter() {
 
   // 注册oddballs
   PyDict::Put(builtins, PyString::NewInstance("True"),
-              handle(Isolate::Current()->py_true_object()));
+              handle(isolate_->py_true_object()));
   PyDict::Put(builtins, PyString::NewInstance("False"),
-              handle(Isolate::Current()->py_false_object()));
+              handle(isolate_->py_false_object()));
   PyDict::Put(builtins, PyString::NewInstance("None"),
-              handle(Isolate::Current()->py_none_object()));
+              handle(isolate_->py_none_object()));
 
   // 注册native function
   auto func_name = PyString::NewInstance("print");

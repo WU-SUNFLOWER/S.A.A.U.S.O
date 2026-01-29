@@ -37,6 +37,7 @@ class PyTuple : public PyObject {
   Tagged<PyObject> GetTagged(int64_t index) const;
 
   int64_t IndexOf(Handle<PyObject> target) const;
+  int64_t IndexOf(Handle<PyObject> target, int64_t begin, int64_t end) const;
 
   int64_t length() const { return length_; }
 

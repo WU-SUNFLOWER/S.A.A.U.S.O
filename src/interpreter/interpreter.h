@@ -9,6 +9,7 @@
 
 namespace saauso::internal {
 
+class Isolate;
 class PyObject;
 class PyCodeObject;
 class FrameObject;
@@ -20,7 +21,7 @@ class ObjectVisitor;
 
 class Interpreter {
  public:
-  Interpreter();
+  Interpreter(Isolate* isolate);
 
   void Run(Handle<PyCodeObject> code_object);
 
@@ -56,6 +57,8 @@ class Interpreter {
 
   Handle<PyObject> ReleaseReturnValue();
   Handle<PyTuple> ReleaseKwArgKeys();
+
+  Isolate* isolate_;
 
   // PyDict* builtins_;
   Tagged<PyObject> builtins_{kNullAddress};
