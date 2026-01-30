@@ -356,13 +356,13 @@ void Interpreter::EvalCurrentFrame() {
                                              })
 
   INTERPRETER_HANDLER_DISPATCH(PopJumpIfNotNone, {
-    if (POP_TAGGED() != Isolate::Current()->py_none_object()) {
+    if (POP_TAGGED() != isolate_->py_none_object()) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
     }
   })
 
   INTERPRETER_HANDLER_DISPATCH(PopJumpIfNone, {
-    if (POP_TAGGED() == Isolate::Current()->py_none_object()) {
+    if (POP_TAGGED() == isolate_->py_none_object()) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
     }
   })

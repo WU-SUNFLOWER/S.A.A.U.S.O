@@ -14,6 +14,7 @@
 namespace saauso::internal {
 
 class BinaryFileReader;
+class Isolate;
 class PyCodeObject;
 class PyList;
 class PyObject;
@@ -21,14 +22,16 @@ class PyString;
 
 class CPython312PycFileParser {
  public:
-  explicit CPython312PycFileParser(const char* filename);
-  explicit CPython312PycFileParser(std::span<const uint8_t> bytes);
+  explicit CPython312PycFileParser(const char* filename, Isolate* isolate);
+  explicit CPython312PycFileParser(std::span<const uint8_t> bytes,
+                                   Isolate* isolate);
   ~CPython312PycFileParser();
 
   Handle<PyCodeObject> Parse();
 
  private:
-  Handle<PyObject> ParseObject(Handle<PyList> string_table, Handle<PyList> cache);
+  Handle<PyObject> ParseObject(Handle<PyList> string_table,
+                               Handle<PyList> cache);
   Handle<PyCodeObject> ParseCodeObject(Handle<PyList> string_table,
                                        Handle<PyList> cache);
 
@@ -39,10 +42,11 @@ class CPython312PycFileParser {
   int ReadInt32();
   uint16_t ReadUInt16();
 
+  Isolate* isolate_;
+
   std::unique_ptr<BinaryFileReader> reader_;
 };
 
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_CODE_CPYTHON312_PYC_FILE_PARSER_H_
-

@@ -17,6 +17,7 @@ namespace saauso::internal {
 template <typename T>
 class Handle;
 
+class Isolate;
 class PyCodeObject;
 class PyList;
 class PyObject;
@@ -27,16 +28,17 @@ Handle<PyObject> PyTrueObject();
 Handle<PyObject> PyFalseObject();
 
 ::testing::AssertionResult IsPyStringEqual(Handle<PyString> s,
-                                          std::string_view expected);
+                                           std::string_view expected);
 
 ::testing::AssertionResult IsPyObjectEqual(Handle<PyObject> x,
-                                          Handle<PyObject> y);
+                                           Handle<PyObject> y);
 
 ::testing::AssertionResult IsPyTrueCondition(Handle<PyObject> condition);
 
 void AppendExpected(Handle<PyList> list, Handle<PyObject> value);
 
-Handle<PyCodeObject> CompileScript312(std::string_view source,
+Handle<PyCodeObject> CompileScript312(Isolate* isolate,
+                                      std::string_view source,
                                       std::string_view file_name);
 
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v);

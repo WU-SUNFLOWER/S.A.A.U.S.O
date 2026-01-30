@@ -47,7 +47,7 @@ int main() {
         CompilePythonSourceToPycBytes312(kSourceCode, kFileName);
 
     CPython312PycFileParser parser(
-        std::span<const uint8_t>(pyc.data(), pyc.size()));
+        std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
     Handle<PyCodeObject> code = parser.Parse();
 
     isolate->interpreter()->Run(code);

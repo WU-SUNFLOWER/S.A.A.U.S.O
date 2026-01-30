@@ -12,13 +12,14 @@ namespace saauso::internal {
 class PyCodeObjectKlass : public Klass {
  public:
   static Tagged<PyCodeObjectKlass> GetInstance();
+
+  PyCodeObjectKlass() = delete;
+
   void PreInitialize();
   void Initialize();
   void Finalize();
 
  private:
-  PyCodeObjectKlass();
-
   static void Virtual_Print(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

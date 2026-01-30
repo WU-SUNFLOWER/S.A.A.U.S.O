@@ -74,7 +74,7 @@ TEST_F(PycFileParserTest, ParseNameCanLoadFromCache) {
   PutInt32LE(bytes, 0);
 
   CPython312PycFileParser parser(
-      std::span<const uint8_t>(bytes.data(), bytes.size()));
+      std::span<const uint8_t>(bytes.data(), bytes.size()), isolate_);
   auto code = parser.Parse();
   ASSERT_FALSE(code.is_null());
 
@@ -97,7 +97,7 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   ASSERT_FALSE(pyc.empty());
 
   CPython312PycFileParser parser(
-      std::span<const uint8_t>(pyc.data(), pyc.size()));
+      std::span<const uint8_t>(pyc.data(), pyc.size()), isolate_);
   auto code = parser.Parse();
   ASSERT_FALSE(code.is_null());
 

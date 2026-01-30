@@ -148,11 +148,14 @@ inline char GetObjectTypeChar(uint8_t object_type) {
 
 }  // namespace
 
-CPython312PycFileParser::CPython312PycFileParser(const char* filename)
-    : reader_(std::make_unique<BinaryFileReader>(filename)) {}
+CPython312PycFileParser::CPython312PycFileParser(const char* filename,
+                                                 Isolate* isolate)
+    : isolate_(isolate),
+      reader_(std::make_unique<BinaryFileReader>(filename)) {}
 
-CPython312PycFileParser::CPython312PycFileParser(std::span<const uint8_t> bytes)
-    : reader_(std::make_unique<BinaryFileReader>(bytes)) {}
+CPython312PycFileParser::CPython312PycFileParser(std::span<const uint8_t> bytes,
+                                                 Isolate* isolate)
+    : isolate_(isolate), reader_(std::make_unique<BinaryFileReader>(bytes)) {}
 
 CPython312PycFileParser::~CPython312PycFileParser() = default;
 
@@ -396,13 +399,13 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = PyFloat::NewInstance(reader_->ReadDouble());
       break;
     case kNoneObjectFlag:
-      object = Handle<PyNone>(Isolate::Current()->py_none_object());
+      object = Handle<PyNone>(isolate_->py_none_object());
       break;
     case kTrueObjectFlag:
-      object = Handle<PyBoolean>(Isolate::Current()->py_true_object());
+      object = Handle<PyBoolean>(isolate_->py_true_object());
       break;
     case kFalseObjectFlag:
-      object = Handle<PyBoolean>(Isolate::Current()->py_false_object());
+      object = Handle<PyBoolean>(isolate_->py_false_object());
       break;
     case kBytesFlag:
     case kUnicodeFlag:

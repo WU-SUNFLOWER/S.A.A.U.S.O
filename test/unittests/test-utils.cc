@@ -80,12 +80,13 @@ void AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
   PyList::Append(list, value);
 }
 
-Handle<PyCodeObject> CompileScript312(std::string_view source,
+Handle<PyCodeObject> CompileScript312(Isolate* isolate,
+                                      std::string_view source,
                                       std::string_view file_name) {
   std::vector<uint8_t> pyc =
       CompilePythonSourceToPycBytes312(source, file_name);
   CPython312PycFileParser parser(
-      std::span<const uint8_t>(pyc.data(), pyc.size()));
+      std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
   return parser.Parse();
 }
 

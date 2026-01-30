@@ -87,7 +87,7 @@ void BasicInterpreterTest::SetUp() {
 
 void BasicInterpreterTest::RunScript(std::string_view source,
                                      std::string_view file_name) {
-  isolate_->interpreter()->Run(CompileScript312(source, file_name));
+  isolate_->interpreter()->Run(CompileScript312(isolate_, source, file_name));
 }
 
 Handle<PyObject> BasicInterpreterTest::Native_PrintV(Handle<PyObject> host,
