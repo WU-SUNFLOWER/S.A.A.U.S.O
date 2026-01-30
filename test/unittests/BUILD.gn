@@ -13,6 +13,7 @@ executable("ut") {
     "./interpreter/interpreter-functions-unittest.cc",
     "./interpreter/interpreter-ops-unittest.cc",
     "./interpreter/interpreter-smoke-unittest.cc",
+    "./interpreter/native-print-unittest.cc",
     "./lsan-suppressions.cc",
     "./objects/attribute-unittest.cc",
     "./objects/py-dict-unittest.cc",
