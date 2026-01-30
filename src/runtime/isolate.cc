@@ -199,7 +199,7 @@ void Isolate::Init() {
   heap_->Setup();
 
   // 初始化句柄作用域实现
-  handle_scope_implementer_ = new HandleScopeImplementer();
+  handle_scope_implementer_ = new HandleScopeImplementer(this);
 
   // 进入当前 Isolate 作用域，以便后续的初始化操作（如分配对象）能找到正确的
   // Isolate

@@ -144,11 +144,11 @@ class Isolate {
   ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_FIELDS)
 #undef DECLARE_ISOLATE_KLASS_FIELDS
 
-  ThreadId owner_thread_{};
+  ThreadId owner_thread_;
   int entry_count_{0};
 
   void* mutex_{nullptr};
-  ThreadId locker_thread_{};
+  ThreadId locker_thread_;
   int locker_count_{0};
 };
 

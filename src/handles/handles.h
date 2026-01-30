@@ -12,6 +12,7 @@
 
 namespace saauso::internal {
 
+class Isolate;
 class HandleScopeImplementer;
 
 class HandleScope {
@@ -23,6 +24,9 @@ class HandleScope {
   };
 
   HandleScope();
+  HandleScope(const HandleScope&) = delete;
+  HandleScope& operator=(const HandleScope&) = delete;
+
   ~HandleScope();
 
  private:
@@ -39,8 +43,7 @@ class HandleScope {
 
   Address* EscapeFromSelf(Address ptr);
 
-  static thread_local State current_;
-
+  Isolate* isolate_{nullptr};
   State previous_;
   bool is_closed_{false};
 };

@@ -10,11 +10,22 @@
 
 namespace saauso::internal {
 
-thread_local HandleScope::State HandleScope::current_;
-
 // 保存父级scope的现场
-HandleScope::HandleScope() : previous_(current_) {
-  current_.extension = 0;  // 当前scope申请的block数要从零开始重新计数
+HandleScope::HandleScope() {
+  // 将新建的handle scope与当前的isolate绑定
+  isolate_ = Isolate::Current();
+  assert(isolate_ != nullptr);
+
+  auto* impl = isolate_->handle_scope_implementer();
+  assert(impl != nullptr);
+  assert(impl->isolate() == isolate_);
+
+  // 保存保存父级scope的现场
+  auto* handle_scope_state = impl->handle_scope_state();
+  previous_ = *handle_scope_state;
+
+  // 当前scope申请的block数要从零开始重新计数
+  handle_scope_state->extension = 0;
 }
 
 HandleScope::~HandleScope() {
@@ -23,9 +34,22 @@ HandleScope::~HandleScope() {
 
 void HandleScope::Close() {
   if (!is_closed_) {
-    Isolate::Current()->handle_scope_implementer()->ReleaseSpareAndExtendedBlocks(
-        current_.extension);
-    current_ = previous_;  // 恢复父级scope的现场
+    // 禁止跨线程释放handle scope
+    if (isolate_ != Isolate::Current()) {
+      std::printf(
+          "Can't release a HandleScope in a thread different with the thread "
+          "which created it!!!");
+      std::exit(1);
+    }
+
+    auto* impl = isolate_->handle_scope_implementer();
+    auto* handle_scope_state = impl->handle_scope_state();
+
+    // 释放申请的blocks
+    impl->ReleaseSpareAndExtendedBlocks(handle_scope_state->extension);
+    // 恢复父级scope的现场
+    impl->set_handle_scope_state(&previous_);
+    // 更新handle scope标志位，避免重复执行释放操作
     is_closed_ = true;
   }
 }
@@ -40,26 +64,34 @@ Address* HandleScope::EscapeFromSelf(Address ptr) {
 
 // static
 Address* HandleScope::CreateHandle(Address ptr) {
-  assert(current_.extension != -1 &&
-         "Cannot create a handle without a HandleScope");
+  auto* impl = Isolate::Current()->handle_scope_implementer();
+  auto* handle_scope_state = impl->handle_scope_state();
 
-  if (current_.next == current_.limit) {
+  if (handle_scope_state->extension == -1) {
+    std::printf("Cannot create a handle without a HandleScope");
+    std::exit(1);
+  }
+
+  if (handle_scope_state->next == handle_scope_state->limit) {
     Extend();
   }
 
-  Address* location = current_.next;
+  Address* location = handle_scope_state->next;
   *location = ptr;
-  ++current_.next;
+  ++handle_scope_state->next;
+
   return location;
 }
 
 // static
 void HandleScope::Extend() {
-  HandleScopeImplementer* impl = Isolate::Current()->handle_scope_implementer();
+  auto* impl = Isolate::Current()->handle_scope_implementer();
+  auto* handle_scope_state = impl->handle_scope_state();
   Address* new_block = impl->AllocateSpareOrNewBlock();
-  current_.extension++;
-  current_.next = new_block;
-  current_.limit = new_block + HandleScopeImplementer::kHandleBlockSize;
+  handle_scope_state->extension++;
+  handle_scope_state->next = new_block;
+  handle_scope_state->limit =
+      new_block + HandleScopeImplementer::kHandleBlockSize;
 }
 
 }  // namespace saauso::internal

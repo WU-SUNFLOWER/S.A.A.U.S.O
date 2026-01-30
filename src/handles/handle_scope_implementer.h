@@ -17,10 +17,11 @@ class HandleScopeImplementer {
   // 一个block可以装载的Address数量
   static constexpr size_t kHandleBlockSize = 512;
 
-  HandleScopeImplementer() = default;
+  explicit HandleScopeImplementer(Isolate* isolate);
   ~HandleScopeImplementer();
 
-  HandleScope::State* CurrentHandleScopeState() const;
+  HandleScope::State* handle_scope_state();
+  void set_handle_scope_state(HandleScope::State* state);
 
   int NumberOfHandles();
   int NumberOfGlobalHandles() const { return global_handle_count_; }
@@ -35,7 +36,13 @@ class HandleScopeImplementer {
 
   Vector<Address*>& blocks() { return blocks_; }
 
+  Isolate* isolate() const { return isolate_; }
+
  private:
+  Isolate* isolate_;
+
+  HandleScope::State handle_scope_state_;
+
   Address* spare_{nullptr};
   Vector<Address*> blocks_;
 

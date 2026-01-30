@@ -21,7 +21,7 @@ class ObjectVisitor;
 
 class Interpreter {
  public:
-  Interpreter(Isolate* isolate);
+  explicit Interpreter(Isolate* isolate);
 
   void Run(Handle<PyCodeObject> code_object);
 

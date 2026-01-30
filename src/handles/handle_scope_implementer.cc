@@ -7,9 +7,13 @@
 #include "include/saauso-internal.h"
 #include "src/handles/handles.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/isolate.h"
 #include "src/utils/allocation.h"
 
 namespace saauso::internal {
+
+HandleScopeImplementer::HandleScopeImplementer(Isolate* isolate)
+    : isolate_(isolate) {}
 
 HandleScopeImplementer::~HandleScopeImplementer() {
   while (!blocks_.IsEmpty()) {
@@ -31,12 +35,16 @@ int HandleScopeImplementer::NumberOfHandles() {
   size_t block_size = HandleScopeImplementer::kHandleBlockSize;
   Address* last_block_base_addr = blocks().GetBack();
   int nr_handles_in_last_block =
-      CurrentHandleScopeState()->next - last_block_base_addr;
+      handle_scope_state()->next - last_block_base_addr;
   return ((nr_blocks - 1) * block_size) + nr_handles_in_last_block;
 }
 
-HandleScope::State* HandleScopeImplementer::CurrentHandleScopeState() const {
-  return &HandleScope::current_;
+HandleScope::State* HandleScopeImplementer::handle_scope_state() {
+  return &handle_scope_state_;
+}
+
+void HandleScopeImplementer::set_handle_scope_state(HandleScope::State* state) {
+  handle_scope_state_ = *state;
 }
 
 Address* HandleScopeImplementer::AllocateSpareOrNewBlock() {
@@ -93,8 +101,8 @@ Address* HandleScopeImplementer::CreateGlobalHandle(Address ptr) {
 
 void HandleScopeImplementer::DestroyGlobalHandle(Address* location) {
   assert(location != nullptr);
-  *location = kNullAddress;  // 置空，避免GC扫描时候意外访问到
-  global_free_slot_list_.PushBack(location); // 回收当前global handle释放的槽位
+  *location = kNullAddress;                   // 置空，避免GC扫描时候意外访问到
+  global_free_slot_list_.PushBack(location);  // 回收当前global handle释放的槽位
   --global_handle_count_;
 }
 
@@ -112,7 +120,7 @@ void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
   // 遍历最后一个block
   if (!blocks_.IsEmpty()) {
     Address* block_begin = blocks_.GetBack();
-    Address* block_end = HandleScope::current_.next;
+    Address* block_end = handle_scope_state_.next;
     v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
                      reinterpret_cast<Tagged<PyObject>*>(block_end));
   }
