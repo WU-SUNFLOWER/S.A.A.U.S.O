@@ -144,7 +144,8 @@ Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
       PySmi::FromInt(Handle<PyString>::cast(self)->length()));
 }
 
-bool PyStringKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
+bool PyStringKlass::Virtual_Equal(Handle<PyObject> self,
+                                  Handle<PyObject> other) {
   if (!IsPyString(other)) {
     return false;
   }
@@ -163,7 +164,16 @@ bool PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
   return !s1->IsEqualTo(*s2);
 }
 
-bool PyStringKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
+bool PyStringKlass::Virtual_Less(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
+  if (!IsPyString(other)) {
+    auto other_name = PyObject::GetKlass(other)->name();
+    std::fprintf(stderr,
+                 "TypeError: '<' not supported between instances of 'str' and "
+                 "'%.*s'\n",
+                 static_cast<int>(other_name->length()), other_name->buffer());
+    std::exit(1);
+  }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
   return s1->IsLessThan(*s2);
@@ -171,6 +181,14 @@ bool PyStringKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) 
 
 bool PyStringKlass::Virtual_Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  if (!IsPyString(other)) {
+    auto other_name = PyObject::GetKlass(other)->name();
+    std::fprintf(stderr,
+                 "TypeError: '>' not supported between instances of 'str' and "
+                 "'%.*s'\n",
+                 static_cast<int>(other_name->length()), other_name->buffer());
+    std::exit(1);
+  }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
   return s1->IsGreaterThan(*s2);
@@ -178,6 +196,14 @@ bool PyStringKlass::Virtual_Greater(Handle<PyObject> self,
 
 bool PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
+  if (!IsPyString(other)) {
+    auto other_name = PyObject::GetKlass(other)->name();
+    std::fprintf(stderr,
+                 "TypeError: '<=' not supported between instances of 'str' and "
+                 "'%.*s'\n",
+                 static_cast<int>(other_name->length()), other_name->buffer());
+    std::exit(1);
+  }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
   return s1->IsEqualTo(*s2) || s1->IsLessThan(*s2);
@@ -185,6 +211,14 @@ bool PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
 
 bool PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
+  if (!IsPyString(other)) {
+    auto other_name = PyObject::GetKlass(other)->name();
+    std::fprintf(stderr,
+                 "TypeError: '>=' not supported between instances of 'str' and "
+                 "'%.*s'\n",
+                 static_cast<int>(other_name->length()), other_name->buffer());
+    std::exit(1);
+  }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
   return s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2);

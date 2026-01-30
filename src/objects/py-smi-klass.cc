@@ -240,6 +240,12 @@ bool PySmiKlass::Virtual_Greater(Handle<PyObject> self,
     double other_value = Handle<PyFloat>::cast(other)->value();
     return self_value > other_value;
   }
+  auto other_name = PyObject::GetKlass(other)->name();
+  std::fprintf(stderr,
+               "TypeError: '>' not supported between instances of 'int' and "
+               "'%.*s'\n",
+               static_cast<int>(other_name->length()), other_name->buffer());
+  std::exit(1);
   return false;
 }
 
@@ -253,6 +259,12 @@ bool PySmiKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     return self_value < other_value;
   }
+  auto other_name = PyObject::GetKlass(other)->name();
+  std::fprintf(stderr,
+               "TypeError: '<' not supported between instances of 'int' and "
+               "'%.*s'\n",
+               static_cast<int>(other_name->length()), other_name->buffer());
+  std::exit(1);
   return false;
 }
 

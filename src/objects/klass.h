@@ -177,6 +177,18 @@ class Klass : public Object {
                                             Handle<PyObject> subscr);
   static Handle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
                                               Handle<PyObject> other);
+  static bool Virtual_Default_Greater(Handle<PyObject> self,
+                                      Handle<PyObject> other);
+  static bool Virtual_Default_Less(Handle<PyObject> self,
+                                   Handle<PyObject> other);
+  static bool Virtual_Default_Equal(Handle<PyObject> self,
+                                    Handle<PyObject> other);
+  static bool Virtual_Default_NotEqual(Handle<PyObject> self,
+                                       Handle<PyObject> other);
+  static bool Virtual_Default_GreaterEqual(Handle<PyObject> self,
+                                           Handle<PyObject> other);
+  static bool Virtual_Default_LessEqual(Handle<PyObject> self,
+                                        Handle<PyObject> other);
   static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);
   static void Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*);

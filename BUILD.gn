@@ -20,6 +20,8 @@ source_set("saauso_core") {
     # utils
     "//src/utils/allocation.cc",
     "//src/utils/allocation.h",
+    "//src/utils/stable-merge-sort.cc",
+    "//src/utils/stable-merge-sort.h",
     "//src/utils/string-search.cc",
     "//src/utils/string-search.h",
     "//src/utils/utils.h",

@@ -37,7 +37,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
 - `src/runtime/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`）。
-- `src/utils/`：通用工具（对齐/内存/小型容器等）。
+- `src/utils/`：通用工具（对齐/内存/小型容器等）。**该目录下的代码严禁依赖和调用虚拟机的任何上层能力！**
 - `test/unittests/`：基于 GTest 的单元测试。
 - `BUILD.gn`：根目标定义（当前主要目标：`vm`、`ut`）。
 - `build/`：编译配置与工具链（Clang/LLD，支持 `is_debug`/`is_asan`）。

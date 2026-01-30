@@ -17,6 +17,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -55,6 +56,31 @@ Handle<PyObject> FindPropertyInMro(Handle<PyObject> object,
   }
 
   return Handle<PyObject>::null();
+}
+
+Handle<PyObject> FindCallableInMro(Handle<PyObject> object,
+                                   Handle<PyObject> prop_name) {
+  Handle<PyObject> result = FindPropertyInMro(object, prop_name);
+  if (result.is_null()) {
+    return result;
+  }
+  if (IsPyFunction(result) || IsPyNativeFunction(result)) {
+    return MethodObject::NewInstance(result, object);
+  }
+  return result;
+}
+
+void PrintCompareUnsupported(Handle<PyObject> self,
+                             Handle<PyObject> other,
+                             const char* op) {
+  auto self_name = PyObject::GetKlass(self)->name();
+  auto other_name = PyObject::GetKlass(other)->name();
+  std::fprintf(
+      stderr,
+      "TypeError: '%s' not supported between instances of '%.*s' and '%.*s'\n",
+      op, static_cast<int>(self_name->length()), self_name->buffer(),
+      static_cast<int>(other_name->length()), other_name->buffer());
+  std::exit(1);
 }
 
 Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
@@ -136,6 +162,12 @@ void Klass::InitializeVTable() {
   vtable_.setattr = &Klass::Virtual_Default_SetAttr;
   vtable_.subscr = &Klass::Virtual_Default_Subscr;
   vtable_.store_subscr = &Klass::Virtual_Default_StoreSubscr;
+  vtable_.greater = &Klass::Virtual_Default_Greater;
+  vtable_.less = &Klass::Virtual_Default_Less;
+  vtable_.equal = &Klass::Virtual_Default_Equal;
+  vtable_.not_equal = &Klass::Virtual_Default_NotEqual;
+  vtable_.ge = &Klass::Virtual_Default_GreaterEqual;
+  vtable_.le = &Klass::Virtual_Default_LessEqual;
   vtable_.call = &Klass::Virtual_Default_Call;
   vtable_.len = &Klass::Virtual_Default_Len;
   vtable_.print = &Klass::Virtual_Default_Print;
@@ -363,6 +395,100 @@ Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
   return FindAndCall(self, args, Handle<PyDict>::null(), ST(add));
+}
+
+bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
+  HandleScope scope;
+  Handle<PyObject> callable = FindCallableInMro(self, ST(gt));
+  if (callable.is_null()) {
+    PrintCompareUnsupported(self, other, ">");
+  }
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+  Handle<PyObject> result =
+      Isolate::Current()->interpreter()->CallPython(callable, args,
+                                                    Handle<PyDict>::null());
+  return Runtime_PyObjectIsTrue(result);
+}
+
+bool Klass::Virtual_Default_Less(Handle<PyObject> self, Handle<PyObject> other) {
+  HandleScope scope;
+  Handle<PyObject> callable = FindCallableInMro(self, ST(lt));
+  if (callable.is_null()) {
+    PrintCompareUnsupported(self, other, "<");
+  }
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+  Handle<PyObject> result =
+      Isolate::Current()->interpreter()->CallPython(callable, args,
+                                                    Handle<PyDict>::null());
+  return Runtime_PyObjectIsTrue(result);
+}
+
+bool Klass::Virtual_Default_Equal(Handle<PyObject> self,
+                                  Handle<PyObject> other) {
+  if (self.is_identical_to(other)) {
+    return true;
+  }
+
+  HandleScope scope;
+  Handle<PyObject> callable = FindCallableInMro(self, ST(eq));
+  if (callable.is_null()) {
+    return false;
+  }
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+  Handle<PyObject> result =
+      Isolate::Current()->interpreter()->CallPython(callable, args,
+                                                    Handle<PyDict>::null());
+  return Runtime_PyObjectIsTrue(result);
+}
+
+bool Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
+  HandleScope scope;
+  Handle<PyObject> callable = FindCallableInMro(self, ST(ne));
+  if (!callable.is_null()) {
+    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    args->SetInternal(0, other);
+    Handle<PyObject> result =
+        Isolate::Current()->interpreter()->CallPython(callable, args,
+                                                      Handle<PyDict>::null());
+    return Runtime_PyObjectIsTrue(result);
+  }
+  return !Virtual_Default_Equal(self, other);
+}
+
+bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  HandleScope scope;
+  Handle<PyObject> callable = FindCallableInMro(self, ST(ge));
+  if (!callable.is_null()) {
+    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    args->SetInternal(0, other);
+    Handle<PyObject> result =
+        Isolate::Current()->interpreter()->CallPython(callable, args,
+                                                      Handle<PyDict>::null());
+    return Runtime_PyObjectIsTrue(result);
+  }
+  return Virtual_Default_Greater(self, other) ||
+         Virtual_Default_Equal(self, other);
+}
+
+bool Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
+  HandleScope scope;
+  Handle<PyObject> callable = FindCallableInMro(self, ST(le));
+  if (!callable.is_null()) {
+    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    args->SetInternal(0, other);
+    Handle<PyObject> result =
+        Isolate::Current()->interpreter()->CallPython(callable, args,
+                                                      Handle<PyDict>::null());
+    return Runtime_PyObjectIsTrue(result);
+  }
+  return Virtual_Default_Less(self, other) || Virtual_Default_Equal(self, other);
 }
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {

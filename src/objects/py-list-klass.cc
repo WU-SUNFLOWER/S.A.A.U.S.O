@@ -5,6 +5,7 @@
 #include "src/objects/py-list-klass.h"
 
 #include <cstdio>
+#include <vector>
 
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
@@ -25,6 +26,7 @@
 #include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/stable-merge-sort.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -103,6 +105,132 @@ Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
   return handle(Isolate::Current()->py_none_object());
 }
 
+Handle<PyObject> NativeMethod_Sort(Handle<PyObject> self,
+                                   Handle<PyTuple> args,
+                                   Handle<PyDict> kwargs) {
+  HandleScope scope;
+
+  if (!args.is_null() && args->length() != 0) {
+    std::fprintf(stderr, "TypeError: sort() takes no positional arguments\n");
+    std::exit(1);
+  }
+
+  auto list = Handle<PyList>::cast(self);
+  int64_t expected_length = list->length();
+  if (expected_length <= 1) {
+    return handle(Isolate::Current()->py_none_object());
+  }
+
+  Handle<PyObject> key_func = handle(Isolate::Current()->py_none_object());
+  bool reverse = false;
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    Handle<PyString> key_name = PyString::NewInstance("key");
+    Handle<PyString> reverse_name = PyString::NewInstance("reverse");
+
+    for (int64_t i = 0; i < kwargs->capacity(); ++i) {
+      Handle<PyObject> k = kwargs->KeyAtIndex(i);
+      if (k.is_null()) {
+        continue;
+      }
+      if (!IsPyString(*k)) {
+        std::fprintf(stderr, "TypeError: sort() keywords must be strings\n");
+        std::exit(1);
+      }
+      auto key_str = Handle<PyString>::cast(k);
+      if (!key_str->IsEqualTo(*key_name) &&
+          !key_str->IsEqualTo(*reverse_name)) {
+        std::fprintf(stderr, "TypeError: sort() got an unexpected keyword\n");
+        std::exit(1);
+      }
+    }
+
+    Handle<PyObject> value = kwargs->Get(key_name);
+    if (!value.is_null()) {
+      key_func = value;
+    }
+
+    value = kwargs->Get(reverse_name);
+    if (!value.is_null()) {
+      reverse = Runtime_PyObjectIsTrue(value);
+    }
+  }
+
+  if (!IsPyNone(*key_func) && !IsNormalPyFunction(key_func) &&
+      !IsPyNativeFunction(*key_func) && !IsMethodObject(*key_func)) {
+    std::fprintf(stderr, "TypeError: key must be callable\n");
+    std::exit(1);
+  }
+
+  Handle<FixedArray> keys = FixedArray::NewInstance(expected_length);
+
+  if (IsPyNone(*key_func)) {
+    for (int64_t i = 0; i < expected_length; ++i) {
+      keys->Set(i, list->Get(i));
+    }
+  } else {
+    Handle<PyTuple> key_args = PyTuple::NewInstance(1);
+    Handle<PyDict> empty_kwargs = PyDict::NewInstance();
+
+    for (int64_t i = 0; i < expected_length; ++i) {
+      if (list->length() != expected_length) {
+        std::fprintf(stderr, "ValueError: list modified during sort (key)\n");
+        std::exit(1);
+      }
+      Handle<PyObject> elem = list->Get(i);
+      key_args->SetInternal(0, elem);
+      Handle<PyObject> key = Isolate::Current()->interpreter()->CallPython(
+          key_func, key_args, empty_kwargs);
+      keys->Set(i, key);
+    }
+  }
+
+  std::vector<int64_t> indices(static_cast<size_t>(expected_length));
+  for (int64_t i = 0; i < expected_length; ++i) {
+    indices[static_cast<size_t>(i)] = i;
+  }
+
+  struct CompareContext {
+    Handle<PyList> list;
+    Handle<FixedArray> keys;
+    int64_t expected_length;
+  };
+
+  CompareContext context{list, keys, expected_length};
+
+  auto less = [](int64_t a, int64_t b, void* ctx) -> bool {
+    auto* c = static_cast<CompareContext*>(ctx);
+    if (c->list->length() != c->expected_length) {
+      std::fprintf(stderr, "ValueError: list modified during sort\n");
+      std::exit(1);
+    }
+    HandleScope scope;
+    Handle<PyObject> ka = handle(c->keys->Get(a));
+    Handle<PyObject> kb = handle(c->keys->Get(b));
+    return PyObject::LessBool(ka, kb);
+  };
+
+  StableMergeSort::Sort(indices.data(), expected_length, less, &context);
+
+  Handle<FixedArray> tmp = FixedArray::NewInstance(expected_length);
+  for (int64_t i = 0; i < expected_length; ++i) {
+    tmp->Set(i, list->Get(indices[static_cast<size_t>(i)]));
+  }
+  for (int64_t i = 0; i < expected_length; ++i) {
+    list->Set(i, handle(tmp->Get(i)));
+  }
+
+  if (reverse) {
+    for (int64_t i = 0; i < (expected_length >> 1); ++i) {
+      Handle<PyObject> t = list->Get(i);
+      list->Set(i, list->Get(expected_length - i - 1));
+      list->Set(expected_length - i - 1, t);
+    }
+  }
+
+  return handle(Isolate::Current()->py_none_object());
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////
@@ -171,6 +299,10 @@ void PyListKlass::Initialize() {
   prop_name = PyString::NewInstance("extend");
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Extend, prop_name));
+
+  prop_name = PyString::NewInstance("sort");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Sort, prop_name));
 
   set_klass_properties(klass_properties);
 
@@ -322,7 +454,8 @@ bool PyListKlass::Virtual_Contains(Handle<PyObject> self,
   return false;
 }
 
-bool PyListKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> target) {
+bool PyListKlass::Virtual_Equal(Handle<PyObject> self,
+                                Handle<PyObject> target) {
   auto list1 = Handle<PyList>::cast(self);
   auto list2 = Handle<PyList>::cast(target);
 

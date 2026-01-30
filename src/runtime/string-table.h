@@ -21,13 +21,19 @@ class ObjectVisitor;
   V(add, "__add__")                  \
   V(build_class, "__build_class__")  \
   V(call, "__call__")                \
+  V(eq, "__eq__")                    \
   V(delitem, "__delitem__")          \
+  V(ge, "__ge__")                    \
   V(getitem, "__getitem__")          \
   V(getattr, "__getattr__")          \
+  V(gt, "__gt__")                    \
   V(init, "__init__")                \
+  V(le, "__le__")                    \
   V(len, "__len__")                  \
+  V(lt, "__lt__")                    \
   V(mro, "__mro__")                  \
   V(name, "__name__")                \
+  V(ne, "__ne__")                    \
   V(_new, "__new__")                 \
   V(classcell, "__classcell__")      \
   V(class, "__class__")              \
