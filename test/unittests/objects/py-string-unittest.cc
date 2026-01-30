@@ -192,7 +192,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
   bool flag = false;
   Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs);
   for (auto i = 0; i < attrs_tuple->length(); ++i) {
-    if (IsPyTrue(PyObject::Equal(attr, attrs_tuple->Get(i)))) {
+    if (PyObject::EqualBool(attr, attrs_tuple->Get(i))) {
       flag = true;
       break;
     }

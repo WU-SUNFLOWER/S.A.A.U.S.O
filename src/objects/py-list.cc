@@ -112,7 +112,7 @@ int64_t PyList::capacity() const {
 
 int64_t PyList::IndexOf(Handle<PyObject> target) const {
   for (auto i = 0; i < length(); ++i) {
-    if (IsPyTrue(PyObject::Equal(target, Get(i)))) {
+    if (PyObject::EqualBool(target, Get(i))) {
       return i;
     }
   }

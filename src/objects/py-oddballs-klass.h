@@ -23,10 +23,8 @@ class PyBooleanKlass : public Klass {
 
  private:
   static void Virtual_Print(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
   static uint64_t Virtual_Hash(Handle<PyObject> self);
 };
 
@@ -41,10 +39,8 @@ class PyNoneKlass : public Klass {
   PyNoneKlass();
 
   static void Virtual_Print(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
   static uint64_t Virtual_Hash(Handle<PyObject> self);
 };
 

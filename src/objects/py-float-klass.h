@@ -30,14 +30,12 @@ class PyFloatKlass : public Klass {
   static Handle<PyObject> Virtual_FloorDiv(Handle<PyObject>, Handle<PyObject>);
   static Handle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
 
-  static Tagged<PyBoolean> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_Less(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_GreaterEqual(Handle<PyObject>,
-                                                Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_LessEqual(Handle<PyObject>,
-                                             Handle<PyObject>);
+  static bool Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_Less(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

@@ -305,10 +305,13 @@ Handle<PyObject> PyObject::Len(Handle<PyObject> self) {
 // python virtual function
 Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  return Isolate::ToPyBoolean(GreaterBool(self, other));
+}
+
+bool PyObject::GreaterBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Isolate::ToPyBoolean(PySmi::cast(*self).value() >
-                                PySmi::cast(*other).value());
+    return PySmi::cast(*self).value() > PySmi::cast(*other).value();
   }
 
   HandleScope scope;
@@ -320,10 +323,13 @@ Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
                                  Handle<PyObject> other) {
+  return Isolate::ToPyBoolean(LessBool(self, other));
+}
+
+bool PyObject::LessBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Isolate::ToPyBoolean(PySmi::cast(*self).value() <
-                                PySmi::cast(*other).value());
+    return PySmi::cast(*self).value() < PySmi::cast(*other).value();
   }
 
   HandleScope scope;
@@ -335,10 +341,14 @@ Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
                                   Handle<PyObject> other) {
+  return Isolate::ToPyBoolean(EqualBool(self, other));
+}
+
+bool PyObject::EqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：直接比较内存地址
   // 两个Smi之间相等的情况已经包括在其中了。
   if (self.is_identical_to(other)) {
-    return Isolate::Current()->py_true_object();
+    return true;
   }
 
   HandleScope scope;
@@ -350,10 +360,13 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
                                      Handle<PyObject> other) {
+  return Isolate::ToPyBoolean(NotEqualBool(self, other));
+}
+
+bool PyObject::NotEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Isolate::ToPyBoolean(PySmi::cast(*self).value() !=
-                                PySmi::cast(*other).value());
+    return PySmi::cast(*self).value() != PySmi::cast(*other).value();
   }
 
   HandleScope scope;
@@ -365,10 +378,13 @@ Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
+  return Isolate::ToPyBoolean(GreaterEqualBool(self, other));
+}
+
+bool PyObject::GreaterEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Isolate::ToPyBoolean(PySmi::cast(*self).value() >=
-                                PySmi::cast(*other).value());
+    return PySmi::cast(*self).value() >= PySmi::cast(*other).value();
   }
 
   HandleScope scope;
@@ -380,10 +396,13 @@ Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
+  return Isolate::ToPyBoolean(LessEqualBool(self, other));
+}
+
+bool PyObject::LessEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Isolate::ToPyBoolean(PySmi::cast(*self).value() <=
-                                PySmi::cast(*other).value());
+    return PySmi::cast(*self).value() <= PySmi::cast(*other).value();
   }
 
   HandleScope scope;
@@ -433,6 +452,10 @@ void PyObject::StoreSubscr(Handle<PyObject> self,
 // python virtual function
 Tagged<PyBoolean> PyObject::Contains(Handle<PyObject> self,
                                      Handle<PyObject> target) {
+  return Isolate::ToPyBoolean(ContainsBool(self, target));
+}
+
+bool PyObject::ContainsBool(Handle<PyObject> self, Handle<PyObject> target) {
   HandleScope scope;
 
   assert(GetKlass(*self)->vtable_.contains);

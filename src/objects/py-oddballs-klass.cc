@@ -75,8 +75,7 @@ void PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 // static
-Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
-                                                Handle<PyObject> other) {
+bool PyBooleanKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
   bool v = Handle<PyBoolean>::cast(self)->value();
 
   bool result = false;
@@ -88,13 +87,13 @@ Tagged<PyBoolean> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
     result = Handle<PyBoolean>::cast(other)->value() == v;
   }
 
-  return Isolate::ToPyBoolean(result);
+  return result;
 }
 
 // static
-Tagged<PyBoolean> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                                   Handle<PyObject> other) {
-  return Virtual_Equal(self, other)->Reverse();
+bool PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
+  return !Virtual_Equal(self, other);
 }
 
 // static
@@ -153,16 +152,15 @@ void PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 // static
-Tagged<PyBoolean> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
+bool PyNoneKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
   assert(IsPyNone(self));
-  return Isolate::ToPyBoolean(self.is_identical_to(other));
+  return self.is_identical_to(other);
 }
 
 // static
-Tagged<PyBoolean> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                                Handle<PyObject> other) {
-  return Virtual_Equal(self, other)->Reverse();
+bool PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                   Handle<PyObject> other) {
+  return !Virtual_Equal(self, other);
 }
 
 // static

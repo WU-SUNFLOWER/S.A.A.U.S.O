@@ -26,21 +26,15 @@ class PyStringKlass : public Klass {
  private:
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
 
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_Less(Handle<PyObject> self,
-                                        Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_Greater(Handle<PyObject> self,
-                                           Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_LessEqual(Handle<PyObject> self,
-                                             Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_GreaterEqual(Handle<PyObject> self,
-                                                Handle<PyObject> other);
+  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_Less(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_Greater(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_LessEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_GreaterEqual(Handle<PyObject> self,
+                                   Handle<PyObject> other);
 
-  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
-                                            Handle<PyObject> target);
+  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> target);
 
   static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
                                          Handle<PyObject> subscr);

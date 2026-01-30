@@ -193,10 +193,10 @@ Handle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
     return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
   }
 
-  std::fprintf(stderr,
-               "TypeError: unsupported operand type(s) for //: 'int' and '%.*s'",
-               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
-               PyObject::GetKlass(other)->name()->buffer());
+  std::fprintf(
+      stderr, "TypeError: unsupported operand type(s) for //: 'int' and '%.*s'",
+      static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+      PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
   return Handle<PyObject>::null();
@@ -230,73 +230,67 @@ uint64_t PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
 }
 
 // static
-Tagged<PyBoolean> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+bool PySmiKlass::Virtual_Greater(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return Isolate::ToPyBoolean(self_value > other_value);
+    return self_value > other_value;
   }
-  return Isolate::Current()->py_false_object();
+  return false;
 }
 
 // static
-Tagged<PyBoolean> PySmiKlass::Virtual_Less(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+bool PySmiKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return Isolate::ToPyBoolean(self_value < other_value);
+    return self_value < other_value;
   }
-  return Isolate::Current()->py_false_object();
+  return false;
 }
 
 // static
-Tagged<PyBoolean> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+bool PySmiKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return Isolate::ToPyBoolean(self_value == other_value);
+    return self_value == other_value;
   }
-  return Isolate::Current()->py_false_object();
+  return false;
 }
 
 // static
-Tagged<PyBoolean> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                               Handle<PyObject> other) {
+bool PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                  Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  return Virtual_Equal(self, other)->Reverse();
+  return !Virtual_Equal(self, other);
 }
 
 // static
-Tagged<PyBoolean> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                                   Handle<PyObject> other) {
+bool PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
-            IsPyTrue(Virtual_Equal(self, other)));
-  return Isolate::ToPyBoolean(v);
+  return Virtual_Greater(self, other) || Virtual_Equal(self, other);
 }
 
 // static
-Tagged<PyBoolean> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                                Handle<PyObject> other) {
+bool PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                   Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  bool v = (IsPyTrue(Virtual_Less(self, other)) ||
-            IsPyTrue(Virtual_Equal(self, other)));
-  return Isolate::ToPyBoolean(v);
+  return Virtual_Less(self, other) || Virtual_Equal(self, other);
 }
 
 }  // namespace saauso::internal

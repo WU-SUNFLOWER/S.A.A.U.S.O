@@ -31,10 +31,8 @@ class PyTypeObjectKlass : public Klass {
                               Handle<PyObject> prop_value);
 
   static uint64_t Virtual_Hash(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

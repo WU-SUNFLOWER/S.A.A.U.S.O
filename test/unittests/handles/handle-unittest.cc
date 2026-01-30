@@ -37,8 +37,8 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
   Handle<PyObject> str3 = f();
   Handle<PyObject> str4 = PyString::NewInstance("I love you");
 
-  EXPECT_TRUE(IsPyTrue(PyObject::Equal(str1, str3)));
-  EXPECT_TRUE(IsPyTrue(PyObject::Equal(str2, str4)));
+  EXPECT_TRUE(PyObject::EqualBool(str1, str3));
+  EXPECT_TRUE(PyObject::EqualBool(str2, str4));
 }
 
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {

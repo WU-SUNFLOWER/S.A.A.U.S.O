@@ -39,13 +39,10 @@ class PyListKlass : public Klass {
                                   Handle<PyObject> subscr,
                                   Handle<PyObject> value);
   static void Virtual_DelSubscr(Handle<PyObject> self, Handle<PyObject> subscr);
-  static Tagged<PyBoolean> Virtual_Less(Handle<PyObject> self,
-                                        Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
-                                            Handle<PyObject> target);
+  static bool Virtual_Less(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> target);
 
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> target);
+  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> target);
 
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> object);
 

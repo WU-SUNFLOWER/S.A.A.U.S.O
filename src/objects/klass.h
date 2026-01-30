@@ -49,12 +49,11 @@ struct VirtualTable {
                                                  OopHandle,
                                                  OopHandle);
 
-  using VirtualFuncType_1_1_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle);
-  using VirtualFuncType_1_2_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle,
-                                                              OopHandle);
-  using VirtualFuncType_1_3_SAFE_BOOL = Tagged<PyBoolean> (*)(OopHandle,
-                                                              OopHandle,
-                                                              OopHandle);
+  using VirtualFuncType_1_1_SAFE_CBOOL = bool (*)(OopHandle);
+  using VirtualFuncType_1_2_SAFE_CBOOL = bool (*)(OopHandle, OopHandle);
+  using VirtualFuncType_1_3_SAFE_CBOOL = bool (*)(OopHandle,
+                                                  OopHandle,
+                                                  OopHandle);
 
   // Tagged<PyObject> add(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE add{nullptr};
@@ -80,18 +79,18 @@ struct VirtualTable {
   // Tagged<PyObject> value);
   VirtualFuncType_0_3_SAFE store_subscr{nullptr};
 
-  // Tagged<PyBoolean> greater(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_BOOL greater{nullptr};
-  // Tagged<PyBoolean> less(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_BOOL less{nullptr};
-  // Tagged<PyBoolean> equal(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_BOOL equal{nullptr};
-  // Tagged<PyBoolean> not_equal(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_BOOL not_equal{nullptr};
-  // Tagged<PyBoolean> ge(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_BOOL ge{nullptr};
-  // Tagged<PyBoolean> le(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_BOOL le{nullptr};
+  // bool greater(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE_CBOOL greater{nullptr};
+  // bool less(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE_CBOOL less{nullptr};
+  // bool equal(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE_CBOOL equal{nullptr};
+  // bool not_equal(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE_CBOOL not_equal{nullptr};
+  // bool ge(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE_CBOOL ge{nullptr};
+  // bool le(Tagged<PyObject> a, Tagged<PyObject> b);
+  VirtualFuncType_1_2_SAFE_CBOOL le{nullptr};
 
   // Tagged<PyObject> mod(Tagged<PyObject> a, Tagged<PyObject> b);
   VirtualFuncType_1_2_SAFE mod{nullptr};
@@ -106,8 +105,8 @@ struct VirtualTable {
   // Tagged<PyObject> len(Tagged<PyObject> object);
   VirtualFuncType_1_1_SAFE len{nullptr};
 
-  // Tagged<PyObject> contains(Tagged<PyObject> object);
-  VirtualFuncType_1_2_SAFE_BOOL contains{nullptr};
+  // bool contains(Tagged<PyObject> object);
+  VirtualFuncType_1_2_SAFE_CBOOL contains{nullptr};
 
   // void print(Tagged<PyObject> object);
   VirtualFuncType_0_1_SAFE print{nullptr};

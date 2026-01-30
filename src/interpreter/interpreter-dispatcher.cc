@@ -310,7 +310,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
-    bool result = PyObject::Contains(r, l)->value();
+    bool result = PyObject::ContainsBool(r, l);
     PUSH(Isolate::ToPyBoolean(result ^ op_arg));
   })
 

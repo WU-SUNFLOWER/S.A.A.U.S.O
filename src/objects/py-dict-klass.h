@@ -27,10 +27,8 @@ class PyDictKlass : public Klass {
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject> self,
-                                         Handle<PyObject> other);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
   static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
                                          Handle<PyObject> subscr);
   static void Virtual_StoreSubscr(Handle<PyObject> self,
@@ -38,8 +36,7 @@ class PyDictKlass : public Klass {
                                   Handle<PyObject> value);
   static void Virtual_DeleteSubscr(Handle<PyObject> self,
                                    Handle<PyObject> subscr);
-  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
-                                            Handle<PyObject> subscr);
+  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };

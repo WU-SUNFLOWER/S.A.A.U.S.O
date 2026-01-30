@@ -25,8 +25,7 @@ class PyDictKeysKlass : public Klass {
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
-                                            Handle<PyObject> subscr);
+  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -46,8 +45,7 @@ class PyDictValuesKlass : public Klass {
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
-                                            Handle<PyObject> subscr);
+  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -67,8 +65,7 @@ class PyDictItemsKlass : public Klass {
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Tagged<PyBoolean> Virtual_Contains(Handle<PyObject> self,
-                                            Handle<PyObject> subscr);
+  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

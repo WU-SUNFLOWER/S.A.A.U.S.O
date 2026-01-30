@@ -123,6 +123,13 @@ class PyObject : public Object {
   static Tagged<PyBoolean> LessEqual(Handle<PyObject> self,
                                      Handle<PyObject> other);
 
+  static bool GreaterBool(Handle<PyObject> self, Handle<PyObject> other);
+  static bool LessBool(Handle<PyObject> self, Handle<PyObject> other);
+  static bool EqualBool(Handle<PyObject> self, Handle<PyObject> other);
+  static bool NotEqualBool(Handle<PyObject> self, Handle<PyObject> other);
+  static bool GreaterEqualBool(Handle<PyObject> self, Handle<PyObject> other);
+  static bool LessEqualBool(Handle<PyObject> self, Handle<PyObject> other);
+
   static Handle<PyObject> GetAttr(Handle<PyObject> self,
                                   Handle<PyObject> attr_name);
   static void SetAttr(Handle<PyObject> self,
@@ -136,6 +143,7 @@ class PyObject : public Object {
                           Handle<PyObject> subscr_value);
   static Tagged<PyBoolean> Contains(Handle<PyObject> self,
                                     Handle<PyObject> target);
+  static bool ContainsBool(Handle<PyObject> self, Handle<PyObject> target);
   static Handle<PyObject> Iter(Handle<PyObject> self);
   static Handle<PyObject> Next(Handle<PyObject> self);
   static void DeletSubscr(Handle<PyObject> self, Handle<PyObject> subscr_name);

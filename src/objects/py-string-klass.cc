@@ -144,63 +144,61 @@ Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
       PySmi::FromInt(Handle<PyString>::cast(self)->length()));
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
-                                               Handle<PyObject> other) {
+bool PyStringKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Isolate::ToPyBoolean(s1->IsEqualTo(*s2));
+  return s1->IsEqualTo(*s2);
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                                  Handle<PyObject> other) {
+bool PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    return Isolate::Current()->py_true_object();
+    return true;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Isolate::ToPyBoolean(!s1->IsEqualTo(*s2));
+  return !s1->IsEqualTo(*s2);
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_Less(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+bool PyStringKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Isolate::ToPyBoolean(s1->IsLessThan(*s2));
+  return s1->IsLessThan(*s2);
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
-                                                 Handle<PyObject> other) {
+bool PyStringKlass::Virtual_Greater(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Isolate::ToPyBoolean(s1->IsGreaterThan(*s2));
+  return s1->IsGreaterThan(*s2);
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                                   Handle<PyObject> other) {
+bool PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Isolate::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
+  return s1->IsEqualTo(*s2) || s1->IsLessThan(*s2);
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                                      Handle<PyObject> other) {
+bool PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return Isolate::ToPyBoolean(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
+  return s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2);
 }
 
-Tagged<PyBoolean> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
-                                                  Handle<PyObject> target) {
+bool PyStringKlass::Virtual_Contains(Handle<PyObject> self,
+                                     Handle<PyObject> target) {
   if (!IsPyString(target)) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   auto s = Handle<PyString>::cast(self);
   auto pattern = Handle<PyString>::cast(target);
-  return Isolate::ToPyBoolean(s->Contains(pattern));
+  return s->Contains(pattern);
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,

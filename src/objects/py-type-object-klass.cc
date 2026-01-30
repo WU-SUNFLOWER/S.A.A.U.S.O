@@ -95,17 +95,17 @@ uint64_t PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {
   return static_cast<uint64_t>((*self).ptr());
 }
 
-Tagged<PyBoolean> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
-                                                   Handle<PyObject> other) {
+bool PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
   if (!IsPyTypeObject(other)) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
-  return Isolate::ToPyBoolean(self.is_identical_to(other));
+  return self.is_identical_to(other);
 }
 
-Tagged<PyBoolean> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                                      Handle<PyObject> other) {
-  return Virtual_Equal(self, other)->Reverse();
+bool PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
+  return !Virtual_Equal(self, other);
 }
 
 // static

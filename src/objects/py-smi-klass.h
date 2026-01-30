@@ -35,14 +35,12 @@ class PySmiKlass : public Klass {
 
   static uint64_t Virtual_Hash(Handle<PyObject> self);
 
-  static Tagged<PyBoolean> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_Less(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_GreaterEqual(Handle<PyObject>,
-                                                Handle<PyObject>);
-  static Tagged<PyBoolean> Virtual_LessEqual(Handle<PyObject>,
-                                             Handle<PyObject>);
+  static bool Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_Less(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
+  static bool Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
 };
 
 }  // namespace saauso::internal

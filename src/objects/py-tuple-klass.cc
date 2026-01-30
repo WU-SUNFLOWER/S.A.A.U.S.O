@@ -120,37 +120,36 @@ void PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
   std::exit(1);
 }
 
-Tagged<PyBoolean> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
-                                                 Handle<PyObject> target) {
+bool PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
+                                    Handle<PyObject> target) {
   auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
-    if (IsPyTrue(PyObject::Equal(tuple->Get(i), target))) {
-      return Isolate::Current()->py_true_object();
+    if (PyObject::EqualBool(tuple->Get(i), target)) {
+      return true;
     }
   }
-  return Isolate::Current()->py_false_object();
+  return false;
 }
 
-Tagged<PyBoolean> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+bool PyTupleKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
   if (!IsPyTuple(*other)) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   auto tuple1 = Handle<PyTuple>::cast(self);
   auto tuple2 = Handle<PyTuple>::cast(other);
 
   if (tuple1->length() != tuple2->length()) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   for (auto i = 0; i < tuple1->length(); ++i) {
-    if (IsPyFalse(PyObject::Equal(tuple1->Get(i), tuple2->Get(i)))) {
-      return Isolate::Current()->py_false_object();
+    if (!PyObject::EqualBool(tuple1->Get(i), tuple2->Get(i))) {
+      return false;
     }
   }
 
-  return Isolate::Current()->py_true_object();
+  return true;
 }
 
 Handle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {

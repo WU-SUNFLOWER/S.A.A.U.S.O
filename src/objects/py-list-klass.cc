@@ -289,8 +289,7 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   list->RemoveByIndex(decoded_subscr);
 }
 
-Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+bool PyListKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
   auto list_l = Handle<PyList>::cast(self);
   auto list_r = Handle<PyList>::cast(other);
   auto min_len = std::min(list_l->length(), list_r->length());
@@ -299,49 +298,45 @@ Tagged<PyBoolean> PyListKlass::Virtual_Less(Handle<PyObject> self,
     auto l = list_l->Get(i);
     auto r = list_r->Get(i);
 
-    bool result = IsPyTrue(PyObject::Less(l, r));
-    if (result) {
-      return Isolate::Current()->py_true_object();
+    if (PyObject::LessBool(l, r)) {
+      return true;
     }
 
-    result = IsPyTrue(PyObject::Greater(l, r));
-    if (result) {
-      return Isolate::Current()->py_false_object();
+    if (PyObject::GreaterBool(l, r)) {
+      return false;
     }
   }
 
-  return Isolate::ToPyBoolean(list_l->length() < list_r->length());
+  return list_l->length() < list_r->length();
 }
 
-Tagged<PyBoolean> PyListKlass::Virtual_Contains(Handle<PyObject> self,
-                                                Handle<PyObject> target) {
+bool PyListKlass::Virtual_Contains(Handle<PyObject> self,
+                                   Handle<PyObject> target) {
   auto list = Handle<PyList>::cast(self);
   for (auto i = 0; i < list->length(); ++i) {
-    auto result = PyObject::Equal(list->Get(i), target);
-    if (IsPyTrue(result)) {
-      return Isolate::Current()->py_true_object();
+    if (PyObject::EqualBool(list->Get(i), target)) {
+      return true;
     }
   }
 
-  return Isolate::Current()->py_false_object();
+  return false;
 }
 
-Tagged<PyBoolean> PyListKlass::Virtual_Equal(Handle<PyObject> self,
-                                             Handle<PyObject> target) {
+bool PyListKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> target) {
   auto list1 = Handle<PyList>::cast(self);
   auto list2 = Handle<PyList>::cast(target);
 
   if (list1->length() != list2->length()) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   for (auto i = 0; i < list1->length(); ++i) {
-    if (IsPyFalse(PyObject::Equal(list1->Get(i), list2->Get(i)))) {
-      return Isolate::Current()->py_false_object();
+    if (!PyObject::EqualBool(list1->Get(i), list2->Get(i))) {
+      return false;
     }
   }
 
-  return Isolate::Current()->py_true_object();
+  return true;
 }
 
 Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {

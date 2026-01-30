@@ -42,7 +42,7 @@ Handle<PyObject> Native_IsInstance(Handle<PyObject> host,
 
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto curr_type_object = mro_of_object->Get(i);
-    if (IsPyTrue(PyObject::Equal(curr_type_object, target_type_object))) {
+    if (PyObject::EqualBool(curr_type_object, target_type_object)) {
       return handle(Isolate::Current()->py_true_object()).EscapeFrom(&scope);
     }
   }

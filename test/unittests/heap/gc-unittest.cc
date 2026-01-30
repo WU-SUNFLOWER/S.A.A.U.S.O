@@ -105,7 +105,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   //////////////////////////////////////////
 
   EXPECT_NE(a1, (*list1).ptr());
-  EXPECT_TRUE(IsPyTrue(PyObject::Equal(list1, list2)));
+  EXPECT_TRUE(PyObject::EqualBool(list1, list2));
 }
 
 TEST_F(GcTest, CopyGcTestForForwardingPointer) {

@@ -46,7 +46,7 @@ TEST_F(PyDictTest, BasicOperations) {
   PyDict::Put(dict, key1, val2);
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
   res1 = dict->Get(key1);
-  EXPECT_TRUE(IsPyTrue(PyObject::Equal(res1, val2)));
+  EXPECT_TRUE(PyObject::EqualBool(res1, val2));
 
   // Remove
   dict->Remove(key1);
@@ -113,16 +113,16 @@ TEST_F(PyDictTest, Equality) {
   PyDict::Put(d2, k2, v2);
   PyDict::Put(d2, k1, v1);
 
-  EXPECT_TRUE(IsPyTrue(PyObject::Equal(d1, d2)));
+  EXPECT_TRUE(PyObject::EqualBool(d1, d2));
 
   // d2 = {"b": 2, "a": 3} (Different value)
   Handle<PyObject> v3(PySmi::FromInt(3));
   PyDict::Put(d2, k1, v3);
-  EXPECT_TRUE(IsPyFalse(PyObject::Equal(d1, d2)));
+  EXPECT_TRUE(!PyObject::EqualBool(d1, d2));
 
   // d2 = {"b": 2} (Different size)
   d2->Remove(k1);
-  EXPECT_TRUE(IsPyFalse(PyObject::Equal(d1, d2)));
+  EXPECT_TRUE(!PyObject::EqualBool(d1, d2));
 }
 
 TEST_F(PyDictTest, GetKeyTuple) {

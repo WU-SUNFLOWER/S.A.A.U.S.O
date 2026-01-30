@@ -152,10 +152,10 @@ Handle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictKeys>(self);
 }
 
-Tagged<PyBoolean> PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
-                                                    Handle<PyObject> subscr) {
+bool PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
+                                       Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner();
-  return Isolate::ToPyBoolean(dict->Contains(subscr));
+  return dict->Contains(subscr);
 }
 
 size_t PyDictKeysKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -235,8 +235,8 @@ Handle<PyObject> PyDictValuesKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictValues>(self);
 }
 
-Tagged<PyBoolean> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
-                                                      Handle<PyObject> subscr) {
+bool PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
+                                         Handle<PyObject> subscr) {
   HandleScope scope;
 
   auto dict = Handle<PyDictValues>::cast(self)->owner();
@@ -245,12 +245,11 @@ Tagged<PyBoolean> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
     if (value.is_null()) {
       continue;
     }
-    if (PyObject::Equal(value, subscr) ==
-        Isolate::Current()->py_true_object()) {
-      return Isolate::Current()->py_true_object();
+    if (PyObject::EqualBool(value, subscr)) {
+      return true;
     }
   }
-  return Isolate::Current()->py_false_object();
+  return false;
 }
 
 size_t PyDictValuesKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -330,17 +329,17 @@ Handle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictItems>(self);
 }
 
-Tagged<PyBoolean> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
-                                                     Handle<PyObject> subscr) {
+bool PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
+                                        Handle<PyObject> subscr) {
   HandleScope scope;
 
   if (!IsPyTuple(subscr)) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   auto item = Handle<PyTuple>::cast(subscr);
   if (item->length() != 2) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   auto dict = Handle<PyDictItems>::cast(self)->owner();
@@ -349,13 +348,10 @@ Tagged<PyBoolean> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
 
   auto found = dict->Get(key);
   if (found.is_null()) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
-  if (PyObject::Equal(found, value) == Isolate::Current()->py_true_object()) {
-    return Isolate::Current()->py_true_object();
-  }
-  return Isolate::Current()->py_false_object();
+  return PyObject::EqualBool(found, value);
 }
 
 size_t PyDictItemsKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

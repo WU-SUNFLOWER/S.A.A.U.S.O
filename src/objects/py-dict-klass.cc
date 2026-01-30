@@ -229,24 +229,23 @@ Handle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
 }
 
 // static
-Tagged<PyBoolean> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
+bool PyDictKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
   assert(IsPyDict(self));
 
   // fast path
   if (self.is_identical_to(other)) {
-    return Isolate::Current()->py_true_object();
+    return true;
   }
 
   if (!IsPyDict(other)) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   auto d1 = Handle<PyDict>::cast(self);
   auto d2 = Handle<PyDict>::cast(other);
 
   if (d1->occupied() != d2->occupied()) {
-    return Isolate::Current()->py_false_object();
+    return false;
   }
 
   for (int64_t i = 0; i < d1->capacity(); ++i) {
@@ -255,24 +254,21 @@ Tagged<PyBoolean> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
       auto v1 = d1->data()->Get((i << 1) + 1);
       auto v2_handle = d2->Get(Handle<PyObject>(k1));
       if (v2_handle.is_null()) {
-        return Isolate::Current()->py_false_object();
+        return false;
       }
 
-      if (IsPyFalse(PyObject::Equal(Handle<PyObject>(v1), v2_handle))) {
-        return Isolate::Current()->py_false_object();
+      if (!PyObject::EqualBool(Handle<PyObject>(v1), v2_handle)) {
+        return false;
       }
     }
   }
-  return Isolate::Current()->py_true_object();
+  return true;
 }
 
 // static
-Tagged<PyBoolean> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                                Handle<PyObject> other) {
-  if (IsPyTrue(Virtual_Equal(self, other))) {
-    return Isolate::Current()->py_false_object();
-  }
-  return Isolate::Current()->py_true_object();
+bool PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                   Handle<PyObject> other) {
+  return !Virtual_Equal(self, other);
 }
 
 // static
@@ -309,9 +305,9 @@ void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
 }
 
 // static
-Tagged<PyBoolean> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
-                                                Handle<PyObject> subscr) {
-  return Isolate::ToPyBoolean(Handle<PyDict>::cast(self)->Contains(subscr));
+bool PyDictKlass::Virtual_Contains(Handle<PyObject> self,
+                                   Handle<PyObject> subscr) {
+  return Handle<PyDict>::cast(self)->Contains(subscr);
 }
 
 // static

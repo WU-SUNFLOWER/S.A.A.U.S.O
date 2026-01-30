@@ -175,57 +175,52 @@ Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
 }
 
 // static
-Tagged<PyBoolean> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
-                                                Handle<PyObject> other) {
+bool PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
+                                   Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Isolate::ToPyBoolean(self_value > other_value);
+  return self_value > other_value;
 }
 
 // static
-Tagged<PyBoolean> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
+bool PyFloatKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Isolate::ToPyBoolean(self_value < other_value);
+  return self_value < other_value;
 }
 
 // static
-Tagged<PyBoolean> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+bool PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Isolate::ToPyBoolean(self_value == other_value);
+  return self_value == other_value;
 }
 
 // static
-Tagged<PyBoolean> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                                 Handle<PyObject> other) {
+bool PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return Isolate::ToPyBoolean(self_value != other_value);
+  return self_value != other_value;
 }
 
 // static
-Tagged<PyBoolean> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                                     Handle<PyObject> other) {
+bool PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  bool v = (IsPyTrue(Virtual_Greater(self, other)) ||
-            IsPyTrue(Virtual_Equal(self, other)));
-  return Isolate::ToPyBoolean(v);
+  return Virtual_Greater(self, other) || Virtual_Equal(self, other);
 }
 
 // static
-Tagged<PyBoolean> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                                  Handle<PyObject> other) {
+bool PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  bool v = (IsPyTrue(Virtual_Less(self, other)) ||
-            IsPyTrue(Virtual_Equal(self, other)));
-  return Isolate::ToPyBoolean(v);
+  return Virtual_Less(self, other) || Virtual_Equal(self, other);
 }
 
 // static
