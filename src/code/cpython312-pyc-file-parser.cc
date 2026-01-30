@@ -100,7 +100,7 @@
 //   - 将 marshal tuple 映射为 `PyTuple`，marshal list 映射为 `PyList`。
 //   - 将 marshal 的 int/long 在当前 MVP 里限制为 int32 范围，并用 `PySmi`
 //   表示。
-//   - code object 落地到 `PyCodeObject::NewInstance312(...)`，并补齐：
+//   - code object 落地到 `PyCodeObject::NewInstance(...)`，并补齐：
 //       * nlocals_（由 localsplusnames 长度推导）
 //       * free_vars_ / cell_vars_（由 localspluskinds 推导）
 //       * 可空字段（localspluskinds/linetable/exceptiontable）用 null 表示
@@ -336,7 +336,7 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
     }
   }
 
-  Handle<PyCodeObject> result = PyCodeObject::NewInstance312(
+  Handle<PyCodeObject> result = PyCodeObject::NewInstance(
       arg_count, posonly_arg_count, kwonly_arg_count, stack_size, flags,
       bytecodes, consts, names, localsplusnames, localspluskinds, var_names,
       free_vars, cell_vars, file_name, co_name, qual_name, begin_line_no,

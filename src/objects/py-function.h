@@ -36,6 +36,9 @@ class PyFunction : public PyObject {
   void set_default_args(Handle<PyTuple> default_args);
   Handle<PyTuple> default_args() const;
 
+  void set_closures(Handle<PyTuple> closures);
+  Handle<PyTuple> closures() const;
+
  private:
   friend class PyFunctionKlass;
   friend class NativeFunctionKlass;
@@ -51,8 +54,11 @@ class PyFunction : public PyObject {
   // 与函数绑定的全局变量表，在函数被创建时确定
   Tagged<PyObject> func_globals_{kNullAddress};
 
-  // PyList* default_args_
+  // PyTuple* default_args_
   Tagged<PyObject> default_args_{kNullAddress};
+
+  // PyTuple* closures_
+  Tagged<PyObject> closures_;
 
   PyFuncFlags flags_{0};
 

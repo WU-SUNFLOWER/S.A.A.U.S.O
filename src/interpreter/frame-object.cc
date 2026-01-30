@@ -22,7 +22,7 @@ FrameObject* FrameObject::Create(Tagged<PyObject> consts,
                                  Tagged<PyObject> names,
                                  Tagged<PyObject> locals,
                                  Tagged<PyObject> globals,
-                                 Tagged<PyObject> fast_locals,
+                                 Tagged<PyObject> localsplus,
                                  Tagged<PyObject> stack,
                                  Tagged<PyObject> code_object) {
   FrameObject* frame = new FrameObject();
@@ -32,7 +32,7 @@ FrameObject* FrameObject::Create(Tagged<PyObject> consts,
 
   frame->locals_ = locals;
   frame->globals_ = globals;
-  frame->fast_locals_ = fast_locals;
+  frame->fast_locals_ = localsplus;
 
   frame->stack_ = stack;
 
@@ -99,7 +99,7 @@ Handle<PyDict> FrameObject::locals() const {
   return handle(Tagged<PyDict>::cast(locals_));
 }
 
-Handle<FixedArray> FrameObject::fast_locals() const {
+Handle<FixedArray> FrameObject::localsplus() const {
   return handle(Tagged<FixedArray>::cast(fast_locals_));
 }
 

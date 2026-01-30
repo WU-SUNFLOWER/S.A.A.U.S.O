@@ -27,6 +27,7 @@
   V(PyDictItemIterator, PyDictItemIteratorKlass, py_dict_itemiterator)    \
   V(PyDictValueIterator, PyDictValueIteratorKlass, py_dict_valueiterator) \
   V(FixedArray, FixedArrayKlass, fixed_array)                             \
+  V(Cell, CellKlass, cell)                                                \
   V(MethodObject, MethodObjectKlass, method_object)                       \
   V(NativeFunction, NativeFunctionKlass, native_function)
 

@@ -33,7 +33,7 @@ struct FrameBuildContext {
   Handle<PyDict> locals;
   Handle<PyDict> globals;
   // fast_locals：局部变量数组（包含形参槽位、以及可能注入的 *args/**kwargs）。
-  Handle<FixedArray> fast_locals;
+  Handle<FixedArray> localsplus;
   // operand stack：解释器执行期间的操作数栈。
   Handle<FixedArray> stack;
   // 仅用于打印错误信息（TypeError: {func_name} ...）。
@@ -47,9 +47,9 @@ struct FrameBuildContext {
   int64_t formal_pos_arg_cnt{0};
   // 若 host 非空，则注入为首个参数（self），此处记录 self 的个数（0/1）。
   int self_arg_cnt{0};
-  // fast_locals 的“写入游标”：
+  // localsplus 的“写入游标”：
   // 指向下一个可放置元素的位置（用于顺序写入位置实参、以及逻辑上统计已填充的形参槽位）。
-  int fast_locals_idx{0};
+  int localsplus_idx{0};
 };
 
 FrameBuildContext PrepareForCodeObject(Handle<PyCodeObject> code_object) {
@@ -59,7 +59,7 @@ FrameBuildContext PrepareForCodeObject(Handle<PyCodeObject> code_object) {
   ctx.locals = PyDict::NewInstance();
   ctx.globals = ctx.locals;
   if (code_object->nlocals() > 0) {
-    ctx.fast_locals = FixedArray::NewInstance(code_object->nlocals());
+    ctx.localsplus = FixedArray::NewInstance(code_object->nlocalsplus());
   }
   ctx.stack = FixedArray::NewInstance(code_object->stack_size());
   return ctx;
@@ -72,7 +72,7 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
   ctx.locals = PyDict::NewInstance();
   ctx.globals = func->func_globals();
   if (ctx.code_object->nlocals() > 0) {
-    ctx.fast_locals = FixedArray::NewInstance(ctx.code_object->nlocals());
+    ctx.localsplus = FixedArray::NewInstance(ctx.code_object->nlocalsplus());
   }
   ctx.stack = FixedArray::NewInstance(ctx.code_object->stack_size());
 
@@ -83,7 +83,7 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
 
   // 将 host 填充为首个函数参数（self）。
   if (!host.is_null()) {
-    ctx.fast_locals->Set(ctx.fast_locals_idx++, host);
+    ctx.localsplus->Set(ctx.localsplus_idx++, host);
     ctx.self_arg_cnt = 1;
   }
   // 不算 self、*args 和 **kwargs 的形参个数。
@@ -93,7 +93,7 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
 }
 
 void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
-  // 使用默认值填充 fast_locals 中的空洞（从尾部形参开始向前回填）。
+  // 使用默认值填充 localsplus 中的空洞（从尾部形参开始向前回填）。
   if (default_args.is_null()) {
     return;
   }
@@ -101,11 +101,11 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
   int64_t default_arg_cnt = default_args->length();
   int64_t arg_list_index = ctx.real_formal_pos_arg_cnt - 1;
   while (default_arg_cnt > 0) {
-    if (ctx.fast_locals->Get(arg_list_index).is_null()) {
-      ctx.fast_locals->Set(arg_list_index,
-                           default_args->Get(default_arg_cnt - 1));
-      // 同理，让 fast_locals_idx 游标在逻辑上向右移动一下。
-      ++ctx.fast_locals_idx;
+    if (ctx.localsplus->Get(arg_list_index).is_null()) {
+      ctx.localsplus->Set(arg_list_index,
+                          default_args->Get(default_arg_cnt - 1));
+      // 同理，让 localsplus_idx 游标在逻辑上向右移动一下。
+      ++ctx.localsplus_idx;
     }
     --default_arg_cnt;
     --arg_list_index;
@@ -114,12 +114,12 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
 
 void CheckMissingArgs(const FrameBuildContext& ctx) {
   // 如果还有位置形参没有有效值，那么抛出错误。
-  if (ctx.fast_locals_idx < ctx.real_formal_pos_arg_cnt) {
+  if (ctx.localsplus_idx < ctx.real_formal_pos_arg_cnt) {
     std::fprintf(stderr,
                  "TypeError: %s() missing %" PRId64
                  " required positional argument",
                  ctx.func_name->buffer(),
-                 ctx.real_formal_pos_arg_cnt - ctx.fast_locals_idx);
+                 ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
     std::exit(1);
   }
 }
@@ -198,13 +198,13 @@ Handle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
 void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
                             Handle<PyTuple> var_args,
                             Handle<PyDict> kw_args) {
-  // 向 fast_locals 中注入 extend_pos_args（*args）。
+  // 向 localsplus 中注入 extend_pos_args（*args）。
   if (!var_args.is_null()) {
-    ctx.fast_locals->Set(ctx.fast_locals_idx++, var_args);
+    ctx.localsplus->Set(ctx.localsplus_idx++, var_args);
   }
-  // 向 fast_locals 中注入 kw_args（**kwargs）。
+  // 向 localsplus 中注入 kw_args（**kwargs）。
   if (!kw_args.is_null()) {
-    ctx.fast_locals->Set(ctx.fast_locals_idx++, kw_args);
+    ctx.localsplus->Set(ctx.localsplus_idx++, kw_args);
   }
 }
 
@@ -217,7 +217,7 @@ FrameObject* FrameObjectBuilder::BuildRootFrame(
   // 仅用于创建根栈帧。
   FrameBuildContext ctx = PrepareForCodeObject(code_object);
   return FrameObject::Create(*code_object->consts(), *code_object->names(),
-                             *ctx.locals, *ctx.globals, *ctx.fast_locals,
+                             *ctx.locals, *ctx.globals, *ctx.localsplus,
                              *ctx.stack, *code_object);
 }
 
@@ -230,12 +230,12 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
   // 创建一般的 python 栈帧（慢速路径）。
   FrameBuildContext ctx = PrepareForFunction(func, host);
 
-  // 将与形参对应的函数实参加载到栈帧的 fast_locals 上去（位置实参优先）。
+  // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置实参优先）。
   if (!actual_pos_args.is_null()) {
     int64_t valid_pos_args_cnt =
         std::min<int64_t>(actual_pos_args->length(), ctx.formal_pos_arg_cnt);
     for (int64_t i = 0; i < valid_pos_args_cnt; ++i) {
-      ctx.fast_locals->Set(ctx.fast_locals_idx++, actual_pos_args->Get(i));
+      ctx.localsplus->Set(ctx.localsplus_idx++, actual_pos_args->Get(i));
     }
   }
 
@@ -255,12 +255,13 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
     while (!item.is_null()) {
       auto key = Handle<PyString>::cast(item->Get(0));
       auto value = item->Get(1);
-      int64_t index_in_var_args = ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+      int64_t index_in_var_args =
+          ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
 
       // 如果当前 key 对应于形参列表中的某个形参。
       if (index_in_var_args != PyTuple::kNotFound) {
         // 不允许重复对形参赋值。
-        if (!ctx.fast_locals->Get(index_in_var_args).is_null()) {
+        if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
           std::fprintf(
               stderr, "TypeError: %s() got multiple values for argument '%s'\n",
               ctx.func_name->buffer(), key->buffer());
@@ -268,10 +269,10 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
         }
 
         // 给形参赋值。
-        ctx.fast_locals->Set(index_in_var_args, value);
-        // 现在有新的形参被填充进 fast_locals 了，
-        // 因此让 fast_locals_idx 游标在逻辑上向右移动一下。
-        ++ctx.fast_locals_idx;
+        ctx.localsplus->Set(index_in_var_args, value);
+        // 现在有新的形参被填充进 localsplus 了，
+        // 因此让 localsplus_idx 游标在逻辑上向右移动一下。
+        ++ctx.localsplus_idx;
       } else if (!kw_args.is_null()) {
         // key 没有命中特定的形参，如果当前函数支持键值对参数包，
         // 将键值对参数注入进 **kwargs 当中。
@@ -297,9 +298,10 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
       PackExtraPosArgsFromPosArgs(ctx, actual_pos_args);
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
+
   return FrameObject::Create(
       *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
-      *ctx.globals, *ctx.fast_locals, *ctx.stack, *ctx.code_object);
+      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object);
 }
 
 FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
@@ -316,11 +318,11 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
   // 用户通过键值对形式传入的实参个数。
   int64_t actual_kw_arg_cnt = kwarg_keys.is_null() ? 0 : kwarg_keys->length();
 
-  // 将与形参对应的函数实参加载到栈帧的 fast_locals 上去（位置部分）。
+  // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置部分）。
   int64_t valid_pos_args_cnt = std::min<int64_t>(
       actual_arg_cnt - actual_kw_arg_cnt, ctx.formal_pos_arg_cnt);
   for (int64_t i = 0; i < valid_pos_args_cnt; ++i) {
-    ctx.fast_locals->Set(ctx.fast_locals_idx++, actual_args->Get(i));
+    ctx.localsplus->Set(ctx.localsplus_idx++, actual_args->Get(i));
   }
 
   Handle<PyDict> kw_args;
@@ -337,10 +339,11 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
     auto value = actual_args->Get(actual_arg_cnt - i - 1);
 
     // 1. 检查当前的键值对是否能够赋值给特定的形参。
-    int64_t index_in_var_args = ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+    int64_t index_in_var_args =
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
     if (index_in_var_args != PyTuple::kNotFound) {
       // 不允许重复对形参赋值。
-      if (!ctx.fast_locals->Get(index_in_var_args).is_null()) {
+      if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
         std::fprintf(stderr,
                      "TypeError: %s() got multiple values for argument '%s'\n",
                      ctx.func_name->buffer(), key->buffer());
@@ -348,10 +351,10 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
       }
 
       // 检查通过，给形参赋值。
-      ctx.fast_locals->Set(index_in_var_args, value);
-      // 现在有新的形参被填充进 fast_locals 了，
-      // 因此让 fast_locals_idx 游标在逻辑上向右移动一下。
-      ++ctx.fast_locals_idx;
+      ctx.localsplus->Set(index_in_var_args, value);
+      // 现在有新的形参被填充进 localsplus 了，
+      // 因此让 localsplus_idx 游标在逻辑上向右移动一下。
+      ++ctx.localsplus_idx;
       continue;
     }
 
@@ -380,7 +383,7 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
 
   return FrameObject::Create(
       *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
-      *ctx.globals, *ctx.fast_locals, *ctx.stack, *ctx.code_object);
+      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object);
 }
 
 }  // namespace saauso::internal

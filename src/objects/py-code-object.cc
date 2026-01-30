@@ -15,61 +15,39 @@
 
 namespace saauso::internal {
 
-// static
-Handle<PyCodeObject> PyCodeObject::NewInstance(int arg_count,
-                                               int posonly_arg_count,
-                                               int kwonly_arg_count,
-                                               int nlocals,
-                                               int stack_size,
-                                               int flags,
-                                               Handle<PyString> bytecodes,
-                                               Handle<PyTuple> names,
-                                               Handle<PyTuple> consts,
-                                               Handle<PyTuple> var_names,
-                                               Handle<PyTuple> free_vars,
-                                               Handle<PyTuple> cell_vars,
-                                               Handle<PyString> file_name,
-                                               Handle<PyString> co_name,
-                                               int line_no,
-                                               Handle<PyString> no_table) {
-  Handle<PyCodeObject> object(
-      Isolate::Current()->heap()->Allocate<PyCodeObject>(
-          Heap::AllocationSpace::kNewSpace));
-  PyObject::SetKlass(object, PyCodeObjectKlass::GetInstance());
+namespace {
+void ComputeLocalsplusCounts(int nlocalsplus,
+                             Tagged<PyObject> kinds,
+                             int& nlocals,
+                             int& ncellvars,
+                             int& nfreevars) {
+  nlocals = ncellvars = nfreevars = 0;
 
-  object->arg_count_ = arg_count;
-  object->posonly_arg_count_ = posonly_arg_count;
-  object->kwonly_arg_count_ = kwonly_arg_count;
-  object->nlocals_ = nlocals;
-  object->stack_size_ = stack_size;
-  object->flags_ = flags;
+  auto kind_bytes = Tagged<PyString>::cast(kinds);
+  auto kind_bytes_size = kind_bytes.is_null() ? 0 : kind_bytes->length();
+  if (kind_bytes_size != nlocalsplus) {
+    std::fprintf(stderr, "kind_bytes_size != nlocalsplus");
+    std::exit(1);
+  }
 
-  object->bytecodes_ = *bytecodes;
-  object->names_ = *names;
-  object->consts_ = *consts;
-  object->localsplusnames_ = *var_names;
-  object->localspluskinds_ = Tagged<PyObject>::null();
-  object->var_names_ = *var_names;
-
-  object->free_vars_ = *free_vars;
-  object->cell_vars_ = *cell_vars;
-
-  object->file_name_ = *file_name;
-  object->co_name_ = *co_name;
-  object->qual_name_ = *co_name;
-
-  object->line_no_ = line_no;
-  object->line_table_ = *no_table;
-  object->exception_table_ = Tagged<PyObject>::null();
-  object->no_table_ = *no_table;
-
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  return object;
+  for (auto i = 0; i < nlocalsplus; ++i) {
+    char kind = kind_bytes->Get(i);
+    if (kind & PyCodeObject::LocalsPlusKind::kFastLocal) {
+      ++nlocals;
+      if (kind & PyCodeObject::LocalsPlusKind::kFastCell) {
+        ++ncellvars;
+      }
+    } else if (kind & PyCodeObject::LocalsPlusKind::kFastCell) {
+      ++ncellvars;
+    } else if (kind & PyCodeObject::LocalsPlusKind::kFastFree) {
+      ++nfreevars;
+    }
+  }
 }
+}  // namespace
 
 // static
-Handle<PyCodeObject> PyCodeObject::NewInstance312(
+Handle<PyCodeObject> PyCodeObject::NewInstance(
     int arg_count,
     int posonly_arg_count,
     int kwonly_arg_count,
@@ -97,7 +75,6 @@ Handle<PyCodeObject> PyCodeObject::NewInstance312(
   object->arg_count_ = arg_count;
   object->posonly_arg_count_ = posonly_arg_count;
   object->kwonly_arg_count_ = kwonly_arg_count;
-  object->nlocals_ = static_cast<int>(localsplusnames->length());
   object->stack_size_ = stack_size;
   object->flags_ = flags;
 
@@ -107,13 +84,20 @@ Handle<PyCodeObject> PyCodeObject::NewInstance312(
   object->localsplusnames_ = *localsplusnames;
   object->localspluskinds_ =
       localspluskinds.is_null() ? Tagged<PyObject>::null() : *localspluskinds;
+
   object->var_names_ = *var_names;
-
-  // var_names的长度一定等于nlocals的长度
-  assert(var_names->length() == object->nlocals_);
-
   object->free_vars_ = *free_vars;
   object->cell_vars_ = *cell_vars;
+
+  object->nlocalsplus_ = static_cast<int>(localsplusnames->length());
+  ComputeLocalsplusCounts(object->nlocalsplus_, object->localspluskinds_,
+                          object->nlocals_, object->ncellvars_,
+                          object->nfreevars_);
+
+  if (var_names->length() != object->nlocals_) {
+    std::fprintf(stderr, "var_names->length() != object->nlocals_");
+    std::exit(1);
+  }
 
   object->file_name_ = *file_name;
   object->co_name_ = *co_name;
@@ -147,6 +131,14 @@ Handle<PyTuple> PyCodeObject::names() const {
 
 Handle<PyTuple> PyCodeObject::var_names() const {
   return handle(Tagged<PyTuple>::cast(var_names_));
+}
+
+Handle<PyTuple> PyCodeObject::free_vars() const {
+  return handle(Tagged<PyTuple>::cast(free_vars_));
+}
+
+Handle<PyTuple> PyCodeObject::cell_vars() const {
+  return handle(Tagged<PyTuple>::cast(cell_vars_));
 }
 
 Handle<PyTuple> PyCodeObject::consts() const {

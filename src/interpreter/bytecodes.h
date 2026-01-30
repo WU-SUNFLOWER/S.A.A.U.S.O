@@ -43,6 +43,7 @@ namespace saauso::internal {
   V(PopJumpIfNotNone, 128) \
   V(PopJumpIfNone, 129)    \
   V(MakeFunction, 132)     \
+  V(MakeCell, 135)         \
   V(JumpBackward, 140)     \
   V(Resume, 151)           \
   V(BuildConstKeyMap, 156) \

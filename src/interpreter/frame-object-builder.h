@@ -35,7 +35,7 @@ class FrameObjectBuilder {
   static FrameObject* BuildRootFrame(Handle<PyCodeObject> code_object);
 
   // 创建一般的 python 栈帧（慢速路径）。
-  // - 遍历 actual_kw_args：若 key 命中形参则写入 fast_locals，否则注入 **kwargs
+  // - 遍历 actual_kw_args：若 key 命中形参则写入 localsplus，否则注入 **kwargs
   // 或报错。
   // - 支持默认参数回填、*args/**kwargs 的打包与注入。
   static FrameObject* BuildSlowPath(Handle<PyFunction> func,

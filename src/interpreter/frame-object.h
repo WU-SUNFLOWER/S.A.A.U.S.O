@@ -54,7 +54,7 @@ class FrameObject : Object {
   Handle<PyTuple> consts() const;
   Handle<PyTuple> names() const;
   Handle<PyDict> locals() const;
-  Handle<FixedArray> fast_locals() const;
+  Handle<FixedArray> localsplus() const;
   Handle<PyDict> globals() const;
   Handle<PyCodeObject> code_object() const;
 
@@ -72,7 +72,7 @@ class FrameObject : Object {
                              Tagged<PyObject> names,
                              Tagged<PyObject> locals,
                              Tagged<PyObject> globals,
-                             Tagged<PyObject> fast_locals,
+                             Tagged<PyObject> localsplus,
                              Tagged<PyObject> stack,
                              Tagged<PyObject> code_object);
 
@@ -87,7 +87,7 @@ class FrameObject : Object {
 
   // PyDict* locals; 支持通过符号名称泄露给外部的变量表
   Tagged<PyObject> locals_{kNullAddress};
-  // FixedArray* fast_locals
+  // FixedArray* localsplus
   Tagged<PyObject> fast_locals_{kNullAddress};
   // PyDict* globals;
   Tagged<PyObject> globals_{kNullAddress};

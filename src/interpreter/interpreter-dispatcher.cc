@@ -8,6 +8,7 @@
 #include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/interpreter/interpreter.h"
+#include "src/objects/cell.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-code-object.h"
@@ -41,14 +42,14 @@ void Interpreter::EvalCurrentFrame() {
 
 #define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
 
-#define DISPATCH()                         \
-  do {                                     \
-    if (!current_frame_->HasMoreCodes()) { \
-      goto exit_interpreter;               \
-    }                                      \
-    op_code = current_frame_->GetOpCode(); \
-    op_arg = current_frame_->GetOpArg();   \
-    goto* dispatch_table_[op_code];        \
+#define DISPATCH()                                      \
+  do {                                                  \
+    if (!current_frame_->HasMoreCodes()) [[unlikely]] { \
+      goto exit_interpreter;                            \
+    }                                                   \
+    op_code = current_frame_->GetOpCode();              \
+    op_arg = current_frame_->GetOpArg();                \
+    goto* dispatch_table_[op_code];                     \
   } while (0)
 
 #define INTERPRETER_HANDLER_DISPATCH(bytecode, ...) \
@@ -346,10 +347,10 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
-      LoadFast, PUSH(current_frame_->fast_locals()->Get(op_arg));)
+      LoadFast, PUSH(current_frame_->localsplus()->Get(op_arg));)
 
   INTERPRETER_HANDLER_WITH_SCOPE(
-      StoreFast, current_frame_->fast_locals()->Set(op_arg, *POP());)
+      StoreFast, current_frame_->localsplus()->Set(op_arg, *POP());)
 
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, {
                                                  // todo
@@ -380,10 +381,25 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyFunction> func =
         PyFunction::NewInstance(Handle<PyCodeObject>::cast(code_object));
     func->set_func_globals(current_frame_->globals());
+
+    // 向函数对象中注入依据词法作用域捕获到的cell们
+    if (op_arg & MakeFunctionOpArgMask::kClosure) {
+      func->set_closures(Handle<PyTuple>::cast(POP()));
+    }
+
+    // 向函数对象中注入形参默认值
     if (op_arg & MakeFunctionOpArgMask::kDefaults) {
       func->set_default_args(Handle<PyTuple>::cast(POP()));
     }
+
     PUSH(func);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
+    auto cell = Cell::NewInstance();
+    auto initial = current_frame_->localsplus()->Get(op_arg);
+    cell->set_value(initial);
+    current_frame_->localsplus()->Set(op_arg, cell);
   })
 
   INTERPRETER_HANDLER_DISPATCH(JumpBackward, {

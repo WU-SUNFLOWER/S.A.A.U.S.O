@@ -6,9 +6,14 @@
     "clangd.arguments": [
         "--compile-commands-dir=${workspaceFolder}/out/debug",
         "--query-driver=D:/LLVM/bin/*.exe", // 指向你的 LLVM bin 目录
-        "--clang-tidy", // 开启静态分析
-        "--background-index", // 后台建立索引
-        "--completion-style=detailed",
+        "--clang-tidy=false",
+        //"--background-index=false",
+        "-j=4",
+        "--pch-storage=disk",
+        "--header-insertion=never",
+        "--completion-style=bundled",
+        "--limit-results=50",
+        "--limit-references=200"
     ],
     // 2. 启用保存时自动格式化
     "editor.formatOnSave": true,
@@ -29,5 +34,5 @@
     },
     "explorer.copyRelativePathSeparator": "/",
     "cmake.ignoreCMakeListsMissing": true,
-    "files.eol": "\n",
+    "files.eol": "\n"
 }

@@ -12,6 +12,7 @@
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
+#include "src/objects/cell-klass.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-code-object-klass.h"

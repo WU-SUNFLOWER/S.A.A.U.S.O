@@ -50,6 +50,10 @@ source_set("saauso_core") {
     "//src/heap/spaces.h",
 
     # objects (对象系统)
+    "//src/objects/cell-klass.cc",
+    "//src/objects/cell-klass.h",
+    "//src/objects/cell.cc",
+    "//src/objects/cell.h",
     "//src/objects/fixed-array-klass.cc",
     "//src/objects/fixed-array-klass.h",
     "//src/objects/fixed-array.cc",

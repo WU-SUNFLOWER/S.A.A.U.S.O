@@ -16,6 +16,7 @@ executable("ut") {
     "./interpreter/native-print-unittest.cc",
     "./lsan-suppressions.cc",
     "./objects/attribute-unittest.cc",
+    "./objects/cell-unittest.cc",
     "./objects/py-dict-unittest.cc",
     "./objects/py-float-unittest.cc",
     "./objects/py-list-unittest.cc",

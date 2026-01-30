@@ -103,6 +103,14 @@ void PyFunction::set_default_args(Handle<PyTuple> default_args) {
   default_args_ = *default_args;
 }
 
+void PyFunction::set_closures(Handle<PyTuple> closures) {
+  closures_ = *closures;
+}
+
+Handle<PyTuple> PyFunction::closures() const {
+  return Handle<PyTuple>::cast(handle(closures_));
+}
+
 // static
 Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
                                                Handle<PyObject> owner) {
