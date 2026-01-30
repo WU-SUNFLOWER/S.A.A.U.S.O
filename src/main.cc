@@ -25,9 +25,22 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-l = [109, 108, 107, 106, 105, 100]
-l.sort(key=lambda x : x % 10)
-print(l)
+def call_cnt(fn):
+    cnt = 0
+    def inner_func(*args):
+        nonlocal cnt
+        cnt += 1
+        print(cnt)
+        return fn(*args)
+
+    return inner_func
+
+@call_cnt
+def add(a, b = 2): 
+    return a + b 
+
+print(add(1, 2))
+print(add(2, 3))
 )";
 
 int main() {

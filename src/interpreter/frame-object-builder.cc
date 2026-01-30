@@ -28,11 +28,16 @@ namespace {
 struct FrameBuildContext {
   // 目标函数对应的 code object。
   Handle<PyCodeObject> code_object;
+  // 目标函数
+  Handle<PyFunction> func;
   // locals/globals：当前栈帧可见的变量表（locals 用于泄露符号名，globals
   // 通常来自 func）。
   Handle<PyDict> locals;
   Handle<PyDict> globals;
-  // fast_locals：局部变量数组（包含形参槽位、以及可能注入的 *args/**kwargs）。
+  // localsplus：依次放置以下内容
+  // - 局部变量（包括形参槽位、以及可能注入的 *args/**kwargs）。
+  // - Cell变量
+  // - Free变量
   Handle<FixedArray> localsplus;
   // operand stack：解释器执行期间的操作数栈。
   Handle<FixedArray> stack;
@@ -58,7 +63,7 @@ FrameBuildContext PrepareForCodeObject(Handle<PyCodeObject> code_object) {
   // root frame：locals 与 globals 共用一份 dict。
   ctx.locals = PyDict::NewInstance();
   ctx.globals = ctx.locals;
-  if (code_object->nlocals() > 0) {
+  if (code_object->nlocalsplus() > 0) {
     ctx.localsplus = FixedArray::NewInstance(code_object->nlocalsplus());
   }
   ctx.stack = FixedArray::NewInstance(code_object->stack_size());
@@ -69,9 +74,10 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
                                      Handle<PyObject> host) {
   FrameBuildContext ctx;
   ctx.code_object = func->func_code();
+  ctx.func = func;
   ctx.locals = PyDict::NewInstance();
   ctx.globals = func->func_globals();
-  if (ctx.code_object->nlocals() > 0) {
+  if (ctx.code_object->nlocalsplus() > 0) {
     ctx.localsplus = FixedArray::NewInstance(ctx.code_object->nlocalsplus());
   }
   ctx.stack = FixedArray::NewInstance(ctx.code_object->stack_size());
@@ -212,19 +218,23 @@ void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
 
 FrameObject* FrameObjectBuilder::BuildRootFrame(
     Handle<PyCodeObject> code_object) {
+  // 在build入口设置一个scope。
+  // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
   // 仅用于创建根栈帧。
   FrameBuildContext ctx = PrepareForCodeObject(code_object);
-  return FrameObject::Create(*code_object->consts(), *code_object->names(),
-                             *ctx.locals, *ctx.globals, *ctx.localsplus,
-                             *ctx.stack, *code_object);
+  return FrameObject::Create(
+      *code_object->consts(), *code_object->names(), *ctx.locals, *ctx.globals,
+      *ctx.localsplus, *ctx.stack, *code_object, Tagged<PyObject>::null());
 }
 
 FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
                                                Handle<PyObject> host,
                                                Handle<PyTuple> actual_pos_args,
                                                Handle<PyDict> actual_kw_args) {
+  // 在build入口设置一个scope。
+  // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
   // 创建一般的 python 栈帧（慢速路径）。
@@ -301,13 +311,15 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
 
   return FrameObject::Create(
       *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
-      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object);
+      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object, *ctx.func);
 }
 
 FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
                                                Handle<PyObject> host,
                                                Handle<PyTuple> actual_args,
                                                Handle<PyTuple> kwarg_keys) {
+  // 在build入口设置一个scope。
+  // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
   // 创建一般的 python 栈帧（快速路径）。
@@ -383,7 +395,7 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
 
   return FrameObject::Create(
       *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
-      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object);
+      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object, *ctx.func);
 }
 
 }  // namespace saauso::internal

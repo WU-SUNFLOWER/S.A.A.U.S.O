@@ -11,6 +11,7 @@
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
@@ -24,7 +25,8 @@ FrameObject* FrameObject::Create(Tagged<PyObject> consts,
                                  Tagged<PyObject> globals,
                                  Tagged<PyObject> localsplus,
                                  Tagged<PyObject> stack,
-                                 Tagged<PyObject> code_object) {
+                                 Tagged<PyObject> code_object,
+                                 Tagged<PyObject> func) {
   FrameObject* frame = new FrameObject();
 
   frame->consts_ = consts;
@@ -32,11 +34,13 @@ FrameObject* FrameObject::Create(Tagged<PyObject> consts,
 
   frame->locals_ = locals;
   frame->globals_ = globals;
-  frame->fast_locals_ = localsplus;
+  frame->localsplus_ = localsplus;
 
   frame->stack_ = stack;
 
   frame->code_object_ = code_object;
+  frame->func_ = func;
+
   frame->pc_ = 0;
   frame->caller_ = nullptr;
   frame->is_entry_frame_ = false;
@@ -100,7 +104,7 @@ Handle<PyDict> FrameObject::locals() const {
 }
 
 Handle<FixedArray> FrameObject::localsplus() const {
-  return handle(Tagged<FixedArray>::cast(fast_locals_));
+  return handle(Tagged<FixedArray>::cast(localsplus_));
 }
 
 Handle<PyDict> FrameObject::globals() const {
@@ -108,7 +112,19 @@ Handle<PyDict> FrameObject::globals() const {
 }
 
 Handle<PyCodeObject> FrameObject::code_object() const {
-  return handle(Tagged<PyCodeObject>::cast(code_object_));
+  return handle(code_object_tagged());
+}
+
+Tagged<PyCodeObject> FrameObject::code_object_tagged() const {
+  return Tagged<PyCodeObject>::cast(code_object_);
+}
+
+Handle<PyFunction> FrameObject::func() const {
+  return handle(func_tagged());
+}
+
+Tagged<PyFunction> FrameObject::func_tagged() const {
+  return Tagged<PyFunction>::cast(func_);
 }
 
 int FrameObject::GetOpArg() {
@@ -128,7 +144,7 @@ void FrameObject::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&consts_);
   v->VisitPointer(&names_);
   v->VisitPointer(&locals_);
-  v->VisitPointer(&fast_locals_);
+  v->VisitPointer(&localsplus_);
   v->VisitPointer(&globals_);
   v->VisitPointer(&code_object_);
 }

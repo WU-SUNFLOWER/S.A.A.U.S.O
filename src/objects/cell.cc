@@ -37,6 +37,10 @@ Handle<PyObject> Cell::value() {
   return handle(value_);
 }
 
+Tagged<PyObject> Cell::value_tagged() {
+  return value_;
+}
+
 void Cell::set_value(Handle<PyObject> value) {
   set_value(*value);
 }

@@ -22,6 +22,7 @@ class Cell : public PyObject {
   static Tagged<Cell> cast(Tagged<PyObject> object);
 
   Handle<PyObject> value();
+  Tagged<PyObject> value_tagged();
   void set_value(Handle<PyObject> value);
   void set_value(Tagged<PyObject> value);
 

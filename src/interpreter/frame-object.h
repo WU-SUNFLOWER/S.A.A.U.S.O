@@ -56,7 +56,11 @@ class FrameObject : Object {
   Handle<PyDict> locals() const;
   Handle<FixedArray> localsplus() const;
   Handle<PyDict> globals() const;
+
   Handle<PyCodeObject> code_object() const;
+  Tagged<PyCodeObject> code_object_tagged() const;
+  Handle<PyFunction> func() const;
+  Tagged<PyFunction> func_tagged() const;
 
   bool is_entry_frame() const { return is_entry_frame_; }
   void set_is_entry_frame(bool value) { is_entry_frame_ = value; }
@@ -74,7 +78,8 @@ class FrameObject : Object {
                              Tagged<PyObject> globals,
                              Tagged<PyObject> localsplus,
                              Tagged<PyObject> stack,
-                             Tagged<PyObject> code_object);
+                             Tagged<PyObject> code_object,
+                             Tagged<PyObject> func);
 
   // FixedArray* stack_;
   Tagged<PyObject> stack_{kNullAddress};
@@ -88,12 +93,15 @@ class FrameObject : Object {
   // PyDict* locals; 支持通过符号名称泄露给外部的变量表
   Tagged<PyObject> locals_{kNullAddress};
   // FixedArray* localsplus
-  Tagged<PyObject> fast_locals_{kNullAddress};
+  Tagged<PyObject> localsplus_{kNullAddress};
   // PyDict* globals;
   Tagged<PyObject> globals_{kNullAddress};
 
   // PyCodeObject* code_object;
   Tagged<PyObject> code_object_{kNullAddress};
+  // PyFunction* func;
+  Tagged<PyObject> func_{kNullAddress};
+
   int64_t pc_{0};
 
   FrameObject* caller_{nullptr};

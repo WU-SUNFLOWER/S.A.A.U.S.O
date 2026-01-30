@@ -41,9 +41,6 @@ class PyCodeObject : public PyObject {
                                           Handle<PyTuple> names,
                                           Handle<PyTuple> localsplusnames,
                                           Handle<PyString> localspluskinds,
-                                          Handle<PyTuple> var_names,
-                                          Handle<PyTuple> free_vars,
-                                          Handle<PyTuple> cell_vars,
                                           Handle<PyString> file_name,
                                           Handle<PyString> co_name,
                                           Handle<PyString> qual_name,
@@ -73,6 +70,9 @@ class PyCodeObject : public PyObject {
   int nlocals() const { return nlocals_; }
   int ncellvars() const { return ncellvars_; }
   int nfreevars() const { return nfreevars_; }
+
+  Handle<PyTuple> localsplusnames() const;
+  Handle<PyString> localspluskinds() const;
 
  private:
   friend class PyCodeObjectKlass;

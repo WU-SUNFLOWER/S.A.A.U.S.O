@@ -44,7 +44,11 @@ namespace saauso::internal {
   V(PopJumpIfNone, 129)    \
   V(MakeFunction, 132)     \
   V(MakeCell, 135)         \
+  V(LoadClosure, 136)      \
+  V(LoadDeref, 137)        \
+  V(StoreDeref, 138)       \
   V(JumpBackward, 140)     \
+  V(CopyFreeVars, 149)     \
   V(Resume, 151)           \
   V(BuildConstKeyMap, 156) \
   V(ListExtend, 162)       \

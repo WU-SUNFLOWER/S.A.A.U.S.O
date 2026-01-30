@@ -396,15 +396,71 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
-    auto cell = Cell::NewInstance();
-    auto initial = current_frame_->localsplus()->Get(op_arg);
+    Handle<Cell> cell = Cell::NewInstance();
+    Tagged<PyObject> initial = current_frame_->localsplus()->Get(op_arg);
     cell->set_value(initial);
     current_frame_->localsplus()->Set(op_arg, cell);
+  })
+
+  INTERPRETER_HANDLER_DISPATCH(LoadClosure, {
+    Tagged<PyObject> value = current_frame_->localsplus()->Get(op_arg);
+    PUSH(value);
+  })
+
+  INTERPRETER_HANDLER_DISPATCH(LoadDeref, {
+    Tagged<Cell> cell =
+        Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
+    PUSH(cell->value_tagged());
+  })
+
+  INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
+    Tagged<PyObject> value = POP_TAGGED();
+    Tagged<Cell> cell =
+        Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
+    cell->set_value(value);
   })
 
   INTERPRETER_HANDLER_DISPATCH(JumpBackward, {
     current_frame_->set_pc(current_frame_->pc() - (op_arg << 1));
   })
+
+  // INTERPRETER_HANDLER_DISPATCH(CopyFreeVars, {
+  //   Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
+  //   assert(op_arg == code_object->nfreevars());
+
+  //   Tagged<PyFunction> func_of_current_frame = current_frame_->func_tagged();
+  //   assert(IsPyFunction(func_of_current_frame));
+
+  //   Tagged<PyTuple> func_closures = func_of_current_frame->closures_tagged();
+  //   int offset = code_object->nlocalsplus() - op_arg;
+  //   for (auto i = 0; i < op_arg; ++i) {
+  //     Tagged<PyObject> object = func_closures->GetTagged(i);
+  //     current_frame_->localsplus()->Set(i + offset, object);
+  //   }
+  // })
+
+handler_CopyFreeVars: {
+  do {
+    {
+      Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
+      Tagged<PyFunction> func_of_current_frame = current_frame_->func_tagged();
+      Tagged<PyTuple> func_closures = func_of_current_frame->closures_tagged();
+      int offset = code_object->nlocalsplus() - op_arg;
+      for (auto i = 0; i < op_arg; ++i) {
+        Tagged<PyObject> object = func_closures->GetTagged(i);
+        current_frame_->localsplus()->Set(i + offset, object);
+      }
+    }
+  } while (0);
+  do {
+    if (!current_frame_->HasMoreCodes()) [[unlikely]] {
+      goto exit_interpreter;
+    }
+    op_code = current_frame_->GetOpCode();
+    op_arg = current_frame_->GetOpArg();
+    goto* dispatch_table_[op_code];
+  } while (0);
+}
 
   INTERPRETER_HANDLER_NOOP(Resume)
 

@@ -108,7 +108,11 @@ void PyFunction::set_closures(Handle<PyTuple> closures) {
 }
 
 Handle<PyTuple> PyFunction::closures() const {
-  return Handle<PyTuple>::cast(handle(closures_));
+  return handle(closures_tagged());
+}
+
+Tagged<PyTuple> PyFunction::closures_tagged() const {
+  return Tagged<PyTuple>::cast(closures_);
 }
 
 // static

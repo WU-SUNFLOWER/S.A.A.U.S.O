@@ -15,6 +15,8 @@
 
 namespace saauso::internal {
 
+// 参考CPython312源码 Objects/codeobject.c
+
 namespace {
 void ComputeLocalsplusCounts(int nlocalsplus,
                              Tagged<PyObject> kinds,
@@ -44,6 +46,34 @@ void ComputeLocalsplusCounts(int nlocalsplus,
     }
   }
 }
+
+Tagged<PyObject> GetNamesFromLocalsplusNames(
+    Handle<PyCodeObject> code_object,
+    PyCodeObject::LocalsPlusKind target_kind,
+    int num) {
+  HandleScope scope;
+
+  Handle<PyTuple> localsplusnames = code_object->localsplusnames();
+  Handle<PyString> localspluskinds = code_object->localspluskinds();
+
+  Handle<PyTuple> result_names = PyTuple::NewInstance(num);
+  int result_index = 0;
+
+  for (auto i = 0; i < code_object->nlocalsplus(); ++i) {
+    char kind = localspluskinds->Get(i);
+    if ((kind & target_kind) == 0) {
+      continue;
+    }
+
+    Tagged<PyObject> name = localsplusnames->GetTagged(i);
+    assert(result_index < num);
+    result_names->SetInternal(result_index, name);
+    ++result_index;
+  }
+
+  assert(result_names->length() == num);
+  return *result_names;
+}
 }  // namespace
 
 // static
@@ -58,15 +88,14 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
     Handle<PyTuple> names,
     Handle<PyTuple> localsplusnames,
     Handle<PyString> localspluskinds,
-    Handle<PyTuple> var_names,
-    Handle<PyTuple> free_vars,
-    Handle<PyTuple> cell_vars,
     Handle<PyString> file_name,
     Handle<PyString> co_name,
     Handle<PyString> qual_name,
     int line_no,
     Handle<PyString> line_table,
     Handle<PyString> exception_table) {
+  HandleScope scope;
+
   Handle<PyCodeObject> object(
       Isolate::Current()->heap()->Allocate<PyCodeObject>(
           Heap::AllocationSpace::kNewSpace));
@@ -81,23 +110,23 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
   object->bytecodes_ = *bytecodes;
   object->names_ = *names;
   object->consts_ = *consts;
-  object->localsplusnames_ = *localsplusnames;
-  object->localspluskinds_ =
-      localspluskinds.is_null() ? Tagged<PyObject>::null() : *localspluskinds;
 
-  object->var_names_ = *var_names;
-  object->free_vars_ = *free_vars;
-  object->cell_vars_ = *cell_vars;
+  object->localsplusnames_ = *localsplusnames;
+  object->localspluskinds_ = *localspluskinds;
+  assert(!localsplusnames.is_null());
+  assert(!localspluskinds.is_null());
+  assert(localsplusnames->length() == localspluskinds->length());
 
   object->nlocalsplus_ = static_cast<int>(localsplusnames->length());
   ComputeLocalsplusCounts(object->nlocalsplus_, object->localspluskinds_,
                           object->nlocals_, object->ncellvars_,
                           object->nfreevars_);
-
-  if (var_names->length() != object->nlocals_) {
-    std::fprintf(stderr, "var_names->length() != object->nlocals_");
-    std::exit(1);
-  }
+  object->var_names_ = GetNamesFromLocalsplusNames(
+      object, LocalsPlusKind::kFastLocal, object->nlocals_);
+  object->cell_vars_ = GetNamesFromLocalsplusNames(
+      object, LocalsPlusKind::kFastCell, object->ncellvars_);
+  object->free_vars_ = GetNamesFromLocalsplusNames(
+      object, LocalsPlusKind::kFastFree, object->nfreevars_);
 
   object->file_name_ = *file_name;
   object->co_name_ = *co_name;
@@ -112,7 +141,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
 
   PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
-  return object;
+  return object.EscapeFrom(&scope);
 }
 
 // static
@@ -151,6 +180,14 @@ Handle<PyString> PyCodeObject::co_name() const {
 
 Handle<PyString> PyCodeObject::file_name() const {
   return handle(Tagged<PyString>::cast(file_name_));
+}
+
+Handle<PyTuple> PyCodeObject::localsplusnames() const {
+  return handle(Tagged<PyTuple>::cast(localsplusnames_));
+}
+
+Handle<PyString> PyCodeObject::localspluskinds() const {
+  return handle(Tagged<PyString>::cast(localspluskinds_));
 }
 
 };  // namespace saauso::internal

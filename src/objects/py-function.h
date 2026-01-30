@@ -38,6 +38,7 @@ class PyFunction : public PyObject {
 
   void set_closures(Handle<PyTuple> closures);
   Handle<PyTuple> closures() const;
+  Tagged<PyTuple> closures_tagged() const;
 
  private:
   friend class PyFunctionKlass;

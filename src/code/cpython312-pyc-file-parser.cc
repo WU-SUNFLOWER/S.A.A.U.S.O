@@ -258,58 +258,11 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
   auto bytecodes = Handle<PyString>::cast(ParseObject(string_table, cache));
   auto consts = Handle<PyTuple>::cast(ParseObject(string_table, cache));
   auto names = Handle<PyTuple>::cast(ParseObject(string_table, cache));
+
   auto localsplusnames =
       Handle<PyTuple>::cast(ParseObject(string_table, cache));
-
-  Handle<PyString> localspluskinds;
-  {
-    auto kinds_obj = ParseObject(string_table, cache);
-    if (!kinds_obj.is_null()) {
-      localspluskinds = Handle<PyString>::cast(kinds_obj);
-    } else {
-      localspluskinds = Handle<PyString>::null();
-    }
-  }
-
-  Handle<PyTuple> var_names = localsplusnames;
-  Handle<PyTuple> free_vars = PyTuple::NewInstance(0);
-  Handle<PyTuple> cell_vars = PyTuple::NewInstance(0);
-
-  if (!localspluskinds.is_null()) {
-    const unsigned char* kinds =
-        reinterpret_cast<const unsigned char*>(localspluskinds->buffer());
-    int64_t n = localspluskinds->length();
-    int64_t m = localsplusnames.is_null() ? 0 : localsplusnames->length();
-    int64_t limit = n < m ? n : m;
-
-    int64_t free_count = 0;
-    int64_t cell_count = 0;
-    for (int64_t i = 0; i < limit; ++i) {
-      unsigned char kind = kinds[i];
-      if ((kind & 0x80) != 0) {
-        ++free_count;
-      } else if ((kind & 0x40) != 0) {
-        ++cell_count;
-      }
-    }
-
-    free_vars = PyTuple::NewInstance(free_count);
-    cell_vars = PyTuple::NewInstance(cell_count);
-
-    int64_t free_i = 0;
-    int64_t cell_i = 0;
-    for (int64_t i = 0; i < limit; ++i) {
-      unsigned char kind = kinds[i];
-      Handle<PyObject> name = localsplusnames->Get(i);
-      if ((kind & 0x80) != 0) {
-        free_vars->SetInternal(
-            free_i++, name.is_null() ? Tagged<PyObject>::null() : *name);
-      } else if ((kind & 0x40) != 0) {
-        cell_vars->SetInternal(
-            cell_i++, name.is_null() ? Tagged<PyObject>::null() : *name);
-      }
-    }
-  }
+  auto localspluskinds =
+      Handle<PyString>::cast(ParseObject(string_table, cache));
 
   auto file_name = Handle<PyString>::cast(ParseObject(string_table, cache));
   auto co_name = Handle<PyString>::cast(ParseObject(string_table, cache));
@@ -338,9 +291,8 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
 
   Handle<PyCodeObject> result = PyCodeObject::NewInstance(
       arg_count, posonly_arg_count, kwonly_arg_count, stack_size, flags,
-      bytecodes, consts, names, localsplusnames, localspluskinds, var_names,
-      free_vars, cell_vars, file_name, co_name, qual_name, begin_line_no,
-      line_table, exception_table);
+      bytecodes, consts, names, localsplusnames, localspluskinds, file_name,
+      co_name, qual_name, begin_line_no, line_table, exception_table);
 
   return result.EscapeFrom(&scope);
 }
