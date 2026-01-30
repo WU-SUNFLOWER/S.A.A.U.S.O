@@ -77,6 +77,68 @@ print(add5(10))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, LambdaImmediateCall) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+print((lambda x: x + 1)(2))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, LambdaAssignedAndCalled) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+f = lambda a, b: a * 100 + b
+print(f(1, 2))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(102));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, LambdaAsArgument) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def apply(f, x):
+    return f(x)
+print(apply(lambda y: y * 2, 6))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFloat::NewInstance(12));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, LambdaWithDefaultArgsCapture) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def make(x):
+    return lambda a, b = x: a + b
+f = make(5)
+print(f(10))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(15)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, FunctionWithDefaultArgsWithKwOverride) {
   HandleScope scope;
 
