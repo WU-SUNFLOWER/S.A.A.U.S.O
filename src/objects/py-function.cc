@@ -59,7 +59,9 @@ Handle<PyFunction> PyFunction::NewInstanceInternal() {
   // 初始化字段
   object->func_code_ = Tagged<PyObject>::null();
   object->func_name_ = Tagged<PyObject>::null();
+  object->func_globals_ = Tagged<PyObject>::null();
   object->default_args_ = Tagged<PyObject>::null();
+  object->closures_ = Tagged<PyObject>::null();
   object->flags_ = 0;
   object->native_func_ = nullptr;
 

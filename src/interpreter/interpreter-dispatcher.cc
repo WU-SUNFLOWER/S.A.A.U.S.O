@@ -446,11 +446,33 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   // 加载cell对象指向的实际值对象
-  INTERPRETER_HANDLER_DISPATCH(LoadDeref, {
+  INTERPRETER_HANDLER_WITH_SCOPE(LoadDeref, {
     Tagged<Cell> cell =
         Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
     assert(IsCell(cell));
-    PUSH(cell->value_tagged());
+
+    Tagged<PyObject> value = cell->value_tagged();
+    if (!value.is_null()) [[likely]] {
+      PUSH(value);
+      break;
+    }
+
+    Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
+    Tagged<PyString> var_name = Tagged<PyString>::cast(
+        code_object->localsplusnames()->GetTagged(op_arg));
+    char kind = code_object->localspluskinds()->Get(op_arg);
+    if (kind & PyCodeObject::LocalsPlusKind::kFastFree) {
+      std::fprintf(stderr,
+                   "NameError: cannot access free variable '%s' where it is "
+                   "not associated with a value in enclosing scope\n",
+                   var_name->buffer());
+    } else {
+      std::fprintf(stderr,
+                   "UnboundLocalError: local variable '%s' referenced before "
+                   "assignment\n",
+                   var_name->buffer());
+    }
+    std::exit(1);
   })
 
   // 修改cell对象所指向的实际值对象

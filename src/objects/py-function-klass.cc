@@ -81,6 +81,7 @@ void PyFunctionKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
   v->VisitPointer(&func->func_name_);
   v->VisitPointer(&func->func_globals_);
   v->VisitPointer(&func->default_args_);
+  v->VisitPointer(&func->closures_);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -143,6 +144,8 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&func->func_name_);
   v->VisitPointer(&func->default_args_);
   v->VisitPointer(&func->func_code_);
+  v->VisitPointer(&func->func_globals_);
+  v->VisitPointer(&func->closures_);
 }
 
 ///////////////////////////////////////////////////////////////

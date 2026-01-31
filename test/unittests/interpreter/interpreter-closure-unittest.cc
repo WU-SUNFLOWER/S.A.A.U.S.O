@@ -118,4 +118,73 @@ print(add(2, 3))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, UnboundFreeVarFailsFast) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def outer():
+    def inner():
+        print(x)
+    inner()
+    x = 1
+outer()
+)";
+
+  EXPECT_EXIT({ RunScript(kSource, kInterpreterTestFileName); },
+              ::testing::ExitedWithCode(1), "free variable 'x'");
+}
+
+TEST_F(BasicInterpreterTest, SharedCellAcrossClosures) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def outer():
+    x = 0
+    def inc():
+        nonlocal x
+        x += 1
+        return x
+    def get():
+        return x
+    return inc, get
+
+inc, get = outer()
+print(inc())
+print(get())
+print(inc())
+print(get())
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, MultiLevelNestedClosure) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def a():
+    x = 7
+    def b():
+        def c():
+            print(x)
+        return c
+    return b()
+
+a()()
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

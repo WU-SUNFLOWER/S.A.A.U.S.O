@@ -4,8 +4,11 @@
 
 #include "src/heap/heap.h"
 #include "src/objects/cell.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -13,6 +16,14 @@
 namespace saauso::internal {
 
 class CellTest : public VmTestBase {};
+
+namespace {
+Handle<PyObject> DummyNative(Handle<PyObject>,
+                             Handle<PyTuple>,
+                             Handle<PyDict>) {
+  return Handle<PyObject>::null();
+}
+}  // namespace
 
 TEST_F(CellTest, NewInstanceDefaultsToNullValue) {
   HandleScope scope;
@@ -31,6 +42,29 @@ TEST_F(CellTest, SetValueSurvivesMinorGc) {
   Isolate::Current()->heap()->CollectGarbage();
 
   Handle<PyObject> cell_value = cell->value();
+  ASSERT_FALSE(cell_value.is_null());
+  EXPECT_EQ((*cell_value).ptr(), (*payload).ptr());
+}
+
+TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
+  HandleScope scope;
+
+  Handle<Cell> cell = Cell::NewInstance();
+  Handle<PyString> payload = PyString::NewInstance("payload");
+  cell->set_value(payload);
+
+  Handle<PyTuple> closures = PyTuple::NewInstance(1);
+  closures->SetInternal(0, cell);
+
+  Handle<PyFunction> func =
+      PyFunction::NewInstance(&DummyNative, PyString::NewInstance("dummy"));
+  func->set_closures(closures);
+
+  Isolate::Current()->heap()->CollectGarbage();
+
+  Handle<PyTuple> closures_after = func->closures();
+  Handle<Cell> cell_after = Handle<Cell>::cast(closures_after->Get(0));
+  Handle<PyObject> cell_value = cell_after->value();
   ASSERT_FALSE(cell_value.is_null());
   EXPECT_EQ((*cell_value).ptr(), (*payload).ptr());
 }
