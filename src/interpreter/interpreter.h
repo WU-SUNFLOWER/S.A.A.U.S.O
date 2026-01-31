@@ -37,10 +37,12 @@ class Interpreter {
 
  private:
   void InvokeCallable(Handle<PyObject> callable,
+                      Handle<PyObject> host,
                       Handle<PyTuple> actual_args,
                       Handle<PyTuple> kwarg_keys);
 
   void InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
+                                        Handle<PyObject> host,
                                         Handle<PyTuple> pos_args,
                                         Handle<PyDict> kw_args);
 
@@ -54,6 +56,8 @@ class Interpreter {
   void EvalCurrentFrame();
   void LeaveCurrentFrame();
   void DestroyCurrentFrame();
+
+  void PopCallTarget(Handle<PyObject>& callable, Handle<PyObject>& host);
 
   Handle<PyObject> ReleaseReturnValue();
   Handle<PyTuple> ReleaseKwArgKeys();

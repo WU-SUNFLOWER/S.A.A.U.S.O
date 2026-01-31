@@ -351,6 +351,37 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   return Handle<PyObject>::null();
 }
 
+Handle<PyObject> Klass::Virtual_Default_GetAttrForCall(
+    Handle<PyObject> self,
+    Handle<PyObject> prop_name,
+    Handle<PyObject>& self_or_null) {
+  assert(IsPyString(prop_name));
+
+  self_or_null = Handle<PyObject>::null();
+
+  Handle<PyObject> result;
+  if (IsHeapObject(self)) {
+    Handle<PyDict> properties = PyObject::GetProperties(self);
+    if (!properties.is_null()) {
+      result = properties->Get(prop_name);
+      if (!result.is_null()) {
+        return result;
+      }
+    }
+  }
+
+  result = FindPropertyInMro(self, prop_name);
+  if (!result.is_null()) {
+    if (IsPyFunction(result) || IsPyNativeFunction(result)) {
+      self_or_null = self;
+      return result;
+    }
+    return result;
+  }
+
+  return Virtual_Default_GetAttr(self, prop_name);
+}
+
 void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
                                     Handle<PyObject> property_name,
                                     Handle<PyObject> property_value) {

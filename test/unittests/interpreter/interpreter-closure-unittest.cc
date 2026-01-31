@@ -53,4 +53,69 @@ say()
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, NestedClosures) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def foo(x, y):
+    def bar(i):
+        nonlocal x
+        x += 1
+        print(x)
+        print(i)
+        def baz(j):
+            nonlocal y
+            y += 1
+            print(y)
+            print(j)
+        return baz
+    return bar
+
+bar_instance = foo(12, 25)
+baz_instance = bar_instance(19)
+baz_instance(14)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(13)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(19)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(26)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(14)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SimpleDecorator) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def call_cnt(fn):
+    cnt = 0
+    def inner_func(*args):
+        nonlocal cnt
+        cnt += 1
+        print(cnt)
+        return fn(*args)
+
+    return inner_func
+
+@call_cnt
+def add(a, b = 2): 
+    return a + b 
+
+print(add(1, 2))
+print(add(2, 3))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(5)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

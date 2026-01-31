@@ -165,6 +165,10 @@ class Klass : public Object {
   static Handle<PyObject> Virtual_Default_GetAttr(
       Handle<PyObject> self,
       Handle<PyObject> property_name);
+  static Handle<PyObject> Virtual_Default_GetAttrForCall(
+      Handle<PyObject> self,
+      Handle<PyObject> property_name,
+      Handle<PyObject>& self_or_null);
   static void Virtual_Default_SetAttr(Handle<PyObject> self,
                                       Handle<PyObject> property_name,
                                       Handle<PyObject> property_value);

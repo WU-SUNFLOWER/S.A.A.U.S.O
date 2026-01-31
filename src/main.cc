@@ -25,12 +25,21 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-def wrapper(fn):
-    return fn
+def foo(x, y):
+    def bar(i):
+        x += 1
+        print(x)
+        print(i)
+        def baz(j):
+            y += 1
+            print(y)
+            print(j)
+        return baz
+    return bar
 
-@wrapper
-def add(a, b): 
-    return a + b 
+bar_instance = foo(12, 25)
+baz_instance = bar_instance(19)
+baz_instance(14)
 )";
 
 int main() {

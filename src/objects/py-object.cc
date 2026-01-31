@@ -12,6 +12,8 @@
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/objects/cell-klass.h"
+#include "src/objects/cell.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
@@ -132,6 +134,7 @@ IMPL_PY_CHECKER_BY_KLASS(PyDictItemIterator)
 IMPL_PY_CHECKER_BY_KLASS(PyDictValueIterator)
 IMPL_PY_CHECKER_BY_KLASS(FixedArray)
 IMPL_PY_CHECKER_BY_KLASS(MethodObject)
+IMPL_PY_CHECKER_BY_KLASS(Cell)
 #undef IMPL_PY_CHECKER_BY_KLASS
 
 bool IsPyFunction(Tagged<PyObject> object) {
@@ -418,6 +421,32 @@ Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
 
   assert(GetKlass(*self)->vtable_.getattr);
   return GetKlass(*self)->vtable_.getattr(self, attr_name).EscapeFrom(&scope);
+}
+
+Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
+                                          Handle<PyObject> attr_name,
+                                          Handle<PyObject>& self_or_null) {
+  HandleScope scope;
+
+  self_or_null = Handle<PyObject>::null();
+
+  Tagged<Klass> klass = GetKlass(*self);
+  // Fast Path:
+  // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
+  // MethodObject对象的操作。
+  if (klass->vtable_.getattr == &Klass::Virtual_Default_GetAttr) {
+    return Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null)
+        .EscapeFrom(&scope);
+  }
+
+  // Fallback
+  Handle<PyObject> value = GetAttr(self, attr_name);
+  if (IsMethodObject(value)) {
+    auto method = Handle<MethodObject>::cast(value);
+    self_or_null = method->owner();
+    return method->func().EscapeFrom(&scope);
+  }
+  return value.EscapeFrom(&scope);
 }
 
 // python virtual function

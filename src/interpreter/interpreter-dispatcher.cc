@@ -86,7 +86,7 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_DISPATCH(PopTop, POP_TAGGED();)
 
-  INTERPRETER_HANDLER_NOOP(PushNull)
+  INTERPRETER_HANDLER_DISPATCH(PushNull, { PUSH(Tagged<PyObject>::null()); })
 
   INTERPRETER_HANDLER_NOOP(EndFor)
 
@@ -232,6 +232,30 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg >> 1);
+
+    // 在python代码中出现了类似于`obj.do_something(arg)`的操作，
+    // 即此处可能发生了对象方法调用。
+    // 尝试直接查询目标方法（裸的PyFunction）并随对象自身一起压到栈上，
+    // 这样就可以避免创建临时的MethodObject对象！！！
+    if ((op_arg & 1) != 0) {
+      Handle<PyObject> self_or_null;
+      Handle<PyObject> value =
+          PyObject::GetAttrForCall(object, attr_name, self_or_null);
+
+      if (!self_or_null.is_null()) {
+        // Happy case: attr_name的确对应一个对象方法
+        PUSH(value);
+        PUSH(self_or_null);
+      } else {
+        // Bad case: attr_name不是一个对象方法，
+        // 这时按照常规的函数调用协议压栈。
+        PUSH(Tagged<PyObject>::null());
+        PUSH(value);
+      }
+      break;
+    }
+
+    // 一般的属性获取，走常规的GetAttr虚函数查询
     PUSH(PyObject::GetAttr(object, attr_name));
   })
 
@@ -289,6 +313,10 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
+    if ((op_arg & 1) != 0) {
+      PUSH(Tagged<PyObject>::null());
+    }
+
     Handle<PyObject> key = current_frame_->names()->Get(op_arg >> 1);
 
     Handle<PyObject> value = current_frame_->globals()->Get(key);
@@ -395,6 +423,7 @@ void Interpreter::EvalCurrentFrame() {
     PUSH(func);
   })
 
+  // 初始化闭包变量
   INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
     Handle<Cell> cell = Cell::NewInstance();
     Tagged<PyObject> initial = current_frame_->localsplus()->Get(op_arg);
@@ -402,21 +431,34 @@ void Interpreter::EvalCurrentFrame() {
     current_frame_->localsplus()->Set(op_arg, cell);
   })
 
+  // 加载cell对象到栈上（不解引用），
+  // 该字节码会在生成持有对外部函数变量引用的内部函数时出现。
+  // 例子：
+  // LOAD_CLOSURE             1 (x)
+  // BUILD_TUPLE              1
+  // LOAD_CONST               2 (<code object say, file "example.py">)
+  // MAKE_FUNCTION            8 (closure)
+  // STORE_FAST               0 (say)
   INTERPRETER_HANDLER_DISPATCH(LoadClosure, {
-    Tagged<PyObject> value = current_frame_->localsplus()->Get(op_arg);
-    PUSH(value);
+    Tagged<PyObject> cell = current_frame_->localsplus()->Get(op_arg);
+    assert(IsCell(cell));
+    PUSH(cell);
   })
 
+  // 加载cell对象指向的实际值对象
   INTERPRETER_HANDLER_DISPATCH(LoadDeref, {
     Tagged<Cell> cell =
         Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
+    assert(IsCell(cell));
     PUSH(cell->value_tagged());
   })
 
+  // 修改cell对象所指向的实际值对象
   INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
     Tagged<PyObject> value = POP_TAGGED();
     Tagged<Cell> cell =
         Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
+    assert(IsCell(cell));
     cell->set_value(value);
   })
 
@@ -424,43 +466,25 @@ void Interpreter::EvalCurrentFrame() {
     current_frame_->set_pc(current_frame_->pc() - (op_arg << 1));
   })
 
-  // INTERPRETER_HANDLER_DISPATCH(CopyFreeVars, {
-  //   Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
-  //   assert(op_arg == code_object->nfreevars());
+  // 一般作为持有外部函数闭包变量的内部函数的第一条字节码出现
+  // 在这个字节码中，我们将外部函数的闭包变量列表（cellvars，本质上是一系列Cell对象）
+  // 注入进被调函数栈帧的自由变量列表（freevars）当中，
+  // 这样在被调函数中就可以通过LOAD_DEREF/STORE_DEREF字节码来读写这些闭包变量了。
+  INTERPRETER_HANDLER_DISPATCH(CopyFreeVars, {
+    Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
+    assert(op_arg == code_object->nfreevars());
 
-  //   Tagged<PyFunction> func_of_current_frame = current_frame_->func_tagged();
-  //   assert(IsPyFunction(func_of_current_frame));
+    Tagged<PyFunction> func_of_current_frame = current_frame_->func_tagged();
+    assert(IsPyFunction(func_of_current_frame));
 
-  //   Tagged<PyTuple> func_closures = func_of_current_frame->closures_tagged();
-  //   int offset = code_object->nlocalsplus() - op_arg;
-  //   for (auto i = 0; i < op_arg; ++i) {
-  //     Tagged<PyObject> object = func_closures->GetTagged(i);
-  //     current_frame_->localsplus()->Set(i + offset, object);
-  //   }
-  // })
-
-handler_CopyFreeVars: {
-  do {
-    {
-      Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
-      Tagged<PyFunction> func_of_current_frame = current_frame_->func_tagged();
-      Tagged<PyTuple> func_closures = func_of_current_frame->closures_tagged();
-      int offset = code_object->nlocalsplus() - op_arg;
-      for (auto i = 0; i < op_arg; ++i) {
-        Tagged<PyObject> object = func_closures->GetTagged(i);
-        current_frame_->localsplus()->Set(i + offset, object);
-      }
+    Tagged<PyTuple> func_closures = func_of_current_frame->closures_tagged();
+    int offset = code_object->nlocalsplus() - op_arg;
+    for (auto i = 0; i < op_arg; ++i) {
+      Tagged<PyObject> object = func_closures->GetTagged(i);
+      assert(IsCell(object));
+      current_frame_->localsplus()->Set(i + offset, object);
     }
-  } while (0);
-  do {
-    if (!current_frame_->HasMoreCodes()) [[unlikely]] {
-      goto exit_interpreter;
-    }
-    op_code = current_frame_->GetOpCode();
-    op_arg = current_frame_->GetOpArg();
-    goto* dispatch_table_[op_code];
-  } while (0);
-}
+  })
 
   INTERPRETER_HANDLER_NOOP(Resume)
 
@@ -493,7 +517,9 @@ handler_CopyFreeVars: {
     }
 
     Handle<PyObject> args_obj = POP();
-    Handle<PyObject> callable = POP();
+    Handle<PyObject> callable;
+    Handle<PyObject> host;
+    PopCallTarget(callable, host);
 
     Handle<PyTuple> pos_args;
     if (args_obj.is_null()) {
@@ -504,18 +530,25 @@ handler_CopyFreeVars: {
       pos_args = Runtime_UnpackIterableObjectToTuple(args_obj);
     }
 
-    InvokeCallableWithNormalizedArgs(callable, pos_args, kw_args);
+    InvokeCallableWithNormalizedArgs(callable, host, pos_args, kw_args);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {
+    int arg_count = op_arg;
+
     Handle<PyTuple> args;
-    if (op_arg > 0) {
-      args = PyTuple::NewInstance(op_arg);
-      while (op_arg-- > 0) {
-        args->SetInternal(op_arg, POP());
+    if (arg_count > 0) {
+      args = PyTuple::NewInstance(arg_count);
+      while (arg_count-- > 0) {
+        args->SetInternal(arg_count, POP());
       }
     }
-    InvokeCallable(POP(), args, ReleaseKwArgKeys());
+
+    Handle<PyObject> callable;
+    Handle<PyObject> host;
+    PopCallTarget(callable, host);
+
+    InvokeCallable(callable, host, args, ReleaseKwArgKeys());
   })
 
   INTERPRETER_HANDLER_DISPATCH(
@@ -549,10 +582,29 @@ exit_interpreter:
   return;
 }
 
+// Python3.11+中引入的双槽位调用协议规定了两种栈布局:
+// - 普通函数调用：栈底->[..., NULL, callable, arg1, ...]<-栈顶
+// - 对象方法调用：栈底->[..., callable, self, arg1, ...]<-栈顶
+//
+// 这里需要根据arg1左边倒数第2个槽位是否为NULL，来确定属于哪一种调用操作，
+// 并相应地完成从栈中提取数据的操作。
+void Interpreter::PopCallTarget(Handle<PyObject>& callable,
+                                Handle<PyObject>& host) {
+  Handle<PyObject> callable_or_self = POP();
+  Handle<PyObject> method = POP();
+
+  host = Handle<PyObject>::null();
+  callable = callable_or_self;
+  if (!method.is_null()) {
+    host = callable_or_self;
+    callable = method;
+  }
+}
+
 void Interpreter::InvokeCallable(Handle<PyObject> callable,
+                                 Handle<PyObject> host,
                                  Handle<PyTuple> actual_args,
                                  Handle<PyTuple> kwarg_keys) {
-  Handle<PyObject> host;
   NormalizeCallable(callable, host);
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
@@ -572,9 +624,9 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
 }
 
 void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
+                                                   Handle<PyObject> host,
                                                    Handle<PyTuple> pos_args,
                                                    Handle<PyDict> kw_args) {
-  Handle<PyObject> host;
   NormalizeCallable(callable, host);
 
   if (IsNormalPyFunction(callable)) {

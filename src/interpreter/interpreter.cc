@@ -138,6 +138,7 @@ void Interpreter::NormalizeCallable(Handle<PyObject>& callable,
                                     Handle<PyObject>& host) {
   // 如果是对象方法，那么进行解包
   if (IsMethodObject(callable)) {
+    assert(host.is_null());
     auto method = Handle<MethodObject>::cast(callable);
     callable = method->func();
     host = method->owner();

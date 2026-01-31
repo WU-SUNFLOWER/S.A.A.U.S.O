@@ -37,7 +37,8 @@ class PyObject;
   V(PyDictItemIterator)         \
   V(PyDictValueIterator)        \
   V(FixedArray)                 \
-  V(MethodObject)
+  V(MethodObject)               \
+  V(Cell)
 
 #define PY_TYPE_LIST(V) \
   V(PySmi)              \
@@ -132,6 +133,9 @@ class PyObject : public Object {
 
   static Handle<PyObject> GetAttr(Handle<PyObject> self,
                                   Handle<PyObject> attr_name);
+  static Handle<PyObject> GetAttrForCall(Handle<PyObject> self,
+                                         Handle<PyObject> attr_name,
+                                         Handle<PyObject>& self_or_null);
   static void SetAttr(Handle<PyObject> self,
                       Handle<PyObject> attr_name,
                       Handle<PyObject> attr_value);

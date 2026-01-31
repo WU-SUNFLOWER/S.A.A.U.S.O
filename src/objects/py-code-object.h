@@ -52,11 +52,6 @@ class PyCodeObject : public PyObject {
 
   Handle<PyString> bytecodes() const;
 
-  Handle<PyTuple> names() const;
-  Handle<PyTuple> var_names() const;
-  Handle<PyTuple> free_vars() const;
-  Handle<PyTuple> cell_vars() const;
-
   Handle<PyTuple> consts() const;
 
   Handle<PyString> co_name() const;
@@ -66,9 +61,43 @@ class PyCodeObject : public PyObject {
   int stack_size() const { return stack_size_; }
   int arg_count() const { return arg_count_; }
 
+  // 特别说明：
+  // 在Python3.11+中，varnames、cellvars、freevars可能有重叠。
+  // 比如下面这个例子。
+  // ```python
+  // def foo(x, y):
+  //     def bar():
+  //         print(x)
+  //         def baz():
+  //             print(y)
+  //         return baz
+  //     return bar
+  // ```
+  // 其中：
+  // - foo的varnames为('x', 'y', 'bar')
+  // - foo的cellvars为('x', 'y')
+  // - bar的varnames为('baz',)
+  // - bar的freevars为('x', 'y')
+  // - baz的freevars为('y',)
+  // 可见foo的varnames和cellvars中的内容就有重叠。
+  //
+  // 这也就可以解释为什么在Python3.11中，要将varnames、cellvars、freevars三者整合为localsplusnames，
+  // 以及为什么nlocals+ncellvars+nfreevars不一定等于nlocalsplus（因为三者有交集的部分）。
+  //
+  // 对应到解释器栈帧当中，就是localplus元组。这种设计可以进一步节约空间，还能提升cpu
+  // cache的命中率。
+  Handle<PyTuple> names() const;
+  Handle<PyTuple> var_names() const;
+  Handle<PyTuple> cell_vars() const;
+  Handle<PyTuple> free_vars() const;
+
+  // 解释器栈帧中实际localsplus的长度
   int nlocalsplus() const { return nlocalsplus_; }
+  // var_names的长度
   int nlocals() const { return nlocals_; }
+  // cell_vars的长度
   int ncellvars() const { return ncellvars_; }
+  // free_vars的长度
   int nfreevars() const { return nfreevars_; }
 
   Handle<PyTuple> localsplusnames() const;
