@@ -52,8 +52,8 @@ class PyList : public PyObject {
     return length_ == capacity();
   }
 
-  // 查找**第一个**匹配数组元素的下标
   int64_t IndexOf(Handle<PyObject> target) const;
+  int64_t IndexOf(Handle<PyObject> target, int64_t begin, int64_t end) const;
 
   static void Append(Handle<PyList> self, Handle<PyObject> value);
   static void Insert(Handle<PyList> self,

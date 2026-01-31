@@ -181,10 +181,17 @@ Handle<PyString> PyString::Append(Handle<PyString> self,
 }
 
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {
+  return IndexOf(pattern, 0, length());
+}
+
+int64_t PyString::IndexOf(Handle<PyString> pattern,
+                          int64_t begin,
+                          int64_t end) const {
+  size_t length = end - begin + 1;
+  size_t pattern_length = pattern->length();
   return StringSearch::IndexOfSubstring(
-      std::string_view(buffer(), static_cast<size_t>(length_)),
-      std::string_view(pattern->buffer(),
-                       static_cast<size_t>(pattern->length())));
+      std::string_view(buffer() + begin, length),
+      std::string_view(pattern->buffer(), pattern_length));
 }
 
 bool PyString::Contains(Handle<PyString> pattern) const {
