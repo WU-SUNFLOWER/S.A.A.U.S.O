@@ -4,12 +4,14 @@
 
 #include "src/objects/py-tuple-klass.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -20,9 +22,76 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/runtime.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
+
+namespace {
+
+Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
+  HandleScope scope;
+  auto tuple = Handle<PyTuple>::cast(self);
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    std::fprintf(stderr,
+                 "TypeError: tuple.index() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc < 1) {
+    std::fprintf(
+        stderr,
+        "TypeError: tuple.index() takes at least 1 argument (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+  if (argc > 3) {
+    std::fprintf(
+        stderr,
+        "TypeError: tuple.index() takes at most 3 arguments (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  auto target = args->Get(0);
+  int64_t length = tuple->length();
+  int64_t begin = 0;
+  int64_t end = length;
+
+  if (argc >= 2) {
+    begin = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
+  }
+  if (argc >= 3) {
+    end = Runtime_DecodeIntLikeOrDie(args->GetTagged(2));
+  }
+
+  if (begin < 0) {
+    begin += length;
+  }
+  if (end < 0) {
+    end += length;
+  }
+
+  begin = std::min(std::max(static_cast<int64_t>(0), begin), length);
+  end = std::min(std::max(static_cast<int64_t>(0), end), length);
+
+  int64_t result = PyTuple::kNotFound;
+  if (begin <= end) {
+    result = tuple->IndexOf(target, begin, end);
+  }
+  if (result == PyTuple::kNotFound) {
+    std::fprintf(stderr, "ValueError: tuple.index(x): x not in tuple\n");
+    std::exit(1);
+  }
+
+  return handle(PySmi::FromInt(result)).EscapeFrom(&scope);
+}
+
+}  // namespace
 
 Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
@@ -53,7 +122,11 @@ void PyTupleKlass::PreInitialize() {
 void PyTupleKlass::Initialize() {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
-  set_klass_properties(PyDict::NewInstance());
+  auto klass_properties = PyDict::NewInstance();
+  auto prop_name = PyString::NewInstance("index");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Index, prop_name));
+  set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
   OrderSupers();
@@ -131,7 +204,8 @@ bool PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
   return false;
 }
 
-bool PyTupleKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
+bool PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
   if (!IsPyTuple(*other)) {
     return false;
   }

@@ -99,4 +99,19 @@ Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   return tuple.EscapeFrom(&scope);
 }
 
+int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
+  if (IsPySmi(value)) {
+    return PySmi::ToInt(Tagged<PySmi>::cast(value));
+  }
+  if (IsPyBoolean(value)) {
+    return Tagged<PyBoolean>::cast(value)->value() ? 1 : 0;
+  }
+
+  auto type_name = PyObject::GetKlass(value)->name();
+  std::fprintf(stderr,
+               "TypeError: '%.*s' object cannot be interpreted as an integer\n",
+               static_cast<int>(type_name->length()), type_name->buffer());
+  std::exit(1);
+}
+
 }  // namespace saauso::internal

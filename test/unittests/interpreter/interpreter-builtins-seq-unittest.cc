@@ -145,17 +145,69 @@ TEST_F(BasicInterpreterTest, IndexMethod) {
   constexpr std::string_view kSource = R"(
 s = "xxyyzz"
 print(s.index("yy"))
+print(s.index("yy", 1))
+print(s.index("", 3))
+print(s.index("yy", 0, 4))
 
-l = [3,1]
+l = [1, 2, 1, 3]
 print(l.index(1))
+print(l.index(1, 1))
+print(l.index(1, 1, 3))
+
+t = (1, 2, 1, 3)
+print(t.index(1))
+print(t.index(1, 1))
+print(t.index(1, 1, 3))
 )";
 
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, IndexMethodErrors) {
+  HandleScope scope;
+
+  constexpr std::string_view kStrNotFound = R"(
+"abc".index("d")
+)";
+  EXPECT_EXIT(
+      { RunScript(kStrNotFound, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "ValueError: substring not found");
+
+  constexpr std::string_view kListNotFound = R"(
+[1].index(2)
+)";
+  EXPECT_EXIT(
+      { RunScript(kListNotFound, kTestFileName); },
+      ::testing::ExitedWithCode(1), "ValueError");
+
+  constexpr std::string_view kTupleNotFound = R"(
+(1,).index(2)
+)";
+  EXPECT_EXIT(
+      { RunScript(kTupleNotFound, kTestFileName); },
+      ::testing::ExitedWithCode(1), "tuple.index\\(x\\): x not in tuple");
+
+  constexpr std::string_view kStrKeyword = R"(
+"abc".index(sub="a")
+)";
+  EXPECT_EXIT(
+      { RunScript(kStrKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError: str.index\\(\\) takes no keyword arguments");
 }
 
 TEST_F(BasicInterpreterTest, ListPop) {
@@ -319,8 +371,9 @@ l = [1, "a"]
 l.sort()
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kTestFileName); },
-              ::testing::ExitedWithCode(1), "TypeError");
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError");
 }
 
 TEST_F(BasicInterpreterTest, ComputeListWithInt) {

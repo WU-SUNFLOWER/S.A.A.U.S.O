@@ -4,6 +4,7 @@
 
 #include "src/objects/py-list-klass.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <vector>
 
@@ -32,6 +33,46 @@
 namespace saauso::internal {
 
 namespace {
+
+int64_t DecodeIntLikeOrDie(Handle<PyObject> value) {
+  if (IsPySmi(value)) {
+    return PySmi::ToInt(Handle<PySmi>::cast(value));
+  }
+  if (IsPyBoolean(value)) {
+    return Handle<PyBoolean>::cast(value)->value() ? 1 : 0;
+  }
+
+  auto type_name = PyObject::GetKlass(value)->name();
+  std::fprintf(stderr,
+               "TypeError: '%.*s' object cannot be interpreted as an integer\n",
+               static_cast<int>(type_name->length()), type_name->buffer());
+  std::exit(1);
+}
+
+void PrintObjectForError(FILE* out, Handle<PyObject> value) {
+  if (IsPySmi(value)) {
+    std::fprintf(
+        out, "%lld",
+        static_cast<long long>(PySmi::ToInt(Handle<PySmi>::cast(value))));
+    return;
+  }
+  if (IsPyBoolean(value)) {
+    std::fprintf(out, "%s",
+                 Handle<PyBoolean>::cast(value)->value() ? "True" : "False");
+    return;
+  }
+  if (IsPyNone(value)) {
+    std::fprintf(out, "None");
+    return;
+  }
+  if (IsPyString(value)) {
+    auto s = Handle<PyString>::cast(value);
+    std::fprintf(out, "%.*s", static_cast<int>(s->length()), s->buffer());
+    return;
+  }
+
+  PyObject::Print(value);
+}
 
 Handle<PyObject> NativeMethod_Append(Handle<PyObject> self,
                                      Handle<PyTuple> args,
@@ -70,12 +111,59 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
   HandleScope scope;
   auto list = Handle<PyList>::cast(self);
 
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    std::fprintf(stderr,
+                 "TypeError: list.index() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc < 1) {
+    std::fprintf(
+        stderr,
+        "TypeError: list.index() takes at least 1 argument (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+  if (argc > 3) {
+    std::fprintf(
+        stderr,
+        "TypeError: list.index() takes at most 3 arguments (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+
   auto target = args->Get(0);
-  auto result = list->IndexOf(target);
+
+  int64_t length = list->length();
+  int64_t begin = 0;
+  int64_t end = length;
+
+  if (argc >= 2) {
+    begin = DecodeIntLikeOrDie(args->Get(1));
+  }
+  if (argc >= 3) {
+    end = DecodeIntLikeOrDie(args->Get(2));
+  }
+
+  if (begin < 0) {
+    begin += length;
+  }
+  if (end < 0) {
+    end += length;
+  }
+
+  begin = std::min(std::max(static_cast<int64_t>(0), begin), length);
+  end = std::min(std::max(static_cast<int64_t>(0), end), length);
+
+  int64_t result = PyList::kNotFound;
+  if (begin <= end) {
+    result = list->IndexOf(target, begin, end);
+  }
   if (result == PyList::kNotFound) {
-    std::printf("ValueError: ");
-    PyObject::Print(target);
-    std::printf(" is not in list");
+    std::fprintf(stderr, "ValueError: ");
+    PrintObjectForError(stderr, target);
+    std::fprintf(stderr, " is not in list\n");
     std::exit(1);
   }
 

@@ -4,6 +4,7 @@
 
 #include "src/objects/py-string-klass.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
@@ -15,12 +16,14 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/runtime.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -43,7 +46,7 @@ Handle<PyObject> NativeMethod_Upper(Handle<PyObject> self,
     }
   }
 
-  return result;
+  return result.EscapeFrom(&scope);
 }
 
 Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
@@ -51,6 +54,27 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
                                     Handle<PyDict> kwargs) {
   HandleScope scope;
   auto str_object = Handle<PyString>::cast(self);
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: str.index() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc < 1) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.index() takes at least 1 argument (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+  if (argc > 3) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.index() takes at most 3 arguments (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
 
   auto target = args->Get(0);
   if (!IsPyString(target)) {
@@ -61,13 +85,37 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
   }
 
   auto target_str = Handle<PyString>::cast(target);
-  auto result = str_object->IndexOf(target_str);
+
+  int64_t length = str_object->length();
+  int64_t begin = 0;
+  int64_t end = length;
+  if (argc >= 2) {
+    begin = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
+  }
+  if (argc >= 3) {
+    end = Runtime_DecodeIntLikeOrDie(args->GetTagged(2));
+  }
+
+  if (begin < 0) {
+    begin += length;
+  }
+  if (end < 0) {
+    end += length;
+  }
+
+  begin = std::min(std::max(static_cast<int64_t>(0), begin), length);
+  end = std::min(std::max(static_cast<int64_t>(0), end), length);
+
+  int64_t result = PyString::kNotFound;
+  if (begin <= end) {
+    result = str_object->IndexOf(target_str, begin, end);
+  }
   if (result == PyString::kNotFound) {
-    std::fprintf(stderr, "ValueError: substring not found");
+    std::fprintf(stderr, "ValueError: substring not found\n");
     std::exit(1);
   }
 
-  return handle(PySmi::FromInt(result));
+  return handle(PySmi::FromInt(result)).EscapeFrom(&scope);
 }
 
 }  // namespace

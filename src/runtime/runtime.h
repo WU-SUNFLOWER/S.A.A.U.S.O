@@ -24,6 +24,8 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 
 Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 
+int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value);
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_RUNTIME_RUNTIME_H_

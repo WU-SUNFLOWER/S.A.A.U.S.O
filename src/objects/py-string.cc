@@ -187,11 +187,15 @@ int64_t PyString::IndexOf(Handle<PyString> pattern) const {
 int64_t PyString::IndexOf(Handle<PyString> pattern,
                           int64_t begin,
                           int64_t end) const {
-  size_t length = end - begin + 1;
-  size_t pattern_length = pattern->length();
-  return StringSearch::IndexOfSubstring(
+  assert(0 <= begin && begin <= end && end <= length());
+
+  size_t length = static_cast<size_t>(end - begin);
+  size_t pattern_length = static_cast<size_t>(pattern->length());
+
+  int64_t offset = StringSearch::IndexOfSubstring(
       std::string_view(buffer() + begin, length),
       std::string_view(pattern->buffer(), pattern_length));
+  return offset == StringSearch::kNotFound ? kNotFound : begin + offset;
 }
 
 bool PyString::Contains(Handle<PyString> pattern) const {
