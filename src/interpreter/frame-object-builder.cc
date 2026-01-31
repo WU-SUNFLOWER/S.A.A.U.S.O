@@ -123,7 +123,7 @@ void CheckMissingArgs(const FrameBuildContext& ctx) {
   if (ctx.localsplus_idx < ctx.real_formal_pos_arg_cnt) {
     std::fprintf(stderr,
                  "TypeError: %s() missing %" PRId64
-                 " required positional argument",
+                 " required positional argument\n",
                  ctx.func_name->buffer(),
                  ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
     std::exit(1);

@@ -25,22 +25,12 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-def call_cnt(fn):
-    cnt = 0
-    def inner_func(*args):
-        nonlocal cnt
-        cnt += 1
-        print(cnt)
-        return fn(*args)
+def wrapper(fn):
+    return fn
 
-    return inner_func
-
-@call_cnt
-def add(a, b = 2): 
+@wrapper
+def add(a, b): 
     return a + b 
-
-print(add(1, 2))
-print(add(2, 3))
 )";
 
 int main() {
