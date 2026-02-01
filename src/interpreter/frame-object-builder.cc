@@ -20,6 +20,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -224,6 +225,7 @@ FrameObject* FrameObjectBuilder::BuildRootFrame(
 
   // 仅用于创建根栈帧。
   FrameBuildContext ctx = PrepareForCodeObject(code_object);
+  PyDict::Put(ctx.locals, ST(name), ST(main));
   return FrameObject::Create(
       *code_object->consts(), *code_object->names(), *ctx.locals, *ctx.globals,
       *ctx.localsplus, *ctx.stack, *code_object, Tagged<PyObject>::null());

@@ -73,9 +73,21 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
 
 Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
   HandleScope scope;
+  Handle<PyTuple> tuple;
+  // Fast Path: List转Tuple
+  if (IsPyList(iterable)) {
+    auto list = Handle<PyList>::cast(iterable);
+    tuple = PyTuple::NewInstance(list->length());
+    for (auto i = 0; i < list->length(); ++i) {
+      tuple->SetInternal(i, list->Get(i));
+    }
+    return tuple;
+  }
+
+  // Fallback: 通过迭代器进行转换
   Handle<PyList> tmp = PyList::NewInstance();
   Runtime_ExtendListByItratableObject(tmp, iterable);
-  Handle<PyTuple> tuple = PyTuple::NewInstance(tmp->length());
+  tuple = PyTuple::NewInstance(tmp->length());
   for (auto i = 0; i < tmp->length(); ++i) {
     tuple->SetInternal(i, tmp->Get(i));
   }

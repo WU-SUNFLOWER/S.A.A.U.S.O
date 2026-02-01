@@ -525,11 +525,40 @@ void Interpreter::EvalCurrentFrame() {
     Runtime_ExtendListByItratableObject(Handle<PyList>::cast(list), source);
   })
 
+  // 当使用*或**尝试展开iterable object或dict时，
+  // 参数的个数在运行前是不确定的，因此必须走CallFunctionEx字节码由解释器手工进行展开!
+  //
+  // 【例子1】
+  // 代码：f(*[1, 2])
+  // 字节码：
+  //   LOAD_NAME (f)
+  //   BUILD_LIST (1, 2)      # 运行时构造列表（或从变量加载）
+  //   CALL_FUNCTION_EX 0     # 0 表示没有关键字参数字典
+  //
+  // 【例子2】
+  // 代码：f(a=1, **d)
+  // 字节码：
+  //   ... 加载 f ...
+  //   BUILD_MAP (a:1)        # 先把普通关键字打包成 dict
+  //   LOAD_NAME (d)          # 加载动态字典
+  //   DICT_MERGE 1           # 关键：将 d 合并到前面的 dict 中
+  //   CALL_FUNCTION_EX 1     # 1 表示栈顶存在关键字参数字典
+  //
+  // 【例子3】
+  // 如果参数太多，逐个执行 PUSH
+  // 指令会占用过多的字节码空间和虚拟机栈深度。此时编译器可能会选择将参数预先打
+  // 包成元组，通过CALL_FUNCTION_EX 一次性传入。
+  // 代码：f(1, 2, ..., 31)  # 超过 30 个参数
+  // 字节码：
+  //   LOAD_NAME (f)
+  //   LOAD_CONST ((1, 2, ..., 31)) # 编译器直接把参数打包成一个常量元组
+  //   CALL_FUNCTION_EX 0           # 降级使用 CALL_FUNCTION_EX
   INTERPRETER_HANDLER_WITH_SCOPE(CallFunctionEx, {
     Handle<PyDict> kw_args;
+    // `op_arg & 1`表示栈顶存在关键字参数字典
     if ((op_arg & 1) != 0) {
       Handle<PyObject> kw = POP();
-      if (!IsPyDict(*kw)) {
+      if (!IsPyDict(*kw)) [[unlikely]] {
         std::fprintf(
             stderr,
             "TypeError: CALL_FUNCTION_EX expected a dict for **kwargs\n");
@@ -544,12 +573,10 @@ void Interpreter::EvalCurrentFrame() {
     PopCallTarget(callable, host);
 
     Handle<PyTuple> pos_args;
-    if (args_obj.is_null()) {
-      pos_args = PyTuple::NewInstance(0);
-    } else if (IsPyTuple(args_obj)) {
-      pos_args = Handle<PyTuple>::cast(args_obj);
-    } else {
-      pos_args = Runtime_UnpackIterableObjectToTuple(args_obj);
+    if (!args_obj.is_null()) {
+      pos_args = IsPyTuple(args_obj)
+                     ? Handle<PyTuple>::cast(args_obj)
+                     : Runtime_UnpackIterableObjectToTuple(args_obj);
     }
 
     InvokeCallableWithNormalizedArgs(callable, host, pos_args, kw_args);

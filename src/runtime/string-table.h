@@ -44,7 +44,8 @@ class ObjectVisitor;
   V(setattr, "__setattr__")          \
   V(str, "__str__")                  \
   V(traceback, "__traceback__")      \
-  V(context, "__context__")
+  V(context, "__context__")          \
+  V(main, "__main_")
 
 #if BUILDFLAG(IS_WIN)
 #define LIB_EXT ".dll"
