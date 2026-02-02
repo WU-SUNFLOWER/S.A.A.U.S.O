@@ -135,13 +135,8 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
 
   Handle<PyTypeObject> type_object = PyTypeObject::NewInstance();
 
-  // 设置默认父类
-  if (supers->length() == 0) {
-    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
-  }
-
   // 创建新的klass并注册进isolate
-  Tagged<Klass> klass = Klass::CreateRawKlass();
+  Tagged<Klass> klass = Klass::CreateRawPythonKlass();
   Isolate::Current()->klass_list().PushBack(klass);
 
   // 设置klass字段

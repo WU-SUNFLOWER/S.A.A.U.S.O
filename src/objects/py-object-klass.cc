@@ -25,6 +25,8 @@ Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
   return instance;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void PyObjectKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));

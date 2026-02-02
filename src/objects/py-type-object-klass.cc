@@ -117,18 +117,8 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
                                                  Handle<PyObject> args,
                                                  Handle<PyObject> kwargs) {
   auto type_object = Handle<PyTypeObject>::cast(self);
-
-  auto instance = PyObject::AllocateRawPythonObject();
-  PyObject::SetKlass(instance, type_object->own_klass());
-  PyDict::Put(PyObject::GetProperties(instance), ST(class), type_object);
-
-  auto init_method = PyObject::GetAttr(instance, ST(init));
-  if (!init_method.is_null()) {
-    Isolate::Current()->interpreter()->CallPython(
-        init_method, Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs));
-  }
-
-  return instance;
+  auto own_klass = type_object->own_klass();
+  return own_klass->ConstructInstance(args, kwargs);
 }
 
 // static

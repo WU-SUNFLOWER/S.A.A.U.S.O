@@ -158,19 +158,23 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
 ///////////////////////////////////////////////////////////////////////
 
 // static
-Tagged<Klass> Klass::CreateRawKlass() {
+Tagged<Klass> Klass::CreateRawPythonKlass() {
   auto* isolate = Isolate::Current();
-  auto klass = isolate->heap()->Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
+  auto klass =
+      isolate->heap()->Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
   // 填充虚函数表
   klass->InitializeVTable();
   // 填充字段默认值
-  klass->klass_properties_ = Tagged<PyObject>::null();
-  klass->name_ = Tagged<PyObject>::null();
-  klass->type_object_ = Tagged<PyObject>::null();
-  klass->supers_ = Tagged<PyObject>::null();
-  klass->mro_ = Tagged<PyObject>::null();
+  klass->set_klass_properties(Handle<PyDict>::null());
+  klass->set_name(Handle<PyString>::null());
+  klass->set_type_object(Handle<PyTypeObject>::null());
+  klass->set_supers(Handle<PyList>::null());
+  klass->set_mro(Handle<PyList>::null());
+
   return klass;
 }
+
+///////////////////////////////////////////////////////////////////////
 
 void Klass::InitializeVTable() {
   vtable_.add = &Klass::Virtual_Default_Add;
@@ -191,6 +195,7 @@ void Klass::InitializeVTable() {
   vtable_.del_subscr = &Klass::Virtual_Default_Delete_Subscr;
   vtable_.iter = &Klass::Virtual_Default_Iter;
   vtable_.next = &Klass::Virtual_Default_Next;
+  vtable_.construct_instance = &Klass::Virtual_Default_ConstructInstance;
   vtable_.iterate = &Klass::Virtual_Default_Iterate;
   vtable_.instance_size = &Klass::Virtual_Default_InstanceSize;
 }
@@ -233,6 +238,10 @@ Handle<PyList> Klass::mro() {
   return handle(Tagged<PyList>::cast(mro_));
 }
 
+void Klass::set_mro(Handle<PyList> mro) {
+  mro_ = *mro;
+}
+
 void Klass::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&name_);
   v->VisitPointer(&type_object_);
@@ -271,6 +280,13 @@ void Klass::OrderSupers() {
   PyDict::Put(klass_properties(), ST(mro), mro_result);
 
   mro_ = *mro_result;
+}
+
+Handle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,
+                                          Handle<PyObject> kwargs) {
+  HandleScope scope;
+  return vtable_.construct_instance(Tagged<Klass>(this), args, kwargs)
+      .EscapeFrom(&scope);
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -542,6 +558,25 @@ Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
 Handle<PyObject> Klass::Virtual_Default_Iter(Handle<PyObject> self) {
   return FindAndCall(self, Handle<PyTuple>::null(), Handle<PyDict>::null(),
                      ST(iter));
+}
+
+Handle<PyObject> Klass::Virtual_Default_ConstructInstance(
+    Tagged<Klass> klass_self,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  auto instance = PyObject::AllocateRawPythonObject();
+  auto type_object = klass_self->type_object();
+
+  PyObject::SetKlass(instance, type_object->own_klass());
+  PyDict::Put(PyObject::GetProperties(instance), ST(class), type_object);
+
+  auto init_method = PyObject::GetAttr(instance, ST(init));
+  if (!init_method.is_null()) {
+    Isolate::Current()->interpreter()->CallPython(
+        init_method, Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs));
+  }
+
+  return instance;
 }
 
 void Klass::Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*) {

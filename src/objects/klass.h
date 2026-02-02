@@ -13,11 +13,13 @@
 
 namespace saauso::internal {
 
+class Klass;
 class PyObject;
 class PyString;
 class PyTypeObject;
 class PyDict;
 class PyList;
+class PyTuple;
 class PyBoolean;
 class ObjectVisitor;
 
@@ -119,6 +121,11 @@ struct VirtualTable {
   // size_t instance_object(Tagged<PyObject>);
   size_t (*instance_size)(Oop){nullptr};
 
+  // 构造一个对象实例
+  // Handle<PyObject>construct_instance(Tagged<Klass> self,
+  // Handle<PyObject>args,Handle<PyObject>kwargs)
+  OopHandle (*construct_instance)(Tagged<Klass>, OopHandle, OopHandle){nullptr};
+
   // 扫描对象内部数据，用于GC
   void (*iterate)(Oop, ObjectVisitor*){nullptr};
 };
@@ -126,7 +133,7 @@ struct VirtualTable {
 
 class Klass : public Object {
  public:
-  static Tagged<Klass> CreateRawKlass();
+  static Tagged<Klass> CreateRawPythonKlass();
 
   Klass() = delete;
 
@@ -145,6 +152,7 @@ class Klass : public Object {
   void set_supers(Handle<PyList>);
 
   Handle<PyList> mro();
+  void set_mro(Handle<PyList> mro);
 
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
@@ -154,7 +162,9 @@ class Klass : public Object {
   // 执行C3算法，执行结果保存在mro_
   void OrderSupers();
 
-  // Python对象虚函数表
+  // 创建一个对象实例
+  Handle<PyObject> ConstructInstance(Handle<PyObject> args,
+                                     Handle<PyObject> kwargs);
 
   // 默认虚函数
   static void Virtual_Default_Print(Handle<PyObject> self);
@@ -195,11 +205,19 @@ class Klass : public Object {
                                            Handle<PyObject> other);
   static bool Virtual_Default_LessEqual(Handle<PyObject> self,
                                         Handle<PyObject> other);
+
+  static Handle<PyObject> Virtual_Default_ConstructInstance(
+      Tagged<Klass> klass_self,
+      Handle<PyObject> args,
+      Handle<PyObject> kwargs);
+
   static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);
+
   static void Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*);
   static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
 
+  // Python对象虚函数表
   VirtualTable vtable_;
 
  protected:
