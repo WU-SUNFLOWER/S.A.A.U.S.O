@@ -6,6 +6,7 @@
 
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -155,6 +156,21 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
 }  // namespace
 
 ///////////////////////////////////////////////////////////////////////
+
+// static
+Tagged<Klass> Klass::CreateRawKlass() {
+  auto* isolate = Isolate::Current();
+  auto klass = isolate->heap()->Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
+  // 填充虚函数表
+  klass->InitializeVTable();
+  // 填充字段默认值
+  klass->klass_properties_ = Tagged<PyObject>::null();
+  klass->name_ = Tagged<PyObject>::null();
+  klass->type_object_ = Tagged<PyObject>::null();
+  klass->supers_ = Tagged<PyObject>::null();
+  klass->mro_ = Tagged<PyObject>::null();
+  return klass;
+}
 
 void Klass::InitializeVTable() {
   vtable_.add = &Klass::Virtual_Default_Add;
@@ -437,13 +453,13 @@ bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
   }
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  Handle<PyObject> result =
-      Isolate::Current()->interpreter()->CallPython(callable, args,
-                                                    Handle<PyDict>::null());
+  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+      callable, args, Handle<PyDict>::null());
   return Runtime_PyObjectIsTrue(result);
 }
 
-bool Klass::Virtual_Default_Less(Handle<PyObject> self, Handle<PyObject> other) {
+bool Klass::Virtual_Default_Less(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
   HandleScope scope;
   Handle<PyObject> callable = FindCallableInMro(self, ST(lt));
   if (callable.is_null()) {
@@ -451,9 +467,8 @@ bool Klass::Virtual_Default_Less(Handle<PyObject> self, Handle<PyObject> other) 
   }
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  Handle<PyObject> result =
-      Isolate::Current()->interpreter()->CallPython(callable, args,
-                                                    Handle<PyDict>::null());
+  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+      callable, args, Handle<PyDict>::null());
   return Runtime_PyObjectIsTrue(result);
 }
 
@@ -470,9 +485,8 @@ bool Klass::Virtual_Default_Equal(Handle<PyObject> self,
   }
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  Handle<PyObject> result =
-      Isolate::Current()->interpreter()->CallPython(callable, args,
-                                                    Handle<PyDict>::null());
+  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+      callable, args, Handle<PyDict>::null());
   return Runtime_PyObjectIsTrue(result);
 }
 
@@ -483,9 +497,8 @@ bool Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
-    Handle<PyObject> result =
-        Isolate::Current()->interpreter()->CallPython(callable, args,
-                                                      Handle<PyDict>::null());
+    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+        callable, args, Handle<PyDict>::null());
     return Runtime_PyObjectIsTrue(result);
   }
   return !Virtual_Default_Equal(self, other);
@@ -498,9 +511,8 @@ bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
-    Handle<PyObject> result =
-        Isolate::Current()->interpreter()->CallPython(callable, args,
-                                                      Handle<PyDict>::null());
+    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+        callable, args, Handle<PyDict>::null());
     return Runtime_PyObjectIsTrue(result);
   }
   return Virtual_Default_Greater(self, other) ||
@@ -514,12 +526,12 @@ bool Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
-    Handle<PyObject> result =
-        Isolate::Current()->interpreter()->CallPython(callable, args,
-                                                      Handle<PyDict>::null());
+    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+        callable, args, Handle<PyDict>::null());
     return Runtime_PyObjectIsTrue(result);
   }
-  return Virtual_Default_Less(self, other) || Virtual_Default_Equal(self, other);
+  return Virtual_Default_Less(self, other) ||
+         Virtual_Default_Equal(self, other);
 }
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {

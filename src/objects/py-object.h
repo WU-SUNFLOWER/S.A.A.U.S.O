@@ -97,6 +97,8 @@ class PyObject : public Object {
   static Handle<PyDict> GetProperties(Handle<PyObject> object);
   static void SetProperties(Tagged<PyObject> object, Tagged<PyDict> properties);
 
+  static Handle<PyObject> AllocateRawPythonObject();
+
   static Tagged<PyObject> cast(Tagged<PyObject> object) { return object; }
 
   ////////////////// 多态函数 开始 //////////////////

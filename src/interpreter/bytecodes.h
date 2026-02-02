@@ -17,10 +17,12 @@ namespace saauso::internal {
   V(BinarySubscr, 25)      \
   V(StoreSubscr, 60)       \
   V(GetIter, 68)           \
+  V(LoadBuildClass, 71)    \
   V(ReturnValue, 83)       \
   V(StoreName, 90)         \
   V(UnpackSequence, 92)    \
   V(ForIter, 93)           \
+  V(StoreAttr, 95)         \
   V(StoreGlobal, 97)       \
   V(LoadConst, 100)        \
   V(LoadName, 101)         \

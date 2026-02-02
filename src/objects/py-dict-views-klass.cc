@@ -98,7 +98,7 @@ Tagged<PyDictKeysKlass> PyDictKeysKlass::GetInstance() {
 }
 
 void PyDictKeysKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -180,7 +180,7 @@ Tagged<PyDictValuesKlass> PyDictValuesKlass::GetInstance() {
 }
 
 void PyDictValuesKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -275,7 +275,7 @@ Tagged<PyDictItemsKlass> PyDictItemsKlass::GetInstance() {
 }
 
 void PyDictItemsKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -384,7 +384,7 @@ Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance() {
 }
 
 void PyDictKeyIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -458,7 +458,7 @@ Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance() {
 }
 
 void PyDictItemIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -532,7 +532,7 @@ Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance() {
 }
 
 void PyDictValueIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;

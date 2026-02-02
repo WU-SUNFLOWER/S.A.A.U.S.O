@@ -8,12 +8,16 @@
 #include <cstdlib>
 
 #include "src/handles/tagged.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -138,6 +142,42 @@ Handle<PyObject> Native_IsInstance(Handle<PyObject> host,
   }
 
   return handle(Isolate::Current()->py_false_object()).EscapeFrom(&scope);
+}
+
+Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
+                                        Handle<PyTuple> args,
+                                        Handle<PyDict> kwargs) {
+  HandleScope scope;
+
+  if (args->length() < 2) [[unlikely]] {
+    std::fprintf(stderr, "__build_class__: not enough arguments");
+    std::exit(1);
+  }
+
+  auto class_builder = Handle<PyFunction>::cast(args->Get(0));
+  if (!IsPyFunction(class_builder)) [[unlikely]] {
+    std::fprintf(stderr, "__build_class__: not enough arguments");
+    std::exit(1);
+  }
+
+  auto class_name = Handle<PyString>::cast(args->Get(1));
+  if (!IsPyString(class_name)) [[unlikely]] {
+    std::fprintf(stderr, "__build_class__: name is not a string");
+    std::exit(1);
+  }
+
+  auto class_supers = PyList::NewInstance(args->length() - 2);
+  for (auto i = 2; i < args->length(); ++i) {
+    PyList::Append(class_supers, args->Get(i));
+  }
+
+  auto class_properties = PyDict::NewInstance();
+  Isolate::Current()->interpreter()->CallPython(
+      class_builder, Handle<PyTuple>::null(), Handle<PyDict>::null(),
+      class_properties);
+
+  return Runtime_CreatePythonClass(class_name, class_properties, class_supers)
+      .EscapeFrom(&scope);
 }
 
 }  // namespace saauso::internal

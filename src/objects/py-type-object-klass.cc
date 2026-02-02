@@ -5,15 +5,18 @@
 #include "src/objects/py-type-object-klass.h"
 
 #include "src/heap/heap.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -33,8 +36,8 @@ Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
 }
 
 void PyTypeObjectKlass::PreInitialize() {
-  // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(this);
+  // 将自己注册到isolate
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -43,6 +46,7 @@ void PyTypeObjectKlass::PreInitialize() {
   vtable_.hash = &Virtual_Hash;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
+  vtable_.call = &Virtual_Call;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
@@ -106,6 +110,25 @@ bool PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
 bool PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   return !Virtual_Equal(self, other);
+}
+
+Handle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
+                                                 Handle<PyObject> host,
+                                                 Handle<PyObject> args,
+                                                 Handle<PyObject> kwargs) {
+  auto type_object = Handle<PyTypeObject>::cast(self);
+
+  auto instance = PyObject::AllocateRawPythonObject();
+  PyObject::SetKlass(instance, type_object->own_klass());
+  PyDict::Put(PyObject::GetProperties(instance), ST(class), type_object);
+
+  auto init_method = PyObject::GetAttr(instance, ST(init));
+  if (!init_method.is_null()) {
+    Isolate::Current()->interpreter()->CallPython(
+        init_method, Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs));
+  }
+
+  return instance;
 }
 
 // static

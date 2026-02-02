@@ -25,21 +25,22 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-def foo(x, y):
-    def bar(i):
-        x += 1
-        print(x)
-        print(i)
-        def baz(j):
-            y += 1
-            print(y)
-            print(j)
-        return baz
-    return bar
+class Vector(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
 
-bar_instance = foo(12, 25)
-baz_instance = bar_instance(19)
-baz_instance(14)
+    def say(self):
+        print(self.x)
+        print(self.y)
+        print(self.z)
+
+a = Vector(1, 2, 3)
+b = Vector(4, 5, 6)
+
+a.say()
+b.say()
 )";
 
 int main() {

@@ -27,7 +27,7 @@ Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
 
 void PyObjectKlass::PreInitialize() {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;

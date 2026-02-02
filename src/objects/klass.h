@@ -126,6 +126,8 @@ struct VirtualTable {
 
 class Klass : public Object {
  public:
+  static Tagged<Klass> CreateRawKlass();
+
   Klass() = delete;
 
   void InitializeVTable();

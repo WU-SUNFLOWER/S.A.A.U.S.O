@@ -99,6 +99,15 @@ void PyObject::SetProperties(Tagged<PyObject> object,
   WRITE_BARRIER(object, &object->properties_, properties);
 }
 
+// static
+Handle<PyObject> PyObject::AllocateRawPythonObject() {
+  Handle<PyObject> object(Isolate::Current()->heap()->Allocate<PyObject>(
+      Heap::AllocationSpace::kNewSpace));
+  Handle<PyDict> properties = PyDict::NewInstance();
+  SetProperties(*object, *properties);
+  return object;
+}
+
 ///////////////////////////////////////////////////////////////////
 // 类型判断工具函数 开始
 
@@ -194,7 +203,7 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyNativeFunction)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 #undef IMPL_PY_CHECKER_WITH_HANDLE_ARG
 
-///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // 多态虚方法入口 开始
 
 // python virtual function

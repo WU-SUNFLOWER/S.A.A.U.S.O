@@ -79,6 +79,10 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   PyDict::Put(builtins, func_name,
               PyFunction::NewInstance(&Native_IsInstance, func_name));
 
+  func_name = ST(build_class);
+  PyDict::Put(builtins, func_name,
+              PyFunction::NewInstance(&Native_BuildTypeObject, func_name));
+
   // 把builtins自己注册进去
   PyDict::Put(builtins, ST(builtins), builtins);
 
@@ -86,7 +90,11 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
 }
 
 Handle<PyDict> Interpreter::builtins() const {
-  return handle(Tagged<PyDict>::cast(builtins_));
+  return handle(builtins_tagged());
+}
+
+Tagged<PyDict> Interpreter::builtins_tagged() const {
+  return Tagged<PyDict>::cast(builtins_);
 }
 
 Handle<PyTuple> Interpreter::kwarg_keys() const {
@@ -99,10 +107,25 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
   DestroyCurrentFrame();
 }
 
-// public
 Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
                                          Handle<PyTuple> pos_args,
                                          Handle<PyDict> kw_args) {
+  return CallPythonImpl(callable, pos_args, kw_args);
+}
+
+Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
+                                         Handle<PyTuple> pos_args,
+                                         Handle<PyDict> kw_args,
+                                         Handle<PyDict> bound_locals) {
+  return CallPythonImpl(callable, pos_args, kw_args, bound_locals);
+}
+
+// private
+template <typename... ExtendArgs>
+Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
+                                             Handle<PyTuple> pos_args,
+                                             Handle<PyDict> kw_args,
+                                             ExtendArgs... extend_args) {
   HandleScope scope;
 
   Handle<PyObject> host;
@@ -113,7 +136,8 @@ Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
   // 如果是普通的python函数，那么请求解释器进行处理
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
-        Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
+        Handle<PyFunction>::cast(callable), host, pos_args, kw_args,
+        extend_args...);
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);
 

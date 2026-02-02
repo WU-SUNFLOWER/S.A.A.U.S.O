@@ -26,7 +26,7 @@ Tagged<CellKlass> CellKlass::GetInstance() {
 }
 
 void CellKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;

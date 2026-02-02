@@ -40,7 +40,7 @@ Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
 
 void PyBooleanKlass::PreInitialize() {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -75,7 +75,8 @@ void PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 // static
-bool PyBooleanKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
+bool PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
+                                   Handle<PyObject> other) {
   bool v = Handle<PyBoolean>::cast(self)->value();
 
   bool result = false;
@@ -118,7 +119,7 @@ Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
 
 void PyNoneKlass::PreInitialize() {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;

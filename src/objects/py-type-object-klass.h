@@ -34,6 +34,11 @@ class PyTypeObjectKlass : public Klass {
   static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
   static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
 
+  static Handle<PyObject> Virtual_Call(Handle<PyObject> self,
+                                       Handle<PyObject> host,
+                                       Handle<PyObject> args,
+                                       Handle<PyObject> kwargs);
+
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };

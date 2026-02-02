@@ -26,9 +26,15 @@ class Interpreter {
   void Run(Handle<PyCodeObject> code_object);
 
   Handle<PyObject> CallPython(Handle<PyObject> callable,
-                              Handle<PyTuple> args,
-                              Handle<PyDict> kwargs);
+                              Handle<PyTuple> pos_args,
+                              Handle<PyDict> kw_args);
 
+  Handle<PyObject> CallPython(Handle<PyObject> callable,
+                              Handle<PyTuple> pos_args,
+                              Handle<PyDict> kw_args,
+                              Handle<PyDict> bound_locals);
+
+  Tagged<PyDict> builtins_tagged() const;
   Handle<PyDict> builtins() const;
   Handle<PyTuple> kwarg_keys() const;
 
@@ -45,6 +51,12 @@ class Interpreter {
                                         Handle<PyObject> host,
                                         Handle<PyTuple> pos_args,
                                         Handle<PyDict> kw_args);
+
+  template <typename... ExtendArgs>
+  Handle<PyObject> CallPythonImpl(Handle<PyObject> callable,
+                                  Handle<PyTuple> args,
+                                  Handle<PyDict> kwargs,
+                                  ExtendArgs... extend_args);
 
   void NormalizeCallable(Handle<PyObject>& callable, Handle<PyObject>& host);
   void NormalizeArguments(Handle<PyTuple> actual_args,

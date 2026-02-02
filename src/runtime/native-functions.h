@@ -21,6 +21,10 @@ Handle<PyObject> Native_IsInstance(Handle<PyObject> host,
                                    Handle<PyTuple> args,
                                    Handle<PyDict> kwargs);
 
+Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
+                                        Handle<PyTuple> args,
+                                        Handle<PyDict> kwargs);
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_RUNTIME_NATIVE_FUNCTIONS_H_

@@ -105,7 +105,7 @@ Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
 }
 
 void PyTupleKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.len = &Virtual_Len;
   vtable_.print = &Virtual_Print;

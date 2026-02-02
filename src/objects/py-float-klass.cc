@@ -63,7 +63,7 @@ Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
 
 void PyFloatKlass::PreInitialize() {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.add = &Virtual_Add;

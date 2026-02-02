@@ -11,6 +11,9 @@ namespace saauso::internal {
 
 class PyObject;
 class PyList;
+class PyDict;
+class PyString;
+class PyTypeObject;
 class PyTuple;
 
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
@@ -25,6 +28,10 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 
 int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value);
+
+Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
+                                               Handle<PyDict> class_properties,
+                                               Handle<PyList> supers);
 
 }  // namespace saauso::internal
 

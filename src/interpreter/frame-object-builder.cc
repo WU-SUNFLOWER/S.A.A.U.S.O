@@ -58,6 +58,13 @@ struct FrameBuildContext {
   int localsplus_idx{0};
 };
 
+Handle<PyDict> GetDefaultBoundLocals(Handle<PyFunction> func) {
+  if ((func->flags() & PyCodeObject::Flag::kOptimized) != 0) [[unlikely]] {
+    return func->func_globals();
+  }
+  return Handle<PyDict>::null();
+}
+
 FrameBuildContext PrepareForCodeObject(Handle<PyCodeObject> code_object) {
   FrameBuildContext ctx;
   ctx.code_object = code_object;
@@ -72,11 +79,12 @@ FrameBuildContext PrepareForCodeObject(Handle<PyCodeObject> code_object) {
 }
 
 FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
-                                     Handle<PyObject> host) {
+                                     Handle<PyObject> host,
+                                     Handle<PyDict> bound_locals) {
   FrameBuildContext ctx;
   ctx.code_object = func->func_code();
   ctx.func = func;
-  ctx.locals = PyDict::NewInstance();
+  ctx.locals = bound_locals;
   ctx.globals = func->func_globals();
   if (ctx.code_object->nlocalsplus() > 0) {
     ctx.localsplus = FixedArray::NewInstance(ctx.code_object->nlocalsplus());
@@ -235,12 +243,21 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
                                                Handle<PyObject> host,
                                                Handle<PyTuple> actual_pos_args,
                                                Handle<PyDict> actual_kw_args) {
+  return BuildSlowPath(func, host, actual_pos_args, actual_kw_args,
+                       GetDefaultBoundLocals(func));
+}
+
+FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
+                                               Handle<PyObject> host,
+                                               Handle<PyTuple> actual_pos_args,
+                                               Handle<PyDict> actual_kw_args,
+                                               Handle<PyDict> bound_locals) {
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
   // 创建一般的 python 栈帧（慢速路径）。
-  FrameBuildContext ctx = PrepareForFunction(func, host);
+  FrameBuildContext ctx = PrepareForFunction(func, host, bound_locals);
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置实参优先）。
   if (!actual_pos_args.is_null()) {
@@ -320,12 +337,21 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
                                                Handle<PyObject> host,
                                                Handle<PyTuple> actual_args,
                                                Handle<PyTuple> kwarg_keys) {
+  return BuildFastPath(func, host, actual_args, kwarg_keys,
+                       GetDefaultBoundLocals(func));
+}
+
+FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
+                                               Handle<PyObject> host,
+                                               Handle<PyTuple> actual_args,
+                                               Handle<PyTuple> kwarg_keys,
+                                               Handle<PyDict> bound_locals) {
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
   // 创建一般的 python 栈帧（快速路径）。
-  FrameBuildContext ctx = PrepareForFunction(func, host);
+  FrameBuildContext ctx = PrepareForFunction(func, host, bound_locals);
 
   // 用户传入的全体实参个数。
   int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();

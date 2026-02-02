@@ -99,7 +99,7 @@ class Isolate {
   HandleScopeImplementer* handle_scope_implementer() const {
     return handle_scope_implementer_;
   }
-  Vector<Klass*>& klass_list() { return klass_list_; }
+  Vector<Tagged<Klass>>& klass_list() { return klass_list_; }
   Interpreter* interpreter() const { return interpreter_; }
   StringTable* string_table() const { return string_table_; }
 
@@ -131,7 +131,7 @@ class Isolate {
 
   Heap* heap_{nullptr};
   HandleScopeImplementer* handle_scope_implementer_{nullptr};
-  Vector<Klass*> klass_list_;
+  Vector<Tagged<Klass>> klass_list_;
   Interpreter* interpreter_{nullptr};
   StringTable* string_table_{nullptr};
 

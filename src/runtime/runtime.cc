@@ -10,11 +10,13 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -124,6 +126,36 @@ int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
                "TypeError: '%.*s' object cannot be interpreted as an integer\n",
                static_cast<int>(type_name->length()), type_name->buffer());
   std::exit(1);
+}
+
+Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
+                                               Handle<PyDict> class_properties,
+                                               Handle<PyList> supers) {
+  HandleScope scope;
+
+  Handle<PyTypeObject> type_object = PyTypeObject::NewInstance();
+
+  // 设置默认父类
+  if (supers->length() == 0) {
+    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
+  }
+
+  // 创建新的klass并注册进isolate
+  Tagged<Klass> klass = Klass::CreateRawKlass();
+  Isolate::Current()->klass_list().PushBack(klass);
+
+  // 设置klass字段
+  klass->set_klass_properties(class_properties);
+  klass->set_name(class_name);
+  klass->set_supers(supers);
+
+  // 建立双向绑定
+  type_object->BindWithKlass(klass);
+
+  // 为klass计算mro
+  klass->OrderSupers();
+
+  return type_object.EscapeFrom(&scope);
 }
 
 }  // namespace saauso::internal

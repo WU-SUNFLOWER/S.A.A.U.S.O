@@ -1,0 +1,102 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#include <string_view>
+
+#include "src/handles/handles.h"
+#include "src/objects/py-float.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/isolate.h"
+#include "test/unittests/test-helpers.h"
+#include "test/unittests/test-utils.h"
+#include "testing/gtest/include/gtest/gtest.h"
+
+namespace saauso::internal {
+
+TEST_F(BasicInterpreterTest, SimpleCustomClass) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    value = 2025
+
+print(A.value)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2025)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuildObjectByCustomClass) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+s1 = "Hello"
+s2 = "World"
+
+class A:
+    value = s1 + " " + s2
+
+a = A()
+
+print(A.value)
+print(a.value)
+print(A.value is a.value)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  auto s = PyString::NewInstance("Hello World");
+  AppendExpected(expected_printv_result, s);
+  AppendExpected(expected_printv_result, s);
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ComplicatedCustomClass) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Vector(object):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def say(self):
+        print(self.x)
+        print(self.y)
+        print(self.z)
+
+a = Vector(1, 2, 3)
+b = Vector(4, 5, 6)
+
+a.say()
+b.say()
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(5)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+}  // namespace saauso::internal

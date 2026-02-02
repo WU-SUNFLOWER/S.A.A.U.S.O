@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_PyObjectS_PY_LIST_H_
-#define SAAUSO_PyObjectS_PY_LIST_H_
+#ifndef SAAUSO_OBJECTS_PY_LIST_H_
+#define SAAUSO_OBJECTS_PY_LIST_H_
 
 #include <cstdint>
 
@@ -77,4 +77,4 @@ class PyList : public PyObject {
 
 }  // namespace saauso::internal
 
-#endif  // SAAUSO_PyObjectS_PY_LIST_H_
+#endif  // SAAUSO_OBJECTS_PY_LIST_H_

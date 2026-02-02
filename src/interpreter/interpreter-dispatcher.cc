@@ -23,6 +23,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -107,6 +108,9 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
 
+  INTERPRETER_HANDLER_DISPATCH(
+      LoadBuildClass, { PUSH(builtins_tagged()->Get(ST_TAGGED(build_class))); })
+
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
     ret_value_ = POP_TAGGED();
     if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
@@ -117,7 +121,17 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
     Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-    PyDict::Put(current_frame_->locals(), key, POP());
+
+    Handle<PyDict> locals = current_frame_->locals();
+    // Python中栈帧的locals是按需创建的。
+    // 我们不保证一个函数栈帧当中一定有一个有效的locals字典！
+    if (locals.is_null()) [[unlikely]] {
+      std::fprintf(stderr, "no locals found when storing %s\n",
+                   Handle<PyString>::cast(key)->buffer());
+      std::exit(1);
+    }
+
+    PyDict::Put(locals, key, POP());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
@@ -140,6 +154,13 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
     PUSH(next_result);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
+    Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg);
+    Handle<PyObject> object = POP();
+    Handle<PyObject> attr_value = POP();
+    PyObject::SetAttr(object, attr_name, attr_value);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
@@ -408,6 +429,8 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> code_object = POP();
     Handle<PyFunction> func =
         PyFunction::NewInstance(Handle<PyCodeObject>::cast(code_object));
+    // 向函数对象注入创建它的函数所绑定的全局变量表
+    // 这是Python中函数依据词法作用域规则访问它所在模块全局变量的根本原理！！！
     func->set_func_globals(current_frame_->globals());
 
     // 向函数对象中注入依据词法作用域捕获到的cell们

@@ -43,6 +43,12 @@ class FrameObjectBuilder {
                                     Handle<PyTuple> actual_pos_args,
                                     Handle<PyDict> actual_kw_args);
 
+  static FrameObject* BuildSlowPath(Handle<PyFunction> func,
+                                    Handle<PyObject> host,
+                                    Handle<PyTuple> actual_pos_args,
+                                    Handle<PyDict> actual_kw_args,
+                                    Handle<PyDict> bound_locals);
+
   // 创建一般的 python 栈帧（快速路径）。
   // - 约定：所有 kw 值位于 actual_args 尾部，与 kwarg_keys 一一对应。
   // - 遍历 kwarg_keys（从尾部取 key/value），尽量用 tuple 索引完成处理。
@@ -51,6 +57,12 @@ class FrameObjectBuilder {
                                     Handle<PyObject> host,
                                     Handle<PyTuple> actual_args,
                                     Handle<PyTuple> kwarg_keys);
+
+  static FrameObject* BuildFastPath(Handle<PyFunction> func,
+                                    Handle<PyObject> host,
+                                    Handle<PyTuple> actual_args,
+                                    Handle<PyTuple> kwarg_keys,
+                                    Handle<PyDict> bound_locals);
 };
 
 }  // namespace saauso::internal

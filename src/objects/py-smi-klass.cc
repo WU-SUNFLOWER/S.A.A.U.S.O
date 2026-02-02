@@ -37,7 +37,7 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 ////////////////////////////////////////////////////////////////////
 
 void PySmiKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(this);
+  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;

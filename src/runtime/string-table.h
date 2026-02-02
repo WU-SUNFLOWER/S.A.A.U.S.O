@@ -15,7 +15,8 @@ namespace saauso::internal {
 
 class ObjectVisitor;
 
-#define ST(x) (handle(Isolate::Current()->string_table()->x##_str_))
+#define ST_TAGGED(x) (Isolate::Current()->string_table()->x##_str_)
+#define ST(x) (handle(ST_TAGGED(x)))
 
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
   V(add, "__add__")                  \
