@@ -74,6 +74,7 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
                                          Handle<PyObject> iteratable) {
   HandleScope scope;
 
+  // Fast Path: 直接展开tuple
   if (IsPyTuple(iteratable)) {
     auto tuple = Handle<PyTuple>::cast(iteratable);
     for (int64_t i = 0; i < tuple->length(); ++i) {
@@ -82,6 +83,7 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
     return;
   }
 
+  // Fast Path: 直接展开list
   if (IsPyList(iteratable)) {
     auto source = Handle<PyList>::cast(iteratable);
     for (int64_t i = 0; i < source->length(); ++i) {

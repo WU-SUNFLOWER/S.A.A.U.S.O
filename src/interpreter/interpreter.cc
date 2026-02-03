@@ -151,14 +151,14 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     result = ReleaseReturnValue();
     DestroyCurrentFrame();
 
-    return result;
+    return result.EscapeFrom(&scope);
   }
 
   // 兜底：尝试调用callable的call虚方法
   // 如果对象无法被调用，执行PyObject::Call后会抛出错误。
   // 类似于TypeError: 'xxx' object is not callable
   result = PyObject::Call(callable, host, pos_args, kw_args);
-  return result;
+  return result.EscapeFrom(&scope);
 }
 
 // private

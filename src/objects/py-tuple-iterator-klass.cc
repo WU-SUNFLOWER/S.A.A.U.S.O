@@ -42,8 +42,7 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
 Handle<PyObject> Native_Next(Handle<PyObject> self,
                              Handle<PyTuple> args,
                              Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return NextImpl(self).EscapeFrom(&scope);
+  return NextImpl(self);
 }
 
 }  // namespace

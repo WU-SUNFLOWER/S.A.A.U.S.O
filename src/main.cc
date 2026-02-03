@@ -25,10 +25,8 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-l = [1, 2, 1, 3]
-print(l.index(1))
-print(l.index(1, 1))
-print(l.index(1, 1, 3))
+lst = [1, 2, 3, 4, 5, 6, "hello"]
+print(lst)
 )";
 
 int main() {
