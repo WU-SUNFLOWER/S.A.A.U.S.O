@@ -74,22 +74,28 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
                                          Handle<PyObject> iteratable) {
   HandleScope scope;
 
-  auto source_iterator = PyObject::Iter(iteratable);
-  auto iterator_next_func =
-      Runtime_FindPropertyInMro(source_iterator, ST(next));
-
-#define CALL_NEXT_FUNC()                                            \
-  Isolate::Current()->interpreter()->CallPython(                    \
-      iterator_next_func, source_iterator, Handle<PyTuple>::null(), \
-      Handle<PyDict>::null())
-
-  auto elem = CALL_NEXT_FUNC();
-  while (!elem.is_null()) {
-    PyList::Append(list, elem);
-    elem = CALL_NEXT_FUNC();
+  if (IsPyTuple(iteratable)) {
+    auto tuple = Handle<PyTuple>::cast(iteratable);
+    for (int64_t i = 0; i < tuple->length(); ++i) {
+      PyList::Append(list, tuple->Get(i));
+    }
+    return;
   }
 
-#undef CALL_NEXT_FUNC
+  if (IsPyList(iteratable)) {
+    auto source = Handle<PyList>::cast(iteratable);
+    for (int64_t i = 0; i < source->length(); ++i) {
+      PyList::Append(list, source->Get(i));
+    }
+    return;
+  }
+
+  auto iterator = PyObject::Iter(iteratable);
+  auto elem = PyObject::Next(iterator);
+  while (!elem.is_null()) {
+    PyList::Append(list, elem);
+    elem = PyObject::Next(iterator);
+  }
 }
 
 Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {

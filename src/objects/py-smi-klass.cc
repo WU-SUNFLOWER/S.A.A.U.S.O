@@ -274,10 +274,17 @@ bool PySmiKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
 
   int64_t self_value = PySmi::cast(*self).value();
 
+  if (IsPyBoolean(other)) {
+    return self_value == (Handle<PyBoolean>::cast(other)->value() ? 1 : 0);
+  }
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     return self_value == other_value;
   }
+  if (IsPySmi(other)) {
+    return self_value == PySmi::cast(*other).value();
+  }
+
   return false;
 }
 

@@ -134,4 +134,27 @@ TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
             Isolate::Current()->py_true_object().ptr());
 }
 
+TEST_F(PySmiTest, MixedEqualitySmiWithBool) {
+  HandleScope scope;
+
+  Handle<PyObject> one(PySmi::FromInt(1));
+  Handle<PyObject> zero(PySmi::FromInt(0));
+  Handle<PyObject> t = handle(Isolate::Current()->py_true_object());
+  Handle<PyObject> f = handle(Isolate::Current()->py_false_object());
+
+  EXPECT_EQ(PyObject::Equal(one, t).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Equal(zero, f).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Equal(one, f).ptr(),
+            Isolate::Current()->py_false_object().ptr());
+  EXPECT_EQ(PyObject::Equal(zero, t).ptr(),
+            Isolate::Current()->py_false_object().ptr());
+
+  EXPECT_EQ(PyObject::Equal(t, one).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+  EXPECT_EQ(PyObject::Equal(f, zero).ptr(),
+            Isolate::Current()->py_true_object().ptr());
+}
+
 }  // namespace saauso::internal

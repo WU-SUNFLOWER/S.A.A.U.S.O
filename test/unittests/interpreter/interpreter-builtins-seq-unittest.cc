@@ -59,6 +59,33 @@ print(lst)
   ExpectPrintResult(expected_printv_result);
 }
 
+// 构建长的list字面量会用到Python3的新字节码LIST_EXTEND，
+// 因此这里设置一个独立的单测！
+TEST_F(BasicInterpreterTest, BuildLongList) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+lst = [1, 2, 3, 4, 5, 6, "hello"]
+print(lst)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  auto list = PyList::NewInstance(2);
+  PyList::Append(list, handle(PySmi::FromInt(1)));
+  PyList::Append(list, handle(PySmi::FromInt(2)));
+  PyList::Append(list, handle(PySmi::FromInt(3)));
+  PyList::Append(list, handle(PySmi::FromInt(4)));
+  PyList::Append(list, handle(PySmi::FromInt(5)));
+  PyList::Append(list, handle(PySmi::FromInt(6)));
+  PyList::Append(list, PyString::NewInstance("hello"));
+
+  AppendExpected(expected_printv_result, list);
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, ListSubscrAccess) {
   HandleScope scope;
 

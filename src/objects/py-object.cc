@@ -358,7 +358,8 @@ Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
 
 bool PyObject::EqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   // 内联Fast Path：直接比较内存地址
-  // 两个Smi之间相等的情况已经包括在其中了。
+  // 特别注意：如果self和other都是smi，这时候handle引用的就是
+  // 裸的smi。因此调用is_identical_to也可以完成比较！！！
   if (self.is_identical_to(other)) {
     return true;
   }
