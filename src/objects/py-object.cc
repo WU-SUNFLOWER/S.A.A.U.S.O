@@ -542,10 +542,8 @@ Handle<PyObject> PyObject::Call(Handle<PyObject> self,
                                 Handle<PyObject> kwargs) {
   HandleScope scope;
 
-  assert(GetKlass(*self)->vtable_.call);
-  return GetKlass(*self)
-      ->vtable_.call(self, host, args, kwargs)
-      .EscapeFrom(&scope);
+  auto* call_method = GetKlass(*self)->vtable_.call;
+  return call_method(self, host, args, kwargs).EscapeFrom(&scope);
 }
 
 // python virtual function

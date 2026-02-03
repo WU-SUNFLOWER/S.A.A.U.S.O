@@ -53,16 +53,35 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
   return true;
 }
 
+bool Runtime_IsPyObjectCallable(Tagged<PyObject> object) {
+  if (object.is_null()) {
+    return false;
+  }
+
+  if (IsPyFunction(object) || IsMethodObject(object)) {
+    return true;
+  }
+
+  Tagged<Klass> klass = PyObject::GetKlass(object);
+  if (klass->vtable_.call != nullptr) {
+    return true;
+  }
+
+  return false;
+}
+
 void Runtime_ExtendListByItratableObject(Handle<PyList> list,
                                          Handle<PyObject> iteratable) {
   HandleScope scope;
 
   auto source_iterator = PyObject::Iter(iteratable);
-  auto iterator_next_func = PyObject::GetAttr(source_iterator, ST(next), false);
+  auto iterator_next_func =
+      Runtime_FindPropertyInMro(source_iterator, ST(next));
 
-#define CALL_NEXT_FUNC()                         \
-  Isolate::Current()->interpreter()->CallPython( \
-      iterator_next_func, Handle<PyTuple>::null(), Handle<PyDict>::null())
+#define CALL_NEXT_FUNC()                                            \
+  Isolate::Current()->interpreter()->CallPython(                    \
+      iterator_next_func, source_iterator, Handle<PyTuple>::null(), \
+      Handle<PyDict>::null())
 
   auto elem = CALL_NEXT_FUNC();
   while (!elem.is_null()) {
@@ -151,6 +170,26 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   klass->OrderSupers();
 
   return type_object.EscapeFrom(&scope);
+}
+
+Handle<PyObject> Runtime_FindPropertyInMro(Handle<PyObject> instance,
+                                           Handle<PyObject> prop_name) {
+  HandleScope scope;
+
+  // 沿着mro序列进行查找
+  Handle<PyList> mro_of_object = PyObject::GetKlass(instance)->mro();
+  for (auto i = 0; i < mro_of_object->length(); ++i) {
+    auto type_object =
+        handle(Tagged<PyTypeObject>::cast(*mro_of_object->Get(i)));
+    auto own_klass = type_object->own_klass();
+    auto klass_properties = own_klass->klass_properties();
+    auto result = klass_properties->Get(prop_name);
+    if (!result.is_null()) {
+      return result.EscapeFrom(&scope);
+    }
+  }
+
+  return Handle<PyObject>::null();
 }
 
 }  // namespace saauso::internal

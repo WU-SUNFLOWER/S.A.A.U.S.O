@@ -25,32 +25,21 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-keys = []
-values = []
+s = "xxyyzz"
+print(s.index("yy"))
+print(s.index("yy", 1))
+print(s.index("", 3))
+print(s.index("yy", 0, 4))
 
-class B(object):
-    def __setattr__(self, k, v):
-        if k in keys:
-            index = keys.index(k)
-            values[index] = v
-        else:
-            keys.append(k)
-            values.append(v)
+l = [1, 2, 1, 3]
+print(l.index(1))
+print(l.index(1, 1))
+print(l.index(1, 1, 3))
 
-    def __getattr__(self, k):
-        if k in keys:
-            index = keys.index(k)
-            return values[index]
-        else:
-            return None
-
-b = B()
-#b.foo = 1
-#b.bar = 2
-#print(b.foo)
-#print(b.bar)
-#b.foo = 3
-#print(b.foo)
+t = (1, 2, 1, 3)
+print(t.index(1))
+print(t.index(1, 1))
+print(t.index(1, 1, 3))
 )";
 
 int main() {

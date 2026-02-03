@@ -268,7 +268,7 @@ Handle<PyObject> NativeMethod_Sort(Handle<PyObject> self,
       Handle<PyObject> elem = list->Get(i);
       key_args->SetInternal(0, elem);
       Handle<PyObject> key = Isolate::Current()->interpreter()->CallPython(
-          key_func, key_args, empty_kwargs);
+          key_func, Handle<PyObject>::null(), key_args, empty_kwargs);
       keys->Set(i, key);
     }
   }

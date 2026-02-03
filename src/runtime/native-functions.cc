@@ -173,7 +173,7 @@ Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
 
   auto class_properties = PyDict::NewInstance();
   Isolate::Current()->interpreter()->CallPython(
-      class_builder, Handle<PyTuple>::null(), Handle<PyDict>::null(),
+      class_builder, Handle<PyTuple>::null(), Handle<PyTuple>::null(), Handle<PyDict>::null(),
       class_properties);
 
   return Runtime_CreatePythonClass(class_name, class_properties, class_supers)

@@ -26,10 +26,12 @@ class Interpreter {
   void Run(Handle<PyCodeObject> code_object);
 
   Handle<PyObject> CallPython(Handle<PyObject> callable,
+                              Handle<PyObject> host,
                               Handle<PyTuple> pos_args,
                               Handle<PyDict> kw_args);
 
   Handle<PyObject> CallPython(Handle<PyObject> callable,
+                              Handle<PyObject> host,
                               Handle<PyTuple> pos_args,
                               Handle<PyDict> kw_args,
                               Handle<PyDict> bound_locals);
@@ -54,6 +56,7 @@ class Interpreter {
 
   template <typename... ExtendArgs>
   Handle<PyObject> CallPythonImpl(Handle<PyObject> callable,
+                                  Handle<PyObject> host,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs,
                                   ExtendArgs... extend_args);

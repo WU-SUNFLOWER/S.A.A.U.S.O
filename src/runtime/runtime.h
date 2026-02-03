@@ -33,6 +33,9 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
                                                Handle<PyDict> class_properties,
                                                Handle<PyList> supers);
 
+Handle<PyObject> Runtime_FindPropertyInMro(Handle<PyObject> instance,
+                                           Handle<PyObject> prop_name);
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_RUNTIME_RUNTIME_H_

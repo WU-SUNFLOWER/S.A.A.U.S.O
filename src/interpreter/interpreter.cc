@@ -108,27 +108,29 @@ void Interpreter::Run(Handle<PyCodeObject> code_object) {
 }
 
 Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
+                                         Handle<PyObject> host,
                                          Handle<PyTuple> pos_args,
                                          Handle<PyDict> kw_args) {
-  return CallPythonImpl(callable, pos_args, kw_args);
+  return CallPythonImpl(callable, host, pos_args, kw_args);
 }
 
 Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
+                                         Handle<PyObject> host,
                                          Handle<PyTuple> pos_args,
                                          Handle<PyDict> kw_args,
                                          Handle<PyDict> bound_locals) {
-  return CallPythonImpl(callable, pos_args, kw_args, bound_locals);
+  return CallPythonImpl(callable, host, pos_args, kw_args, bound_locals);
 }
 
 // private
 template <typename... ExtendArgs>
 Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
+                                             Handle<PyObject> host,
                                              Handle<PyTuple> pos_args,
                                              Handle<PyDict> kw_args,
                                              ExtendArgs... extend_args) {
   HandleScope scope;
 
-  Handle<PyObject> host;
   NormalizeCallable(callable, host);
 
   Handle<PyObject> result;
@@ -153,6 +155,8 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   }
 
   // 兜底：尝试调用callable的call虚方法
+  // 如果对象无法被调用，执行PyObject::Call后会抛出错误。
+  // 类似于TypeError: 'xxx' object is not callable
   result = PyObject::Call(callable, host, pos_args, kw_args);
   return result;
 }
@@ -162,6 +166,7 @@ void Interpreter::NormalizeCallable(Handle<PyObject>& callable,
                                     Handle<PyObject>& host) {
   // 如果是对象方法，那么进行解包
   if (IsMethodObject(callable)) {
+    // 如果传入的已经是待解包的host，理论上不应该再显式传入host
     assert(host.is_null());
     auto method = Handle<MethodObject>::cast(callable);
     callable = method->func();
