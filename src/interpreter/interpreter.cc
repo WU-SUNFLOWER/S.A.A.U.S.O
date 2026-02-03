@@ -154,6 +154,14 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     return result.EscapeFrom(&scope);
   }
 
+  // Fast Path: 如果是NativeFunction，直接执行调用
+  if (IsNativePyFunction(callable)) {
+    auto func_object = Handle<PyFunction>::cast(callable);
+    auto* native_func_ptr = func_object->native_func();
+    result = native_func_ptr(host, pos_args, kw_args);
+    return result.EscapeFrom(&scope);
+  }
+
   // 兜底：尝试调用callable的call虚方法
   // 如果对象无法被调用，执行PyObject::Call后会抛出错误。
   // 类似于TypeError: 'xxx' object is not callable

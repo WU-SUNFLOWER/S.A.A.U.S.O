@@ -211,4 +211,79 @@ print(a["one"]) # Error
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, OperatorOverloading4) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+keys = []
+values = []
+
+class B(object):
+    def __setattr__(self, k, v):
+        if k in keys:
+            index = keys.index(k)
+            values[index] = v
+        else:
+            keys.append(k)
+            values.append(v)
+
+    def __getattr__(self, k):
+        if k in keys:
+            index = keys.index(k)
+            return values[index]
+        else:
+            return None
+
+b = B()
+b.foo = 1
+b.bar = 2
+print(b.foo)
+print(b.bar)
+b.foo = 3
+print(b.foo)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SimpleClassInheritance) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A(object):
+    def say(self):
+        print("I am A")
+
+class B(A):
+    def say(self):
+        print("I am B")
+
+class C(A):
+    pass
+
+b = B()
+c = C()
+
+b.say()    # "I am B"
+c.say()    # "I am A"
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  AppendExpected(expected_printv_result, PyString::NewInstance("I am B"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("I am A"));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

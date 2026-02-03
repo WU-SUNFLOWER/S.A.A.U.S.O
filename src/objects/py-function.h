@@ -40,6 +40,11 @@ class PyFunction : public PyObject {
   Handle<PyTuple> closures() const;
   Tagged<PyTuple> closures_tagged() const;
 
+  NativeFuncPointer native_func() const {
+    assert(native_func_ != nullptr);
+    return native_func_;
+  }
+
  private:
   friend class PyFunctionKlass;
   friend class NativeFunctionKlass;

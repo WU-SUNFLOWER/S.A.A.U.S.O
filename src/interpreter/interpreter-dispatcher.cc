@@ -697,6 +697,16 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
   Handle<PyTuple> pos_args;
   Handle<PyDict> kw_args;
   NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
+
+  // 如果是NativeFunction，直接执行调用，不走开销昂贵的虚函数
+  if (IsNativePyFunction(callable)) {
+    auto func_object = Handle<PyFunction>::cast(callable);
+    auto* native_func_ptr = func_object->native_func();
+    PUSH(native_func_ptr(host, pos_args, kw_args));
+    return;
+  }
+
+  // 兜底：调用对象的__call__虚函数
   Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
   PUSH(result);
 }

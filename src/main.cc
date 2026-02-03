@@ -25,8 +25,22 @@ using namespace saauso::internal;
 
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-lst = [1, 2, 3, 4, 5, 6, "hello"]
-print(lst)
+class A(object):
+    def say(self):
+        print("I am A")
+
+class B(A):
+    def say(self):
+        print("I am B")
+
+class C(A):
+    pass
+
+b = B()
+c = C()
+
+b.say()    # "I am B"
+c.say()    # "I am A"
 )";
 
 int main() {

@@ -29,6 +29,8 @@ Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 
 int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value);
 
+bool Runtime_IsPyObjectCallable(Tagged<PyObject> object);
+
 Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
                                                Handle<PyDict> class_properties,
                                                Handle<PyList> supers);
