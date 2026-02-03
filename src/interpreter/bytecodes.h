@@ -16,6 +16,7 @@ namespace saauso::internal {
   V(Nop, 9)                \
   V(BinarySubscr, 25)      \
   V(StoreSubscr, 60)       \
+  V(DeleteSubscr, 61)      \
   V(GetIter, 68)           \
   V(LoadBuildClass, 71)    \
   V(ReturnValue, 83)       \

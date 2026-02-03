@@ -99,4 +99,116 @@ b.say()
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, OperatorOverloading1) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self, v):
+        self.value = v
+
+    def __add__(self, a):
+        print("executing operator +")
+        return A(self.value + a.value)
+
+a = A(1)
+b = A(2)
+c = a + b       # executing operator +
+print(a.value)   # 1
+print(b.value)   # 2
+print(c.value)   # 3
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  AppendExpected(expected_printv_result,
+                 PyString::NewInstance("executing operator +"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, OperatorOverloading2) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, v):
+        return Vector(self.x + v.x, self.y + v.y)
+
+    def __len__(self):
+        return self.x * self.x + self.y * self.y
+
+print(len(Vector(3, 4)))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(25)));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, OperatorOverloading3) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self, *args):
+        self.attrs = dict()
+        n = len(args)
+        i = 0
+        while (i < n):
+            a = args[i]
+            i += 1
+            b = args[i]
+            i += 1
+            self.attrs[a] = b
+            
+    def __getitem__(self, key):
+        if key in self.attrs:
+            return self.attrs[key]
+        else:
+            return "Error"
+
+    def __setitem__(self, key, value):
+        self.attrs[key] = value
+
+    def __delitem__(self, key):
+        del self.attrs[key]
+
+    def __str__(self):
+        return "object of A"
+
+a = A("hello", "hi", "how are you", "fine")
+print(a["hello"])           # hi
+print(a["how are you"])     # fine
+a["one"] = 1
+print(a["one"])             # 1
+del a["one"]
+print(a["one"]) # Error
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  AppendExpected(expected_printv_result, PyString::NewInstance("hi"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("fine"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, PyString::NewInstance("Error"));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

@@ -25,7 +25,7 @@ TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
   auto value = handle(PySmi::FromInt(42));
 
   PyObject::SetAttr(func, key, value);
-  auto result = PyObject::GetAttr(func, key);
+  auto result = PyObject::GetAttr(func, key, false);
 
   EXPECT_TRUE(result.is_identical_to(value));
 }
@@ -38,7 +38,8 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
 
   auto append =
       PyObject::GetAttr(Handle<PyObject>(list),
-                        Handle<PyObject>(PyString::NewInstance("append")));
+                        Handle<PyObject>(PyString::NewInstance("append")),
+                        false);
 
   ASSERT_FALSE(append.is_null());
   EXPECT_TRUE(IsMethodObject(append));

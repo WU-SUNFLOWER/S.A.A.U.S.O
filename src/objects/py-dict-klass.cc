@@ -152,6 +152,7 @@ void PyDictKlass::PreInitialize() {
   vtable_.del_subscr = &Virtual_DeleteSubscr;
   vtable_.contains = &Virtual_Contains;
   vtable_.iter = &Virtual_Iter;
+  vtable_.construct_instance = &Virtual_Default_ConstructInstance;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
@@ -308,6 +309,16 @@ void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
 bool PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                    Handle<PyObject> subscr) {
   return Handle<PyDict>::cast(self)->Contains(subscr);
+}
+
+Handle<PyObject> PyDictKlass::Virtual_Default_ConstructInstance(
+    Tagged<Klass> klass_self,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(klass_self == PyDictKlass::GetInstance());
+
+  // TODO
+  return PyDict::NewInstance();
 }
 
 // static

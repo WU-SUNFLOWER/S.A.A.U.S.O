@@ -50,6 +50,9 @@ struct VirtualTable {
                                                  OopHandle,
                                                  OopHandle,
                                                  OopHandle);
+  using VirtualFuncType_1_2_SAFE_TRY = OopHandle (*)(OopHandle,
+                                                     OopHandle,
+                                                     bool);
 
   using VirtualFuncType_1_1_SAFE_CBOOL = bool (*)(OopHandle);
   using VirtualFuncType_1_2_SAFE_CBOOL = bool (*)(OopHandle, OopHandle);
@@ -70,8 +73,9 @@ struct VirtualTable {
 
   uint64_t (*hash)(OopHandle){nullptr};
 
-  // Tagged<PyObject> getattr(Tagged<PyObject> object, Tagged<PyObject> key);
-  VirtualFuncType_1_2_SAFE getattr{nullptr};
+  // Handle<PyObject> getattr(Handle<PyObject> object, Handle<PyObject> key,
+  // bool is_try);
+  VirtualFuncType_1_2_SAFE_TRY getattr{nullptr};
   // Tagged<PyObject> setattr(Tagged<PyObject> object, Tagged<PyObject> key,
   // Tagged<PyObject> value);
   VirtualFuncType_0_3_SAFE setattr{nullptr};
@@ -176,7 +180,8 @@ class Klass : public Object {
                                                Handle<PyObject> kwargs);
   static Handle<PyObject> Virtual_Default_GetAttr(
       Handle<PyObject> self,
-      Handle<PyObject> property_name);
+      Handle<PyObject> property_name,
+      bool is_try);
   static Handle<PyObject> Virtual_Default_GetAttrForCall(
       Handle<PyObject> self,
       Handle<PyObject> property_name,

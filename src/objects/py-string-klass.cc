@@ -303,7 +303,7 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
     std::fprintf(stderr,
-                 "TypeError: can only concatenate str (not \"%.*s\") to str",
+                 "TypeError: can only concatenate str (not \"%.*s\") to str\n",
                  static_cast<int>(other_klass->name()->length()),
                  other_klass->name()->buffer());
     std::exit(1);

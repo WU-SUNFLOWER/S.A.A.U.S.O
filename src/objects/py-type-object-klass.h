@@ -25,7 +25,8 @@ class PyTypeObjectKlass : public Klass {
   static void Virtual_Print(Handle<PyObject> self);
 
   static Handle<PyObject> Virtual_GetAttr(Handle<PyObject> self,
-                                          Handle<PyObject> prop_name);
+                                          Handle<PyObject> prop_name,
+                                          bool is_try);
   static void Virtual_SetAttr(Handle<PyObject> self,
                               Handle<PyObject> prop_name,
                               Handle<PyObject> prop_value);

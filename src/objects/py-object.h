@@ -134,7 +134,8 @@ class PyObject : public Object {
   static bool LessEqualBool(Handle<PyObject> self, Handle<PyObject> other);
 
   static Handle<PyObject> GetAttr(Handle<PyObject> self,
-                                  Handle<PyObject> attr_name);
+                                  Handle<PyObject> attr_name,
+                                  bool is_try);
   static Handle<PyObject> GetAttrForCall(Handle<PyObject> self,
                                          Handle<PyObject> attr_name,
                                          Handle<PyObject>& self_or_null);

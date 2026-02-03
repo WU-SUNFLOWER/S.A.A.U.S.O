@@ -83,9 +83,22 @@ void PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
 
 Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(
     Handle<PyObject> self,
-    Handle<PyObject> prop_name) {
+    Handle<PyObject> prop_name,
+    bool is_try) {
+  assert(IsPyString(prop_name));
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
-  return own_klass->klass_properties()->Get(prop_name);
+  Handle<PyObject> result = own_klass->klass_properties()->Get(prop_name);
+  if (!result.is_null()) {
+    return result;
+  }
+  if (is_try) {
+    return Handle<PyObject>::null();
+  }
+  std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
+               PyObject::GetKlass(self)->name()->buffer(),
+               Handle<PyString>::cast(prop_name)->buffer());
+  std::exit(1);
+  return Handle<PyObject>::null();
 }
 
 void PyTypeObjectKlass::Virtual_SetAttr(Handle<PyObject> self,
@@ -118,6 +131,7 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
                                                  Handle<PyObject> kwargs) {
   auto type_object = Handle<PyTypeObject>::cast(self);
   auto own_klass = type_object->own_klass();
+  // type object本身并不知道如何创建新对象的逻辑，需要转发给对应的klass
   return own_klass->ConstructInstance(args, kwargs);
 }
 

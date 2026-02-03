@@ -37,6 +37,12 @@ class PyDictKlass : public Klass {
   static void Virtual_DeleteSubscr(Handle<PyObject> self,
                                    Handle<PyObject> subscr);
   static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
+
+  static Handle<PyObject> Virtual_Default_ConstructInstance(
+      Tagged<Klass> klass_self,
+      Handle<PyObject> args,
+      Handle<PyObject> kwargs);
+
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };

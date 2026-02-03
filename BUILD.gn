@@ -58,6 +58,7 @@ source_set("saauso_core") {
     "//src/objects/fixed-array-klass.h",
     "//src/objects/fixed-array.cc",
     "//src/objects/fixed-array.h",
+    "//src/objects/klass-default-vtable.cc",
     "//src/objects/klass.cc",
     "//src/objects/klass.h",
     "//src/objects/mark-word.cc",

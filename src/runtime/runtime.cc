@@ -58,7 +58,7 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
   HandleScope scope;
 
   auto source_iterator = PyObject::Iter(iteratable);
-  auto iterator_next_func = PyObject::GetAttr(source_iterator, ST(next));
+  auto iterator_next_func = PyObject::GetAttr(source_iterator, ST(next), false);
 
 #define CALL_NEXT_FUNC()                         \
   Isolate::Current()->interpreter()->CallPython( \

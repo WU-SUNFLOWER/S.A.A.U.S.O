@@ -106,6 +106,12 @@ void Interpreter::EvalCurrentFrame() {
     PyObject::StoreSubscr(object, subscr, value);
   })
 
+  INTERPRETER_HANDLER_WITH_SCOPE(DeleteSubscr, {
+    Handle<PyObject> subscr = POP();
+    Handle<PyObject> object = POP();
+    PyObject::DeletSubscr(object, subscr);
+  })
+
   INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
 
   INTERPRETER_HANDLER_DISPATCH(
@@ -277,7 +283,7 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     // 一般的属性获取，走常规的GetAttr虚函数查询
-    PUSH(PyObject::GetAttr(object, attr_name));
+    PUSH(PyObject::GetAttr(object, attr_name, false));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(CompareOp, {

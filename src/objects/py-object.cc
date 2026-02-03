@@ -425,11 +425,14 @@ bool PyObject::LessEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
 
 // python virtual function
 Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
-                                   Handle<PyObject> attr_name) {
+                                   Handle<PyObject> attr_name,
+                                   bool is_try) {
   HandleScope scope;
 
   assert(GetKlass(*self)->vtable_.getattr);
-  return GetKlass(*self)->vtable_.getattr(self, attr_name).EscapeFrom(&scope);
+  return GetKlass(*self)
+      ->vtable_.getattr(self, attr_name, is_try)
+      .EscapeFrom(&scope);
 }
 
 Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
@@ -449,7 +452,7 @@ Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   }
 
   // Fallback
-  Handle<PyObject> value = GetAttr(self, attr_name);
+  Handle<PyObject> value = GetAttr(self, attr_name, false);
   if (IsMethodObject(value)) {
     auto method = Handle<MethodObject>::cast(value);
     self_or_null = method->owner();
