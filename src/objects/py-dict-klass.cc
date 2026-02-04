@@ -291,7 +291,7 @@ Handle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
 void PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                       Handle<PyObject> subscr,
                                       Handle<PyObject> value) {
-  PyDict::Put(self, subscr, value);
+  PyDict::Put(Handle<PyDict>::cast(self), subscr, value);
 }
 
 // static

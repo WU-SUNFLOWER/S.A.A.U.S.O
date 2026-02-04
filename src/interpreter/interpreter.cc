@@ -61,6 +61,8 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
               PyDictKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("tuple"),
               PyTupleKlass::GetInstance()->type_object());
+  PyDict::Put(builtins, PyString::NewInstance("type"),
+              PyTypeObjectKlass::GetInstance()->type_object());
 
   // 注册oddballs
   PyDict::Put(builtins, PyString::NewInstance("True"),

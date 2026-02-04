@@ -228,7 +228,8 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
       return PyString::NewInstance("None");
     }
 
-    Handle<PyObject> method = Runtime_FindPropertyInMro(value, ST(str));
+    Handle<PyObject> method =
+        Runtime_FindPropertyInInstanceTypeMro(value, ST(str));
     if (!method.is_null()) {
       Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
           method, value, Handle<PyTuple>::null(), Handle<PyDict>::null());
@@ -259,7 +260,8 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     std::exit(1);
   }
 
-  std::fprintf(stderr, "TypeError: str() takes at most 3 arguments (%lld given)\n",
+  std::fprintf(stderr,
+               "TypeError: str() takes at most 3 arguments (%lld given)\n",
                static_cast<long long>(argc));
   std::exit(1);
 }

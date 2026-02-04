@@ -35,6 +35,10 @@ class PyTypeObjectKlass : public Klass {
   static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
   static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
 
+  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
+
   static Handle<PyObject> Virtual_Call(Handle<PyObject> self,
                                        Handle<PyObject> host,
                                        Handle<PyObject> args,

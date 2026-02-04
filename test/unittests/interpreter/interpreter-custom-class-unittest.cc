@@ -450,4 +450,134 @@ __build_class__(body, 1)
       "name is not a string");
 }
 
+TEST_F(BasicInterpreterTest, TypeObjectMroSingleInheritanceIsC3Linearized) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A(object):
+    pass
+
+class B(A):
+    pass
+
+class C(B):
+    pass
+
+m = C.__mro__
+print(len(m))
+print(m[0] is C)
+print(m[1] is B)
+print(m[2] is A)
+print(m[3] is object)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, TypeObjectMroDiamondIsC3Linearized) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A(object):
+    pass
+
+class B(A):
+    pass
+
+class C(A):
+    pass
+
+class D(B, C):
+    pass
+
+m = D.__mro__
+print(len(m))
+print(m[0] is D)
+print(m[1] is B)
+print(m[2] is C)
+print(m[3] is A)
+print(m[4] is object)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(5)));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, LoadAttrOnTypeObjectFindsPropertyFromBaseMro) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A(object):
+    value = 1
+
+class B(A):
+    pass
+
+class C(B):
+    value = 3
+
+print(B.value)
+print(C.value)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, LoadAttrOnTypeObjectMissRaisesAttributeError) {
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+class A(object):
+    pass
+
+print(A.miss)
+)";
+        RunScript(kSource, kInterpreterTestFileName);
+      },
+      "AttributeError");
+}
+
+TEST_F(BasicInterpreterTest, LoadAttrOnInstanceFallsBackToClassMroProperty) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A(object):
+    x = 7
+
+class B(A):
+    pass
+
+b = B()
+print(b.x)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

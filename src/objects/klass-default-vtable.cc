@@ -24,7 +24,8 @@ Handle<PyObject> FindMagicOperationMethodAndCall(Handle<PyObject> object,
                                                  Handle<PyTuple> args,
                                                  Handle<PyDict> kwargs,
                                                  Handle<PyObject> func_name) {
-  Handle<PyObject> method = Runtime_FindPropertyInMro(object, func_name);
+  Handle<PyObject> method =
+      Runtime_FindPropertyInInstanceTypeMro(object, func_name);
   if (!method.is_null()) {
     return Isolate::Current()->interpreter()->CallPython(method, object, args,
                                                          kwargs);
@@ -78,7 +79,8 @@ void Klass::InitializeVTable() {
 
 void Klass::Virtual_Default_Print(Handle<PyObject> self) {
   // 先尝试查找对象的__str__方法
-  Handle<PyObject> method = Runtime_FindPropertyInMro(self, ST(str));
+  Handle<PyObject> method =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(str));
   if (method.is_null()) {
     // 没有找到，再尝试查找__repr__方法
     method = PyObject::GetAttr(self, ST(repr), true);
@@ -109,7 +111,8 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
                                              Handle<PyObject> host,
                                              Handle<PyObject> args,
                                              Handle<PyObject> kwargs) {
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(call));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(call));
   if (callable.is_null()) {
     std::fprintf(stderr, "TypeError: '%s' object is not callable\n",
                  PyObject::GetKlass(self)->name()->buffer());
@@ -140,7 +143,7 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   }
 
   // 2. 沿着 MRO 序列在类字典中查找prop_name
-  result = Runtime_FindPropertyInMro(self, prop_name);
+  result = Runtime_FindPropertyInInstanceTypeMro(self, prop_name);
   if (!result.is_null()) {
     // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
     //   （这样调用时 self 才会自动传入）。
@@ -154,7 +157,8 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
 
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
-  Handle<PyObject> getattr_func = Runtime_FindPropertyInMro(self, ST(getattr));
+  Handle<PyObject> getattr_func =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(getattr));
   if (!getattr_func.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, prop_name);
@@ -197,7 +201,7 @@ Handle<PyObject> Klass::Virtual_Default_GetAttrForCall(
     }
   }
 
-  result = Runtime_FindPropertyInMro(self, prop_name);
+  result = Runtime_FindPropertyInInstanceTypeMro(self, prop_name);
   if (!result.is_null()) {
     if (IsPyFunction(result) || IsPyNativeFunction(result)) {
       self_or_null = self;
@@ -265,7 +269,8 @@ Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
 
 bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(gt));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(gt));
   if (callable.is_null()) {
     PrintCompareUnsupported(self, other, ">");
   }
@@ -279,7 +284,8 @@ bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
 
 bool Klass::Virtual_Default_Less(Handle<PyObject> self,
                                  Handle<PyObject> other) {
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(lt));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(lt));
   if (callable.is_null()) {
     PrintCompareUnsupported(self, other, "<");
   }
@@ -297,7 +303,8 @@ bool Klass::Virtual_Default_Equal(Handle<PyObject> self,
     return true;
   }
 
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(eq));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(eq));
   if (callable.is_null()) {
     return false;
   }
@@ -313,7 +320,8 @@ bool Klass::Virtual_Default_Equal(Handle<PyObject> self,
 
 bool Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
                                      Handle<PyObject> other) {
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(ne));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(ne));
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
@@ -327,7 +335,8 @@ bool Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
 
 bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(ge));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(ge));
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
@@ -342,7 +351,8 @@ bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
 
 bool Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
-  Handle<PyObject> callable = Runtime_FindPropertyInMro(self, ST(le));
+  Handle<PyObject> callable =
+      Runtime_FindPropertyInInstanceTypeMro(self, ST(le));
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
@@ -377,10 +387,11 @@ Handle<PyObject> Klass::Virtual_Default_ConstructInstance(
   PyDict::Put(PyObject::GetProperties(instance), ST(class), type_object);
 
   // 如果用户自定义类有__init__方法，那么调用之
-  auto init_method = Runtime_FindPropertyInMro(instance, ST(init));
+  auto init_method = Runtime_FindPropertyInInstanceTypeMro(instance, ST(init));
   if (!init_method.is_null()) {
-    Isolate::Current()->interpreter()->CallPython(
-        init_method, instance, Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs));
+    Isolate::Current()->interpreter()->CallPython(init_method, instance,
+                                                  Handle<PyTuple>::cast(args),
+                                                  Handle<PyDict>::cast(kwargs));
   }
 
   return instance;

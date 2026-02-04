@@ -219,7 +219,7 @@ void PyDict::Remove(Handle<PyObject> key) {
 }
 
 // static
-void PyDict::Put(Handle<PyObject> object,
+void PyDict::Put(Handle<PyDict> object,
                  Handle<PyObject> key,
                  Handle<PyObject> value) {
   HandleScope scope;

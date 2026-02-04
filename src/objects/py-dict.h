@@ -35,7 +35,7 @@ class PyDict : public PyObject {
 
   int64_t occupied() const { return occupied_; }
 
-  static void Put(Handle<PyObject> dict,
+  static void Put(Handle<PyDict> dict,
                   Handle<PyObject> key,
                   Handle<PyObject> value);
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict);

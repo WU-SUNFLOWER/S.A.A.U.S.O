@@ -63,8 +63,9 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsFloatParseError) {
 float("bad")
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-              "ValueError: could not convert string to float: 'bad'");
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "ValueError: could not convert string to float: 'bad'");
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
@@ -74,8 +75,9 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
 str("abc", "utf-8")
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-              "TypeError: decoding str is not supported");
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError: decoding str is not supported");
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
@@ -85,8 +87,9 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
 int(x=1)
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-              "TypeError: int\\(\\) takes no keyword arguments");
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError: int\\(\\) takes no keyword arguments");
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
@@ -96,8 +99,9 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
 int("4611686018427387904")
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-              "OverflowError: int too large to convert to Smi");
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "OverflowError: int too large to convert to Smi");
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
@@ -107,8 +111,9 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
 int("0x10", 10)
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-              "ValueError: invalid literal for int\\(\\) with base 10: '0x10'");
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "ValueError: invalid literal for int\\(\\) with base 10: '0x10'");
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsListAndTuple) {
@@ -144,4 +149,40 @@ print(tuple([1, 2]))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsType) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+print(type(1) is int)
+print(type(int) is type)
+print(type(type) is type)
+C = type("C", (), {})
+o = C()
+print(type(o) is C)
+print(isinstance(o, object))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject());
+  ExpectPrintResult(expected_printv_result);
 }
+
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArgCountError) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+type()
+)";
+
+  EXPECT_EXIT(
+      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError: type\\(\\) takes 1 or 3 arguments");
+}
+
+}  // namespace saauso::internal

@@ -180,12 +180,19 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   return scope.Escape(type_object);
 }
 
-Handle<PyObject> Runtime_FindPropertyInMro(Handle<PyObject> instance,
-                                           Handle<PyObject> prop_name) {
+Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
+    Handle<PyObject> instance,
+    Handle<PyObject> prop_name) {
+  return Runtime_FindPropertyInKlassMro(PyObject::GetKlass(instance),
+                                        prop_name);
+}
+
+Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
+                                                Handle<PyObject> prop_name) {
   EscapableHandleScope scope;
 
   // 沿着mro序列进行查找
-  Handle<PyList> mro_of_object = PyObject::GetKlass(instance)->mro();
+  Handle<PyList> mro_of_object = klass->mro();
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto type_object =
         handle(Tagged<PyTypeObject>::cast(*mro_of_object->Get(i)));
