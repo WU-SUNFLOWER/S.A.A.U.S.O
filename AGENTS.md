@@ -200,38 +200,109 @@ if (method != NULL) {
 - **cpython312-pyc-file-parser**：解析 CPython 3.12 `.pyc` 并构建 `PyCodeObject`。
 - **cpython312-pyc-compiler（可选）**：通过嵌入式 CPython 3.12 生成 `.pyc`（对应 GN 目标 `saauso_cpython312_compiler`）。
 
-## 4. 代码规范
+## 4. 代码规范（人类程序员和AI助手都必须严格遵守）
 
-### 4.1. 风格
-- **标准**: 遵循[Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)。
-- **命名空间**: 所有内部代码必须位于 `namespace saauso::internal` 中。
-- **头文件依赖**: 为降低编译期依赖复杂度，优先使用前置声明；仅在需要完整类型（例如按值成员、继承、`sizeof`/`alignof`、模板/内联实现）时才 `#include`。
+S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)。
+
+### 4.1. 代码文件规范
 - **文件**:
   - C++ 源文件: `*.cc`
   - C++ 头文件: `*.h`
   - 文件名: `kebab-case` (例如 `py-code-object.cc`)。
+- **头文件依赖**: 
+  - 为降低编译期依赖复杂度，减少编译/链接错误，优先使用前置声明。
+  - 仅在需要完整类型（例如按值成员、继承、`sizeof`/`alignof`、模板/内联实现）时才 `#include`。
+
+### 4.2. 代码风格
+- **命名空间**: 所有内部代码必须位于 `namespace saauso::internal` 中。
+- **通用命名规则**
+  - 名称应该是描述性的（Descriptive）。例如`int num_errors;`, `int num_dns_connections;`。
+  - 严禁使用缩写，除非该缩写在项目外也非常通用（如`dns`, `url`）。不要通过删除单词中的字母来缩写（例如严禁使用`cstmr_id`代替`customer_id`）。
 - **类**: `PascalCase`。
 - **变量**: `snake_case`，类成员变量以 `_` 结尾。
+- **常量**: `kPascalCase`（例如`constexpr int kDaysInAWeek = 7;`, `const std::string kAndroid8_0 = "Android 8.0";`）
+- **函数**: `PascalCase`（例如`class UrlTable`、`struct UrlTableProperties`、`using PropertiesMap = hash_map<UrlTableProperties*, string>;`）
+  - 例外：类属性的访问器与修改器，可以与变量命名风格对齐。Getter使用变量名本身（不要加`get_`前缀），Setter使用`set_ + 变量名`。例如：
+    ```C++
+    class MyClass {
+    public:
+      int count() const { return count_; }        // Getter
+      void set_count(int count) { count_ = count; } // Setter
+    private:
+      int count_;
+    };
+    ```
+
+- **枚举值**: `kCamelCase`，例子：
+  ```C++
+  enum UrlTableErrors {
+    kOk = 0,
+    kOutOfMemory,
+    kMalformedInput,
+  };
+  ```
+- **宏**: `MACRO_CASE`。在头文件中定义宏需要非常谨慎，应保证命名独特，以免污染全局命名空间。
 - **类/结构体声明（头文件）**: 
   1. 访问控制段按 `public`→`protected`→`private`
   1. 数据成员集中放在末尾并尽量为 `private`（除非确有继承扩展需要）。
   2. 每段内部按以下顺序排列：
-    - 类型与类型别名（例如typedef、using、enum、嵌套struct/class、友元类型）
-    - 静态常量
-    - 工厂函数
-    - 构造函数与赋值运算符
-    - 析构函数
-    - 其他所有函数（静态与非静态成员函数，以及友元函数）
-    - 其他所有数据成员（静态与非静态）
-- **注释**: 关键代码需添加
+      - 类型与类型别名（例如typedef、using、enum、嵌套struct/class、友元类型）
+      - 静态常量
+      - 工厂函数
+      - 构造函数与赋值运算符
+      - 析构函数
+      - 其他所有函数（静态与非静态成员函数，以及友元函数）
+      - 其他所有数据成员（静态与非静态）
 
-### 4.2. 版权头
-所有新文件必须包含标准的许可证头：
-```cpp
-// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
-// Use of this source code is governed by a GNU-style license that can be
-// found in the LICENSE file.
-```
+### 4.3. 注释风格
+- **整体风格 (Generic Comment Style)**：
+  - 统一使用`//`风格。
+  - 除文件头部的版权声明外，正文代码统一采用**简体中文注释**。
+  - 注释应像正式文档一样编写，注意英文术语大小写和中文标点符号。
+  - 完整的句子通常比句子片段或词组更具可读性。
+- **文件注释 (File Comments)**：
+  - 版权声明：所有新文件必须包含如下的标准许可证头。
+  ```cpp
+  // Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+  // Use of this source code is governed by a GNU-style license that can be
+  // found in the LICENSE file.
+  ```
+  - 如果一个头文件（`.h`）声明了多个面向用户的抽象概念（如一组相关的类或函数），应在文件开头进行整体描述。
+      - **注意**：具体的类或函数文档应放在各自的声明处，不要堆砌在文件开头。
+  - `.cc` 文件通常不需要文件级注释，除非它包含不属于任何头文件的独立实现细节。
+- **类与结构体注释 (Class and Struct Comments)**
+  - **必须写注释的情况**：所有非显而易见（non-obvious）的类或结构体都必须有注释。
+  - **内容**：描述该类的用途（what it is for）以及如何使用（how it should be used）。
+    - **可选**：如果确认该类或结构体属于长时间内不会发生变动的基建，可以提供一小段示例代码。
+  - **示例**：
+  ```C++
+  // 用于遍历GargantuanTable中的内容。
+  // 示例:
+  //    std::unique_ptr<GargantuanTableIterator> iter = table->NewIterator();
+  //    for (iter->Seek("foo"); !iter->done(); iter->Next()) {
+  //      process(iter->key(), iter->value());
+  //    }
+  class GargantuanTableIterator {
+    ...
+  };
+  ```
+- **声明处的函数注释 (Function Declaration Comments)**
+  - **位置**：几乎每个函数的声明前都应有注释。
+  - **内容**：描述函数做什么（what it does）以及如何使用（how to use it）。不要描述它是如何实现的（这是定义处注释的任务）。
+  - **措辞**：使用祈使句语气，以动词开头（隐含主语"该函数"）。例如："打开文件"。
+  - **必须包含的细节**：
+    - 输入参数和输出结果。尤其是当参数含义不明显时（例如传入true/false开关）。
+    - 指针/Handle参数是否允许为`null`。
+    - 如有：需特别说明的其他内容（例如使用该函数对性能的影响等）。
+- **定义处的函数注释 (Function Declaration Comments)**
+  - **内容**：描述函数是如何工作的（how it does its job）。
+  - **适用场景**：解释复杂的实现逻辑、算法步骤、或者是为什么选择了这种实现方式而非其他方案。
+  - **避免**：不要简单重复声明处的注释。
+- **函数实现细节注释（Function Implementation Comments）**
+  - **代码块**：在晦涩、复杂或巧妙的代码段前添加解释性注释。
+  - **行尾注释**：如果是简短的说明，可以放在代码行尾，但要注意格式整洁。
+- **TODO 注释**：使用全大写的TODO，例如`TODO: 当X模块完成后，移除此处逻辑`。
+
 
 ## 5. 开发工作流
 
