@@ -94,7 +94,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
     int line_no,
     Handle<PyString> line_table,
     Handle<PyString> exception_table) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyCodeObject> object(
       Isolate::Current()->heap()->Allocate<PyCodeObject>(
@@ -141,7 +141,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
 
   PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 // static

@@ -24,25 +24,27 @@ namespace saauso::internal {
 
 namespace {
 Handle<PyObject> NextImpl(Handle<PyObject> self) {
-  HandleScope scope;
+  EscapableHandleScope scope;
+
   auto iterator = Handle<PyListIterator>::cast(self);
   auto list = iterator->owner();
   assert(!list.is_null());
 
   auto iter_cnt = iterator->iter_cnt();
+  auto result = Handle<PyObject>::null();
   if (iter_cnt < list->length()) {
-    auto result = list->Get(iter_cnt);
+    result = list->Get(iter_cnt);
     iterator->increase_iter_cnt();
-    return result.EscapeFrom(&scope);
   }
-  return Handle<PyObject>::null();
+
+  return scope.Escape(result);
 }
 
 Handle<PyObject> Native_Next(Handle<PyObject> self,
                              Handle<PyTuple> args,
                              Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return NextImpl(self).EscapeFrom(&scope);
+  EscapableHandleScope scope;
+  return scope.Escape(NextImpl(self));
 }
 }  // namespace
 

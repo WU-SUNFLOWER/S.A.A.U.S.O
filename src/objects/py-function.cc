@@ -19,7 +19,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyFunction> PyFunction::NewInstance(Handle<PyCodeObject> code_object) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   Handle<PyFunction> object = NewInstanceInternal();
 
   object->func_code_ = *code_object;
@@ -29,13 +29,13 @@ Handle<PyFunction> PyFunction::NewInstance(Handle<PyCodeObject> code_object) {
   // 绑定klass
   SetKlass(object, PyFunctionKlass::GetInstance());
 
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 // static
 Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
                                            Handle<PyString> func_name) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   Handle<PyFunction> object = NewInstanceInternal();
 
   object->native_func_ = native_func;
@@ -44,7 +44,7 @@ Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
   // 绑定klass
   SetKlass(object, NativeFunctionKlass::GetInstance());
 
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 Handle<PyFunction> PyFunction::NewInstanceInternal() {

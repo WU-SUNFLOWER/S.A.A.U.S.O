@@ -196,7 +196,7 @@ Handle<PyString> CPython312PycFileParser::ParseString(bool is_long_string) {
 }
 
 Handle<PyCodeObject> CPython312PycFileParser::Parse() {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   // .pyc header: magic_number + flags + (timestamp/hash, size/hash)。
   // 解析器当前只需要跳过它们，真正的语义由 marshal payload 决定。
@@ -240,13 +240,13 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
     cache->Set(index, code_object);
   }
 
-  return code_object.EscapeFrom(&scope);
+  return scope.Escape(code_object);
 }
 
 Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
     Handle<PyList> string_table,
     Handle<PyList> cache) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   // 这里的读取顺序必须严格匹配 CPython3.12 marshal 对 code object 的写入顺序。
   int arg_count = ReadInt32();
@@ -294,13 +294,13 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
       bytecodes, consts, names, localsplusnames, localspluskinds, file_name,
       co_name, qual_name, begin_line_no, line_table, exception_table);
 
-  return result.EscapeFrom(&scope);
+  return scope.Escape(result);
 }
 
 Handle<PyObject> CPython312PycFileParser::ParseObject(
     Handle<PyList> string_table,
     Handle<PyList> cache) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   // marshal 的每个对象以一个 raw_tag 开始：高 1bit 是 ref_flag，低 7bit 是
   // tag。
@@ -457,10 +457,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     cache->Set(cache_index, object);
   }
 
-  if (object.is_null()) {
-    return Handle<PyObject>::null();
-  }
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 }  // namespace saauso::internal

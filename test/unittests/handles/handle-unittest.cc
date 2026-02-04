@@ -28,9 +28,9 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
   Handle<PyObject> str1 = PyString::NewInstance("Hello World");
 
   auto f = []() -> Handle<PyObject> {
-    HandleScope scope;
+    EscapableHandleScope scope;
     Handle<PyObject> object = PyString::NewInstance("Hello World");
-    return object.EscapeFrom(&scope);
+    return scope.Escape(object);
   };
 
   Handle<PyObject> str2 = PyString::NewInstance("I love you");

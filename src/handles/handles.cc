@@ -56,7 +56,7 @@ void HandleScope::Close() {
   }
 }
 
-Address* HandleScope::EscapeFromSelf(Address ptr) {
+Address* HandleScope::CloseAndEscape(Address ptr) {
   // 释放自己
   assert(!is_closed_);
   Close();

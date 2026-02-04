@@ -33,7 +33,7 @@ namespace {
 Handle<PyObject> NativeMethod_Upper(Handle<PyObject> self,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto str_object = Handle<PyString>::cast(self);
   auto result =
@@ -46,13 +46,13 @@ Handle<PyObject> NativeMethod_Upper(Handle<PyObject> self,
     }
   }
 
-  return result.EscapeFrom(&scope);
+  return scope.Escape(result);
 }
 
 Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto str_object = Handle<PyString>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -115,7 +115,7 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
     std::exit(1);
   }
 
-  return handle(PySmi::FromInt(result)).EscapeFrom(&scope);
+  return scope.Escape(handle(PySmi::FromInt(result)));
 }
 
 }  // namespace

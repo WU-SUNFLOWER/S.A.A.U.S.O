@@ -194,7 +194,7 @@ bool PyString::IsGreaterThan(Tagged<PyString> other) {
 Handle<PyString> PyString::Slice(Handle<PyString> self,
                                  int64_t from,
                                  int64_t to) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(0 <= from && from <= to && to < self->length_);
 
@@ -202,12 +202,12 @@ Handle<PyString> PyString::Slice(Handle<PyString> self,
   Handle<PyString> result = PyString::NewInstance(sliced_length);
 
   std::memcpy(result->writable_buffer(), self->buffer() + from, sliced_length);
-  return result.EscapeFrom(&scope);
+  return scope.Escape(result);
 }
 
 Handle<PyString> PyString::Append(Handle<PyString> self,
                                   Handle<PyString> other) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   int new_length = self->length_ + other->length();
   Handle<PyString> new_object(PyString::NewInstance(new_length));
@@ -216,7 +216,7 @@ Handle<PyString> PyString::Append(Handle<PyString> self,
   std::memcpy(new_object->writable_buffer() + self->length_, other->buffer(),
               other->length());
 
-  return new_object.EscapeFrom(&scope);
+  return scope.Escape(new_object);
 }
 
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {

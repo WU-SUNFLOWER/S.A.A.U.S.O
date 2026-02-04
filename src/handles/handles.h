@@ -29,6 +29,9 @@ class HandleScope {
 
   ~HandleScope();
 
+ protected:
+  Address* CloseAndEscape(Address ptr);
+
  private:
   friend class HandleScopeImplementer;
 
@@ -42,8 +45,6 @@ class HandleScope {
   static void AssertValidLocation(Address* location);
 
   void Close();
-
-  Address* EscapeFromSelf(Address ptr);
 
   Isolate* isolate_{nullptr};
   State previous_;
@@ -61,13 +62,9 @@ class EscapableHandleScope final : public HandleScope {
 
   template <typename T>
   Handle<T> Escape(Handle<T> value) {
-    assert(!has_escaped_);
-    has_escaped_ = true;
-    return value.EscapeFrom(this);
+    return value.is_null() ? Handle<T>::null()
+                           : Handle<T>(CloseAndEscape(value.location_));
   }
-
- private:
-  bool has_escaped_{false};
 };
 
 template <typename T>
@@ -119,13 +116,6 @@ class Handle {
 
   constexpr bool is_null() const { return location_ == nullptr; }
   static Handle<T> null() { return Handle<T>(); }
-
-  Handle<T> EscapeFrom(HandleScope* scope) {
-    if (is_null()) {
-      return Handle<T>::null();
-    }
-    return Handle<T>(scope->EscapeFromSelf(*location_));
-  }
 
   Address* location() const { return location_; }
 

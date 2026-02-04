@@ -128,26 +128,28 @@ Handle<PyObject> Native_Len(Handle<PyObject> host,
 Handle<PyObject> Native_IsInstance(Handle<PyObject> host,
                                    Handle<PyTuple> args,
                                    Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto object = args->Get(0);
   auto mro_of_object = PyObject::GetKlass(object)->mro();
   auto target_type_object = args->Get(1);
 
+  auto result = handle(Isolate::Current()->py_false_object());
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto curr_type_object = mro_of_object->Get(i);
     if (PyObject::EqualBool(curr_type_object, target_type_object)) {
-      return handle(Isolate::Current()->py_true_object()).EscapeFrom(&scope);
+      result = handle(Isolate::Current()->py_true_object());
+      break;
     }
   }
 
-  return handle(Isolate::Current()->py_false_object()).EscapeFrom(&scope);
+  return scope.Escape(result);
 }
 
 Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
                                         Handle<PyTuple> args,
                                         Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   if (args->length() < 2) [[unlikely]] {
     std::fprintf(stderr, "__build_class__: not enough arguments");
@@ -173,11 +175,12 @@ Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
 
   auto class_properties = PyDict::NewInstance();
   Isolate::Current()->interpreter()->CallPython(
-      class_builder, Handle<PyTuple>::null(), Handle<PyTuple>::null(), Handle<PyDict>::null(),
-      class_properties);
+      class_builder, Handle<PyTuple>::null(), Handle<PyTuple>::null(),
+      Handle<PyDict>::null(), class_properties);
 
-  return Runtime_CreatePythonClass(class_name, class_properties, class_supers)
-      .EscapeFrom(&scope);
+  Handle<PyTypeObject> type_object =
+      Runtime_CreatePythonClass(class_name, class_properties, class_supers);
+  return scope.Escape(type_object);
 }
 
 }  // namespace saauso::internal

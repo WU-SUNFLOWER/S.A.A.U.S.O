@@ -16,7 +16,7 @@
 namespace saauso::internal {
 
 Handle<PyDictKeys> PyDictKeys::NewInstance(Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDictKeys> view(Isolate::Current()->heap()->Allocate<PyDictKeys>(
       Heap::AllocationSpace::kNewSpace));
@@ -25,7 +25,7 @@ Handle<PyDictKeys> PyDictKeys::NewInstance(Handle<PyObject> owner) {
   PyObject::SetKlass(view, PyDictKeysKlass::GetInstance());
   PyObject::SetProperties(*view, Tagged<PyDict>::null());
 
-  return view.EscapeFrom(&scope);
+  return scope.Escape(view);
 }
 
 Tagged<PyDictKeys> PyDictKeys::cast(Tagged<PyObject> object) {
@@ -39,7 +39,7 @@ Handle<PyDict> PyDictKeys::owner() const {
 }
 
 Handle<PyDictValues> PyDictValues::NewInstance(Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDictValues> view(Isolate::Current()->heap()->Allocate<PyDictValues>(
       Heap::AllocationSpace::kNewSpace));
@@ -48,7 +48,7 @@ Handle<PyDictValues> PyDictValues::NewInstance(Handle<PyObject> owner) {
   PyObject::SetKlass(view, PyDictValuesKlass::GetInstance());
   PyObject::SetProperties(*view, Tagged<PyDict>::null());
 
-  return view.EscapeFrom(&scope);
+  return scope.Escape(view);
 }
 
 Tagged<PyDictValues> PyDictValues::cast(Tagged<PyObject> object) {
@@ -62,7 +62,7 @@ Handle<PyDict> PyDictValues::owner() const {
 }
 
 Handle<PyDictItems> PyDictItems::NewInstance(Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDictItems> view(Isolate::Current()->heap()->Allocate<PyDictItems>(
       Heap::AllocationSpace::kNewSpace));
@@ -71,7 +71,7 @@ Handle<PyDictItems> PyDictItems::NewInstance(Handle<PyObject> owner) {
   PyObject::SetKlass(view, PyDictItemsKlass::GetInstance());
   PyObject::SetProperties(*view, Tagged<PyDict>::null());
 
-  return view.EscapeFrom(&scope);
+  return scope.Escape(view);
 }
 
 Tagged<PyDictItems> PyDictItems::cast(Tagged<PyObject> object) {
@@ -86,7 +86,7 @@ Handle<PyDict> PyDictItems::owner() const {
 
 Handle<PyDictKeyIterator> PyDictKeyIterator::NewInstance(
     Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDictKeyIterator> iterator(
       Isolate::Current()->heap()->Allocate<PyDictKeyIterator>(
@@ -98,7 +98,7 @@ Handle<PyDictKeyIterator> PyDictKeyIterator::NewInstance(
   PyObject::SetKlass(iterator, PyDictKeyIteratorKlass::GetInstance());
   PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
 
-  return iterator.EscapeFrom(&scope);
+  return scope.Escape(iterator);
 }
 
 Tagged<PyDictKeyIterator> PyDictKeyIterator::cast(Tagged<PyObject> object) {
@@ -113,7 +113,7 @@ Handle<PyDict> PyDictKeyIterator::owner() const {
 
 Handle<PyDictValueIterator> PyDictValueIterator::NewInstance(
     Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDictValueIterator> iterator(
       Isolate::Current()->heap()->Allocate<PyDictValueIterator>(
@@ -125,7 +125,7 @@ Handle<PyDictValueIterator> PyDictValueIterator::NewInstance(
   PyObject::SetKlass(iterator, PyDictValueIteratorKlass::GetInstance());
   PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
 
-  return iterator.EscapeFrom(&scope);
+  return scope.Escape(iterator);
 }
 
 Tagged<PyDictValueIterator> PyDictValueIterator::cast(Tagged<PyObject> object) {
@@ -140,7 +140,7 @@ Handle<PyDict> PyDictValueIterator::owner() const {
 
 Handle<PyDictItemIterator> PyDictItemIterator::NewInstance(
     Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDictItemIterator> iterator(
       Isolate::Current()->heap()->Allocate<PyDictItemIterator>(
@@ -152,7 +152,7 @@ Handle<PyDictItemIterator> PyDictItemIterator::NewInstance(
   PyObject::SetKlass(iterator, PyDictItemIteratorKlass::GetInstance());
   PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
 
-  return iterator.EscapeFrom(&scope);
+  return scope.Escape(iterator);
 }
 
 Tagged<PyDictItemIterator> PyDictItemIterator::cast(Tagged<PyObject> object) {

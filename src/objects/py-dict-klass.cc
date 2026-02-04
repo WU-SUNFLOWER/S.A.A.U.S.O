@@ -59,7 +59,7 @@ Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
 Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   if (args->length() < 1 || args->length() > 2) {
     std::fprintf(stderr,
@@ -73,11 +73,11 @@ Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
   auto value = dict->Get(key);
   if (!value.is_null()) {
     dict->Remove(key);
-    return value.EscapeFrom(&scope);
+    return scope.Escape(value);
   }
 
   if (args->length() == 2) {
-    return args->Get(1).EscapeFrom(&scope);
+    return scope.Escape(args->Get(1));
   }
 
   std::printf("KeyError: ");
@@ -89,28 +89,28 @@ Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
 Handle<PyObject> NativeMethod_Keys(Handle<PyObject> self,
                                    Handle<PyTuple> args,
                                    Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return PyDictKeys::NewInstance(self).EscapeFrom(&scope);
+  EscapableHandleScope scope;
+  return scope.Escape(PyDictKeys::NewInstance(self));
 }
 
 Handle<PyObject> NativeMethod_Values(Handle<PyObject> self,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return PyDictValues::NewInstance(self).EscapeFrom(&scope);
+  EscapableHandleScope scope;
+  return scope.Escape(PyDictValues::NewInstance(self));
 }
 
 Handle<PyObject> NativeMethod_Items(Handle<PyObject> self,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return PyDictItems::NewInstance(self).EscapeFrom(&scope);
+  EscapableHandleScope scope;
+  return scope.Escape(PyDictItems::NewInstance(self));
 }
 
 Handle<PyObject> NativeMethod_Get(Handle<PyObject> self,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
 
@@ -119,7 +119,7 @@ Handle<PyObject> NativeMethod_Get(Handle<PyObject> self,
     result = handle(Isolate::Current()->py_none_object());
   }
 
-  return result.EscapeFrom(&scope);
+  return scope.Escape(result);
 }
 
 }  // namespace

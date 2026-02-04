@@ -16,7 +16,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyTypeObject> PyTypeObject::NewInstance() {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyTypeObject> object(
       Isolate::Current()->heap()->Allocate<PyTypeObject>(
@@ -33,7 +33,7 @@ Handle<PyTypeObject> PyTypeObject::NewInstance() {
   // 初始化对象字段
   object->own_klass_ = Tagged<Klass>::null();
 
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 // static

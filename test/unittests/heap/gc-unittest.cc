@@ -228,12 +228,12 @@ TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
   HandleScope scope;
 
   // 关键点：
-  // - EscapeFrom 会把 inner scope 中的 handle “提升”到 outer scope
+  // - Escape 会把 inner scope 中的 handle “提升”到 outer scope
   // - 在 minor GC 中，handle slot 会被更新为新地址
   auto create_escaped_string = []() -> Handle<PyString> {
-    HandleScope inner_scope;
+    EscapableHandleScope inner_scope;
     auto s = PyString::NewInstance("escaped-string");
-    return s.EscapeFrom(&inner_scope);
+    return inner_scope.Escape(s);
   };
 
   Handle<PyString> escaped = create_escaped_string();

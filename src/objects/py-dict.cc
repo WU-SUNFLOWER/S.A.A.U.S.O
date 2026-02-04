@@ -44,7 +44,7 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
   // 我们要求init_capacity必须取2的幂次方
   assert((init_capacity & (init_capacity - 1)) == 0);
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   // 创建对象
   Handle<PyDict> object = NewInstanceWithoutAllocateData();
@@ -54,19 +54,19 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
   Handle<FixedArray> data = FixedArray::NewInstance(init_capacity * 2);
   object->data_ = *data;
 
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 // static
 Handle<PyDict> PyDict::Clone(Handle<PyDict> other) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyDict> result = NewInstanceWithoutAllocateData();
   Handle<FixedArray> data = FixedArray::Clone(other->data());
   result->occupied_ = other->occupied();
   result->data_ = *data;
 
-  return result.EscapeFrom(&scope);
+  return scope.Escape(result);
 }
 
 // static
@@ -257,7 +257,8 @@ void PyDict::Put(Handle<PyObject> object,
 
 // static
 Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
-  HandleScope scope;
+  EscapableHandleScope scope;
+
   int64_t out_length = dict->occupied();
   Handle<PyTuple> keys = PyTuple::NewInstance(out_length);
 
@@ -274,7 +275,8 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
     }
   }
   assert(out_index == out_length);
-  return keys.EscapeFrom(&scope);
+
+  return scope.Escape(keys);
 }
 
 // static

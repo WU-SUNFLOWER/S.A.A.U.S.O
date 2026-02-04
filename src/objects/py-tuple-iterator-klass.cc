@@ -25,18 +25,20 @@ namespace saauso::internal {
 namespace {
 
 Handle<PyObject> NextImpl(Handle<PyObject> self) {
-  HandleScope scope;
+  EscapableHandleScope scope;
+
   auto iterator = Handle<PyTupleIterator>::cast(self);
   auto tuple = iterator->owner();
   assert(!tuple.is_null());
 
+  auto result = Handle<PyObject>::null();
   auto iter_cnt = iterator->iter_cnt();
   if (iter_cnt < tuple->length()) {
-    auto result = tuple->Get(iter_cnt);
+    result = tuple->Get(iter_cnt);
     iterator->increase_iter_cnt();
-    return result.EscapeFrom(&scope);
   }
-  return Handle<PyObject>::null();
+
+  return scope.Escape(result);
 }
 
 Handle<PyObject> Native_Next(Handle<PyObject> self,

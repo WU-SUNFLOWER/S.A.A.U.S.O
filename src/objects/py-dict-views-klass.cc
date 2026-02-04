@@ -28,7 +28,7 @@ namespace {
 
 template <typename IteratorType, typename Getter>
 Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto iterator = Handle<IteratorType>::cast(self);
   auto dict = iterator->owner();
@@ -41,11 +41,11 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
       continue;
     }
     iterator->set_iter_index(index + 1);
-    return result.EscapeFrom(&scope);
+    return scope.Escape(result);
   }
 
   iterator->set_iter_index(dict->capacity());
-  return Handle<PyObject>::null();
+  return scope.Escape(Handle<PyObject>::null());
 }
 
 template <typename ViewType>
@@ -57,31 +57,40 @@ Handle<PyObject> DictViewLen(Handle<PyObject> self) {
 Handle<PyObject> Native_KeyIteratorNext(Handle<PyObject> self,
                                         Handle<PyTuple> args,
                                         Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return NextFromIterator<PyDictKeyIterator>(
-             self, [](Handle<PyDict> dict,
-                      int64_t index) { return dict->KeyAtIndex(index); })
-      .EscapeFrom(&scope);
+  EscapableHandleScope scope;
+
+  Handle<PyObject> result = NextFromIterator<PyDictKeyIterator>(
+      self, [](Handle<PyDict> dict, int64_t index) {
+        return dict->KeyAtIndex(index);
+      });
+
+  return scope.Escape(result);
 }
 
 Handle<PyObject> Native_ValueIteratorNext(Handle<PyObject> self,
                                           Handle<PyTuple> args,
                                           Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return NextFromIterator<PyDictValueIterator>(
-             self, [](Handle<PyDict> dict,
-                      int64_t index) { return dict->ValueAtIndex(index); })
-      .EscapeFrom(&scope);
+  EscapableHandleScope scope;
+
+  Handle<PyObject> result = NextFromIterator<PyDictValueIterator>(
+      self, [](Handle<PyDict> dict, int64_t index) {
+        return dict->ValueAtIndex(index);
+      });
+
+  return scope.Escape(result);
 }
 
 Handle<PyObject> Native_ItemIteratorNext(Handle<PyObject> self,
                                          Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
-  HandleScope scope;
-  return NextFromIterator<PyDictItemIterator>(
-             self, [](Handle<PyDict> dict,
-                      int64_t index) { return dict->ItemAtIndex(index); })
-      .EscapeFrom(&scope);
+  EscapableHandleScope scope;
+
+  Handle<PyObject> result = NextFromIterator<PyDictItemIterator>(
+      self, [](Handle<PyDict> dict, int64_t index) {
+        return dict->ItemAtIndex(index);
+      });
+
+  return scope.Escape(result);
 }
 
 }  // namespace

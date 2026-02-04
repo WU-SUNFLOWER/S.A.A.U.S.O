@@ -19,7 +19,7 @@ namespace saauso::internal {
 Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
   assert(0 <= length);
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   size_t object_size = ComputeObjectSize(length);
   Tagged<PyTuple> object(Isolate::Current()->heap()->AllocateRaw(
@@ -34,18 +34,18 @@ Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
 
   PyObject::SetKlass(object, PyTupleKlass::GetInstance());
 
-  return Handle<PyTuple>(object).EscapeFrom(&scope);
+  return scope.Escape(handle(object));
 }
 
 Handle<PyTuple> PyTuple::NewInstance(Handle<PyList> elements) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto length = elements->length();
   auto tuple = NewInstance(length);
   for (auto i = 0; i < length; ++i) {
     tuple->SetInternal(i, *elements->Get(i));
   }
-  return tuple.EscapeFrom(&scope);
+  return scope.Escape(tuple);
 }
 
 Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {

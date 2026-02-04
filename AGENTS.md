@@ -19,7 +19,7 @@
 ### 0.2. Top 10 必守规则（AI Checklist）
 1. 修改前先在仓库中搜索同类实现与既有模式，再决定具体写法（见 0.1）。
 2. 禁止在接口上传递 `PyObject*`；对外暴露与内部调用使用 `Tagged<PyObject>` 或 `Handle<PyObject>`（见 6.1）。
-3. 栈上持有 GC-able 对象必须使用 `Handle<T>`；跨 `HandleScope` 返回必须 `EscapeFrom` 或使用 `EscapableHandleScope::Escape`（见 6.1）。
+3. 栈上持有 GC-able 对象必须使用 `Handle<T>`；跨 `HandleScope` 返回必须使用 `EscapableHandleScope::Escape`（见 6.1）。
 4. 分配 `PyObject` 派生对象禁止使用 `new`；必须通过 `Isolate::Current()->heap()->Allocate<T>(...)` 获取地址并显式初始化字段与 `SetKlass`（见 6.2）。
 5. 不依赖构造函数写默认值：`Allocate/AllocateRaw` 不清零且不调用构造函数，默认值应在工厂函数中手工写入（见 6.2）。
 6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 3.1）。
@@ -124,7 +124,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 目前通过 `WRITE_BARRIER` 宏强制为空、且 `IterateRoots()` 内的 `IterateRememberedSet()` 调用被禁用，MVP 不依赖该机制。
 - **句柄系统 (`src/handles`)**:
   - `Handle<T>` 是“会被 GC 移动/回收的对象”的栈上安全持有方式；`Tagged<T>` 更接近裸指针语义。
-  - `HandleScope` 管理 handle 生命周期；跨 scope 返回时使用 `EscapeFrom`。
+  - `HandleScope` 管理 handle 生命周期；跨 scope 返回时应当使用语义更加明确的`EscapableHandleScope`。
   - 永久区对象（例如 `Isolate::py_none_object()` / `py_true_object()` / `py_false_object()`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
 - **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。**当前的目标是实现一个仅含有新生代scavenge gc的MVP版本**！
 
@@ -403,7 +403,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 - **禁止在接口上传递 `PyObject*`**：`PyObject` 语义上可能承载 Smi（并非真实对象指针），传裸指针会导致 C++ UB；对外暴露与内部调用都应使用 `Tagged<PyObject>` 或 `Handle<PyObject>`。
 - 该约束在源码注释中被视为“设计硬性前提”，相关说明集中在 `src/objects/py-object.h`。
 - **栈上持有 GC-able 对象必须用 Handle**：只要对象可能在新生代中被复制移动，就必须用 `Handle<T>` 防止悬垂引用。
-- **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `HandleScope scope;`，然后 `return result.EscapeFrom(&scope);`。
+- **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `EscapableHandleScope scope;`，然后 `return scope.Escape(result);`。
 - **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中；如果需要跨作用域/长期持有，请使用 `Global<T>`。
 
 #### Global（长期句柄，类似 v8::Global）

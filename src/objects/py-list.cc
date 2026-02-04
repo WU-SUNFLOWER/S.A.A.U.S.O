@@ -19,7 +19,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   // 分配对象本体
   Handle<PyList> object(Isolate::Current()->heap()->Allocate<PyList>(
@@ -43,7 +43,7 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   // AttributeError: 'list' object has no attribute '__dict__'
   PyObject::SetProperties(*object, Tagged<PyDict>::null());
 
-  return object.EscapeFrom(&scope);
+  return scope.Escape(object);
 }
 
 // static

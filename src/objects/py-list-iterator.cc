@@ -17,7 +17,7 @@
 namespace saauso::internal {
 
 Handle<PyListIterator> PyListIterator::NewInstance(Handle<PyObject> owner) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyListIterator> iterator(
       Isolate::Current()->heap()->Allocate<PyListIterator>(
@@ -29,7 +29,7 @@ Handle<PyListIterator> PyListIterator::NewInstance(Handle<PyObject> owner) {
   PyObject::SetKlass(iterator, PyListIteratorKlass::GetInstance());
   PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
 
-  return iterator.EscapeFrom(&scope);
+  return scope.Escape(iterator);
 }
 
 Tagged<PyListIterator> PyListIterator::cast(Tagged<PyObject> object) {
