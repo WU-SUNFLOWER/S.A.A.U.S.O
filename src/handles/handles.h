@@ -63,7 +63,7 @@ class EscapableHandleScope final : public HandleScope {
   template <typename T>
   Handle<T> Escape(Handle<T> value) {
     return value.is_null() ? Handle<T>::null()
-                           : Handle<T>(CloseAndEscape(value.location_));
+                           : Handle<T>(CloseAndEscape(*value.location()));
   }
 };
 
@@ -81,11 +81,11 @@ class Handle {
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>
   template <typename S>
-  Handle(Handle<S> other)  // NOLINT
+  constexpr Handle(Handle<S> other)  // NOLINT
     requires(is_subtype_v<S, T>)
       : Handle(other.location()) {}
 
-  T* operator->() const {
+  constexpr T* operator->() const {
     assert(!is_null());
 #if defined(_DEBUG) || defined(ASAN_BUILD)
     HandleScope::AssertValidLocation(location_);
@@ -93,7 +93,7 @@ class Handle {
     return Tagged<T>(*location_).operator->();
   }
 
-  Tagged<T> operator*() const {
+  constexpr Tagged<T> operator*() const {
     if (is_null()) {
       return Tagged<T>::null();
     }
@@ -104,7 +104,7 @@ class Handle {
   }
 
   template <class S>
-  static Handle<T> cast(Handle<S> that) {
+  constexpr static Handle<T> cast(Handle<S> that) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
     if (that.is_null()) {
       return Handle<T>::null();
@@ -115,12 +115,12 @@ class Handle {
   }
 
   constexpr bool is_null() const { return location_ == nullptr; }
-  static Handle<T> null() { return Handle<T>(); }
+  constexpr static Handle<T> null() { return Handle<T>(); }
 
-  Address* location() const { return location_; }
+  constexpr Address* location() const { return location_; }
 
   // 快速检测两个handle是否指向同一个对象
-  bool is_identical_to(const Handle<T> other) const {
+  constexpr bool is_identical_to(const Handle<T> other) const {
     return location() == other.location() || operator*() == *other;
   }
 
@@ -135,7 +135,7 @@ class Handle {
 
 // 工具函数，用于方便地将一个裸指针或tagged提升为一个handle
 template <typename T>
-Handle<T> handle(Tagged<T> object) {
+constexpr Handle<T> handle(Tagged<T> object) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
   if (!object.is_null()) {
     T::cast(object);
@@ -145,7 +145,7 @@ Handle<T> handle(Tagged<T> object) {
 }
 
 template <typename T>
-Handle<T> handle(T object) {
+constexpr Handle<T> handle(T object) {
   return handle(Tagged<T>(object));
 }
 
