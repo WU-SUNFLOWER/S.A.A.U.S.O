@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "src/handles/tagged.h"
+#include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -184,6 +185,13 @@ Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
   Handle<PyTypeObject> type_object =
       Runtime_CreatePythonClass(class_name, class_properties, class_supers);
   return scope.Escape(type_object);
+}
+
+Handle<PyObject> Native_Sysgc(Handle<PyObject> host,
+                              Handle<PyTuple> args,
+                              Handle<PyDict> kwargs) {
+  Isolate::Current()->heap()->CollectGarbage();
+  return handle(Isolate::Current()->py_none_object());
 }
 
 }  // namespace saauso::internal

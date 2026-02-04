@@ -147,6 +147,7 @@ void FrameObject::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&localsplus_);
   v->VisitPointer(&globals_);
   v->VisitPointer(&code_object_);
+  v->VisitPointer(&func_);
 }
 
 }  // namespace saauso::internal

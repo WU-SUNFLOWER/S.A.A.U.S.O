@@ -88,6 +88,10 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   PyDict::Put(builtins, func_name,
               PyFunction::NewInstance(&Native_BuildTypeObject, func_name));
 
+  func_name = PyString::NewInstance("sysgc");
+  PyDict::Put(builtins, func_name,
+              PyFunction::NewInstance(&Native_Sysgc, func_name));
+
   // 把builtins自己注册进去
   PyDict::Put(builtins, ST(builtins), builtins);
 
@@ -233,9 +237,10 @@ void Interpreter::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&kwarg_keys_);
 
   FrameObject* frame = current_frame_;
+  // 遍历函数调用栈
   while (frame != nullptr) {
     frame->Iterate(v);
-    frame = current_frame_->caller();
+    frame = frame->caller();
   }
 }
 

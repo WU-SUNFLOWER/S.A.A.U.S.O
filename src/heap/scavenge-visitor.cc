@@ -61,10 +61,6 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   // 如果当前slot处指针指向的对象已经被转发
   MarkWord mark_word = PyObject::GetMarkWord(object);
   if (mark_word.IsForwardingAddress()) {
-#ifdef _DEBUG
-    std::cout << "find a forwarding pointer. target="
-              << mark_word.ToForwardingAddress().ptr() << std::endl;
-#endif
     *slot_ptr = mark_word.ToForwardingAddress();
     return;
   }
@@ -76,11 +72,6 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   // 执行拷贝
   std::memcpy(reinterpret_cast<void*>(target_addr),
               reinterpret_cast<void*>(object.ptr()), size);
-
-#ifdef _DEBUG
-  std::cout << "copy from " << object.ptr() << " to " << target_addr
-            << std::endl;
-#endif  // _DEBUG
 
   // 在原对象所处的内存位置，安放forwarding pointer
   PyObject::SetMapWordForwarded(object, Tagged<PyObject>(target_addr));
