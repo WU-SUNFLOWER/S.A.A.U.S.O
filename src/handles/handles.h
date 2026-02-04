@@ -39,6 +39,8 @@ class HandleScope {
 
   static Address* CreateHandle(Address ptr);
 
+  static void AssertValidLocation(Address* location);
+
   void Close();
 
   Address* EscapeFromSelf(Address ptr);
@@ -46,6 +48,26 @@ class HandleScope {
   Isolate* isolate_{nullptr};
   State previous_;
   bool is_closed_{false};
+};
+
+template <typename T>
+class Handle;
+
+class EscapableHandleScope final : public HandleScope {
+ public:
+  EscapableHandleScope() = default;
+  EscapableHandleScope(const EscapableHandleScope&) = delete;
+  EscapableHandleScope& operator=(const EscapableHandleScope&) = delete;
+
+  template <typename T>
+  Handle<T> Escape(Handle<T> value) {
+    assert(!has_escaped_);
+    has_escaped_ = true;
+    return value.EscapeFrom(this);
+  }
+
+ private:
+  bool has_escaped_{false};
 };
 
 template <typename T>
@@ -68,11 +90,20 @@ class Handle {
 
   T* operator->() const {
     assert(!is_null());
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+    HandleScope::AssertValidLocation(location_);
+#endif
     return Tagged<T>(*location_).operator->();
   }
 
   Tagged<T> operator*() const {
-    return is_null() ? Tagged<T>::null() : Tagged<T>(*location_);
+    if (is_null()) {
+      return Tagged<T>::null();
+    }
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+    HandleScope::AssertValidLocation(location_);
+#endif
+    return Tagged<T>(*location_);
   }
 
   template <class S>

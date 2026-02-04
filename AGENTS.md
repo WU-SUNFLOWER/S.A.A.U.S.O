@@ -22,11 +22,11 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 基础对象系统：`PyObject/Klass/VTable`、`PyTypeObject`，以及若干内建类型（`int(Smi)`/`float`/`str`/`list`/`tuple`/`dict`/`bool`/`None`）。
   - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
   - 堆与 GC：按 `NewSpace/OldSpace/MetaSpace` 分区；MVP 以新生代 scavenge 为主（老生代回收仍在 TODO）。
-  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance` 等）。
+  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class` 等），并注入若干内建类型名（`object/int/str/list/bool/dict/tuple`）与单例（`True/False/None`）。
   - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
 - **尚未重点覆盖/仍在 TODO（非穷尽）**：
   - 异常体系（当前大量错误以 `stderr + exit(1)` 方式处理）。
-  - 老生代回收、写屏障/remembered set（目前 write barrier 处于禁用/空实现状态）。
+  - 老生代回收，以及分代式 GC 所需的 remembered set / write barrier（已实现雏形，但当前通过宏与 root-iterate 路径整体禁用，MVP 不做跨代引用处理）。
   - 更完整的 Python 语义：import/module、class 语义细节、生成器/协程等。
 
 ## 2. 仓库结构速览
@@ -44,6 +44,14 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `testing/gtest/`：项目内置的 GTest GN 封装目标（供 `ut` 依赖）。
 - `third_party/`：第三方代码（例如 `googletest` 上游源码、`rapidhash`）。
 
+## 2.1. 建议阅读路线（快速上手）
+- 生命周期与入口：从 [main.cc](file:///e:/MyProject/S.A.A.U.S.O/src/main.cc) 看初始化/创建 Isolate/执行 `.pyc`。
+- 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/isolate.cc)（`Init/InitMetaArea/TearDown`）。
+- 字节码执行主循环：读 [interpreter-dispatcher.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter-dispatcher.cc)（computed-goto handlers）。
+- 调用与参数绑定：读 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc) 与 [frame-object-builder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/frame-object-builder.cc)。
+- 对象模型与属性查找：读 [py-object.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-object.cc) 与 [klass.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc)。
+- 堆与新生代 GC：读 [heap.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/heap.cc) / [spaces.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/spaces.cc) / [scavenge-visitor.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/scavenge-visitor.cc)。
+
 ## 3. 架构指南
 
 本项目的架构设计深度借鉴了 V8 和 HotSpot。
@@ -56,11 +64,13 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - `Klass::vtable_` 保存各类操作的函数指针，优先使用以 `Handle<PyObject>` 为参数的 SAFE 版本，避免 GC 导致悬垂引用。
   - 新增/重写 slot 时：要么显式指向默认实现，要么确保所有调用点在 `nullptr` 时可处理（否则会空函数指针调用崩溃）。
   - `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内部所有 `Tagged<PyObject>` 引用字段。
+  - `getattr` 采用三参形式：`getattr(self, name, is_try)`。当 `is_try=true` 时属性 miss 返回 null；当 `is_try=false` 时属性 miss 走 `AttributeError + exit(1)`（当前异常体系尚未完善）。
+  - 比较与 `contains` 等热点 slot 在 VirtualTable 层以 C++ `bool` 作为 canonical 返回值；Python 语义需要 `True/False` 时由上层 wrapper 转换。
 - **Klass 也是 GC Root**:
   - `Klass::Iterate(ObjectVisitor*)` 负责把 `Klass` 自身持有的引用暴露给 GC；新增字段时必须同步更新。
 - **MRO/C3 与属性查找**:
   - `Klass::supers_` 语义上保存父类 `PyTypeObject` 列表；`OrderSupers()` 用 C3 线性化生成 `mro_`，并通常同时写入 `klass_properties_["mro"]`。
-  - 默认 getattr 流程：先沿 MRO 查 `__getattr__`，再查实例 dict（仅 heap object），最后沿 MRO 查类 dict；命中函数时包装成 `MethodObject(func, self)`。
+  - 默认 getattr 流程：先沿 MRO 查 `__getattr__`，再查实例 dict（仅 heap object），最后沿 MRO 查类 dict；命中函数时可按“普通语义”包装成 `MethodObject(func, self)`，但解释器的 call-shape 路径会优先走 `GetAttrForCall` 来避免分配 `MethodObject`（见 3.4.1）。
 - **Handle/Tagged 转换约定**:
   - `Handle<T>::cast` 依赖 `T::cast(...)` 做断言；若某类型未提供该断言函数，需要在T类型的.h及.cc文件中分别补充`Tagged<T> T::cast(Tagged<PyObject> object)`方法的定义与实现。
 - **对象布局关键约束**:
@@ -74,14 +84,18 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 
 ### 3.2. 内存管理 (`src/heap`)
 - **垃圾回收 (GC)**: 当前实现以新生代 Scavenge 为主。
-  - **NewSpace**: 复制算法（Eden + Survivor，Flip）。
+  - **NewSpace**: 复制算法（Eden + Survivor，Flip）。注意：当前 `NewSpace::Contains()` 仅判断 Eden；涉及空间判定时优先使用 `Heap::InNewSpaceEden()` / `Heap::InNewSpaceSurvivor()` 或直接对 `eden_space()/survivor_space()` 做 Contains。
   - **OldSpace**: 已划分空间，但回收逻辑仍在 TODO（目前可能出现老生代 OOM 即退出）。
   - **MetaSpace**: 永久区（例如 `None/True/False` 等全局单例与 `Klass` 相关数据）。
 - **根集合 (Roots)**:
   - `Isolate::klass_list_`：遍历各 `Klass` 内部引用（通常由各 `Klass::PreInitialize()` 注册）。
   - `HandleScopeImplementer`：遍历所有 handle blocks 内引用。
   - `Interpreter`：解释器内部持有的引用也会被遍历（见 `Heap::IterateRoots`）。
-  - Python 运行时根（栈帧/全局变量等）仍在 TODO（见 `Heap::IterateRoots`）。
+  - `StringTable` 当前把常用字符串驻留在 MetaSpace，`Heap::IterateRoots` 暂未开放其遍历入口。
+  - Python 运行时根（更完整的栈帧/全局变量等）仍在 TODO（见 `Heap::IterateRoots`）。
+- **Remembered set / Write barrier（现状）**:
+  - `Heap::RecordWrite()` 与 `remembered_set_` 已实现雏形，用于记录 “Old -> New” 跨代写入。
+  - 目前通过 `WRITE_BARRIER` 宏强制为空、且 `IterateRoots()` 内的 `IterateRememberedSet()` 调用被禁用，MVP 不依赖该机制。
 - **句柄系统 (`src/handles`)**:
   - `Handle<T>` 是“会被 GC 移动/回收的对象”的栈上安全持有方式；`Tagged<T>` 更接近裸指针语义。
   - `HandleScope` 管理 handle 生命周期；跨 scope 返回时使用 `EscapeFrom`。
@@ -97,12 +111,17 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 初始化 `StringTable`。
   - 创建全局单例 `None/True/False`（这些对象需要在大量初始化逻辑之前就可用）。
   - 正式初始化所有 `Klass`：`Initialize()`（常见动作：创建类字典、C3/MRO、绑定 type object 等）。
+- **销毁流程（关键）**:
+  - 先 `Finalize()` 所有 `Klass`（反向释放与清理元数据）。
+  - 再依次销毁 `StringTable`、`Interpreter`、`HandleScopeImplementer`、最后销毁 `Heap` 与 `mutex`，并清空 `klass_list_` 与 `None/True/False` 引用。
 - **Interpreter**: 当前字节码执行与内建函数注册入口（内建函数实现在 `native-functions.*`）。
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
 - **隔离性**: 主路径已迁移为 Isolate 架构；需要全局状态时，优先通过 `Isolate::Current()` 获取（而不是引入新的静态全局）。
 
 ### 3.4. 字节码解释器 (`src/interpreter`)
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。
+- **builtins 字典（行为对齐用）**：
+  - 除 `print/len/isinstance/build_class` 外，还会注入 `object/int/str/list/bool/dict/tuple` 的 type 对象、`True/False/None` 单例，并把 `builtins` 自身注册进 builtins dict（自引用）。
 - **computed-goto dispatcher**：`Interpreter::EvalCurrentFrame()` 使用 256 槽 dispatch table（未知 opcode 默认跳到 `unknown_bytecode`），每个 handler 内优先创建 `HandleScope`，避免 GC 移动导致悬垂引用。
 - **FrameObject（栈帧）**：
   - 保存 `stack/fast_locals/locals/globals/consts/names/code_object` 等字段，并在 `Iterate(ObjectVisitor*)` 中暴露为 GC roots。
@@ -234,7 +253,6 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ./build.sh asan
 ./build.sh ut
 ```
-注：`build.sh` 的 usage 文案仍写 `unittest`，但实际参数为 `ut`。
 
 在 Windows PowerShell 下可直接手动执行（注意目标名为 `vm`/`ut`）：
 ```powershell
@@ -286,6 +304,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ## 6. 给 AI Agent 的关键实现细节
 ### 6.1. Handle / Tagged 使用规则（非常重要）
 - **禁止在接口上传递 `PyObject*`**：`PyObject` 语义上可能承载 Smi（并非真实对象指针），传裸指针会导致 C++ UB；对外暴露与内部调用都应使用 `Tagged<PyObject>` 或 `Handle<PyObject>`。
+- 该约束在源码注释中被视为“设计硬性前提”，相关说明集中在 `src/objects/py-object.h`。
 - **栈上持有 GC-able 对象必须用 Handle**：只要对象可能在新生代中被复制移动，就必须用 `Handle<T>` 防止悬垂引用。
 - **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `HandleScope scope;`，然后 `return result.EscapeFrom(&scope);`。
 - **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中；如果需要跨作用域/长期持有，请使用 `Global<T>`。

@@ -32,7 +32,7 @@ namespace {
 Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
                                          Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
@@ -40,7 +40,7 @@ Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
   auto value = dict->Get(key);
   // 如果dict中已经有目标key，直接返回对应的value
   if (!value.is_null()) {
-    return value;
+    return scope.Escape(value);
   }
 
   // 确定默认值。
@@ -53,7 +53,7 @@ Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
   // 填充默认值
   PyDict::Put(dict, key, value);
 
-  return value;
+  return scope.Escape(value);
 }
 
 Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,

@@ -17,12 +17,12 @@ esac
 
 # 定义帮助信息
 usage() {
-    echo "使用方法: $0 [release | debug | asan | unittest]"
+    echo "使用方法: $0 [release | debug | asan | ut]"
     echo "------------------------------------------------"
     echo "  release  : 默认发布版本"
     echo "  debug    : 调试版本 (is_debug=true)"
     echo "  asan     : 内存检测版本 (is_asan=true)"
-    echo "  unittest : 单元测试版本 (is_asan=true, 编译 saauso_unittests)"
+    echo "  ut       : 单元测试版本 (is_asan=true, 编译 ut)"
     exit 1
 }
 

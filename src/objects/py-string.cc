@@ -5,14 +5,18 @@
 #include "src/objects/py-string.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
 
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-float.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/runtime/isolate.h"
+#include "src/utils/number-conversion.h"
 #include "third_party/rapidhash/rapidhash.h"
 
 namespace saauso::internal {
@@ -20,6 +24,7 @@ namespace saauso::internal {
 namespace {
 constexpr uint64_t kInvalidHashCache = 0;
 constexpr uint64_t kFallbackHashCache = kInvalidHashCache + 1;
+constexpr int kNumberToStringBufferSize = 32;
 }  // namespace
 
 ////////////////////////////////////////////////////////////
@@ -70,6 +75,40 @@ Handle<PyString> PyString::NewInstance(const char* source,
 Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
   return NewInstance(source, std::strlen(source), in_meta_space);
 }
+
+////////////////////////////////////////////////////////////
+
+// static
+Handle<PyString> PyString::FromPySmi(Tagged<PySmi> smi) {
+  return FromInt(PySmi::ToInt(smi));
+}
+
+// static
+Handle<PyString> PyString::FromInt(int64_t n) {
+  EscapableHandleScope scope;
+
+  std::array<char, kNumberToStringBufferSize> buffer{};
+  Int64ToStringView(n, std::string_view(buffer.data(), buffer.size()));
+  Handle<PyString> result = PyString::NewInstance(buffer.data());
+  return scope.Escape(result);
+}
+
+// static
+Handle<PyString> PyString::FromPyFloat(Handle<PyFloat> py_float) {
+  return FromDouble(py_float->value());
+}
+
+// static
+Handle<PyString> PyString::FromDouble(double n) {
+  EscapableHandleScope scope;
+
+  std::array<char, kNumberToStringBufferSize> buffer{};
+  DoubleToStringView(n, std::string_view(buffer.data(), buffer.size()));
+  Handle<PyString> result = PyString::NewInstance(buffer.data());
+  return scope.Escape(result);
+}
+
+////////////////////////////////////////////////////////////
 
 // static
 Tagged<PyString> PyString::cast(Tagged<PyObject> object) {

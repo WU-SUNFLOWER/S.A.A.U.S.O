@@ -77,38 +77,38 @@ void PrintObjectForError(FILE* out, Handle<PyObject> value) {
 Handle<PyObject> NativeMethod_Append(Handle<PyObject> self,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0));
-  return handle(Isolate::Current()->py_none_object());
+  return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 
 Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   if (object->IsEmpty()) {
     std::fprintf(stderr, "IndexError: pop from empty list\n");
     std::exit(1);
   }
-  return object->Pop();
+  return scope.Escape(object->Pop());
 }
 
 Handle<PyObject> NativeMethod_Insert(Handle<PyObject> self,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1));
-  return handle(Isolate::Current()->py_none_object());
+  return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 
 Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto list = Handle<PyList>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -167,13 +167,13 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
     std::exit(1);
   }
 
-  return handle(PySmi::FromInt(result));
+  return scope.Escape(handle(PySmi::FromInt(result)));
 }
 
 Handle<PyObject> NativeMethod_Reverse(Handle<PyObject> self,
                                       Handle<PyTuple> args,
                                       Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   auto list = Handle<PyList>::cast(self);
 
   auto length = list->length();
@@ -183,7 +183,7 @@ Handle<PyObject> NativeMethod_Reverse(Handle<PyObject> self,
     list->Set(length - i - 1, tmp);
   }
 
-  return handle(Isolate::Current()->py_none_object());
+  return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 
 Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
@@ -196,7 +196,7 @@ Handle<PyObject> NativeMethod_Extend(Handle<PyObject> self,
 Handle<PyObject> NativeMethod_Sort(Handle<PyObject> self,
                                    Handle<PyTuple> args,
                                    Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   if (!args.is_null() && args->length() != 0) {
     std::fprintf(stderr, "TypeError: sort() takes no positional arguments\n");
@@ -206,7 +206,7 @@ Handle<PyObject> NativeMethod_Sort(Handle<PyObject> self,
   auto list = Handle<PyList>::cast(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {
-    return handle(Isolate::Current()->py_none_object());
+    return scope.Escape(handle(Isolate::Current()->py_none_object()));
   }
 
   Handle<PyObject> key_func = handle(Isolate::Current()->py_none_object());
@@ -316,7 +316,7 @@ Handle<PyObject> NativeMethod_Sort(Handle<PyObject> self,
     }
   }
 
-  return handle(Isolate::Current()->py_none_object());
+  return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 
 }  // namespace

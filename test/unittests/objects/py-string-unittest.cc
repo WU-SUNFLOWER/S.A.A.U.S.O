@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <limits>
 
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
@@ -179,6 +180,23 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
             Isolate::Current()->py_false_object().ptr());
   EXPECT_EQ(PyObject::Contains(s, not_a_string).ptr(),
             Isolate::Current()->py_false_object().ptr());
+}
+
+TEST_F(PyStringTest, FromIntAndFromDoubleWork) {
+  HandleScope scope;
+
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(0), "0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(-42), "-42"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromPySmi(PySmi::FromInt(233)), "233"));
+
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1.0), "1.0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1000000.0), "1000000.0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1e-5), "1e-05"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1e16), "1e+16"));
+  EXPECT_TRUE(IsPyStringEqual(
+      PyString::FromDouble(std::numeric_limits<double>::infinity()), "inf"));
+  EXPECT_TRUE(IsPyStringEqual(
+      PyString::FromDouble(-std::numeric_limits<double>::infinity()), "-inf"));
 }
 
 TEST_F(PyStringTest, StringUpperMethod) {

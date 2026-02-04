@@ -30,6 +30,7 @@ executable("ut") {
     "./objects/py-tuple-unittest.cc",
     "./test-helpers.cc",
     "./test-utils.cc",
+    "./utils/number-conversion-unittest.cc",
     "./utils/string-search-unittest.cc",
   ]
 

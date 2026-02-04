@@ -101,7 +101,7 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
 }
 
 Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
-  HandleScope scope;
+  EscapableHandleScope scope;
   Handle<PyTuple> tuple;
   // Fast Path: List转Tuple
   if (IsPyList(iterable)) {
@@ -110,7 +110,7 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
     for (auto i = 0; i < list->length(); ++i) {
       tuple->SetInternal(i, list->Get(i));
     }
-    return tuple;
+    return scope.Escape(tuple);
   }
 
   // Fallback: 通过迭代器进行转换
@@ -120,11 +120,11 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
   for (auto i = 0; i < tmp->length(); ++i) {
     tuple->SetInternal(i, tmp->Get(i));
   }
-  return tuple.EscapeFrom(&scope);
+  return scope.Escape(tuple);
 }
 
 Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   if (!IsPyList(object)) {
     std::fprintf(stderr,
@@ -137,7 +137,7 @@ Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   for (auto i = 0; i < list->length(); ++i) {
     tuple->SetInternal(i, list->Get(i));
   }
-  return tuple.EscapeFrom(&scope);
+  return scope.Escape(tuple);
 }
 
 int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
@@ -158,7 +158,7 @@ int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
 Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
                                                Handle<PyDict> class_properties,
                                                Handle<PyList> supers) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   Handle<PyTypeObject> type_object = PyTypeObject::NewInstance();
 
@@ -177,12 +177,12 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   // 为klass计算mro
   klass->OrderSupers();
 
-  return type_object.EscapeFrom(&scope);
+  return scope.Escape(type_object);
 }
 
 Handle<PyObject> Runtime_FindPropertyInMro(Handle<PyObject> instance,
                                            Handle<PyObject> prop_name) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   // 沿着mro序列进行查找
   Handle<PyList> mro_of_object = PyObject::GetKlass(instance)->mro();
@@ -193,7 +193,7 @@ Handle<PyObject> Runtime_FindPropertyInMro(Handle<PyObject> instance,
     auto klass_properties = own_klass->klass_properties();
     auto result = klass_properties->Get(prop_name);
     if (!result.is_null()) {
-      return result.EscapeFrom(&scope);
+      return scope.Escape(result);
     }
   }
 

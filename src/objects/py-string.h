@@ -13,6 +13,9 @@
 
 namespace saauso::internal {
 
+class PyFloat;
+class PySmi;
+
 class PyString : public PyObject {
  public:
   static constexpr int kNotFound = StringSearch::kNotFound;
@@ -24,6 +27,11 @@ class PyString : public PyObject {
   static Handle<PyString> NewInstance(const char* source,
                                       int64_t str_length,
                                       bool in_meta_space = false);
+
+  static Handle<PyString> FromPySmi(Tagged<PySmi> smi);
+  static Handle<PyString> FromInt(int64_t n);
+  static Handle<PyString> FromPyFloat(Handle<PyFloat> py_float);
+  static Handle<PyString> FromDouble(double n);
 
   static Tagged<PyString> cast(Tagged<PyObject> object);
 

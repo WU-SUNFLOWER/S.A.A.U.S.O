@@ -11,11 +11,17 @@
 
 namespace saauso::internal {
 
+class PyString;
+
 // PySmi只是一个幻影类！
 // 外界永远无法创建一个PySmi实例对象，
 // 只能使用PySmi*类型的指针来保存整型值！
 class PySmi : public PyObject {
  public:
+  static constexpr int kSmiValueSize = 63;
+  static constexpr int64_t kSmiMinValue = -(int64_t{1} << (kSmiValueSize - 1));
+  static constexpr int64_t kSmiMaxValue = -(kSmiMinValue + 1);
+
   PySmi() = delete;
   PySmi(const PySmi&) = delete;
 
@@ -32,6 +38,8 @@ class PySmi : public PyObject {
 
   // 将一个整型转换成Tagged<PySmi>
   static Tagged<PySmi> FromInt(int64_t value);
+
+  static Tagged<PySmi> FromPyString(Tagged<PyString> py_string);
 
   // 将裸的Tagged<PyObject>指针转成Tagged<PySmi>
   static Tagged<PySmi> cast(Tagged<PyObject> object);

@@ -222,10 +222,10 @@ Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
                                            PySmi::cast(*other).value()));
   }
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.add);
-  return GetKlass(*self)->vtable_.add(self, other).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.add(self, other));
 }
 
 // python virtual function
@@ -236,10 +236,10 @@ Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
                                            PySmi::cast(*other).value()));
   }
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.sub);
-  return GetKlass(*self)->vtable_.sub(self, other).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.sub(self, other));
 }
 
 // python virtual function
@@ -250,18 +250,18 @@ Handle<PyObject> PyObject::Mul(Handle<PyObject> self, Handle<PyObject> other) {
                                            PySmi::cast(*other).value()));
   }
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.mul);
-  return GetKlass(*self)->vtable_.mul(self, other).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.mul(self, other));
 }
 
 // python virtual function
 Handle<PyObject> PyObject::Div(Handle<PyObject> self, Handle<PyObject> other) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.div);
-  return GetKlass(*self)->vtable_.div(self, other).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.div(self, other));
 }
 
 Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
@@ -274,7 +274,7 @@ Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
         PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
   }
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto floor_div = GetKlass(*self)->vtable_.floor_div;
   if (floor_div == nullptr) [[unlikely]] {
@@ -288,7 +288,7 @@ Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
     std::exit(1);
   }
 
-  return floor_div(self, other).EscapeFrom(&scope);
+  return scope.Escape(floor_div(self, other));
 }
 
 // python virtual function
@@ -300,18 +300,18 @@ Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
     return Handle<PyObject>(PySmi::FromInt(result));
   }
 
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.mod);
-  return GetKlass(*self)->vtable_.mod(self, other).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.mod(self, other));
 }
 
 // python virtual function
 Handle<PyObject> PyObject::Len(Handle<PyObject> self) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.len);
-  return GetKlass(*self)->vtable_.len(self).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.len(self));
 }
 
 // python virtual function
@@ -428,18 +428,17 @@ bool PyObject::LessEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
 Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
                                    Handle<PyObject> attr_name,
                                    bool is_try) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.getattr);
-  return GetKlass(*self)
-      ->vtable_.getattr(self, attr_name, is_try)
-      .EscapeFrom(&scope);
+  return scope.Escape(
+      GetKlass(*self)->vtable_.getattr(self, attr_name, is_try));
 }
 
 Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
                                           Handle<PyObject> attr_name,
                                           Handle<PyObject>& self_or_null) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   self_or_null = Handle<PyObject>::null();
 
@@ -448,8 +447,8 @@ Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
   // MethodObject对象的操作。
   if (klass->vtable_.getattr == &Klass::Virtual_Default_GetAttr) {
-    return Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null)
-        .EscapeFrom(&scope);
+    return scope.Escape(
+        Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null));
   }
 
   // Fallback
@@ -457,9 +456,9 @@ Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   if (IsMethodObject(value)) {
     auto method = Handle<MethodObject>::cast(value);
     self_or_null = method->owner();
-    return method->func().EscapeFrom(&scope);
+    return scope.Escape(method->func());
   }
-  return value.EscapeFrom(&scope);
+  return scope.Escape(value);
 }
 
 // python virtual function
@@ -475,10 +474,10 @@ void PyObject::SetAttr(Handle<PyObject> self,
 // python virtual function
 Handle<PyObject> PyObject::Subscr(Handle<PyObject> self,
                                   Handle<PyObject> subscr_name) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.subscr);
-  return GetKlass(*self)->vtable_.subscr(self, subscr_name).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.subscr(self, subscr_name));
 }
 
 // python virtual function
@@ -506,18 +505,18 @@ bool PyObject::ContainsBool(Handle<PyObject> self, Handle<PyObject> target) {
 
 // python virtual function
 Handle<PyObject> PyObject::Iter(Handle<PyObject> self) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.iter);
-  return GetKlass(*self)->vtable_.iter(self).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.iter(self));
 }
 
 // python virtual function
 Handle<PyObject> PyObject::Next(Handle<PyObject> self) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   assert(GetKlass(*self)->vtable_.next);
-  return GetKlass(*self)->vtable_.next(self).EscapeFrom(&scope);
+  return scope.Escape(GetKlass(*self)->vtable_.next(self));
 }
 
 // python virtual function
@@ -541,10 +540,10 @@ Handle<PyObject> PyObject::Call(Handle<PyObject> self,
                                 Handle<PyObject> host,
                                 Handle<PyObject> args,
                                 Handle<PyObject> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   auto* call_method = GetKlass(*self)->vtable_.call;
-  return call_method(self, host, args, kwargs).EscapeFrom(&scope);
+  return scope.Escape(call_method(self, host, args, kwargs));
 }
 
 // python virtual function

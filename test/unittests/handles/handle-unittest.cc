@@ -41,6 +41,41 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
   EXPECT_TRUE(PyObject::EqualBool(str2, str4));
 }
 
+TEST_F(HandleTest, EscapableHandleScopeEscape) {
+  HandleScope scope;
+  Handle<PyObject> str1 = PyString::NewInstance("Hello World");
+
+  auto f = []() -> Handle<PyObject> {
+    EscapableHandleScope scope;
+    Handle<PyObject> object = PyString::NewInstance("Hello World");
+    return scope.Escape(object);
+  };
+
+  Handle<PyObject> str2 = PyString::NewInstance("I love you");
+  Handle<PyObject> str3 = f();
+  Handle<PyObject> str4 = PyString::NewInstance("I love you");
+
+  EXPECT_TRUE(PyObject::EqualBool(str1, str3));
+  EXPECT_TRUE(PyObject::EqualBool(str2, str4));
+}
+
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
+  auto f = []() -> Handle<PyObject> {
+    HandleScope scope;
+    return PyString::NewInstance("Hello World");
+  };
+
+  ASSERT_DEATH_IF_SUPPORTED(
+      {
+        HandleScope scope;
+        Handle<PyObject> bad = f();
+        (void)(*bad);
+      },
+      "Invalid handle");
+}
+#endif
+
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   HandleScope scope;
 
