@@ -158,6 +158,8 @@ class Klass : public Object {
   Handle<PyList> mro();
   void set_mro(Handle<PyList> mro);
 
+  const VirtualTable& vtable() const { return vtable_; }
+
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
 
@@ -222,10 +224,10 @@ class Klass : public Object {
   static void Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*);
   static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
 
+ protected:
   // Python对象虚函数表
   VirtualTable vtable_;
 
- protected:
   // PyDict* klass_properties_
   Tagged<PyObject> klass_properties_{kNullAddress};
 

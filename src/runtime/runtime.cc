@@ -63,7 +63,7 @@ bool Runtime_IsPyObjectCallable(Tagged<PyObject> object) {
   }
 
   Tagged<Klass> klass = PyObject::GetKlass(object);
-  if (klass->vtable_.call != nullptr) {
+  if (klass->vtable().call != nullptr) {
     return true;
   }
 
