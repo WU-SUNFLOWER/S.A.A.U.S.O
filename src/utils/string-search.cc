@@ -14,6 +14,7 @@ namespace saauso::internal {
 namespace {
 
 int64_t IndexOfNaive(std::string_view subject, std::string_view pattern) {
+  // 朴素滑窗：逐位置 memcmp，比起通用算法对短 pattern 常数更小。
   const int64_t n = static_cast<int64_t>(subject.size());
   const int64_t m = static_cast<int64_t>(pattern.size());
 
@@ -37,6 +38,9 @@ int64_t IndexOfNaive(std::string_view subject, std::string_view pattern) {
 void PreprocessGoodSuffix(const uint8_t* pattern,
                           int64_t m,
                           std::vector<int64_t>* shift) {
+  // 预处理 good-suffix shift 表（Boyer-Moore 的一部分）。
+  // - shift[j]：当在位置 j 发生失配时，模式串可向右移动的距离。
+  // - bpos：记录边界位置，用于计算可复用的后缀匹配位置。
   shift->assign(static_cast<size_t>(m + 1), m);
   std::vector<int64_t> bpos(static_cast<size_t>(m + 1), 0);
 
@@ -67,6 +71,7 @@ void PreprocessGoodSuffix(const uint8_t* pattern,
 }
 
 int64_t IndexOfBoyerMoore(std::string_view subject, std::string_view pattern) {
+  // Boyer-Moore：从右向左比较，结合 bad-character 与 good-suffix 两种跳转规则。
   const int64_t n = static_cast<int64_t>(subject.size());
   const int64_t m = static_cast<int64_t>(pattern.size());
 
@@ -81,6 +86,7 @@ int64_t IndexOfBoyerMoore(std::string_view subject, std::string_view pattern) {
   const uint8_t* const pat = reinterpret_cast<const uint8_t*>(pattern.data());
 
   std::array<int64_t, 256> last{};
+  // last[c] 记录字符 c 在模式串中最后一次出现的位置；不存在则为 kNotFound。
   last.fill(StringSearch::kNotFound);
   for (int64_t i = 0; i < m; ++i) {
     last[pat[i]] = i;
@@ -100,12 +106,14 @@ int64_t IndexOfBoyerMoore(std::string_view subject, std::string_view pattern) {
       return s;
     }
 
+    // bad-character：让失配字符在模式串中对齐到其最后出现位置（至少移动 1）。
     const uint8_t bad_char = txt[s + j - 1];
     int64_t bc_shift = j - 1 - last[bad_char];
     if (bc_shift < 1) {
       bc_shift = 1;
     }
 
+    // good-suffix：利用已匹配的后缀信息跳过不可能匹配的位置。
     const int64_t gs_shift = good_suffix_shift[static_cast<size_t>(j)];
     s += std::max(bc_shift, gs_shift);
   }
@@ -117,6 +125,7 @@ int64_t IndexOfBoyerMoore(std::string_view subject, std::string_view pattern) {
 
 int64_t StringSearch::IndexOfSubstring(std::string_view subject,
                                        std::string_view pattern) {
+  // 对短模式串使用朴素搜索，避免 Boyer-Moore 预处理带来的额外开销。
   if (static_cast<int64_t>(pattern.size()) < kBMMinPatternLength) {
     return IndexOfNaive(subject, pattern);
   }

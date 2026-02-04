@@ -20,6 +20,7 @@ namespace saauso::internal {
 namespace {
 
 bool IsAsciiSpace(char c) {
+  // 仅识别 ASCII 空白字符，避免受本地化/Unicode 规则影响。
   switch (c) {
     case ' ':
     case '\t':
@@ -38,6 +39,7 @@ bool IsAsciiDigit(char c) {
 }
 
 char ToLowerAscii(char c) {
+  // 仅处理 ASCII 大小写映射。
   if (c >= 'A' && c <= 'Z') {
     return static_cast<char>(c - 'A' + 'a');
   }
@@ -45,6 +47,7 @@ char ToLowerAscii(char c) {
 }
 
 std::string_view TrimAsciiWhitespace(std::string_view s) {
+  // 仅裁剪 ASCII 空白字符。
   size_t begin = 0;
   while (begin < s.size() && IsAsciiSpace(s[begin])) {
     ++begin;
@@ -57,6 +60,7 @@ std::string_view TrimAsciiWhitespace(std::string_view s) {
 }
 
 bool ParseSignedInt(std::string_view s, int* out) {
+  // 解析十进制有符号整数（仅用于浮点指数部分），并做溢出保护。
   if (s.empty()) {
     return false;
   }
@@ -86,6 +90,7 @@ bool ParseSignedInt(std::string_view s, int* out) {
 }
 
 bool NormalizeUnderscores(std::string_view s, std::string* out) {
+  // 规范化 '_' 分隔符：只允许出现在两个数字之间；其它情况视为非法。
   out->clear();
   out->reserve(s.size());
 
@@ -106,6 +111,7 @@ bool NormalizeUnderscores(std::string_view s, std::string* out) {
 }
 
 void WriteStringToBuffer(std::string_view buffer, std::string_view text) {
+  // 写入 text 并补 '\\0'，buffer 过小则 fail-fast。
   if (buffer.size() < text.size() + 1) {
     std::fprintf(stderr, "FatalError: number conversion buffer too small\n");
     std::exit(1);
@@ -124,6 +130,7 @@ struct DecimalDigits {
 };
 
 DecimalDigits ParseToDecimalDigits(std::string_view s) {
+  // 将十进制浮点字符串拆解为“纯数字 + 小数点位置”，便于后续统一格式化。
   DecimalDigits rep;
   if (!s.empty() && s.front() == '-') {
     rep.negative = true;
@@ -173,6 +180,7 @@ DecimalDigits ParseToDecimalDigits(std::string_view s) {
 }
 
 std::string FormatFixed(const DecimalDigits& rep) {
+  // 以不带指数的 fixed 格式输出，并保证至少包含一位小数（例如 1.0）。
   std::string out;
   if (rep.negative) {
     out.push_back('-');
@@ -204,6 +212,7 @@ std::string FormatFixed(const DecimalDigits& rep) {
 }
 
 std::string FormatScientific(const DecimalDigits& rep) {
+  // 以科学计数法输出，指数使用 e±NN 的形式（至少两位指数数字）。
   std::string out;
   if (rep.negative) {
     out.push_back('-');
@@ -249,6 +258,7 @@ std::optional<double> StringToDouble(std::string_view s) {
     return std::nullopt;
   }
 
+  // 先单独处理符号位，以便识别 -inf 等形式。
   bool negative = false;
   std::string_view payload = trimmed;
   if (!payload.empty() && (payload.front() == '+' || payload.front() == '-')) {
@@ -271,6 +281,7 @@ std::optional<double> StringToDouble(std::string_view s) {
   }
 
   std::string normalized;
+  // 解析前先去掉 '_' 分隔符；格式不合法则直接失败。
   if (!NormalizeUnderscores(trimmed, &normalized)) {
     return std::nullopt;
   }
@@ -293,6 +304,7 @@ std::optional<int64_t> StringToInt(std::string_view s) {
   }
 
   std::string normalized;
+  // 按 Python 风格允许数字中包含 '_'，但必须满足“数字_数字”约束。
   if (!NormalizeUnderscores(s, &normalized)) {
     return std::nullopt;
   }
@@ -334,6 +346,7 @@ void DoubleToStringView(double n, std::string_view buffer) {
     return;
   }
 
+  // 寻找最短的十进制表示，使其经 fast_float 再解析后能精确回到原值。
   std::array<char, 128> tmp{};
   int len = -1;
   for (int precision = 1; precision <= 17; ++precision) {
@@ -367,6 +380,7 @@ void DoubleToStringView(double n, std::string_view buffer) {
   const int exp10 = rep.decimal_index - 1;
 
   std::string out;
+  // 与常见语言行为对齐：指数过大/过小使用科学计数法，其它使用 fixed。
   if (exp10 < -4 || exp10 >= 16) {
     out = FormatScientific(rep);
   } else {
@@ -382,6 +396,7 @@ void Int64ToStringView(int64_t n, std::string_view buffer) {
     std::fprintf(stderr, "FatalError: number conversion buffer too small\n");
     std::exit(1);
   }
+  // 预留 1 字节写入 '\\0'，以便 buffer 始终可作为 C 字符串使用。
   auto result = std::to_chars(out, out + buffer.size() - 1, n);
   if (result.ec != std::errc()) {
     std::fprintf(stderr, "FatalError: failed to format int64\n");

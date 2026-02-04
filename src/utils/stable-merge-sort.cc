@@ -27,6 +27,8 @@ void StableMergeSort::Sort(int64_t* data,
 
   std::vector<int64_t> buffer(static_cast<size_t>(length));
 
+  // 采用自底向上的迭代归并排序：每一轮把宽度为 width 的有序段两两归并成
+  // 宽度为 2*width 的有序段，并使用双缓冲在 src/dst 间交换角色。
   int64_t* src = data;
   int64_t* dst = buffer.data();
 
@@ -40,6 +42,7 @@ void StableMergeSort::Sort(int64_t* data,
       int64_t k = left;
 
       while (i < mid && j < right) {
+        // 稳定性来源：当 src[j] 并不严格小于 src[i] 时，优先取左侧元素。
         if (less(src[j], src[i], context)) {
           dst[k++] = src[j++];
         } else {
@@ -59,10 +62,10 @@ void StableMergeSort::Sort(int64_t* data,
     std::swap(src, dst);
   }
 
+  // 若最终结果落在 buffer 中，则拷贝回 data。
   if (src != data) {
     std::copy(src, src + length, data);
   }
 }
 
 }  // namespace saauso::internal
-

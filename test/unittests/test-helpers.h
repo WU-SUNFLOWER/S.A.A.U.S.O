@@ -11,6 +11,10 @@
 
 namespace saauso::internal {
 
+// 单元测试夹具与公共测试基类。
+//
+// 该文件聚焦于测试生命周期与运行环境搭建（Initialize/Dispose、Isolate 创建等）；
+// 与之配套的无状态断言与小工具函数见 test-utils.{h,cc}。
 template <typename T>
 class Global;
 
@@ -23,41 +27,62 @@ class PyList;
 class PyObject;
 class PyTuple;
 
+// 需要完整虚拟机环境（包含 Isolate Enter/Exit）的单元测试基类。
 class VmTestBase : public ::testing::Test {
  protected:
+  // 在整个测试套件启动时初始化运行时并创建/进入 Isolate。
   static void SetUpTestSuite();
+
+  // 在整个测试套件结束时退出/销毁 Isolate 并释放运行时。
   static void TearDownTestSuite();
 
   static Isolate* isolate_;
 };
 
+// 仅创建/销毁 Isolate、但不 Enter 的单元测试基类（用于隔离/并发等场景）。
 class IsolateOnlyTestBase : public ::testing::Test {
  protected:
+  // 在整个测试套件启动时初始化运行时并创建 Isolate（不 Enter）。
   static void SetUpTestSuite();
+
+  // 在整个测试套件结束时销毁 Isolate 并释放运行时。
   static void TearDownTestSuite();
 
   static Isolate* isolate_;
 };
 
+// 需要嵌入式 CPython 3.12 前端环境的单元测试基类。
+// 在 VmTestBase 的基础上，在套件结束时额外释放嵌入式 Python 运行时资源。
 class EmbeddedPython312VmTestBase : public VmTestBase {
  protected:
+  // 在套件结束时按顺序释放 VM 与嵌入式 Python 运行时资源。
   static void TearDownTestSuite();
 };
 
+// 基础解释器端到端测试夹具：将 builtins.print 注入为 Native_PrintV，
+// 并把每次 print 的实参收集到列表中供断言使用。
 class BasicInterpreterTest : public EmbeddedPython312VmTestBase {
  protected:
+  // 初始化解释器环境，并注入 builtins.print。
   static void SetUpTestSuite();
+
+  // 清理收集结果并释放运行时资源。
   static void TearDownTestSuite();
 
+  // 每个测试用例开始前重置输出收集容器。
   void SetUp() override;
 
+  // 编译并运行指定 Python 源码（CPython 3.12 字节码）。
   static void RunScript(std::string_view source, std::string_view file_name);
 
+  // 断言当前用例收集到的 print 实参序列与 expected 相等。
   static void ExpectPrintResult(Handle<PyList> expected);
 
+  // 获取当前解释器测试使用的 Isolate。
   static Isolate* isolate();
 
  private:
+  // 测试用 native print：把 args 中的每个实参追加到 printv_result_。
   static Handle<PyObject> Native_PrintV(Handle<PyObject> host,
                                         Handle<PyTuple> args,
                                         Handle<PyDict> kwargs);
@@ -65,6 +90,7 @@ class BasicInterpreterTest : public EmbeddedPython312VmTestBase {
   static Global<PyList> printv_result_;
 };
 
+// 解释器端到端测试默认使用的虚拟文件名（用于编译与错误定位信息）。
 inline constexpr std::string_view kInterpreterTestFileName = "saauso_test.py";
 
 }  // namespace saauso::internal

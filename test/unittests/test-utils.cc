@@ -37,6 +37,7 @@ Handle<PyObject> PyFalseObject() {
     return ::testing::AssertionFailure() << "PyString is null";
   }
 
+  // 先比较长度，再做逐字节比较，避免对含零字节的字符串产生歧义。
   const int64_t expected_len = static_cast<int64_t>(expected.size());
   if (s->length() != expected_len) {
     return ::testing::AssertionFailure()
@@ -59,6 +60,7 @@ Handle<PyObject> PyFalseObject() {
            << " y=" << (y.is_null() ? "null" : "non-null");
   }
 
+  // 等价性以 Python 语义的 __eq__ 路径为准，期望返回 PyTrue。
   auto result = PyObject::Equal(x, y);
   if (!IsPyTrue(Tagged<PyObject>(result))) {
     return ::testing::AssertionFailure() << "PyObject::Equal returned false";
@@ -83,6 +85,7 @@ void AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
 Handle<PyCodeObject> CompileScript312(Isolate* isolate,
                                       std::string_view source,
                                       std::string_view file_name) {
+  // 编译阶段产出 CPython 3.12 的 pyc 字节流；解析阶段将其转换为 VM 内部 code 对象。
   std::vector<uint8_t> pyc =
       CompilePythonSourceToPycBytes312(source, file_name);
   CPython312PycFileParser parser(
@@ -91,6 +94,7 @@ Handle<PyCodeObject> CompileScript312(Isolate* isolate,
 }
 
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
+  // 以小端序写入 4 字节。
   out.push_back(static_cast<uint8_t>(v & 0xff));
   out.push_back(static_cast<uint8_t>((v >> 8) & 0xff));
   out.push_back(static_cast<uint8_t>((v >> 16) & 0xff));
@@ -102,6 +106,7 @@ void PutByte(std::vector<uint8_t>& out, uint8_t v) {
 }
 
 void PutLongString(std::vector<uint8_t>& out, const std::string& s) {
+  // 写入长度前缀（int32 little-endian）再写入内容字节。
   PutInt32LE(out, static_cast<int32_t>(s.size()));
   out.insert(out.end(), s.begin(), s.end());
 }

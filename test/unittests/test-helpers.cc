@@ -24,12 +24,14 @@ namespace saauso::internal {
 Isolate* VmTestBase::isolate_ = nullptr;
 
 void VmTestBase::SetUpTestSuite() {
+  // 运行时初始化必须早于 Isolate 创建；Enter 后 Current Isolate 才可用。
   saauso::Saauso::Initialize();
   isolate_ = Isolate::New();
   isolate_->Enter();
 }
 
 void VmTestBase::TearDownTestSuite() {
+  // 与 SetUpTestSuite 严格配对：Exit -> Dispose(Isolate) -> Dispose(Runtime)。
   if (isolate_ != nullptr) {
     isolate_->Exit();
     Isolate::Dispose(isolate_);
@@ -43,6 +45,7 @@ void VmTestBase::TearDownTestSuite() {
 Isolate* IsolateOnlyTestBase::isolate_ = nullptr;
 
 void IsolateOnlyTestBase::SetUpTestSuite() {
+  // 该基类不 Enter Isolate，适用于仅验证隔离/并发等不依赖 Current 的场景。
   saauso::Saauso::Initialize();
   isolate_ = Isolate::New();
 }
@@ -58,6 +61,7 @@ void IsolateOnlyTestBase::TearDownTestSuite() {
 //////////////////////////////////////////////////////////////
 
 void EmbeddedPython312VmTestBase::TearDownTestSuite() {
+  // 先释放 VM，再释放嵌入式 Python 运行时，避免前端残留引用访问已销毁的 VM。
   VmTestBase::TearDownTestSuite();
   FinalizeEmbeddedPython312Runtime();
 }
@@ -71,6 +75,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
 
   HandleScope scope;
   Handle<PyString> func_name = PyString::NewInstance("print");
+  // 将 builtins.print 替换为 Native_PrintV，用于捕获解释器侧的打印参数。
   PyDict::Put(isolate_->interpreter()->builtins(), func_name,
               PyFunction::NewInstance(&Native_PrintV, func_name));
 }
@@ -109,6 +114,7 @@ void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
 
   ASSERT_EQ(actual->length(), expected->length());
 
+  // 逐项按 Python 语义相等性比较，便于定位具体哪一项不匹配。
   for (auto i = 0; i < actual->length(); ++i) {
     EXPECT_TRUE(IsPyObjectEqual(actual->Get(i), expected->Get(i)));
   }
