@@ -206,7 +206,7 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
 
   EXPECT_EQ(static_cast<int>(seen.size()), count);
   for (int i = 0; i < count; ++i) {
-    EXPECT_NE(seen.count(i), 0);
+    EXPECT_NE(seen.count(i), static_cast<size_t>(0));
   }
 }
 

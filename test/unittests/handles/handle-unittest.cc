@@ -79,9 +79,9 @@ TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   HandleScope scope;
 
-  int nr_base_block =
+  auto nr_base_block =
       Isolate::Current()->handle_scope_implementer()->blocks().length();
-  int nr_base_handles =
+  auto nr_base_handles =
       Isolate::Current()->handle_scope_implementer()->NumberOfHandles();
 
   EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
@@ -106,9 +106,9 @@ TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
 TEST_F(HandleTest, NestedHandleScopes) {
   HandleScope scope;
 
-  int nr_base_block =
+  auto nr_base_block =
       Isolate::Current()->handle_scope_implementer()->blocks().length();
-  int nr_base_handles =
+  auto nr_base_handles =
       Isolate::Current()->handle_scope_implementer()->NumberOfHandles();
 
   EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
@@ -128,10 +128,10 @@ TEST_F(HandleTest, NestedHandleScopes) {
   //////////////////////////////////////////////////////////////////////////////
 
   {
-    HandleScope scope;
-    constexpr int kBlockNumber = 3;
+    HandleScope inner_scope;
+    constexpr int kInnerBlockNumber = 3;
     constexpr int kNumberOfHandles =
-        HandleScopeImplementer::kHandleBlockSize * kBlockNumber + 100;
+        HandleScopeImplementer::kHandleBlockSize * kInnerBlockNumber + 100;
     for (int i = 0; i < kNumberOfHandles; ++i) {
       Handle<PySmi> temp(PySmi::FromInt(666));
     }
@@ -143,10 +143,11 @@ TEST_F(HandleTest, NestedHandleScopes) {
               NR_BLOCKS(n));
 
     {
-      HandleScope scope;
-      constexpr int kBlockNumber = 3;
+      HandleScope most_inner_scope;
+      constexpr int kMostInnerBlockNumber = 3;
       constexpr int kNestNumberOfHandles =
-          HandleScopeImplementer::kHandleBlockSize * kBlockNumber + 100;
+          HandleScopeImplementer::kHandleBlockSize * kMostInnerBlockNumber +
+          100;
       for (int i = 0; i < kNestNumberOfHandles; ++i) {
         Handle<PySmi> temp(PySmi::FromInt(666));
       }

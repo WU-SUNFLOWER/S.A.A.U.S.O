@@ -16,7 +16,7 @@ namespace saauso::internal {
 class HandleThreadTest : public IsolateOnlyTestBase {};
 
 TEST_F(HandleThreadTest, HandleScopeStateIsThreadLocalAndCleansUpAfterThread) {
-  int base_blocks = 0;
+  size_t base_blocks = 0;
   int base_handles = 0;
   base_blocks = isolate_->handle_scope_implementer()->blocks().length();
   base_handles = isolate_->handle_scope_implementer()->NumberOfHandles();

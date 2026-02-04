@@ -125,7 +125,7 @@ void HandleScope::AssertValidLocation(Address* location) {
   uintptr_t addr = reinterpret_cast<uintptr_t>(location);
   bool in_active_blocks = false;
   Address* last_block = blocks.GetBack();
-  for (int i = 0; i < blocks.length(); ++i) {
+  for (size_t i = 0; i < blocks.length(); ++i) {
     Address* block = blocks.Get(i);
     uintptr_t start = reinterpret_cast<uintptr_t>(block);
     uintptr_t end =

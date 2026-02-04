@@ -60,7 +60,7 @@ Address* HandleScopeImplementer::AllocateSpareOrNewBlock() {
 }
 
 void HandleScopeImplementer::ReleaseSpareAndExtendedBlocks(int n) {
-  assert(0 <= n && n <= blocks_.length());
+  assert(n >= 0 && static_cast<size_t>(n) <= blocks_.length());
 
   // 如果当前HandleScope没有申请任何额外的block，
   // 则什么也不做。
@@ -109,7 +109,7 @@ void HandleScopeImplementer::DestroyGlobalHandle(Address* location) {
 void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
   // 遍历所有填充完整的block
   if (blocks_.length() > 1) {
-    for (auto i = 0; i < blocks_.length() - 1; ++i) {
+    for (size_t i = 0; i < blocks_.length() - 1; ++i) {
       Address* block_begin = blocks_.Get(i);
       Address* block_end = block_begin + kHandleBlockSize;
       v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),
@@ -129,7 +129,7 @@ void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
 
   // 遍历global blocks
   if (global_blocks_.length() > 1) {
-    for (auto i = 0; i < global_blocks_.length() - 1; ++i) {
+    for (size_t i = 0; i < global_blocks_.length() - 1; ++i) {
       Address* block_begin = global_blocks_.Get(i);
       Address* block_end = block_begin + kHandleBlockSize;
       v->VisitPointers(reinterpret_cast<Tagged<PyObject>*>(block_begin),

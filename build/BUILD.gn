@@ -10,6 +10,16 @@ config("compiler_defaults") {
       "/EHsc",
       "/W3",
       "-Wno-deprecated-declarations",
+
+      # 增强跨平台兼容性检查 (Simulate Linux/Standard behavior)
+      "-Wextra",  # 开启更多警告
+      "-Wno-unused-parameter",  # 忽略未使用的参数警告
+                                # (接口实现常见)
+      "-Wshadow",  # 检查变量遮蔽
+      "-Wmicrosoft",  # 警告 Microsoft 扩展 (关键：防止依赖 MSVC
+                      # 特性)
+      "-Wunreachable-code",  # 警告不可达代码
+      "-Werror",  # 强制将警告视为编译错误
     ]
     defines = [
       "UNICODE",
@@ -20,6 +30,12 @@ config("compiler_defaults") {
     cflags = [
       "-std=c++20",
       "-Wall",  # 开启常用警告
+      "-Wextra",  # 开启更多警告
+      "-Wno-unused-parameter",  # 忽略未使用的参数警告
+                                # (接口实现常见)
+      "-Wshadow",  # 检查变量遮蔽
+      "-Wunreachable-code",  # 警告不可达代码
+      "-Werror",  # 强制将警告视为编译错误
       "-Wno-deprecated-declarations",
       "-fPIC",  # 生成位置无关代码
                 # (对动态库是必须的，对可执行文件通常也没问题)

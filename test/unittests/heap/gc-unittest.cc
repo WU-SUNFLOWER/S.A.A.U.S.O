@@ -83,7 +83,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   Address a1 = (*list1).ptr();
 
   for (auto i = 0; i < kLength; ++i) {
-    HandleScope scope;
+    HandleScope inner_scope;
     Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
     PyList::Append(list1, elem);
   }
@@ -97,7 +97,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   Handle<PyList> list2 = PyList::NewInstance(kLength);
 
   for (auto i = 0; i < kLength; ++i) {
-    HandleScope scope;
+    HandleScope inner_scope;
     Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
     PyList::Append(list2, elem);
   }
