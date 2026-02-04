@@ -151,25 +151,28 @@ Handle<PyObject> Native_BuildTypeObject(Handle<PyObject> host,
                                         Handle<PyDict> kwargs) {
   EscapableHandleScope scope;
 
-  if (args->length() < 2) [[unlikely]] {
+  const auto args_length = args.is_null() ? 0 : args->length();
+  if (args_length < 2) [[unlikely]] {
     std::fprintf(stderr, "__build_class__: not enough arguments");
     std::exit(1);
   }
 
-  auto class_builder = Handle<PyFunction>::cast(args->Get(0));
-  if (!IsPyFunction(class_builder)) [[unlikely]] {
-    std::fprintf(stderr, "__build_class__: not enough arguments");
+  auto class_builder_obj = args->Get(0);
+  if (!IsPyFunction(class_builder_obj)) [[unlikely]] {
+    std::fprintf(stderr, "__build_class__: func is not a function");
     std::exit(1);
   }
+  auto class_builder = Handle<PyFunction>::cast(class_builder_obj);
 
-  auto class_name = Handle<PyString>::cast(args->Get(1));
-  if (!IsPyString(class_name)) [[unlikely]] {
+  auto class_name_obj = args->Get(1);
+  if (!IsPyString(class_name_obj)) [[unlikely]] {
     std::fprintf(stderr, "__build_class__: name is not a string");
     std::exit(1);
   }
+  auto class_name = Handle<PyString>::cast(class_name_obj);
 
-  auto class_supers = PyList::NewInstance(args->length() - 2);
-  for (auto i = 2; i < args->length(); ++i) {
+  auto class_supers = PyList::NewInstance(args_length - 2);
+  for (auto i = 2; i < args_length; ++i) {
     PyList::Append(class_supers, args->Get(i));
   }
 

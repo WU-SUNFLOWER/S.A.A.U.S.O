@@ -99,7 +99,7 @@ b.say()
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, OperatorOverloading1) {
+TEST_F(BasicInterpreterTest, DunderAddInvokedByBinaryAdd) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
@@ -132,7 +132,7 @@ print(c.value)   # 3
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, OperatorOverloading2) {
+TEST_F(BasicInterpreterTest, DunderLenInvokedByLenBuiltinAndDunderAdd) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
@@ -147,7 +147,10 @@ class Vector:
     def __len__(self):
         return self.x * self.x + self.y * self.y
 
-print(len(Vector(3, 4)))
+v = Vector(3, 4)
+print(len(v))
+v2 = Vector(1, 2) + Vector(3, 4)
+print(len(v2))
 )";
 
   RunScript(kSource, kInterpreterTestFileName);
@@ -155,11 +158,12 @@ print(len(Vector(3, 4)))
   auto expected_printv_result = PyList::NewInstance();
 
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(25)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(52)));
 
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, OperatorOverloading3) {
+TEST_F(BasicInterpreterTest, DunderGetSetDelItemInvokedBySubscriptOps) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
@@ -187,9 +191,6 @@ class A:
     def __delitem__(self, key):
         del self.attrs[key]
 
-    def __str__(self):
-        return "object of A"
-
 a = A("hello", "hi", "how are you", "fine")
 print(a["hello"])           # hi
 print(a["how are you"])     # fine
@@ -211,7 +212,7 @@ print(a["one"]) # Error
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, OperatorOverloading4) {
+TEST_F(BasicInterpreterTest, DunderGetAttrSetAttrInterceptsAttributes) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
@@ -241,6 +242,7 @@ print(b.foo)
 print(b.bar)
 b.foo = 3
 print(b.foo)
+print(b.baz)
 )";
 
   RunScript(kSource, kInterpreterTestFileName);
@@ -250,6 +252,7 @@ print(b.foo)
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(isolate_->py_none_object()));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -284,6 +287,167 @@ c.say()    # "I am A"
   AppendExpected(expected_printv_result, PyString::NewInstance("I am A"));
 
   ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CustomClassAttributeLookupPriorityAndGetAttrHook) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    x = 1
+    def __init__(self):
+        self.x = 2
+
+    def __getattr__(self, name):
+        print("__getattr__ called")
+        return 99
+
+a = A()
+print(a.x)
+print(a.miss)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result,
+                 PyString::NewInstance("__getattr__ called"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(99)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, MissingAttributeRaisesAttributeError) {
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+a = A()
+print(a.miss)
+)";
+        RunScript(kSource, kInterpreterTestFileName);
+      },
+      "AttributeError");
+}
+
+TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self, v):
+        self.v = v
+
+    def show(self):
+        print(self.v)
+
+a = A(7)
+f = a.show
+f()
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, MethodCallFromClassWithExplicitSelf) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self, v):
+        self.v = v
+
+    def show(self):
+        print(self.v)
+
+a = A(8)
+g = A.show
+g(a)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(8)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CustomClassStrUsedByPrint) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __str__(self):
+        return "object of A"
+
+a = A()
+print(a.__str__())
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("object of A"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, IsInstanceWorksForCustomClassInheritance) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A(object):
+    pass
+
+class B(A):
+    pass
+
+b = B()
+print(isinstance(b, B))
+print(isinstance(b, A))
+print(isinstance(b, object))
+print(isinstance(b, dict))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_false_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuildClassErrors) {
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+__build_class__()
+)";
+        RunScript(kSource, kInterpreterTestFileName);
+      },
+      "__build_class__");
+
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        constexpr std::string_view kSource = R"(
+def body():
+    pass
+
+__build_class__(body, 1)
+)";
+        RunScript(kSource, kInterpreterTestFileName);
+      },
+      "name is not a string");
 }
 
 }  // namespace saauso::internal
