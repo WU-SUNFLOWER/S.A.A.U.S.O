@@ -1,6 +1,32 @@
 # S.A.A.U.S.O 项目 - AI 助手指南
 
-本文档概述了 S.A.A.U.S.O 项目的架构决策、代码标准和开发工作流。AI 助手需要扮演一位资深C++工程师，在生成代码时应参考本文档，以确保与现有代码库保持一致。
+本文档概述了 S.A.A.U.S.O 项目的架构决策、代码标准和开发工作流。AI 助手需要扮演一位资深 C++ 工程师，在生成代码时应参考本文档，以确保与现有代码库保持一致。
+
+## 0. 给 AI 的执行规则（必读）
+
+### 0.1. 执行优先级与冲突处理
+- **规则优先级（从高到低）**：
+  1. 仓库现有实现与“能编译/能链接/能运行单测”的事实
+  2. 本文档（AGENTS.md）
+  3. Google C++ Style Guide
+  4. 通用最佳实践
+- **冲突处理流程**：
+  1. 先在仓库中搜索同类代码与既有模式（优先保持局部一致性）。
+  2. 若仍存在多种可行实现，选择更符合本仓库架构约束、且对现有代码扰动更小的方案。
+  3. 若约束仍不明确，优先保证行为正确与可测试性，再逐步收敛风格。
+- **用户指令优先**：当用户的最新明确指令与本文档冲突时，以用户指令为准；但应在交付说明中点出偏离点与潜在风险，并尽量把偏离范围限制在最小。
+
+### 0.2. Top 10 必守规则（AI Checklist）
+1. 修改前先在仓库中搜索同类实现与既有模式，再决定具体写法（见 0.1）。
+2. 禁止在接口上传递 `PyObject*`；对外暴露与内部调用使用 `Tagged<PyObject>` 或 `Handle<PyObject>`（见 6.1）。
+3. 栈上持有 GC-able 对象必须使用 `Handle<T>`；跨 `HandleScope` 返回必须 `EscapeFrom` 或使用 `EscapableHandleScope::Escape`（见 6.1）。
+4. 分配 `PyObject` 派生对象禁止使用 `new`；必须通过 `Isolate::Current()->heap()->Allocate<T>(...)` 获取地址并显式初始化字段与 `SetKlass`（见 6.2）。
+5. 不依赖构造函数写默认值：`Allocate/AllocateRaw` 不清零且不调用构造函数，默认值应在工厂函数中手工写入（见 6.2）。
+6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 3.1）。
+7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 3.1、6.3）。
+8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 2）。
+9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循第 4 章的命名与风格规范。
+10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 5.3）。
 
 ## 1. 项目概览
 S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码。
@@ -202,7 +228,7 @@ if (method != NULL) {
 
 ## 4. 代码规范（人类程序员和AI助手都必须严格遵守）
 
-S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)。
+S.A.A.U.S.O 的代码规范主要基于 [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)。
 
 ### 4.1. 代码文件规范
 - **文件**:
@@ -217,13 +243,13 @@ S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.gi
 - **命名空间**: 所有内部代码必须位于 `namespace saauso::internal` 中。
 - **通用命名规则**
   - 名称应该是描述性的（Descriptive）。例如`int num_errors;`, `int num_dns_connections;`。
-  - 严禁使用缩写，除非该缩写在项目外也非常通用（如`dns`, `url`）。不要通过删除单词中的字母来缩写（例如严禁使用`cstmr_id`代替`customer_id`）。
+  - 严禁使用非通用缩写。允许使用业界通用缩写（如 `cpu`/`gc`/`vm`/`ir`/`abi`/`utf8`、`dns`、`url`）与仓库既有缩写。不要通过删除单词中的字母来缩写（例如严禁使用`cstmr_id`代替`customer_id`）。
 - **类**: `PascalCase`。
 - **变量**: `snake_case`，类成员变量以 `_` 结尾。
 - **常量**: `kPascalCase`（例如`constexpr int kDaysInAWeek = 7;`, `const std::string kAndroid8_0 = "Android 8.0";`）
-- **函数**: `PascalCase`（例如`class UrlTable`、`struct UrlTableProperties`、`using PropertiesMap = hash_map<UrlTableProperties*, string>;`）
+- **函数**: `PascalCase`（例如 `InitMetaArea()`、`IterateRoots()`、`RecordWrite()`）。
   - 例外：类属性的访问器与修改器，可以与变量命名风格对齐。Getter使用变量名本身（不要加`get_`前缀），Setter使用`set_ + 变量名`。例如：
-    ```C++
+    ```cpp
     class MyClass {
     public:
       int count() const { return count_; }        // Getter
@@ -234,7 +260,7 @@ S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.gi
     ```
 
 - **枚举值**: `kCamelCase`，例子：
-  ```C++
+  ```cpp
   enum UrlTableErrors {
     kOk = 0,
     kOutOfMemory,
@@ -244,8 +270,8 @@ S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.gi
 - **宏**: `MACRO_CASE`。在头文件中定义宏需要非常谨慎，应保证命名独特，以免污染全局命名空间。
 - **类/结构体声明（头文件）**: 
   1. 访问控制段按 `public`→`protected`→`private`
-  1. 数据成员集中放在末尾并尽量为 `private`（除非确有继承扩展需要）。
-  2. 每段内部按以下顺序排列：
+  2. 数据成员集中放在末尾并尽量为 `private`（除非确有继承扩展需要）。
+  3. 每段内部按以下顺序排列：
       - 类型与类型别名（例如typedef、using、enum、嵌套struct/class、友元类型）
       - 静态常量
       - 工厂函数
@@ -275,7 +301,7 @@ S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.gi
   - **内容**：描述该类的用途（what it is for）以及如何使用（how it should be used）。
     - **可选**：如果确认该类或结构体属于长时间内不会发生变动的基建，可以提供一小段示例代码。
   - **示例**：
-  ```C++
+  ```cpp
   // 用于遍历GargantuanTable中的内容。
   // 示例:
   //    std::unique_ptr<GargantuanTableIterator> iter = table->NewIterator();
@@ -294,7 +320,7 @@ S.A.A.U.S.O的代码规范主要基于[Google C++ Style Guide](https://google.gi
     - 输入参数和输出结果。尤其是当参数含义不明显时（例如传入true/false开关）。
     - 指针/Handle参数是否允许为`null`。
     - 如有：需特别说明的其他内容（例如使用该函数对性能的影响等）。
-- **定义处的函数注释 (Function Declaration Comments)**
+- **定义处的函数注释 (Function Definition Comments)**
   - **内容**：描述函数是如何工作的（how it does its job）。
   - **适用场景**：解释复杂的实现逻辑、算法步骤、或者是为什么选择了这种实现方式而非其他方案。
   - **避免**：不要简单重复声明处的注释。
@@ -437,3 +463,15 @@ void Example() {
 - （可选）在 `src/interpreter/interpreter.cc` 注册该类型的 `type_object()`，并加入 `builtins` 字典。
   - 这步不是必须选项，只有当我们希望将这种类型泄露到 Python 语言中，允许用户代码中使用 `type(...)` 或 `isinstance(..., ...)` 等操作时才需要。
   - 例如在Python中，NoneType这种类型就没有被泄漏到Python语言环境，因此它不需要注册到`builtins`字典中。
+
+### 6.5. `src/utils/` 的依赖边界（判定口径）
+- **目标**：将 `src/utils/` 维持为“纯工具层”，避免引入虚拟机上层耦合，降低编译期依赖与循环依赖风险。
+- **允许依赖**：
+  - `src/build/` 中的编译控制宏（如 `BUILDFLAG`、`IS_WIN`、`IS_LINUX`等）。
+  - `src/utils/` 目录内的其它工具模块。
+  - `third_party/` 中的第三方库。 
+  - C++ 标准库。
+- **禁止依赖**：
+  - `src/runtime/`、`src/heap/`、`src/handles/`、`src/objects/`、`src/interpreter/` 及其暴露的能力。
+  - 直接或间接访问 `Isolate::Current()`、`HandleScope`、`Heap::Allocate` 等会把 `utils` 变成“VM 上层的一部分”的接口。
+- **例外处理**：若确需跨模块共享基础类型或小型工具，优先下沉到 `include/` 或在 `src/utils/` 内提供与 VM 无关的抽象接口，再由上层实现适配。
