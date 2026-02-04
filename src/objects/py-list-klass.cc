@@ -342,6 +342,7 @@ void PyListKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
+  vtable_.construct_instance = &Virtual_ConstructInstance;
   vtable_.len = &Virtual_Len;
   vtable_.print = &Virtual_Print;
   vtable_.add = &Virtual_Add;
@@ -404,6 +405,36 @@ void PyListKlass::Initialize() {
 
 void PyListKlass::Finalize() {
   Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::null());
+}
+
+Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
+    Tagged<Klass> klass_self,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(klass_self == PyListKlass::GetInstance());
+
+  // list() 不接受关键字参数。
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: list() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+  if (argc == 0) {
+    return PyList::NewInstance();
+  }
+  if (argc > 1) {
+    std::fprintf(stderr,
+                 "TypeError: list expected at most 1 argument, got %lld\n",
+                 static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  Handle<PyList> result = PyList::NewInstance();
+  // list(iterable)：从可迭代对象中逐个追加元素；对 list/tuple 走 fast path。
+  Runtime_ExtendListByItratableObject(result, pos_args->Get(0));
+  return result;
 }
 
 Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

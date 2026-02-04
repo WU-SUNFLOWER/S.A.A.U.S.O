@@ -14,6 +14,7 @@
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list-klass.h"
@@ -50,6 +51,8 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
               PySmiKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("str"),
               PyStringKlass::GetInstance()->type_object());
+  PyDict::Put(builtins, PyString::NewInstance("float"),
+              PyFloatKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("list"),
               PyListKlass::GetInstance()->type_object());
   PyDict::Put(builtins, PyString::NewInstance("bool"),

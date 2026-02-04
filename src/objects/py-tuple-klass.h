@@ -5,8 +5,6 @@
 #ifndef SAAUSO_OBJECTS_PY_TUPLE_KLASS_H_
 #define SAAUSO_OBJECTS_PY_TUPLE_KLASS_H_
 
-#include <cstddef>
-
 #include "src/objects/klass.h"
 
 namespace saauso::internal {
@@ -23,6 +21,10 @@ class PyTupleKlass : public Klass {
  private:
   PyTupleKlass();
 
+  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
+
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static void Virtual_Print(Handle<PyObject> self);
   static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
@@ -30,8 +32,7 @@ class PyTupleKlass : public Klass {
   static void Virtual_StoreSubscr(Handle<PyObject> self,
                                   Handle<PyObject> subscr,
                                   Handle<PyObject> value);
-  static void Virtual_DelSubscr(Handle<PyObject> self,
-                                Handle<PyObject> subscr);
+  static void Virtual_DelSubscr(Handle<PyObject> self, Handle<PyObject> subscr);
   static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> target);
   static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
 

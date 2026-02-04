@@ -25,6 +25,10 @@ class PyListKlass : public Klass {
   void Finalize();
 
  private:
+  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
+
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
   static void Virtual_Print(Handle<PyObject> self);
 

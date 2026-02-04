@@ -210,5 +210,89 @@ print(("q", 1) in d.items())
   ExpectPrintResult(expected_printv_result);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, DictConstructorKwargs) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+d = dict(name="Alice", age=30, city="Beijing")
+print(d["name"])
+print(d["age"])
+print(d["city"])
+print(len(d))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("Alice"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(30)));
+  AppendExpected(expected_printv_result, PyString::NewInstance("Beijing"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictConstructorListOfTuples) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = dict([("one", 1), ("two", 2), ("three", 3)])
+print(d["one"])
+print(d["two"])
+print(d["three"])
+print(len(d))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictConstructorCopyFromDict) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+old_dict = {"x": 10, "y": 20}
+new_dict = dict(old_dict)
+print(new_dict is old_dict)
+print(new_dict["x"])
+print(new_dict["y"])
+print(len(new_dict))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(10)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(20)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictConstructorIterableThenKwOverride) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = dict([("a", 1), ("b", 2)], b=3, c=4)
+print(d["a"])
+print(d["b"])
+print(d["c"])
+print(len(d))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+}  // namespace saauso::internal

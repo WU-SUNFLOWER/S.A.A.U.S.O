@@ -11,7 +11,9 @@
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-float.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
@@ -24,6 +26,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -141,6 +144,7 @@ void PyStringKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
+  vtable_.construct_instance = &Virtual_ConstructInstance;
   vtable_.len = &Virtual_Len;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
@@ -185,6 +189,79 @@ void PyStringKlass::Initialize() {
 
 void PyStringKlass::Finalize() {
   Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
+}
+
+Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
+    Tagged<Klass> klass_self,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(klass_self == PyStringKlass::GetInstance());
+
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: str() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+
+  if (argc == 0) {
+    return PyString::NewInstance("");
+  }
+
+  if (argc == 1) {
+    Handle<PyObject> value = pos_args->Get(0);
+    if (IsPyString(value)) {
+      return value;
+    }
+    if (IsPySmi(value)) {
+      return PyString::FromPySmi(Tagged<PySmi>::cast(*value));
+    }
+    if (IsPyFloat(value)) {
+      return PyString::FromPyFloat(Handle<PyFloat>::cast(value));
+    }
+    if (IsPyBoolean(value)) {
+      bool v = Tagged<PyBoolean>::cast(*value)->value();
+      return PyString::NewInstance(v ? "True" : "False");
+    }
+    if (IsPyNone(value)) {
+      return PyString::NewInstance("None");
+    }
+
+    Handle<PyObject> method = Runtime_FindPropertyInMro(value, ST(str));
+    if (!method.is_null()) {
+      Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+          method, value, Handle<PyTuple>::null(), Handle<PyDict>::null());
+      if (!IsPyString(result)) {
+        std::fprintf(stderr, "TypeError: __str__ returned non-string\n");
+        std::exit(1);
+      }
+      return result;
+    }
+
+    char buffer[64];
+    std::snprintf(buffer, sizeof(buffer), "<object at %p>",
+                  reinterpret_cast<void*>((*value).ptr()));
+    return PyString::NewInstance(buffer);
+  }
+
+  if (argc == 2 || argc == 3) {
+    Handle<PyObject> value = pos_args->Get(0);
+    if (IsPyString(value)) {
+      std::fprintf(stderr, "TypeError: decoding str is not supported\n");
+      std::exit(1);
+    }
+    auto type_name = PyObject::GetKlass(value)->name();
+    std::fprintf(
+        stderr,
+        "TypeError: decoding to str: need a bytes-like object, %.*s found\n",
+        static_cast<int>(type_name->length()), type_name->buffer());
+    std::exit(1);
+  }
+
+  std::fprintf(stderr, "TypeError: str() takes at most 3 arguments (%lld given)\n",
+               static_cast<long long>(argc));
+  std::exit(1);
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {

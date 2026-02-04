@@ -5,6 +5,7 @@
 #include "src/utils/number-conversion.h"
 
 #include <array>
+#include <cassert>
 #include <charconv>
 #include <cmath>
 #include <cstdio>
@@ -106,6 +107,57 @@ bool NormalizeUnderscores(std::string_view s, std::string* out) {
       continue;
     }
     out->push_back(c);
+  }
+  return true;
+}
+
+int DigitValueForBase(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  }
+  c = ToLowerAscii(c);
+  if (c >= 'a' && c <= 'z') {
+    return c - 'a' + 10;
+  }
+  return -1;
+}
+
+bool StartsWithIgnoreCase(std::string_view s, std::string_view prefix) {
+  if (s.size() < prefix.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < prefix.size(); ++i) {
+    if (ToLowerAscii(s[i]) != ToLowerAscii(prefix[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool NormalizeUnderscoresForBase(std::string_view s, int base, std::string* out) {
+  out->clear();
+  out->reserve(s.size());
+
+  for (size_t i = 0; i < s.size(); ++i) {
+    const char c = s[i];
+    if (c == '_') {
+      if (i == 0 || i + 1 >= s.size()) {
+        return false;
+      }
+      if (DigitValueForBase(s[i - 1]) < 0 ||
+          DigitValueForBase(s[i - 1]) >= base ||
+          DigitValueForBase(s[i + 1]) < 0 ||
+          DigitValueForBase(s[i + 1]) >= base) {
+        return false;
+      }
+      continue;
+    }
+
+    int digit = DigitValueForBase(c);
+    if (digit < 0 || digit >= base) {
+      return false;
+    }
+    out->push_back(ToLowerAscii(c));
   }
   return true;
 }
@@ -297,31 +349,96 @@ std::optional<double> StringToDouble(std::string_view s) {
   return value;
 }
 
-std::optional<int64_t> StringToInt(std::string_view s) {
+StringToIntError StringToIntWithBase(std::string_view s,
+                                     int base_input,
+                                     int64_t* out) {
+  assert(out != nullptr);
+
+  if (!(base_input == 0 || (2 <= base_input && base_input <= 36))) {
+    return StringToIntError::kInvalidBase;
+  }
+
   s = TrimAsciiWhitespace(s);
   if (s.empty()) {
-    return std::nullopt;
+    return StringToIntError::kInvalid;
+  }
+
+  bool negative = false;
+  if (s.front() == '+' || s.front() == '-') {
+    negative = (s.front() == '-');
+    s.remove_prefix(1);
+  }
+  if (s.empty()) {
+    return StringToIntError::kInvalid;
+  }
+
+  int base = base_input;
+  if (base == 0) {
+    if (StartsWithIgnoreCase(s, "0x")) {
+      base = 16;
+      s.remove_prefix(2);
+    } else if (StartsWithIgnoreCase(s, "0o")) {
+      base = 8;
+      s.remove_prefix(2);
+    } else if (StartsWithIgnoreCase(s, "0b")) {
+      base = 2;
+      s.remove_prefix(2);
+    } else {
+      base = 10;
+    }
+  } else if (base == 16 && StartsWithIgnoreCase(s, "0x")) {
+    s.remove_prefix(2);
+  } else if (base == 8 && StartsWithIgnoreCase(s, "0o")) {
+    s.remove_prefix(2);
+  } else if (base == 2 && StartsWithIgnoreCase(s, "0b")) {
+    s.remove_prefix(2);
+  }
+
+  if (s.empty()) {
+    return StringToIntError::kInvalid;
   }
 
   std::string normalized;
-  // 按 Python 风格允许数字中包含 '_'，但必须满足“数字_数字”约束。
-  if (!NormalizeUnderscores(s, &normalized)) {
-    return std::nullopt;
+  if (!NormalizeUnderscoresForBase(s, base, &normalized) || normalized.empty()) {
+    return StringToIntError::kInvalid;
   }
 
-  std::string_view payload(normalized);
-  if (!payload.empty() && payload.front() == '+') {
-    payload.remove_prefix(1);
+  uint64_t unsigned_value = 0;
+  auto parsed = std::from_chars(normalized.data(),
+                                normalized.data() + normalized.size(),
+                                unsigned_value, base);
+  if (parsed.ec == std::errc::invalid_argument ||
+      parsed.ptr != normalized.data() + normalized.size()) {
+    return StringToIntError::kInvalid;
+  }
+  if (parsed.ec == std::errc::result_out_of_range) {
+    return StringToIntError::kOverflow;
   }
 
+  const uint64_t kLimit =
+      negative ? static_cast<uint64_t>(std::numeric_limits<int64_t>::max()) + 1
+               : static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+  if (unsigned_value > kLimit) {
+    return StringToIntError::kOverflow;
+  }
+
+  if (negative) {
+    if (unsigned_value == kLimit) {
+      *out = std::numeric_limits<int64_t>::min();
+    } else {
+      *out = -static_cast<int64_t>(unsigned_value);
+    }
+  } else {
+    *out = static_cast<int64_t>(unsigned_value);
+  }
+  return StringToIntError::kOk;
+}
+
+std::optional<int64_t> StringToInt(std::string_view s) {
   int64_t value = 0;
-  auto result =
-      std::from_chars(payload.data(), payload.data() + payload.size(), value);
-  if (result.ec != std::errc() ||
-      result.ptr != payload.data() + payload.size()) {
-    return std::nullopt;
-  }
-  return value;
+  return StringToIntWithBase(s, 10, &value) == StringToIntError::kOk
+             ? std::optional<int64_t>(value)
+             : std::nullopt;
 }
 
 void DoubleToStringView(double n, std::string_view buffer) {

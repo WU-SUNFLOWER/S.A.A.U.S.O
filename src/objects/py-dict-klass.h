@@ -38,7 +38,7 @@ class PyDictKlass : public Klass {
                                    Handle<PyObject> subscr);
   static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
 
-  static Handle<PyObject> Virtual_Default_ConstructInstance(
+  static Handle<PyObject> Virtual_ConstructInstance(
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);

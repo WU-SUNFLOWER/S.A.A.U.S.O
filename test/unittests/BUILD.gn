@@ -7,6 +7,7 @@ executable("ut") {
     "./handles/handle-thread-unittest.cc",
     "./handles/handle-unittest.cc",
     "./heap/gc-unittest.cc",
+    "./interpreter/interpreter-builtins-constructor-unittest.cc",
     "./interpreter/interpreter-builtins-seq-unittest.cc",
     "./interpreter/interpreter-call-stack-unittest.cc",
     "./interpreter/interpreter-closure-unittest.cc",

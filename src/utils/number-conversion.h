@@ -18,6 +18,15 @@ namespace saauso::internal {
 std::optional<double> StringToDouble(std::string_view s);
 std::optional<int64_t> StringToInt(std::string_view s);
 
+enum class StringToIntError {
+  kOk = 0,
+  kInvalid,
+  kOverflow,
+  kInvalidBase,
+};
+
+StringToIntError StringToIntWithBase(std::string_view s, int base, int64_t* out);
+
 // 将 double 格式化为最短的可 round-trip（再次解析得到原值）的十进制字符串。
 // buffer 需预留末尾 '\\0'，且大小不足会直接报错退出。
 void DoubleToStringView(double n, std::string_view buffer);

@@ -107,6 +107,7 @@ Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
 void PyTupleKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
+  vtable_.construct_instance = &Virtual_ConstructInstance;
   vtable_.len = &Virtual_Len;
   vtable_.print = &Virtual_Print;
   vtable_.subscr = &Virtual_Subscr;
@@ -136,6 +137,39 @@ void PyTupleKlass::Initialize() {
 
 void PyTupleKlass::Finalize() {
   Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
+}
+
+Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
+    Tagged<Klass> klass_self,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(klass_self == PyTupleKlass::GetInstance());
+
+  // tuple() 不接受关键字参数。
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: tuple() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+  if (argc == 0) {
+    return PyTuple::NewInstance(0);
+  }
+  if (argc > 1) {
+    std::fprintf(stderr,
+                 "TypeError: tuple expected at most 1 argument, got %lld\n",
+                 static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  // tuple(tuple_obj) 直接返回自身（不可变对象的语义对齐 CPython）。
+  Handle<PyObject> iterable = pos_args->Get(0);
+  if (IsPyTuple(iterable)) {
+    return iterable;
+  }
+
+  return Runtime_UnpackIterableObjectToTuple(iterable);
 }
 
 Handle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {

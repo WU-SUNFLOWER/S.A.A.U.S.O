@@ -25,7 +25,7 @@
 6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 3.1）。
 7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 3.1、6.3）。
 8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 2）。
-9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循第 4 章的命名与风格规范。
+9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循第 4 章的命名与风格规范。特别地，代码必须包括必要的中文注释（见 4.3），严禁只写代码不写注释。
 10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 5.3）。
 
 ## 1. 项目概览
@@ -92,6 +92,57 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内部所有 `Tagged<PyObject>` 引用字段。
   - `getattr` 采用三参形式：`getattr(self, name, is_try)`。当 `is_try=true` 时属性 miss 返回 null；当 `is_try=false` 时属性 miss 走 `AttributeError + exit(1)`（当前异常体系尚未完善）。
   - 比较与 `contains` 等热点 slot 在 VirtualTable 层以 C++ `bool` 作为 canonical 返回值；Python 语义需要 `True/False` 时由上层 wrapper 转换。
+
+#### 3.1.1. 内建类型构造函数（`construct_instance`）的原理与写法
+
+本项目中，“调用一个 type object”（例如 `list(...)` / `dict(...)` / 自定义类 `C(...)`）最终会落到 `Klass::vtable_.construct_instance`。内建类型要对齐 CPython 行为，通常必须覆盖该 slot。
+
+**调用链（从 Python 层到 C++ 构造 slot）**
+
+- 字节码层：`CALL` 触发一次可调用对象调用（见 3.4.1 的双槽位协议）。
+- 若被调用对象是 type object：走 [PyTypeObjectKlass::Virtual_Call](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-type-object-klass.cc#L128-L136)，将创建实例的职责转发给该 type object 的 `own_klass`。
+- `own_klass->ConstructInstance(args, kwargs)`：见 [Klass::ConstructInstance](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc#L198-L204)，实际调用 `vtable_.construct_instance(klass_self, args, kwargs)`。
+
+**默认实现的语义（何时会被用到）**
+
+- `Klass::InitializeVTable()` 会把 `construct_instance` 初始化为默认逻辑 [Klass::Virtual_Default_ConstructInstance](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass-default-vtable.cc#L368-L387)。
+- 默认逻辑做的事情是：分配“通用 PyObject”并设置 `__class__`，然后在类上找到 `__init__` 时调用它。它适用于“普通 Python 类对象”的创建，不适用于需要特定内存布局的内建容器/数值类型。
+
+**为什么内建类型必须覆盖**
+
+- 例如 `list/tuple/dict` 这些类型有自己的字段布局（如 `PyList::array_`、`PyDict::data_`），如果走默认构造就会变成“通用 PyObject”，后续 `len/subscr/iterate` 等 slot 会读错字段，必然崩溃或行为错误。
+
+**slot 覆盖时机（初始化顺序很关键）**
+
+- `Isolate::InitMetaArea()` 会先对每个 `Klass` 执行 `InitializeVTable()`，再执行 `PreInitialize()`（见 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/isolate.cc)），因此：
+  - `PreInitialize()` 是覆盖 `vtable_.construct_instance` 的正确地点；
+  - 如果忘记覆盖，类型会自动回退到默认构造逻辑。
+
+**推荐实现模板（遵循仓库习惯，强调可测性）**
+
+- 在 `*-klass.h` 中声明：
+  - `static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self, Handle<PyObject> args, Handle<PyObject> kwargs);`
+- 在 `PreInitialize()` 中接入：
+  - `vtable_.construct_instance = &Virtual_ConstructInstance;`
+- 在实现中处理参数的通用约定：
+  - `args` 通常是 `PyTuple` 或 null；`kwargs` 通常是 `PyDict` 或 null。
+  - `argc = args.is_null() ? 0 : args->length()`；对“最多 1 个位置参数”等规则做 fail-fast 校验。
+  - 对“不支持关键字参数”的构造函数：当 `kwargs` 非空且 `occupied()!=0` 时，按 CPython 文案打印 `TypeError` 并 `exit(1)`。
+  - 尽量复用 runtime helper：例如 iterable 展开使用 [Runtime_UnpackIterableObjectToTuple](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/runtime.cc#L103-L124)，list 扩展使用 `Runtime_ExtendListByItratableObject`，避免在类型实现中重复写迭代逻辑。
+
+**对齐 CPython 的典型语义要点（实现时要考虑）**
+
+- `tuple(tuple_obj)` 返回同一对象（不可变类型的语义/优化）。
+- `list(list_obj)` 返回新对象（浅拷贝元素引用）。
+- `dict(old_dict)` 返回新对象（浅拷贝键值对引用），随后 `kwargs` 覆盖之前的值。
+- 对齐的关键不是“支持更多输入”，而是“正确的参数个数规则 + kwargs 规则 + fast path/identity 语义 + 错误文案”，这些应当通过解释器端到端单测覆盖。
+
+**测试策略（强烈建议）**
+
+- 构造函数属于“解释器 builtins + type object call + klass slot”整条链路的交汇点，优先写解释器端到端测试（`RunScript(...)` + `ExpectPrintResult(...)`），以便一次性覆盖：
+  - `builtins` 注入是否完整（例如 `tuple/list/dict` 是否在 builtins 中可见）；
+  - `CALL` 参数布局是否正确；
+  - `construct_instance` 的语义与报错是否符合预期。
 - **Klass 也是 GC Root**:
   - `Klass::Iterate(ObjectVisitor*)` 负责把 `Klass` 自身持有的引用暴露给 GC；新增字段时必须同步更新。
 - **MRO/C3 与属性查找**:

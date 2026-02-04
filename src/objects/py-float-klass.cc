@@ -15,10 +15,12 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
+#include "src/utils/number-conversion.h"
 
 namespace saauso::internal {
 
@@ -66,6 +68,7 @@ void PyFloatKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
+  vtable_.construct_instance = &Virtual_ConstructInstance;
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
@@ -103,6 +106,61 @@ void PyFloatKlass::Finalize() {
 }
 
 ////////////////////////////////////////////////////////////////////
+
+Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(Tagged<Klass> klass_self,
+                                                         Handle<PyObject> args,
+                                                         Handle<PyObject> kwargs) {
+  assert(klass_self == PyFloatKlass::GetInstance());
+
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: float() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+  if (argc == 0) {
+    return PyFloat::NewInstance(0.0);
+  }
+  if (argc != 1) {
+    std::fprintf(stderr,
+                 "TypeError: float() takes at most 1 argument (%lld given)\n",
+                 static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  Handle<PyObject> value = pos_args->Get(0);
+  if (IsPyFloat(value)) {
+    return value;
+  }
+  if (IsPySmi(value)) {
+    return PyFloat::NewInstance(
+        static_cast<double>(PySmi::ToInt(Handle<PySmi>::cast(value))));
+  }
+  if (IsPyBoolean(value)) {
+    bool v = Tagged<PyBoolean>::cast(*value)->value();
+    return PyFloat::NewInstance(v ? 1.0 : 0.0);
+  }
+  if (IsPyString(value)) {
+    auto s = Handle<PyString>::cast(value);
+    std::string_view text(s->buffer(), static_cast<size_t>(s->length()));
+    std::optional<double> parsed = StringToDouble(text);
+    if (!parsed) {
+      std::fprintf(stderr,
+                   "ValueError: could not convert string to float: '%.*s'\n",
+                   static_cast<int>(s->length()), s->buffer());
+      std::exit(1);
+    }
+    return PyFloat::NewInstance(*parsed);
+  }
+
+  auto type_name = PyObject::GetKlass(value)->name();
+  std::fprintf(stderr,
+               "TypeError: float() argument must be a string or a real number, "
+               "not '%.*s'\n",
+               static_cast<int>(type_name->length()), type_name->buffer());
+  std::exit(1);
+}
 
 void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%g", PyFloat::cast(*self)->value());

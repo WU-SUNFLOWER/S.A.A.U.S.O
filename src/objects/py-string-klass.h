@@ -24,6 +24,10 @@ class PyStringKlass : public Klass {
   void Finalize();
 
  private:
+  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
+
   static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
 
   static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);

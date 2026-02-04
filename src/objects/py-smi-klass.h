@@ -24,6 +24,10 @@ class PySmiKlass : public Klass {
  private:
   PySmiKlass();
 
+  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
+
   static void Virtual_Print(Handle<PyObject>);
 
   static Handle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
