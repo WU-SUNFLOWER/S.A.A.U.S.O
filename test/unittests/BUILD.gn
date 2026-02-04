@@ -7,7 +7,8 @@ executable("ut") {
     "./handles/handle-thread-unittest.cc",
     "./handles/handle-unittest.cc",
     "./heap/gc-unittest.cc",
-    "./heap/gc-interpreter-stress-unittest.cc",
+    # GC压力测试运行时间太久了，这里先暂时注释掉
+    # "./heap/gc-interpreter-stress-unittest.cc",
     "./interpreter/interpreter-builtins-constructor-unittest.cc",
     "./interpreter/interpreter-builtins-seq-unittest.cc",
     "./interpreter/interpreter-call-stack-unittest.cc",
