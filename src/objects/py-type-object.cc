@@ -5,12 +5,13 @@
 #include "src/objects/py-type-object.h"
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object-klass.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

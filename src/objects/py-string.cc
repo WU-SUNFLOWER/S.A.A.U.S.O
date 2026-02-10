@@ -10,14 +10,15 @@
 #include <cstdint>
 #include <cstring>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
-#include "src/runtime/isolate.h"
 #include "src/utils/number-conversion.h"
 #include "third_party/rapidhash/rapidhash.h"
+
 
 namespace saauso::internal {
 

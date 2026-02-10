@@ -4,6 +4,7 @@
 
 #include "src/objects/py-function.h"
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object.h"
@@ -13,7 +14,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

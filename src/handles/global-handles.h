@@ -7,9 +7,9 @@
 
 #include <cassert>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
-#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 

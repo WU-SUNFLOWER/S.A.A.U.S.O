@@ -6,13 +6,13 @@
 
 #include <cassert>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list.h"
-#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/isolate.h"
+#include "src/execution/isolate.h"
 
 #include <mutex>
 #include <thread>

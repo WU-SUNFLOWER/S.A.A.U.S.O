@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "gtest/gtest.h"
+#include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/handles/handles.h"
@@ -10,7 +11,6 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/isolate.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 

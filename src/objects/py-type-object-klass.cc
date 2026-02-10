@@ -4,6 +4,7 @@
 
 #include "src/objects/py-type-object-klass.h"
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
@@ -17,9 +18,9 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
+
 
 namespace saauso::internal {
 

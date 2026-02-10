@@ -8,6 +8,7 @@
 
 #include "include/saauso.h"
 #include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
@@ -18,7 +19,6 @@
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
 
 using namespace saauso::internal;
 

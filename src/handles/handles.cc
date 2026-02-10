@@ -7,8 +7,9 @@
 #include <cstdint>
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handle_scope_implementer.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 
@@ -136,10 +137,12 @@ void HandleScope::AssertValidLocation(Address* location) {
 
     in_active_blocks = true;
     if (block == last_block) {
-      uintptr_t next = reinterpret_cast<uintptr_t>(impl->handle_scope_state()->next);
+      uintptr_t next =
+          reinterpret_cast<uintptr_t>(impl->handle_scope_state()->next);
       if (addr >= next) {
-        std::fprintf(stderr,
-                     "Invalid handle: location is outside the active handle scope");
+        std::fprintf(
+            stderr,
+            "Invalid handle: location is outside the active handle scope");
         std::exit(1);
       }
     }

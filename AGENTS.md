@@ -72,7 +72,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 
 ## 2.1. 建议阅读路线（快速上手）
 - 生命周期与入口：从 [main.cc](file:///e:/MyProject/S.A.A.U.S.O/src/main.cc) 看初始化/创建 Isolate/执行 `.pyc`。
-- 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/isolate.cc)（`Init/InitMetaArea/TearDown`）。
+- 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/execution/isolate.cc)（`Init/InitMetaArea/TearDown`）。
 - 字节码执行主循环：读 [interpreter-dispatcher.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter-dispatcher.cc)（computed-goto handlers）。
 - 调用与参数绑定：读 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc) 与 [frame-object-builder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/frame-object-builder.cc)。
 - 对象模型与属性查找：读 [py-object.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-object.cc) 与 [klass.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc)。
@@ -114,7 +114,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 
 **slot 覆盖时机（初始化顺序很关键）**
 
-- `Isolate::InitMetaArea()` 会先对每个 `Klass` 执行 `InitializeVTable()`，再执行 `PreInitialize()`（见 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/isolate.cc)），因此：
+- `Isolate::InitMetaArea()` 会先对每个 `Klass` 执行 `InitializeVTable()`，再执行 `PreInitialize()`（见 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/execution/isolate.cc)），因此：
   - `PreInitialize()` 是覆盖 `vtable_.construct_instance` 的正确地点；
   - 如果忘记覆盖，类型会自动回退到默认构造逻辑。
 

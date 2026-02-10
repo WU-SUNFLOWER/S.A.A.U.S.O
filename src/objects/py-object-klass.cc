@@ -4,12 +4,13 @@
 
 #include "src/objects/py-object-klass.h"
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

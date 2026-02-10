@@ -8,13 +8,13 @@
 #include <span>
 
 #include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 

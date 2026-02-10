@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "src/execution/isolate.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
@@ -24,11 +25,11 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/stable-merge-sort.h"
 #include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 

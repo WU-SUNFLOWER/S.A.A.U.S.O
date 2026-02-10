@@ -5,6 +5,7 @@
 #include "test/unittests/test-helpers.h"
 
 #include "include/saauso.h"
+#include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
@@ -15,7 +16,6 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
 #include "test/unittests/test-utils.h"
 
 namespace saauso::internal {

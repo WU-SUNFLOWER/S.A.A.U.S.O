@@ -11,6 +11,7 @@
 #include <limits>
 #include <string_view>
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -21,10 +22,10 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 

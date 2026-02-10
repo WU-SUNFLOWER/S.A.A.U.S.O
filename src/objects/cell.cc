@@ -5,10 +5,10 @@
 #include "src/objects/cell.h"
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/cell-klass.h"
 #include "src/objects/py-dict.h"
-#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 

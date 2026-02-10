@@ -6,10 +6,11 @@
 
 #include <cassert>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-float-klass.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

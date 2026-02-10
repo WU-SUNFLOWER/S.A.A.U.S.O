@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
@@ -14,7 +15,6 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
 
 namespace saauso::internal {
 

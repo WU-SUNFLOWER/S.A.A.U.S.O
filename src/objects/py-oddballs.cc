@@ -6,11 +6,12 @@
 
 #include <cassert>
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -18,9 +19,9 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
-#include "src/utils/utils.h"
 #include "src/utils/number-conversion.h"
+#include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 
@@ -107,9 +108,10 @@ void PyFloatKlass::Finalize() {
 
 ////////////////////////////////////////////////////////////////////
 
-Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(Tagged<Klass> klass_self,
-                                                         Handle<PyObject> args,
-                                                         Handle<PyObject> kwargs) {
+Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
+    Tagged<Klass> klass_self,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
   assert(klass_self == PyFloatKlass::GetInstance());
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {

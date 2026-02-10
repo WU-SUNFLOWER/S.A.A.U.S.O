@@ -5,10 +5,11 @@
 #include "src/handles/handle_scope_implementer.h"
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/utils/allocation.h"
+
 
 namespace saauso::internal {
 

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/execution/isolate.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
@@ -17,7 +18,6 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 

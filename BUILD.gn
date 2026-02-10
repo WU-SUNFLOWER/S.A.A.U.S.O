@@ -138,13 +138,17 @@ source_set("saauso_core") {
     "//src/interpreter/interpreter.cc",
     "//src/interpreter/interpreter.h",
 
+    # init
+    "//src/init/saauso.cc",
+
+    # execution
+    "//src/execution/isolate-klass-list.h",
+    "//src/execution/isolate.cc",
+    "//src/execution/isolate.h",
+
     # runtime (运行时)
-    "//src/runtime/isolate.cc",
-    "//src/runtime/isolate.h",
     "//src/runtime/runtime.cc",
     "//src/runtime/runtime.h",
-    "//src/runtime/saauso-dispose-hook.h",
-    "//src/runtime/saauso.cc",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
 

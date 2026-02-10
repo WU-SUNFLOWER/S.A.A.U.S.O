@@ -8,12 +8,13 @@
 #include <iostream>
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-object.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

@@ -4,11 +4,12 @@
 
 #include "src/objects/fixed-array-klass.h"
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

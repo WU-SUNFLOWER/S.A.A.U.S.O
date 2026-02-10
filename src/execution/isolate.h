@@ -7,8 +7,8 @@
 
 #include <thread>
 
+#include "src/execution/isolate-klass-list.h"
 #include "src/handles/tagged.h"
-#include "src/runtime/isolate-klass-list.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {

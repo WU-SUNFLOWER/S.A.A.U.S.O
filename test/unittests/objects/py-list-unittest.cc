@@ -4,14 +4,15 @@
 
 #include <cstdint>
 
+#include "src/execution/isolate.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/isolate.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
 
 namespace saauso::internal {
 

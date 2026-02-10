@@ -10,14 +10,15 @@
 #include <vector>
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/scavenge-visitor.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/allocation.h"
+
 
 namespace saauso::internal {
 

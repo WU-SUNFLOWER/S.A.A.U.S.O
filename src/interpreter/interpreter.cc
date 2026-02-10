@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/interpreter/frame-object-builder.h"
@@ -32,10 +33,10 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/native-functions.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
+
 
 namespace saauso::internal {
 

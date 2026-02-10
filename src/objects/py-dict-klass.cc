@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
@@ -19,12 +20,11 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
-#include "src/objects/py-string.h"
 #include "src/objects/py-string-klass.h"
+#include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 
 namespace saauso::internal {
@@ -323,7 +323,8 @@ Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc > 1) {
-    std::fprintf(stderr, "TypeError: dict expected at most 1 argument, got %lld\n",
+    std::fprintf(stderr,
+                 "TypeError: dict expected at most 1 argument, got %lld\n",
                  static_cast<long long>(argc));
     std::exit(1);
   }
@@ -343,7 +344,8 @@ Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
         Handle<PyTuple> pair = Runtime_UnpackIterableObjectToTuple(elem);
         if (pair->length() != 2) {
           std::fprintf(stderr,
-                       "TypeError: cannot convert dictionary update sequence element #%lld to a sequence\n",
+                       "TypeError: cannot convert dictionary update sequence "
+                       "element #%lld to a sequence\n",
                        static_cast<long long>(i));
           std::exit(1);
         }
@@ -368,8 +370,8 @@ Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
         if (!IsPyString(key)) {
           Handle<PyTuple> one_arg = PyTuple::NewInstance(1);
           one_arg->SetInternal(0, key);
-          key = PyStringKlass::GetInstance()->ConstructInstance(one_arg,
-                                                                Handle<PyObject>::null());
+          key = PyStringKlass::GetInstance()->ConstructInstance(
+              one_arg, Handle<PyObject>::null());
         }
 
         PyDict::Put(result, key, handle(v));

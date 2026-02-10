@@ -9,6 +9,7 @@
 #include <cstdlib>
 
 #include "py-object.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
@@ -38,8 +39,8 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 

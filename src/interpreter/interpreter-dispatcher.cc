@@ -2,6 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/interpreter/bytecodes.h"
@@ -21,7 +22,6 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 

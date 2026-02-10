@@ -2,13 +2,14 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/isolate.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
-#include "src/runtime/isolate.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
 
 namespace saauso::internal {
 

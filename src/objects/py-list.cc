@@ -6,6 +6,7 @@
 
 #include <cassert>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
@@ -13,7 +14,7 @@
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 
@@ -114,7 +115,9 @@ int64_t PyList::IndexOf(Handle<PyObject> target) const {
   return IndexOf(target, 0, length());
 }
 
-int64_t PyList::IndexOf(Handle<PyObject> target, int64_t begin, int64_t end) const {
+int64_t PyList::IndexOf(Handle<PyObject> target,
+                        int64_t begin,
+                        int64_t end) const {
   for (auto i = begin; i < end; ++i) {
     if (PyObject::EqualBool(target, Get(i))) {
       return i;

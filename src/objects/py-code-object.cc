@@ -6,12 +6,13 @@
 
 #include <cassert>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

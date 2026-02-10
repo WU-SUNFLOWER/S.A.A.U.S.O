@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "src/utils/binary-file-reader.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
@@ -21,7 +21,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/isolate.h"
+#include "src/utils/binary-file-reader.h"
 
 // CPython 3.12 .pyc 文件格式（高层概览）
 // -----------------------------------------------------------------------------

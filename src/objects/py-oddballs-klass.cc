@@ -6,6 +6,7 @@
 
 #include <cstdio>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
@@ -18,8 +19,8 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
+
 
 namespace saauso::internal {
 

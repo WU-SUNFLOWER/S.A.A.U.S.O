@@ -6,12 +6,12 @@
 
 #include <algorithm>
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple-klass.h"
-#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {

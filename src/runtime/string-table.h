@@ -7,9 +7,10 @@
 
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/isolate.h"
+
 
 namespace saauso::internal {
 

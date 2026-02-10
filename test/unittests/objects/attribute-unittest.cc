@@ -2,14 +2,15 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/isolate.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/isolate.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
 
 namespace saauso::internal {
 
@@ -36,10 +37,9 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
   auto list = PyList::NewInstance();
   EXPECT_EQ(list->length(), 0);
 
-  auto append =
-      PyObject::GetAttr(Handle<PyObject>(list),
-                        Handle<PyObject>(PyString::NewInstance("append")),
-                        false);
+  auto append = PyObject::GetAttr(
+      Handle<PyObject>(list), Handle<PyObject>(PyString::NewInstance("append")),
+      false);
 
   ASSERT_FALSE(append.is_null());
   EXPECT_TRUE(IsMethodObject(append));

@@ -4,11 +4,11 @@
 
 #include "src/objects/cell-klass.h"
 
+#include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/cell.h"
 #include "src/objects/py-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/isolate.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
