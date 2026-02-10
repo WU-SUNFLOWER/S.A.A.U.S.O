@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/builtins/builtins-definitions.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -34,7 +35,6 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/native-functions.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
@@ -76,26 +76,28 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   // 注册native function
   auto func_name = PyString::NewInstance("print");
   PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&Native_Print, func_name));
+              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Print), func_name));
   func_name = PyString::NewInstance("len");
   PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&Native_Len, func_name));
+              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Len), func_name));
 
   func_name = PyString::NewInstance("isinstance");
-  PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&Native_IsInstance, func_name));
+  PyDict::Put(
+      builtins, func_name,
+      PyFunction::NewInstance(&BUILTIN_FUNC_NAME(IsInstance), func_name));
 
   func_name = ST(build_class);
-  PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&Native_BuildTypeObject, func_name));
+  PyDict::Put(
+      builtins, func_name,
+      PyFunction::NewInstance(&BUILTIN_FUNC_NAME(BuildTypeObject), func_name));
 
   func_name = PyString::NewInstance("sysgc");
   PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&Native_Sysgc, func_name));
+              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Sysgc), func_name));
 
   func_name = PyString::NewInstance("exec");
   PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&Native_Exec, func_name));
+              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Exec), func_name));
 
   // 把builtins自己注册进去
   PyDict::Put(builtins, ST(builtins), builtins);

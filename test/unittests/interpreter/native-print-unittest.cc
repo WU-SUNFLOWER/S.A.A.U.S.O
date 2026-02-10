@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 #include "gtest/gtest.h"
-
+#include "src/builtins/builtins-definitions.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/native-functions.h"
 #include "src/runtime/string-table.h"
 #include "test/unittests/test-helpers.h"
 
@@ -25,7 +24,7 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
   auto kwargs = PyDict::NewInstance();
 
   testing::internal::CaptureStdout();
-  Native_Print(Handle<PyObject>::null(), args, kwargs);
+  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b\n");
 }
@@ -40,7 +39,7 @@ TEST_F(NativePrintTest, EndParameter) {
   PyDict::Put(kwargs, ST(end), PyString::NewInstance("!"));
 
   testing::internal::CaptureStdout();
-  Native_Print(Handle<PyObject>::null(), args, kwargs);
+  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b!");
 }
@@ -55,7 +54,7 @@ TEST_F(NativePrintTest, EolAliasParameter) {
   PyDict::Put(kwargs, ST(eol), PyString::NewInstance("??"));
 
   testing::internal::CaptureStdout();
-  Native_Print(Handle<PyObject>::null(), args, kwargs);
+  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b??");
 }
@@ -71,7 +70,7 @@ TEST_F(NativePrintTest, SepParameter) {
   PyDict::Put(kwargs, ST(sep), PyString::NewInstance(","));
 
   testing::internal::CaptureStdout();
-  Native_Print(Handle<PyObject>::null(), args, kwargs);
+  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a,b,c\n");
 }
@@ -84,10 +83,9 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
   PyDict::Put(kwargs, ST(end), PyString::NewInstance("X"));
 
   testing::internal::CaptureStdout();
-  Native_Print(Handle<PyObject>::null(), args, kwargs);
+  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "X");
 }
 
 }  // namespace saauso::internal
-

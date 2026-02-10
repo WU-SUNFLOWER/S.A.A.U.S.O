@@ -81,9 +81,9 @@ class PyDictKeyIteratorKlass : public Klass {
   void Initialize();
   void Finalize();
 
-  static Handle<PyObject> Native_Next(Handle<PyObject> self,
-                                      Handle<PyTuple> args,
-                                      Handle<PyDict> kwargs);
+  static Handle<PyObject> Builtin_Next(Handle<PyObject> self,
+                                       Handle<PyTuple> args,
+                                       Handle<PyDict> kwargs);
 
  private:
   static void Virtual_Print(Handle<PyObject> self);
@@ -104,9 +104,9 @@ class PyDictItemIteratorKlass : public Klass {
   void Initialize();
   void Finalize();
 
-  static Handle<PyObject> Native_Next(Handle<PyObject> self,
-                                      Handle<PyTuple> args,
-                                      Handle<PyDict> kwargs);
+  static Handle<PyObject> Builtin_Next(Handle<PyObject> self,
+                                       Handle<PyTuple> args,
+                                       Handle<PyDict> kwargs);
 
  private:
   static void Virtual_Print(Handle<PyObject> self);
@@ -127,9 +127,9 @@ class PyDictValueIteratorKlass : public Klass {
   void Initialize();
   void Finalize();
 
-  static Handle<PyObject> Native_Next(Handle<PyObject> self,
-                                      Handle<PyTuple> args,
-                                      Handle<PyDict> kwargs);
+  static Handle<PyObject> Builtin_Next(Handle<PyObject> self,
+                                       Handle<PyTuple> args,
+                                       Handle<PyDict> kwargs);
 
  private:
   static void Virtual_Print(Handle<PyObject> self);

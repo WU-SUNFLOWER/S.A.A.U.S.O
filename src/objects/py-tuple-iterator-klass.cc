@@ -41,9 +41,9 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
   return scope.Escape(result);
 }
 
-Handle<PyObject> Native_Next(Handle<PyObject> self,
-                             Handle<PyTuple> args,
-                             Handle<PyDict> kwargs) {
+Handle<PyObject> Builtin_Next(Handle<PyObject> self,
+                              Handle<PyTuple> args,
+                              Handle<PyDict> kwargs) {
   return NextImpl(self);
 }
 
@@ -75,7 +75,7 @@ void PyTupleIteratorKlass::Initialize() {
 
   auto klass_properties = PyDict::NewInstance();
   PyDict::Put(klass_properties, ST(next),
-              PyFunction::NewInstance(&Native_Next, ST(next)));
+              PyFunction::NewInstance(&Builtin_Next, ST(next)));
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());

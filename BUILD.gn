@@ -125,8 +125,6 @@ source_set("saauso_core") {
     "//src/objects/py-type-object.cc",
     "//src/objects/py-type-object.h",
     "//src/objects/visitors.h",
-    "//src/runtime/native-functions.cc",
-    "//src/runtime/native-functions.h",
 
     # 解释器
     "//src/interpreter/bytecodes.h",
@@ -151,6 +149,14 @@ source_set("saauso_core") {
     "//src/runtime/runtime.h",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
+
+    # builtins (内建函数)
+    "//src/builtins/builtins-debug.cc",
+    "//src/builtins/builtins-definitions.h",
+    "//src/builtins/builtins-exec.cc",
+    "//src/builtins/builtins-io.cc",
+    "//src/builtins/builtins-reflection.cc",
+    "//src/builtins/builtins-utils.h",
 
     # third_party (第三方库)
     "//third_party/fast_float/fast_float.h",

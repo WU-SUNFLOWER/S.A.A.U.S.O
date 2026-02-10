@@ -21,13 +21,12 @@
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
-
 namespace saauso::internal {
 
 namespace {
-Handle<PyObject> Native_Mro(Handle<PyObject> self,
-                            Handle<PyTuple> args,
-                            Handle<PyDict> kwargs) {
+Handle<PyObject> Builtin_Mro(Handle<PyObject> self,
+                             Handle<PyTuple> args,
+                             Handle<PyDict> kwargs) {
   return Handle<PyTypeObject>::cast(self)->mro();
 }
 }  // namespace
@@ -69,7 +68,7 @@ void PyTypeObjectKlass::Initialize() {
   auto klass_properties = PyDict::NewInstance();
 
   auto func_name = PyString::NewInstance("mro");
-  auto func = PyFunction::NewInstance(&Native_Mro, func_name);
+  auto func = PyFunction::NewInstance(&Builtin_Mro, func_name);
   PyDict::Put(klass_properties, func_name, func);
 
   set_klass_properties(klass_properties);
