@@ -102,11 +102,15 @@ void NormalizeExecArgs(Handle<PyDict> kwargs,
     return;
   }
 
+  // 这里的作用是：
+  // 1) 验证 kwargs 中仅包含 globals/locals 两个关键字；
+  // 2) 将关键字参数合并进对应的引用参数中，并处理“与位置参数重复赋值”的错误。
+  // 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
+  // 通过引用返回给调用方，导致悬垂句柄。
   HandleScope scope;
 
   Handle<PyObject> globals_key = PyString::NewInstance("globals");
   Handle<PyObject> locals_key = PyString::NewInstance("locals");
-
   for (auto i = 0; i < kwargs->capacity(); ++i) {
     auto item = kwargs->ItemAtIndex(i);
     if (item.is_null()) {
@@ -262,6 +266,7 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
                              Handle<PyDict> kwargs) {
   EscapableHandleScope scope;
 
+  // 位置参数：exec(obj) / exec(obj, globals) / exec(obj, globals, locals)。
   const int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1 || argc > 3) [[unlikely]] {
     std::fprintf(
@@ -274,6 +279,7 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
 
   Handle<PyObject> source_or_code = args->Get(0);
 
+  // 先按位置参数提取 globals/locals，再用 kwargs 进行覆盖与校验。
   bool globals_from_positional = false;
   bool locals_from_positional = false;
   Handle<PyObject> globals_obj = Handle<PyObject>::null();
@@ -294,6 +300,7 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
   const bool globals_explicit =
       !globals_obj.is_null() && !IsPyNone(*globals_obj);
 
+  // 解析 globals：省略或传 None 时使用当前帧 globals；否则必须为 dict。
   Handle<PyDict> globals_dict;
   if (globals_obj.is_null() || IsPyNone(*globals_obj)) {
     globals_dict = interpreter->CurrentFrameGlobals();
@@ -307,6 +314,11 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
     globals_dict = Handle<PyDict>::cast(globals_obj);
   }
 
+  // 解析 locals：
+  // - locals 省略/None 时：如果 globals 是显式传入的，则 locals=globals（对齐
+  // CPython）。
+  // - 否则尝试使用当前帧 locals；若当前帧没有 locals 字典，则回退为 globals。
+  // - locals 显式传入时必须为 dict。
   Handle<PyDict> locals_dict;
   if (locals_obj.is_null() || IsPyNone(*locals_obj)) {
     if (globals_from_positional || globals_explicit) {
@@ -327,6 +339,10 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
     locals_dict = Handle<PyDict>::cast(locals_obj);
   }
 
+  // 根据第一个参数类型分发：
+  // - str：走源码编译并执行；
+  // - code object：直接执行；
+  // - 其它类型：报错。
   if (IsPyString(*source_or_code)) {
     Runtime_ExecutePythonSourceCode(Handle<PyString>::cast(source_or_code),
                                     locals_dict, globals_dict);
@@ -339,6 +355,7 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
     std::exit(1);
   }
 
+  // 对齐 CPython：exec 总是返回 None。
   return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 

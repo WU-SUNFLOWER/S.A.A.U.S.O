@@ -46,14 +46,25 @@ Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
 Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
                                                 Handle<PyObject> prop_name);
 
+// 执行一个 PyCodeObject，并在指定 locals/globals 环境中运行。
+// - locals/globals 必须是非空的 dict。
+// - 若 globals 中缺少 __builtins__，则自动注入 builtins
+// dict，保证内建符号可用。
+// - 返回值为 code object 执行完成后的返回值（对 exec 来说通常会被上层忽略）。
 Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
                                              Handle<PyDict> locals,
                                              Handle<PyDict> globals);
 
+// 编译并执行一段 Python 源码，并在指定 locals/globals 环境中运行。
+// - locals/globals 必须是非空的 dict。
+// - 若 globals 中缺少 __builtins__，则自动注入 builtins dict。
+// - 返回值为源码执行完成后的返回值（对 exec 来说通常会被上层忽略）。
 Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
                                                  Handle<PyDict> locals,
                                                  Handle<PyDict> globals);
 
+// 编译并执行一段 Python 源码，并在指定 locals/globals 环境中运行。
+// 语义与 Runtime_ExecutePythonSourceCode(PyString, ...) 一致。
 Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
                                                  Handle<PyDict> locals,
                                                  Handle<PyDict> globals);

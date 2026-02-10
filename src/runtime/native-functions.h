@@ -29,6 +29,12 @@ Handle<PyObject> Native_Sysgc(Handle<PyObject> host,
                               Handle<PyTuple> args,
                               Handle<PyDict> kwargs);
 
+// 执行 Python 源码或 code object（内建 exec）。
+// - 位置参数形态：exec(obj) / exec(obj, globals) / exec(obj, globals, locals)。
+// - 关键字参数：仅允许 globals/locals；其它关键字直接报错。
+// - globals/locals 省略或传 None 时，会默认使用“当前执行帧”的环境字典；
+//   当当前帧 locals 不存在时，会回退为 globals。
+// - 返回值始终为 None（对齐 CPython 的 exec）。
 Handle<PyObject> Native_Exec(Handle<PyObject> host,
                              Handle<PyTuple> args,
                              Handle<PyDict> kwargs);
