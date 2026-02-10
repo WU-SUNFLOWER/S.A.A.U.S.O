@@ -7,8 +7,7 @@
 #include <string_view>
 
 #include "include/saauso.h"
-#include "src/code/cpython312-pyc-compiler.h"
-#include "src/code/cpython312-pyc-file-parser.h"
+#include "src/code/compiler.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
@@ -51,12 +50,8 @@ int main() {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope;
 
-    std::vector<uint8_t> pyc =
-        CompilePythonSourceToPycBytes312(kSourceCode, kFileName);
-
-    CPython312PycFileParser parser(
-        std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
-    Handle<PyCodeObject> code = parser.Parse();
+    Handle<PyCodeObject> code =
+        Compiler::CompileSource(isolate, kSourceCode, kFileName);
 
     isolate->interpreter()->Run(code);
   }

@@ -7,6 +7,8 @@
 #include <atomic>
 #include <cstdlib>
 
+#include "src/code/cpython312-pyc-compiler.h"
+
 namespace saauso {
 
 namespace {
@@ -18,6 +20,7 @@ void Saauso::Initialize() {
   if (!g_initialized.compare_exchange_strong(expected, true)) {
     return;
   }
+  internal::EmbeddedPython312Compiler::Setup();
 }
 
 void Saauso::Dispose() {
@@ -25,6 +28,7 @@ void Saauso::Dispose() {
   if (!g_initialized.compare_exchange_strong(expected, false)) {
     return;
   }
+  internal::EmbeddedPython312Compiler::TearDown();
 }
 
 bool Saauso::IsInitialized() {

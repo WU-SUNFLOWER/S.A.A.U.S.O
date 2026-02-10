@@ -35,8 +35,6 @@
 
 namespace saauso::internal {
 
-void FinalizeEmbeddedPython312Runtime();
-
 namespace {
 
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
@@ -47,7 +45,6 @@ void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
 }
 
 std::mutex g_python312_lifecycle_mutex;
-bool g_python312_atexit_registered = false;
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
 bool PathExists(const std::filesystem::path& p) {
@@ -154,15 +151,15 @@ void EnsurePythonInitialized() {
   if (PyStatus_Exception(status)) {
     Py_ExitStatusException(status);
   }
-  if (!g_python312_atexit_registered) {
-    std::atexit(FinalizeEmbeddedPython312Runtime);
-    g_python312_atexit_registered = true;
-  }
 }
 
 }  // namespace
 
-void FinalizeEmbeddedPython312Runtime() {
+void EmbeddedPython312Compiler::Setup() {
+  EnsurePythonInitialized();
+}
+
+void EmbeddedPython312Compiler::TearDown() {
   std::lock_guard<std::mutex> lock(g_python312_lifecycle_mutex);
   if (!Py_IsInitialized()) {
     return;
@@ -178,11 +175,9 @@ void FinalizeEmbeddedPython312Runtime() {
   Py_FinalizeEx();
 }
 
-std::vector<uint8_t> CompilePythonSourceToPycBytes312(
+std::vector<uint8_t> EmbeddedPython312Compiler::CompileToPycBytes(
     std::string_view source,
     std::string_view filename) {
-  EnsurePythonInitialized();
-
   PyGILState_STATE gstate = PyGILState_Ensure();
 
   PyObject* code_obj = Py_CompileStringExFlags(std::string(source).c_str(),

@@ -7,8 +7,7 @@
 #include <cstring>
 #include <span>
 
-#include "src/code/cpython312-pyc-compiler.h"
-#include "src/code/cpython312-pyc-file-parser.h"
+#include "src/code/compiler.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-list.h"
@@ -85,12 +84,7 @@ void AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
 Handle<PyCodeObject> CompileScript312(Isolate* isolate,
                                       std::string_view source,
                                       std::string_view file_name) {
-  // 编译阶段产出 CPython 3.12 的 pyc 字节流；解析阶段将其转换为 VM 内部 code 对象。
-  std::vector<uint8_t> pyc =
-      CompilePythonSourceToPycBytes312(source, file_name);
-  CPython312PycFileParser parser(
-      std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
-  return parser.Parse();
+  return Compiler::CompileSource(isolate, source, file_name);
 }
 
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {

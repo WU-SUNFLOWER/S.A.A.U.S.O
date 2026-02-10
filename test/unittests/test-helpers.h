@@ -51,17 +51,9 @@ class IsolateOnlyTestBase : public ::testing::Test {
   static Isolate* isolate_;
 };
 
-// 需要嵌入式 CPython 3.12 前端环境的单元测试基类。
-// 在 VmTestBase 的基础上，在套件结束时额外释放嵌入式 Python 运行时资源。
-class EmbeddedPython312VmTestBase : public VmTestBase {
- protected:
-  // 在套件结束时按顺序释放 VM 与嵌入式 Python 运行时资源。
-  static void TearDownTestSuite();
-};
-
 // 基础解释器端到端测试夹具：将 builtins.print 注入为 Native_PrintV，
 // 并把每次 print 的实参收集到列表中供断言使用。
-class BasicInterpreterTest : public EmbeddedPython312VmTestBase {
+class BasicInterpreterTest : public VmTestBase {
  protected:
   // 初始化解释器环境，并注入 builtins.print。
   static void SetUpTestSuite();

@@ -20,18 +20,20 @@ source_set("saauso_core") {
     # utils
     "//src/utils/allocation.cc",
     "//src/utils/allocation.h",
-    "//src/utils/stable-merge-sort.cc",
-    "//src/utils/stable-merge-sort.h",
+    "//src/utils/binary-file-reader.cc",
+    "//src/utils/binary-file-reader.h",
     "//src/utils/number-conversion.cc",
     "//src/utils/number-conversion.h",
+    "//src/utils/stable-merge-sort.cc",
+    "//src/utils/stable-merge-sort.h",
     "//src/utils/string-search.cc",
     "//src/utils/string-search.h",
     "//src/utils/utils.h",
     "//src/utils/vector.h",
 
     # code (代码解析相关)
-    "//src/code/binary-file-reader.cc",
-    "//src/code/binary-file-reader.h",
+    "//src/code/compiler.cc",
+    "//src/code/compiler.h",
     "//src/code/cpython312-pyc-file-parser.cc",
     "//src/code/cpython312-pyc-file-parser.h",
 
@@ -141,6 +143,7 @@ source_set("saauso_core") {
     "//src/runtime/isolate.h",
     "//src/runtime/runtime.cc",
     "//src/runtime/runtime.h",
+    "//src/runtime/saauso-dispose-hook.h",
     "//src/runtime/saauso.cc",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",

@@ -12,8 +12,7 @@
 
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
-#include "src/code/cpython312-pyc-compiler.h"
-#include "src/code/cpython312-pyc-file-parser.h"
+#include "src/code/compiler.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
@@ -26,7 +25,7 @@
 
 namespace saauso::internal {
 
-class PycFileParserTest : public EmbeddedPython312VmTestBase {};
+class PycFileParserTest : public VmTestBase {};
 
 TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   HandleScope scope;
@@ -34,13 +33,7 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   constexpr std::string_view kFileName = "saauso_unittest_input.py";
   constexpr std::string_view kSource = "x = 1\n";
 
-  std::vector<uint8_t> pyc =
-      CompilePythonSourceToPycBytes312(kSource, kFileName);
-  ASSERT_FALSE(pyc.empty());
-
-  CPython312PycFileParser parser(
-      std::span<const uint8_t>(pyc.data(), pyc.size()), isolate_);
-  auto code = parser.Parse();
+  auto code = Compiler::CompileSource(isolate_, kSource, kFileName);
   ASSERT_FALSE(code.is_null());
 
   auto file_name = code->file_name();

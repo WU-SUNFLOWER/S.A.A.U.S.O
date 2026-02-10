@@ -9,12 +9,19 @@
 #include <string_view>
 #include <vector>
 
+#include "src/common/globals.h"
+
 namespace saauso::internal {
 
-std::vector<uint8_t> CompilePythonSourceToPycBytes312(std::string_view source,
-                                                      std::string_view filename);
+class EmbeddedPython312Compiler : public AllStatic {
+ public:
+  static void Setup();
 
-void FinalizeEmbeddedPython312Runtime();
+  static void TearDown();
+
+  static std::vector<uint8_t> CompileToPycBytes(std::string_view source,
+                                                std::string_view filename);
+};
 
 }  // namespace saauso::internal
 

@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "src/code/binary-file-reader.h"
+#include "src/utils/binary-file-reader.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"

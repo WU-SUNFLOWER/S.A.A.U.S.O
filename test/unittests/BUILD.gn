@@ -2,6 +2,7 @@ executable("ut") {
   testonly = true
 
   sources = [
+    "./code/compiler-unittest.cc",
     "./code/pyc-file-parser-unittest.cc",
     "./handles/global-handle-unittest.cc",
     "./handles/handle-thread-unittest.cc",

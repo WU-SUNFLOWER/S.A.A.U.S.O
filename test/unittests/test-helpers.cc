@@ -5,7 +5,6 @@
 #include "test/unittests/test-helpers.h"
 
 #include "include/saauso.h"
-#include "src/code/cpython312-pyc-compiler.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
@@ -60,14 +59,6 @@ void IsolateOnlyTestBase::TearDownTestSuite() {
 
 //////////////////////////////////////////////////////////////
 
-void EmbeddedPython312VmTestBase::TearDownTestSuite() {
-  // 先释放 VM，再释放嵌入式 Python 运行时，避免前端残留引用访问已销毁的 VM。
-  VmTestBase::TearDownTestSuite();
-  FinalizeEmbeddedPython312Runtime();
-}
-
-//////////////////////////////////////////////////////////////
-
 Global<PyList> BasicInterpreterTest::printv_result_;
 
 void BasicInterpreterTest::SetUpTestSuite() {
@@ -82,7 +73,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
 
 void BasicInterpreterTest::TearDownTestSuite() {
   printv_result_.Reset();
-  EmbeddedPython312VmTestBase::TearDownTestSuite();
+  VmTestBase::TearDownTestSuite();
 }
 
 void BasicInterpreterTest::SetUp() {
