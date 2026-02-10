@@ -48,7 +48,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 基础对象系统：`PyObject/Klass/VTable`、`PyTypeObject`，以及若干内建类型（`int(Smi)`/`float`/`str`/`list`/`tuple`/`dict`/`bool`/`None`）。
   - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
   - 堆与 GC：`NewSpace/MetaSpace` 已可用；`OldSpace` 地址段已预留，但分配与回收尚未实现；MVP 仅依赖新生代 scavenge。
-  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class/sysgc` 等），并注入若干内建类型名（`object/int/str/float/list/bool/dict/tuple/type`）与单例（`True/False/None`）。
+  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class/sysgc/exec` 等），并注入若干内建类型名（`object/int/str/float/list/bool/dict/tuple/type`）与单例（`True/False/None`）。
   - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
 - **尚未重点覆盖/仍在 TODO（非穷尽）**：
   - 异常体系（当前大量错误以 `stderr + exit(1)` 方式处理）。
@@ -59,14 +59,15 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `include/`：对外/跨模块共享的基础定义（例如 `Address`、Smi/对齐等）。
 - `src/init/`：全局运行时生命周期（`Saauso::Initialize/Dispose`），负责嵌入式 CPython312 前端的 Setup/TearDown。
 - `src/execution/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`），并编排各 `Klass` 的初始化顺序。
+- `src/builtins/`：内建函数（builtins）实现层，统一使用 `Builtin_*` 函数签名，并由解释器在启动时注册进 `builtins` 字典。
 - `src/code/`：编译/`.pyc` 解析前端（`Compiler`、`cpython312-pyc-file-parser`、`cpython312-pyc-compiler` 等）。
 - `src/build/`：构建配置与编译控制宏（如 `BUILDFLAG`、`IS_WIN` 等）。
-- `src/common/`：通用基础设施（例如 `AllStatic`、全局状态封装等）。
+- `src/common/`：跨模块共享的轻量公共定义（当前以 `globals.h` 等为主）。
 - `src/interpreter/`：字节码解释器（bytecode dispatcher、`FrameObject` 栈帧、参数归一化与调用入口）。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
-- `src/runtime/`：运行时 helper（native-functions、通用 runtime helper、字符串表 StringTable 等）。
+- `src/runtime/`：运行时 helper（通用 runtime helper、字符串表 StringTable 等）。内建函数实现已下沉到 `src/builtins/`。
 - `src/utils/`：通用工具（对齐/内存/小型容器、BinaryFileReader 等）。**该目录下的代码严禁依赖和调用虚拟机的任何上层能力！**
 - `test/python312/`：端到端 Python 脚本样例（不依赖 GTest）。
 - `test/unittests/`：基于 GTest 的单元测试。
@@ -82,6 +83,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/execution/isolate.cc)（`Init/InitMetaArea/TearDown`）。
 - 字节码执行主循环：读 [interpreter-dispatcher.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter-dispatcher.cc)（computed-goto handlers）。
 - 调用与参数绑定：读 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc) 与 [frame-object-builder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/frame-object-builder.cc)。
+- builtins 注册与实现：读 [builtins-definitions.h](file:///e:/MyProject/S.A.A.U.S.O/src/builtins/builtins-definitions.h) 与 `src/builtins/builtins-*.cc`，以及解释器构造函数中的注入逻辑 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc)。
 - 对象模型与属性查找：读 [py-object.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-object.cc) 与 [klass.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc)。
 - 堆与新生代 GC：读 [heap.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/heap.cc) / [spaces.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/spaces.cc) / [scavenge-visitor.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/scavenge-visitor.cc)。
 
@@ -204,20 +206,23 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **全局运行时初始化**: `saauso::Saauso::{Initialize,Dispose}` 位于 `src/init/`，用于嵌入式 CPython312 编译器前端的 Setup/TearDown。
 
 #### 3.3.1. Runtime helpers (`src/runtime`)
-- **native-functions**: 内建函数集合与注册入口。
+- **builtins（内建函数）**: 实现在 `src/builtins/`，并由解释器在启动时注册进 `builtins` 字典（而非放在 `src/runtime/`）。
 - **runtime**: 可复用的运行时 helper（例如 unpack iterable、扩展 list 等）。上层类型实现优先复用此处 helper，减少重复迭代/拆包逻辑。
+- **exec 执行入口**：`Runtime_ExecutePyCodeObject/Runtime_ExecutePythonSourceCode` 负责在指定 `globals/locals` 字典中执行代码；当 `globals` 缺少 `__builtins__` 时会自动注入当前解释器的 builtins（对齐 CPython 行为）。
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
 
 ### 3.4. 字节码解释器 (`src/interpreter`)
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。
 - **builtins 字典（行为对齐用）**：
-  - 除 `print/len/isinstance/build_class/sysgc` 外，还会注入 `object/int/str/float/list/bool/dict/tuple/type` 的 type 对象、`True/False/None` 单例，并把 `builtins` 自身注册进 builtins dict（自引用）。
+  - 除 `print/len/isinstance/build_class/sysgc/exec` 外，还会注入 `object/int/str/float/list/bool/dict/tuple/type` 的 type 对象、`True/False/None` 单例，并把 `builtins` 自身注册进 builtins dict（自引用）。
+  - builtins 的 C++ 实现在 `src/builtins/`，其函数签名为 `Handle<PyObject> Builtin_Xxx(Handle<PyObject> host, Handle<PyTuple> args, Handle<PyDict> kwargs)`。
 - **computed-goto dispatcher**：`Interpreter::EvalCurrentFrame()` 使用 256 槽 dispatch table（未知 opcode 默认跳到 `unknown_bytecode`），每个 handler 内优先创建 `HandleScope`，避免 GC 移动导致悬垂引用。
 - **FrameObject（栈帧）**：
   - 保存 `stack/fast_locals/locals/globals/consts/names/code_object` 等字段，并在 `Iterate(ObjectVisitor*)` 中暴露为 GC roots。
   - **参数绑定与默认值**：函数调用的形参绑定主要在 `FrameObjectBuilder::BuildSlowPath/BuildFastPath` 中完成；支持位置参数、关键字参数、默认参数回填，以及 `*args/**kwargs` 的打包与注入。
 - **调用约定（面向实现而非语义保证）**：
   - `CALL + KW_NAMES`：按 CPython3.12 “双槽位调用协议”组织 operand stack（见下文），`KW_NAMES` 提供 `kwarg_keys`；`CALL_FUNCTION_EX` 处理 `f(*args, **kwargs)`；`DICT_MERGE` 处理 kwargs dict 合并。
+  - `CALL_INTRINSIC_1`：支持 `INTRINSIC_LIST_TO_TUPLE`（用于把临时 list 转成 tuple 后再参与调用链），其余 intrinsic 目前 fail-fast。
   - 当前大量错误处理为 `stderr + exit(1)`，尚未形成完整异常传播体系。
 
 #### 3.4.1. CPython3.12 Call 双槽位调用协议（关键）
@@ -474,6 +479,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 - 该约束在源码注释中被视为“设计硬性前提”，相关说明集中在 `src/objects/py-object.h`。
 - **栈上持有 GC-able 对象必须用 Handle**：只要对象可能在新生代中被复制移动，就必须用 `Handle<T>` 防止悬垂引用。
 - **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `EscapableHandleScope scope;`，然后 `return scope.Escape(result);`。
+- **HandleScope 依赖 Isolate::Current()**：在创建 `HandleScope`/使用 `Handle` 或 `Global::Get()` 前，应先进入对应的 `Isolate::Scope`（多线程场景再配合 `Isolate::Locker`），避免在未绑定的线程上访问句柄系统。
 - **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中；如果需要跨作用域/长期持有，请使用 `Global<T>`。
 
 #### Global（长期句柄，类似 v8::Global）
