@@ -260,7 +260,7 @@ Handle<PyObject> Native_Sysgc(Handle<PyObject> host,
 Handle<PyObject> Native_Exec(Handle<PyObject> host,
                              Handle<PyTuple> args,
                              Handle<PyDict> kwargs) {
-  HandleScope scope;
+  EscapableHandleScope scope;
 
   const int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1 || argc > 3) [[unlikely]] {
@@ -276,8 +276,8 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
 
   bool globals_from_positional = false;
   bool locals_from_positional = false;
-  Handle<PyObject> globals_obj;
-  Handle<PyObject> locals_obj;
+  Handle<PyObject> globals_obj = Handle<PyObject>::null();
+  Handle<PyObject> locals_obj = Handle<PyObject>::null();
   if (argc >= 2) {
     globals_obj = args->Get(1);
     globals_from_positional = true;
@@ -292,7 +292,7 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
 
   Interpreter* interpreter = Isolate::Current()->interpreter();
   const bool globals_explicit =
-      !(globals_obj.is_null() || IsPyNone(*globals_obj));
+      !globals_obj.is_null() && !IsPyNone(*globals_obj);
 
   Handle<PyDict> globals_dict;
   if (globals_obj.is_null() || IsPyNone(*globals_obj)) {
@@ -339,7 +339,7 @@ Handle<PyObject> Native_Exec(Handle<PyObject> host,
     std::exit(1);
   }
 
-  return handle(Isolate::Current()->py_none_object());
+  return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 
 }  // namespace saauso::internal
