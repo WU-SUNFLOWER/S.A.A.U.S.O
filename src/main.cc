@@ -50,10 +50,10 @@ int main() {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope;
 
-    Handle<PyCodeObject> code =
+    Handle<PyFunction> boilerplate =
         Compiler::CompileSource(isolate, kSourceCode, kFileName);
 
-    isolate->interpreter()->Run(code);
+    isolate->interpreter()->Run(boilerplate);
   }
 
   Isolate::Dispose(isolate);

@@ -9,6 +9,7 @@
 #include "src/code/cpython312-pyc-compiler.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-code-object.h"
+#include "src/objects/py-function.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -23,11 +24,12 @@ TEST_F(CompilerTest, CompileSourceKeepsFileName) {
   constexpr std::string_view kFileName = "saauso_compiler_test.py";
   constexpr std::string_view kSource = "x = 1\n";
 
-  Handle<PyCodeObject> code =
+  Handle<PyFunction> boilerplate =
       Compiler::CompileSource(isolate_, kSource, kFileName);
-  ASSERT_FALSE(code.is_null());
+  ASSERT_FALSE(boilerplate.is_null());
 
-  EXPECT_TRUE(IsPyStringEqual(code->file_name(), kFileName));
+  EXPECT_TRUE(
+      IsPyStringEqual(boilerplate->func_code()->file_name(), kFileName));
 }
 
 TEST_F(CompilerTest, CompilePycBytesParsesSuccessfully) {
@@ -40,10 +42,12 @@ TEST_F(CompilerTest, CompilePycBytesParsesSuccessfully) {
       EmbeddedPython312Compiler::CompileToPycBytes(kSource, kFileName);
   ASSERT_FALSE(pyc.empty());
 
-  Handle<PyCodeObject> code = Compiler::CompilePyc(isolate_, std::move(pyc));
-  ASSERT_FALSE(code.is_null());
+  Handle<PyFunction> boilerplate =
+      Compiler::CompilePyc(isolate_, std::move(pyc));
+  ASSERT_FALSE(boilerplate.is_null());
 
-  EXPECT_TRUE(IsPyStringEqual(code->file_name(), kFileName));
+  EXPECT_TRUE(
+      IsPyStringEqual(boilerplate->func_code()->file_name(), kFileName));
 }
 
 }  // namespace saauso::internal

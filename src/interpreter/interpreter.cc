@@ -37,7 +37,6 @@
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
-
 namespace saauso::internal {
 
 Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
@@ -111,8 +110,15 @@ Handle<PyTuple> Interpreter::kwarg_keys() const {
   return handle(Tagged<PyTuple>::cast(kwarg_keys_));
 }
 
-void Interpreter::Run(Handle<PyCodeObject> code_object) {
-  EnterFrame(FrameObjectBuilder::BuildRootFrame(code_object));
+void Interpreter::Run(Handle<PyFunction> boilerplate) {
+  Handle<PyDict> globals = PyDict::NewInstance();
+  PyDict::Put(globals, ST(name), ST(main));
+
+  boilerplate->set_func_globals(globals);
+
+  EnterFrame(FrameObjectBuilder::BuildFastPath(
+      boilerplate, Handle<PyObject>::null(), Handle<PyTuple>::null(),
+      Handle<PyTuple>::null(), globals));
   EvalCurrentFrame();
   DestroyCurrentFrame();
 }

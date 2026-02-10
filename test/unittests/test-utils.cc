@@ -81,12 +81,6 @@ void AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
   PyList::Append(list, value);
 }
 
-Handle<PyCodeObject> CompileScript312(Isolate* isolate,
-                                      std::string_view source,
-                                      std::string_view file_name) {
-  return Compiler::CompileSource(isolate, source, file_name);
-}
-
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
   // 以小端序写入 4 字节。
   out.push_back(static_cast<uint8_t>(v & 0xff));

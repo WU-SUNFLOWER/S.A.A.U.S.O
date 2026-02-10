@@ -54,12 +54,6 @@ Handle<PyObject> PyFalseObject();
 // 将期望值追加到 list（用于构造解释器输出的期望序列）。
 void AppendExpected(Handle<PyList> list, Handle<PyObject> value);
 
-// 将 Python 源码编译为 CPython 3.12 的 pyc 字节流，并解析为 PyCodeObject。
-// - isolate 用于解析阶段的对象分配与常量创建，不允许为 nullptr。
-Handle<PyCodeObject> CompileScript312(Isolate* isolate,
-                                      std::string_view source,
-                                      std::string_view file_name);
-
 // 以小端序写入 32 位整数到 out。
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v);
 

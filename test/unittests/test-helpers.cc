@@ -5,6 +5,7 @@
 #include "test/unittests/test-helpers.h"
 
 #include "include/saauso.h"
+#include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handles.h"
@@ -83,7 +84,8 @@ void BasicInterpreterTest::SetUp() {
 
 void BasicInterpreterTest::RunScript(std::string_view source,
                                      std::string_view file_name) {
-  isolate_->interpreter()->Run(CompileScript312(isolate_, source, file_name));
+  isolate_->interpreter()->Run(
+      Compiler::CompileSource(isolate_, source, file_name));
 }
 
 Handle<PyObject> BasicInterpreterTest::Native_PrintV(Handle<PyObject> host,

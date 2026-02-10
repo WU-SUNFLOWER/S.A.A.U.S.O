@@ -2,10 +2,12 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/handles/handles.h"
-
 #ifndef SAAUSO_RUNTIME_RUNTIME_H_
 #define SAAUSO_RUNTIME_RUNTIME_H_
+
+#include <string_view>
+
+#include "src/handles/handles.h"
 
 namespace saauso::internal {
 
@@ -15,6 +17,7 @@ class PyList;
 class PyDict;
 class PyString;
 class PyTypeObject;
+class PyCodeObject;
 class PyTuple;
 
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
@@ -42,6 +45,18 @@ Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
 
 Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
                                                 Handle<PyObject> prop_name);
+
+Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
+                                             Handle<PyDict> locals,
+                                             Handle<PyDict> globals);
+
+Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
+                                                 Handle<PyDict> locals,
+                                                 Handle<PyDict> globals);
+
+Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
+                                                 Handle<PyDict> locals,
+                                                 Handle<PyDict> globals);
 
 }  // namespace saauso::internal
 

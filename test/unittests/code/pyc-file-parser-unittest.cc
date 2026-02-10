@@ -15,6 +15,7 @@
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-code-object.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -33,10 +34,10 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   constexpr std::string_view kFileName = "saauso_unittest_input.py";
   constexpr std::string_view kSource = "x = 1\n";
 
-  auto code = Compiler::CompileSource(isolate_, kSource, kFileName);
-  ASSERT_FALSE(code.is_null());
+  auto boilerplate = Compiler::CompileSource(isolate_, kSource, kFileName);
+  ASSERT_FALSE(boilerplate.is_null());
 
-  auto file_name = code->file_name();
+  auto file_name = boilerplate->func_code()->file_name();
   EXPECT_TRUE(IsPyStringEqual(file_name, kFileName));
 }
 

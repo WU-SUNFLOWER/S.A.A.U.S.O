@@ -23,7 +23,7 @@ class Interpreter {
  public:
   explicit Interpreter(Isolate* isolate);
 
-  void Run(Handle<PyCodeObject> code_object);
+  void Run(Handle<PyFunction> boilerplate);
 
   Handle<PyObject> CallPython(Handle<PyObject> callable,
                               Handle<PyObject> host,

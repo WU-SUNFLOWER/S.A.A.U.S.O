@@ -65,19 +65,6 @@ Handle<PyDict> GetDefaultBoundLocals(Handle<PyFunction> func) {
   return Handle<PyDict>::null();
 }
 
-FrameBuildContext PrepareForCodeObject(Handle<PyCodeObject> code_object) {
-  FrameBuildContext ctx;
-  ctx.code_object = code_object;
-  // root frame：locals 与 globals 共用一份 dict。
-  ctx.locals = PyDict::NewInstance();
-  ctx.globals = ctx.locals;
-  if (code_object->nlocalsplus() > 0) {
-    ctx.localsplus = FixedArray::NewInstance(code_object->nlocalsplus());
-  }
-  ctx.stack = FixedArray::NewInstance(code_object->stack_size());
-  return ctx;
-}
-
 FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
                                      Handle<PyObject> host,
                                      Handle<PyDict> bound_locals) {
@@ -224,20 +211,6 @@ void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
 }
 
 }  // namespace
-
-FrameObject* FrameObjectBuilder::BuildRootFrame(
-    Handle<PyCodeObject> code_object) {
-  // 在build入口设置一个scope。
-  // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
-  HandleScope scope;
-
-  // 仅用于创建根栈帧。
-  FrameBuildContext ctx = PrepareForCodeObject(code_object);
-  PyDict::Put(ctx.locals, ST(name), ST(main));
-  return FrameObject::Create(
-      *code_object->consts(), *code_object->names(), *ctx.locals, *ctx.globals,
-      *ctx.localsplus, *ctx.stack, *code_object, Tagged<PyObject>::null());
-}
 
 FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
                                                Handle<PyObject> host,

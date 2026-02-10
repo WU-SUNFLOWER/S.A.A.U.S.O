@@ -31,9 +31,6 @@ class FrameObjectBuilder {
  public:
   FrameObjectBuilder() = delete;
 
-  // 仅用于创建根栈帧（Interpreter::Run 的入口帧）。
-  static FrameObject* BuildRootFrame(Handle<PyCodeObject> code_object);
-
   // 创建一般的 python 栈帧（慢速路径）。
   // - 遍历 actual_kw_args：若 key 命中形参则写入 localsplus，否则注入 **kwargs
   // 或报错。
