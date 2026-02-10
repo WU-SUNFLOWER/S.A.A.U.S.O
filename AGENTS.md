@@ -48,7 +48,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 基础对象系统：`PyObject/Klass/VTable`、`PyTypeObject`，以及若干内建类型（`int(Smi)`/`float`/`str`/`list`/`tuple`/`dict`/`bool`/`None`）。
   - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
   - 堆与 GC：`NewSpace/MetaSpace` 已可用；`OldSpace` 地址段已预留，但分配与回收尚未实现；MVP 仅依赖新生代 scavenge。
-  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class` 等），并注入若干内建类型名（`object/int/str/list/bool/dict/tuple`）与单例（`True/False/None`）。
+  - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class/sysgc` 等），并注入若干内建类型名（`object/int/str/float/list/bool/dict/tuple/type`）与单例（`True/False/None`）。
   - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
 - **尚未重点覆盖/仍在 TODO（非穷尽）**：
   - 异常体系（当前大量错误以 `stderr + exit(1)` 方式处理）。
@@ -190,6 +190,9 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **Isolate**: 独立的虚拟机实例容器，封装堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable)、各内建 `Klass` 指针，以及全局单例（`None/True/False`）。
 - **Current 绑定模型**: `Isolate::Current()` 通过 `thread_local` 保存当前线程绑定的 Isolate；进入/退出必须使用 `Isolate::Scope`（或显式 `Enter/Exit`），禁止手动设置 Current。
 - **多线程访问控制**: `Isolate::Locker` 基于递归互斥锁保证同一时刻仅一个线程访问某个 Isolate（Isolate 级别的“GIL”语义）。
+- **关键不变量**：
+  - `Isolate::Scope` 的生命周期必须完全被 `Isolate::Locker` 覆盖（若使用多线程访问控制）。
+  - `Isolate::Dispose()` 的前置条件是 `entry_count_ == 0`（必须先正确退出所有 scope）。
 - **初始化流程（关键）**:
   - 预初始化所有 `Klass`：`InitializeVTable()` + `PreInitialize()`（完成 vtable 填充、把 Klass 注册到 `klass_list_` 等）。
   - 初始化 `StringTable`。
@@ -208,11 +211,11 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 ### 3.4. 字节码解释器 (`src/interpreter`)
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。
 - **builtins 字典（行为对齐用）**：
-  - 除 `print/len/isinstance/build_class` 外，还会注入 `object/int/str/list/bool/dict/tuple` 的 type 对象、`True/False/None` 单例，并把 `builtins` 自身注册进 builtins dict（自引用）。
+  - 除 `print/len/isinstance/build_class/sysgc` 外，还会注入 `object/int/str/float/list/bool/dict/tuple/type` 的 type 对象、`True/False/None` 单例，并把 `builtins` 自身注册进 builtins dict（自引用）。
 - **computed-goto dispatcher**：`Interpreter::EvalCurrentFrame()` 使用 256 槽 dispatch table（未知 opcode 默认跳到 `unknown_bytecode`），每个 handler 内优先创建 `HandleScope`，避免 GC 移动导致悬垂引用。
 - **FrameObject（栈帧）**：
   - 保存 `stack/fast_locals/locals/globals/consts/names/code_object` 等字段，并在 `Iterate(ObjectVisitor*)` 中暴露为 GC roots。
-  - **参数绑定与默认值**：函数调用的形参绑定主要在 `FrameObjectBuilder::BuildSlowPath/BuildFastPath` 中完成；支持位置参数、关键字参数、默认参数回填，以及 `*args/**kwargs` 的打包与注入。根栈帧由 `FrameObjectBuilder::BuildRootFrame` 创建。
+  - **参数绑定与默认值**：函数调用的形参绑定主要在 `FrameObjectBuilder::BuildSlowPath/BuildFastPath` 中完成；支持位置参数、关键字参数、默认参数回填，以及 `*args/**kwargs` 的打包与注入。
 - **调用约定（面向实现而非语义保证）**：
   - `CALL + KW_NAMES`：按 CPython3.12 “双槽位调用协议”组织 operand stack（见下文），`KW_NAMES` 提供 `kwarg_keys`；`CALL_FUNCTION_EX` 处理 `f(*args, **kwargs)`；`DICT_MERGE` 处理 kwargs dict 合并。
   - 当前大量错误处理为 `stderr + exit(1)`，尚未形成完整异常传播体系。
@@ -403,7 +406,13 @@ S.A.A.U.S.O 的代码规范主要基于 [Google C++ Style Guide](https://google.
 
 项目本地包含了 `depot_tools`（Windows/Linux amd64），可直接调用其中的 `gn`/`ninja`。
 
+注意：仓库脚本 `build.sh` 默认直接调用 `gn`/`ninja`（Windows 下为 `gn.exe`/`ninja.exe`），因此需要确保它们在 PATH 中可用。
+- 推荐做法：在 Bash 环境中把 `depot_tools/` 加入 PATH（或自行安装并配置 gn/ninja）。
+- 若不想配置 PATH：在 Windows PowerShell 下可以直接使用本文档下方的 `.\depot_tools\gn.exe` / `.\depot_tools\ninja.exe` 命令手动构建。
+
 Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/`），ASan 链接依赖 `llvm_lib_path`（默认 `D:\LLVM\lib\clang\21\lib\windows`）。如果你本地 LLVM 安装路径不同，请通过 `gn args` 或 `--args="llvm_lib_path=... is_asan=true"` 覆盖。
+
+为增强跨平台兼容性检查，本项目在 Windows 与 Linux 的编译配置中均启用了较严格的警告集合（例如 `-Wextra/-Wshadow/-Wunreachable-code`）并将警告视为错误（`-Werror`）。这要求新增代码在两端都保持“零警告构建”（Clean Build）。
 
 推荐优先使用仓库自带脚本（需要 Bash 环境，如 Git Bash/MSYS2/WSL）：
 ```bash
@@ -449,7 +458,6 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
   - `test/unittests/utils/`：纯工具/算法相关用例（如 `string-search-unittest.cc`）。
 - **统一夹具基类**：
   - `VmTestBase`：适用于绝大多数“需要完整虚拟机环境”的单测。
-  - `EmbeddedPython312VmTestBase`：在 `VmTestBase` 基础上额外负责 `FinalizeEmbeddedPython312Runtime()`，用于需要 CPython312 编译/解析前端的单测。
   - `IsolateOnlyTestBase`：仅创建/销毁 `Isolate`（不 Enter），用于线程隔离类测试。
 - **解释器端到端测试**：
   - 统一使用 `BasicInterpreterTest` 夹具（print 注入 + 输出捕获）。
