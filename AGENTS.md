@@ -448,7 +448,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ### 5.3. 单元测试架构（最新）
 - **公共测试代码（当前布局）**：
   - `test/unittests/test-helpers.{h,cc}`：提供带生命周期的测试夹具基类（负责 `Saauso::Initialize/Dispose`、`Isolate` 创建与 Enter/Exit 等）与解释器输出捕获夹具。
-  - `test/unittests/test-utils.{h,cc}`：提供无状态的小工具与断言谓词（例如 `IsPyStringEqual`、`AppendExpected`、`CompileScript312`、pyc 字节构造器等）。
+  - `test/unittests/test-utils.{h,cc}`：提供无状态的小工具与断言谓词（例如 `IsPyStringEqual`、`AppendExpected`、pyc 字节构造器等）。
 - **测试目录分层（按模块分类）**：
   - `test/unittests/interpreter/`：解释器端到端用例（`interpreter-*-unittest.cc`）。
   - `test/unittests/objects/`：对象系统与容器/属性相关用例（`py-*-unittest.cc`、`attribute-unittest.cc`）。

@@ -4,6 +4,7 @@
 
 #include "src/interpreter/interpreter.h"
 
+#include <cstdio>
 #include <cstdlib>
 
 #include "src/execution/isolate.h"
@@ -92,6 +93,10 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   PyDict::Put(builtins, func_name,
               PyFunction::NewInstance(&Native_Sysgc, func_name));
 
+  func_name = PyString::NewInstance("exec");
+  PyDict::Put(builtins, func_name,
+              PyFunction::NewInstance(&Native_Exec, func_name));
+
   // 把builtins自己注册进去
   PyDict::Put(builtins, ST(builtins), builtins);
 
@@ -108,6 +113,22 @@ Tagged<PyDict> Interpreter::builtins_tagged() const {
 
 Handle<PyTuple> Interpreter::kwarg_keys() const {
   return handle(Tagged<PyTuple>::cast(kwarg_keys_));
+}
+
+Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
+  if (current_frame_ == nullptr) [[unlikely]] {
+    std::fprintf(stderr, "RuntimeError: no current frame\n");
+    std::exit(1);
+  }
+  return current_frame_->globals();
+}
+
+Handle<PyDict> Interpreter::CurrentFrameLocals() const {
+  if (current_frame_ == nullptr) [[unlikely]] {
+    std::fprintf(stderr, "RuntimeError: no current frame\n");
+    std::exit(1);
+  }
+  return current_frame_->locals();
 }
 
 void Interpreter::Run(Handle<PyFunction> boilerplate) {

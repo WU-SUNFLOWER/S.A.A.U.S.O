@@ -36,6 +36,9 @@ class Interpreter {
                               Handle<PyDict> kw_args,
                               Handle<PyDict> bound_locals);
 
+  Handle<PyDict> CurrentFrameGlobals() const;
+  Handle<PyDict> CurrentFrameLocals() const;
+
   Tagged<PyDict> builtins_tagged() const;
   Handle<PyDict> builtins() const;
   Handle<PyTuple> kwarg_keys() const;

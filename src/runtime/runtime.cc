@@ -5,10 +5,13 @@
 #include "src/runtime/runtime.h"
 
 #include "src/handles/handles.h"
+#include "src/code/compiler.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -205,6 +208,68 @@ Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
   }
 
   return Handle<PyObject>::null();
+}
+
+Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
+                                             Handle<PyDict> locals,
+                                             Handle<PyDict> globals) {
+  EscapableHandleScope scope;
+
+  if (code.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "TypeError: code object must not be null\n");
+    std::exit(1);
+  }
+  if (locals.is_null() || globals.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "TypeError: locals and globals must not be null\n");
+    std::exit(1);
+  }
+
+  if (globals->Get(ST(builtins)).is_null()) {
+    PyDict::Put(globals, ST(builtins), Isolate::Current()->interpreter()->builtins());
+  }
+
+  Handle<PyFunction> func = PyFunction::NewInstance(code);
+  func->set_func_globals(globals);
+
+  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+      func, Handle<PyObject>::null(), Handle<PyTuple>::null(),
+      Handle<PyDict>::null(), locals);
+  return scope.Escape(result);
+}
+
+Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
+                                                 Handle<PyDict> locals,
+                                                 Handle<PyDict> globals) {
+  if (source.is_null()) {
+    return Handle<PyObject>::null();
+  }
+  return Runtime_ExecutePythonSourceCode(
+      std::string_view(source->buffer(), static_cast<size_t>(source->length())),
+      locals, globals);
+}
+
+Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
+                                                 Handle<PyDict> locals,
+                                                 Handle<PyDict> globals) {
+  EscapableHandleScope scope;
+
+  if (locals.is_null() || globals.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "TypeError: locals and globals must not be null\n");
+    std::exit(1);
+  }
+
+  if (globals->Get(ST(builtins)).is_null()) {
+    PyDict::Put(globals, ST(builtins), Isolate::Current()->interpreter()->builtins());
+  }
+
+  Handle<PyFunction> func =
+      Compiler::CompileSource(Isolate::Current(), source, "<string>");
+  func->set_func_globals(globals);
+
+  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+      func, Handle<PyObject>::null(), Handle<PyTuple>::null(),
+      Handle<PyDict>::null(), locals);
+  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal

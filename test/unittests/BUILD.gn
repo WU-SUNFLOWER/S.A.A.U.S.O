@@ -17,6 +17,7 @@ executable("ut") {
     "./interpreter/interpreter-controlflow-unittest.cc",
     "./interpreter/interpreter-custom-class-unittest.cc",
     "./interpreter/interpreter-dict-unittest.cc",
+    "./interpreter/interpreter-exec-unittest.cc",
     "./interpreter/interpreter-functions-unittest.cc",
     "./interpreter/interpreter-lambda-unittests.cc",
     "./interpreter/interpreter-ops-unittest.cc",

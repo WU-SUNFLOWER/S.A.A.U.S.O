@@ -4,6 +4,7 @@
 
 #include "src/runtime/native-functions.h"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 
@@ -11,6 +12,7 @@
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
+#include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -88,6 +90,67 @@ void NormalizePrintArgs(Handle<PyDict> kwargs,
     std::fprintf(stderr, "TypeError: end must be str, not %s\n",
                  type_name->buffer());
     std::exit(1);
+  }
+}
+
+void NormalizeExecArgs(Handle<PyDict> kwargs,
+                       Handle<PyObject>& globals,
+                       Handle<PyObject>& locals,
+                       bool globals_from_positional,
+                       bool locals_from_positional) {
+  if (kwargs.is_null()) {
+    return;
+  }
+
+  HandleScope scope;
+
+  Handle<PyObject> globals_key = PyString::NewInstance("globals");
+  Handle<PyObject> locals_key = PyString::NewInstance("locals");
+
+  for (auto i = 0; i < kwargs->capacity(); ++i) {
+    auto item = kwargs->ItemAtIndex(i);
+    if (item.is_null()) {
+      continue;
+    }
+
+    auto key = item->Get(0);
+    if (!IsPyString(key)) {
+      std::fprintf(stderr, "TypeError: keywords must be strings\n");
+      std::exit(1);
+    }
+
+    if (PyObject::EqualBool(key, globals_key) ||
+        PyObject::EqualBool(key, locals_key)) {
+      continue;
+    }
+
+    auto key_str = Handle<PyString>::cast(key);
+    std::fprintf(
+        stderr, "TypeError: exec() got an unexpected keyword argument '%.*s'\n",
+        static_cast<int>(key_str->length()), key_str->buffer());
+    std::exit(1);
+  }
+
+  Handle<PyObject> globals_from_kwargs = kwargs->Get(globals_key);
+  if (!globals_from_kwargs.is_null()) {
+    if (globals_from_positional) {
+      std::fprintf(stderr,
+                   "TypeError: exec() got multiple values for argument "
+                   "'globals'\n");
+      std::exit(1);
+    }
+    globals = globals_from_kwargs;
+  }
+
+  Handle<PyObject> locals_from_kwargs = kwargs->Get(locals_key);
+  if (!locals_from_kwargs.is_null()) {
+    if (locals_from_positional) {
+      std::fprintf(stderr,
+                   "TypeError: exec() got multiple values for argument "
+                   "'locals'\n");
+      std::exit(1);
+    }
+    locals = locals_from_kwargs;
   }
 }
 
@@ -191,6 +254,91 @@ Handle<PyObject> Native_Sysgc(Handle<PyObject> host,
                               Handle<PyTuple> args,
                               Handle<PyDict> kwargs) {
   Isolate::Current()->heap()->CollectGarbage();
+  return handle(Isolate::Current()->py_none_object());
+}
+
+Handle<PyObject> Native_Exec(Handle<PyObject> host,
+                             Handle<PyTuple> args,
+                             Handle<PyDict> kwargs) {
+  HandleScope scope;
+
+  const int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc < 1 || argc > 3) [[unlikely]] {
+    std::fprintf(
+        stderr,
+        "TypeError: exec() takes at most 3 positional arguments (%" PRId64
+        " given)\n",
+        argc);
+    std::exit(1);
+  }
+
+  Handle<PyObject> source_or_code = args->Get(0);
+
+  bool globals_from_positional = false;
+  bool locals_from_positional = false;
+  Handle<PyObject> globals_obj;
+  Handle<PyObject> locals_obj;
+  if (argc >= 2) {
+    globals_obj = args->Get(1);
+    globals_from_positional = true;
+  }
+  if (argc == 3) {
+    locals_obj = args->Get(2);
+    locals_from_positional = true;
+  }
+
+  NormalizeExecArgs(kwargs, globals_obj, locals_obj, globals_from_positional,
+                    locals_from_positional);
+
+  Interpreter* interpreter = Isolate::Current()->interpreter();
+  const bool globals_explicit =
+      !(globals_obj.is_null() || IsPyNone(*globals_obj));
+
+  Handle<PyDict> globals_dict;
+  if (globals_obj.is_null() || IsPyNone(*globals_obj)) {
+    globals_dict = interpreter->CurrentFrameGlobals();
+  } else {
+    if (!IsPyDict(*globals_obj)) {
+      auto type_name = PyObject::GetKlass(globals_obj)->name();
+      std::fprintf(stderr, "TypeError: exec() globals must be a dict, not %s\n",
+                   type_name->buffer());
+      std::exit(1);
+    }
+    globals_dict = Handle<PyDict>::cast(globals_obj);
+  }
+
+  Handle<PyDict> locals_dict;
+  if (locals_obj.is_null() || IsPyNone(*locals_obj)) {
+    if (globals_from_positional || globals_explicit) {
+      locals_dict = globals_dict;
+    } else {
+      locals_dict = interpreter->CurrentFrameLocals();
+      if (locals_dict.is_null()) {
+        locals_dict = globals_dict;
+      }
+    }
+  } else {
+    if (!IsPyDict(*locals_obj)) {
+      auto type_name = PyObject::GetKlass(locals_obj)->name();
+      std::fprintf(stderr, "TypeError: exec() locals must be a dict, not %s\n",
+                   type_name->buffer());
+      std::exit(1);
+    }
+    locals_dict = Handle<PyDict>::cast(locals_obj);
+  }
+
+  if (IsPyString(*source_or_code)) {
+    Runtime_ExecutePythonSourceCode(Handle<PyString>::cast(source_or_code),
+                                    locals_dict, globals_dict);
+  } else if (IsPyCodeObject(*source_or_code)) {
+    Runtime_ExecutePyCodeObject(Handle<PyCodeObject>::cast(source_or_code),
+                                locals_dict, globals_dict);
+  } else {
+    std::fprintf(stderr,
+                 "TypeError: exec() arg 1 must be a string or code object\n");
+    std::exit(1);
+  }
+
   return handle(Isolate::Current()->py_none_object());
 }
 
