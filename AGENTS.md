@@ -47,7 +47,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **已具备**：
   - 基础对象系统：`PyObject/Klass/VTable`、`PyTypeObject`，以及若干内建类型（`int(Smi)`/`float`/`str`/`list`/`tuple`/`dict`/`bool`/`None`）。
   - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
-  - 堆与 GC：按 `NewSpace/OldSpace/MetaSpace` 分区；MVP 以新生代 scavenge 为主（老生代回收仍在 TODO）。
+  - 堆与 GC：`NewSpace/MetaSpace` 已可用；`OldSpace` 地址段已预留，但分配与回收尚未实现；MVP 仅依赖新生代 scavenge。
   - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class` 等），并注入若干内建类型名（`object/int/str/list/bool/dict/tuple`）与单例（`True/False/None`）。
   - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
 - **尚未重点覆盖/仍在 TODO（非穷尽）**：
@@ -57,13 +57,18 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 
 ## 2. 仓库结构速览
 - `include/`：对外/跨模块共享的基础定义（例如 `Address`、Smi/对齐等）。
-- `src/code/`：`.pyc` 解析与前端工具（`BinaryFileReader`、`cpython312-pyc-file-parser`、`cpython312-pyc-compiler` 等）。
+- `src/init/`：全局运行时生命周期（`Saauso::Initialize/Dispose`），负责嵌入式 CPython312 前端的 Setup/TearDown。
+- `src/execution/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`），并编排各 `Klass` 的初始化顺序。
+- `src/code/`：编译/`.pyc` 解析前端（`Compiler`、`cpython312-pyc-file-parser`、`cpython312-pyc-compiler` 等）。
+- `src/build/`：构建配置与编译控制宏（如 `BUILDFLAG`、`IS_WIN` 等）。
+- `src/common/`：通用基础设施（例如 `AllStatic`、全局状态封装等）。
 - `src/interpreter/`：字节码解释器（bytecode dispatcher、`FrameObject` 栈帧、参数归一化与调用入口）。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
-- `src/runtime/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`）。
-- `src/utils/`：通用工具（对齐/内存/小型容器等）。**该目录下的代码严禁依赖和调用虚拟机的任何上层能力！**
+- `src/runtime/`：运行时 helper（native-functions、通用 runtime helper、字符串表 StringTable 等）。
+- `src/utils/`：通用工具（对齐/内存/小型容器、BinaryFileReader 等）。**该目录下的代码严禁依赖和调用虚拟机的任何上层能力！**
+- `test/python312/`：端到端 Python 脚本样例（不依赖 GTest）。
 - `test/unittests/`：基于 GTest 的单元测试。
 - `BUILD.gn`：根目标定义（当前主要目标：`vm`、`ut`）。
 - `build/`：编译配置与工具链（Clang/LLD，支持 `is_debug`/`is_asan`）。
@@ -72,6 +77,8 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 
 ## 2.1. 建议阅读路线（快速上手）
 - 生命周期与入口：从 [main.cc](file:///e:/MyProject/S.A.A.U.S.O/src/main.cc) 看初始化/创建 Isolate/执行 `.pyc`。
+- 全局运行时初始化：读 [saauso.cc](file:///e:/MyProject/S.A.A.U.S.O/src/init/saauso.cc)（嵌入式 CPython312 前端生命周期）。
+- 编译链路：读 [compiler.cc](file:///e:/MyProject/S.A.A.U.S.O/src/code/compiler.cc)（source -> pyc bytes -> PyCodeObject）。
 - 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/execution/isolate.cc)（`Init/InitMetaArea/TearDown`）。
 - 字节码执行主循环：读 [interpreter-dispatcher.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter-dispatcher.cc)（computed-goto handlers）。
 - 调用与参数绑定：读 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc) 与 [frame-object-builder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/frame-object-builder.cc)。
@@ -162,7 +169,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 ### 3.2. 内存管理 (`src/heap`)
 - **垃圾回收 (GC)**: 当前实现以新生代 Scavenge 为主。
   - **NewSpace**: 复制算法（Eden + Survivor，Flip）。注意：当前 `NewSpace::Contains()` 仅判断 Eden；涉及空间判定时优先使用 `Heap::InNewSpaceEden()` / `Heap::InNewSpaceSurvivor()` 或直接对 `eden_space()/survivor_space()` 做 Contains。
-  - **OldSpace**: 已划分空间，但回收逻辑仍在 TODO（目前可能出现老生代 OOM 即退出）。
+  - **OldSpace**: 地址段已预留，但 `AllocateRaw/Contains` 尚未实现（当前会触发断言）；MVP 主路径应避免 OldSpace 分配，老生代回收仍在 TODO。
   - **MetaSpace**: 永久区（例如 `None/True/False` 等全局单例与 `Klass` 相关数据）。
 - **根集合 (Roots)**:
   - `Isolate::klass_list_`：遍历各 `Klass` 内部引用（通常由各 `Klass::PreInitialize()` 注册）。
@@ -179,7 +186,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 永久区对象（例如 `Isolate::py_none_object()` / `py_true_object()` / `py_false_object()`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
 - **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。**当前的目标是实现一个仅含有新生代scavenge gc的MVP版本**！
 
-### 3.3. 运行时 (`src/runtime`)
+### 3.3. 执行与隔离 (`src/execution`)
 - **Isolate**: 独立的虚拟机实例容器，封装堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable)、各内建 `Klass` 指针，以及全局单例（`None/True/False`）。
 - **Current 绑定模型**: `Isolate::Current()` 通过 `thread_local` 保存当前线程绑定的 Isolate；进入/退出必须使用 `Isolate::Scope`（或显式 `Enter/Exit`），禁止手动设置 Current。
 - **多线程访问控制**: `Isolate::Locker` 基于递归互斥锁保证同一时刻仅一个线程访问某个 Isolate（Isolate 级别的“GIL”语义）。
@@ -191,9 +198,12 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **销毁流程（关键）**:
   - 先 `Finalize()` 所有 `Klass`（反向释放与清理元数据）。
   - 再依次销毁 `StringTable`、`Interpreter`、`HandleScopeImplementer`、最后销毁 `Heap` 与 `mutex`，并清空 `klass_list_` 与 `None/True/False` 引用。
-- **Interpreter**: 当前字节码执行与内建函数注册入口（内建函数实现在 `native-functions.*`）。
+- **全局运行时初始化**: `saauso::Saauso::{Initialize,Dispose}` 位于 `src/init/`，用于嵌入式 CPython312 编译器前端的 Setup/TearDown。
+
+#### 3.3.1. Runtime helpers (`src/runtime`)
+- **native-functions**: 内建函数集合与注册入口。
+- **runtime**: 可复用的运行时 helper（例如 unpack iterable、扩展 list 等）。上层类型实现优先复用此处 helper，减少重复迭代/拆包逻辑。
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
-- **隔离性**: 主路径已迁移为 Isolate 架构；需要全局状态时，优先通过 `Isolate::Current()` 获取（而不是引入新的静态全局）。
 
 ### 3.4. 字节码解释器 (`src/interpreter`)
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。
@@ -273,9 +283,10 @@ if (method != NULL) {
 - 如果未来引入更完整的 descriptor/`__get__` 协议，需要同步扩展 `GetAttrForCall` 的“是否可拆成 (method,self)”判定规则；目前仅对 `PyFunction/PyNativeFunction` 做了特判优化。
 
 ### 3.5. 代码加载 / 前端 (`src/code`)
-- **BinaryFileReader**：二进制读取工具。
+- **Compiler**：编译入口，提供 `CompileSource/CompilePyc` 等 API。`CompileSource` 的默认实现为“嵌入式 CPython312 编译成 pyc bytes，再解析为 `PyCodeObject`”。
 - **cpython312-pyc-file-parser**：解析 CPython 3.12 `.pyc` 并构建 `PyCodeObject`。
 - **cpython312-pyc-compiler（可选）**：通过嵌入式 CPython 3.12 生成 `.pyc`（对应 GN 目标 `saauso_cpython312_compiler`）。
+- **BinaryFileReader**：二进制读取工具，位于 `src/utils/`，供 pyc parser 等模块复用。
 
 ## 4. 代码规范（人类程序员和AI助手都必须严格遵守）
 
@@ -506,7 +517,7 @@ void Example() {
 - 在 `src/objects/` 新增 `py-xxx.{h,cc}` 与 `py-xxx-klass.{h,cc}`（文件名使用 `kebab-case`）。
 - 如果对象在堆上有实体，加入 `PY_TYPE_IN_HEAP_LIST`（位于 `src/objects/py-object.h`），以便自动生成 `IsPyXxx(...)` 等检查器。
 - 在对应 `Klass::PreInitialize()` 填充 vtable（至少需要 `instance_size` 与 `iterate`），并在 `Finalize()` 做必要清理。
-- 将该类型加入 `src/runtime/isolate-klass-list.h` 的 `ISOLATE_KLASS_LIST`，保证：
+- 将该类型加入 `src/execution/isolate-klass-list.h` 的 `ISOLATE_KLASS_LIST`，保证：
   - `Isolate` 拥有对应的 `*_klass()` accessor 与字段；
   - `Isolate::InitMetaArea()` 会自动执行该 Klass 的 `InitializeVTable/PreInitialize/Initialize`；
   - `Isolate::TearDown()` 会自动执行该 Klass 的 `Finalize`。
