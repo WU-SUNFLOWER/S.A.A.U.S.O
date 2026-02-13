@@ -240,7 +240,219 @@ std::string ResolveRelativeImportName(std::string_view name,
   return fullname;
 }
 
+// 校验并解析 import 请求，返回最终的绝对模块名。
+std::string ValidateAndResolveFullName(Handle<PyString> name,
+                                       int64_t level,
+                                       Handle<PyDict> globals) {
+  assert(level >= 0);
+
+  std::string name_str = ToStdString(name);
+
+  // 当 level==0 时，name 必须非空。
+  // 当 level>0 时，name 可以为空，例如 `from . import x`。
+  if (level == 0 && name_str.empty()) {
+    std::fprintf(stderr, "ModuleNotFoundError: empty module name\n");
+    std::exit(1);
+  }
+
+  return ResolveRelativeImportName(name_str, level, globals);
+}
+
+// 根据 CPython import 语义：当 fromlist 为空且 import 的 name 为 dotted-name
+// 时， 返回顶层包；否则返回最后导入的模块对象。
+Handle<PyObject> ApplyImportReturnSemantics(
+    Handle<PyDict> modules_dict,
+    const std::vector<std::string>& parts,
+    Handle<PyTuple> fromlist,
+    Handle<PyObject> last_module) {
+  bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
+  if (!has_fromlist && parts.size() > 1) {
+    Handle<PyString> top_name = PyString::NewInstance(
+        parts[0].c_str(), static_cast<int64_t>(parts[0].size()));
+    return modules_dict->Get(top_name);
+  }
+  return last_module;
+}
+
+// 在 parent 模块上挂载子模块引用（parent.child = child）。
+// 这让 `import pkg.sub; pkg.sub` 在 Python 层可用。
+void BindChildToParent(Handle<PyDict> modules_dict,
+                       std::string_view parent_fullname,
+                       std::string_view child_short_name,
+                       Handle<PyObject> child) {
+  Handle<PyString> parent_name = PyString::NewInstance(
+      parent_fullname.data(), static_cast<int64_t>(parent_fullname.size()));
+  Handle<PyObject> parent = modules_dict->Get(parent_name);
+  if (parent.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "ImportError: missing parent module '%.*s'\n",
+                 static_cast<int>(parent_fullname.size()),
+                 parent_fullname.data());
+    std::exit(1);
+  }
+
+  Handle<PyDict> parent_dict = PyObject::GetProperties(parent);
+  PyDict::Put(
+      parent_dict,
+      PyString::NewInstance(child_short_name.data(),
+                            static_cast<int64_t>(child_short_name.size())),
+      child);
+}
+
+// 初始化 module 的 namespace（复用 properties_）。
+// 该函数只负责写入模块元数据，不负责执行代码。
+void InitializeModuleDict(Handle<PyModule> module,
+                          Handle<PyString> fullname,
+                          const std::vector<std::string>& parts,
+                          size_t part_index,
+                          const ModuleLocation& loc) {
+  Handle<PyObject> module_obj(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+
+  PyDict::Put(module_dict, PyString::NewInstance("__name__"), fullname);
+
+  if (loc.is_package) {
+    PyDict::Put(module_dict, PyString::NewInstance("__package__"), fullname);
+  } else if (part_index == 0) {
+    PyDict::Put(module_dict, PyString::NewInstance("__package__"),
+                PyString::NewInstance(""));
+  } else {
+    std::string parent_name = JoinModuleName(parts, part_index);
+    PyDict::Put(
+        module_dict, PyString::NewInstance("__package__"),
+        PyString::NewInstance(parent_name.c_str(),
+                              static_cast<int64_t>(parent_name.size())));
+  }
+
+  PyDict::Put(module_dict, PyString::NewInstance("__file__"),
+              PyString::NewInstance(loc.origin.c_str(),
+                                    static_cast<int64_t>(loc.origin.size())));
+
+  PyDict::Put(module_dict, ST(class),
+              PyObject::GetKlass(module_obj)->type_object());
+
+  if (loc.is_package) {
+    Handle<PyList> pkg_path = PyList::NewInstance();
+    PyList::Append(pkg_path, PyString::NewInstance(
+                                 loc.package_dir.c_str(),
+                                 static_cast<int64_t>(loc.package_dir.size())));
+    PyDict::Put(module_dict, PyString::NewInstance("__path__"), pkg_path);
+  }
+}
+
+// 加载一个非 builtin 的源码模块（.py 或 package/__init__.py）。
+// 注意：必须先插入 sys.modules 再执行模块体，以支持循环导入。
+Handle<PyObject> LoadSourceModule(
+    ModuleManager* manager,
+    Handle<PyDict> modules_dict,
+    Handle<PyString> fullname,
+    const std::vector<std::string>& parts,
+    size_t part_index,
+    const std::vector<std::string>& search_paths) {
+  std::vector<std::string> relative_parts;
+  if (part_index == 0) {
+    relative_parts = std::vector<std::string>(parts.begin(), parts.begin() + 1);
+  } else {
+    relative_parts = std::vector<std::string>{parts[part_index]};
+  }
+
+  ModuleLocation loc = FindModuleLocation(search_paths, relative_parts);
+  if (loc.origin.empty()) {
+    std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
+                 ToStdString(fullname).c_str());
+    std::exit(1);
+  }
+
+  std::string source;
+  if (!ReadFileToString(loc.origin, &source)) {
+    std::fprintf(stderr, "ImportError: cannot read '%s'\n", loc.origin.c_str());
+    std::exit(1);
+  }
+
+  Handle<PyModule> module = PyModule::NewInstance();
+  InitializeModuleDict(module, fullname, parts, part_index, loc);
+
+  Handle<PyObject> module_obj(module);
+  PyDict::Put(modules_dict, fullname, module_obj);
+
+  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+  Handle<PyFunction> boilerplate =
+      Compiler::CompileSource(manager->isolate(), std::string_view(source),
+                              std::string_view(loc.origin));
+  boilerplate->set_func_globals(module_dict);
+  manager->isolate()->interpreter()->CallPython(
+      boilerplate, Handle<PyObject>::null(), Handle<PyTuple>::null(),
+      Handle<PyDict>::null(), module_dict);
+
+  return module_obj;
+}
+
+// 加载 dotted-name 的某一段模块（可能是 builtin，也可能是用户源码）。
+Handle<PyObject> LoadModulePart(ModuleManager* manager,
+                                Handle<PyDict> modules_dict,
+                                Handle<PyString> fullname,
+                                const std::vector<std::string>& parts,
+                                size_t part_index,
+                                const std::vector<std::string>& search_paths) {
+  std::string fullname_str = ToStdString(fullname);
+  ModuleManager::BuiltinModuleInitFunc builtin_init =
+      manager->FindBuiltinModule(fullname_str);
+  if (builtin_init != nullptr) {
+    Handle<PyModule> module = builtin_init(manager->isolate(), manager);
+    return Handle<PyObject>(module);
+  }
+
+  return LoadSourceModule(manager, modules_dict, fullname, parts, part_index,
+                          search_paths);
+}
+
+// 导入一个绝对 dotted-name（fullname 已是绝对名），并返回最后导入的 module
+// 对象。
+Handle<PyObject> ImportDottedName(ModuleManager* manager,
+                                  Handle<PyDict> modules_dict,
+                                  const std::vector<std::string>& parts) {
+  Handle<PyObject> last_module;
+
+  for (size_t i = 0; i < parts.size(); ++i) {
+    std::string part_name = JoinModuleName(parts, i + 1);
+    Handle<PyString> part_name_obj = PyString::NewInstance(
+        part_name.c_str(), static_cast<int64_t>(part_name.size()));
+
+    Handle<PyObject> cached = modules_dict->Get(part_name_obj);
+    if (!cached.is_null()) {
+      last_module = cached;
+    } else {
+      std::vector<std::string> search_paths;
+      if (i == 0) {
+        search_paths = ExtractSearchPaths(manager->path());
+      } else {
+        search_paths = ExtractSearchPaths(GetPackagePathListOrDie(last_module));
+      }
+
+      Handle<PyObject> loaded = LoadModulePart(
+          manager, modules_dict, part_name_obj, parts, i, search_paths);
+
+      PyDict::Put(modules_dict, part_name_obj, loaded);
+      last_module = loaded;
+
+      if (i > 0) {
+        std::string parent_name = JoinModuleName(parts, i);
+        BindChildToParent(modules_dict, parent_name, parts[i], loaded);
+      }
+    }
+
+    if (i + 1 < parts.size() && !IsPackageModule(last_module)) {
+      std::fprintf(stderr, "ImportError: '%s' is not a package\n",
+                   part_name.c_str());
+      std::exit(1);
+    }
+  }
+
+  return last_module;
+}
+
 }  // namespace
+
+////////////////////////////////////////////////////////////////////////////////////
 
 ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
   InitializeSysState();
@@ -309,13 +521,7 @@ Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
                                              Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
-  std::string name_str = ToStdString(name);
-  if (level == 0 && name_str.empty()) {
-    std::fprintf(stderr, "ModuleNotFoundError: empty module name\n");
-    std::exit(1);
-  }
-
-  std::string fullname = ResolveRelativeImportName(name_str, level, globals);
+  std::string fullname = ValidateAndResolveFullName(name, level, globals);
   std::vector<std::string> parts = SplitModuleName(fullname);
   if (parts.empty()) {
     std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%s'\n",
@@ -324,132 +530,11 @@ Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
   }
 
   Handle<PyDict> modules_dict = modules();
-  Handle<PyObject> last_module;
-
-  for (size_t i = 0; i < parts.size(); ++i) {
-    std::string part_name = JoinModuleName(parts, i + 1);
-    Handle<PyString> part_name_obj = PyString::NewInstance(
-        part_name.c_str(), static_cast<int64_t>(part_name.size()));
-
-    Handle<PyObject> cached = modules_dict->Get(part_name_obj);
-    if (!cached.is_null()) {
-      last_module = cached;
-    } else {
-      std::vector<std::string> search_paths;
-      if (i == 0) {
-        search_paths = ExtractSearchPaths(path());
-      } else {
-        search_paths = ExtractSearchPaths(GetPackagePathListOrDie(last_module));
-      }
-
-      BuiltinModuleInitFunc builtin_init = FindBuiltinModule(part_name);
-      Handle<PyObject> loaded;
-      if (builtin_init != nullptr) {
-        Handle<PyModule> module = builtin_init(isolate_, this);
-        loaded = Handle<PyObject>(module);
-      } else {
-        std::vector<std::string> part_parts;
-        if (i == 0) {
-          part_parts = std::vector<std::string>(parts.begin(), parts.begin() + 1);
-        } else {
-          part_parts = std::vector<std::string>{parts[i]};
-        }
-        ModuleLocation loc = FindModuleLocation(search_paths, part_parts);
-        if (loc.origin.empty()) {
-          std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
-                       part_name.c_str());
-          std::exit(1);
-        }
-
-        std::string source;
-        if (!ReadFileToString(loc.origin, &source)) {
-          std::fprintf(stderr, "ImportError: cannot read '%s'\n",
-                       loc.origin.c_str());
-          std::exit(1);
-        }
-
-        Handle<PyModule> module = PyModule::NewInstance();
-        Handle<PyObject> module_obj(module);
-        Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
-
-        PyDict::Put(module_dict, PyString::NewInstance("__name__"),
-                    part_name_obj);
-        if (loc.is_package) {
-          PyDict::Put(module_dict, PyString::NewInstance("__package__"),
-                      part_name_obj);
-        } else if (i == 0) {
-          PyDict::Put(module_dict, PyString::NewInstance("__package__"),
-                      PyString::NewInstance(""));
-        } else {
-          std::string parent_name = JoinModuleName(parts, i);
-          PyDict::Put(
-              module_dict, PyString::NewInstance("__package__"),
-              PyString::NewInstance(parent_name.c_str(),
-                                    static_cast<int64_t>(parent_name.size())));
-        }
-
-        PyDict::Put(
-            module_dict, PyString::NewInstance("__file__"),
-            PyString::NewInstance(loc.origin.c_str(),
-                                  static_cast<int64_t>(loc.origin.size())));
-
-        PyDict::Put(module_dict, ST(class),
-                    PyObject::GetKlass(module_obj)->type_object());
-
-        if (loc.is_package) {
-          Handle<PyList> pkg_path = PyList::NewInstance();
-          PyList::Append(pkg_path,
-                         PyString::NewInstance(
-                             loc.package_dir.c_str(),
-                             static_cast<int64_t>(loc.package_dir.size())));
-          PyDict::Put(module_dict, PyString::NewInstance("__path__"), pkg_path);
-        }
-
-        PyDict::Put(modules_dict, part_name_obj, module_obj);
-
-        Handle<PyFunction> boilerplate = Compiler::CompileSource(
-            Isolate::Current(), std::string_view(source),
-            std::string_view(loc.origin));
-        boilerplate->set_func_globals(module_dict);
-        Isolate::Current()->interpreter()->CallPython(
-            boilerplate, Handle<PyObject>::null(), Handle<PyTuple>::null(),
-            Handle<PyDict>::null(), module_dict);
-
-        loaded = module_obj;
-      }
-
-      PyDict::Put(modules_dict, part_name_obj, loaded);
-      last_module = loaded;
-
-      if (i > 0) {
-        std::string parent_name = JoinModuleName(parts, i);
-        Handle<PyObject> parent = modules_dict->Get(PyString::NewInstance(
-            parent_name.c_str(), static_cast<int64_t>(parent_name.size())));
-        Handle<PyDict> parent_dict = PyObject::GetProperties(parent);
-        PyDict::Put(
-            parent_dict,
-            PyString::NewInstance(parts[i].c_str(),
-                                  static_cast<int64_t>(parts[i].size())),
-            loaded);
-      }
-    }
-
-    if (i + 1 < parts.size() && !IsPackageModule(last_module)) {
-      std::fprintf(stderr, "ImportError: '%s' is not a package\n",
-                   part_name.c_str());
-      std::exit(1);
-    }
-  }
-
-  bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
-  if (!has_fromlist && parts.size() > 1) {
-    Handle<PyObject> top = modules_dict->Get(PyString::NewInstance(
-        parts[0].c_str(), static_cast<int64_t>(parts[0].size())));
-    return scope.Escape(top);
-  }
-
+  Handle<PyObject> last_module = ImportDottedName(this, modules_dict, parts);
+  Handle<PyObject> result =
+      ApplyImportReturnSemantics(modules_dict, parts, fromlist, last_module);
   (void)globals;
-  return scope.Escape(last_module);
+  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal

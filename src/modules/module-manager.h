@@ -43,7 +43,19 @@ class ModuleManager final {
   Handle<PyList> path() const;
   Tagged<PyList> path_tagged() const;
 
+  Isolate* isolate() const { return isolate_; }
+
   // 导入模块的统一入口（IMPORT_NAME 会调用此接口）。
+  //
+  // 参数说明：
+  // - name：被导入的模块名。level==0 时不允许为空；level>0 时允许为空（例如
+  // - fromlist：IMPORT_NAME 的 fromlist 参数，允许为 null 或空
+  // tuple。用于决定返回值语义：
+  //   - fromlist 为空且 name 为 dotted-name 时，返回顶层包；
+  //   - 否则返回最后导入的模块对象。
+  // - level：相对导入层级（0 表示绝对导入）。
+  // - globals：当前模块的 globals dict，用于在相对导入时解析
+  // __package__/__name__/__path__。
   Handle<PyObject> ImportModule(Handle<PyString> name,
                                 Handle<PyTuple> fromlist,
                                 int64_t level,
@@ -71,4 +83,3 @@ class ModuleManager final {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_MODULE_MANAGER_H_
-
