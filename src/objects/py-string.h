@@ -53,6 +53,11 @@ class PyString : public PyObject {
   int64_t IndexOf(Handle<PyString> pattern) const;
   int64_t IndexOf(Handle<PyString> pattern, int64_t begin, int64_t end) const;
 
+  int64_t LastIndexOf(Handle<PyString> pattern) const;
+  int64_t LastIndexOf(Handle<PyString> pattern,
+                      int64_t begin,
+                      int64_t end) const;
+
   bool Contains(Handle<PyString> pattern) const;
 
   int64_t length() const { return length_; }

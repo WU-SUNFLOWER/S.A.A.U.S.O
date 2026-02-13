@@ -242,6 +242,24 @@ int64_t PyString::IndexOf(Handle<PyString> pattern,
   return offset == StringSearch::kNotFound ? kNotFound : begin + offset;
 }
 
+int64_t PyString::LastIndexOf(Handle<PyString> pattern) const {
+  return LastIndexOf(pattern, 0, length());
+}
+
+int64_t PyString::LastIndexOf(Handle<PyString> pattern,
+                              int64_t begin,
+                              int64_t end) const {
+  assert(0 <= begin && begin <= end && end <= length());
+
+  size_t length = static_cast<size_t>(end - begin);
+  size_t pattern_length = static_cast<size_t>(pattern->length());
+
+  int64_t offset = StringSearch::LastIndexOfSubstring(
+      std::string_view(buffer() + begin, length),
+      std::string_view(pattern->buffer(), pattern_length));
+  return offset == StringSearch::kNotFound ? kNotFound : begin + offset;
+}
+
 bool PyString::Contains(Handle<PyString> pattern) const {
   return IndexOf(pattern) != kNotFound;
 }

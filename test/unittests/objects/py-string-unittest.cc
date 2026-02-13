@@ -167,6 +167,23 @@ TEST_F(PyStringTest, IndexOfAndContainsWork) {
   EXPECT_TRUE(s->Contains(empty));
 }
 
+TEST_F(PyStringTest, LastIndexOfWorks) {
+  HandleScope scope;
+
+  auto s = PyString::NewInstance("abcabcabcd");
+  auto pattern = PyString::NewInstance("abc");
+  auto missing = PyString::NewInstance("xyz");
+  auto empty = PyString::NewInstance("");
+
+  EXPECT_EQ(s->LastIndexOf(pattern), 6);
+  EXPECT_EQ(s->LastIndexOf(missing), PyString::kNotFound);
+  EXPECT_EQ(s->LastIndexOf(empty), s->length());
+
+  EXPECT_EQ(s->LastIndexOf(pattern, 0, 7), 3);
+  EXPECT_EQ(s->LastIndexOf(pattern, 2, 7), 3);
+  EXPECT_EQ(s->LastIndexOf(empty, 2, 7), 7);
+}
+
 TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
   HandleScope scope;
 

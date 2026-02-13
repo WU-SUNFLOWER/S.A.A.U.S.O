@@ -27,6 +27,12 @@ class StringSearch {
   static int64_t IndexOfSubstring(std::string_view subject,
                                   std::string_view pattern);
 
+  // 在 subject 中查找 pattern 的最后一次出现位置。
+  // - pattern 为空时返回 subject.size()（与 Python 的 rfind 语义对齐）。
+  // - 未找到时返回 kNotFound。
+  static int64_t LastIndexOfSubstring(std::string_view subject,
+                                      std::string_view pattern);
+
   // 判断 subject 是否包含 pattern。
   static bool ContainsSubstring(std::string_view subject,
                                 std::string_view pattern) {

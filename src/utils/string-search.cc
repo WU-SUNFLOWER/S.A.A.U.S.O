@@ -35,6 +35,28 @@ int64_t IndexOfNaive(std::string_view subject, std::string_view pattern) {
   return StringSearch::kNotFound;
 }
 
+int64_t LastIndexOfNaive(std::string_view subject, std::string_view pattern) {
+  // 朴素反向滑窗：从右到左逐位置 memcmp。
+  const int64_t n = static_cast<int64_t>(subject.size());
+  const int64_t m = static_cast<int64_t>(pattern.size());
+
+  if (m == 0) {
+    return n;
+  }
+  if (m > n) {
+    return StringSearch::kNotFound;
+  }
+
+  const char* const s = subject.data();
+  const char* const p = pattern.data();
+  for (int64_t i = n - m; i >= 0; --i) {
+    if (std::memcmp(s + i, p, static_cast<size_t>(m)) == 0) {
+      return i;
+    }
+  }
+  return StringSearch::kNotFound;
+}
+
 void PreprocessGoodSuffix(const uint8_t* pattern,
                           int64_t m,
                           std::vector<int64_t>* shift) {
@@ -130,6 +152,11 @@ int64_t StringSearch::IndexOfSubstring(std::string_view subject,
     return IndexOfNaive(subject, pattern);
   }
   return IndexOfBoyerMoore(subject, pattern);
+}
+
+int64_t StringSearch::LastIndexOfSubstring(std::string_view subject,
+                                           std::string_view pattern) {
+  return LastIndexOfNaive(subject, pattern);
 }
 
 }  // namespace saauso::internal

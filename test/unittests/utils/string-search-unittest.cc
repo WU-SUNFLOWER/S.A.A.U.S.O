@@ -16,10 +16,17 @@ TEST(StringSearchTest, EmptyPattern) {
   EXPECT_EQ(StringSearch::IndexOfSubstring("", ""), 0);
 }
 
+TEST(StringSearchTest, LastIndexOfEmptyPattern) {
+  EXPECT_EQ(StringSearch::LastIndexOfSubstring("abc", ""), 3);
+  EXPECT_EQ(StringSearch::LastIndexOfSubstring("", ""), 0);
+}
+
 TEST(StringSearchTest, PatternLongerThanSubject) {
   EXPECT_EQ(StringSearch::IndexOfSubstring("abc", "abcd"),
             StringSearch::kNotFound);
   EXPECT_EQ(StringSearch::IndexOfSubstring("", "a"), StringSearch::kNotFound);
+  EXPECT_EQ(StringSearch::LastIndexOfSubstring("abc", "abcd"),
+            StringSearch::kNotFound);
 }
 
 TEST(StringSearchTest, FindsSmallPatternNaivePath) {
@@ -27,6 +34,9 @@ TEST(StringSearchTest, FindsSmallPatternNaivePath) {
   EXPECT_EQ(StringSearch::IndexOfSubstring("aaaaa", "aaa"), 0);
   EXPECT_EQ(StringSearch::IndexOfSubstring("aaaaa", "aaaaaa"),
             StringSearch::kNotFound);
+
+  EXPECT_EQ(StringSearch::LastIndexOfSubstring("abcabc", "cab"), 2);
+  EXPECT_EQ(StringSearch::LastIndexOfSubstring("aaaaa", "aa"), 3);
 }
 
 TEST(StringSearchTest, FindsLargePatternBoyerMoorePath) {
@@ -51,6 +61,10 @@ TEST(StringSearchTest, BinarySafe) {
 
   EXPECT_EQ(StringSearch::IndexOfSubstring(std::string_view(subject),
                                            std::string_view(pattern)),
+            1);
+
+  EXPECT_EQ(StringSearch::LastIndexOfSubstring(std::string_view(subject),
+                                               std::string_view(pattern)),
             1);
 }
 

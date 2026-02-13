@@ -205,6 +205,41 @@ print(t.index(1, 1, 3))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, FindAndRfindMethods) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+s = "xxyyzz"
+print(s.find("yy"))
+print(s.find("aa"))
+print(s.find("yy", 1))
+print(s.find("", 3))
+print(s.find("yy", 0, 4))
+
+print(s.rfind("yy"))
+print(s.rfind("y"))
+print(s.rfind("aa"))
+print(s.rfind("", 0, 4))
+print(s.rfind("yy", 0, 2))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, IndexMethodErrors) {
   HandleScope scope;
 
@@ -235,6 +270,24 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
   EXPECT_EXIT(
       { RunScript(kStrKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
       "TypeError: str.index\\(\\) takes no keyword arguments");
+}
+
+TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
+  HandleScope scope;
+
+  constexpr std::string_view kFindKeyword = R"(
+"abc".find(sub="a")
+)";
+  EXPECT_EXIT(
+      { RunScript(kFindKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError: str.find\\(\\) takes no keyword arguments");
+
+  constexpr std::string_view kRfindKeyword = R"(
+"abc".rfind(sub="a")
+)";
+  EXPECT_EXIT(
+      { RunScript(kRfindKeyword, kTestFileName); },
+      ::testing::ExitedWithCode(1), "TypeError: str.rfind\\(\\) takes no keyword arguments");
 }
 
 TEST_F(BasicInterpreterTest, ListPop) {

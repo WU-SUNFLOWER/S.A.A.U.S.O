@@ -122,6 +122,140 @@ Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
   return scope.Escape(handle(PySmi::FromInt(result)));
 }
 
+Handle<PyObject> NativeMethod_Find(Handle<PyObject> self,
+                                   Handle<PyTuple> args,
+                                   Handle<PyDict> kwargs) {
+  EscapableHandleScope scope;
+  auto str_object = Handle<PyString>::cast(self);
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: str.find() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc < 1) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.find() takes at least 1 argument (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+  if (argc > 3) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.find() takes at most 3 arguments (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  auto target = args->Get(0);
+  if (!IsPyString(target)) {
+    auto type_name = PyObject::GetKlass(target)->name();
+    std::fprintf(stderr, "TypeError: must be str, not %s\n",
+                 type_name->buffer());
+    std::exit(1);
+  }
+  auto target_str = Handle<PyString>::cast(target);
+
+  int64_t length = str_object->length();
+  int64_t begin = 0;
+  int64_t end = length;
+  if (argc >= 2) {
+    begin = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
+  }
+  if (argc >= 3) {
+    end = Runtime_DecodeIntLikeOrDie(args->GetTagged(2));
+  }
+
+  if (begin < 0) {
+    begin += length;
+  }
+  if (end < 0) {
+    end += length;
+  }
+
+  begin = std::min(std::max(static_cast<int64_t>(0), begin), length);
+  end = std::min(std::max(static_cast<int64_t>(0), end), length);
+
+  int64_t result = PyString::kNotFound;
+  if (begin <= end) {
+    result = str_object->IndexOf(target_str, begin, end);
+  }
+  if (result == PyString::kNotFound) {
+    result = -1;
+  }
+
+  return scope.Escape(handle(PySmi::FromInt(result)));
+}
+
+Handle<PyObject> NativeMethod_Rfind(Handle<PyObject> self,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
+  EscapableHandleScope scope;
+  auto str_object = Handle<PyString>::cast(self);
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: str.rfind() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc < 1) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.rfind() takes at least 1 argument (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+  if (argc > 3) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.rfind() takes at most 3 arguments (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  auto target = args->Get(0);
+  if (!IsPyString(target)) {
+    auto type_name = PyObject::GetKlass(target)->name();
+    std::fprintf(stderr, "TypeError: must be str, not %s\n",
+                 type_name->buffer());
+    std::exit(1);
+  }
+  auto target_str = Handle<PyString>::cast(target);
+
+  int64_t length = str_object->length();
+  int64_t begin = 0;
+  int64_t end = length;
+  if (argc >= 2) {
+    begin = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
+  }
+  if (argc >= 3) {
+    end = Runtime_DecodeIntLikeOrDie(args->GetTagged(2));
+  }
+
+  if (begin < 0) {
+    begin += length;
+  }
+  if (end < 0) {
+    end += length;
+  }
+
+  begin = std::min(std::max(static_cast<int64_t>(0), begin), length);
+  end = std::min(std::max(static_cast<int64_t>(0), end), length);
+
+  int64_t result = PyString::kNotFound;
+  if (begin <= end) {
+    result = str_object->LastIndexOf(target_str, begin, end);
+  }
+  if (result == PyString::kNotFound) {
+    result = -1;
+  }
+
+  return scope.Escape(handle(PySmi::FromInt(result)));
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////
@@ -173,6 +307,14 @@ void PyStringKlass::Initialize() {
   prop_name = PyString::NewInstance("index");
   PyDict::Put(klass_properties, prop_name,
               PyFunction::NewInstance(&NativeMethod_Index, prop_name));
+
+  prop_name = PyString::NewInstance("find");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Find, prop_name));
+
+  prop_name = PyString::NewInstance("rfind");
+  PyDict::Put(klass_properties, prop_name,
+              PyFunction::NewInstance(&NativeMethod_Rfind, prop_name));
 
   // 初始化类字典
   set_klass_properties(klass_properties);
