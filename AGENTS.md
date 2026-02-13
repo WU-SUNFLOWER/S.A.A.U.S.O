@@ -49,11 +49,12 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
   - 堆与 GC：`NewSpace/MetaSpace` 已可用；`OldSpace` 地址段已预留，但分配与回收尚未实现；MVP 仅依赖新生代 scavenge。
   - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class/sysgc/exec` 等），并注入若干内建类型名（`object/int/str/float/list/bool/dict/tuple/type`）与单例（`True/False/None`）。
+  - 模块系统（MVP）：新增 `ModuleManager/ModuleLoader/PyModule`，解释器接入 `IMPORT_NAME/IMPORT_FROM`，支持从 `sys.path` / `package.__path__` 加载 `.py` 与 package（`__init__.py`），并提供内建 `sys` 模块（含 `sys.modules/sys.path`）。
   - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
 - **尚未重点覆盖/仍在 TODO（非穷尽）**：
   - 异常体系（当前大量错误以 `stderr + exit(1)` 方式处理）。
   - 老生代回收，以及分代式 GC 所需的 remembered set / write barrier（已实现雏形，但当前通过宏与 root-iterate 路径整体禁用，MVP 不做跨代引用处理）。
-  - 更完整的 Python 语义：import/module、class 语义细节、生成器/协程等。
+  - 更完整的 Python 语义：更完整的 importlib/元路径机制、class/descriptor 语义细节、生成器/协程等。
 
 ## 2. 仓库结构速览
 - `include/`：对外/跨模块共享的基础定义（例如 `Address`、Smi/对齐等）。
@@ -64,6 +65,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `src/build/`：构建配置与编译控制宏（如 `BUILDFLAG`、`IS_WIN` 等）。
 - `src/common/`：跨模块共享的轻量公共定义（当前以 `globals.h` 等为主）。
 - `src/interpreter/`：字节码解释器（bytecode dispatcher、`FrameObject` 栈帧、参数归一化与调用入口）。
+- `src/modules/`：模块系统（import MVP）：`ModuleManager` 管理 `sys.modules/sys.path`，`ModuleLoader` 负责基于文件系统的模块定位与源码读取。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
@@ -83,6 +85,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/execution/isolate.cc)（`Init/InitMetaArea/TearDown`）。
 - 字节码执行主循环：读 [interpreter-dispatcher.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter-dispatcher.cc)（computed-goto handlers）。
 - 调用与参数绑定：读 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc) 与 [frame-object-builder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/frame-object-builder.cc)。
+- 模块系统（import MVP）：读 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc)（import 语义与 sys.modules/sys.path）、[module-loader.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.h)（文件系统定位规则）、[py-module.h](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-module.h)（模块对象）。
 - builtins 注册与实现：读 [builtins-definitions.h](file:///e:/MyProject/S.A.A.U.S.O/src/builtins/builtins-definitions.h) 与 `src/builtins/builtins-*.cc`，以及解释器构造函数中的注入逻辑 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc)。
 - 对象模型与属性查找：读 [py-object.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-object.cc) 与 [klass.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc)。
 - 堆与新生代 GC：读 [heap.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/heap.cc) / [spaces.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/spaces.cc) / [scavenge-visitor.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/scavenge-visitor.cc)。
@@ -137,7 +140,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - `args` 通常是 `PyTuple` 或 null；`kwargs` 通常是 `PyDict` 或 null。
   - `argc = args.is_null() ? 0 : args->length()`；对“最多 1 个位置参数”等规则做 fail-fast 校验。
   - 对“不支持关键字参数”的构造函数：当 `kwargs` 非空且 `occupied()!=0` 时，按 CPython 文案打印 `TypeError` 并 `exit(1)`。
-  - 尽量复用 runtime helper：例如 iterable 展开使用 [Runtime_UnpackIterableObjectToTuple](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/runtime.cc#L103-L124)，list 扩展使用 `Runtime_ExtendListByItratableObject`，避免在类型实现中重复写迭代逻辑。
+  - 尽量复用 runtime helper：例如 iterable 展开使用 [Runtime_UnpackIterableObjectToTuple](file:///e:/MyProject/S.A.A.U.S.O/src/runtime/runtime-iterable.cc#L43-L64)，list 扩展使用 `Runtime_ExtendListByItratableObject`，避免在类型实现中重复写迭代逻辑。
 
 **对齐 CPython 的典型语义要点（实现时要考虑）**
 
@@ -177,6 +180,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - `Isolate::klass_list_`：遍历各 `Klass` 内部引用（通常由各 `Klass::PreInitialize()` 注册）。
   - `HandleScopeImplementer`：遍历所有 handle blocks 内引用。
   - `Interpreter`：解释器内部持有的引用也会被遍历（见 `Heap::IterateRoots`）。
+  - `ModuleManager`：遍历模块系统中持有的引用（`sys.modules/sys.path`），保证 import 引入的模块与路径在 minor GC 下可达。
   - `StringTable` 当前把常用字符串驻留在 MetaSpace，`Heap::IterateRoots` 暂未开放其遍历入口。
   - Python 运行时根（更完整的栈帧/全局变量等）仍在 TODO（见 `Heap::IterateRoots`）。
 - **Remembered set / Write barrier（现状）**:
@@ -189,7 +193,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式GC的开发。**当前的目标是实现一个仅含有新生代scavenge gc的MVP版本**！
 
 ### 3.3. 执行与隔离 (`src/execution`)
-- **Isolate**: 独立的虚拟机实例容器，封装堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、字符串表 (StringTable)、各内建 `Klass` 指针，以及全局单例（`None/True/False`）。
+- **Isolate**: 独立的虚拟机实例容器，封装堆 (Heap)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、模块管理器 (ModuleManager)、字符串表 (StringTable)、各内建 `Klass` 指针，以及全局单例（`None/True/False`）。
 - **Current 绑定模型**: `Isolate::Current()` 通过 `thread_local` 保存当前线程绑定的 Isolate；进入/退出必须使用 `Isolate::Scope`（或显式 `Enter/Exit`），禁止手动设置 Current。
 - **多线程访问控制**: `Isolate::Locker` 基于递归互斥锁保证同一时刻仅一个线程访问某个 Isolate（Isolate 级别的“GIL”语义）。
 - **关键不变量**：
@@ -200,9 +204,11 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 初始化 `StringTable`。
   - 创建全局单例 `None/True/False`（这些对象需要在大量初始化逻辑之前就可用）。
   - 正式初始化所有 `Klass`：`Initialize()`（常见动作：创建类字典、C3/MRO、绑定 type object 等）。
+  - 初始化 `Interpreter`（负责 builtins 注入与字节码执行入口）。
+  - 初始化 `ModuleManager`（负责 `sys.modules/sys.path` 与 import 入口）。
 - **销毁流程（关键）**:
   - 先 `Finalize()` 所有 `Klass`（反向释放与清理元数据）。
-  - 再依次销毁 `StringTable`、`Interpreter`、`HandleScopeImplementer`、最后销毁 `Heap` 与 `mutex`，并清空 `klass_list_` 与 `None/True/False` 引用。
+  - 再依次销毁 `StringTable`、`Interpreter`、`ModuleManager`、`HandleScopeImplementer`、最后销毁 `Heap` 与 `mutex`，并清空 `klass_list_` 与 `None/True/False` 引用。
 - **全局运行时初始化**: `saauso::Saauso::{Initialize,Dispose}` 位于 `src/init/`，用于嵌入式 CPython312 编译器前端的 Setup/TearDown。
 
 #### 3.3.1. Runtime helpers (`src/runtime`)
@@ -210,6 +216,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **runtime**: 可复用的运行时 helper（例如 unpack iterable、扩展 list 等）。上层类型实现优先复用此处 helper，减少重复迭代/拆包逻辑。
 - **exec 执行入口**：`Runtime_ExecutePyCodeObject/Runtime_ExecutePythonSourceCode` 负责在指定 `globals/locals` 字典中执行代码；当 `globals` 缺少 `__builtins__` 时会自动注入当前解释器的 builtins（对齐 CPython 行为）。
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
+  - **文件组织**：`runtime.h` 为统一声明入口，具体实现按职责拆分为 `runtime-*.cc`（truthiness/iterable/intrinsics/conversions/reflection/exec）。
 
 ### 3.4. 字节码解释器 (`src/interpreter`)
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。
@@ -295,6 +302,20 @@ if (method != NULL) {
 - **cpython312-pyc-file-parser**：解析 CPython 3.12 `.pyc` 并构建 `PyCodeObject`。
 - **cpython312-pyc-compiler（可选）**：通过嵌入式 CPython 3.12 生成 `.pyc`（对应 GN 目标 `saauso_cpython312_compiler`）。
 - **BinaryFileReader**：二进制读取工具，位于 `src/utils/`，供 pyc parser 等模块复用。
+
+### 3.6. 模块系统（import MVP，`src/modules`）
+- **分层职责**：
+  - `ModuleLoader`：只负责基于文件系统的模块/包定位与源码读取，不触碰 `sys.modules`，也不执行 Python 代码（见 [module-loader.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.h)）。
+  - `ModuleManager`：持有并维护 `sys.modules`（dict）与 `sys.path`（list），提供 `ImportModule(...)` 作为解释器 `IMPORT_NAME/IMPORT_FROM` 的统一入口（见 [module-manager.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.h)）。
+- **查找与加载规则（MVP）**：
+  - 文件系统查找优先级：先 package（`<base>/<name>/__init__.py`），再 module（`<base>/<name>.py`）。
+  - 搜索路径来源：顶层导入使用 `sys.path`；导入子模块使用 `package.__path__`。
+- **关键语义点（对齐 CPython）**：
+  - 必须先把新建 module 放入 `sys.modules` 再执行模块体，以支持循环导入（见 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc) 的 `LoadSourceModule` 注释与实现）。
+  - `import pkg.sub` 会把子模块绑定到父模块 namespace（`pkg.sub = <module>`），保证 Python 层可见（见 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc) 的 `BindChildToParent`）。
+  - `fromlist` 决定 `IMPORT_NAME` 的返回值：当 `fromlist` 为空且导入 dotted-name 时返回顶层包，否则返回最后导入的模块对象。
+- **内建模块**：
+  - 通过 `RegisterBuiltinModule(name, init)` 注册，并由 import 流程优先命中（当前内建 `sys`，其 `modules/path` 指向 `ModuleManager` 所维护对象）。
 
 ## 4. 代码规范（人类程序员和 AI 助手都必须严格遵守）
 
