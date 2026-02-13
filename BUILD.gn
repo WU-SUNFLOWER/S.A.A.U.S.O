@@ -151,8 +151,13 @@ source_set("saauso_core") {
     "//src/execution/isolate.h",
 
     # runtime (运行时)
-    "//src/runtime/runtime.cc",
     "//src/runtime/runtime.h",
+    "//src/runtime/runtime-conversions.cc",
+    "//src/runtime/runtime-exec.cc",
+    "//src/runtime/runtime-intrinsics.cc",
+    "//src/runtime/runtime-iterable.cc",
+    "//src/runtime/runtime-reflection.cc",
+    "//src/runtime/runtime-truthiness.cc",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
 

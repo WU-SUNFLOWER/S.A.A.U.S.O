@@ -5,6 +5,7 @@
 #ifndef SAAUSO_RUNTIME_RUNTIME_H_
 #define SAAUSO_RUNTIME_RUNTIME_H_
 
+#include <cstdint>
 #include <string_view>
 
 #include "src/handles/handles.h"
@@ -19,17 +20,33 @@ class PyString;
 class PyTypeObject;
 class PyCodeObject;
 class PyTuple;
-class PyModule;
 
+// 判断一个 Python 对象的真值（truthiness）。
+// - 支持常见内建类型的快速路径；对未覆盖类型当前回退为 true。
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
 
+// 判断一个 Python 对象的真值（truthiness）。
+// - 参数允许为 null；null 会被按 false 处理（与上层调用点习惯对齐）。
 bool Runtime_PyObjectIsTrue(Tagged<PyObject> object);
 
+// 判断一个 Python 对象是否可调用（callable）。
+// - 参数允许为 null；null 返回 false。
+// - 该函数不会触发 Python 层的 __call__ 查找，仅检查已知可调用对象与 vtable
+//   slot。
+bool Runtime_IsPyObjectCallable(Tagged<PyObject> object);
+
+// 将一个可迭代对象展开并追加到 list 末尾。
+// - list 必须为非空。
+// - iteratable 必须可被 Iter(...)；否则会在下层 fail-fast。
 void Runtime_ExtendListByItratableObject(Handle<PyList> list,
                                          Handle<PyObject> iteratable);
 
+// 将一个可迭代对象转换为 tuple。
+// - iterable 必须可被 Iter(...)；否则会在下层 fail-fast。
 Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 
+// intrinsic：将一个 list 转换为 tuple。
+// - object 必须是 list，否则 fail-fast。
 Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 
 // 导入某个模块名下的所有子模块到解释器栈帧的locals
@@ -42,18 +59,25 @@ Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 void Runtime_IntrinsicImportStar(Handle<PyObject> module,
                                  Handle<PyDict> locals);
 
+// 将 int/bool 等“可解释为整数”的对象解码为 int64_t。
+// - 当前仅支持 Smi 与 bool；不支持时 fail-fast。
 int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value);
 
-bool Runtime_IsPyObjectCallable(Tagged<PyObject> object);
-
+// 创建一个新的 Python 类（返回其 type object）。
+// - class_name/class_properties/supers 均必须为非空。
+// - 该函数会创建新的 Klass 并注册进当前 Isolate。
 Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
                                                Handle<PyDict> class_properties,
                                                Handle<PyList> supers);
 
+// 沿着 instance 的 type mro 查找属性。
+// - 命中返回属性值；未命中返回 null。
 Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
     Handle<PyObject> instance,
     Handle<PyObject> prop_name);
 
+// 沿着 klass 的 mro 查找属性。
+// - 命中返回属性值；未命中返回 null。
 Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
                                                 Handle<PyObject> prop_name);
 
