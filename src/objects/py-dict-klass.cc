@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "include/saauso-internal.h"
+#include "src/builtins/builtins-py-dict-methods.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
@@ -28,103 +29,6 @@
 #include "src/runtime/runtime.h"
 
 namespace saauso::internal {
-
-namespace {
-
-Handle<PyObject> NativeMethod_SetDefault(Handle<PyObject> self,
-                                         Handle<PyTuple> args,
-                                         Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-
-  auto dict = Handle<PyDict>::cast(self);
-  auto key = args->Get(0);
-
-  auto value = dict->Get(key);
-  // 如果dict中已经有目标key，直接返回对应的value
-  if (!value.is_null()) {
-    return scope.Escape(value);
-  }
-
-  // 确定默认值。
-  // 如果args中没有有效的value值，就取None进行填充。
-  value = handle(Isolate::Current()->py_none_object());
-  if (args->length() > 1) {
-    value = args->Get(1);
-  }
-
-  // 填充默认值
-  PyDict::Put(dict, key, value);
-
-  return scope.Escape(value);
-}
-
-Handle<PyObject> NativeMethod_Pop(Handle<PyObject> self,
-                                  Handle<PyTuple> args,
-                                  Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-
-  if (args->length() < 1 || args->length() > 2) {
-    std::fprintf(stderr,
-                 "TypeError: pop expected at most 2 arguments, got %lld\n",
-                 static_cast<long long>(args->length()));
-    std::exit(1);
-  }
-
-  auto dict = Handle<PyDict>::cast(self);
-  auto key = args->Get(0);
-  auto value = dict->Get(key);
-  if (!value.is_null()) {
-    dict->Remove(key);
-    return scope.Escape(value);
-  }
-
-  if (args->length() == 2) {
-    return scope.Escape(args->Get(1));
-  }
-
-  std::printf("KeyError: ");
-  PyObject::Print(key);
-  std::printf("\n");
-  std::exit(1);
-}
-
-Handle<PyObject> NativeMethod_Keys(Handle<PyObject> self,
-                                   Handle<PyTuple> args,
-                                   Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-  return scope.Escape(PyDictKeys::NewInstance(self));
-}
-
-Handle<PyObject> NativeMethod_Values(Handle<PyObject> self,
-                                     Handle<PyTuple> args,
-                                     Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-  return scope.Escape(PyDictValues::NewInstance(self));
-}
-
-Handle<PyObject> NativeMethod_Items(Handle<PyObject> self,
-                                    Handle<PyTuple> args,
-                                    Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-  return scope.Escape(PyDictItems::NewInstance(self));
-}
-
-Handle<PyObject> NativeMethod_Get(Handle<PyObject> self,
-                                  Handle<PyTuple> args,
-                                  Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-  auto dict = Handle<PyDict>::cast(self);
-  auto key = args->Get(0);
-
-  Handle<PyObject> result = dict->Get(key);
-  if (result.is_null()) {
-    result = handle(Isolate::Current()->py_none_object());
-  }
-
-  return scope.Escape(result);
-}
-
-}  // namespace
 
 ////////////////////////////////////////////////////////////////////
 
@@ -163,29 +67,8 @@ void PyDictKlass::Initialize() {
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
 
-  auto prop_name = PyString::NewInstance("setdefault");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_SetDefault, prop_name));
-
-  prop_name = PyString::NewInstance("pop");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_Pop, prop_name));
-
-  prop_name = PyString::NewInstance("keys");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_Keys, prop_name));
-
-  prop_name = PyString::NewInstance("values");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_Values, prop_name));
-
-  prop_name = PyString::NewInstance("items");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_Items, prop_name));
-
-  prop_name = PyString::NewInstance("get");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_Get, prop_name));
+  // 安装内建方法
+  PyDictBuiltinMethods::Install(klass_properties);
 
   set_klass_properties(klass_properties);
 

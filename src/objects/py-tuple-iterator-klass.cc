@@ -7,10 +7,10 @@
 #include <cassert>
 #include <cstdio>
 
+#include "src/builtins/builtins-py-tuple-iterator-methods.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-tuple-iterator.h"
@@ -41,12 +41,6 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
   return scope.Escape(result);
 }
 
-Handle<PyObject> Builtin_Next(Handle<PyObject> self,
-                              Handle<PyTuple> args,
-                              Handle<PyDict> kwargs) {
-  return NextImpl(self);
-}
-
 }  // namespace
 
 Tagged<PyTupleIteratorKlass> PyTupleIteratorKlass::GetInstance() {
@@ -74,8 +68,7 @@ void PyTupleIteratorKlass::Initialize() {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDict::Put(klass_properties, ST(next),
-              PyFunction::NewInstance(&Builtin_Next, ST(next)));
+  PyTupleIteratorBuiltinMethods::Install(klass_properties);
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());

@@ -19,6 +19,20 @@ class PyDict;
   Handle<PyObject> BUILTIN_FUNC_NAME(name)( \
       Handle<PyObject> host, Handle<PyTuple> args, Handle<PyDict> kwargs)
 
+#define DECL_BUILTIN_METHOD(name, _) static BUILTIN(name);
+
+#define BUILTIN_METHOD(type, name)                \
+  Handle<PyObject> type::BUILTIN_FUNC_NAME(name)( \
+      Handle<PyObject> self, Handle<PyTuple> args, Handle<PyDict> kwargs)
+
+#define INSTALL_BUILTIN_METHOD(func_name, method_name)                      \
+  do {                                                                      \
+    auto prop_name = PyString::NewInstance(method_name);                    \
+    PyDict::Put(                                                            \
+        target, prop_name,                                                  \
+        PyFunction::NewInstance(&BUILTIN_FUNC_NAME(func_name), prop_name)); \
+  } while (0);
+
 }  // namespace saauso::internal
 
 #endif  // SRC_BUILTINS_BUILTINS_UTILS_H_

@@ -7,10 +7,10 @@
 #include <cassert>
 #include <cstdio>
 
+#include "src/builtins/builtins-py-list-iterator-methods.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-list-iterator.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
@@ -38,13 +38,6 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
   }
 
   return scope.Escape(result);
-}
-
-Handle<PyObject> Builtin_Next(Handle<PyObject> self,
-                              Handle<PyTuple> args,
-                              Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-  return scope.Escape(NextImpl(self));
 }
 }  // namespace
 
@@ -76,8 +69,7 @@ void PyListIteratorKlass::Initialize() {
   // 设置类属性
   auto klass_properties = PyDict::NewInstance();
 
-  PyDict::Put(klass_properties, ST(next),
-              PyFunction::NewInstance(&Builtin_Next, ST(next)));
+  PyListIteratorBuiltinMethods::Install(klass_properties);
 
   set_klass_properties(klass_properties);
 

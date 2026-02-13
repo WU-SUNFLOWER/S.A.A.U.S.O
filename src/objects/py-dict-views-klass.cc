@@ -7,11 +7,11 @@
 #include <cassert>
 #include <cstdio>
 
+#include "src/builtins/builtins-py-dict-views-methods.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
@@ -52,45 +52,6 @@ template <typename ViewType>
 Handle<PyObject> DictViewLen(Handle<PyObject> self) {
   auto dict = Handle<ViewType>::cast(self)->owner();
   return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
-}
-
-Handle<PyObject> Builtin_KeyIteratorNext(Handle<PyObject> self,
-                                         Handle<PyTuple> args,
-                                         Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-
-  Handle<PyObject> result = NextFromIterator<PyDictKeyIterator>(
-      self, [](Handle<PyDict> dict, int64_t index) {
-        return dict->KeyAtIndex(index);
-      });
-
-  return scope.Escape(result);
-}
-
-Handle<PyObject> Builtin_ValueIteratorNext(Handle<PyObject> self,
-                                           Handle<PyTuple> args,
-                                           Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-
-  Handle<PyObject> result = NextFromIterator<PyDictValueIterator>(
-      self, [](Handle<PyDict> dict, int64_t index) {
-        return dict->ValueAtIndex(index);
-      });
-
-  return scope.Escape(result);
-}
-
-Handle<PyObject> Builtin_ItemIteratorNext(Handle<PyObject> self,
-                                          Handle<PyTuple> args,
-                                          Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-
-  Handle<PyObject> result = NextFromIterator<PyDictItemIterator>(
-      self, [](Handle<PyDict> dict, int64_t index) {
-        return dict->ItemAtIndex(index);
-      });
-
-  return scope.Escape(result);
 }
 
 }  // namespace
@@ -374,12 +335,6 @@ void PyDictItemsKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&view->owner_);
 }
 
-Handle<PyObject> PyDictKeyIteratorKlass::Builtin_Next(Handle<PyObject> self,
-                                                      Handle<PyTuple> args,
-                                                      Handle<PyDict> kwargs) {
-  return Builtin_KeyIteratorNext(self, args, kwargs);
-}
-
 Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictKeyIteratorKlass> instance =
@@ -406,8 +361,7 @@ void PyDictKeyIteratorKlass::Initialize() {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDict::Put(klass_properties, ST(next),
-              PyFunction::NewInstance(&Builtin_Next, ST(next)));
+  PyDictKeyIteratorBuiltinMethods::Install(klass_properties);
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
@@ -448,12 +402,6 @@ void PyDictKeyIteratorKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&iterator->owner_);
 }
 
-Handle<PyObject> PyDictItemIteratorKlass::Builtin_Next(Handle<PyObject> self,
-                                                       Handle<PyTuple> args,
-                                                       Handle<PyDict> kwargs) {
-  return Builtin_ItemIteratorNext(self, args, kwargs);
-}
-
 Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictItemIteratorKlass> instance =
@@ -480,8 +428,7 @@ void PyDictItemIteratorKlass::Initialize() {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDict::Put(klass_properties, ST(next),
-              PyFunction::NewInstance(&Builtin_Next, ST(next)));
+  PyDictItemIteratorBuiltinMethods::Install(klass_properties);
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
@@ -522,12 +469,6 @@ void PyDictItemIteratorKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&iterator->owner_);
 }
 
-Handle<PyObject> PyDictValueIteratorKlass::Builtin_Next(Handle<PyObject> self,
-                                                        Handle<PyTuple> args,
-                                                        Handle<PyDict> kwargs) {
-  return Builtin_ValueIteratorNext(self, args, kwargs);
-}
-
 Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
   Tagged<PyDictValueIteratorKlass> instance =
@@ -554,8 +495,7 @@ void PyDictValueIteratorKlass::Initialize() {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDict::Put(klass_properties, ST(next),
-              PyFunction::NewInstance(&Builtin_Next, ST(next)));
+  PyDictValueIteratorBuiltinMethods::Install(klass_properties);
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());

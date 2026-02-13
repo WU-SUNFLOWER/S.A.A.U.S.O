@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "src/builtins/builtins-py-tuple-methods.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -26,72 +27,6 @@
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
-
-namespace {
-
-Handle<PyObject> NativeMethod_Index(Handle<PyObject> self,
-                                    Handle<PyTuple> args,
-                                    Handle<PyDict> kwargs) {
-  EscapableHandleScope scope;
-  auto tuple = Handle<PyTuple>::cast(self);
-
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    std::fprintf(stderr,
-                 "TypeError: tuple.index() takes no keyword arguments\n");
-    std::exit(1);
-  }
-
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc < 1) {
-    std::fprintf(
-        stderr,
-        "TypeError: tuple.index() takes at least 1 argument (%lld given)\n",
-        static_cast<long long>(argc));
-    std::exit(1);
-  }
-  if (argc > 3) {
-    std::fprintf(
-        stderr,
-        "TypeError: tuple.index() takes at most 3 arguments (%lld given)\n",
-        static_cast<long long>(argc));
-    std::exit(1);
-  }
-
-  auto target = args->Get(0);
-  int64_t length = tuple->length();
-  int64_t begin = 0;
-  int64_t end = length;
-
-  if (argc >= 2) {
-    begin = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
-  }
-  if (argc >= 3) {
-    end = Runtime_DecodeIntLikeOrDie(args->GetTagged(2));
-  }
-
-  if (begin < 0) {
-    begin += length;
-  }
-  if (end < 0) {
-    end += length;
-  }
-
-  begin = std::min(std::max(static_cast<int64_t>(0), begin), length);
-  end = std::min(std::max(static_cast<int64_t>(0), end), length);
-
-  int64_t result = PyTuple::kNotFound;
-  if (begin <= end) {
-    result = tuple->IndexOf(target, begin, end);
-  }
-  if (result == PyTuple::kNotFound) {
-    std::fprintf(stderr, "ValueError: tuple.index(x): x not in tuple\n");
-    std::exit(1);
-  }
-
-  return scope.Escape(handle(PySmi::FromInt(result)));
-}
-
-}  // namespace
 
 Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
   Isolate* isolate = Isolate::Current();
@@ -124,9 +59,10 @@ void PyTupleKlass::Initialize() {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  auto prop_name = PyString::NewInstance("index");
-  PyDict::Put(klass_properties, prop_name,
-              PyFunction::NewInstance(&NativeMethod_Index, prop_name));
+
+  // 安装内建方法
+  PyTupleBuiltinMethods::Install(klass_properties);
+
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());

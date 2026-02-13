@@ -4,12 +4,12 @@
 
 #include "src/objects/py-type-object-klass.h"
 
+#include "src/builtins/builtins-py-type-object-methods.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -22,14 +22,6 @@
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
-
-namespace {
-Handle<PyObject> Builtin_Mro(Handle<PyObject> self,
-                             Handle<PyTuple> args,
-                             Handle<PyDict> kwargs) {
-  return Handle<PyTypeObject>::cast(self)->mro();
-}
-}  // namespace
 
 // static
 Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
@@ -66,10 +58,7 @@ void PyTypeObjectKlass::Initialize() {
 
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-
-  auto func_name = PyString::NewInstance("mro");
-  auto func = PyFunction::NewInstance(&Builtin_Mro, func_name);
-  PyDict::Put(klass_properties, func_name, func);
+  PyTypeObjectBuiltinMethods::Install(klass_properties);
 
   set_klass_properties(klass_properties);
 
