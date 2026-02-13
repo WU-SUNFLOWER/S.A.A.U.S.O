@@ -19,7 +19,6 @@
 #include "src/utils/number-conversion.h"
 #include "third_party/rapidhash/rapidhash.h"
 
-
 namespace saauso::internal {
 
 namespace {
@@ -75,6 +74,11 @@ Handle<PyString> PyString::NewInstance(const char* source,
 // static
 Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
   return NewInstance(source, std::strlen(source), in_meta_space);
+}
+
+// static
+Handle<PyString> PyString::Clone(Handle<PyString> other, bool in_meta_space) {
+  return NewInstance(other->buffer(), other->length(), in_meta_space);
 }
 
 ////////////////////////////////////////////////////////////

@@ -22,6 +22,8 @@ source_set("saauso_core") {
     "//src/utils/allocation.h",
     "//src/utils/binary-file-reader.cc",
     "//src/utils/binary-file-reader.h",
+    "//src/utils/file-utils.cc",
+    "//src/utils/file-utils.h",
     "//src/utils/number-conversion.cc",
     "//src/utils/number-conversion.h",
     "//src/utils/stable-merge-sort.cc",
@@ -72,6 +74,10 @@ source_set("saauso_core") {
     "//src/objects/py-code-object-klass.h",
     "//src/objects/py-code-object.cc",
     "//src/objects/py-code-object.h",
+    "//src/objects/py-module-klass.cc",
+    "//src/objects/py-module-klass.h",
+    "//src/objects/py-module.cc",
+    "//src/objects/py-module.h",
     "//src/objects/py-dict-klass.cc",
     "//src/objects/py-dict-klass.h",
     "//src/objects/py-dict-views-klass.cc",
@@ -149,6 +155,10 @@ source_set("saauso_core") {
     "//src/runtime/runtime.h",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
+
+    # modules (模块系统)
+    "//src/modules/module-manager.cc",
+    "//src/modules/module-manager.h",
 
     # builtins (内建函数)
     "//src/builtins/builtins-debug.cc",

@@ -11,7 +11,6 @@
 #include "src/handles/handles.h"
 #include "src/objects/py-string.h"
 
-
 namespace saauso::internal {
 
 class ObjectVisitor;
@@ -23,6 +22,7 @@ class ObjectVisitor;
   V(add, "__add__")                  \
   V(build_class, "__build_class__")  \
   V(call, "__call__")                \
+  V(all, "__all__")                  \
   V(eq, "__eq__")                    \
   V(delitem, "__delitem__")          \
   V(ge, "__ge__")                    \
@@ -47,7 +47,8 @@ class ObjectVisitor;
   V(str, "__str__")                  \
   V(traceback, "__traceback__")      \
   V(context, "__context__")          \
-  V(main, "__main_")
+  V(main, "__main_")                 \
+  V(dot, ".")
 
 #if BUILDFLAG(IS_WIN)
 #define LIB_EXT ".dll"

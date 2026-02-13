@@ -19,6 +19,7 @@ class PyString;
 class PyTypeObject;
 class PyCodeObject;
 class PyTuple;
+class PyModule;
 
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
 
@@ -30,6 +31,16 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
 Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 
 Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
+
+// 导入某个模块名下的所有子模块到解释器栈帧的locals
+// 注意：
+// 在Python中，假设包package当中的__init__.py没有显
+// 式设置__all__，并且package名下的所有子包都从没有被显
+// 式导入，那么执行`from package import *`后，虚拟机
+// 实际上不会主动查找package目录下的模块文件或子包目录。
+// 因此用户也无法直接使用package名下的子模块。
+void Runtime_IntrinsicImportStar(Handle<PyObject> module,
+                                 Handle<PyDict> locals);
 
 int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value);
 

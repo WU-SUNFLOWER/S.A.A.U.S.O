@@ -14,6 +14,7 @@
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/scavenge-visitor.h"
 #include "src/interpreter/interpreter.h"
+#include "src/modules/module-manager.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
 #include "src/runtime/string-table.h"
@@ -173,6 +174,11 @@ void Heap::IterateRoots(ObjectVisitor* v) {
   // 遍历字节码解释器中持有的引用
   if (isolate_->interpreter() != nullptr) {
     isolate_->interpreter()->Iterate(v);
+  }
+
+  // 遍历模块系统中持有的引用（sys.modules/sys.path）
+  if (isolate_->module_manager() != nullptr) {
+    isolate_->module_manager()->Iterate(v);
   }
 
   // 现阶段string table中所有的字符串都保存在meta space，暂时不需要开放GC!

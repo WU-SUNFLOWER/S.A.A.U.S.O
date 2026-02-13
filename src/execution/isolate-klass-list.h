@@ -15,6 +15,7 @@
   V(PyBoolean, PyBooleanKlass, py_boolean)                                \
   V(PyNone, PyNoneKlass, py_none)                                         \
   V(PyCodeObject, PyCodeObjectKlass, py_code_object)                      \
+  V(PyModule, PyModuleKlass, py_module)                                   \
   V(PyList, PyListKlass, py_list)                                         \
   V(PyListIterator, PyListIteratorKlass, py_list_iterator)                \
   V(PyTuple, PyTupleKlass, py_tuple)                                      \

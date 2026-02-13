@@ -32,6 +32,8 @@ namespace saauso::internal {
   V(BuildMap, 105)         \
   V(LoadAttr, 106)         \
   V(CompareOp, 107)        \
+  V(ImportName, 108)       \
+  V(ImportFrom, 109)       \
   V(JumpForward, 110)      \
   V(JumpIfFalse, 114)      \
   V(JumpIfTrue, 115)       \

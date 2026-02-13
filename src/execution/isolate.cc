@@ -12,6 +12,7 @@
 #include "src/handles/handle_scope_implementer.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
+#include "src/modules/module-manager.h"
 #include "src/objects/cell-klass.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
@@ -22,6 +23,7 @@
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-klass.h"
+#include "src/objects/py-module-klass.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
@@ -212,6 +214,9 @@ void Isolate::Init() {
 
   // 初始化解释器
   interpreter_ = new Interpreter(this);
+
+  // 初始化模块管理器（sys.modules/sys.path 等）。
+  module_manager_ = new ModuleManager(this);
 }
 
 void Isolate::InitMetaArea() {
@@ -255,6 +260,10 @@ void Isolate::TearDown() {
   // 销毁解释器
   delete interpreter_;
   interpreter_ = nullptr;
+
+  // 销毁模块管理器
+  delete module_manager_;
+  module_manager_ = nullptr;
 
   // 销毁句柄作用域实现
   delete handle_scope_implementer_;

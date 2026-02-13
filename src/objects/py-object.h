@@ -25,6 +25,7 @@ class PyObject;
   V(PyBoolean)                  \
   V(PyNone)                     \
   V(PyCodeObject)               \
+  V(PyModule)                   \
   V(PyList)                     \
   V(PyListIterator)             \
   V(PyTuple)                    \

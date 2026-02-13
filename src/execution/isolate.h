@@ -19,6 +19,7 @@ class Heap;
 class Klass;
 class HandleScopeImplementer;
 class Interpreter;
+class ModuleManager;
 class StringTable;
 
 #define DECLARE_ISOLATE_KLASS_TYPES(Type, Klass, _) \
@@ -101,6 +102,7 @@ class Isolate {
   }
   Vector<Tagged<Klass>>& klass_list() { return klass_list_; }
   Interpreter* interpreter() const { return interpreter_; }
+  ModuleManager* module_manager() const { return module_manager_; }
   StringTable* string_table() const { return string_table_; }
 
   // 获取全局单例对象（None, True, False）
@@ -133,6 +135,7 @@ class Isolate {
   HandleScopeImplementer* handle_scope_implementer_{nullptr};
   Vector<Tagged<Klass>> klass_list_;
   Interpreter* interpreter_{nullptr};
+  ModuleManager* module_manager_{nullptr};
   StringTable* string_table_{nullptr};
 
   Tagged<PyNone> py_none_object_;

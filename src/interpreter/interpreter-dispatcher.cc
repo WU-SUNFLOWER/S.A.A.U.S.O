@@ -9,6 +9,7 @@
 #include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/interpreter/interpreter.h"
+#include "src/modules/module-manager.h"
 #include "src/objects/cell.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object-klass.h"
@@ -20,6 +21,7 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime.h"
@@ -313,6 +315,70 @@ void Interpreter::EvalCurrentFrame() {
         std::fprintf(stderr, "unknown compare op type: %d\n", compare_op_type);
         std::exit(1);
     }
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(ImportName, {
+    // 获取导入列表。
+    // 例如，`from os import path, rmdir`的fromlist是
+    // ('path', 'rmdir')。
+    auto fromlist_obj = POP();
+    Handle<PyTuple> fromlist;
+    // 对于纯import操作，fromlist为None。
+    // 例如`import os`就没有有效的fromlist。
+    if (!IsPyNone(fromlist_obj)) {
+      fromlist = Handle<PyTuple>::cast(fromlist_obj);
+    }
+
+    // 相对导入层级。
+    // 例如`import os`和`from os import path`的level都是0。
+    // `from .os import path`的level是1。
+    // `from ..os import path`的level是2。
+    auto level = Handle<PySmi>::cast(POP());
+
+    auto name = Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
+
+    auto module = isolate_->module_manager()->ImportModule(
+        name, fromlist, PySmi::ToInt(level), current_frame_->globals());
+    PUSH(module);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(ImportFrom, {
+    auto parent_module = TOP();
+    auto sub_module_name =
+        Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
+
+    // Fast Path: 如果目标子模块已经被解析过了，直接返回
+    auto value = PyObject::GetAttr(parent_module, sub_module_name, true);
+    if (!value.is_null()) {
+      PUSH(value);
+      break;
+    }
+
+    // Slow Path: 目标子模块还没被解析过，走完整的解析流程
+
+    auto parent_module_name_obj =
+        PyObject::GetAttr(parent_module, ST(name), false);
+    if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
+      std::fprintf(stderr, "TypeError: module __name__ must be a string\n");
+      std::exit(1);
+    }
+
+    auto parent_module_name = Handle<PyString>::cast(parent_module_name_obj);
+
+    // 拼接目标子模块的完整符号名
+    // 如`from os import path`，则目标子模块`path`的
+    // 完整符号名为`os.path`。
+    auto sub_module_fullname = PyString::Clone(parent_module_name);
+    sub_module_fullname = PyString::Append(sub_module_fullname, ST(dot));
+    sub_module_fullname =
+        PyString::Append(sub_module_fullname, sub_module_name);
+
+    Handle<PyTuple> synthetic_fromlist = PyTuple::NewInstance(1);
+    synthetic_fromlist->SetInternal(0, sub_module_name);
+
+    Handle<PyObject> submodule = isolate_->module_manager()->ImportModule(
+        sub_module_fullname, synthetic_fromlist, 0, current_frame_->globals());
+    PUSH(submodule);
   })
 
   INTERPRETER_HANDLER_DISPATCH(JumpForward, {
@@ -637,6 +703,11 @@ void Interpreter::EvalCurrentFrame() {
     switch (op_arg) {
       case UnaryIntrinsic::kListToTuple: {
         PUSH(Runtime_IntrinsicListToTuple(arg));
+        break;
+      }
+      case UnaryIntrinsic::kImportStar: {
+        Runtime_IntrinsicImportStar(arg, current_frame_->locals());
+        PUSH(handle(isolate_->py_none_object()));
         break;
       }
       default:

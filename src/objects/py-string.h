@@ -28,6 +28,9 @@ class PyString : public PyObject {
                                       int64_t str_length,
                                       bool in_meta_space = false);
 
+  static Handle<PyString> Clone(Handle<PyString> other,
+                                bool in_meta_space = false);
+
   static Handle<PyString> FromPySmi(Tagged<PySmi> smi);
   static Handle<PyString> FromInt(int64_t n);
   static Handle<PyString> FromPyFloat(Handle<PyFloat> py_float);
