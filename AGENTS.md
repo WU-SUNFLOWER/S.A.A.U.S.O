@@ -25,7 +25,7 @@
 6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 3.1）。
 7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 3.1、6.3）。
 8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 2）。
-9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循第 4 章的命名与风格规范。特别地，代码必须包括必要的中文注释（见 4.3），严禁只写代码不写注释。
+9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循第 4 章的命名与风格规范。特别地，代码必须包括必要的中文注释（见 4.4），严禁只写代码不写注释。
 10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 5.3）。
 
 ## 1. 项目概览
@@ -309,7 +309,7 @@ S.A.A.U.S.O 的代码规范主要基于 [Google C++ Style Guide](https://google.
   - 为降低编译期依赖复杂度，减少编译/链接错误，优先使用前置声明。
   - 仅在需要完整类型（例如按值成员、继承、`sizeof`/`alignof`、模板/内联实现）时才 `#include`。
 
-### 4.2. 代码风格
+### 4.2. 整体代码风格（General Style）
 - **命名空间**: 所有内部代码必须位于 `namespace saauso::internal` 中。
 - **通用命名规则**
   - 名称应该是描述性的（Descriptive）。例如`int num_errors;`, `int num_dns_connections;`。
@@ -317,18 +317,6 @@ S.A.A.U.S.O 的代码规范主要基于 [Google C++ Style Guide](https://google.
 - **类**: `PascalCase`。
 - **变量**: `snake_case`，类成员变量以 `_` 结尾。
 - **常量**: `kPascalCase`（例如`constexpr int kDaysInAWeek = 7;`, `const std::string kAndroid8_0 = "Android 8.0";`）
-- **函数**: `PascalCase`（例如 `InitMetaArea()`、`IterateRoots()`、`RecordWrite()`）。
-  - 例外：类属性的访问器与修改器，可以与变量命名风格对齐。Getter使用变量名本身（不要加`get_`前缀），Setter使用`set_ + 变量名`。例如：
-    ```cpp
-    class MyClass {
-    public:
-      int count() const { return count_; }        // Getter
-      void set_count(int count) { count_ = count; } // Setter
-    private:
-      int count_;
-    };
-    ```
-
 - **枚举值**: `kCamelCase`，例子：
   ```cpp
   enum UrlTableErrors {
@@ -350,7 +338,24 @@ S.A.A.U.S.O 的代码规范主要基于 [Google C++ Style Guide](https://google.
       - 其他所有函数（静态与非静态成员函数，以及友元函数）
       - 其他所有数据成员（静态与非静态）
 
-### 4.3. 注释风格（重要，严禁只写代码不写注释）
+### 4.3 函数/方法风格（重要，严禁写超长的复杂函数）
+- **命名规则**: `PascalCase`（例如 `InitMetaArea()`、`IterateRoots()`、`RecordWrite()`）。
+  - 例外：类属性的访问器与修改器，可以与变量命名风格对齐。Getter使用变量名本身（不要加`get_`前缀），Setter使用`set_ + 变量名`。例如：
+    ```cpp
+    class MyClass {
+    public:
+      int count() const { return count_; }        // Getter
+      void set_count(int count) { count_ = count; } // Setter
+    private:
+      int count_;
+    };
+    ```
+- **尽量让函数短小且职责单一**
+  - 因为长函数在某些情况下是必要的，因此不对函数长度设硬性限制。
+  - 然而，如果一个函数**超过了约 40 行**，请考虑是否可以在不破坏程序结构的前提下，将其拆分为**更小、更易于调试和维护或更易复用的片段**。
+
+
+### 4.4. 注释风格（重要，严禁只写代码不写注释）
 - **整体风格 (Generic Comment Style)**：
   - 统一使用`//`风格。
   - 除文件头部的版权声明外，正文代码统一采用**简体中文注释**。
