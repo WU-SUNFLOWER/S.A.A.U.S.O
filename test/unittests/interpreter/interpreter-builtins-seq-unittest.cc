@@ -240,6 +240,117 @@ print(s.rfind("yy", 0, 2))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, SplitMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+print("a b  c".split())
+print(" a  b ".split(maxsplit=1))
+print("a,,b,".split(","))
+print("".split(","))
+print("a,b".split(sep=","))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+
+  auto v0 = PyList::NewInstance();
+  PyList::Append(v0, PyString::NewInstance("a"));
+  PyList::Append(v0, PyString::NewInstance("b"));
+  PyList::Append(v0, PyString::NewInstance("c"));
+  AppendExpected(expected_printv_result, v0);
+
+  auto v1 = PyList::NewInstance();
+  PyList::Append(v1, PyString::NewInstance("a"));
+  PyList::Append(v1, PyString::NewInstance("b"));
+  AppendExpected(expected_printv_result, v1);
+
+  auto v2 = PyList::NewInstance();
+  PyList::Append(v2, PyString::NewInstance("a"));
+  PyList::Append(v2, PyString::NewInstance(""));
+  PyList::Append(v2, PyString::NewInstance("b"));
+  PyList::Append(v2, PyString::NewInstance(""));
+  AppendExpected(expected_printv_result, v2);
+
+  auto v3 = PyList::NewInstance();
+  PyList::Append(v3, PyString::NewInstance(""));
+  AppendExpected(expected_printv_result, v3);
+
+  auto v4 = PyList::NewInstance();
+  PyList::Append(v4, PyString::NewInstance("a"));
+  PyList::Append(v4, PyString::NewInstance("b"));
+  AppendExpected(expected_printv_result, v4);
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SplitMethodErrors) {
+  HandleScope scope;
+
+  constexpr std::string_view kEmptySep = R"(
+"abc".split("")
+)";
+  EXPECT_EXIT(
+      { RunScript(kEmptySep, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "ValueError: empty separator");
+
+  constexpr std::string_view kUnexpectedKeyword = R"(
+"a".split(foo=1)
+)";
+  EXPECT_EXIT(
+      { RunScript(kUnexpectedKeyword, kTestFileName); },
+      ::testing::ExitedWithCode(1),
+      "TypeError: str.split\\(\\) got an unexpected keyword argument");
+
+  constexpr std::string_view kMultipleValues = R"(
+"a".split(",", sep=",")
+)";
+  EXPECT_EXIT(
+      { RunScript(kMultipleValues, kTestFileName); },
+      ::testing::ExitedWithCode(1),
+      "TypeError: str.split\\(\\) got multiple values for argument 'sep'");
+}
+
+TEST_F(BasicInterpreterTest, JoinMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+print(",".join(["a", "b"]))
+print("".join(("a", "b", "c")))
+print("x".join([]))
+print("x".join(["a"]))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("a,b"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("abc"));
+  AppendExpected(expected_printv_result, PyString::NewInstance(""));
+  AppendExpected(expected_printv_result, PyString::NewInstance("a"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, JoinMethodErrors) {
+  HandleScope scope;
+
+  constexpr std::string_view kElementNotStr = R"(
+print(",".join(["a", 1]))
+)";
+  EXPECT_EXIT(
+      { RunScript(kElementNotStr, kTestFileName); },
+      ::testing::ExitedWithCode(1),
+      "TypeError: sequence item 1: expected str instance");
+
+  constexpr std::string_view kKeyword = R"(
+"-".join(iterable=["a", "b"])
+)";
+  EXPECT_EXIT(
+      { RunScript(kKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
+      "TypeError: str.join\\(\\) takes no keyword arguments");
+}
+
 TEST_F(BasicInterpreterTest, IndexMethodErrors) {
   HandleScope scope;
 
@@ -287,7 +398,8 @@ TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
 )";
   EXPECT_EXIT(
       { RunScript(kRfindKeyword, kTestFileName); },
-      ::testing::ExitedWithCode(1), "TypeError: str.rfind\\(\\) takes no keyword arguments");
+      ::testing::ExitedWithCode(1),
+      "TypeError: str.rfind\\(\\) takes no keyword arguments");
 }
 
 TEST_F(BasicInterpreterTest, ListPop) {

@@ -14,7 +14,9 @@ namespace saauso::internal {
   V(Upper, "upper")           \
   V(Index, "index")           \
   V(Find, "find")             \
-  V(Rfind, "rfind")
+  V(Rfind, "rfind")           \
+  V(Split, "split")           \
+  V(Join, "join")
 
 class PyStringBuiltinMethods : public AllStatic {
  public:

@@ -14,6 +14,7 @@
 namespace saauso::internal {
 
 class PyFloat;
+class PyList;
 class PySmi;
 
 class PyString : public PyObject {
@@ -68,6 +69,11 @@ class PyString : public PyObject {
                                 int64_t from,
                                 int64_t to);
   static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);
+  static Handle<PyList> Split(Handle<PyString> self,
+                              Handle<PyObject> sep_or_null,
+                              int64_t maxsplit);
+  static Handle<PyString> Join(Handle<PyString> self,
+                               Handle<PyObject> iterable);
 
  private:
   friend class PyStringKlass;

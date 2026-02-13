@@ -12,7 +12,9 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
@@ -239,6 +241,123 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
   }
 
   return scope.Escape(handle(PySmi::FromInt(result)));
+}
+
+BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
+  EscapableHandleScope scope;
+  auto str_object = Handle<PyString>::cast(self);
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc > 2) {
+    std::fprintf(
+        stderr,
+        "TypeError: str.split() takes at most 2 arguments (%lld given)\n",
+        static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  bool sep_from_positional = false;
+  bool maxsplit_from_positional = false;
+  Handle<PyObject> sep_obj = Handle<PyObject>::null();
+  int64_t maxsplit = -1;
+
+  if (argc >= 1) {
+    sep_obj = args->Get(0);
+    sep_from_positional = true;
+  }
+  if (argc == 2) {
+    maxsplit = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
+    maxsplit_from_positional = true;
+  }
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    Handle<PyObject> sep_key = PyString::NewInstance("sep");
+    Handle<PyObject> maxsplit_key = PyString::NewInstance("maxsplit");
+
+    for (auto i = 0; i < kwargs->capacity(); ++i) {
+      auto item = kwargs->ItemAtIndex(i);
+      if (item.is_null()) {
+        continue;
+      }
+
+      auto key = item->Get(0);
+      if (!IsPyString(key)) {
+        std::fprintf(stderr, "TypeError: keywords must be strings\n");
+        std::exit(1);
+      }
+
+      if (PyObject::EqualBool(key, sep_key) ||
+          PyObject::EqualBool(key, maxsplit_key)) {
+        continue;
+      }
+
+      auto key_str = Handle<PyString>::cast(key);
+      std::fprintf(stderr,
+                   "TypeError: str.split() got an unexpected keyword argument "
+                   "'%.*s'\n",
+                   static_cast<int>(key_str->length()), key_str->buffer());
+      std::exit(1);
+    }
+
+    Handle<PyObject> sep_from_kwargs = kwargs->Get(sep_key);
+    if (!sep_from_kwargs.is_null()) {
+      if (sep_from_positional) {
+        std::fprintf(
+            stderr,
+            "TypeError: str.split() got multiple values for argument 'sep'\n");
+        std::exit(1);
+      }
+      sep_obj = sep_from_kwargs;
+    }
+
+    Handle<PyObject> maxsplit_from_kwargs = kwargs->Get(maxsplit_key);
+    if (!maxsplit_from_kwargs.is_null()) {
+      if (maxsplit_from_positional) {
+        std::fprintf(stderr,
+                     "TypeError: str.split() got multiple values for argument "
+                     "'maxsplit'\n");
+        std::exit(1);
+      }
+      maxsplit = Runtime_DecodeIntLikeOrDie(*maxsplit_from_kwargs);
+    }
+  }
+
+  Handle<PyObject> sep_or_null = Handle<PyObject>::null();
+  if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
+    if (!IsPyString(*sep_obj)) {
+      auto type_name = PyObject::GetKlass(sep_obj)->name();
+      std::fprintf(stderr, "TypeError: must be str or None, not %s\n",
+                   type_name->buffer());
+      std::exit(1);
+    }
+    sep_or_null = sep_obj;
+  }
+
+  Handle<PyList> result = PyString::Split(str_object, sep_or_null, maxsplit);
+  return scope.Escape(result);
+}
+
+BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
+  EscapableHandleScope scope;
+  auto str_object = Handle<PyString>::cast(self);
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+    std::fprintf(stderr, "TypeError: str.join() takes no keyword arguments\n");
+    std::exit(1);
+  }
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 1) {
+    std::fprintf(stderr,
+                 "TypeError: str.join() takes exactly one argument (%lld "
+                 "given)\n",
+                 static_cast<long long>(argc));
+    std::exit(1);
+  }
+
+  Handle<PyObject> iterable = args->Get(0);
+  Handle<PyString> result = PyString::Join(str_object, iterable);
+  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal
