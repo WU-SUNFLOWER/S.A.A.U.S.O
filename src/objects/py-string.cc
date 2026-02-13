@@ -365,7 +365,7 @@ Handle<PyString> PyString::Join(Handle<PyString> self,
   Handle<PyTuple> parts = Runtime_UnpackIterableObjectToTuple(iterable);
   const int64_t num_parts = parts->length();
   if (num_parts == 0) {
-    return scope.Escape(PyString::NewInstance(0));
+    return scope.Escape(PyString::NewInstance(static_cast<int64_t>(0)));
   }
 
   const int64_t sep_length = self->length();

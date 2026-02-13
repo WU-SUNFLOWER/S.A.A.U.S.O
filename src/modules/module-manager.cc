@@ -6,7 +6,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <filesystem>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,6 +15,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
+#include "src/modules/module-loader.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -26,7 +27,6 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/file-utils.h"
 
 namespace saauso::internal {
 
@@ -91,12 +91,6 @@ std::string JoinModuleName(const std::vector<std::string>& parts,
   return out;
 }
 
-struct ModuleLocation {
-  std::string origin;
-  bool is_package{false};
-  std::string package_dir;
-};
-
 std::vector<std::string> ExtractSearchPaths(Handle<PyList> path_list) {
   std::vector<std::string> result;
   if (path_list.is_null()) {
@@ -114,38 +108,6 @@ std::vector<std::string> ExtractSearchPaths(Handle<PyList> path_list) {
     }
     result.emplace_back(ToStdString(Handle<PyString>::cast(elem)));
   }
-  return result;
-}
-
-ModuleLocation FindModuleLocation(const std::vector<std::string>& search_paths,
-                                  const std::vector<std::string>& parts) {
-  ModuleLocation result;
-
-  std::filesystem::path relative;
-  for (const auto& part : parts) {
-    relative /= std::filesystem::path(part);
-  }
-
-  for (const auto& base : search_paths) {
-    std::filesystem::path base_path(base);
-
-    std::filesystem::path package_init = base_path / relative / "__init__.py";
-    if (FileExists(package_init.string())) {
-      result.origin = NormalizePath(package_init.string());
-      result.is_package = true;
-      result.package_dir = NormalizePath((base_path / relative).string());
-      return result;
-    }
-
-    std::filesystem::path module_py = base_path / relative;
-    module_py += ".py";
-    if (FileExists(module_py.string())) {
-      result.origin = NormalizePath(module_py.string());
-      result.is_package = false;
-      return result;
-    }
-  }
-
   return result;
 }
 
@@ -258,8 +220,9 @@ std::string ValidateAndResolveFullName(Handle<PyString> name,
   return ResolveRelativeImportName(name_str, level, globals);
 }
 
-// 根据 CPython import 语义：当 fromlist 为空且 import 的 name 为 dotted-name
-// 时， 返回顶层包；否则返回最后导入的模块对象。
+// 根据 CPython import 语义：
+// 1. 当fromlist为空且import的name为dotted-name时，返回顶层包
+// 2. 否则返回最后导入的模块对象。
 Handle<PyObject> ApplyImportReturnSemantics(
     Handle<PyDict> modules_dict,
     const std::vector<std::string>& parts,
@@ -355,7 +318,8 @@ Handle<PyObject> LoadSourceModule(
     relative_parts = std::vector<std::string>{parts[part_index]};
   }
 
-  ModuleLocation loc = FindModuleLocation(search_paths, relative_parts);
+  ModuleLocation loc =
+      manager->loader()->FindModuleLocation(search_paths, relative_parts);
   if (loc.origin.empty()) {
     std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
                  ToStdString(fullname).c_str());
@@ -363,7 +327,7 @@ Handle<PyObject> LoadSourceModule(
   }
 
   std::string source;
-  if (!ReadFileToString(loc.origin, &source)) {
+  if (!manager->loader()->ReadModuleSource(loc, &source)) {
     std::fprintf(stderr, "ImportError: cannot read '%s'\n", loc.origin.c_str());
     std::exit(1);
   }
@@ -455,6 +419,7 @@ Handle<PyObject> ImportDottedName(ModuleManager* manager,
 ////////////////////////////////////////////////////////////////////////////////////
 
 ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
+  loader_ = std::make_unique<ModuleLoader>();
   InitializeSysState();
   RegisterBuiltinModules();
 }
@@ -533,7 +498,7 @@ Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
   Handle<PyObject> last_module = ImportDottedName(this, modules_dict, parts);
   Handle<PyObject> result =
       ApplyImportReturnSemantics(modules_dict, parts, fromlist, last_module);
-      
+
   return scope.Escape(result);
 }
 
