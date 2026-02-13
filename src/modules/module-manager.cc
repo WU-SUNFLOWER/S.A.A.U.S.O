@@ -533,7 +533,7 @@ Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
   Handle<PyObject> last_module = ImportDottedName(this, modules_dict, parts);
   Handle<PyObject> result =
       ApplyImportReturnSemantics(modules_dict, parts, fromlist, last_module);
-  (void)globals;
+      
   return scope.Escape(result);
 }
 
