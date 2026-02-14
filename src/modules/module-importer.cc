@@ -31,36 +31,6 @@ Handle<PyList> GetPackagePathListOrDie(Handle<PyObject> module) {
   return path;
 }
 
-Handle<PyObject> ApplyImportReturnSemantics(Handle<PyDict> modules_dict,
-                                            Handle<PyString> fullname,
-                                            Handle<PyTuple> fromlist,
-                                            Handle<PyObject> last_module) {
-  bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
-  int64_t dot = fullname->IndexOf(ST(dot));
-  if (!has_fromlist && dot != PyString::kNotFound) {
-    int64_t top_end = dot - 1;
-    Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
-    return modules_dict->Get(top_name);
-  }
-  return last_module;
-}
-
-void LinkChildToParent(Handle<PyDict> modules_dict,
-                       Handle<PyString> parent_name,
-                       Handle<PyString> child_short_name,
-                       Handle<PyObject> child) {
-  Handle<PyObject> parent = modules_dict->Get(parent_name);
-  if (parent.is_null()) [[unlikely]] {
-    std::fprintf(stderr, "ImportError: missing parent module '%.*s'\n",
-                 static_cast<int>(parent_name->length()),
-                 parent_name->buffer());
-    std::exit(1);
-  }
-
-  Handle<PyDict> parent_dict = PyObject::GetProperties(parent);
-  PyDict::Put(parent_dict, child_short_name, child);
-}
-
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////
@@ -81,20 +51,16 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
     std::exit(1);
   }
 
-  Handle<PyDict> modules_dict = manager_->modules();
-  Handle<PyObject> last_module =
-      LinkAndImportModuleImpl(modules_dict, fullname);
+  Handle<PyObject> last_module = ImportModuleImpl(fullname);
   Handle<PyObject> result =
-      ApplyImportReturnSemantics(modules_dict, fullname, fromlist, last_module);
+      ApplyImportReturnSemantics(fullname, fromlist, last_module);
 
   return scope.Escape(result);
 }
 
-Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
-    Handle<PyDict> modules_dict,
-    Handle<PyString> fullname) {
+Handle<PyObject> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
   Handle<PyObject> last_module;
-  Handle<PyString> parent_part_name_obj;
+  Handle<PyString> parent_part_name;
 
   int64_t segment_start = 0;
   int64_t fullname_len = fullname->length();
@@ -106,7 +72,7 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
 
     int64_t part_end = dot - 1;
     Handle<PyString> part_name_obj = PyString::Slice(fullname, 0, part_end);
-    Handle<PyObject> cached = modules_dict->Get(part_name_obj);
+    Handle<PyObject> cached = modules_dict()->Get(part_name_obj);
     if (!cached.is_null()) {
       last_module = cached;
     } else {
@@ -117,14 +83,8 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
           manager_->loader()->LoadModulePart(part_name_obj, search_path_list);
       last_module = loaded;
 
-      if (segment_start != 0) {
-        int64_t child_begin = segment_start;
-        int64_t child_end = dot - 1;
-        Handle<PyString> child_short_name_obj =
-            PyString::Slice(fullname, child_begin, child_end);
-        LinkChildToParent(modules_dict, parent_part_name_obj,
-                          child_short_name_obj, loaded);
-      }
+      LinkChildToParent(parent_part_name, fullname, segment_start, dot - 1,
+                        loaded);
     }
 
     if (dot != fullname_len && !ModuleUtils::IsPackageModule(last_module)) {
@@ -136,11 +96,58 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
     if (dot == fullname_len) {
       break;
     }
-    parent_part_name_obj = part_name_obj;
+    parent_part_name = part_name_obj;
     segment_start = dot + 1;
   }
 
   return last_module;
+}
+
+void ModuleImporter::LinkChildToParent(Handle<PyString> parent_part_name,
+                                       Handle<PyString> fullname,
+                                       int64_t child_begin,
+                                       int64_t child_end,
+                                       Handle<PyObject> child) {
+  if (child_begin == 0) {
+    return;
+  }
+
+  Handle<PyString> child_short_name_obj =
+      PyString::Slice(fullname, child_begin, child_end);
+  LinkChildToParentImpl(parent_part_name, child_short_name_obj, child);
+}
+
+void ModuleImporter::LinkChildToParentImpl(Handle<PyString> parent_name,
+                                           Handle<PyString> child_short_name,
+                                           Handle<PyObject> child) {
+  Handle<PyObject> parent = modules_dict()->Get(parent_name);
+  if (parent.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "ImportError: missing parent module '%.*s'\n",
+                 static_cast<int>(parent_name->length()),
+                 parent_name->buffer());
+    std::exit(1);
+  }
+
+  Handle<PyDict> parent_dict = PyObject::GetProperties(parent);
+  PyDict::Put(parent_dict, child_short_name, child);
+}
+
+Handle<PyObject> ModuleImporter::ApplyImportReturnSemantics(
+    Handle<PyString> fullname,
+    Handle<PyTuple> fromlist,
+    Handle<PyObject> last_module) {
+  bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
+  int64_t dot = fullname->IndexOf(ST(dot));
+  if (!has_fromlist && dot != PyString::kNotFound) {
+    int64_t top_end = dot - 1;
+    Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
+    return modules_dict()->Get(top_name);
+  }
+  return last_module;
+}
+
+Handle<PyDict> ModuleImporter::modules_dict() {
+  return manager_->modules();
 }
 
 }  // namespace saauso::internal

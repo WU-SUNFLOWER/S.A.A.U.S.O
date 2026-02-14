@@ -30,8 +30,23 @@ class ModuleImporter final {
                                 Handle<PyDict> globals);
 
  private:
-  Handle<PyObject> LinkAndImportModuleImpl(Handle<PyDict> modules_dict,
-                                           Handle<PyString> fullname);
+  Handle<PyObject> ImportModuleImpl(Handle<PyString> fullname);
+
+  void LinkChildToParent(Handle<PyString> parent_part_name,
+                         Handle<PyString> fullname,
+                         int64_t child_begin,
+                         int64_t child_end,
+                         Handle<PyObject> child);
+  void LinkChildToParentImpl(Handle<PyString> parent_name,
+                             Handle<PyString> child_short_name,
+                             Handle<PyObject> child);
+
+Handle<PyObject> ApplyImportReturnSemantics(
+                                            Handle<PyString> fullname,
+                                            Handle<PyTuple> fromlist,
+                                            Handle<PyObject> last_module);
+
+  Handle<PyDict> modules_dict();
 
   ModuleManager* manager_;
 };
