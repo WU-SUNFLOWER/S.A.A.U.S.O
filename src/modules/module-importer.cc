@@ -16,6 +16,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -34,11 +35,10 @@ Handle<PyObject> ApplyImportReturnSemantics(Handle<PyDict> modules_dict,
                                             Handle<PyString> fullname,
                                             Handle<PyTuple> fromlist,
                                             Handle<PyObject> last_module) {
-  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
   bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
-  size_t dot = fullname_view.find('.');
-  if (!has_fromlist && dot != std::string_view::npos) {
-    int64_t top_end = static_cast<int64_t>(dot) - 1;
+  int64_t dot = fullname->IndexOf(ST(dot));
+  if (!has_fromlist && dot != PyString::kNotFound) {
+    int64_t top_end = dot - 1;
     Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
     return modules_dict->Get(top_name);
   }
@@ -93,19 +93,18 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
 Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
     Handle<PyDict> modules_dict,
     Handle<PyString> fullname) {
-  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
-
   Handle<PyObject> last_module;
   Handle<PyString> parent_part_name_obj;
 
-  size_t segment_start = 0;
-  while (segment_start <= fullname_view.size()) {
-    size_t dot = fullname_view.find('.', segment_start);
-    if (dot == std::string_view::npos) {
-      dot = fullname_view.size();
+  int64_t segment_start = 0;
+  int64_t fullname_len = fullname->length();
+  while (segment_start <= fullname_len) {
+    int64_t dot = fullname->IndexOf(ST(dot), segment_start, fullname_len);
+    if (dot == PyString::kNotFound) {
+      dot = fullname_len;
     }
 
-    int64_t part_end = static_cast<int64_t>(dot) - 1;
+    int64_t part_end = dot - 1;
     Handle<PyString> part_name_obj = PyString::Slice(fullname, 0, part_end);
     Handle<PyObject> cached = modules_dict->Get(part_name_obj);
     if (!cached.is_null()) {
@@ -119,8 +118,8 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
       last_module = loaded;
 
       if (segment_start != 0) {
-        int64_t child_begin = static_cast<int64_t>(segment_start);
-        int64_t child_end = static_cast<int64_t>(dot) - 1;
+        int64_t child_begin = segment_start;
+        int64_t child_end = dot - 1;
         Handle<PyString> child_short_name_obj =
             PyString::Slice(fullname, child_begin, child_end);
         BindChildToParent(modules_dict, parent_part_name_obj,
@@ -128,14 +127,13 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
       }
     }
 
-    if (dot != fullname_view.size() &&
-        !ModuleUtils::IsPackageModule(last_module)) {
+    if (dot != fullname_len && !ModuleUtils::IsPackageModule(last_module)) {
       std::fprintf(stderr, "ImportError: '%.*s' is not a package\n",
-                   static_cast<int>(dot), fullname_view.data());
+                   static_cast<int>(dot), fullname->buffer());
       std::exit(1);
     }
 
-    if (dot == fullname_view.size()) {
+    if (dot == fullname_len) {
       break;
     }
     parent_part_name_obj = part_name_obj;
