@@ -7,9 +7,12 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/modules/module-manager.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -82,6 +85,38 @@ print(pkg.sub.answer)
   AppendExpected(expected, PyString::NewInstance("pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
+  HandleScope scope;
+
+  PyList::Append(isolate()->module_manager()->path(),
+                 PyString::NewInstance("test/python312/import-mvp"));
+
+  Handle<PyString> name = PyString::NewInstance("pkg.sub");
+  Handle<PyTuple> non_empty_fromlist = PyTuple::NewInstance(1);
+  isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
+                                            Handle<PyDict>::null());
+
+  Handle<PyDict> modules = isolate()->module_manager()->modules();
+  Handle<PyObject> pkg_module = modules->Get(PyString::NewInstance("pkg"));
+  ASSERT_FALSE(pkg_module.is_null());
+
+  Handle<PyDict> pkg_dict = PyObject::GetProperties(pkg_module);
+  ASSERT_FALSE(pkg_dict.is_null());
+
+  Handle<PyString> sub_short_name = PyString::NewInstance("sub");
+  pkg_dict->Remove(sub_short_name);
+  EXPECT_TRUE(pkg_dict->Get(sub_short_name).is_null());
+
+  isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
+                                            Handle<PyDict>::null());
+
+  Handle<PyObject> pkg_sub_module = modules->Get(name);
+  Handle<PyObject> bound = pkg_dict->Get(sub_short_name);
+  ASSERT_FALSE(pkg_sub_module.is_null());
+  ASSERT_FALSE(bound.is_null());
+  EXPECT_TRUE(PyObject::EqualBool(bound, pkg_sub_module));
 }
 
 TEST_F(BasicInterpreterTest, RelativeImportWorksInsidePackageModule) {

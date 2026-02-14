@@ -22,13 +22,25 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyList> GetPackagePathListOrDie(Handle<PyObject> module) {
-  Handle<PyList> path = ModuleUtils::GetPackagePathList(module);
-  if (path.is_null()) [[unlikely]] {
-    std::fprintf(stderr, "ImportError: parent is not a package\n");
-    std::exit(1);
+struct ModulePartScanResult {
+  int64_t dot{0};
+  int64_t part_end{0};
+  bool is_last{false};
+};
+
+ModulePartScanResult ScanNextPart(Handle<PyString> fullname,
+                                  int64_t segment_start) {
+  int64_t fullname_len = fullname->length();
+  int64_t dot = fullname->IndexOf(ST(dot), segment_start, fullname_len);
+  if (dot == PyString::kNotFound) {
+    dot = fullname_len;
   }
-  return path;
+
+  ModulePartScanResult result;
+  result.dot = dot;
+  result.part_end = dot - 1;
+  result.is_last = dot == fullname_len;
+  return result;
 }
 
 }  // namespace
@@ -59,77 +71,82 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
 }
 
 Handle<PyObject> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
+  Handle<PyObject> parent_module;
   Handle<PyObject> last_module;
-  Handle<PyString> parent_part_name;
 
   int64_t segment_start = 0;
-  int64_t fullname_len = fullname->length();
-  while (segment_start <= fullname_len) {
-    int64_t dot = fullname->IndexOf(ST(dot), segment_start, fullname_len);
-    if (dot == PyString::kNotFound) {
-      dot = fullname_len;
+  while (true) {
+    ModulePartScanResult scan = ScanNextPart(fullname, segment_start);
+
+    Handle<PyString> part_fullname =
+        PyString::Slice(fullname, 0, scan.part_end);
+    Handle<PyObject> module =
+        GetOrLoadModulePart(part_fullname, segment_start == 0, parent_module);
+
+    if (segment_start != 0) {
+      Handle<PyString> child_short_name =
+          PyString::Slice(fullname, segment_start, scan.part_end);
+      BindChildModuleToParentNamespace(parent_module, child_short_name, module);
     }
 
-    int64_t part_end = dot - 1;
-    Handle<PyString> part_name_obj = PyString::Slice(fullname, 0, part_end);
-    Handle<PyObject> cached = modules_dict()->Get(part_name_obj);
-    if (!cached.is_null()) {
-      last_module = cached;
-    } else {
-      Handle<PyList> search_path_list =
-          segment_start == 0 ? manager_->path()
-                             : GetPackagePathListOrDie(last_module);
-      Handle<PyObject> loaded =
-          manager_->loader()->LoadModulePart(part_name_obj, search_path_list);
-      last_module = loaded;
+    EnsurePackageForNextSegment(module, fullname, scan.dot);
 
-      LinkChildToParent(parent_part_name, fullname, segment_start, dot - 1,
-                        loaded);
-    }
-
-    if (dot != fullname_len && !ModuleUtils::IsPackageModule(last_module)) {
-      std::fprintf(stderr, "ImportError: '%.*s' is not a package\n",
-                   static_cast<int>(dot), fullname->buffer());
-      std::exit(1);
-    }
-
-    if (dot == fullname_len) {
+    last_module = module;
+    if (scan.is_last) {
       break;
     }
-    parent_part_name = part_name_obj;
-    segment_start = dot + 1;
+
+    parent_module = module;
+    segment_start = scan.dot + 1;
   }
 
   return last_module;
 }
 
-void ModuleImporter::LinkChildToParent(Handle<PyString> parent_part_name,
-                                       Handle<PyString> fullname,
-                                       int64_t child_begin,
-                                       int64_t child_end,
-                                       Handle<PyObject> child) {
-  if (child_begin == 0) {
-    return;
+Handle<PyObject> ModuleImporter::GetOrLoadModulePart(
+    Handle<PyString> part_fullname,
+    bool is_top,
+    Handle<PyObject> parent_module) {
+  Handle<PyObject> cached = modules_dict()->Get(part_fullname);
+  if (!cached.is_null()) {
+    return cached;
   }
 
-  Handle<PyString> child_short_name_obj =
-      PyString::Slice(fullname, child_begin, child_end);
-  LinkChildToParentImpl(parent_part_name, child_short_name_obj, child);
+  Handle<PyList> search_path_list = SelectSearchPathList(is_top, parent_module);
+  return manager_->loader()->LoadModulePart(part_fullname, search_path_list);
 }
 
-void ModuleImporter::LinkChildToParentImpl(Handle<PyString> parent_name,
-                                           Handle<PyString> child_short_name,
-                                           Handle<PyObject> child) {
-  Handle<PyObject> parent = modules_dict()->Get(parent_name);
-  if (parent.is_null()) [[unlikely]] {
-    std::fprintf(stderr, "ImportError: missing parent module '%.*s'\n",
-                 static_cast<int>(parent_name->length()),
-                 parent_name->buffer());
-    std::exit(1);
+Handle<PyList> ModuleImporter::SelectSearchPathList(
+    bool is_top,
+    Handle<PyObject> parent_module) {
+  if (is_top) {
+    return manager_->path();
   }
 
-  Handle<PyDict> parent_dict = PyObject::GetProperties(parent);
-  PyDict::Put(parent_dict, child_short_name, child);
+  Handle<PyList> path = ModuleUtils::GetPackagePathList(parent_module);
+  if (path.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "ImportError: parent is not a package\n");
+    std::exit(1);
+  }
+  return path;
+}
+
+void ModuleImporter::BindChildModuleToParentNamespace(
+    Handle<PyObject> parent_module,
+    Handle<PyString> child_short_name,
+    Handle<PyObject> child_module) {
+  Handle<PyDict> parent_dict = PyObject::GetProperties(parent_module);
+  PyDict::Put(parent_dict, child_short_name, child_module);
+}
+
+void ModuleImporter::EnsurePackageForNextSegment(Handle<PyObject> module,
+                                                 Handle<PyString> fullname,
+                                                 int64_t dot) {
+  if (dot != fullname->length() && !ModuleUtils::IsPackageModule(module)) {
+    std::fprintf(stderr, "ImportError: '%.*s' is not a package\n",
+                 static_cast<int>(dot), fullname->buffer());
+    std::exit(1);
+  }
 }
 
 Handle<PyObject> ModuleImporter::ApplyImportReturnSemantics(
