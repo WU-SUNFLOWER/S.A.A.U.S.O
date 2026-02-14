@@ -2,12 +2,11 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_MODULES_MODULE_EXECUTOR_H_
-#define SAAUSO_MODULES_MODULE_EXECUTOR_H_
+#ifndef SAAUSO_MODULES_MODULE_LOADER_H_
+#define SAAUSO_MODULES_MODULE_LOADER_H_
 
 #include <cstddef>
 #include <string>
-#include <vector>
 
 #include "src/modules/builtin-module.h"
 
@@ -17,10 +16,11 @@ class Isolate;
 class BuiltinModuleRegistry;
 class ModuleFinder;
 class ModuleManager;
+class PyList;
 class PyDict;
 class PyObject;
 class PyString;
-class ModuleLocation;
+struct ModuleLocation;
 
 class ModuleLoader final {
  public:
@@ -33,7 +33,7 @@ class ModuleLoader final {
   ~ModuleLoader() = default;
 
   Handle<PyObject> LoadModulePart(Handle<PyString> fullname,
-                                  const std::vector<std::string>& search_paths);
+                                  Handle<PyList> search_path_list);
 
  private:
   Handle<PyModule> ExecuteModuleImpl(Handle<PyString> fullname,
@@ -48,4 +48,4 @@ class ModuleLoader final {
 
 }  // namespace saauso::internal
 
-#endif  // SAAUSO_MODULES_MODULE_EXECUTOR_H_
+#endif  // SAAUSO_MODULES_MODULE_LOADER_H_

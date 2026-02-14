@@ -7,9 +7,12 @@
 
 #include <string>
 #include <string_view>
-#include <vector>
+
+#include "src/handles/handles.h"
 
 namespace saauso::internal {
+
+class PyList;
 
 struct ModuleLocation {
   std::string origin;
@@ -24,7 +27,7 @@ class ModuleFinder final {
   ModuleFinder& operator=(const ModuleFinder&) = delete;
   ~ModuleFinder() = default;
 
-  ModuleLocation FindModuleLocation(const std::vector<std::string>& search_paths,
+  ModuleLocation FindModuleLocation(Handle<PyList> search_path_list,
                                     std::string_view relative_name) const;
 
   bool ReadModuleSource(const ModuleLocation& location, std::string* out) const;

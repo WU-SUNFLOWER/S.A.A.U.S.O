@@ -138,4 +138,34 @@ print(_b)
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, ImportPackageSubmoduleUnderGcPressure) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+import sys
+sys.path.append("test/python312/import-mvp")
+
+if "pkg.sub" in sys.modules:
+    del sys.modules["pkg.sub"]
+if "pkg" in sys.modules:
+    del sys.modules["pkg"]
+
+hog = []
+i = 0
+while i < 5000:
+    hog.append(str(i))
+    i += 1
+
+import pkg.sub
+print(pkg.sub.answer)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("pkg_init"));
+  AppendExpected(expected, handle(PySmi::FromInt(42)));
+  ExpectPrintResult(expected);
+}
+
 }  // namespace saauso::internal

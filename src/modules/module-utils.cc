@@ -26,36 +26,26 @@ std::string_view ModuleUtils::ToStringView(Handle<PyString> s) {
   return std::string_view(s->buffer(), static_cast<size_t>(s->length()));
 }
 
-std::vector<std::string> ModuleUtils::SplitModuleName(std::string_view name) {
-  std::vector<std::string> parts;
-  size_t start = 0;
-  while (start <= name.size()) {
-    size_t dot = name.find('.', start);
-    if (dot == std::string_view::npos) {
-      dot = name.size();
-    }
-    if (dot == start) {
-      return {};
-    }
-    parts.emplace_back(name.substr(start, dot - start));
-    if (dot == name.size()) {
-      break;
-    }
-    start = dot + 1;
+Handle<PyString> ModuleUtils::NewPyString(std::string_view s) {
+  if (s.empty()) {
+    return PyString::NewInstance("");
   }
-  return parts;
+  return PyString::NewInstance(s.data(), static_cast<int64_t>(s.size()));
 }
 
-std::string ModuleUtils::JoinModuleName(const std::vector<std::string>& parts,
-                                        size_t count) {
-  std::string out;
-  for (size_t i = 0; i < count; ++i) {
-    if (i != 0) {
-      out.push_back('.');
-    }
-    out.append(parts[i]);
+bool ModuleUtils::IsValidModuleName(std::string_view fullname) {
+  if (fullname.empty()) {
+    return false;
   }
-  return out;
+  if (fullname.front() == '.' || fullname.back() == '.') {
+    return false;
+  }
+  for (size_t i = 1; i < fullname.size(); ++i) {
+    if (fullname[i] == '.' && fullname[i - 1] == '.') {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ModuleUtils::IsPackageModule(Handle<PyObject> module) {

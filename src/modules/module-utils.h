@@ -7,7 +7,6 @@
 
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "src/handles/handles.h"
 
@@ -21,11 +20,12 @@ class PyString;
 class ModuleUtils final {
  public:
   static std::string ToStdString(Handle<PyString> s);
+
   static std::string_view ToStringView(Handle<PyString> s);
 
-  static std::vector<std::string> SplitModuleName(std::string_view name);
-  static std::string JoinModuleName(const std::vector<std::string>& parts,
-                                    size_t count);
+  static Handle<PyString> NewPyString(std::string_view s);
+
+  static bool IsValidModuleName(std::string_view fullname);
 
   static bool IsPackageModule(Handle<PyObject> module);
   static Handle<PyList> GetPackagePathList(Handle<PyObject> module);

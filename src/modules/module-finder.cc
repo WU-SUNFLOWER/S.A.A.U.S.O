@@ -4,20 +4,39 @@
 
 #include "src/modules/module-finder.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 
+#include "src/modules/module-utils.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-string.h"
 #include "src/utils/file-utils.h"
 
 namespace saauso::internal {
 
 ModuleLocation ModuleFinder::FindModuleLocation(
-    const std::vector<std::string>& search_paths,
+    Handle<PyList> search_path_list,
     std::string_view relative_name) const {
+  HandleScope scope;
   ModuleLocation result;
+  if (search_path_list.is_null()) {
+    return result;
+  }
 
   std::filesystem::path relative{std::string(relative_name)};
 
-  for (const auto& base : search_paths) {
+  for (int64_t i = 0; i < search_path_list->length(); ++i) {
+    Handle<PyObject> elem = search_path_list->Get(i);
+    if (elem.is_null()) {
+      continue;
+    }
+    if (!IsPyString(elem)) {
+      std::fprintf(stderr, "TypeError: sys.path items must be strings\n");
+      std::exit(1);
+    }
+    std::string base = ModuleUtils::ToStdString(Handle<PyString>::cast(elem));
     std::filesystem::path base_path(base);
 
     std::filesystem::path package_init = base_path / relative / "__init__.py";

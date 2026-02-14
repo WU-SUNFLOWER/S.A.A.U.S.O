@@ -46,24 +46,21 @@ void InitializeModuleDict(Handle<PyModule> module,
     if (dot == std::string_view::npos) {
       PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
     } else {
-      PyDict::Put(module_dict, ST(package),
-                  PyString::NewInstance(fullname_view.data(),
-                                        static_cast<int64_t>(dot)));
+      int64_t package_end = static_cast<int64_t>(dot) - 1;
+      Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);
+      PyDict::Put(module_dict, ST(package), package_name);
     }
   }
 
   PyDict::Put(module_dict, PyString::NewInstance("__file__"),
-              PyString::NewInstance(loc.origin.c_str(),
-                                    static_cast<int64_t>(loc.origin.size())));
+              ModuleUtils::NewPyString(loc.origin));
 
   PyDict::Put(module_dict, ST(class),
               PyObject::GetKlass(module)->type_object());
 
   if (loc.is_package) {
     Handle<PyList> pkg_path = PyList::NewInstance();
-    PyList::Append(pkg_path, PyString::NewInstance(
-                                 loc.package_dir.c_str(),
-                                 static_cast<int64_t>(loc.package_dir.size())));
+    PyList::Append(pkg_path, ModuleUtils::NewPyString(loc.package_dir));
     PyDict::Put(module_dict, ST(path), pkg_path);
   }
 }
@@ -79,14 +76,15 @@ ModuleLoader::ModuleLoader(Isolate* isolate,
       manager_(manager),
       builtin_registry_(builtin_registry) {}
 
-Handle<PyObject> ModuleLoader::LoadModulePart(
-    Handle<PyString> fullname,
-    const std::vector<std::string>& search_paths) {
+Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
+                                              Handle<PyList> search_path_list) {
   EscapableHandleScope scope;
+
+  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
 
   BuiltinModuleInitFunc builtin_init = nullptr;
   if (builtin_registry_ != nullptr) {
-    builtin_init = builtin_registry_->Find(ModuleUtils::ToStringView(fullname));
+    builtin_init = builtin_registry_->Find(fullname_view);
   }
   if (builtin_init != nullptr) {
     Handle<PyModule> module = builtin_init(isolate_, manager_);
@@ -96,13 +94,13 @@ Handle<PyObject> ModuleLoader::LoadModulePart(
     return scope.Escape(module_obj);
   }
 
-  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
   size_t dot = fullname_view.rfind('.');
   std::string_view relative_name = dot == std::string_view::npos
                                        ? fullname_view
                                        : fullname_view.substr(dot + 1);
 
-  ModuleLocation loc = finder_->FindModuleLocation(search_paths, relative_name);
+  ModuleLocation loc =
+      finder_->FindModuleLocation(search_path_list, relative_name);
   if (loc.origin.empty()) {
     std::fprintf(stderr, "ModuleNotFoundError: No module named '%.*s'\n",
                  static_cast<int>(fullname_view.size()), fullname_view.data());
