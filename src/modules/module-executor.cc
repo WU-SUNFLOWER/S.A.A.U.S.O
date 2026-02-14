@@ -120,11 +120,10 @@ Handle<PyObject> ModuleExecutor::LoadModulePart(
   Handle<PyModule> module = PyModule::NewInstance();
   InitializeModuleDict(module, fullname, loc);
 
-  Handle<PyObject> module_obj(module);
   Handle<PyDict> modules_dict = manager_->modules();
-  PyDict::Put(modules_dict, fullname, module_obj);
+  PyDict::Put(modules_dict, fullname, module);
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
   Handle<PyFunction> boilerplate = Compiler::CompileSource(
       isolate_, std::string_view(source), std::string_view(loc.origin));
   boilerplate->set_func_globals(module_dict);
@@ -132,7 +131,7 @@ Handle<PyObject> ModuleExecutor::LoadModulePart(
                                       Handle<PyTuple>::null(),
                                       Handle<PyDict>::null(), module_dict);
 
-  return scope.Escape(module_obj);
+  return scope.Escape(module);
 }
 
 }  // namespace saauso::internal

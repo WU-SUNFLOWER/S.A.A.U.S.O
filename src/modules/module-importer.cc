@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "src/modules/module-executor.h"
@@ -104,9 +103,37 @@ bool IsValidModuleName(std::string_view fullname) {
   return true;
 }
 
-Handle<PyObject> ImportDottedName(ModuleManager* manager,
-                                  Handle<PyDict> modules_dict,
-                                  std::string_view fullname) {
+}  // namespace
+
+////////////////////////////////////////////////////////////////////////
+
+ModuleImporter::ModuleImporter(ModuleManager* manager) : manager_(manager) {}
+
+Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
+                                              Handle<PyTuple> fromlist,
+                                              int64_t level,
+                                              Handle<PyDict> globals) {
+  EscapableHandleScope scope;
+
+  std::string fullname = ModuleResolver::ResolveFullName(name, level, globals);
+  if (!IsValidModuleName(fullname)) {
+    std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%s'\n",
+                 fullname.c_str());
+    std::exit(1);
+  }
+
+  Handle<PyDict> modules_dict = manager_->modules();
+  Handle<PyObject> last_module =
+      LinkAndImportModuleImpl(modules_dict, std::string_view(fullname));
+  Handle<PyObject> result = ApplyImportReturnSemantics(
+      modules_dict, std::string_view(fullname), fromlist, last_module);
+
+  return scope.Escape(result);
+}
+
+Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
+    Handle<PyDict> modules_dict,
+    std::string_view fullname) {
   Handle<PyObject> last_module;
 
   size_t segment_start = 0;
@@ -126,13 +153,13 @@ Handle<PyObject> ImportDottedName(ModuleManager* manager,
     } else {
       std::vector<std::string> search_paths;
       if (segment_start == 0) {
-        search_paths = ExtractSearchPaths(manager->path());
+        search_paths = ExtractSearchPaths(manager_->path());
       } else {
         search_paths = ExtractSearchPaths(GetPackagePathListOrDie(last_module));
       }
 
       Handle<PyObject> loaded =
-          manager->executor()->LoadModulePart(part_name_obj, search_paths);
+          manager_->executor()->LoadModulePart(part_name_obj, search_paths);
       last_module = loaded;
 
       if (segment_start != 0) {
@@ -155,31 +182,6 @@ Handle<PyObject> ImportDottedName(ModuleManager* manager,
   }
 
   return last_module;
-}
-
-}  // namespace
-
-Handle<PyObject> ModuleImporter::ImportModule(ModuleManager* manager,
-                                              Handle<PyString> name,
-                                              Handle<PyTuple> fromlist,
-                                              int64_t level,
-                                              Handle<PyDict> globals) {
-  EscapableHandleScope scope;
-
-  std::string fullname = ModuleResolver::ResolveFullName(name, level, globals);
-  if (!IsValidModuleName(fullname)) {
-    std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%s'\n",
-                 fullname.c_str());
-    std::exit(1);
-  }
-
-  Handle<PyDict> modules_dict = manager->modules();
-  Handle<PyObject> last_module =
-      ImportDottedName(manager, modules_dict, std::string_view(fullname));
-  Handle<PyObject> result = ApplyImportReturnSemantics(
-      modules_dict, std::string_view(fullname), fromlist, last_module);
-
-  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal

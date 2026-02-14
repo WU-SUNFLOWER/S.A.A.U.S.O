@@ -58,7 +58,7 @@ ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
   finder_ = std::make_unique<ModuleFinder>();
   executor_ = std::make_unique<ModuleExecutor>(isolate_, finder_.get(), this,
                                                builtin_registry_.get());
-  importer_ = std::make_unique<ModuleImporter>();
+  importer_ = std::make_unique<ModuleImporter>(this);
   InitializeSysState();
   RegisterBuiltinModules();
 }
@@ -110,7 +110,7 @@ Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
                                              Handle<PyTuple> fromlist,
                                              int64_t level,
                                              Handle<PyDict> globals) {
-  return importer_->ImportModule(this, name, fromlist, level, globals);
+  return importer_->ImportModule(name, fromlist, level, globals);
 }
 
 }  // namespace saauso::internal

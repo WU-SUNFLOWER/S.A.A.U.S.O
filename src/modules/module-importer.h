@@ -6,6 +6,7 @@
 #define SAAUSO_MODULES_MODULE_IMPORTER_H_
 
 #include <cstdint>
+#include <string_view>
 
 #include "src/handles/handles.h"
 
@@ -19,19 +20,23 @@ class PyTuple;
 
 class ModuleImporter final {
  public:
-  ModuleImporter() = default;
+  ModuleImporter(ModuleManager* manager);
   ModuleImporter(const ModuleImporter&) = delete;
   ModuleImporter& operator=(const ModuleImporter&) = delete;
   ~ModuleImporter() = default;
 
-  Handle<PyObject> ImportModule(ModuleManager* manager,
-                                Handle<PyString> name,
+  Handle<PyObject> ImportModule(Handle<PyString> name,
                                 Handle<PyTuple> fromlist,
                                 int64_t level,
                                 Handle<PyDict> globals);
+
+ private:
+  Handle<PyObject> LinkAndImportModuleImpl(Handle<PyDict> modules_dict,
+                                           std::string_view fullname);
+
+  ModuleManager* manager_;
 };
 
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_MODULE_IMPORTER_H_
-
