@@ -12,6 +12,7 @@
 
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/modules/builtin-module.h"
 
 namespace saauso::internal {
 
@@ -23,15 +24,17 @@ class PyModule;
 class PyObject;
 class PyString;
 class PyTuple;
-class ModuleLoader;
+class BuiltinModuleRegistry;
+class ModuleExecutor;
+class ModuleFinder;
+class ModuleImporter;
 
-// ModuleManager 负责管理模块导入过程中的全局状态（sys.modules/sys.path），
-// 并提供内建模块的注册与实例化入口。
+// ModuleManager 是虚拟机模块系统的门面：
+// - 对解释器提供 ImportModule 接口（导入语义编排）。
+// - 持有 sys.modules/sys.path 等全局导入状态。
+// - 组合 BuiltinModuleRegistry/ModuleFinder/ModuleExecutor 以分离职责边界。
 class ModuleManager final {
  public:
-  using BuiltinModuleInitFunc = Handle<PyModule> (*)(Isolate* isolate,
-                                                     ModuleManager* manager);
-
   explicit ModuleManager(Isolate* isolate);
   ModuleManager(const ModuleManager&) = delete;
   ModuleManager& operator=(const ModuleManager&) = delete;
@@ -46,14 +49,16 @@ class ModuleManager final {
   Tagged<PyList> path_tagged() const;
 
   Isolate* isolate() const { return isolate_; }
-  ModuleLoader* loader() const { return loader_.get(); }
+  ModuleFinder* finder() const { return finder_.get(); }
+  ModuleExecutor* executor() const { return executor_.get(); }
 
   // 导入模块的统一入口（IMPORT_NAME 会调用此接口）。
   //
   // 参数说明：
   // - name：被导入的模块名。level==0 时不允许为空；level>0 时允许为空（例如
-  // - fromlist：IMPORT_NAME 的 fromlist 参数，允许为 null 或空
-  // tuple。用于决定返回值语义：
+  //   `from . import x`）。
+  // - fromlist：IMPORT_NAME 的 fromlist 参数，允许为 null 或空 tuple。
+  //   用于决定返回值语义：
   //   - fromlist 为空且 name 为 dotted-name 时，返回顶层包；
   //   - 否则返回最后导入的模块对象。
   // - level：相对导入层级（0 表示绝对导入）。
@@ -64,24 +69,21 @@ class ModuleManager final {
                                 int64_t level,
                                 Handle<PyDict> globals);
 
-  void RegisterBuiltinModule(std::string_view name, BuiltinModuleInitFunc init);
-  BuiltinModuleInitFunc FindBuiltinModule(std::string_view name) const;
-
  private:
+  friend class ModuleImporter;
+
   void InitializeSysState();
   void RegisterBuiltinModules();
+  BuiltinModuleInitFunc FindBuiltinModule(std::string_view name) const;
 
   Isolate* isolate_{nullptr};
-  std::unique_ptr<ModuleLoader> loader_;
+  std::unique_ptr<BuiltinModuleRegistry> builtin_registry_;
+  std::unique_ptr<ModuleFinder> finder_;
+  std::unique_ptr<ModuleExecutor> executor_;
+  std::unique_ptr<ModuleImporter> importer_;
 
   Tagged<PyDict> modules_{kNullAddress};
   Tagged<PyList> path_{kNullAddress};
-
-  struct BuiltinModuleEntry {
-    std::string name;
-    BuiltinModuleInitFunc init{nullptr};
-  };
-  std::vector<BuiltinModuleEntry> builtin_modules_;
 };
 
 }  // namespace saauso::internal

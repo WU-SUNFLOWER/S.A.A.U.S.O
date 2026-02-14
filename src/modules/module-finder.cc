@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/modules/module-loader.h"
+#include "src/modules/module-finder.h"
 
 #include <filesystem>
 
@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-ModuleLocation ModuleLoader::FindModuleLocation(
+ModuleLocation ModuleFinder::FindModuleLocation(
     const std::vector<std::string>& search_paths,
     const std::vector<std::string>& relative_parts) const {
   ModuleLocation result;
@@ -43,7 +43,7 @@ ModuleLocation ModuleLoader::FindModuleLocation(
   return result;
 }
 
-bool ModuleLoader::ReadModuleSource(const ModuleLocation& location,
+bool ModuleFinder::ReadModuleSource(const ModuleLocation& location,
                                     std::string* out) const {
   if (location.origin.empty()) {
     return false;

@@ -162,10 +162,21 @@ source_set("saauso_core") {
     "//src/runtime/string-table.h",
 
     # modules (模块系统)
-    "//src/modules/module-loader.cc",
-    "//src/modules/module-loader.h",
+    "//src/modules/builtin-module-registry.cc",
+    "//src/modules/builtin-module-registry.h",
+    "//src/modules/builtin-module.h",
+    "//src/modules/module-executor.cc",
+    "//src/modules/module-executor.h",
+    "//src/modules/module-finder.cc",
+    "//src/modules/module-finder.h",
+    "//src/modules/module-importer.cc",
+    "//src/modules/module-importer.h",
     "//src/modules/module-manager.cc",
     "//src/modules/module-manager.h",
+    "//src/modules/module-resolver.cc",
+    "//src/modules/module-resolver.h",
+    "//src/modules/module-utils.cc",
+    "//src/modules/module-utils.h",
 
     # builtins (内建函数)
     "//src/builtins/builtins-debug.cc",
