@@ -6,7 +6,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <string>
 
 #include "src/modules/module-loader.h"
 #include "src/modules/module-manager.h"
@@ -32,14 +31,15 @@ Handle<PyList> GetPackagePathListOrDie(Handle<PyObject> module) {
 }
 
 Handle<PyObject> ApplyImportReturnSemantics(Handle<PyDict> modules_dict,
-                                            std::string_view fullname,
+                                            Handle<PyString> fullname,
                                             Handle<PyTuple> fromlist,
                                             Handle<PyObject> last_module) {
+  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
   bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
-  size_t dot = fullname.find('.');
+  size_t dot = fullname_view.find('.');
   if (!has_fromlist && dot != std::string_view::npos) {
-    Handle<PyString> top_name =
-        ModuleUtils::NewPyString(fullname.substr(0, dot));
+    int64_t top_end = static_cast<int64_t>(dot) - 1;
+    Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
     return modules_dict->Get(top_name);
   }
   return last_module;
@@ -51,8 +51,8 @@ void BindChildToParent(Handle<PyDict> modules_dict,
                        Handle<PyObject> child) {
   Handle<PyObject> parent = modules_dict->Get(parent_name);
   if (parent.is_null()) [[unlikely]] {
-    std::string parent_fullname = ModuleUtils::ToStdString(parent_name);
-    std::fprintf(stderr, "ImportError: missing parent module '%s'\n",
+    std::fprintf(stderr, "ImportError: missing parent module '%.*s'\n",
+                 static_cast<int>(parent_name->length()),
                  parent_name->buffer());
     std::exit(1);
   }
@@ -73,39 +73,40 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
                                               Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
-  std::string fullname = ModuleResolver::ResolveFullName(name, level, globals);
+  Handle<PyString> fullname =
+      ModuleResolver::ResolveFullName(name, level, globals);
   if (!ModuleUtils::IsValidModuleName(fullname)) {
-    std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%s'\n",
-                 fullname.c_str());
+    std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%.*s'\n",
+                 static_cast<int>(fullname->length()), fullname->buffer());
     std::exit(1);
   }
 
   Handle<PyDict> modules_dict = manager_->modules();
   Handle<PyObject> last_module =
-      LinkAndImportModuleImpl(modules_dict, std::string_view(fullname));
-  Handle<PyObject> result = ApplyImportReturnSemantics(
-      modules_dict, std::string_view(fullname), fromlist, last_module);
+      LinkAndImportModuleImpl(modules_dict, fullname);
+  Handle<PyObject> result =
+      ApplyImportReturnSemantics(modules_dict, fullname, fromlist, last_module);
 
   return scope.Escape(result);
 }
 
 Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
     Handle<PyDict> modules_dict,
-    std::string_view fullname) {
+    Handle<PyString> fullname) {
+  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
+
   Handle<PyObject> last_module;
   Handle<PyString> parent_part_name_obj;
 
   size_t segment_start = 0;
-  while (segment_start <= fullname.size()) {
-    size_t dot = fullname.find('.', segment_start);
+  while (segment_start <= fullname_view.size()) {
+    size_t dot = fullname_view.find('.', segment_start);
     if (dot == std::string_view::npos) {
-      dot = fullname.size();
+      dot = fullname_view.size();
     }
 
-    std::string_view segment =
-        fullname.substr(segment_start, dot - segment_start);
-    Handle<PyString> part_name_obj =
-        ModuleUtils::NewPyString(fullname.substr(0, dot));
+    int64_t part_end = static_cast<int64_t>(dot) - 1;
+    Handle<PyString> part_name_obj = PyString::Slice(fullname, 0, part_end);
     Handle<PyObject> cached = modules_dict->Get(part_name_obj);
     if (!cached.is_null()) {
       last_module = cached;
@@ -118,20 +119,23 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
       last_module = loaded;
 
       if (segment_start != 0) {
+        int64_t child_begin = static_cast<int64_t>(segment_start);
+        int64_t child_end = static_cast<int64_t>(dot) - 1;
         Handle<PyString> child_short_name_obj =
-            ModuleUtils::NewPyString(segment);
+            PyString::Slice(fullname, child_begin, child_end);
         BindChildToParent(modules_dict, parent_part_name_obj,
                           child_short_name_obj, loaded);
       }
     }
 
-    if (dot != fullname.size() && !ModuleUtils::IsPackageModule(last_module)) {
-      std::fprintf(stderr, "ImportError: '%s' is not a package\n",
-                   std::string(fullname.substr(0, dot)).c_str());
+    if (dot != fullname_view.size() &&
+        !ModuleUtils::IsPackageModule(last_module)) {
+      std::fprintf(stderr, "ImportError: '%.*s' is not a package\n",
+                   static_cast<int>(dot), fullname_view.data());
       std::exit(1);
     }
 
-    if (dot == fullname.size()) {
+    if (dot == fullname_view.size()) {
       break;
     }
     parent_part_name_obj = part_name_obj;

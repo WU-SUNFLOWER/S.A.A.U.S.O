@@ -25,7 +25,7 @@ class ModuleUtils final {
 
   static Handle<PyString> NewPyString(std::string_view s);
 
-  static bool IsValidModuleName(std::string_view fullname);
+  static bool IsValidModuleName(Handle<PyString> fullname);
 
   static bool IsPackageModule(Handle<PyObject> module);
   static Handle<PyList> GetPackagePathList(Handle<PyObject> module);

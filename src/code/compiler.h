@@ -19,20 +19,23 @@ class PyFunction;
 
 class Compiler : AllStatic {
  public:
-  // 传入Python源代码，需要走CPython的编译器前端进行翻译
-  static Handle<PyFunction> CompileSource(Isolate* isolate,
-                                          Handle<PyString> source);
-  static Handle<PyFunction> CompileSource(Isolate* isolate,
-                                          const char* source,
-                                          size_t source_size);
+  static constexpr std::string_view kDefaultFileName = "<saauso>";
 
-  static Handle<PyFunction> CompileSource(Isolate* isolate,
-                                          std::string_view source,
-                                          std::string_view filename);
-  static Handle<PyFunction> CompileSource(Isolate* isolate,
-                                          const char* source,
-                                          size_t source_size,
-                                          std::string_view filename);
+  // 传入Python源代码，需要走CPython的编译器前端进行翻译
+  static Handle<PyFunction> CompileSource(
+      Isolate* isolate,
+      Handle<PyString> source,
+      std::string_view filename = kDefaultFileName);
+  static Handle<PyFunction> CompileSource(
+      Isolate* isolate,
+      const char* source,
+      size_t source_size,
+      std::string_view filename = kDefaultFileName);
+
+  static Handle<PyFunction> CompileSource(
+      Isolate* isolate,
+      std::string_view source,
+      std::string_view filename = kDefaultFileName);
 
   // 传入pyc文件路径或二进制流，直接进行PyCodeObject解析
   static Handle<PyFunction> CompilePyc(Isolate* isolate,

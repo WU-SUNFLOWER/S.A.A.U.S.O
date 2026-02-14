@@ -6,7 +6,6 @@
 #define SAAUSO_MODULES_MODULE_IMPORTER_H_
 
 #include <cstdint>
-#include <string_view>
 
 #include "src/handles/handles.h"
 
@@ -32,7 +31,7 @@ class ModuleImporter final {
 
  private:
   Handle<PyObject> LinkAndImportModuleImpl(Handle<PyDict> modules_dict,
-                                           std::string_view fullname);
+                                           Handle<PyString> fullname);
 
   ModuleManager* manager_;
 };

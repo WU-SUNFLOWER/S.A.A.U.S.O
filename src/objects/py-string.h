@@ -61,9 +61,21 @@ class PyString : public PyObject {
 
   bool Contains(Handle<PyString> pattern) const;
 
+  bool IsEmpty() const { return length_ == 0; }
+
   int64_t length() const { return length_; }
 
   const char* buffer() const { return reinterpret_cast<const char*>(this + 1); }
+
+  char front() const {
+    assert(!IsEmpty());
+    return Get(0);
+  }
+
+  char back() const {
+    assert(!IsEmpty());
+    return Get(length_ - 1);
+  }
 
   static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from,

@@ -38,7 +38,7 @@ class ModuleLoader final {
  private:
   Handle<PyModule> ExecuteModuleImpl(Handle<PyString> fullname,
                                      const ModuleLocation& loc,
-                                     const std::string& source);
+                                     Handle<PyString> source);
 
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};

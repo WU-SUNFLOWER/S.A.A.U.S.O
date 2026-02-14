@@ -6,8 +6,6 @@
 #define SAAUSO_MODULES_MODULE_RESOLVER_H_
 
 #include <cstdint>
-#include <string>
-#include <string_view>
 
 #include "src/handles/handles.h"
 
@@ -18,16 +16,19 @@ class PyString;
 
 class ModuleResolver final {
  public:
-  static std::string ResolveFullName(Handle<PyString> name,
-                                     int64_t level,
-                                     Handle<PyDict> globals);
+  // 解析并返回最终导入的模块全名。
+  // - name 允许为空字符串：仅当 level > 0（相对导入）时成立。
+  // - 返回值保证为 PyString（可能为空字符串，但此时调用方通常会报错并退出）。
+  static Handle<PyString> ResolveFullName(Handle<PyString> name,
+                                          int64_t level,
+                                          Handle<PyDict> globals);
 
  private:
-  static std::string ParentModuleNameOrEmpty(std::string_view name);
-  static std::string ResolvePackageFromGlobals(Handle<PyDict> globals);
-  static std::string ResolveRelativeImportName(std::string_view name,
-                                               int64_t level,
-                                               Handle<PyDict> globals);
+  static Handle<PyString> ParentModuleNameOrEmpty(Handle<PyString> name);
+  static Handle<PyString> ResolvePackageFromGlobals(Handle<PyDict> globals);
+  static Handle<PyString> ResolveRelativeImportName(Handle<PyString> name,
+                                                    int64_t level,
+                                                    Handle<PyDict> globals);
 };
 
 }  // namespace saauso::internal

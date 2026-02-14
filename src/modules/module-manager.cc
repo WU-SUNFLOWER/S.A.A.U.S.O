@@ -91,7 +91,7 @@ void ModuleManager::InitializeSysState() {
   modules_ = *modules;
 
   Handle<PyList> path = PyList::NewInstance();
-  PyList::Append(path, PyString::NewInstance("."));
+  PyList::Append(path, ST(dot));
   path_ = *path;
 }
 

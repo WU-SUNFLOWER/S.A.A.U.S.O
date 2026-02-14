@@ -107,8 +107,8 @@ Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
     std::exit(1);
   }
 
-  std::string source;
-  if (!finder_->ReadModuleSource(loc, &source)) {
+  Handle<PyString> source;
+  if (!finder_->ReadModuleSource(loc, source)) {
     std::fprintf(stderr, "ImportError: cannot read '%s'\n", loc.origin.c_str());
     std::exit(1);
   }
@@ -119,7 +119,7 @@ Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
 
 Handle<PyModule> ModuleLoader::ExecuteModuleImpl(Handle<PyString> fullname,
                                                  const ModuleLocation& loc,
-                                                 const std::string& source) {
+                                                 Handle<PyString> source) {
   Handle<PyModule> module = PyModule::NewInstance();
   InitializeModuleDict(module, fullname, loc);
 
@@ -128,8 +128,8 @@ Handle<PyModule> ModuleLoader::ExecuteModuleImpl(Handle<PyString> fullname,
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  Handle<PyFunction> boilerplate = Compiler::CompileSource(
-      isolate_, std::string_view(source), std::string_view(loc.origin));
+  Handle<PyFunction> boilerplate =
+      Compiler::CompileSource(isolate_, source, loc.origin);
   boilerplate->set_func_globals(module_dict);
 
   isolate_->interpreter()->CallPython(boilerplate, Handle<PyObject>::null(),

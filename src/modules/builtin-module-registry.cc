@@ -9,7 +9,7 @@ namespace saauso::internal {
 void BuiltinModuleRegistry::Register(std::string_view name,
                                      BuiltinModuleInitFunc init) {
   Entry entry;
-  entry.name = std::string(name);
+  entry.name = name;
   entry.init = init;
   entries_.push_back(std::move(entry));
 }
@@ -24,4 +24,3 @@ BuiltinModuleInitFunc BuiltinModuleRegistry::Find(std::string_view name) const {
 }
 
 }  // namespace saauso::internal
-

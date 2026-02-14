@@ -14,23 +14,16 @@
 #include "src/objects/py-string.h"
 
 namespace saauso::internal {
-namespace {
-constexpr std::string_view kDefaultFileName = "<saauso>";
-}  // namespace
+namespace {}  // namespace
 
 Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
-                                           Handle<PyString> source) {
+                                           Handle<PyString> source,
+                                           std::string_view filename) {
   if (source.is_null()) {
     return Handle<PyFunction>::null();
   }
   return CompileSource(isolate, source->buffer(),
-                       static_cast<size_t>(source->length()), kDefaultFileName);
-}
-
-Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
-                                           const char* source,
-                                           size_t source_size) {
-  return CompileSource(isolate, source, source_size, kDefaultFileName);
+                       static_cast<size_t>(source->length()), filename);
 }
 
 Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,

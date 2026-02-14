@@ -25,7 +25,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
     return result;
   }
 
-  std::filesystem::path relative{std::string(relative_name)};
+  std::filesystem::path relative{relative_name};
 
   for (int64_t i = 0; i < search_path_list->length(); ++i) {
     Handle<PyObject> elem = search_path_list->Get(i);
@@ -60,11 +60,18 @@ ModuleLocation ModuleFinder::FindModuleLocation(
 }
 
 bool ModuleFinder::ReadModuleSource(const ModuleLocation& location,
-                                    std::string* out) const {
+                                    Handle<PyString>& out) const {
   if (location.origin.empty()) {
     return false;
   }
-  return ReadFileToString(location.origin, out);
+
+  std::string raw_out;
+  if (!ReadFileToString(location.origin, &raw_out)) {
+    return false;
+  }
+
+  out = ModuleUtils::NewPyString(raw_out);
+  return true;
 }
 
 }  // namespace saauso::internal

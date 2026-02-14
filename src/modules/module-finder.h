@@ -13,6 +13,7 @@
 namespace saauso::internal {
 
 class PyList;
+class PyString;
 
 struct ModuleLocation {
   std::string origin;
@@ -30,7 +31,7 @@ class ModuleFinder final {
   ModuleLocation FindModuleLocation(Handle<PyList> search_path_list,
                                     std::string_view relative_name) const;
 
-  bool ReadModuleSource(const ModuleLocation& location, std::string* out) const;
+  bool ReadModuleSource(const ModuleLocation& location, Handle<PyString>& out) const;
 };
 
 }  // namespace saauso::internal

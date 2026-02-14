@@ -5,7 +5,6 @@
 #ifndef SAAUSO_MODULES_BUILTIN_MODULE_REGISTRY_H_
 #define SAAUSO_MODULES_BUILTIN_MODULE_REGISTRY_H_
 
-#include <string>
 #include <string_view>
 #include <vector>
 
@@ -22,12 +21,16 @@ class BuiltinModuleRegistry final {
   BuiltinModuleRegistry& operator=(const BuiltinModuleRegistry&) = delete;
   ~BuiltinModuleRegistry() = default;
 
+  // 注册一个内建模块初始化函数。
+  //
+  // 注意：BuiltinModuleRegistry 会以 std::string_view 的形式保存 name，
+  // 因此 name 必须具有足够长的生命周期（推荐使用字符串字面量）。
   void Register(std::string_view name, BuiltinModuleInitFunc init);
   BuiltinModuleInitFunc Find(std::string_view name) const;
 
  private:
   struct Entry {
-    std::string name;
+    std::string_view name;
     BuiltinModuleInitFunc init{nullptr};
   };
   std::vector<Entry> entries_;
@@ -36,4 +39,3 @@ class BuiltinModuleRegistry final {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_BUILTIN_MODULE_REGISTRY_H_
-

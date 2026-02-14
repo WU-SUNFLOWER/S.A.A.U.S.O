@@ -4,7 +4,9 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/modules/module-manager.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -166,6 +168,17 @@ print(pkg.sub.answer)
   AppendExpected(expected, PyString::NewInstance("pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
+  ASSERT_DEATH(
+      {
+        HandleScope scope;
+        Handle<PyString> invalid = PyString::NewInstance("a..b");
+        isolate()->module_manager()->ImportModule(
+            invalid, Handle<PyTuple>::null(), 0, Handle<PyDict>::null());
+      },
+      "invalid module name");
 }
 
 }  // namespace saauso::internal

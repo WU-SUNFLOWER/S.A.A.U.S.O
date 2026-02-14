@@ -33,15 +33,15 @@ Handle<PyString> ModuleUtils::NewPyString(std::string_view s) {
   return PyString::NewInstance(s.data(), static_cast<int64_t>(s.size()));
 }
 
-bool ModuleUtils::IsValidModuleName(std::string_view fullname) {
-  if (fullname.empty()) {
+bool ModuleUtils::IsValidModuleName(Handle<PyString> fullname) {
+  if (fullname->IsEmpty()) {
     return false;
   }
-  if (fullname.front() == '.' || fullname.back() == '.') {
+  if (fullname->front() == '.' || fullname->back() == '.') {
     return false;
   }
-  for (size_t i = 1; i < fullname.size(); ++i) {
-    if (fullname[i] == '.' && fullname[i - 1] == '.') {
+  for (int64_t i = 1; i < fullname->length(); ++i) {
+    if (fullname->Get(i) == '.' && fullname->Get(i - 1) == '.') {
       return false;
     }
   }
