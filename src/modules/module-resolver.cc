@@ -7,9 +7,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
-#include <string_view>
 
-#include "src/modules/module-utils.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
@@ -115,13 +113,12 @@ Handle<PyString> ModuleResolver::ParentModuleNameOrEmpty(
     return scope.Escape(PyString::NewInstance(""));
   }
 
-  std::string_view name_view = ModuleUtils::ToStringView(name);
-  size_t dot = name_view.rfind('.');
-  if (dot == std::string_view::npos || dot == 0) {
+  auto dot_index = name->LastIndexOf(ST(dot));
+  if (dot_index == PyString::kNotFound || dot_index == 0) {
     return scope.Escape(PyString::NewInstance(""));
   }
 
-  int64_t parent_end = static_cast<int64_t>(dot) - 1;
+  int64_t parent_end = dot_index - 1;
   return scope.Escape(PyString::Slice(name, 0, parent_end));
 }
 
