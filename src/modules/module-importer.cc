@@ -9,7 +9,7 @@
 
 #include "src/modules/module-loader.h"
 #include "src/modules/module-manager.h"
-#include "src/modules/module-resolver.h"
+#include "src/modules/module-name-resolver.h"
 #include "src/modules/module-utils.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -44,7 +44,7 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
   EscapableHandleScope scope;
 
   Handle<PyString> fullname =
-      ModuleResolver::ResolveFullName(name, level, globals);
+      ModuleNameResolver::ResolveFullName(name, level, globals);
   if (!ModuleUtils::IsValidModuleName(fullname)) {
     std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%.*s'\n",
                  static_cast<int>(fullname->length()), fullname->buffer());

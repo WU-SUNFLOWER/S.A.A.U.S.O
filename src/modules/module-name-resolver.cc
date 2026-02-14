@@ -2,12 +2,11 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/modules/module-resolver.h"
-
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/modules/module-name-resolver.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
@@ -15,9 +14,9 @@
 
 namespace saauso::internal {
 
-Handle<PyString> ModuleResolver::ResolveFullName(Handle<PyString> name,
-                                                 int64_t level,
-                                                 Handle<PyDict> globals) {
+Handle<PyString> ModuleNameResolver::ResolveFullName(Handle<PyString> name,
+                                                     int64_t level,
+                                                     Handle<PyDict> globals) {
   EscapableHandleScope scope;
   assert(level >= 0);
 
@@ -32,7 +31,7 @@ Handle<PyString> ModuleResolver::ResolveFullName(Handle<PyString> name,
   return scope.Escape(fullname);
 }
 
-Handle<PyString> ModuleResolver::ResolveRelativeImportName(
+Handle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     Handle<PyString> name,
     int64_t level,
     Handle<PyDict> globals) {
@@ -74,7 +73,7 @@ Handle<PyString> ModuleResolver::ResolveRelativeImportName(
   return scope.Escape(fullname);
 }
 
-Handle<PyString> ModuleResolver::ResolvePackageFromGlobals(
+Handle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
@@ -105,7 +104,7 @@ Handle<PyString> ModuleResolver::ResolvePackageFromGlobals(
   return scope.Escape(ParentModuleNameOrEmpty(name_str));
 }
 
-Handle<PyString> ModuleResolver::ParentModuleNameOrEmpty(
+Handle<PyString> ModuleNameResolver::ParentModuleNameOrEmpty(
     Handle<PyString> name) {
   EscapableHandleScope scope;
 

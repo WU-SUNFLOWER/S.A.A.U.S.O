@@ -173,8 +173,8 @@ source_set("saauso_core") {
     "//src/modules/module-loader.h",
     "//src/modules/module-manager.cc",
     "//src/modules/module-manager.h",
-    "//src/modules/module-resolver.cc",
-    "//src/modules/module-resolver.h",
+    "//src/modules/module-name-resolver.cc",
+    "//src/modules/module-name-resolver.h",
     "//src/modules/module-utils.cc",
     "//src/modules/module-utils.h",
 
