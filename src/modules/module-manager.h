@@ -25,14 +25,14 @@ class PyObject;
 class PyString;
 class PyTuple;
 class BuiltinModuleRegistry;
-class ModuleExecutor;
+class ModuleLoader;
 class ModuleFinder;
 class ModuleImporter;
 
 // ModuleManager 是虚拟机模块系统的门面：
 // - 对解释器提供 ImportModule 接口（导入语义编排）。
 // - 持有 sys.modules/sys.path 等全局导入状态。
-// - 组合 BuiltinModuleRegistry/ModuleFinder/ModuleExecutor 以分离职责边界。
+// - 组合 BuiltinModuleRegistry/ModuleFinder/ModuleLoader 以分离职责边界。
 class ModuleManager final {
  public:
   explicit ModuleManager(Isolate* isolate);
@@ -50,7 +50,7 @@ class ModuleManager final {
 
   Isolate* isolate() const { return isolate_; }
   ModuleFinder* finder() const { return finder_.get(); }
-  ModuleExecutor* executor() const { return executor_.get(); }
+  ModuleLoader* loader() const { return loader_.get(); }
 
   // 导入模块的统一入口（IMPORT_NAME 会调用此接口）。
   //
@@ -79,7 +79,7 @@ class ModuleManager final {
   Isolate* isolate_{nullptr};
   std::unique_ptr<BuiltinModuleRegistry> builtin_registry_;
   std::unique_ptr<ModuleFinder> finder_;
-  std::unique_ptr<ModuleExecutor> executor_;
+  std::unique_ptr<ModuleLoader> loader_;
   std::unique_ptr<ModuleImporter> importer_;
 
   Tagged<PyDict> modules_{kNullAddress};

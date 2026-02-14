@@ -20,21 +20,26 @@ class ModuleManager;
 class PyDict;
 class PyObject;
 class PyString;
+class ModuleLocation;
 
-class ModuleExecutor final {
+class ModuleLoader final {
  public:
-  ModuleExecutor(Isolate* isolate,
-                 ModuleFinder* finder,
-                 ModuleManager* manager,
-                 BuiltinModuleRegistry* builtin_registry);
-  ModuleExecutor(const ModuleExecutor&) = delete;
-  ModuleExecutor& operator=(const ModuleExecutor&) = delete;
-  ~ModuleExecutor() = default;
+  ModuleLoader(Isolate* isolate,
+               ModuleFinder* finder,
+               ModuleManager* manager,
+               BuiltinModuleRegistry* builtin_registry);
+  ModuleLoader(const ModuleLoader&) = delete;
+  ModuleLoader& operator=(const ModuleLoader&) = delete;
+  ~ModuleLoader() = default;
 
   Handle<PyObject> LoadModulePart(Handle<PyString> fullname,
                                   const std::vector<std::string>& search_paths);
 
  private:
+  Handle<PyModule> ExecuteModuleImpl(Handle<PyString> fullname,
+                                     const ModuleLocation& loc,
+                                     const std::string& source);
+
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};
   ModuleManager* manager_{nullptr};

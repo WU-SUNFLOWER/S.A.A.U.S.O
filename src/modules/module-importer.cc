@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "src/modules/module-executor.h"
+#include "src/modules/module-loader.h"
 #include "src/modules/module-manager.h"
 #include "src/modules/module-resolver.h"
 #include "src/modules/module-utils.h"
@@ -159,7 +159,7 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
       }
 
       Handle<PyObject> loaded =
-          manager_->executor()->LoadModulePart(part_name_obj, search_paths);
+          manager_->loader()->LoadModulePart(part_name_obj, search_paths);
       last_module = loaded;
 
       if (segment_start != 0) {

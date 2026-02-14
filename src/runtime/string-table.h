@@ -35,6 +35,8 @@ class ObjectVisitor;
   V(lt, "__lt__")                    \
   V(mro, "__mro__")                  \
   V(name, "__name__")                \
+  V(package, "__package__")          \
+  V(path, "__path__")                \
   V(ne, "__ne__")                    \
   V(_new, "__new__")                 \
   V(classcell, "__classcell__")      \

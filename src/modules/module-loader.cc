@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/modules/module-executor.h"
+#include "src/modules/module-loader.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -34,21 +34,19 @@ namespace {
 void InitializeModuleDict(Handle<PyModule> module,
                           Handle<PyString> fullname,
                           const ModuleLocation& loc) {
-  Handle<PyObject> module_obj(module);
-  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  PyDict::Put(module_dict, PyString::NewInstance("__name__"), fullname);
+  PyDict::Put(module_dict, ST(name), fullname);
 
   if (loc.is_package) {
-    PyDict::Put(module_dict, PyString::NewInstance("__package__"), fullname);
+    PyDict::Put(module_dict, ST(package), fullname);
   } else {
     std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
     size_t dot = fullname_view.rfind('.');
     if (dot == std::string_view::npos) {
-      PyDict::Put(module_dict, PyString::NewInstance("__package__"),
-                  PyString::NewInstance(""));
+      PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
     } else {
-      PyDict::Put(module_dict, PyString::NewInstance("__package__"),
+      PyDict::Put(module_dict, ST(package),
                   PyString::NewInstance(fullname_view.data(),
                                         static_cast<int64_t>(dot)));
     }
@@ -59,29 +57,29 @@ void InitializeModuleDict(Handle<PyModule> module,
                                     static_cast<int64_t>(loc.origin.size())));
 
   PyDict::Put(module_dict, ST(class),
-              PyObject::GetKlass(module_obj)->type_object());
+              PyObject::GetKlass(module)->type_object());
 
   if (loc.is_package) {
     Handle<PyList> pkg_path = PyList::NewInstance();
     PyList::Append(pkg_path, PyString::NewInstance(
                                  loc.package_dir.c_str(),
                                  static_cast<int64_t>(loc.package_dir.size())));
-    PyDict::Put(module_dict, PyString::NewInstance("__path__"), pkg_path);
+    PyDict::Put(module_dict, ST(path), pkg_path);
   }
 }
 
 }  // namespace
 
-ModuleExecutor::ModuleExecutor(Isolate* isolate,
-                               ModuleFinder* finder,
-                               ModuleManager* manager,
-                               BuiltinModuleRegistry* builtin_registry)
+ModuleLoader::ModuleLoader(Isolate* isolate,
+                           ModuleFinder* finder,
+                           ModuleManager* manager,
+                           BuiltinModuleRegistry* builtin_registry)
     : isolate_(isolate),
       finder_(finder),
       manager_(manager),
       builtin_registry_(builtin_registry) {}
 
-Handle<PyObject> ModuleExecutor::LoadModulePart(
+Handle<PyObject> ModuleLoader::LoadModulePart(
     Handle<PyString> fullname,
     const std::vector<std::string>& search_paths) {
   EscapableHandleScope scope;
@@ -117,6 +115,13 @@ Handle<PyObject> ModuleExecutor::LoadModulePart(
     std::exit(1);
   }
 
+  Handle<PyModule> module = ExecuteModuleImpl(fullname, loc, source);
+  return scope.Escape(module);
+}
+
+Handle<PyModule> ModuleLoader::ExecuteModuleImpl(Handle<PyString> fullname,
+                                                 const ModuleLocation& loc,
+                                                 const std::string& source) {
   Handle<PyModule> module = PyModule::NewInstance();
   InitializeModuleDict(module, fullname, loc);
 
@@ -124,14 +129,16 @@ Handle<PyObject> ModuleExecutor::LoadModulePart(
   PyDict::Put(modules_dict, fullname, module);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
+
   Handle<PyFunction> boilerplate = Compiler::CompileSource(
       isolate_, std::string_view(source), std::string_view(loc.origin));
   boilerplate->set_func_globals(module_dict);
+
   isolate_->interpreter()->CallPython(boilerplate, Handle<PyObject>::null(),
                                       Handle<PyTuple>::null(),
                                       Handle<PyDict>::null(), module_dict);
 
-  return scope.Escape(module);
+  return module;
 }
 
 }  // namespace saauso::internal

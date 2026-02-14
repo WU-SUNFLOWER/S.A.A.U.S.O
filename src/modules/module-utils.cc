@@ -8,6 +8,7 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -62,7 +63,7 @@ bool ModuleUtils::IsPackageModule(Handle<PyObject> module) {
   if (dict.is_null()) {
     return false;
   }
-  Handle<PyObject> path = dict->Get(PyString::NewInstance("__path__"));
+  Handle<PyObject> path = dict->Get(ST(path));
   return !path.is_null() && IsPyList(path);
 }
 
@@ -71,7 +72,7 @@ Handle<PyList> ModuleUtils::GetPackagePathList(Handle<PyObject> module) {
   if (dict.is_null()) {
     return Handle<PyList>::null();
   }
-  Handle<PyObject> path_obj = dict->Get(PyString::NewInstance("__path__"));
+  Handle<PyObject> path_obj = dict->Get(ST(path));
   if (path_obj.is_null() || !IsPyList(path_obj)) {
     return Handle<PyList>::null();
   }

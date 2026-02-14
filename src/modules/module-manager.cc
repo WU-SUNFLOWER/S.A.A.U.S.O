@@ -14,9 +14,9 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/modules/builtin-module-registry.h"
-#include "src/modules/module-executor.h"
 #include "src/modules/module-finder.h"
 #include "src/modules/module-importer.h"
+#include "src/modules/module-loader.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-module.h"
@@ -24,6 +24,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -33,13 +34,10 @@ Handle<PyModule> InitSysModule(Isolate* isolate, ModuleManager* manager) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module = PyModule::NewInstance();
-  Handle<PyObject> module_obj(module);
-  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  PyDict::Put(module_dict, PyString::NewInstance("__name__"),
-              PyString::NewInstance("sys"));
-  PyDict::Put(module_dict, PyString::NewInstance("__package__"),
-              PyString::NewInstance(""));
+  PyDict::Put(module_dict, ST(name), PyString::NewInstance("sys"));
+  PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
   PyDict::Put(module_dict, PyString::NewInstance("modules"),
               manager->modules());
   PyDict::Put(module_dict, PyString::NewInstance("path"), manager->path());
@@ -56,8 +54,8 @@ Handle<PyModule> InitSysModule(Isolate* isolate, ModuleManager* manager) {
 ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
   builtin_registry_ = std::make_unique<BuiltinModuleRegistry>();
   finder_ = std::make_unique<ModuleFinder>();
-  executor_ = std::make_unique<ModuleExecutor>(isolate_, finder_.get(), this,
-                                               builtin_registry_.get());
+  loader_ = std::make_unique<ModuleLoader>(isolate_, finder_.get(), this,
+                                           builtin_registry_.get());
   importer_ = std::make_unique<ModuleImporter>(this);
   InitializeSysState();
   RegisterBuiltinModules();

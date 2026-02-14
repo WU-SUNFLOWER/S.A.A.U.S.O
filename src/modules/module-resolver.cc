@@ -12,6 +12,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -74,8 +75,7 @@ std::string ModuleResolver::ResolvePackageFromGlobals(Handle<PyDict> globals) {
     return std::string();
   }
 
-  Handle<PyObject> package_obj =
-      globals->Get(PyString::NewInstance("__package__"));
+  Handle<PyObject> package_obj = globals->Get(ST(package));
   if (!package_obj.is_null()) {
     if (!IsPyString(package_obj)) {
       std::fprintf(stderr, "TypeError: __package__ must be a string\n");
@@ -84,7 +84,7 @@ std::string ModuleResolver::ResolvePackageFromGlobals(Handle<PyDict> globals) {
     return ModuleUtils::ToStdString(Handle<PyString>::cast(package_obj));
   }
 
-  Handle<PyObject> name_obj = globals->Get(PyString::NewInstance("__name__"));
+  Handle<PyObject> name_obj = globals->Get(ST(name));
   if (name_obj.is_null() || !IsPyString(name_obj)) {
     std::fprintf(stderr, "ImportError: missing __name__ in globals\n");
     std::exit(1);
@@ -92,7 +92,7 @@ std::string ModuleResolver::ResolvePackageFromGlobals(Handle<PyDict> globals) {
 
   std::string name_str =
       ModuleUtils::ToStdString(Handle<PyString>::cast(name_obj));
-  bool is_package = !globals->Get(PyString::NewInstance("__path__")).is_null();
+  bool is_package = !globals->Get(ST(path)).is_null();
   if (is_package) {
     return name_str;
   }
