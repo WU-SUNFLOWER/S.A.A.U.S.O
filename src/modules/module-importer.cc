@@ -45,7 +45,7 @@ Handle<PyObject> ApplyImportReturnSemantics(Handle<PyDict> modules_dict,
   return last_module;
 }
 
-void BindChildToParent(Handle<PyDict> modules_dict,
+void LinkChildToParent(Handle<PyDict> modules_dict,
                        Handle<PyString> parent_name,
                        Handle<PyString> child_short_name,
                        Handle<PyObject> child) {
@@ -122,7 +122,7 @@ Handle<PyObject> ModuleImporter::LinkAndImportModuleImpl(
         int64_t child_end = dot - 1;
         Handle<PyString> child_short_name_obj =
             PyString::Slice(fullname, child_begin, child_end);
-        BindChildToParent(modules_dict, parent_part_name_obj,
+        LinkChildToParent(modules_dict, parent_part_name_obj,
                           child_short_name_obj, loaded);
       }
     }
