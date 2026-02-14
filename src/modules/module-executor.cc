@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <string_view>
 
 #include "src/code/compiler.h"
@@ -13,6 +14,8 @@
 #include "src/interpreter/interpreter.h"
 #include "src/modules/builtin-module-registry.h"
 #include "src/modules/module-finder.h"
+#include "src/modules/module-manager.h"
+#include "src/modules/module-utils.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -28,29 +31,8 @@ namespace saauso::internal {
 
 namespace {
 
-std::string ToStdString(Handle<PyString> s) {
-  if (s.is_null()) {
-    return std::string();
-  }
-  return std::string(s->buffer(), static_cast<size_t>(s->length()));
-}
-
-std::string JoinModuleName(const std::vector<std::string>& parts,
-                           size_t count) {
-  std::string out;
-  for (size_t i = 0; i < count; ++i) {
-    if (i != 0) {
-      out.push_back('.');
-    }
-    out.append(parts[i]);
-  }
-  return out;
-}
-
 void InitializeModuleDict(Handle<PyModule> module,
                           Handle<PyString> fullname,
-                          const std::vector<std::string>& parts,
-                          size_t part_index,
                           const ModuleLocation& loc) {
   Handle<PyObject> module_obj(module);
   Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
@@ -59,15 +41,17 @@ void InitializeModuleDict(Handle<PyModule> module,
 
   if (loc.is_package) {
     PyDict::Put(module_dict, PyString::NewInstance("__package__"), fullname);
-  } else if (part_index == 0) {
-    PyDict::Put(module_dict, PyString::NewInstance("__package__"),
-                PyString::NewInstance(""));
   } else {
-    std::string parent_name = JoinModuleName(parts, part_index);
-    PyDict::Put(
-        module_dict, PyString::NewInstance("__package__"),
-        PyString::NewInstance(parent_name.c_str(),
-                              static_cast<int64_t>(parent_name.size())));
+    std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
+    size_t dot = fullname_view.rfind('.');
+    if (dot == std::string_view::npos) {
+      PyDict::Put(module_dict, PyString::NewInstance("__package__"),
+                  PyString::NewInstance(""));
+    } else {
+      PyDict::Put(module_dict, PyString::NewInstance("__package__"),
+                  PyString::NewInstance(fullname_view.data(),
+                                        static_cast<int64_t>(dot)));
+    }
   }
 
   PyDict::Put(module_dict, PyString::NewInstance("__file__"),
@@ -88,40 +72,42 @@ void InitializeModuleDict(Handle<PyModule> module,
 
 }  // namespace
 
-ModuleExecutor::ModuleExecutor(Isolate* isolate, ModuleFinder* finder)
-    : isolate_(isolate), finder_(finder) {}
+ModuleExecutor::ModuleExecutor(Isolate* isolate,
+                               ModuleFinder* finder,
+                               ModuleManager* manager,
+                               BuiltinModuleRegistry* builtin_registry)
+    : isolate_(isolate),
+      finder_(finder),
+      manager_(manager),
+      builtin_registry_(builtin_registry) {}
 
 Handle<PyObject> ModuleExecutor::LoadModulePart(
-    Handle<PyDict> modules_dict,
     Handle<PyString> fullname,
-    const std::vector<std::string>& parts,
-    size_t part_index,
-    const std::vector<std::string>& search_paths,
-    BuiltinModuleRegistry* builtin_registry,
-    ModuleManager* manager) {
+    const std::vector<std::string>& search_paths) {
   EscapableHandleScope scope;
 
   BuiltinModuleInitFunc builtin_init = nullptr;
-  if (builtin_registry != nullptr) {
-    builtin_init = builtin_registry->Find(ToStdString(fullname));
+  if (builtin_registry_ != nullptr) {
+    builtin_init = builtin_registry_->Find(ModuleUtils::ToStringView(fullname));
   }
   if (builtin_init != nullptr) {
-    Handle<PyModule> module = builtin_init(isolate_, manager);
-    return scope.Escape(Handle<PyObject>(module));
+    Handle<PyModule> module = builtin_init(isolate_, manager_);
+    Handle<PyObject> module_obj(module);
+    Handle<PyDict> modules_dict = manager_->modules();
+    PyDict::Put(modules_dict, fullname, module_obj);
+    return scope.Escape(module_obj);
   }
 
-  std::vector<std::string> relative_parts;
-  if (part_index == 0) {
-    relative_parts = std::vector<std::string>(parts.begin(), parts.begin() + 1);
-  } else {
-    relative_parts = std::vector<std::string>{parts[part_index]};
-  }
+  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
+  size_t dot = fullname_view.rfind('.');
+  std::string_view relative_name = dot == std::string_view::npos
+                                       ? fullname_view
+                                       : fullname_view.substr(dot + 1);
 
-  ModuleLocation loc =
-      finder_->FindModuleLocation(search_paths, relative_parts);
+  ModuleLocation loc = finder_->FindModuleLocation(search_paths, relative_name);
   if (loc.origin.empty()) {
-    std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
-                 ToStdString(fullname).c_str());
+    std::fprintf(stderr, "ModuleNotFoundError: No module named '%.*s'\n",
+                 static_cast<int>(fullname_view.size()), fullname_view.data());
     std::exit(1);
   }
 
@@ -132,9 +118,10 @@ Handle<PyObject> ModuleExecutor::LoadModulePart(
   }
 
   Handle<PyModule> module = PyModule::NewInstance();
-  InitializeModuleDict(module, fullname, parts, part_index, loc);
+  InitializeModuleDict(module, fullname, loc);
 
   Handle<PyObject> module_obj(module);
+  Handle<PyDict> modules_dict = manager_->modules();
   PyDict::Put(modules_dict, fullname, module_obj);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);

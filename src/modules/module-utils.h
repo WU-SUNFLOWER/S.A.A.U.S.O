@@ -21,6 +21,7 @@ class PyString;
 class ModuleUtils final {
  public:
   static std::string ToStdString(Handle<PyString> s);
+  static std::string_view ToStringView(Handle<PyString> s);
 
   static std::vector<std::string> SplitModuleName(std::string_view name);
   static std::string JoinModuleName(const std::vector<std::string>& parts,
@@ -33,4 +34,3 @@ class ModuleUtils final {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_MODULE_UTILS_H_
-

@@ -18,6 +18,13 @@ std::string ModuleUtils::ToStdString(Handle<PyString> s) {
   return std::string(s->buffer(), static_cast<size_t>(s->length()));
 }
 
+std::string_view ModuleUtils::ToStringView(Handle<PyString> s) {
+  if (s.is_null()) {
+    return std::string_view();
+  }
+  return std::string_view(s->buffer(), static_cast<size_t>(s->length()));
+}
+
 std::vector<std::string> ModuleUtils::SplitModuleName(std::string_view name) {
   std::vector<std::string> parts;
   size_t start = 0;
@@ -72,4 +79,3 @@ Handle<PyList> ModuleUtils::GetPackagePathList(Handle<PyObject> module) {
 }
 
 }  // namespace saauso::internal
-

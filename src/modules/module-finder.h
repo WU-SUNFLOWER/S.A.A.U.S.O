@@ -6,6 +6,7 @@
 #define SAAUSO_MODULES_MODULE_FINDER_H_
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace saauso::internal {
@@ -23,9 +24,8 @@ class ModuleFinder final {
   ModuleFinder& operator=(const ModuleFinder&) = delete;
   ~ModuleFinder() = default;
 
-  ModuleLocation FindModuleLocation(
-      const std::vector<std::string>& search_paths,
-      const std::vector<std::string>& relative_parts) const;
+  ModuleLocation FindModuleLocation(const std::vector<std::string>& search_paths,
+                                    std::string_view relative_name) const;
 
   bool ReadModuleSource(const ModuleLocation& location, std::string* out) const;
 };
@@ -33,4 +33,3 @@ class ModuleFinder final {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_MODULE_FINDER_H_
-

@@ -12,13 +12,10 @@ namespace saauso::internal {
 
 ModuleLocation ModuleFinder::FindModuleLocation(
     const std::vector<std::string>& search_paths,
-    const std::vector<std::string>& relative_parts) const {
+    std::string_view relative_name) const {
   ModuleLocation result;
 
-  std::filesystem::path relative;
-  for (const auto& part : relative_parts) {
-    relative /= std::filesystem::path(part);
-  }
+  std::filesystem::path relative{std::string(relative_name)};
 
   for (const auto& base : search_paths) {
     std::filesystem::path base_path(base);
@@ -52,4 +49,3 @@ bool ModuleFinder::ReadModuleSource(const ModuleLocation& location,
 }
 
 }  // namespace saauso::internal
-

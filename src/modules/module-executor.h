@@ -16,28 +16,29 @@ namespace saauso::internal {
 class Isolate;
 class BuiltinModuleRegistry;
 class ModuleFinder;
+class ModuleManager;
 class PyDict;
 class PyObject;
 class PyString;
 
 class ModuleExecutor final {
  public:
-  ModuleExecutor(Isolate* isolate, ModuleFinder* finder);
+  ModuleExecutor(Isolate* isolate,
+                 ModuleFinder* finder,
+                 ModuleManager* manager,
+                 BuiltinModuleRegistry* builtin_registry);
   ModuleExecutor(const ModuleExecutor&) = delete;
   ModuleExecutor& operator=(const ModuleExecutor&) = delete;
   ~ModuleExecutor() = default;
 
-  Handle<PyObject> LoadModulePart(Handle<PyDict> modules_dict,
-                                  Handle<PyString> fullname,
-                                  const std::vector<std::string>& parts,
-                                  size_t part_index,
-                                  const std::vector<std::string>& search_paths,
-                                  BuiltinModuleRegistry* builtin_registry,
-                                  ModuleManager* manager);
+  Handle<PyObject> LoadModulePart(Handle<PyString> fullname,
+                                  const std::vector<std::string>& search_paths);
 
  private:
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};
+  ModuleManager* manager_{nullptr};
+  BuiltinModuleRegistry* builtin_registry_{nullptr};
 };
 
 }  // namespace saauso::internal

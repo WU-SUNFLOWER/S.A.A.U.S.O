@@ -10,7 +10,6 @@
 #include <string_view>
 #include <vector>
 
-#include "src/modules/builtin-module-registry.h"
 #include "src/modules/module-executor.h"
 #include "src/modules/module-manager.h"
 #include "src/modules/module-resolver.h"
@@ -54,15 +53,15 @@ Handle<PyList> GetPackagePathListOrDie(Handle<PyObject> module) {
   return path;
 }
 
-Handle<PyObject> ApplyImportReturnSemantics(
-    Handle<PyDict> modules_dict,
-    const std::vector<std::string>& parts,
-    Handle<PyTuple> fromlist,
-    Handle<PyObject> last_module) {
+Handle<PyObject> ApplyImportReturnSemantics(Handle<PyDict> modules_dict,
+                                            std::string_view fullname,
+                                            Handle<PyTuple> fromlist,
+                                            Handle<PyObject> last_module) {
   bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
-  if (!has_fromlist && parts.size() > 1) {
-    Handle<PyString> top_name = PyString::NewInstance(
-        parts[0].c_str(), static_cast<int64_t>(parts[0].size()));
+  size_t dot = fullname.find('.');
+  if (!has_fromlist && dot != std::string_view::npos) {
+    Handle<PyString> top_name =
+        PyString::NewInstance(fullname.data(), static_cast<int64_t>(dot));
     return modules_dict->Get(top_name);
   }
   return last_module;
@@ -90,46 +89,69 @@ void BindChildToParent(Handle<PyDict> modules_dict,
       child);
 }
 
+bool IsValidModuleName(std::string_view fullname) {
+  if (fullname.empty()) {
+    return false;
+  }
+  if (fullname.front() == '.' || fullname.back() == '.') {
+    return false;
+  }
+  for (size_t i = 1; i < fullname.size(); ++i) {
+    if (fullname[i] == '.' && fullname[i - 1] == '.') {
+      return false;
+    }
+  }
+  return true;
+}
+
 Handle<PyObject> ImportDottedName(ModuleManager* manager,
-                                  BuiltinModuleRegistry* builtin_registry,
                                   Handle<PyDict> modules_dict,
-                                  const std::vector<std::string>& parts) {
+                                  std::string_view fullname) {
   Handle<PyObject> last_module;
 
-  for (size_t i = 0; i < parts.size(); ++i) {
-    std::string part_name = ModuleUtils::JoinModuleName(parts, i + 1);
-    Handle<PyString> part_name_obj = PyString::NewInstance(
-        part_name.c_str(), static_cast<int64_t>(part_name.size()));
+  size_t segment_start = 0;
+  while (segment_start <= fullname.size()) {
+    size_t dot = fullname.find('.', segment_start);
+    if (dot == std::string_view::npos) {
+      dot = fullname.size();
+    }
 
+    std::string_view segment =
+        fullname.substr(segment_start, dot - segment_start);
+    Handle<PyString> part_name_obj =
+        PyString::NewInstance(fullname.data(), static_cast<int64_t>(dot));
     Handle<PyObject> cached = modules_dict->Get(part_name_obj);
     if (!cached.is_null()) {
       last_module = cached;
     } else {
       std::vector<std::string> search_paths;
-      if (i == 0) {
+      if (segment_start == 0) {
         search_paths = ExtractSearchPaths(manager->path());
       } else {
         search_paths = ExtractSearchPaths(GetPackagePathListOrDie(last_module));
       }
 
-      Handle<PyObject> loaded = manager->executor()->LoadModulePart(
-          modules_dict, part_name_obj, parts, i, search_paths, builtin_registry,
-          manager);
-
-      PyDict::Put(modules_dict, part_name_obj, loaded);
+      Handle<PyObject> loaded =
+          manager->executor()->LoadModulePart(part_name_obj, search_paths);
       last_module = loaded;
 
-      if (i > 0) {
-        std::string parent_name = ModuleUtils::JoinModuleName(parts, i);
-        BindChildToParent(modules_dict, parent_name, parts[i], loaded);
+      if (segment_start != 0) {
+        std::string_view parent_fullname =
+            fullname.substr(0, segment_start - 1);
+        BindChildToParent(modules_dict, parent_fullname, segment, loaded);
       }
     }
 
-    if (i + 1 < parts.size() && !ModuleUtils::IsPackageModule(last_module)) {
+    if (dot != fullname.size() && !ModuleUtils::IsPackageModule(last_module)) {
       std::fprintf(stderr, "ImportError: '%s' is not a package\n",
-                   part_name.c_str());
+                   std::string(fullname.substr(0, dot)).c_str());
       std::exit(1);
     }
+
+    if (dot == fullname.size()) {
+      break;
+    }
+    segment_start = dot + 1;
   }
 
   return last_module;
@@ -145,18 +167,17 @@ Handle<PyObject> ModuleImporter::ImportModule(ModuleManager* manager,
   EscapableHandleScope scope;
 
   std::string fullname = ModuleResolver::ResolveFullName(name, level, globals);
-  std::vector<std::string> parts = ModuleUtils::SplitModuleName(fullname);
-  if (parts.empty()) {
+  if (!IsValidModuleName(fullname)) {
     std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%s'\n",
                  fullname.c_str());
     std::exit(1);
   }
 
   Handle<PyDict> modules_dict = manager->modules();
-  Handle<PyObject> last_module = ImportDottedName(
-      manager, manager->builtin_registry_.get(), modules_dict, parts);
-  Handle<PyObject> result =
-      ApplyImportReturnSemantics(modules_dict, parts, fromlist, last_module);
+  Handle<PyObject> last_module =
+      ImportDottedName(manager, modules_dict, std::string_view(fullname));
+  Handle<PyObject> result = ApplyImportReturnSemantics(
+      modules_dict, std::string_view(fullname), fromlist, last_module);
 
   return scope.Escape(result);
 }
