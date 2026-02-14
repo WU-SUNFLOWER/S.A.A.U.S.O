@@ -203,6 +203,10 @@ bool PyString::IsGreaterThan(Tagged<PyString> other) {
   return length_ > other->length();
 }
 
+Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from) {
+  return Slice(self, from, self->length() - 1);
+}
+
 Handle<PyString> PyString::Slice(Handle<PyString> self,
                                  int64_t from,
                                  int64_t to) {

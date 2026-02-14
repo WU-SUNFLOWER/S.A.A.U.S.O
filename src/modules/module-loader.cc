@@ -6,8 +6,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <string>
-#include <string_view>
 
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
@@ -94,16 +92,19 @@ Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
     return scope.Escape(module_obj);
   }
 
-  size_t dot = fullname_view.rfind('.');
-  std::string_view relative_name = dot == std::string_view::npos
-                                       ? fullname_view
-                                       : fullname_view.substr(dot + 1);
+  auto dot_index = fullname->LastIndexOf(ST(dot));
+  Handle<PyString> relative_name;
+  if (dot_index == PyString::kNotFound) {
+    relative_name = fullname;
+  } else {
+    relative_name = PyString::Slice(fullname, dot_index + 1);
+  }
 
   ModuleLocation loc =
       finder_->FindModuleLocation(search_path_list, relative_name);
   if (loc.origin.empty()) {
-    std::fprintf(stderr, "ModuleNotFoundError: No module named '%.*s'\n",
-                 static_cast<int>(fullname_view.size()), fullname_view.data());
+    std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
+                 fullname->buffer());
     std::exit(1);
   }
 

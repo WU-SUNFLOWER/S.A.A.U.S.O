@@ -18,14 +18,14 @@ namespace saauso::internal {
 
 ModuleLocation ModuleFinder::FindModuleLocation(
     Handle<PyList> search_path_list,
-    std::string_view relative_name) const {
+    Handle<PyString> relative_name) const {
   HandleScope scope;
   ModuleLocation result;
   if (search_path_list.is_null()) {
     return result;
   }
 
-  std::filesystem::path relative{relative_name};
+  std::filesystem::path relative{ModuleUtils::ToStringView(relative_name)};
 
   for (int64_t i = 0; i < search_path_list->length(); ++i) {
     Handle<PyObject> elem = search_path_list->Get(i);

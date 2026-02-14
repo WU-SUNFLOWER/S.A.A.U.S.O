@@ -78,6 +78,8 @@ class PyString : public PyObject {
   }
 
   static Handle<PyString> Slice(Handle<PyString> self,
+                                int64_t from);
+  static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from,
                                 int64_t to);
   static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);

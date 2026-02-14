@@ -29,9 +29,10 @@ class ModuleFinder final {
   ~ModuleFinder() = default;
 
   ModuleLocation FindModuleLocation(Handle<PyList> search_path_list,
-                                    std::string_view relative_name) const;
+                                    Handle<PyString> relative_name) const;
 
-  bool ReadModuleSource(const ModuleLocation& location, Handle<PyString>& out) const;
+  bool ReadModuleSource(const ModuleLocation& location,
+                        Handle<PyString>& out) const;
 };
 
 }  // namespace saauso::internal
