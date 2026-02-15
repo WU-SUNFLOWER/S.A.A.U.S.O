@@ -78,11 +78,9 @@ Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
                                               Handle<PyList> search_path_list) {
   EscapableHandleScope scope;
 
-  std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
-
   BuiltinModuleInitFunc builtin_init = nullptr;
   if (builtin_registry_ != nullptr) {
-    builtin_init = builtin_registry_->Find(fullname_view);
+    builtin_init = builtin_registry_->Find(fullname);
   }
   if (builtin_init != nullptr) {
     Handle<PyModule> module = builtin_init(isolate_, manager_);

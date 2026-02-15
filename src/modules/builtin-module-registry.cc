@@ -4,23 +4,35 @@
 
 #include "src/modules/builtin-module-registry.h"
 
+#include "src/objects/py-string.h"
+#include "src/objects/visitors.h"
+
 namespace saauso::internal {
 
-void BuiltinModuleRegistry::Register(std::string_view name,
+void BuiltinModuleRegistry::Register(Handle<PyString> name,
                                      BuiltinModuleInitFunc init) {
   Entry entry;
-  entry.name = name;
+  entry.name = *name;
   entry.init = init;
-  entries_.push_back(std::move(entry));
+  entries_.PushBack(std::move(entry));
 }
 
-BuiltinModuleInitFunc BuiltinModuleRegistry::Find(std::string_view name) const {
-  for (const auto& entry : entries_) {
-    if (entry.name == name) {
+BuiltinModuleInitFunc BuiltinModuleRegistry::Find(Handle<PyString> name) const {
+  for (size_t i = 0; i < entries_.length(); ++i) {
+    const auto& entry = entries_.Get(i);
+    if (name->IsEqualTo(entry.name)) {
       return entry.init;
     }
   }
+
   return nullptr;
+}
+
+void BuiltinModuleRegistry::Iterate(ObjectVisitor* v) {
+  for (size_t i = 0; i < entries_.length(); ++i) {
+    auto& entry = entries_.Get(i);
+    v->VisitPointer(reinterpret_cast<Tagged<PyObject>*>(&entry.name));
+  }
 }
 
 }  // namespace saauso::internal

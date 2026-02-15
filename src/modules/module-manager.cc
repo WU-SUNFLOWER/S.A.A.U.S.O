@@ -66,6 +66,7 @@ ModuleManager::~ModuleManager() = default;
 void ModuleManager::Iterate(ObjectVisitor* v) {
   v->VisitPointer(reinterpret_cast<Tagged<PyObject>*>(&modules_));
   v->VisitPointer(reinterpret_cast<Tagged<PyObject>*>(&path_));
+  builtin_registry_->Iterate(v);
 }
 
 Handle<PyDict> ModuleManager::modules() const {
@@ -95,13 +96,8 @@ void ModuleManager::InitializeSysState() {
   path_ = *path;
 }
 
-BuiltinModuleInitFunc ModuleManager::FindBuiltinModule(
-    std::string_view name) const {
-  return builtin_registry_->Find(name);
-}
-
 void ModuleManager::RegisterBuiltinModules() {
-  builtin_registry_->Register("sys", &InitSysModule);
+  builtin_registry_->Register(PyString::NewInstance("sys"), &InitSysModule);
 }
 
 Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
