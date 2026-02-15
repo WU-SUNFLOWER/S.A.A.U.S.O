@@ -73,7 +73,6 @@ class ModuleManager final {
   friend class ModuleImporter;
 
   void InitializeSysState();
-  void RegisterBuiltinModules();
 
   Isolate* isolate_{nullptr};
   std::unique_ptr<BuiltinModuleRegistry> builtin_registry_;

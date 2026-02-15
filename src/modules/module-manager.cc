@@ -37,7 +37,7 @@ ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
                                            builtin_registry_.get());
   importer_ = std::make_unique<ModuleImporter>(this);
   InitializeSysState();
-  RegisterBuiltinModules();
+  builtin_registry_->BootstrapAllBuiltinModules();
 }
 
 ModuleManager::~ModuleManager() = default;
@@ -75,9 +75,6 @@ void ModuleManager::InitializeSysState() {
   path_ = *path;
 }
 
-void ModuleManager::RegisterBuiltinModules() {
-  builtin_registry_->BootstrapAllBuiltinModules();
-}
 
 Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
                                              Handle<PyTuple> fromlist,
