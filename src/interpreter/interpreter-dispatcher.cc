@@ -373,10 +373,10 @@ void Interpreter::EvalCurrentFrame() {
     sub_module_fullname =
         PyString::Append(sub_module_fullname, sub_module_name);
 
-    Handle<PyTuple> synthetic_fromlist = PyTuple::NewInstance(1);
+    auto synthetic_fromlist = PyTuple::NewInstance(1);
     synthetic_fromlist->SetInternal(0, sub_module_name);
 
-    Handle<PyObject> submodule = isolate_->module_manager()->ImportModule(
+    auto submodule = isolate_->module_manager()->ImportModule(
         sub_module_fullname, synthetic_fromlist, 0, current_frame_->globals());
     PUSH(submodule);
   })

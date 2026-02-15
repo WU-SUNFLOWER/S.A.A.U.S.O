@@ -342,10 +342,7 @@ Handle<PyObject> Math_IsInf(Handle<PyObject> host,
 
 }  // namespace
 
-Handle<PyModule> InitMathModule(Isolate* isolate, ModuleManager* manager) {
-  (void)isolate;
-  (void)manager;
-
+BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   EscapableHandleScope scope;
   Handle<PyModule> module = PyModule::NewInstance();
   Handle<PyDict> module_dict = PyObject::GetProperties(module);

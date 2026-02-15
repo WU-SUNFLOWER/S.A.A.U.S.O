@@ -144,10 +144,7 @@ Handle<PyObject> Time_Sleep(Handle<PyObject> host,
 
 }  // namespace
 
-Handle<PyModule> InitTimeModule(Isolate* isolate, ModuleManager* manager) {
-  (void)isolate;
-  (void)manager;
-
+BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
   EscapableHandleScope scope;
   Handle<PyModule> module = PyModule::NewInstance();
   Handle<PyDict> module_dict = PyObject::GetProperties(module);

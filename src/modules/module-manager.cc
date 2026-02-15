@@ -28,32 +28,6 @@
 
 namespace saauso::internal {
 
-// 内建模块的 init 函数在对应的 builtin-*-module.cc 中实现。
-Handle<PyModule> InitMathModule(Isolate* isolate, ModuleManager* manager);
-Handle<PyModule> InitRandomModule(Isolate* isolate, ModuleManager* manager);
-Handle<PyModule> InitTimeModule(Isolate* isolate, ModuleManager* manager);
-
-namespace {
-
-Handle<PyModule> InitSysModule(Isolate* isolate, ModuleManager* manager) {
-  EscapableHandleScope scope;
-
-  Handle<PyModule> module = PyModule::NewInstance();
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  PyDict::Put(module_dict, ST(name), PyString::NewInstance("sys"));
-  PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
-  PyDict::Put(module_dict, PyString::NewInstance("modules"),
-              manager->modules());
-  PyDict::Put(module_dict, PyString::NewInstance("path"), manager->path());
-  PyDict::Put(module_dict, PyString::NewInstance("version"),
-              PyString::NewInstance("3.12 (saauso mvp)"));
-
-  return scope.Escape(module);
-}
-
-}  // namespace
-
 ////////////////////////////////////////////////////////////////////////////////////
 
 ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
@@ -102,11 +76,7 @@ void ModuleManager::InitializeSysState() {
 }
 
 void ModuleManager::RegisterBuiltinModules() {
-  builtin_registry_->Register(PyString::NewInstance("sys"), &InitSysModule);
-  builtin_registry_->Register(PyString::NewInstance("math"), &InitMathModule);
-  builtin_registry_->Register(PyString::NewInstance("random"),
-                              &InitRandomModule);
-  builtin_registry_->Register(PyString::NewInstance("time"), &InitTimeModule);
+  builtin_registry_->BootstrapAllBuiltinModules();
 }
 
 Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,

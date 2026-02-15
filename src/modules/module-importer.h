@@ -16,6 +16,7 @@ class PyDict;
 class PyList;
 class PyObject;
 class PyString;
+class PyModule;
 class PyTuple;
 
 class ModuleImporter final {
@@ -30,21 +31,21 @@ class ModuleImporter final {
   // - fromlist: IMPORT_NAME 的 fromlist 参数，影响返回顶层包还是最后导入模块。
   // - level: 相对导入层级；0 表示绝对导入。
   // - globals: 当前执行上下文的 globals，用于解析相对导入基准包信息。
-  Handle<PyObject> ImportModule(Handle<PyString> name,
+  Handle<PyModule> ImportModule(Handle<PyString> name,
                                 Handle<PyTuple> fromlist,
                                 int64_t level,
                                 Handle<PyDict> globals);
 
  private:
   // 导入一个完整的绝对模块名（可能为 dotted-name），并返回最后一段模块对象。
-  Handle<PyObject> ImportModuleImpl(Handle<PyString> fullname);
+  Handle<PyModule> ImportModuleImpl(Handle<PyString> fullname);
 
   // 从 sys.modules 中获取模块；若未命中则按 search path 规则触发加载。
   // - part_fullname: 当前导入段的累积全名（例如 a.b.c 的第二段是 a.b）。
   // - is_top: 是否为顶层段（顶层使用 sys.path；非顶层使用
   // parent_module.__path__）。
   // - parent_module: 非顶层段对应的父模块（顶层段允许为 null）。
-  Handle<PyObject> GetOrLoadModulePart(Handle<PyString> part_fullname,
+  Handle<PyModule> GetOrLoadModulePart(Handle<PyString> part_fullname,
                                        bool is_top,
                                        Handle<PyObject> parent_module);
 
@@ -69,9 +70,9 @@ class ModuleImporter final {
   // 应用 IMPORT_NAME 的返回值语义：
   // - fromlist 为空且 fullname 含 dot 时，返回顶层包；
   // - 否则返回最后导入的模块对象。
-  Handle<PyObject> ApplyImportReturnSemantics(Handle<PyString> fullname,
+  Handle<PyModule> ApplyImportReturnSemantics(Handle<PyString> fullname,
                                               Handle<PyTuple> fromlist,
-                                              Handle<PyObject> last_module);
+                                              Handle<PyModule> last_module);
 
   Handle<PyDict> modules_dict();
 

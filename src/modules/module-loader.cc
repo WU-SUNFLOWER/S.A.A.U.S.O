@@ -73,20 +73,27 @@ ModuleLoader::ModuleLoader(Isolate* isolate,
       manager_(manager),
       builtin_registry_(builtin_registry) {}
 
-Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
+Handle<PyModule> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
                                               Handle<PyList> search_path_list) {
   EscapableHandleScope scope;
 
-  BuiltinModuleInitFunc builtin_init = nullptr;
-  if (builtin_registry_ != nullptr) {
-    builtin_init = builtin_registry_->Find(fullname);
-  }
-  if (builtin_init != nullptr) {
-    Handle<PyModule> module = builtin_init(isolate_, manager_);
-    Handle<PyObject> module_obj(module);
-    Handle<PyDict> modules_dict = manager_->modules();
-    PyDict::Put(modules_dict, fullname, module_obj);
-    return scope.Escape(module_obj);
+  Handle<PyModule> loaded_module =
+      LoadModulePartImpl(fullname, search_path_list);
+
+  // 将加载的模块保存到modules缓存
+  Handle<PyDict> modules_dict = manager_->modules();
+  PyDict::Put(modules_dict, fullname, loaded_module);
+
+  return scope.Escape(loaded_module);
+}
+
+Handle<PyModule> ModuleLoader::LoadModulePartImpl(
+    Handle<PyString> fullname,
+    Handle<PyList> search_path_list) {
+  // 先尝试查找是否命中builtin模块
+  Handle<PyModule> module = LoadAsBuiltinModule(fullname);
+  if (!module.is_null()) {
+    return module;
   }
 
   auto dot_index = fullname->LastIndexOf(ST(dot));
@@ -111,18 +118,25 @@ Handle<PyObject> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
     std::exit(1);
   }
 
-  Handle<PyModule> module = ExecuteModuleImpl(fullname, loc, source);
-  return scope.Escape(module);
+  module = ExecuteModuleInternal(fullname, loc, source);
+  return module;
 }
 
-Handle<PyModule> ModuleLoader::ExecuteModuleImpl(Handle<PyString> fullname,
-                                                 const ModuleLocation& loc,
-                                                 Handle<PyString> source) {
+Handle<PyModule> ModuleLoader::LoadAsBuiltinModule(Handle<PyString> fullname) {
+  BuiltinModuleInitFunc builtin_init = builtin_registry_->Find(fullname);
+  if (builtin_init == nullptr) {
+    return Handle<PyModule>::null();
+  }
+
+  Handle<PyModule> module = builtin_init(isolate_, manager_);
+  return module;
+}
+
+Handle<PyModule> ModuleLoader::ExecuteModuleInternal(Handle<PyString> fullname,
+                                                     const ModuleLocation& loc,
+                                                     Handle<PyString> source) {
   Handle<PyModule> module = PyModule::NewInstance();
   InitializeModuleDict(module, fullname, loc);
-
-  Handle<PyDict> modules_dict = manager_->modules();
-  PyDict::Put(modules_dict, fullname, module);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 

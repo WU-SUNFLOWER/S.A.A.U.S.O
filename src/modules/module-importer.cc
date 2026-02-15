@@ -13,6 +13,7 @@
 #include "src/modules/module-utils.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
@@ -49,7 +50,7 @@ ModulePartScanResult ScanNextPart(Handle<PyString> fullname,
 
 ModuleImporter::ModuleImporter(ModuleManager* manager) : manager_(manager) {}
 
-Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
+Handle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
                                               Handle<PyTuple> fromlist,
                                               int64_t level,
                                               Handle<PyDict> globals) {
@@ -63,15 +64,15 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
     std::exit(1);
   }
 
-  Handle<PyObject> last_module = ImportModuleImpl(fullname);
-  Handle<PyObject> result =
+  Handle<PyModule> last_module = ImportModuleImpl(fullname);
+  Handle<PyModule> result =
       ApplyImportReturnSemantics(fullname, fromlist, last_module);
 
   return scope.Escape(result);
 }
 
-Handle<PyObject> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
-  Handle<PyObject> last_module;
+Handle<PyModule> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
+  Handle<PyModule> last_module;
 
   int64_t segment_start = 0;
   while (true) {
@@ -79,7 +80,7 @@ Handle<PyObject> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
 
     Handle<PyString> part_module_fullname =
         PyString::Slice(fullname, 0, scan.part_end);
-    Handle<PyObject> part_module = GetOrLoadModulePart(
+    Handle<PyModule> part_module = GetOrLoadModulePart(
         part_module_fullname, segment_start == 0, last_module);
 
     if (segment_start != 0) {
@@ -103,14 +104,14 @@ Handle<PyObject> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
   return last_module;
 }
 
-Handle<PyObject> ModuleImporter::GetOrLoadModulePart(
+Handle<PyModule> ModuleImporter::GetOrLoadModulePart(
     Handle<PyString> part_fullname,
     bool is_top,
     Handle<PyObject> parent_module) {
   // Fast Path: 模块已经被缓存
   Handle<PyObject> cached = modules_dict()->Get(part_fullname);
   if (!cached.is_null()) {
-    return cached;
+    return Handle<PyModule>::cast(cached);
   }
 
   // Slow Path: 走module loader加载模块
@@ -161,16 +162,16 @@ void ModuleImporter::EnsurePackageForNextSegment(
   }
 }
 
-Handle<PyObject> ModuleImporter::ApplyImportReturnSemantics(
+Handle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
     Handle<PyString> fullname,
     Handle<PyTuple> fromlist,
-    Handle<PyObject> last_module) {
+    Handle<PyModule> last_module) {
   bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
   int64_t dot = fullname->IndexOf(ST(dot));
   if (!has_fromlist && dot != PyString::kNotFound) {
     int64_t top_end = dot - 1;
     Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
-    return modules_dict()->Get(top_name);
+    return Handle<PyModule>::cast(modules_dict()->Get(top_name));
   }
   return last_module;
 }

@@ -16,7 +16,18 @@ class PyModule;
 using BuiltinModuleInitFunc = Handle<PyModule> (*)(Isolate* isolate,
                                                    ModuleManager* manager);
 
+#define BUILTIN_MODULE_INIT_FUNC(module_name, func_name) \
+  Handle<PyModule> func_name(Isolate* isolate, ModuleManager* manager)
+
+#define DECL_BUILTIN_MODULE_INIT_FUNC(module_name, func_name) \
+  BUILTIN_MODULE_INIT_FUNC(module_name, func_name);
+
+#define BUILTIN_MODULE_LIST(V)  \
+  V("sys", InitSysModule)       \
+  V("math", InitMathModule)     \
+  V("random", InitRandomModule) \
+  V("time", InitTimeModule)
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_BUILTIN_MODULE_H_
-

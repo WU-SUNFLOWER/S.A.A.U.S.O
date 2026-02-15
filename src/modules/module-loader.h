@@ -32,13 +32,18 @@ class ModuleLoader final {
   ModuleLoader& operator=(const ModuleLoader&) = delete;
   ~ModuleLoader() = default;
 
-  Handle<PyObject> LoadModulePart(Handle<PyString> fullname,
+  Handle<PyModule> LoadModulePart(Handle<PyString> fullname,
                                   Handle<PyList> search_path_list);
 
  private:
-  Handle<PyModule> ExecuteModuleImpl(Handle<PyString> fullname,
-                                     const ModuleLocation& loc,
-                                     Handle<PyString> source);
+  Handle<PyModule> LoadModulePartImpl(Handle<PyString> fullname,
+                                      Handle<PyList> search_path_list);
+
+  Handle<PyModule> LoadAsBuiltinModule(Handle<PyString> fullname);
+
+  Handle<PyModule> ExecuteModuleInternal(Handle<PyString> fullname,
+                                         const ModuleLocation& loc,
+                                         Handle<PyString> source);
 
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};

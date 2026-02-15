@@ -9,12 +9,23 @@
 
 namespace saauso::internal {
 
+BUILTIN_MODULE_LIST(DECL_BUILTIN_MODULE_INIT_FUNC);
+
 void BuiltinModuleRegistry::Register(Handle<PyString> name,
                                      BuiltinModuleInitFunc init) {
   Entry entry;
   entry.name = *name;
   entry.init = init;
   entries_.PushBack(std::move(entry));
+}
+
+void BuiltinModuleRegistry::BootstrapAllBuiltinModules() {
+  HandleScope scope;
+
+#define REGISTER_BUILTIN_MODULE(module_name, func_name) \
+  Register(PyString::NewInstance(module_name), &func_name);
+  BUILTIN_MODULE_LIST(REGISTER_BUILTIN_MODULE)
+#undef REGISTER_BUILTIN_MODULE
 }
 
 BuiltinModuleInitFunc BuiltinModuleRegistry::Find(Handle<PyString> name) const {

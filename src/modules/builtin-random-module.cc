@@ -378,10 +378,7 @@ Handle<PyObject> Random_Shuffle(Handle<PyObject> host,
 
 }  // namespace
 
-Handle<PyModule> InitRandomModule(Isolate* isolate, ModuleManager* manager) {
-  (void)isolate;
-  (void)manager;
-
+BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
   EscapableHandleScope scope;
   Handle<PyModule> module = PyModule::NewInstance();
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
