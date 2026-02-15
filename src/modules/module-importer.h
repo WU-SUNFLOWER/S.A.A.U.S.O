@@ -64,8 +64,7 @@ class ModuleImporter final {
   // 如果当前段不是最后一段，则校验 module 必须为 package（存在 __path__
   // list）。
   void EnsurePackageForNextSegment(Handle<PyObject> module,
-                                   Handle<PyString> fullname,
-                                   int64_t dot);
+                                   Handle<PyString> module_fullname);
 
   // 应用 IMPORT_NAME 的返回值语义：
   // - fromlist 为空且 fullname 含 dot 时，返回顶层包；

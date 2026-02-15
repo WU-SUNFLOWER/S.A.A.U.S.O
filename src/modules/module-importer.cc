@@ -71,32 +71,32 @@ Handle<PyObject> ModuleImporter::ImportModule(Handle<PyString> name,
 }
 
 Handle<PyObject> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
-  Handle<PyObject> parent_module;
   Handle<PyObject> last_module;
 
   int64_t segment_start = 0;
   while (true) {
     ModulePartScanResult scan = ScanNextPart(fullname, segment_start);
 
-    Handle<PyString> part_fullname =
+    Handle<PyString> part_module_fullname =
         PyString::Slice(fullname, 0, scan.part_end);
-    Handle<PyObject> module =
-        GetOrLoadModulePart(part_fullname, segment_start == 0, parent_module);
+    Handle<PyObject> part_module = GetOrLoadModulePart(
+        part_module_fullname, segment_start == 0, last_module);
 
     if (segment_start != 0) {
-      Handle<PyString> child_short_name =
+      Handle<PyString> part_module_short_name =
           PyString::Slice(fullname, segment_start, scan.part_end);
-      BindChildModuleToParentNamespace(parent_module, child_short_name, module);
+      BindChildModuleToParentNamespace(last_module, part_module_short_name,
+                                       part_module);
     }
 
-    EnsurePackageForNextSegment(module, fullname, scan.dot);
-
-    last_module = module;
+    last_module = part_module;
     if (scan.is_last) {
       break;
     }
 
-    parent_module = module;
+    // 如果当前段不是最后一段，则对应 module 必须为 package
+    EnsurePackageForNextSegment(part_module, part_module_fullname);
+
     segment_start = scan.dot + 1;
   }
 
@@ -107,11 +107,13 @@ Handle<PyObject> ModuleImporter::GetOrLoadModulePart(
     Handle<PyString> part_fullname,
     bool is_top,
     Handle<PyObject> parent_module) {
+  // Fast Path: 模块已经被缓存
   Handle<PyObject> cached = modules_dict()->Get(part_fullname);
   if (!cached.is_null()) {
     return cached;
   }
 
+  // Slow Path: 走module loader加载模块
   Handle<PyList> search_path_list = SelectSearchPathList(is_top, parent_module);
   return manager_->loader()->LoadModulePart(part_fullname, search_path_list);
 }
@@ -120,6 +122,7 @@ Handle<PyList> ModuleImporter::SelectSearchPathList(
     bool is_top,
     Handle<PyObject> parent_module) {
   if (is_top) {
+    assert(parent_module.is_null());
     return manager_->path();
   }
 
@@ -136,15 +139,23 @@ void ModuleImporter::BindChildModuleToParentNamespace(
     Handle<PyString> child_short_name,
     Handle<PyObject> child_module) {
   Handle<PyDict> parent_dict = PyObject::GetProperties(parent_module);
+
+  // 如果父模块中已经链接了子模块，则不需要重复链接。
+  // 但应确保该子模块与当前准备链接的child_module是同一个module object对象。
+  if (parent_dict->Contains(child_short_name)) {
+    assert(parent_dict->Get(child_short_name).is_identical_to(child_module));
+    return;
+  }
+
   PyDict::Put(parent_dict, child_short_name, child_module);
 }
 
-void ModuleImporter::EnsurePackageForNextSegment(Handle<PyObject> module,
-                                                 Handle<PyString> fullname,
-                                                 int64_t dot) {
-  if (dot != fullname->length() && !ModuleUtils::IsPackageModule(module)) {
-    std::fprintf(stderr, "ImportError: '%.*s' is not a package\n",
-                 static_cast<int>(dot), fullname->buffer());
+void ModuleImporter::EnsurePackageForNextSegment(
+    Handle<PyObject> module,
+    Handle<PyString> module_fullname) {
+  if (!ModuleUtils::IsPackageModule(module)) {
+    std::fprintf(stderr, "ImportError: '%s' is not a package\n",
+                 module_fullname->buffer());
     std::exit(1);
   }
 }
