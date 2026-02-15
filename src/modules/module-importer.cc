@@ -121,6 +121,7 @@ Handle<PyObject> ModuleImporter::GetOrLoadModulePart(
 Handle<PyList> ModuleImporter::SelectSearchPathList(
     bool is_top,
     Handle<PyObject> parent_module) {
+  // 顶层模块直接走sys.path进行查找
   if (is_top) {
     assert(parent_module.is_null());
     return manager_->path();
