@@ -26,6 +26,8 @@ source_set("saauso_core") {
     "//src/utils/file-utils.h",
     "//src/utils/number-conversion.cc",
     "//src/utils/number-conversion.h",
+    "//src/utils/random-number-generator.cc",
+    "//src/utils/random-number-generator.h",
     "//src/utils/stable-merge-sort.cc",
     "//src/utils/stable-merge-sort.h",
     "//src/utils/string-search.cc",
@@ -162,9 +164,12 @@ source_set("saauso_core") {
     "//src/runtime/string-table.h",
 
     # modules (模块系统)
+    "//src/modules/builtin-math-module.cc",
     "//src/modules/builtin-module-registry.cc",
     "//src/modules/builtin-module-registry.h",
     "//src/modules/builtin-module.h",
+    "//src/modules/builtin-random-module.cc",
+    "//src/modules/builtin-time-module.cc",
     "//src/modules/module-finder.cc",
     "//src/modules/module-finder.h",
     "//src/modules/module-importer.cc",

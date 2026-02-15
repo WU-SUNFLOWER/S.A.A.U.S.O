@@ -28,6 +28,11 @@
 
 namespace saauso::internal {
 
+// 内建模块的 init 函数在对应的 builtin-*-module.cc 中实现。
+Handle<PyModule> InitMathModule(Isolate* isolate, ModuleManager* manager);
+Handle<PyModule> InitRandomModule(Isolate* isolate, ModuleManager* manager);
+Handle<PyModule> InitTimeModule(Isolate* isolate, ModuleManager* manager);
+
 namespace {
 
 Handle<PyModule> InitSysModule(Isolate* isolate, ModuleManager* manager) {
@@ -98,6 +103,10 @@ void ModuleManager::InitializeSysState() {
 
 void ModuleManager::RegisterBuiltinModules() {
   builtin_registry_->Register(PyString::NewInstance("sys"), &InitSysModule);
+  builtin_registry_->Register(PyString::NewInstance("math"), &InitMathModule);
+  builtin_registry_->Register(PyString::NewInstance("random"),
+                              &InitRandomModule);
+  builtin_registry_->Register(PyString::NewInstance("time"), &InitTimeModule);
 }
 
 Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,

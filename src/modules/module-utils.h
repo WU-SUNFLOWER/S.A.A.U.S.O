@@ -5,7 +5,6 @@
 #ifndef SAAUSO_MODULES_MODULE_UTILS_H_
 #define SAAUSO_MODULES_MODULE_UTILS_H_
 
-#include <string>
 #include <string_view>
 
 #include "src/handles/handles.h"
