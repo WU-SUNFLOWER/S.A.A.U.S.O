@@ -39,12 +39,11 @@ void InitializeModuleDict(Handle<PyModule> module,
   if (loc.is_package) {
     PyDict::Put(module_dict, ST(package), fullname);
   } else {
-    std::string_view fullname_view = ModuleUtils::ToStringView(fullname);
-    size_t dot = fullname_view.rfind('.');
-    if (dot == std::string_view::npos) {
+    int64_t dot_index = fullname->LastIndexOf(ST(dot));
+    if (dot_index == PyString::kNotFound) {
       PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
     } else {
-      int64_t package_end = static_cast<int64_t>(dot) - 1;
+      int64_t package_end = static_cast<int64_t>(dot_index) - 1;
       Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);
       PyDict::Put(module_dict, ST(package), package_name);
     }
