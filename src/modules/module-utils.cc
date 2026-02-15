@@ -12,20 +12,6 @@
 
 namespace saauso::internal {
 
-std::string ModuleUtils::ToStdString(Handle<PyString> s) {
-  if (s.is_null()) {
-    return std::string();
-  }
-  return std::string(s->buffer(), static_cast<size_t>(s->length()));
-}
-
-std::string_view ModuleUtils::ToStringView(Handle<PyString> s) {
-  if (s.is_null()) {
-    return std::string_view();
-  }
-  return std::string_view(s->buffer(), static_cast<size_t>(s->length()));
-}
-
 Handle<PyString> ModuleUtils::NewPyString(std::string_view s) {
   if (s.empty()) {
     return PyString::NewInstance("");

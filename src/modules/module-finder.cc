@@ -25,7 +25,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
     return result;
   }
 
-  std::filesystem::path relative{ModuleUtils::ToStringView(relative_name)};
+  std::filesystem::path relative{relative_name->ToStdString()};
 
   for (int64_t i = 0; i < search_path_list->length(); ++i) {
     Handle<PyObject> elem = search_path_list->Get(i);
@@ -36,7 +36,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       std::fprintf(stderr, "TypeError: sys.path items must be strings\n");
       std::exit(1);
     }
-    std::string base = ModuleUtils::ToStdString(Handle<PyString>::cast(elem));
+    std::string base = Handle<PyString>::cast(elem)->ToStdString();
     std::filesystem::path base_path(base);
 
     std::filesystem::path package_init = base_path / relative / "__init__.py";

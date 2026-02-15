@@ -19,10 +19,6 @@ class PyString;
 
 class ModuleUtils final {
  public:
-  static std::string ToStdString(Handle<PyString> s);
-
-  static std::string_view ToStringView(Handle<PyString> s);
-
   static Handle<PyString> NewPyString(std::string_view s);
 
   static bool IsValidModuleName(Handle<PyString> fullname);

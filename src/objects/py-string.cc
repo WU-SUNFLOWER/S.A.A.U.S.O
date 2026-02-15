@@ -203,6 +203,10 @@ bool PyString::IsGreaterThan(Tagged<PyString> other) {
   return length_ > other->length();
 }
 
+std::string PyString::ToStdString() const {
+  return std::string(buffer(), static_cast<size_t>(length()));
+}
+
 Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from) {
   return Slice(self, from, self->length() - 1);
 }

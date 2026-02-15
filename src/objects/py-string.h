@@ -6,6 +6,7 @@
 #define SAAUSO_OBJECTS_STRING_H_
 
 #include <cstdint>
+#include <string>
 
 #include "src/handles/handles.h"
 #include "src/objects/py-object.h"
@@ -76,6 +77,8 @@ class PyString : public PyObject {
     assert(!IsEmpty());
     return Get(length_ - 1);
   }
+
+  std::string ToStdString() const;
 
   static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from);
