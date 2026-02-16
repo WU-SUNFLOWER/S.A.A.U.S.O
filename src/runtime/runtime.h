@@ -47,7 +47,8 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable);
 
 // 将一个 Python 字符串按指定分隔符拆分为 list。
 // - sep_or_null 为 null 表示按空白拆分（行为对齐 CPython 的子集语义）。
-// - sep_or_null 非 null 时必须为 str；空字符串分隔符会触发 ValueError 并 fail-fast。
+// - sep_or_null 非 null 时必须为 str；空字符串分隔符会触发 ValueError 并
+// fail-fast。
 // - maxsplit < 0 表示不限次数；maxsplit == 0 返回至多一个元素（保留现有行为）。
 Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
                                      Handle<PyObject> sep_or_null,
@@ -63,6 +64,15 @@ Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 // - 支持 str/int/float/bool/None 的快速路径。
 // - 其它对象会尝试调用 __str__；若找不到 __str__，回退为 "<object at 0x...>"。
 Handle<PyString> Runtime_NewStr(Handle<PyObject> value);
+
+// 沿着对象的 type mro 查找某个 magic method 并立即调用。
+// - func_name 必须为非空的 str。
+// - args/kwargs 允许为 null。
+// - 若未找到对应方法，则打印错误信息并 fail-fast。
+Handle<PyObject> Runtime_InvokeMagicOperationMethod(Handle<PyObject> object,
+                                                    Handle<PyTuple> args,
+                                                    Handle<PyDict> kwargs,
+                                                    Handle<PyObject> func_name);
 
 // intrinsic：将一个 list 转换为 tuple。
 // - object 必须是 list，否则 fail-fast。

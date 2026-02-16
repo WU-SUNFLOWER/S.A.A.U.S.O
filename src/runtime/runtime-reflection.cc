@@ -2,15 +2,18 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/runtime.h"
+#include <cstdio>
+#include <cstdlib>
 
 #include "src/execution/isolate.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime.h"
 
 namespace saauso::internal {
 
@@ -66,5 +69,26 @@ Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
   return Handle<PyObject>::null();
 }
 
-}  // namespace saauso::internal
+Handle<PyObject> Runtime_InvokeMagicOperationMethod(
+    Handle<PyObject> object,
+    Handle<PyTuple> args,
+    Handle<PyDict> kwargs,
+    Handle<PyObject> func_name) {
+  EscapableHandleScope scope;
 
+  Handle<PyObject> method =
+      Runtime_FindPropertyInInstanceTypeMro(object, func_name);
+  if (!method.is_null()) {
+    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+        method, object, args, kwargs);
+    return scope.Escape(result);
+  }
+
+  std::fprintf(stderr, "class %s Error : unsupport operation for class",
+               PyObject::GetKlass(object)->name()->buffer());
+  std::exit(1);
+
+  return Handle<PyObject>::null();
+}
+
+}  // namespace saauso::internal

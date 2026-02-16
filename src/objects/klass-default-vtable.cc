@@ -20,24 +20,6 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> FindMagicOperationMethodAndCall(Handle<PyObject> object,
-                                                 Handle<PyTuple> args,
-                                                 Handle<PyDict> kwargs,
-                                                 Handle<PyObject> func_name) {
-  Handle<PyObject> method =
-      Runtime_FindPropertyInInstanceTypeMro(object, func_name);
-  if (!method.is_null()) {
-    return Isolate::Current()->interpreter()->CallPython(method, object, args,
-                                                         kwargs);
-  }
-
-  std::fprintf(stderr, "class %s Error : unsupport operation for class",
-               PyObject::GetKlass(object)->name()->buffer());
-  std::exit(1);
-
-  return handle(Isolate::Current()->py_none_object());
-}
-
 void PrintCompareUnsupported(Handle<PyObject> self,
                              Handle<PyObject> other,
                              const char* op) {
@@ -98,13 +80,13 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
 }
 
 Handle<PyObject> Klass::Virtual_Default_Len(Handle<PyObject> self) {
-  return FindMagicOperationMethodAndCall(self, Handle<PyTuple>::null(),
-                                         Handle<PyDict>::null(), ST(len));
+  return Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+                                            Handle<PyDict>::null(), ST(len));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
-  return FindMagicOperationMethodAndCall(self, Handle<PyTuple>::null(),
-                                         Handle<PyDict>::null(), ST(repr));
+  return Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+                                            Handle<PyDict>::null(), ST(repr));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
@@ -234,8 +216,8 @@ Handle<PyObject> Klass::Virtual_Default_Subscr(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
 
-  return FindMagicOperationMethodAndCall(self, args, Handle<PyDict>::null(),
-                                         ST(getitem));
+  return Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                            ST(getitem));
 }
 
 void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
@@ -245,8 +227,8 @@ void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
   args->SetInternal(0, subscr);
   args->SetInternal(1, value);
 
-  FindMagicOperationMethodAndCall(self, args, Handle<PyDict>::null(),
-                                  ST(setitem));
+  Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                     ST(setitem));
 }
 
 void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
@@ -254,8 +236,8 @@ void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
 
-  FindMagicOperationMethodAndCall(self, args, Handle<PyDict>::null(),
-                                  ST(delitem));
+  Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                     ST(delitem));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
@@ -263,8 +245,8 @@ Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
-  return FindMagicOperationMethodAndCall(self, args, Handle<PyDict>::null(),
-                                         ST(add));
+  return Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                            ST(add));
 }
 
 bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
@@ -366,13 +348,13 @@ bool Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
 }
 
 Handle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
-  return FindMagicOperationMethodAndCall(self, Handle<PyTuple>::null(),
-                                         Handle<PyDict>::null(), ST(next));
+  return Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+                                            Handle<PyDict>::null(), ST(next));
 }
 
 Handle<PyObject> Klass::Virtual_Default_Iter(Handle<PyObject> self) {
-  return FindMagicOperationMethodAndCall(self, Handle<PyTuple>::null(),
-                                         Handle<PyDict>::null(), ST(iter));
+  return Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+                                            Handle<PyDict>::null(), ST(iter));
 }
 
 // 默认的构造新对象执行逻辑
