@@ -2,8 +2,6 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/runtime.h"
-
 #include <cstdio>
 #include <cstdlib>
 
@@ -16,6 +14,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -58,19 +57,21 @@ Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
 // PyString 重载仅用于做薄封装，最终走 string_view 版本统一实现。
 Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
                                                  Handle<PyDict> locals,
-                                                 Handle<PyDict> globals) {
+                                                 Handle<PyDict> globals,
+                                                 std::string_view filename) {
   if (source.is_null()) {
     return Handle<PyObject>::null();
   }
   return Runtime_ExecutePythonSourceCode(
       std::string_view(source->buffer(), static_cast<size_t>(source->length())),
-      locals, globals);
+      locals, globals, filename);
 }
 
 // 编译并执行一段 Python 源码，并显式指定其运行环境（locals/globals）。
 Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
                                                  Handle<PyDict> locals,
-                                                 Handle<PyDict> globals) {
+                                                 Handle<PyDict> globals,
+                                                 std::string_view filename) {
   EscapableHandleScope scope;
 
   // 当前异常体系尚未完善，统一采用 fail-fast：stderr + exit(1)。
@@ -88,7 +89,7 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
 
   // 将源码编译为模块级 boilerplate function，然后在指定字典环境中执行它。
   Handle<PyFunction> func =
-      Compiler::CompileSource(Isolate::Current(), source, "<string>");
+      Compiler::CompileSource(Isolate::Current(), source, filename);
   func->set_func_globals(globals);
 
   Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
@@ -98,4 +99,3 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
 }
 
 }  // namespace saauso::internal
-

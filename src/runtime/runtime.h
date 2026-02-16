@@ -21,6 +21,8 @@ class PyTypeObject;
 class PyCodeObject;
 class PyTuple;
 
+inline constexpr std::string_view kDefaultSourceFilename = "<string>";
+
 // 判断一个 Python 对象的真值（truthiness）。
 // - 支持常见内建类型的快速路径；对未覆盖类型当前回退为 true。
 bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
@@ -131,15 +133,19 @@ Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
 // - locals/globals 必须是非空的 dict。
 // - 若 globals 中缺少 __builtins__，则自动注入 builtins dict。
 // - 返回值为源码执行完成后的返回值（对 exec 来说通常会被上层忽略）。
-Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
-                                                 Handle<PyDict> locals,
-                                                 Handle<PyDict> globals);
+Handle<PyObject> Runtime_ExecutePythonSourceCode(
+    Handle<PyString> source,
+    Handle<PyDict> locals,
+    Handle<PyDict> globals,
+    std::string_view filename = kDefaultSourceFilename);
 
 // 编译并执行一段 Python 源码，并在指定 locals/globals 环境中运行。
 // 语义与 Runtime_ExecutePythonSourceCode(PyString, ...) 一致。
-Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
-                                                 Handle<PyDict> locals,
-                                                 Handle<PyDict> globals);
+Handle<PyObject> Runtime_ExecutePythonSourceCode(
+    std::string_view source,
+    Handle<PyDict> locals,
+    Handle<PyDict> globals,
+    std::string_view filename = kDefaultSourceFilename);
 
 }  // namespace saauso::internal
 

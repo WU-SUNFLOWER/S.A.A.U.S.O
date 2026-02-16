@@ -7,9 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "src/code/compiler.h"
 #include "src/execution/isolate.h"
-#include "src/interpreter/interpreter.h"
 #include "src/modules/builtin-module-registry.h"
 #include "src/modules/module-finder.h"
 #include "src/modules/module-manager.h"
@@ -23,6 +21,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -139,14 +138,7 @@ Handle<PyModule> ModuleLoader::ExecuteModuleInternal(Handle<PyString> fullname,
   InitializeModuleDict(module, fullname, loc);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  Handle<PyFunction> boilerplate =
-      Compiler::CompileSource(isolate_, source, loc.origin);
-  boilerplate->set_func_globals(module_dict);
-
-  isolate_->interpreter()->CallPython(boilerplate, Handle<PyObject>::null(),
-                                      Handle<PyTuple>::null(),
-                                      Handle<PyDict>::null(), module_dict);
+  Runtime_ExecutePythonSourceCode(source, module_dict, module_dict, loc.origin);
 
   return module;
 }
