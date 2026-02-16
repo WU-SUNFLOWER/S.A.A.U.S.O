@@ -39,11 +39,20 @@ class ModuleLoader final {
   Handle<PyModule> LoadModulePartImpl(Handle<PyString> fullname,
                                       Handle<PyList> search_path_list);
 
+  Handle<PyModule> ExecuteModuleInternal(Handle<PyString> fullname,
+                                         const ModuleLocation& loc);
+
   Handle<PyModule> LoadAsBuiltinModule(Handle<PyString> fullname);
 
-  Handle<PyModule> ExecuteModuleInternal(Handle<PyString> fullname,
-                                         const ModuleLocation& loc,
-                                         Handle<PyString> source);
+  Handle<PyModule> LoadAsFileModule(Handle<PyString> fullname,
+                                    Handle<PyList> search_path_list);
+
+  Handle<PyModule> ExecuteModuleFromSource(Handle<PyString> fullname,
+                                           const ModuleLocation& loc,
+                                           Handle<PyString> source);
+
+  Handle<PyModule> ExecuteModuleFromPyc(Handle<PyString> fullname,
+                                        const ModuleLocation& loc);
 
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};

@@ -98,4 +98,30 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
   return scope.Escape(result);
 }
 
+Handle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
+                                              Handle<PyDict> locals,
+                                              Handle<PyDict> globals) {
+  EscapableHandleScope scope;
+
+  if (locals.is_null() || globals.is_null()) [[unlikely]] {
+    std::fprintf(stderr, "TypeError: locals and globals must not be null\n");
+    std::exit(1);
+  }
+
+  if (globals->Get(ST(builtins)).is_null()) {
+    PyDict::Put(globals, ST(builtins),
+                Isolate::Current()->interpreter()->builtins());
+  }
+
+  std::string filename_str(filename);
+  Handle<PyFunction> func =
+      Compiler::CompilePyc(Isolate::Current(), filename_str.c_str());
+  func->set_func_globals(globals);
+
+  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
+      func, Handle<PyObject>::null(), Handle<PyTuple>::null(),
+      Handle<PyDict>::null(), locals);
+  return scope.Escape(result);
+}
+
 }  // namespace saauso::internal

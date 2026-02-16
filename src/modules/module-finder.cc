@@ -42,6 +42,17 @@ ModuleLocation ModuleFinder::FindModuleLocation(
     std::filesystem::path package_init = base_path / relative / "__init__.py";
     if (FileExists(package_init.string())) {
       result.origin = NormalizePath(package_init.string());
+      result.kind = ModuleFileKind::kSourcePy;
+      result.is_package = true;
+      result.package_dir = NormalizePath((base_path / relative).string());
+      return result;
+    }
+
+    std::filesystem::path package_init_pyc =
+        base_path / relative / "__init__.pyc";
+    if (FileExists(package_init_pyc.string())) {
+      result.origin = NormalizePath(package_init_pyc.string());
+      result.kind = ModuleFileKind::kBytecodePyc;
       result.is_package = true;
       result.package_dir = NormalizePath((base_path / relative).string());
       return result;
@@ -51,6 +62,16 @@ ModuleLocation ModuleFinder::FindModuleLocation(
     module_py += ".py";
     if (FileExists(module_py.string())) {
       result.origin = NormalizePath(module_py.string());
+      result.kind = ModuleFileKind::kSourcePy;
+      result.is_package = false;
+      return result;
+    }
+
+    std::filesystem::path module_pyc = base_path / relative;
+    module_pyc += ".pyc";
+    if (FileExists(module_pyc.string())) {
+      result.origin = NormalizePath(module_pyc.string());
+      result.kind = ModuleFileKind::kBytecodePyc;
       result.is_package = false;
       return result;
     }
@@ -61,7 +82,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
 
 bool ModuleFinder::ReadModuleSource(const ModuleLocation& location,
                                     Handle<PyString>& out) const {
-  if (location.origin.empty()) {
+  if (location.origin.empty() || location.kind != ModuleFileKind::kSourcePy) {
     return false;
   }
 

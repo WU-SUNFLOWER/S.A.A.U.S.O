@@ -15,8 +15,15 @@ namespace saauso::internal {
 class PyList;
 class PyString;
 
+enum class ModuleFileKind {
+  kNotFound = 0,
+  kSourcePy,
+  kBytecodePyc,
+};
+
 struct ModuleLocation {
   std::string origin;
+  ModuleFileKind kind{ModuleFileKind::kNotFound};
   bool is_package{false};
   std::string package_dir;
 };

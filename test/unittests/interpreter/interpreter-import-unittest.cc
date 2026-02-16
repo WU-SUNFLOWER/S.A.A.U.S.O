@@ -2,8 +2,14 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <string>
 #include <string_view>
+#include <vector>
 
+#include "src/code/cpython312-pyc-compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/modules/module-manager.h"
@@ -214,6 +220,49 @@ TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
             invalid, Handle<PyTuple>::null(), 0, Handle<PyDict>::null());
       },
       "invalid module name");
+}
+
+TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {
+  HandleScope scope;
+
+  int64_t suffix = static_cast<int64_t>(
+      std::chrono::steady_clock::now().time_since_epoch().count());
+  std::string suffix_str = std::to_string(suffix);
+  std::string module_name = "pyc_only_mod_" + suffix_str;
+
+  std::filesystem::path dir = std::filesystem::temp_directory_path() /
+                              ("saauso_import_pyc_" + suffix_str);
+  std::filesystem::create_directories(dir);
+
+  std::string file_name = module_name + ".py";
+  std::string module_source = "x = 7\nprint(\"pyc_init\")\n";
+  std::vector<uint8_t> pyc =
+      EmbeddedPython312Compiler::CompileToPycBytes(module_source, file_name);
+  ASSERT_FALSE(pyc.empty());
+
+  std::filesystem::path pyc_path = dir / (module_name + ".pyc");
+  std::ofstream out(pyc_path, std::ios::binary | std::ios::out);
+  out.write(reinterpret_cast<const char*>(pyc.data()),
+            static_cast<std::streamsize>(pyc.size()));
+  out.close();
+
+  std::string dir_str = dir.generic_string();
+  std::string script;
+  script += "import sys\n";
+  script += "sys.path.append(\"" + dir_str + "\")\n";
+  script += "if \"" + module_name + "\" in sys.modules:\n";
+  script += "    del sys.modules[\"" + module_name + "\"]\n";
+  script += "import " + module_name + "\n";
+  script += "print(" + module_name + ".x)\n";
+
+  RunScript(script, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("pyc_init"));
+  AppendExpected(expected, handle(PySmi::FromInt(7)));
+  ExpectPrintResult(expected);
+
+  std::filesystem::remove_all(dir);
 }
 
 }  // namespace saauso::internal

@@ -79,6 +79,13 @@ Handle<PyModule> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
   Handle<PyModule> loaded_module =
       LoadModulePartImpl(fullname, search_path_list);
 
+  if (loaded_module.is_null()) {
+    std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
+                 fullname->buffer());
+    std::exit(1);
+    return Handle<PyModule>::null();
+  }
+
   // 将加载的模块保存到modules缓存
   Handle<PyDict> modules_dict = manager_->modules();
   PyDict::Put(modules_dict, fullname, loaded_module);
@@ -95,30 +102,13 @@ Handle<PyModule> ModuleLoader::LoadModulePartImpl(
     return module;
   }
 
-  auto dot_index = fullname->LastIndexOf(ST(dot));
-  Handle<PyString> relative_name;
-  if (dot_index == PyString::kNotFound) {
-    relative_name = fullname;
-  } else {
-    relative_name = PyString::Slice(fullname, dot_index + 1);
+  // 不是builtin模块，走OS文件系统进行查找
+  module = LoadAsFileModule(fullname, search_path_list);
+  if (!module.is_null()) {
+    return module;
   }
 
-  ModuleLocation loc =
-      finder_->FindModuleLocation(search_path_list, relative_name);
-  if (loc.origin.empty()) {
-    std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
-                 fullname->buffer());
-    std::exit(1);
-  }
-
-  Handle<PyString> source;
-  if (!finder_->ReadModuleSource(loc, source)) {
-    std::fprintf(stderr, "ImportError: cannot read '%s'\n", loc.origin.c_str());
-    std::exit(1);
-  }
-
-  module = ExecuteModuleInternal(fullname, loc, source);
-  return module;
+  return Handle<PyModule>::null();
 }
 
 Handle<PyModule> ModuleLoader::LoadAsBuiltinModule(Handle<PyString> fullname) {
@@ -131,14 +121,69 @@ Handle<PyModule> ModuleLoader::LoadAsBuiltinModule(Handle<PyString> fullname) {
   return module;
 }
 
-Handle<PyModule> ModuleLoader::ExecuteModuleInternal(Handle<PyString> fullname,
-                                                     const ModuleLocation& loc,
-                                                     Handle<PyString> source) {
+Handle<PyModule> ModuleLoader::LoadAsFileModule(
+    Handle<PyString> fullname,
+    Handle<PyList> search_path_list) {
+  auto dot_index = fullname->LastIndexOf(ST(dot));
+  Handle<PyString> relative_name;
+  if (dot_index == PyString::kNotFound) {
+    relative_name = fullname;
+  } else {
+    relative_name = PyString::Slice(fullname, dot_index + 1);
+  }
+
+  ModuleLocation loc =
+      finder_->FindModuleLocation(search_path_list, relative_name);
+  if (loc.origin.empty()) {
+    return Handle<PyModule>::null();
+  }
+
+  return ExecuteModuleInternal(fullname, loc);
+}
+
+Handle<PyModule> ModuleLoader::ExecuteModuleInternal(
+    Handle<PyString> fullname,
+    const ModuleLocation& loc) {
+  Handle<PyModule> module;
+  if (loc.kind == ModuleFileKind::kSourcePy) {
+    Handle<PyString> source;
+    if (!finder_->ReadModuleSource(loc, source)) {
+      std::fprintf(stderr, "ImportError: cannot read '%s'\n",
+                   loc.origin.c_str());
+      std::exit(1);
+    }
+    module = ExecuteModuleFromSource(fullname, loc, source);
+    return module;
+  }
+
+  if (loc.kind == ModuleFileKind::kBytecodePyc) {
+    module = ExecuteModuleFromPyc(fullname, loc);
+    return module;
+  }
+
+  return Handle<PyModule>::null();
+}
+
+Handle<PyModule> ModuleLoader::ExecuteModuleFromSource(
+    Handle<PyString> fullname,
+    const ModuleLocation& loc,
+    Handle<PyString> source) {
   Handle<PyModule> module = PyModule::NewInstance();
   InitializeModuleDict(module, fullname, loc);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   Runtime_ExecutePythonSourceCode(source, module_dict, module_dict, loc.origin);
+
+  return module;
+}
+
+Handle<PyModule> ModuleLoader::ExecuteModuleFromPyc(Handle<PyString> fullname,
+                                                    const ModuleLocation& loc) {
+  Handle<PyModule> module = PyModule::NewInstance();
+  InitializeModuleDict(module, fullname, loc);
+
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Runtime_ExecutePythonPycFile(loc.origin, module_dict, module_dict);
 
   return module;
 }

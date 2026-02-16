@@ -9,7 +9,7 @@
   1. 仓库现有实现与“能编译/能链接/能运行单测”的事实
   2. 本文档（AGENTS.md）
   3. Google C++ Style Guide
-  4. 通用最佳实践
+  4. 通用最佳实践（包括但不限于 SOLID 原则）
 - **冲突处理流程**：
   1. 先在仓库中搜索同类代码与既有模式（优先保持局部一致性）。
   2. 若仍存在多种可行实现，选择更符合本仓库架构约束、且对现有代码扰动更小的方案。
@@ -323,7 +323,8 @@ if (method != NULL) {
   - `ModuleLoader`：只负责基于文件系统的模块/包定位与源码读取，不触碰 `sys.modules`，也不执行 Python 代码（见 [module-loader.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.h)）。
   - `ModuleManager`：持有并维护 `sys.modules`（dict）与 `sys.path`（list），提供 `ImportModule(...)` 作为解释器 `IMPORT_NAME/IMPORT_FROM` 的统一入口（见 [module-manager.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.h)）。
 - **查找与加载规则（MVP）**：
-  - 文件系统查找优先级：先 package（`<base>/<name>/__init__.py`），再 module（`<base>/<name>.py`）。
+  - 文件系统查找优先级：先 package（`<base>/<name>/__init__.py` → `<base>/<name>/__init__.pyc`），再 module（`<base>/<name>.py` → `<base>/<name>.pyc`），并遵循“`.py` 优先、`.pyc` 兜底”。
+  - 不默认扫描 `__pycache__/<name>.*.pyc` 这类 tagged 缓存路径；embedder 若只分发字节码，建议直接提供同目录的 `<name>.pyc` 或 `<pkg>/__init__.pyc`。
   - 搜索路径来源：顶层导入使用 `sys.path`；导入子模块使用 `package.__path__`。
 - **关键语义点（对齐 CPython）**：
   - 必须先把新建 module 放入 `sys.modules` 再执行模块体，以支持循环导入（见 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc) 的 `LoadSourceModule` 注释与实现）。

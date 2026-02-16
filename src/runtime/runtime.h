@@ -147,6 +147,10 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(
     Handle<PyDict> globals,
     std::string_view filename = kDefaultSourceFilename);
 
+Handle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
+                                              Handle<PyDict> locals,
+                                              Handle<PyDict> globals);
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_RUNTIME_RUNTIME_H_
