@@ -15,7 +15,6 @@
 namespace saauso::internal {
 
 class PyFloat;
-class PyList;
 class PySmi;
 
 class PyString : public PyObject {
@@ -68,6 +67,10 @@ class PyString : public PyObject {
 
   const char* buffer() const { return reinterpret_cast<const char*>(this + 1); }
 
+  // 获取可写 buffer，用于在分配后快速填充字符串内容。
+  // 注意：该接口仅供虚拟机内部使用，调用方必须保证写入不越界。
+  char* writable_buffer() { return reinterpret_cast<char*>(this + 1); }
+
   char front() const {
     assert(!IsEmpty());
     return Get(0);
@@ -80,22 +83,14 @@ class PyString : public PyObject {
 
   std::string ToStdString() const;
 
-  static Handle<PyString> Slice(Handle<PyString> self,
-                                int64_t from);
+  static Handle<PyString> Slice(Handle<PyString> self, int64_t from);
   static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from,
                                 int64_t to);
   static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);
-  static Handle<PyList> Split(Handle<PyString> self,
-                              Handle<PyObject> sep_or_null,
-                              int64_t maxsplit);
-  static Handle<PyString> Join(Handle<PyString> self,
-                               Handle<PyObject> iterable);
 
  private:
   friend class PyStringKlass;
-
-  char* writable_buffer() { return reinterpret_cast<char*>(this + 1); }
 
   int64_t length_{0};
   uint64_t hash_{0};

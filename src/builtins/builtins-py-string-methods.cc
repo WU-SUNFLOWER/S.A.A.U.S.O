@@ -333,7 +333,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     sep_or_null = sep_obj;
   }
 
-  Handle<PyList> result = PyString::Split(str_object, sep_or_null, maxsplit);
+  Handle<PyList> result =
+      Runtime_PyStringSplit(str_object, sep_or_null, maxsplit);
   return scope.Escape(result);
 }
 
@@ -356,7 +357,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
   }
 
   Handle<PyObject> iterable = args->Get(0);
-  Handle<PyString> result = PyString::Join(str_object, iterable);
+  Handle<PyString> result = Runtime_PyStringJoin(str_object, iterable);
   return scope.Escape(result);
 }
 

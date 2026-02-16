@@ -158,6 +158,7 @@ source_set("saauso_core") {
     "//src/runtime/runtime-intrinsics.cc",
     "//src/runtime/runtime-iterable.cc",
     "//src/runtime/runtime-reflection.cc",
+    "//src/runtime/runtime-string.cc",
     "//src/runtime/runtime-truthiness.cc",
     "//src/runtime/runtime.h",
     "//src/runtime/string-table.cc",

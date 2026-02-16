@@ -116,39 +116,7 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
 
   if (argc == 1) {
     Handle<PyObject> value = pos_args->Get(0);
-    if (IsPyString(value)) {
-      return value;
-    }
-    if (IsPySmi(value)) {
-      return PyString::FromPySmi(Tagged<PySmi>::cast(*value));
-    }
-    if (IsPyFloat(value)) {
-      return PyString::FromPyFloat(Handle<PyFloat>::cast(value));
-    }
-    if (IsPyBoolean(value)) {
-      bool v = Tagged<PyBoolean>::cast(*value)->value();
-      return PyString::NewInstance(v ? "True" : "False");
-    }
-    if (IsPyNone(value)) {
-      return PyString::NewInstance("None");
-    }
-
-    Handle<PyObject> method =
-        Runtime_FindPropertyInInstanceTypeMro(value, ST(str));
-    if (!method.is_null()) {
-      Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-          method, value, Handle<PyTuple>::null(), Handle<PyDict>::null());
-      if (!IsPyString(result)) {
-        std::fprintf(stderr, "TypeError: __str__ returned non-string\n");
-        std::exit(1);
-      }
-      return result;
-    }
-
-    char buffer[64];
-    std::snprintf(buffer, sizeof(buffer), "<object at %p>",
-                  reinterpret_cast<void*>((*value).ptr()));
-    return PyString::NewInstance(buffer);
+    return Runtime_NewStr(value);
   }
 
   if (argc == 2 || argc == 3) {

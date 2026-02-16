@@ -21,7 +21,6 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
-#include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
@@ -251,10 +250,7 @@ Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
 
         Handle<PyObject> key = handle(k);
         if (!IsPyString(key)) {
-          Handle<PyTuple> one_arg = PyTuple::NewInstance(1);
-          one_arg->SetInternal(0, key);
-          key = PyStringKlass::GetInstance()->ConstructInstance(
-              one_arg, Handle<PyObject>::null());
+          key = Runtime_NewStr(key);
         }
 
         PyDict::Put(result, key, handle(v));
