@@ -29,19 +29,22 @@
 10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 5.3）。
 
 ## 1. 项目概览
-S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码。
+S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython3.12 字节码。
 - **开发者**: WU-SUNFLOWER（Computer Science专业本科大四学生）
   - GitHub主页：https://github.com/WU-SUNFLOWER
   - 个人博客：https://juejin.cn/user/3544481220008744
 - **开发目的**：
  - 这是WU-SUNFLOWER的本科毕业设计。
  - 他希望通过开发这个项目，在顺利拿到CS专业学士学位的同时，帮助自己提升对编程语言虚拟机的理解和工程实现能力。为深入阅读和学习工业级虚拟机（如HotSpot JVM、V8、CPython）的源代码打下坚实的基础。
- - 此外，WU-SUNFLOWER希望能够将本项目写进求职简历的"个人作品"栏目，增强他在未来通过社会招聘跳槽时的市场竞争力。
-- **距离WU-SUNFLOWER提交毕业设计作品的剩余时间**: 大约2个月不到
+ - 此外，WU-SUNFLOWER希望能够将本项目写进求职简历的"个人作品"栏目，增强他在未来跳槽时的市场竞争力。
+- **项目定位**：
+  - 可用于本科计算机专业课程（如《编译原理》《操作系统》等）的教学和演示。（对应毕业设计的教育教学价值）
+  - 可作为脚本引擎提供给游戏引擎、办公软件等 embedder 使用。（对应毕业设计的实际应用价值）
 - **语言**: C++20。
 - **构建系统**: GN (Generate Ninja) + Ninja。
 - **测试框架**: Google Test。
 - **辅助调试工具**: LLDB、AddressSanitizer、UBSanitizer
+- **兼容系统平台**：Windows(x64)、Linux(x64)
 
 ### 1.1. 当前实现进度（以仓库现状为准）
 - **已具备**：
@@ -49,7 +52,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
   - 句柄系统：`HandleScope` + `HandleScopeImplementer`，以及长期句柄 `Global<T>`（会被 GC 扫描并在 minor GC 后更新）。
   - 堆与 GC：`NewSpace/MetaSpace` 已可用；`OldSpace` 地址段已预留，但分配与回收尚未实现；MVP 仅依赖新生代 scavenge。
   - 字节码解释器：基于 CPython 3.12 字节码模型的初版执行引擎（computed-goto dispatch）、栈帧与参数绑定、基础 builtins（`print/len/isinstance/build_class/sysgc/exec` 等），并注入若干内建类型名（`object/int/str/float/list/bool/dict/tuple/type`）与单例（`True/False/None`）。
-  - 模块系统（MVP）：新增 `ModuleManager/ModuleLoader/PyModule`，解释器接入 `IMPORT_NAME/IMPORT_FROM`，支持从 `sys.path` / `package.__path__` 加载 `.py` 与 package（`__init__.py`），并提供内建 `sys` 模块（含 `sys.modules/sys.path`）。
+  - 模块系统（import）：新增 `ModuleManager/ModuleImporter/ModuleLoader/ModuleFinder/ModuleNameResolver/PyModule` 等，解释器接入 `IMPORT_NAME/IMPORT_FROM` 并支持 `level` 相对导入；支持从 `sys.path` / `package.__path__` 加载 `.py/.pyc` 与 package（`__init__.py/__init__.pyc`）；支持 `fromlist` 语义与父子模块绑定（`pkg.sub = <module>`）；内建模块通过注册表机制优先命中（当前含 `sys/math/random/time`，其中 `sys.modules/sys.path` 直接引用 `ModuleManager` 维护对象）。
   - `.pyc` 前端：CPython 3.12 `.pyc` 解析器与（可选）嵌入式 CPython 3.12 编译器前端目标。
 - **尚未重点覆盖/仍在 TODO（非穷尽）**：
   - 异常体系（当前大量错误以 `stderr + exit(1)` 方式处理）。
@@ -65,7 +68,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - `src/build/`：构建配置与编译控制宏（如 `BUILDFLAG`、`IS_WIN` 等）。
 - `src/common/`：跨模块共享的轻量公共定义（当前以 `globals.h` 等为主）。
 - `src/interpreter/`：字节码解释器（bytecode dispatcher、`FrameObject` 栈帧、参数归一化与调用入口）。
-- `src/modules/`：模块系统（import MVP）：`ModuleManager` 管理 `sys.modules/sys.path`，`ModuleLoader` 负责基于文件系统的模块定位与源码读取。
+- `src/modules/`：模块系统（import）：`ModuleManager` 持有 `sys.modules/sys.path` 并作为解释器入口；`ModuleImporter` 编排 dotted-name/fromlist/相对导入；`ModuleNameResolver` 解析相对导入基准；`ModuleFinder` 只做文件系统定位；`ModuleLoader` 负责创建模块对象并执行模块体；`BuiltinModuleRegistry` 管理内建模块注册表。
 - `src/objects/`：对象系统（`PyObject`、`Klass`、各内建对象与其 `*-klass`）。
 - `src/handles/`：句柄系统（`Handle`/`HandleScope`/`HandleScopeImplementer`）、长期句柄 `Global<T>` 与 `Tagged<T>`。
 - `src/heap/`：堆与空间（`NewSpace`/`OldSpace`/`MetaSpace`）以及新生代 GC（Scavenge）。
@@ -85,7 +88,7 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - 运行时与初始化顺序：读 [isolate.cc](file:///e:/MyProject/S.A.A.U.S.O/src/execution/isolate.cc)（`Init/InitMetaArea/TearDown`）。
 - 字节码执行主循环：读 [interpreter-dispatcher.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter-dispatcher.cc)（computed-goto handlers）。
 - 调用与参数绑定：读 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc) 与 [frame-object-builder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/frame-object-builder.cc)。
-- 模块系统（import MVP）：读 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc)（import 语义与 sys.modules/sys.path）、[module-loader.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.h)（文件系统定位规则）、[py-module.h](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-module.h)（模块对象）。
+- 模块系统（import）：读 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc)（sys.modules/sys.path 与入口）、[module-importer.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-importer.cc)（dotted-name/fromlist 编排与父子绑定）、[module-name-resolver.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-name-resolver.cc)（相对导入解析）、[module-finder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-finder.cc)（文件系统定位规则）、[module-loader.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.cc)（创建模块对象并执行模块体）、[builtin-sys-module.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/builtin-sys-module.cc)（sys 模块暴露）、[py-module.h](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-module.h)（模块对象）。
 - builtins 注册与实现：读 [builtins-definitions.h](file:///e:/MyProject/S.A.A.U.S.O/src/builtins/builtins-definitions.h) 与 `src/builtins/builtins-*.cc`，以及解释器构造函数中的注入逻辑 [interpreter.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/interpreter.cc)。
 - 对象模型与属性查找：读 [py-object.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-object.cc) 与 [klass.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc)。
 - 堆与新生代 GC：读 [heap.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/heap.cc) / [spaces.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/spaces.cc) / [scavenge-visitor.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/scavenge-visitor.cc)。
@@ -318,20 +321,26 @@ if (method != NULL) {
 - **cpython312-pyc-compiler（可选）**：通过嵌入式 CPython 3.12 生成 `.pyc`（对应 GN 目标 `saauso_cpython312_compiler`）。
 - **BinaryFileReader**：二进制读取工具，位于 `src/utils/`，供 pyc parser 等模块复用。
 
-### 3.6. 模块系统（import MVP，`src/modules`）
-- **分层职责**：
-  - `ModuleLoader`：只负责基于文件系统的模块/包定位与源码读取，不触碰 `sys.modules`，也不执行 Python 代码（见 [module-loader.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.h)）。
-  - `ModuleManager`：持有并维护 `sys.modules`（dict）与 `sys.path`（list），提供 `ImportModule(...)` 作为解释器 `IMPORT_NAME/IMPORT_FROM` 的统一入口（见 [module-manager.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.h)）。
-- **查找与加载规则（MVP）**：
-  - 文件系统查找优先级：先 package（`<base>/<name>/__init__.py` → `<base>/<name>/__init__.pyc`），再 module（`<base>/<name>.py` → `<base>/<name>.pyc`），并遵循“`.py` 优先、`.pyc` 兜底”。
+### 3.6. 模块系统（import，`src/modules`）
+- **分层职责（按“语义编排/定位/加载/状态”拆分）**：
+  - `ModuleManager`：模块系统门面与状态持有者，维护 `sys.modules`（dict）与 `sys.path`（list），并向解释器暴露统一入口 `ImportModule(...)`（见 [module-manager.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.h)）。
+  - `ModuleImporter`：导入语义编排层，负责 dotted-name 分段导入、`fromlist` 语义、父子模块绑定，以及在 `level` 非 0 时配合相对导入名解析（见 [module-importer.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-importer.cc)）。
+  - `ModuleNameResolver`：相对导入名解析器，基于 `globals["__package__"]` / `globals["__name__"]` 与是否为 package（存在 `globals["__path__"]`）决定相对导入基准，并处理越界/无父包等错误（见 [module-name-resolver.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-name-resolver.cc)）。
+  - `ModuleFinder`：纯文件系统定位层，只负责在给定 search path 中查找 module/package 的位置，不执行模块体（见 [module-finder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-finder.cc)）。
+  - `ModuleLoader`：加载与执行层，负责创建 `PyModule`、初始化 `__name__/__package__/__file__/__path__` 等关键字段，并执行模块体（source 或 pyc）；同时负责 builtin 模块的创建（见 [module-loader.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.cc)）。
+  - `BuiltinModuleRegistry`：内建模块注册表，仅维护 name → init 函数映射，供 `ModuleLoader` 优先命中（见 [builtin-module-registry.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/builtin-module-registry.cc)）。
+- **sys 状态初始化**：
+  - `sys.modules` 初始为空 dict；`sys.path` 初始为 `['.']`（见 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc)）。
+- **查找与加载规则（文件系统）**：
+  - 文件系统查找优先级：对每个 base path，先尝试 package（`<base>/<name>/__init__.py` → `<base>/<name>/__init__.pyc`），再尝试 module（`<base>/<name>.py` → `<base>/<name>.pyc`），并遵循“`.py` 优先、`.pyc` 兜底”（见 [module-finder.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-finder.cc)）。
   - 不默认扫描 `__pycache__/<name>.*.pyc` 这类 tagged 缓存路径；embedder 若只分发字节码，建议直接提供同目录的 `<name>.pyc` 或 `<pkg>/__init__.pyc`。
-  - 搜索路径来源：顶层导入使用 `sys.path`；导入子模块使用 `package.__path__`。
-- **关键语义点（对齐 CPython）**：
-  - 必须先把新建 module 放入 `sys.modules` 再执行模块体，以支持循环导入（见 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc) 的 `LoadSourceModule` 注释与实现）。
-  - `import pkg.sub` 会把子模块绑定到父模块 namespace（`pkg.sub = <module>`），保证 Python 层可见（见 [module-manager.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.cc) 的 `BindChildToParent`）。
-  - `fromlist` 决定 `IMPORT_NAME` 的返回值：当 `fromlist` 为空且导入 dotted-name 时返回顶层包，否则返回最后导入的模块对象。
-- **内建模块**：
-  - 通过 `RegisterBuiltinModule(name, init)` 注册，并由 import 流程优先命中（当前内建 `sys`，其 `modules/path` 指向 `ModuleManager` 所维护对象）。
+  - 搜索路径来源：导入顶层段使用 `sys.path`；导入子模块使用 `package.__path__`，若父模块不是 package 则 fail-fast（见 [module-importer.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-importer.cc)）。
+- **关键语义点（以仓库现状为准）**：
+  - 父子模块绑定：导入 `pkg.sub` 后会把子模块写入父模块 dict（`pkg.sub = <module>`），保证 Python 层可见（见 [module-importer.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-importer.cc)）。
+  - `fromlist` 决定 `IMPORT_NAME` 返回值：当 `fromlist` 为空且导入 dotted-name 时返回顶层包，否则返回最后导入的模块对象（见 [module-importer.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-importer.cc)）。
+  - 循环导入：CPython 语义通常要求“执行模块体前就将 module 放入 sys.modules”。当前实现把模块写入 `sys.modules` 的时机在执行模块体之后，因此循环导入行为不保证对齐 CPython，后续需要专门补齐（见 [module-loader.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-loader.cc)）。
+- **内建模块（builtin）**：
+  - 内建模块通过注册表机制优先命中（见 [builtin-module.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/builtin-module.h)）。当前内建模块列表含 `sys/math/random/time`；`sys.modules/sys.path` 指向 `ModuleManager` 持有对象（见 [builtin-sys-module.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/builtin-sys-module.cc)）。
 
 ## 4. 代码规范（人类程序员和 AI 助手都必须严格遵守）
 
