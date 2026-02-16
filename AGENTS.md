@@ -94,6 +94,16 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 
 本项目的架构设计深度借鉴了 V8 和 HotSpot。
 
+### 3.0. 分层与依赖方向（V8-like）
+- **目标**：让“对象表示/运行时语义/执行引擎/系统装配”各司其职，避免 `src/objects` 因承载高层语义而膨胀，并把变化点（语义/报错/协议）收敛在更合适的层。
+- **utils (`src/utils/`)**：纯工具层；严禁依赖 VM 上层能力（对象/堆/句柄/解释器/运行时/模块系统等）。
+- **handles (`src/handles/`)**：GC 安全持有与跨 `HandleScope` 约束；可依赖 `execution` 的 `Isolate::Current()` 绑定模型（现有实现如此）。
+- **objects (`src/objects/`)**：对象表示层（布局/字段/GC iterate/instance_size）+ vtable slot 的调度骨架；`py-xxx.cc` 实体类优先保持为“数据容器 + 原语操作”，避免把跨对象的复杂语义流程塞进实体类。
+- **builtins (`src/builtins/`)**：Python API 外壳层；负责参数解析与错误文案；尽量薄，复杂流程优先调用 runtime helper。
+- **runtime (`src/runtime/`)**：跨类型语义层；承载可复用流程（iterable unpack、`str(x)`、magic method invoke、建类/反射等）。
+  - 约束：只有“确实需要执行 Python 代码/调用解释器”的少数 helper 允许依赖 interpreter（例如 `Runtime_Execute*`、`Runtime_NewStr`、magic invoke）；纯算法/纯数据流程应避免引入 interpreter 依赖。
+- **interpreter (`src/interpreter/`)**：执行层；依赖 objects/runtime/builtins；负责字节码调度、调用协议与栈帧。
+
 ### 3.1. 对象系统 (`src/objects`)
 - **PyObject**: 所有堆对象的基类。
 - **Klass**: 表示对象的类型/元信息（类似于 V8 的 Map 或 HotSpot 的 Klass）。数据（`PyObject`）与行为（`Klass`）严格分离。
@@ -216,7 +226,12 @@ S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython 字节码
 - **runtime**: 可复用的运行时 helper（例如 unpack iterable、扩展 list 等）。上层类型实现优先复用此处 helper，减少重复迭代/拆包逻辑。
 - **exec 执行入口**：`Runtime_ExecutePyCodeObject/Runtime_ExecutePythonSourceCode` 负责在指定 `globals/locals` 字典中执行代码；当 `globals` 缺少 `__builtins__` 时会自动注入当前解释器的 builtins（对齐 CPython 行为）。
 - **StringTable**: 常用字符串常量池（通常在 `kMetaSpace` 分配字符串对象，避免被 GC 移动）。
-  - **文件组织**：`runtime.h` 为统一声明入口，具体实现按职责拆分为 `runtime-*.cc`（truthiness/iterable/intrinsics/conversions/reflection/exec）。
+  - **文件组织**：`runtime.h` 为统一声明入口，具体实现按职责拆分为 `runtime-*.cc`（truthiness/iterable/intrinsics/conversions/reflection/exec/string）。
+  - **推荐放置规则**：
+    - 字符串相关高层语义（split/join/`str(x)` 转换）优先放在 `runtime-py-string.cc`。
+    - iterable 通用语义放在 `runtime-iterable.cc`。
+    - 反射/MRO/property find/magic method invoke 放在 `runtime-reflection.cc`。
+    - exec/source/code 执行入口放在 `runtime-exec.cc`。
 
 ### 3.4. 字节码解释器 (`src/interpreter`)
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护 `builtins`、当前栈帧链、以及 computed-goto 的 dispatch table。

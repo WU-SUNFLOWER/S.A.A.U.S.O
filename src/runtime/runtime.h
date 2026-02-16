@@ -74,6 +74,14 @@ Handle<PyObject> Runtime_InvokeMagicOperationMethod(Handle<PyObject> object,
                                                     Handle<PyDict> kwargs,
                                                     Handle<PyObject> func_name);
 
+Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
+                                 Handle<PyObject> kwargs);
+
+Handle<PyObject> Runtime_NewDict(Handle<PyObject> args,
+                                 Handle<PyObject> kwargs);
+
+Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args, Handle<PyObject> kwargs);
+
 // intrinsic：将一个 list 转换为 tuple。
 // - object 必须是 list，否则 fail-fast。
 Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);

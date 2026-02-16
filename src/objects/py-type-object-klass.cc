@@ -7,7 +7,6 @@
 #include "src/builtins/builtins-py-type-object-methods.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -136,77 +135,7 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_ConstructInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
-
-  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
-  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
-  if (!(argc == 1 || argc == 3)) {
-    std::fprintf(stderr, "TypeError: type() takes 1 or 3 arguments\n");
-    std::exit(1);
-  }
-
-  // 只有一个参数，直接返回传入对象对应类型的type object。
-  // 这是Python中type最常见的用法。
-  if (argc == 1) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      std::fprintf(stderr, "TypeError: type() takes 1 or 3 arguments\n");
-      std::exit(1);
-    }
-
-    Handle<PyObject> obj = pos_args->Get(0);
-    return PyObject::GetKlass(obj)->type_object();
-  }
-
-  // 有三个参数，走以下的创建新的Python类型的逻辑
-  Handle<PyObject> name_obj = pos_args->Get(0);
-  Handle<PyObject> bases_obj = pos_args->Get(1);
-  Handle<PyObject> dict_obj = pos_args->Get(2);
-
-  if (!IsPyString(name_obj)) {
-    std::fprintf(
-        stderr, "TypeError: type() argument 1 must be str, not '%.*s'\n",
-        static_cast<int>(PyObject::GetKlass(name_obj)->name()->length()),
-        PyObject::GetKlass(name_obj)->name()->buffer());
-    std::exit(1);
-  }
-  if (!IsPyTuple(bases_obj)) {
-    std::fprintf(
-        stderr, "TypeError: type() argument 2 must be tuple, not '%.*s'\n",
-        static_cast<int>(PyObject::GetKlass(bases_obj)->name()->length()),
-        PyObject::GetKlass(bases_obj)->name()->buffer());
-    std::exit(1);
-  }
-  if (!IsPyDict(dict_obj)) {
-    std::fprintf(
-        stderr, "TypeError: type() argument 3 must be dict, not '%.*s'\n",
-        static_cast<int>(PyObject::GetKlass(dict_obj)->name()->length()),
-        PyObject::GetKlass(dict_obj)->name()->buffer());
-    std::exit(1);
-  }
-
-  Handle<PyString> name = Handle<PyString>::cast(name_obj);
-  Handle<PyTuple> bases_tuple = Handle<PyTuple>::cast(bases_obj);
-  Handle<PyDict> class_dict = PyDict::Clone(Handle<PyDict>::cast(dict_obj));
-
-  Handle<PyList> supers;
-  if (bases_tuple->length() == 0) {
-    supers = PyList::NewInstance(1);
-    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
-  } else {
-    supers = PyList::NewInstance(bases_tuple->length());
-    for (int64_t i = 0; i < bases_tuple->length(); ++i) {
-      Handle<PyObject> base = bases_tuple->Get(i);
-      if (!IsPyTypeObject(base)) {
-        std::fprintf(stderr, "TypeError: type() bases must be types\n");
-        std::exit(1);
-      }
-      PyList::Append(supers, base);
-    }
-  }
-
-  // 关键字参数在 CPython 中会进入 metaclass machinery（例如
-  // __init_subclass__）。 当前 MVP 尚未实现该机制，因此先忽略 kwargs
-  // 的语义（不影响常见的动态建类用法）。
-  return Runtime_CreatePythonClass(name, class_dict, supers);
+  return Runtime_NewType(args, kwargs);
 }
 
 Handle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,

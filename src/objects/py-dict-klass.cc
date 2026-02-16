@@ -200,65 +200,7 @@ Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyDictKlass::GetInstance());
-
-  // dict([iterable], **kwargs)：最多允许 1 个位置参数，kwargs 最后覆盖。
-  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
-  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
-  if (argc > 1) {
-    std::fprintf(stderr,
-                 "TypeError: dict expected at most 1 argument, got %lld\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
-  }
-
-  Handle<PyDict> result = PyDict::NewInstance();
-
-  if (argc == 1) {
-    Handle<PyObject> input = pos_args->Get(0);
-    if (IsPyDict(input)) {
-      // dict(old_dict)：复制得到新对象（浅拷贝键值对引用）。
-      result = PyDict::Clone(Handle<PyDict>::cast(input));
-    } else {
-      // dict(iterable)：要求 iterable 中每个元素可解包为长度为 2 的序列。
-      Handle<PyTuple> elements = Runtime_UnpackIterableObjectToTuple(input);
-      for (int64_t i = 0; i < elements->length(); ++i) {
-        Handle<PyObject> elem = elements->Get(i);
-        Handle<PyTuple> pair = Runtime_UnpackIterableObjectToTuple(elem);
-        if (pair->length() != 2) {
-          std::fprintf(stderr,
-                       "TypeError: cannot convert dictionary update sequence "
-                       "element #%lld to a sequence\n",
-                       static_cast<long long>(i));
-          std::exit(1);
-        }
-
-        PyDict::Put(result, pair->Get(0), pair->Get(1));
-      }
-    }
-  }
-
-  if (!kwargs.is_null()) {
-    Handle<PyDict> kw = Handle<PyDict>::cast(kwargs);
-    if (!kw.is_null() && kw->occupied() != 0) {
-      // 关键字参数键名按 Python 语义应为 str；非 str 时兜底转换为 str(key)。
-      for (int64_t i = 0; i < kw->capacity(); ++i) {
-        Tagged<PyObject> k = kw->data()->Get(i << 1);
-        if (k.is_null()) {
-          continue;
-        }
-        Tagged<PyObject> v = kw->data()->Get((i << 1) + 1);
-
-        Handle<PyObject> key = handle(k);
-        if (!IsPyString(key)) {
-          key = Runtime_NewStr(key);
-        }
-
-        PyDict::Put(result, key, handle(v));
-      }
-    }
-  }
-
-  return result;
+  return Runtime_NewDict(args, kwargs);
 }
 
 // static

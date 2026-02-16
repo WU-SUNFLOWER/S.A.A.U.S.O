@@ -24,6 +24,8 @@ bool DirectoryExists(std::string_view dirname);
 std::string JoinPath(std::string_view a, std::string_view b);
 
 // 将路径进行规范化（不访问文件系统）。
+// 例如，将 "a/./b" 规范化为 "a/b"；将 "a/b/../c" 规范化为 "a/c"。
+// 支持处理含'/'或'\'的路径，但返回结果中的斜杠与当前操作系统环境对齐。
 std::string NormalizePath(std::string_view path);
 
 }  // namespace saauso::internal

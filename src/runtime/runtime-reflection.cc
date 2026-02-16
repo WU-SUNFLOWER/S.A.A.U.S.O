@@ -10,8 +10,10 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime.h"
 
@@ -89,6 +91,76 @@ Handle<PyObject> Runtime_InvokeMagicOperationMethod(
   std::exit(1);
 
   return Handle<PyObject>::null();
+}
+
+Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
+                                 Handle<PyObject> kwargs) {
+  EscapableHandleScope scope;
+
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+  if (!(argc == 1 || argc == 3)) {
+    std::fprintf(stderr, "TypeError: type() takes 1 or 3 arguments\n");
+    std::exit(1);
+  }
+
+  if (argc == 1) {
+    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+      std::fprintf(stderr, "TypeError: type() takes 1 or 3 arguments\n");
+      std::exit(1);
+    }
+
+    Handle<PyObject> obj = pos_args->Get(0);
+    return scope.Escape(PyObject::GetKlass(obj)->type_object());
+  }
+
+  Handle<PyObject> name_obj = pos_args->Get(0);
+  Handle<PyObject> bases_obj = pos_args->Get(1);
+  Handle<PyObject> dict_obj = pos_args->Get(2);
+
+  if (!IsPyString(name_obj)) {
+    std::fprintf(
+        stderr, "TypeError: type() argument 1 must be str, not '%.*s'\n",
+        static_cast<int>(PyObject::GetKlass(name_obj)->name()->length()),
+        PyObject::GetKlass(name_obj)->name()->buffer());
+    std::exit(1);
+  }
+  if (!IsPyTuple(bases_obj)) {
+    std::fprintf(
+        stderr, "TypeError: type() argument 2 must be tuple, not '%.*s'\n",
+        static_cast<int>(PyObject::GetKlass(bases_obj)->name()->length()),
+        PyObject::GetKlass(bases_obj)->name()->buffer());
+    std::exit(1);
+  }
+  if (!IsPyDict(dict_obj)) {
+    std::fprintf(
+        stderr, "TypeError: type() argument 3 must be dict, not '%.*s'\n",
+        static_cast<int>(PyObject::GetKlass(dict_obj)->name()->length()),
+        PyObject::GetKlass(dict_obj)->name()->buffer());
+    std::exit(1);
+  }
+
+  Handle<PyString> name = Handle<PyString>::cast(name_obj);
+  Handle<PyTuple> bases_tuple = Handle<PyTuple>::cast(bases_obj);
+  Handle<PyDict> class_dict = PyDict::Clone(Handle<PyDict>::cast(dict_obj));
+
+  Handle<PyList> supers;
+  if (bases_tuple->length() == 0) {
+    supers = PyList::NewInstance(1);
+    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
+  } else {
+    supers = PyList::NewInstance(bases_tuple->length());
+    for (int64_t i = 0; i < bases_tuple->length(); ++i) {
+      Handle<PyObject> base = bases_tuple->Get(i);
+      if (!IsPyTypeObject(base)) {
+        std::fprintf(stderr, "TypeError: type() bases must be types\n");
+        std::exit(1);
+      }
+      PyList::Append(supers, base);
+    }
+  }
+
+  return scope.Escape(Runtime_CreatePythonClass(name, class_dict, supers));
 }
 
 }  // namespace saauso::internal
