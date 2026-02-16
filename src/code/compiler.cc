@@ -4,10 +4,15 @@
 
 #include "src/code/compiler.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <span>
 #include <string_view>
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
 #include "src/code/cpython312-pyc-compiler.h"
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
+
 #include "src/code/cpython312-pyc-file-parser.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-function.h"
@@ -38,6 +43,13 @@ Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
                                            std::string_view filename) {
   EscapableHandleScope scope;
 
+#if !SAAUSO_ENABLE_CPYTHON_COMPILER
+  std::fprintf(stderr,
+               "RuntimeError: CompileSource() requires embedded CPython "
+               "compiler; build with saauso_enable_cpython_compiler=true\n");
+  std::exit(1);
+  return Handle<PyFunction>::null();
+#else
   std::vector<uint8_t> pyc = EmbeddedPython312Compiler::CompileToPycBytes(
       std::string_view(source, source_size), filename);
 
@@ -48,6 +60,7 @@ Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
   Handle<PyFunction> func = PyFunction::NewInstance(code);
 
   return scope.Escape(func);
+#endif  // !SAAUSO_ENABLE_CPYTHON_COMPILER
 }
 
 Handle<PyFunction> Compiler::CompilePyc(Isolate* isolate,

@@ -474,9 +474,17 @@ S.A.A.U.S.O 的代码规范主要基于 [Google C++ Style Guide](https://google.
 ### 5.1. 构建
 根 `BUILD.gn` 当前主要提供：
 - `saauso_core`：核心实现 `source_set`（虚拟机主体）。
-- `saauso_cpython312_compiler`：嵌入式 CPython 3.12 编译器前端 `source_set`（可选）。
+- `saauso_cpython312_compiler`：嵌入式 CPython 3.12 编译器前端的可选依赖门面（开关关闭时不引入任何 CPython 依赖）。
 - `vm`：示例入口（见 `src/main.cc`）。
 - `ut`：单元测试入口（转发到 `//test/unittests:ut`）。
+
+构建开关：
+- `saauso_enable_cpython_compiler`（默认 `true`）：控制是否启用“内嵌 CPython 3.12 编译器前端”。
+  - 该开关会注入 C++ 宏 `SAAUSO_ENABLE_CPYTHON_COMPILER=0/1`，用于隔离依赖 `Python.h` 的代码路径。
+  - 当关闭时：
+    - `Compiler::CompileSource`、`Runtime_ExecutePythonSourceCode`、`exec(str)`、以及导入 `.py` 的路径会 fail-fast（提示需要开启该开关）。
+    - `CompilePyc` 与导入 `.pyc` 仍可用，且导入查找会优先选择 `.pyc`。
+    - 单元测试会自动剔除依赖源码编译的解释器端到端用例与编译器前端用例，仅保留纯后端相关用例用于回归。
 
 项目本地包含了 `depot_tools`（Windows/Linux amd64），可直接调用其中的 `gn`/`ninja`。
 

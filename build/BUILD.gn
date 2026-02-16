@@ -45,6 +45,12 @@ config("compiler_defaults") {
     # Linux 下不需要 UNICODE 宏，默认就是 UTF-8
     defines = []
   }
+
+  if (saauso_enable_cpython_compiler) {
+    defines += [ "SAAUSO_ENABLE_CPYTHON_COMPILER=1" ]
+  } else {
+    defines += [ "SAAUSO_ENABLE_CPYTHON_COMPILER=0" ]
+  }
 }
 
 # 2. Debug 配置

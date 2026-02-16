@@ -219,24 +219,27 @@ source_set("saauso_core") {
   public_configs = [ ":saauso_includes" ]
 }
 
-# 接入cpython312编译器前端
+# 接入 cpython312 编译器前端
 source_set("saauso_cpython312_compiler") {
-  sources = [
-    "//src/code/cpython312-pyc-compiler.cc",
-    "//src/code/cpython312-pyc-compiler.h",
-  ]
+  if (saauso_enable_cpython_compiler) {
+    sources = [
+      "//src/code/cpython312-pyc-compiler.cc",
+      "//src/code/cpython312-pyc-compiler.h",
+    ]
 
-  public_deps = [ "//third_party/cpython312" ]
-
-  public_configs = [ ":saauso_includes" ]
+    public_deps = [ "//third_party/cpython312" ]
+    public_configs = [ ":saauso_includes" ]
+  } else {
+    sources = []
+  }
 }
 
 executable("vm") {
   sources = [ "//src/main.cc" ]
-  deps = [
-    ":saauso_core",
-    ":saauso_cpython312_compiler",
-  ]
+  deps = [ ":saauso_core" ]
+  if (saauso_enable_cpython_compiler) {
+    deps += [ ":saauso_cpython312_compiler" ]
+  }
 }
 
 group("ut") {

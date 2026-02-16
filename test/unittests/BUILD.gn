@@ -2,32 +2,10 @@ executable("ut") {
   testonly = true
 
   sources = [
-    "./code/compiler-unittest.cc",
-    "./code/pyc-file-parser-unittest.cc",
     "./handles/global-handle-unittest.cc",
     "./handles/handle-thread-unittest.cc",
     "./handles/handle-unittest.cc",
     "./heap/gc-unittest.cc",
-
-    # GC压力测试运行时间太久了，这里先暂时注释掉
-    # "./heap/gc-interpreter-stress-unittest.cc",
-    "./interpreter/interpreter-builtins-constructor-unittest.cc",
-    "./interpreter/interpreter-builtins-seq-unittest.cc",
-    "./interpreter/interpreter-call-stack-unittest.cc",
-    "./interpreter/interpreter-closure-unittest.cc",
-    "./interpreter/interpreter-controlflow-unittest.cc",
-    "./interpreter/interpreter-custom-class-unittest.cc",
-    "./interpreter/interpreter-dict-unittest.cc",
-    "./interpreter/interpreter-exec-unittest.cc",
-    "./interpreter/interpreter-functions-unittest.cc",
-    "./interpreter/interpreter-import-unittest.cc",
-    "./interpreter/interpreter-lambda-unittests.cc",
-    "./interpreter/interpreter-math-module-unittest.cc",
-    "./interpreter/interpreter-ops-unittest.cc",
-    "./interpreter/interpreter-random-module-unittest.cc",
-    "./interpreter/interpreter-smoke-unittest.cc",
-    "./interpreter/interpreter-time-module-unittest.cc",
-    "./interpreter/native-print-unittest.cc",
     "./lsan-suppressions.cc",
     "./objects/attribute-unittest.cc",
     "./objects/cell-unittest.cc",
@@ -46,9 +24,39 @@ executable("ut") {
     "./utils/string-search-unittest.cc",
   ]
 
+  if (saauso_enable_cpython_compiler) {
+    sources += [
+      "./code/compiler-unittest.cc",
+      "./code/pyc-file-parser-unittest.cc",
+
+      # GC压力测试运行时间太久了，这里先暂时注释掉
+      # "./heap/gc-interpreter-stress-unittest.cc",
+      "./interpreter/interpreter-builtins-constructor-unittest.cc",
+      "./interpreter/interpreter-builtins-seq-unittest.cc",
+      "./interpreter/interpreter-call-stack-unittest.cc",
+      "./interpreter/interpreter-closure-unittest.cc",
+      "./interpreter/interpreter-controlflow-unittest.cc",
+      "./interpreter/interpreter-custom-class-unittest.cc",
+      "./interpreter/interpreter-dict-unittest.cc",
+      "./interpreter/interpreter-exec-unittest.cc",
+      "./interpreter/interpreter-functions-unittest.cc",
+      "./interpreter/interpreter-import-unittest.cc",
+      "./interpreter/interpreter-lambda-unittests.cc",
+      "./interpreter/interpreter-math-module-unittest.cc",
+      "./interpreter/interpreter-ops-unittest.cc",
+      "./interpreter/interpreter-random-module-unittest.cc",
+      "./interpreter/interpreter-smoke-unittest.cc",
+      "./interpreter/interpreter-time-module-unittest.cc",
+      "./interpreter/native-print-unittest.cc",
+    ]
+  }
+
   deps = [
     "//:saauso_core",
-    "//:saauso_cpython312_compiler",
     "//testing/gtest",
   ]
+
+  if (saauso_enable_cpython_compiler) {
+    deps += [ "//:saauso_cpython312_compiler" ]
+  }
 }

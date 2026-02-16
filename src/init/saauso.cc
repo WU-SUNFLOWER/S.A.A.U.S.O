@@ -7,7 +7,9 @@
 #include <atomic>
 #include <cstdlib>
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
 #include "src/code/cpython312-pyc-compiler.h"
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
 namespace saauso {
 
@@ -20,7 +22,9 @@ void Saauso::Initialize() {
   if (!g_initialized.compare_exchange_strong(expected, true)) {
     return;
   }
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
   internal::EmbeddedPython312Compiler::Setup();
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 }
 
 void Saauso::Dispose() {
@@ -28,7 +32,9 @@ void Saauso::Dispose() {
   if (!g_initialized.compare_exchange_strong(expected, false)) {
     return;
   }
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
   internal::EmbeddedPython312Compiler::TearDown();
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 }
 
 bool Saauso::IsInitialized() {

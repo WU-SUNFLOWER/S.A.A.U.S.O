@@ -165,8 +165,15 @@ BUILTIN(Exec) {
   // - code object：直接执行；
   // - 其它类型：报错。
   if (IsPyString(*source_or_code)) {
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
     Runtime_ExecutePythonSourceCode(Handle<PyString>::cast(source_or_code),
                                     locals_dict, globals_dict);
+#else
+    std::fprintf(stderr,
+                 "RuntimeError: exec(str) requires embedded CPython compiler; "
+                 "build with saauso_enable_cpython_compiler=true\n");
+    std::exit(1);
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
   } else if (IsPyCodeObject(*source_or_code)) {
     Runtime_ExecutePyCodeObject(Handle<PyCodeObject>::cast(source_or_code),
                                 locals_dict, globals_dict);

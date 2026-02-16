@@ -17,12 +17,13 @@ esac
 
 # 定义帮助信息
 usage() {
-    echo "使用方法: $0 [release | debug | asan | ut]"
+    echo "使用方法: $0 [release | debug | asan | ut | ut_backend]"
     echo "------------------------------------------------"
     echo "  release  : 默认发布版本"
     echo "  debug    : 调试版本 (is_debug=true)"
     echo "  asan     : 内存检测版本 (is_asan=true)"
     echo "  ut       : 单元测试版本 (is_asan=true, 编译 ut)"
+    echo "  ut_backend: 纯后端单元测试版本 (is_asan=true, saauso_enable_cpython_compiler=false, 编译 ut)"
     exit 1
 }
 
@@ -52,6 +53,11 @@ case $MODE in
     ut)
         OUT_DIR="out/ut"
         GN_ARGS="is_asan=true"
+        TARGET="ut"
+        ;;
+    ut_backend)
+        OUT_DIR="out/ut_backend"
+        GN_ARGS="is_asan=true saauso_enable_cpython_compiler=false"
         TARGET="ut"
         ;;
     *)

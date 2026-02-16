@@ -80,6 +80,15 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
     std::exit(1);
   }
 
+#if !SAAUSO_ENABLE_CPYTHON_COMPILER
+  std::fprintf(
+      stderr,
+      "RuntimeError: executing Python source requires embedded "
+      "CPython compiler; build with saauso_enable_cpython_compiler=true\n");
+  std::exit(1);
+  return Handle<PyObject>::null();
+#else  // !SAAUSO_ENABLE_CPYTHON_COMPILER
+
   // 对齐 CPython：若 globals 未提供 __builtins__，则自动注入当前解释器的
   // builtins。
   if (globals->Get(ST(builtins)).is_null()) {
@@ -96,6 +105,7 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
       func, Handle<PyObject>::null(), Handle<PyTuple>::null(),
       Handle<PyDict>::null(), locals);
   return scope.Escape(result);
+#endif
 }
 
 Handle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,

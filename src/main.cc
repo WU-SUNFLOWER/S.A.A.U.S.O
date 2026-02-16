@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -22,6 +24,7 @@
 
 using namespace saauso::internal;
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
 class A(object):
@@ -41,8 +44,9 @@ c = C()
 b.say()    # "I am B"
 c.say()    # "I am A"
 )";
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
-int main() {
+int main(int argc, char** argv) {
   saauso::Saauso::Initialize();
   Isolate* isolate = Isolate::New();
 
@@ -50,8 +54,19 @@ int main() {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope;
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
     Handle<PyFunction> boilerplate =
         Compiler::CompileSource(isolate, kSourceCode, kFileName);
+#else
+    if (argc != 2) {
+      std::fprintf(stderr, "Usage: vm <module.pyc>\n");
+      std::fprintf(stderr,
+                   "Note: build with saauso_enable_cpython_compiler=true to "
+                   "run source-code demo.\n");
+      std::exit(1);
+    }
+    Handle<PyFunction> boilerplate = Compiler::CompilePyc(isolate, argv[1]);
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
     isolate->interpreter()->Run(boilerplate);
   }

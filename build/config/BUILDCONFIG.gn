@@ -21,6 +21,7 @@ declare_args() {
   is_debug = false
   is_asan = false
   llvm_lib_path = "D:\\LLVM\\lib\\clang\\21\\lib\\windows"
+  saauso_enable_cpython_compiler = true
 }
 
 set_default_toolchain("//build/toolchain:clang")

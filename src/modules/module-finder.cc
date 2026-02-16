@@ -39,6 +39,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
     std::string base = Handle<PyString>::cast(elem)->ToStdString();
     std::filesystem::path base_path(base);
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
     std::filesystem::path package_init = base_path / relative / "__init__.py";
     if (FileExists(package_init.string())) {
       result.origin = NormalizePath(package_init.string());
@@ -47,6 +48,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       result.package_dir = NormalizePath((base_path / relative).string());
       return result;
     }
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
     std::filesystem::path package_init_pyc =
         base_path / relative / "__init__.pyc";
@@ -58,6 +60,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       return result;
     }
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
     std::filesystem::path module_py = base_path / relative;
     module_py += ".py";
     if (FileExists(module_py.string())) {
@@ -66,6 +69,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       result.is_package = false;
       return result;
     }
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
     std::filesystem::path module_pyc = base_path / relative;
     module_pyc += ".pyc";
