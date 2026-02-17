@@ -9,6 +9,10 @@
 
 namespace saauso::internal {
 
+// 特别提醒：
+// 如果需要Python内建函数对应的C++函数签名声明，
+// 请使用src/objects/py-function.h当中的NativeFuncPointer！！！
+
 class PyObject;
 class PyTuple;
 class PyDict;

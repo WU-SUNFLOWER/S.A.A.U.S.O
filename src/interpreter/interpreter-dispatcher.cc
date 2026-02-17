@@ -201,15 +201,15 @@ void Interpreter::EvalCurrentFrame() {
         if (!IsPyTypeObject(elem)) {
           auto type_error_type = Handle<PyTypeObject>::cast(
               builtins()->Get(PyString::NewInstance("TypeError")));
-          auto type_error = type_error_type->own_klass()->ConstructInstance(
-              Handle<PyObject>::null(), Handle<PyObject>::null());
+          auto type_error =
+              type_error_type->own_klass()->ConstructInstance(
+                  Handle<PyObject>::null(), Handle<PyObject>::null());
           SetPendingException(*type_error);
           pending_exception_ip_ = current_frame_->pc() - 2;
           pending_exception_origin_ip_ = pending_exception_ip_;
           goto pending_exception_unwind;
         }
-        if (Runtime_IsInstanceOfTypeObject(exc,
-                                           Handle<PyTypeObject>::cast(elem))) {
+        if (Runtime_IsInstanceOfTypeObject(exc, Handle<PyTypeObject>::cast(elem))) {
           matched = true;
           break;
         }
@@ -217,8 +217,9 @@ void Interpreter::EvalCurrentFrame() {
     } else {
       auto type_error_type = Handle<PyTypeObject>::cast(
           builtins()->Get(PyString::NewInstance("TypeError")));
-      auto type_error = type_error_type->own_klass()->ConstructInstance(
-          Handle<PyObject>::null(), Handle<PyObject>::null());
+      auto type_error =
+          type_error_type->own_klass()->ConstructInstance(
+              Handle<PyObject>::null(), Handle<PyObject>::null());
       SetPendingException(*type_error);
       pending_exception_ip_ = current_frame_->pc() - 2;
       pending_exception_origin_ip_ = pending_exception_ip_;
@@ -314,7 +315,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
 
   INTERPRETER_HANDLER_DISPATCH(
-      LoadBuildClass, { PUSH(builtins_tagged()->Get(ST_TAGGED(build_class))); })
+      LoadBuildClass, { PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class))); })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
     ret_value_ = POP_TAGGED();

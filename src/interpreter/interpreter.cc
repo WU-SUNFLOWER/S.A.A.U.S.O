@@ -11,6 +11,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/interpreter/builtin-bootstrapper.h"
 #include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/objects/fixed-array.h"
@@ -42,104 +43,7 @@ namespace saauso::internal {
 
 Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   HandleScope scope;
-
-  Handle<PyDict> builtins = PyDict::NewInstance();
-
-  // 注册基础类型的klass
-  PyDict::Put(builtins, PyString::NewInstance("object"),
-              PyObjectKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("int"),
-              PySmiKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("str"),
-              PyStringKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("float"),
-              PyFloatKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("list"),
-              PyListKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("bool"),
-              PyBooleanKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("dict"),
-              PyDictKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("tuple"),
-              PyTupleKlass::GetInstance()->type_object());
-  PyDict::Put(builtins, PyString::NewInstance("type"),
-              PyTypeObjectKlass::GetInstance()->type_object());
-
-  // 注册oddballs
-  PyDict::Put(builtins, PyString::NewInstance("True"),
-              handle(isolate_->py_true_object()));
-  PyDict::Put(builtins, PyString::NewInstance("False"),
-              handle(isolate_->py_false_object()));
-  PyDict::Put(builtins, PyString::NewInstance("None"),
-              handle(isolate_->py_none_object()));
-
-  // 注册native function
-  auto func_name = PyString::NewInstance("print");
-  PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Print), func_name));
-  func_name = PyString::NewInstance("len");
-  PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Len), func_name));
-
-  func_name = PyString::NewInstance("isinstance");
-  PyDict::Put(
-      builtins, func_name,
-      PyFunction::NewInstance(&BUILTIN_FUNC_NAME(IsInstance), func_name));
-
-  func_name = ST(build_class);
-  PyDict::Put(
-      builtins, func_name,
-      PyFunction::NewInstance(&BUILTIN_FUNC_NAME(BuildTypeObject), func_name));
-
-  func_name = PyString::NewInstance("sysgc");
-  PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Sysgc), func_name));
-
-  func_name = PyString::NewInstance("exec");
-  PyDict::Put(builtins, func_name,
-              PyFunction::NewInstance(&BUILTIN_FUNC_NAME(Exec), func_name));
-
-  // 把builtins自己注册进去
-  PyDict::Put(builtins, ST(builtins), builtins);
-
-  // 注册内建异常类型（MVP：仅覆盖常用的一小批）。
-  // 这些类型的核心用途是：支持 try/except/finally
-  // 的匹配与传播，而非完整异常对象语义。
-  {
-    Handle<PyTypeObject> object_type =
-        Handle<PyTypeObject>::cast(PyObjectKlass::GetInstance()->type_object());
-
-    auto supers = PyList::NewInstance(1);
-    supers->SetAndExtendLength(0, object_type);
-    Handle<PyTypeObject> base_exception = Runtime_CreatePythonClass(
-        PyString::NewInstance("BaseException"), PyDict::NewInstance(), supers);
-
-    supers = PyList::NewInstance(1);
-    supers->SetAndExtendLength(0, base_exception);
-    Handle<PyTypeObject> exception = Runtime_CreatePythonClass(
-        PyString::NewInstance("Exception"), PyDict::NewInstance(), supers);
-
-    auto RegisterException = [&](const char* name, Handle<PyTypeObject> base) {
-      auto supers = PyList::NewInstance(1);
-      supers->SetAndExtendLength(0, base);
-      auto type_object = Runtime_CreatePythonClass(
-          PyString::NewInstance(name), PyDict::NewInstance(), supers);
-      PyDict::Put(builtins, PyString::NewInstance(name), type_object);
-    };
-
-    PyDict::Put(builtins, PyString::NewInstance("BaseException"),
-                base_exception);
-    PyDict::Put(builtins, PyString::NewInstance("Exception"), exception);
-    RegisterException("TypeError", exception);
-    RegisterException("ValueError", exception);
-    RegisterException("NameError", exception);
-    RegisterException("AttributeError", exception);
-    RegisterException("IndexError", exception);
-    RegisterException("KeyError", exception);
-    RegisterException("RuntimeError", exception);
-  }
-
-  builtins_ = *builtins;
+  builtins_ = *BuiltinBootstrapper(isolate_).CreateBuiltins();
 }
 
 Handle<PyDict> Interpreter::builtins() const {

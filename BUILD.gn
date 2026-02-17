@@ -135,6 +135,8 @@ source_set("saauso_core") {
     "//src/objects/visitors.h",
 
     # 解释器
+    "//src/interpreter/builtin-bootstrapper.cc",
+    "//src/interpreter/builtin-bootstrapper.h",
     "//src/interpreter/bytecodes.h",
     "//src/interpreter/frame-object-builder.cc",
     "//src/interpreter/frame-object-builder.h",

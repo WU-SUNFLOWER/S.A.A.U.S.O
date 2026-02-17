@@ -20,7 +20,6 @@ class ObjectVisitor;
 
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
   V(add, "__add__")                  \
-  V(build_class, "__build_class__")  \
   V(call, "__call__")                \
   V(all, "__all__")                  \
   V(eq, "__eq__")                    \
@@ -52,6 +51,27 @@ class ObjectVisitor;
   V(main, "__main_")                 \
   V(dot, ".")
 
+#define PY_BUILTIN_FUNC_LIST(V)          \
+  V(func_build_class, "__build_class__") \
+  V(func_print, "print")                 \
+  V(func_len, "len")                     \
+  V(func_isinstance, "isinstance")       \
+  V(func_sysgc, "sysgc")                 \
+  V(func_exec, "exec")
+
+#define PY_EXCEPTION_TYPE_LIST(V)    \
+  V(base_exception, "BaseException") \
+  V(exception, "Exception")          \
+  V(type_err, "TypeError")           \
+  V(value_err, "ValueError")         \
+  V(name_err, "NameError")           \
+  V(attr_err, "AttributeError")      \
+  V(index_err, "IndexError")         \
+  V(key_err, "KeyError")             \
+  V(runtime_err, "RuntimeError")     \
+  V(div_zero, "ZeroDivisionError")   \
+  V(stop_iter, "StopIteration")
+
 #if BUILDFLAG(IS_WIN)
 #define LIB_EXT ".dll"
 #endif  // BUILDFLAG(IS_WIN)
@@ -60,17 +80,13 @@ class ObjectVisitor;
 #define LIB_EXT ".so"
 #endif  // BUILDFLAG(IS_LINUX)
 
-#define STRING_IN_TABLE_LIST(V)    \
-  V(div_zero, "ZeroDivisionError") \
-  V(stop_iter, "StopIteration")    \
-  V(index_err, "IndexError")       \
-  V(exc, "Exception")              \
-  V(lib, "lib/")                   \
-  V(pyc, ".pyc")                   \
-  V(so, LIB_EXT)                   \
-  V(builtins, "__builtins__")      \
-  V(end, "end")                    \
-  V(eol, "eol")                    \
+#define STRING_IN_TABLE_LIST(V) \
+  V(lib, "lib/")                \
+  V(pyc, ".pyc")                \
+  V(so, LIB_EXT)                \
+  V(builtins, "__builtins__")   \
+  V(end, "end")                 \
+  V(eol, "eol")                 \
   V(sep, "sep")
 
 class StringTable {
@@ -80,6 +96,8 @@ class StringTable {
 
 #define DECLARE_STR_FIELD(name, _) Tagged<PyString> name##_str_{kNullAddress};
   PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD)
+  PY_BUILTIN_FUNC_LIST(DECLARE_STR_FIELD)
+  PY_EXCEPTION_TYPE_LIST(DECLARE_STR_FIELD)
   STRING_IN_TABLE_LIST(DECLARE_STR_FIELD)
 #undef DECLARE_STR_FIELD
 };

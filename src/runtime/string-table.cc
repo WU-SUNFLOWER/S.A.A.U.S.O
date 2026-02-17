@@ -12,20 +12,28 @@ namespace saauso::internal {
 StringTable::StringTable() {
 #define INIT_STR_FIELD(name, value) \
   name##_str_ = *PyString::NewInstance(value, true);
-  STRING_IN_TABLE_LIST(INIT_STR_FIELD);
+
   PY_OBJECT_MAGIC_ATTR_LIST(INIT_STR_FIELD);
+  PY_BUILTIN_FUNC_LIST(INIT_STR_FIELD);
+  PY_EXCEPTION_TYPE_LIST(INIT_STR_FIELD);
+  STRING_IN_TABLE_LIST(INIT_STR_FIELD);
+
 #undef INIT_STR_FIELD
 }
 
 void StringTable::Iterate(ObjectVisitor* v) {
-#define VISIT_STR_FIELD(name, _)                      \
-  do {                                                \
-    Tagged<PyObject> object = name##_str_;             \
-    v->VisitPointer(&object);                          \
-    name##_str_ = Tagged<PyString>::cast(object);      \
+#define VISIT_STR_FIELD(name, _)                  \
+  do {                                            \
+    Tagged<PyObject> object = name##_str_;        \
+    v->VisitPointer(&object);                     \
+    name##_str_ = Tagged<PyString>::cast(object); \
   } while (false);
-  PY_OBJECT_MAGIC_ATTR_LIST(VISIT_STR_FIELD)
-  STRING_IN_TABLE_LIST(VISIT_STR_FIELD)
+
+  PY_OBJECT_MAGIC_ATTR_LIST(VISIT_STR_FIELD);
+  PY_BUILTIN_FUNC_LIST(VISIT_STR_FIELD);
+  PY_EXCEPTION_TYPE_LIST(VISIT_STR_FIELD);
+  STRING_IN_TABLE_LIST(VISIT_STR_FIELD);
+
 #undef VISIT_STR_FIELD
 }
 
