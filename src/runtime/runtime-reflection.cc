@@ -44,6 +44,19 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   return scope.Escape(type_object);
 }
 
+bool Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
+                                    Handle<PyTypeObject> type_object) {
+  auto mro_of_object = PyObject::GetKlass(object)->mro();
+  Handle<PyObject> type_or_tuple = type_object;
+  for (auto i = 0; i < mro_of_object->length(); ++i) {
+    auto curr_type_object = mro_of_object->Get(i);
+    if (PyObject::EqualBool(curr_type_object, type_or_tuple)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
     Handle<PyObject> instance,
     Handle<PyObject> prop_name) {

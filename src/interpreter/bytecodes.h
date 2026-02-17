@@ -15,16 +15,20 @@ namespace saauso::internal {
   V(EndFor, 4)             \
   V(Nop, 9)                \
   V(BinarySubscr, 25)      \
+  V(PushExcInfo, 35)       \
+  V(CheckExcMatch, 36)     \
   V(StoreSubscr, 60)       \
   V(DeleteSubscr, 61)      \
   V(GetIter, 68)           \
   V(LoadBuildClass, 71)    \
   V(ReturnValue, 83)       \
+  V(PopExcept, 89)         \
   V(StoreName, 90)         \
   V(UnpackSequence, 92)    \
   V(ForIter, 93)           \
   V(StoreAttr, 95)         \
   V(StoreGlobal, 97)       \
+  V(Swap, 99)              \
   V(LoadConst, 100)        \
   V(LoadName, 101)         \
   V(BuildTuple, 102)       \
@@ -40,6 +44,8 @@ namespace saauso::internal {
   V(IsOp, 117)             \
   V(LoadGlobal, 116)       \
   V(ContainsOp, 118)       \
+  V(Reraise, 119)          \
+  V(Copy, 120)             \
   V(ReturnConst, 121)      \
   V(BinaryOp, 122)         \
   V(LoadFast, 124)         \
@@ -47,6 +53,7 @@ namespace saauso::internal {
   V(DeleteFast, 126)       \
   V(PopJumpIfNotNone, 128) \
   V(PopJumpIfNone, 129)    \
+  V(RaiseVarargs, 130)     \
   V(MakeFunction, 132)     \
   V(MakeCell, 135)         \
   V(LoadClosure, 136)      \

@@ -109,6 +109,12 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
                                                Handle<PyDict> class_properties,
                                                Handle<PyList> supers);
 
+// 判断 object 是否是某个 type 的实例。
+// - 该函数仅依赖对象的 klass mro，不做 Python 层参数校验。
+// - 入参应由上层（builtin/解释器语义层）保证为合法的 type object。
+bool Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
+                                    Handle<PyTypeObject> type_object);
+
 // 沿着 instance 的 type mro 查找属性。
 // - 命中返回属性值；未命中返回 null。
 Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(

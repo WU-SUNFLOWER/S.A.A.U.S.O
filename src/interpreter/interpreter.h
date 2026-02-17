@@ -43,6 +43,18 @@ class Interpreter {
   Handle<PyDict> builtins() const;
   Handle<PyTuple> kwarg_keys() const;
 
+  // 返回当前处于“已捕获态”的异常对象（用于 except 语义与 sys.exc_info 族
+  // API）。
+  Tagged<PyObject> caught_exception_tagged() const;
+  Handle<PyObject> caught_exception() const;
+
+  // 返回当前处于“传播态”的异常对象。若非空，表示解释器正在进行异常展开。
+  bool HasPendingException() const;
+  Tagged<PyObject> pending_exception_tagged() const;
+  Handle<PyObject> pending_exception() const;
+  void SetPendingException(Tagged<PyObject> exception);
+  void ClearPendingException();
+
   // GC接口
   void Iterate(ObjectVisitor* v);
 
@@ -74,6 +86,7 @@ class Interpreter {
   void EvalCurrentFrame();
   void LeaveCurrentFrame();
   void DestroyCurrentFrame();
+  void UnwindCurrentFrameForException();
 
   void PopCallTarget(Handle<PyObject>& callable, Handle<PyObject>& host);
 
@@ -90,6 +103,16 @@ class Interpreter {
 
   // 临时储存发起函数调用时传入的实际键值对参数的所有键
   Tagged<PyObject> kwarg_keys_{kNullAddress};
+
+  // 当前处于“已捕获态”的异常（用于 PUSH_EXC_INFO/POP_EXCEPT 恢复）。
+  Tagged<PyObject> caught_exception_{kNullAddress};
+  int caught_exception_origin_ip_{-1};
+
+  // 当前处于“传播态”的异常（用于跨栈帧传播与 exception table 查找 handler）。
+  Tagged<PyObject> pending_exception_{kNullAddress};
+  int pending_exception_ip_{-1};
+  int pending_exception_origin_ip_{-1};
+  int stack_exception_origin_ip_{-1};
 
   FrameObject* current_frame_{nullptr};
 

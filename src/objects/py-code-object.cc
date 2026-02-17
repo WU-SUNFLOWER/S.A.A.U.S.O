@@ -191,4 +191,8 @@ Handle<PyString> PyCodeObject::localspluskinds() const {
   return handle(Tagged<PyString>::cast(localspluskinds_));
 }
 
+Handle<PyString> PyCodeObject::exception_table() const {
+  return handle(Tagged<PyString>::cast(exception_table_));
+}
+
 };  // namespace saauso::internal

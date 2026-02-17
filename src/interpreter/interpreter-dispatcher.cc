@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <cassert>
+
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -24,10 +26,64 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
+
+namespace {
+
+int ParseExceptionTableVarint(const char* data, int length, int& index) {
+  assert(index < length);
+  uint8_t b = static_cast<uint8_t>(data[index++]);
+  int val = b & 63;
+  while (b & 64) {
+    assert(index < length);
+    val <<= 6;
+    b = static_cast<uint8_t>(data[index++]);
+    val |= b & 63;
+  }
+  return val;
+}
+
+bool FindExceptionHandler(Handle<PyCodeObject> code_object,
+                          int instruction_offset_in_bytes,
+                          int& stack_depth,
+                          int& handler_offset_in_bytes,
+                          bool& push_lasti) {
+  Handle<PyString> table = code_object->exception_table();
+  if (table.is_null() || table->length() == 0) {
+    return false;
+  }
+
+  const char* data = table->buffer();
+  const int length = static_cast<int>(table->length());
+
+  int index = 0;
+  while (index < length) {
+    const int start = ParseExceptionTableVarint(data, length, index) * 2;
+    const int size = ParseExceptionTableVarint(data, length, index) * 2;
+    const int end = start + size;
+    const int target = ParseExceptionTableVarint(data, length, index) * 2;
+    const int depth_and_lasti = ParseExceptionTableVarint(data, length, index);
+
+    const int depth = depth_and_lasti >> 1;
+    const bool lasti = (depth_and_lasti & 1) != 0;
+
+    if (start <= instruction_offset_in_bytes &&
+        instruction_offset_in_bytes < end) {
+      stack_depth = depth;
+      handler_offset_in_bytes = target;
+      push_lasti = lasti;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+}  // namespace
 
 #define STACK_SIZE() (current_frame_->StackSize())
 #define TOP() (current_frame_->TopOfStack())
@@ -47,6 +103,9 @@ void Interpreter::EvalCurrentFrame() {
 
 #define DISPATCH()                                      \
   do {                                                  \
+    if (HasPendingException()) [[unlikely]] {           \
+      goto pending_exception_unwind;                    \
+    }                                                   \
     if (!current_frame_->HasMoreCodes()) [[unlikely]] { \
       goto exit_interpreter;                            \
     }                                                   \
@@ -94,6 +153,144 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_NOOP(EndFor)
 
   INTERPRETER_HANDLER_NOOP(Nop)
+
+  INTERPRETER_HANDLER_DISPATCH(Copy, {
+    assert(op_arg > 0);
+    const int index = current_frame_->stack_top() - op_arg;
+    PUSH(current_frame_->StackGetTagged(index));
+  })
+
+  INTERPRETER_HANDLER_DISPATCH(Swap, {
+    assert(op_arg > 0);
+    auto stack = current_frame_->stack();
+    const int index = current_frame_->stack_top() - op_arg;
+    const int top = current_frame_->stack_top() - 1;
+    Tagged<PyObject> a = stack->Get(index);
+    Tagged<PyObject> b = stack->Get(top);
+    stack->Set(index, b);
+    stack->Set(top, a);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(PushExcInfo, {
+    Handle<PyObject> new_exc = POP();
+    PUSH(caught_exception_);
+    PUSH(new_exc);
+    caught_exception_ = *new_exc;
+    caught_exception_origin_ip_ = stack_exception_origin_ip_;
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(PopExcept, {
+    Handle<PyObject> restore_exc = POP();
+    caught_exception_ =
+        restore_exc.is_null() ? Tagged<PyObject>::null() : *restore_exc;
+    caught_exception_origin_ip_ = -1;
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(CheckExcMatch, {
+    Handle<PyObject> match_type = POP();
+    Handle<PyObject> exc = TOP();
+
+    bool matched = false;
+    if (IsPyTypeObject(match_type)) {
+      matched = Runtime_IsInstanceOfTypeObject(
+          exc, Handle<PyTypeObject>::cast(match_type));
+    } else if (IsPyTuple(match_type)) {
+      auto tuple = Handle<PyTuple>::cast(match_type);
+      for (auto i = 0; i < tuple->length(); ++i) {
+        auto elem = tuple->Get(i);
+        if (!IsPyTypeObject(elem)) {
+          auto type_error_type = Handle<PyTypeObject>::cast(
+              builtins()->Get(PyString::NewInstance("TypeError")));
+          auto type_error = type_error_type->own_klass()->ConstructInstance(
+              Handle<PyObject>::null(), Handle<PyObject>::null());
+          SetPendingException(*type_error);
+          pending_exception_ip_ = current_frame_->pc() - 2;
+          pending_exception_origin_ip_ = pending_exception_ip_;
+          goto pending_exception_unwind;
+        }
+        if (Runtime_IsInstanceOfTypeObject(exc,
+                                           Handle<PyTypeObject>::cast(elem))) {
+          matched = true;
+          break;
+        }
+      }
+    } else {
+      auto type_error_type = Handle<PyTypeObject>::cast(
+          builtins()->Get(PyString::NewInstance("TypeError")));
+      auto type_error = type_error_type->own_klass()->ConstructInstance(
+          Handle<PyObject>::null(), Handle<PyObject>::null());
+      SetPendingException(*type_error);
+      pending_exception_ip_ = current_frame_->pc() - 2;
+      pending_exception_origin_ip_ = pending_exception_ip_;
+      goto pending_exception_unwind;
+    }
+
+    PUSH(matched ? handle(isolate_->py_true_object())
+                 : handle(isolate_->py_false_object()));
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(RaiseVarargs, {
+    Handle<PyObject> cause;
+    Handle<PyObject> exc;
+    const int current_ip_in_bytes = current_frame_->pc() - 2;
+    if (op_arg == 0) {
+      if (caught_exception_.is_null()) {
+        auto runtime_error_type = Handle<PyTypeObject>::cast(
+            builtins()->Get(PyString::NewInstance("RuntimeError")));
+        exc = runtime_error_type->own_klass()->ConstructInstance(
+            Handle<PyObject>::null(), Handle<PyObject>::null());
+        pending_exception_origin_ip_ = current_ip_in_bytes;
+      } else {
+        exc = handle(Tagged<PyObject>::cast(caught_exception_));
+        pending_exception_origin_ip_ = caught_exception_origin_ip_ >= 0
+                                           ? caught_exception_origin_ip_
+                                           : current_ip_in_bytes;
+      }
+      pending_exception_ip_ = current_ip_in_bytes;
+    } else if (op_arg == 1) {
+      exc = POP();
+      pending_exception_ip_ = current_ip_in_bytes;
+      pending_exception_origin_ip_ = current_ip_in_bytes;
+    } else if (op_arg == 2) {
+      cause = POP();
+      exc = POP();
+      (void)cause;
+      pending_exception_ip_ = current_ip_in_bytes;
+      pending_exception_origin_ip_ = current_ip_in_bytes;
+    } else {
+      std::fprintf(stderr, "TypeError: invalid RAISE_VARARGS oparg=%d\n",
+                   op_arg);
+      std::exit(1);
+    }
+
+    if (IsPyTypeObject(exc)) {
+      auto type_object = Handle<PyTypeObject>::cast(exc);
+      exc = type_object->own_klass()->ConstructInstance(
+          Handle<PyObject>::null(), Handle<PyObject>::null());
+    }
+
+    SetPendingException(*exc);
+  })
+
+  INTERPRETER_HANDLER_WITH_SCOPE(Reraise, {
+    Handle<PyObject> exc = POP();
+    const int current_ip_in_bytes = current_frame_->pc() - 2;
+    pending_exception_ip_ = current_ip_in_bytes;
+    if (op_arg != 0) {
+      Handle<PyObject> lasti_obj = POP();
+      if (IsPySmi(lasti_obj)) {
+        int lasti = Tagged<PySmi>::cast(*lasti_obj).value();
+        pending_exception_origin_ip_ = lasti * 2;
+      } else {
+        pending_exception_origin_ip_ = current_ip_in_bytes;
+      }
+    } else {
+      pending_exception_origin_ip_ = caught_exception_origin_ip_ >= 0
+                                         ? caught_exception_origin_ip_
+                                         : current_ip_in_bytes;
+    }
+    SetPendingException(*exc);
+  })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinarySubscr, {
     Handle<PyObject> subscr = POP();
@@ -717,6 +914,50 @@ void Interpreter::EvalCurrentFrame() {
     }
   })
 
+pending_exception_unwind: {
+  if (current_frame_ == nullptr) [[unlikely]] {
+    goto exit_interpreter;
+  }
+
+  const int offset_in_bytes = pending_exception_ip_ >= 0
+                                  ? pending_exception_ip_
+                                  : current_frame_->pc() - 2;
+  const int origin_ip_in_bytes = pending_exception_origin_ip_ >= 0
+                                     ? pending_exception_origin_ip_
+                                     : offset_in_bytes;
+  int stack_depth = 0;
+  int handler_offset_in_bytes = 0;
+  bool push_lasti = false;
+  bool found_handler = false;
+
+  Tagged<PyObject> exception = pending_exception_tagged();
+  {
+    HandleScope scope;
+    found_handler =
+        FindExceptionHandler(current_frame_->code_object(), offset_in_bytes,
+                             stack_depth, handler_offset_in_bytes, push_lasti);
+  }
+
+  if (found_handler) {
+    current_frame_->set_stack_top(stack_depth);
+    if (push_lasti) {
+      PUSH(Tagged<PyObject>::cast(
+          Tagged<PySmi>(static_cast<int64_t>(origin_ip_in_bytes / 2))));
+    }
+    PUSH(exception);
+    stack_exception_origin_ip_ = origin_ip_in_bytes;
+    ClearPendingException();
+    current_frame_->set_pc(handler_offset_in_bytes);
+    DISPATCH();
+  }
+
+  if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
+    goto exit_interpreter;
+  }
+  UnwindCurrentFrameForException();
+  DISPATCH();
+}
+
 #undef INTERPRETER_HANDLER_NOOP
 #undef INTERPRETER_HANDLER_WITH_SCOPE
 #undef INTERPRETER_HANDLER_DISPATCH
@@ -817,6 +1058,13 @@ void Interpreter::DestroyCurrentFrame() {
   // 弹出并销毁当前python栈帧，恢复上一个python栈帧
   current_frame_ = callee->caller();
   delete callee;
+}
+
+void Interpreter::UnwindCurrentFrameForException() {
+  DestroyCurrentFrame();
+  ret_value_ = Tagged<PyObject>::null();
+  pending_exception_ip_ =
+      current_frame_ == nullptr ? -1 : current_frame_->pc() - 2;
 }
 
 }  // namespace saauso::internal

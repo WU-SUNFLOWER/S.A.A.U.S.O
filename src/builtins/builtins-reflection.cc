@@ -23,19 +23,40 @@ BUILTIN(Len) {
 BUILTIN(IsInstance) {
   EscapableHandleScope scope;
 
-  auto object = args->Get(0);
-  auto mro_of_object = PyObject::GetKlass(object)->mro();
-  auto target_type_object = args->Get(1);
-
-  auto result = handle(Isolate::Current()->py_false_object());
-  for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto curr_type_object = mro_of_object->Get(i);
-    if (PyObject::EqualBool(curr_type_object, target_type_object)) {
-      result = handle(Isolate::Current()->py_true_object());
-      break;
-    }
+  const auto args_length = args.is_null() ? 0 : args->length();
+  if (args_length != 2) [[unlikely]] {
+    std::fprintf(stderr, "TypeError: isinstance expected 2 arguments\n");
+    std::exit(1);
   }
 
+  auto object = args->Get(0);
+  auto type_or_tuple = args->Get(1);
+  assert(!type_or_tuple.is_null());
+
+  bool matched = false;
+  if (IsPyTypeObject(type_or_tuple)) {
+    matched = Runtime_IsInstanceOfTypeObject(
+        object, Handle<PyTypeObject>::cast(type_or_tuple));
+  } else if (IsPyTuple(type_or_tuple)) {
+    auto tuple = Handle<PyTuple>::cast(type_or_tuple);
+    for (auto i = 0; i < tuple->length(); ++i) {
+      auto elem = tuple->Get(i);
+      if (!IsPyTypeObject(elem)) [[unlikely]] {
+        std::fprintf(stderr, "TypeError: isinstance() arg 2 must be a type\n");
+        std::exit(1);
+      }
+      if (Runtime_IsInstanceOfTypeObject(object,
+                                         Handle<PyTypeObject>::cast(elem))) {
+        matched = true;
+        break;
+      }
+    }
+  } else {
+    std::fprintf(stderr, "TypeError: isinstance() arg 2 must be a type\n");
+    std::exit(1);
+  }
+
+  auto result = handle(Isolate::ToPyBoolean(matched));
   return scope.Escape(result);
 }
 

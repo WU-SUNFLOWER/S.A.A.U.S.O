@@ -102,6 +102,43 @@ Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
   // 把builtins自己注册进去
   PyDict::Put(builtins, ST(builtins), builtins);
 
+  // 注册内建异常类型（MVP：仅覆盖常用的一小批）。
+  // 这些类型的核心用途是：支持 try/except/finally
+  // 的匹配与传播，而非完整异常对象语义。
+  {
+    Handle<PyTypeObject> object_type =
+        Handle<PyTypeObject>::cast(PyObjectKlass::GetInstance()->type_object());
+
+    auto supers = PyList::NewInstance(1);
+    supers->SetAndExtendLength(0, object_type);
+    Handle<PyTypeObject> base_exception = Runtime_CreatePythonClass(
+        PyString::NewInstance("BaseException"), PyDict::NewInstance(), supers);
+
+    supers = PyList::NewInstance(1);
+    supers->SetAndExtendLength(0, base_exception);
+    Handle<PyTypeObject> exception = Runtime_CreatePythonClass(
+        PyString::NewInstance("Exception"), PyDict::NewInstance(), supers);
+
+    auto RegisterException = [&](const char* name, Handle<PyTypeObject> base) {
+      auto supers = PyList::NewInstance(1);
+      supers->SetAndExtendLength(0, base);
+      auto type_object = Runtime_CreatePythonClass(
+          PyString::NewInstance(name), PyDict::NewInstance(), supers);
+      PyDict::Put(builtins, PyString::NewInstance(name), type_object);
+    };
+
+    PyDict::Put(builtins, PyString::NewInstance("BaseException"),
+                base_exception);
+    PyDict::Put(builtins, PyString::NewInstance("Exception"), exception);
+    RegisterException("TypeError", exception);
+    RegisterException("ValueError", exception);
+    RegisterException("NameError", exception);
+    RegisterException("AttributeError", exception);
+    RegisterException("IndexError", exception);
+    RegisterException("KeyError", exception);
+    RegisterException("RuntimeError", exception);
+  }
+
   builtins_ = *builtins;
 }
 
@@ -115,6 +152,36 @@ Tagged<PyDict> Interpreter::builtins_tagged() const {
 
 Handle<PyTuple> Interpreter::kwarg_keys() const {
   return handle(Tagged<PyTuple>::cast(kwarg_keys_));
+}
+
+Tagged<PyObject> Interpreter::caught_exception_tagged() const {
+  return Tagged<PyObject>::cast(caught_exception_);
+}
+
+Handle<PyObject> Interpreter::caught_exception() const {
+  return handle(caught_exception_tagged());
+}
+
+bool Interpreter::HasPendingException() const {
+  return !pending_exception_tagged().is_null();
+}
+
+Tagged<PyObject> Interpreter::pending_exception_tagged() const {
+  return Tagged<PyObject>::cast(pending_exception_);
+}
+
+Handle<PyObject> Interpreter::pending_exception() const {
+  return handle(pending_exception_tagged());
+}
+
+void Interpreter::SetPendingException(Tagged<PyObject> exception) {
+  pending_exception_ = exception;
+}
+
+void Interpreter::ClearPendingException() {
+  pending_exception_ = Tagged<PyObject>::null();
+  pending_exception_ip_ = -1;
+  pending_exception_origin_ip_ = -1;
 }
 
 Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
@@ -265,6 +332,8 @@ void Interpreter::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&builtins_);
   v->VisitPointer(&ret_value_);
   v->VisitPointer(&kwarg_keys_);
+  v->VisitPointer(&caught_exception_);
+  v->VisitPointer(&pending_exception_);
 
   FrameObject* frame = current_frame_;
   // 遍历函数调用栈

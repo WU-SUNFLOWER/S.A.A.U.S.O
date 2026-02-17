@@ -102,6 +102,7 @@ class PyCodeObject : public PyObject {
 
   Handle<PyTuple> localsplusnames() const;
   Handle<PyString> localspluskinds() const;
+  Handle<PyString> exception_table() const;
 
  private:
   friend class PyCodeObjectKlass;
