@@ -52,6 +52,8 @@ bool FindExceptionHandler(Handle<PyCodeObject> code_object,
                           int& stack_depth,
                           int& handler_offset_in_bytes,
                           bool& push_lasti) {
+  HandleScope scope;
+
   Handle<PyString> table = code_object->exception_table();
   if (table.is_null() || table->length() == 0) {
     return false;
@@ -201,15 +203,15 @@ void Interpreter::EvalCurrentFrame() {
         if (!IsPyTypeObject(elem)) {
           auto type_error_type = Handle<PyTypeObject>::cast(
               builtins()->Get(PyString::NewInstance("TypeError")));
-          auto type_error =
-              type_error_type->own_klass()->ConstructInstance(
-                  Handle<PyObject>::null(), Handle<PyObject>::null());
+          auto type_error = type_error_type->own_klass()->ConstructInstance(
+              Handle<PyObject>::null(), Handle<PyObject>::null());
           SetPendingException(*type_error);
           pending_exception_ip_ = current_frame_->pc() - 2;
           pending_exception_origin_ip_ = pending_exception_ip_;
           goto pending_exception_unwind;
         }
-        if (Runtime_IsInstanceOfTypeObject(exc, Handle<PyTypeObject>::cast(elem))) {
+        if (Runtime_IsInstanceOfTypeObject(exc,
+                                           Handle<PyTypeObject>::cast(elem))) {
           matched = true;
           break;
         }
@@ -217,9 +219,8 @@ void Interpreter::EvalCurrentFrame() {
     } else {
       auto type_error_type = Handle<PyTypeObject>::cast(
           builtins()->Get(PyString::NewInstance("TypeError")));
-      auto type_error =
-          type_error_type->own_klass()->ConstructInstance(
-              Handle<PyObject>::null(), Handle<PyObject>::null());
+      auto type_error = type_error_type->own_klass()->ConstructInstance(
+          Handle<PyObject>::null(), Handle<PyObject>::null());
       SetPendingException(*type_error);
       pending_exception_ip_ = current_frame_->pc() - 2;
       pending_exception_origin_ip_ = pending_exception_ip_;
@@ -255,7 +256,6 @@ void Interpreter::EvalCurrentFrame() {
     } else if (op_arg == 2) {
       cause = POP();
       exc = POP();
-      (void)cause;
       pending_exception_ip_ = current_ip_in_bytes;
       pending_exception_origin_ip_ = current_ip_in_bytes;
     } else {
@@ -314,8 +314,9 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
 
-  INTERPRETER_HANDLER_DISPATCH(
-      LoadBuildClass, { PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class))); })
+  INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
+    PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class)));
+  })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
     ret_value_ = POP_TAGGED();
@@ -915,6 +916,11 @@ void Interpreter::EvalCurrentFrame() {
     }
   })
 
+#undef INTERPRETER_HANDLER_NOOP
+#undef INTERPRETER_HANDLER_WITH_SCOPE
+#undef INTERPRETER_HANDLER_DISPATCH
+#undef INTERPRETER_HANDLER
+
 pending_exception_unwind: {
   if (current_frame_ == nullptr) [[unlikely]] {
     goto exit_interpreter;
@@ -929,15 +935,10 @@ pending_exception_unwind: {
   int stack_depth = 0;
   int handler_offset_in_bytes = 0;
   bool push_lasti = false;
-  bool found_handler = false;
 
-  Tagged<PyObject> exception = pending_exception_tagged();
-  {
-    HandleScope scope;
-    found_handler =
-        FindExceptionHandler(current_frame_->code_object(), offset_in_bytes,
-                             stack_depth, handler_offset_in_bytes, push_lasti);
-  }
+  bool found_handler =
+      FindExceptionHandler(current_frame_->code_object(), offset_in_bytes,
+                           stack_depth, handler_offset_in_bytes, push_lasti);
 
   if (found_handler) {
     current_frame_->set_stack_top(stack_depth);
@@ -945,7 +946,7 @@ pending_exception_unwind: {
       PUSH(Tagged<PyObject>::cast(
           Tagged<PySmi>(static_cast<int64_t>(origin_ip_in_bytes / 2))));
     }
-    PUSH(exception);
+    PUSH(pending_exception_tagged());
     stack_exception_origin_ip_ = origin_ip_in_bytes;
     ClearPendingException();
     current_frame_->set_pc(handler_offset_in_bytes);
@@ -959,11 +960,7 @@ pending_exception_unwind: {
   DISPATCH();
 }
 
-#undef INTERPRETER_HANDLER_NOOP
-#undef INTERPRETER_HANDLER_WITH_SCOPE
-#undef INTERPRETER_HANDLER_DISPATCH
 #undef DISPATCH
-#undef INTERPRETER_HANDLER
 
 unknown_bytecode:
   std::fprintf(stderr, "unknown bytecode %d, arguments %d\n", op_code, op_arg);
