@@ -169,7 +169,7 @@ void Interpreter::EvalCurrentFrame() {
           auto type_error = type_error_type->own_klass()->ConstructInstance(
               Handle<PyObject>::null(), Handle<PyObject>::null());
           SetPendingException(*type_error);
-          pending_exception_pc_ = current_frame_->pc() - kInvalidProgramCounter;
+          pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
           pending_exception_origin_pc_ = pending_exception_pc_;
           goto pending_exception_unwind;
         }
@@ -186,7 +186,7 @@ void Interpreter::EvalCurrentFrame() {
       auto type_error = type_error_type->own_klass()->ConstructInstance(
           Handle<PyObject>::null(), Handle<PyObject>::null());
       SetPendingException(*type_error);
-      pending_exception_pc_ = current_frame_->pc() - kInvalidProgramCounter;
+      pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
       pending_exception_origin_pc_ = pending_exception_pc_;
       goto pending_exception_unwind;
     }
@@ -264,7 +264,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(Reraise, {
     Handle<PyObject> exception = POP();
 
-    pending_exception_pc_ = current_frame_->pc() - kInvalidProgramCounter;
+    pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
     pending_exception_origin_pc_ = pending_exception_pc_;
 
     if (op_arg != 0) {

@@ -5,6 +5,8 @@
 #include "src/interpreter/exception-table.h"
 
 #include <cassert>
+#include <cstdint>
+#include <limits>
 
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-string.h"
@@ -13,17 +15,32 @@ namespace saauso::internal {
 
 namespace {
 
-int ParseExceptionTableVarint(const char* data, int length, int& index) {
-  assert(index < length);
+bool ParseExceptionTableVarint(const char* data,
+                               int length,
+                               int& index,
+                               int& out) {
+  if (index >= length) {
+    return false;
+  }
+
   uint8_t b = static_cast<uint8_t>(data[index++]);
-  int val = b & 63;
+  int64_t val = b & 63;
   while (b & 64) {
-    assert(index < length);
+    if (index >= length) {
+      return false;
+    }
+
+    if (val > (std::numeric_limits<int>::max() >> 6)) {
+      return false;
+    }
     val <<= 6;
+
     b = static_cast<uint8_t>(data[index++]);
     val |= b & 63;
   }
-  return val;
+
+  out = static_cast<int>(val);
+  return true;
 }
 
 }  // namespace
@@ -43,11 +60,21 @@ bool ExceptionTable::LookupHandler(Handle<PyCodeObject> code_object,
 
   int index = 0;
   while (index < length) {
-    const int start = ParseExceptionTableVarint(data, length, index) * 2;
-    const int size = ParseExceptionTableVarint(data, length, index) * 2;
+    int start = 0;
+    int size = 0;
+    int target = 0;
+    int depth_and_lasti = 0;
+    if (!ParseExceptionTableVarint(data, length, index, start) ||
+        !ParseExceptionTableVarint(data, length, index, size) ||
+        !ParseExceptionTableVarint(data, length, index, target) ||
+        !ParseExceptionTableVarint(data, length, index, depth_and_lasti)) {
+      return false;
+    }
+
+    start *= 2;
+    size *= 2;
     const int end = start + size;
-    const int target = ParseExceptionTableVarint(data, length, index) * 2;
-    const int depth_and_lasti = ParseExceptionTableVarint(data, length, index);
+    target *= 2;
 
     if (start <= instruction_offset_in_bytes &&
         instruction_offset_in_bytes < end) {

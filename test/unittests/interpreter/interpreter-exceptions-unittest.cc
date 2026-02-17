@@ -82,5 +82,29 @@ print("after")
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, TryExceptFinally2) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  raise RuntimeError
+except ValueError:
+  print("value_error")
+except RuntimeError:
+  print("runtime eroror")
+finally:
+  print("finally")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("runtime eroror"));
+  AppendExpected(expected, PyString::NewInstance("finally"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
 }  // namespace saauso::internal
 
