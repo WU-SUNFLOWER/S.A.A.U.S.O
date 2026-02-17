@@ -48,10 +48,13 @@ class Interpreter {
   Tagged<PyObject> caught_exception_tagged() const;
   Handle<PyObject> caught_exception() const;
 
-  // 返回当前处于“传播态”的异常对象。若非空，表示解释器正在进行异常展开。
+  // 当前解释器中是否存在处于“传播态”的异常对象。
   bool HasPendingException() const;
+
+  // 返回当前处于“传播态”的异常对象。若非空，表示解释器正在进行异常展开。
   Tagged<PyObject> pending_exception_tagged() const;
   Handle<PyObject> pending_exception() const;
+
   void SetPendingException(Tagged<PyObject> exception);
   void ClearPendingException();
 
@@ -59,6 +62,8 @@ class Interpreter {
   void Iterate(ObjectVisitor* v);
 
  private:
+  static constexpr int kInvalidProgramCounter = -1;
+
   void InvokeCallable(Handle<PyObject> callable,
                       Handle<PyObject> host,
                       Handle<PyTuple> actual_args,
@@ -104,15 +109,25 @@ class Interpreter {
   // 临时储存发起函数调用时传入的实际键值对参数的所有键
   Tagged<PyObject> kwarg_keys_{kNullAddress};
 
-  // 当前处于“已捕获态”的异常（用于 PUSH_EXC_INFO/POP_EXCEPT 恢复）。
-  Tagged<PyObject> caught_exception_{kNullAddress};
-  int caught_exception_origin_ip_{-1};
-
   // 当前处于“传播态”的异常（用于跨栈帧传播与 exception table 查找 handler）。
   Tagged<PyObject> pending_exception_{kNullAddress};
-  int pending_exception_ip_{-1};
-  int pending_exception_origin_ip_{-1};
-  int stack_exception_origin_ip_{-1};
+  // 异常发生/继续传播时所处的指令地址
+  // （用于确定落在哪个exception table 范围内）。
+  int pending_exception_pc_{kInvalidProgramCounter};
+  // 对应 exception table 里 push-lasti 语义的lasti，
+  // 即异常起始栈帧中"异常最初发生点"的指令地址。
+  int pending_exception_origin_pc_{kInvalidProgramCounter};
+
+  // 当进入某个 handler 时，把其 lasti
+  // 语义临时缓存下来，供随后 PUSH_EXC_INFO 写入 caught_exception_origin_ip_。
+  int stack_exception_origin_pc_{kInvalidProgramCounter};
+
+  // 当前处于“已捕获态”的异常。即当前 except 块正在处理/持有的异常。
+  // 用于 PUSH_EXC_INFO/POP_EXCEPT 恢复。
+  Tagged<PyObject> caught_exception_{kNullAddress};
+  // caught_exception_对应的 origin ip，供
+  // `raise`(无参)再抛时恢复 lasti 语义。
+  int caught_exception_origin_pc_{kInvalidProgramCounter};
 
   FrameObject* current_frame_{nullptr};
 

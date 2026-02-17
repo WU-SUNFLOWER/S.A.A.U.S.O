@@ -2,12 +2,11 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include <cassert>
-
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/interpreter/bytecodes.h"
+#include "src/interpreter/exception-table.h"
 #include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/interpreter/interpreter.h"
@@ -31,61 +30,6 @@
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
-
-namespace {
-
-int ParseExceptionTableVarint(const char* data, int length, int& index) {
-  assert(index < length);
-  uint8_t b = static_cast<uint8_t>(data[index++]);
-  int val = b & 63;
-  while (b & 64) {
-    assert(index < length);
-    val <<= 6;
-    b = static_cast<uint8_t>(data[index++]);
-    val |= b & 63;
-  }
-  return val;
-}
-
-bool FindExceptionHandler(Handle<PyCodeObject> code_object,
-                          int instruction_offset_in_bytes,
-                          int& stack_depth,
-                          int& handler_offset_in_bytes,
-                          bool& push_lasti) {
-  HandleScope scope;
-
-  Handle<PyString> table = code_object->exception_table();
-  if (table.is_null() || table->length() == 0) {
-    return false;
-  }
-
-  const char* data = table->buffer();
-  const int length = static_cast<int>(table->length());
-
-  int index = 0;
-  while (index < length) {
-    const int start = ParseExceptionTableVarint(data, length, index) * 2;
-    const int size = ParseExceptionTableVarint(data, length, index) * 2;
-    const int end = start + size;
-    const int target = ParseExceptionTableVarint(data, length, index) * 2;
-    const int depth_and_lasti = ParseExceptionTableVarint(data, length, index);
-
-    const int depth = depth_and_lasti >> 1;
-    const bool lasti = (depth_and_lasti & 1) != 0;
-
-    if (start <= instruction_offset_in_bytes &&
-        instruction_offset_in_bytes < end) {
-      stack_depth = depth;
-      handler_offset_in_bytes = target;
-      push_lasti = lasti;
-      return true;
-    }
-  }
-
-  return false;
-}
-
-}  // namespace
 
 #define STACK_SIZE() (current_frame_->StackSize())
 #define TOP() (current_frame_->TopOfStack())
@@ -136,10 +80,12 @@ void Interpreter::EvalCurrentFrame() {
     for (auto i = 0; i < 256; ++i) {
       dispatch_table_[i] = &&unknown_bytecode;
     }
+
 #define REGISTER_INTERPRETER_HANDLER(bytecode, _) \
   dispatch_table_[bytecode] = &&handler_##bytecode;
     BYTECODE_LIST(REGISTER_INTERPRETER_HANDLER);
 #undef REGISTER_INTERPRETER_HANDLER
+
     dispatch_table_initialized_ = true;
   }
 
@@ -173,21 +119,38 @@ void Interpreter::EvalCurrentFrame() {
     stack->Set(top, a);
   })
 
+  // 进入 except handler时，把“当前捕获异常状态”与“新异常对象”一起写入栈，
+  // 并更新解释器的caught_exception_，以便后续 `raise`(无参) 可以再抛该异常。
+  //
+  // 操作数栈结构:
+  //   before: [..., exc]
+  //   after : [..., prev_exc, exc]
   INTERPRETER_HANDLER_WITH_SCOPE(PushExcInfo, {
     Handle<PyObject> new_exc = POP();
     PUSH(caught_exception_);
     PUSH(new_exc);
     caught_exception_ = *new_exc;
-    caught_exception_origin_ip_ = stack_exception_origin_ip_;
+    caught_exception_origin_pc_ = stack_exception_origin_pc_;
   })
 
+  // 离开 except handler 时恢复 caught_exception_。
+  //
+  // 操作数栈结构:
+  //   before: [..., prev_exc]
+  //   after : [...]
   INTERPRETER_HANDLER_WITH_SCOPE(PopExcept, {
     Handle<PyObject> restore_exc = POP();
     caught_exception_ =
         restore_exc.is_null() ? Tagged<PyObject>::null() : *restore_exc;
-    caught_exception_origin_ip_ = -1;
+    caught_exception_origin_pc_ = kInvalidProgramCounter;
   })
 
+  // 判断异常对象是否匹配某个异常类型（或 tuple-of-types），并把bool压栈。
+  // match_type 不合法时，这里就地构造一个TypeError向前传播。
+  //
+  // 操作数栈结构:
+  //   before: [..., exc, match_type]
+  //   after : [..., exc, bool]
   INTERPRETER_HANDLER_WITH_SCOPE(CheckExcMatch, {
     Handle<PyObject> match_type = POP();
     Handle<PyObject> exc = TOP();
@@ -206,10 +169,11 @@ void Interpreter::EvalCurrentFrame() {
           auto type_error = type_error_type->own_klass()->ConstructInstance(
               Handle<PyObject>::null(), Handle<PyObject>::null());
           SetPendingException(*type_error);
-          pending_exception_ip_ = current_frame_->pc() - 2;
-          pending_exception_origin_ip_ = pending_exception_ip_;
+          pending_exception_pc_ = current_frame_->pc() - kInvalidProgramCounter;
+          pending_exception_origin_pc_ = pending_exception_pc_;
           goto pending_exception_unwind;
         }
+
         if (Runtime_IsInstanceOfTypeObject(exc,
                                            Handle<PyTypeObject>::cast(elem))) {
           matched = true;
@@ -222,75 +186,100 @@ void Interpreter::EvalCurrentFrame() {
       auto type_error = type_error_type->own_klass()->ConstructInstance(
           Handle<PyObject>::null(), Handle<PyObject>::null());
       SetPendingException(*type_error);
-      pending_exception_ip_ = current_frame_->pc() - 2;
-      pending_exception_origin_ip_ = pending_exception_ip_;
+      pending_exception_pc_ = current_frame_->pc() - kInvalidProgramCounter;
+      pending_exception_origin_pc_ = pending_exception_pc_;
       goto pending_exception_unwind;
     }
 
-    PUSH(matched ? handle(isolate_->py_true_object())
-                 : handle(isolate_->py_false_object()));
+    PUSH(isolate_->ToPyBoolean(matched));
   })
 
+  // 设置 pending_exception_ 并触发异常展开（由 DISPATCH 统一跳转到
+  // pending_exception_unwind）。
+  // - oparg == 0 : raise（无参数）→ 再抛 caught_exception_；若为空则抛
+  // RuntimeError
+  // - oparg == 1 : raise exc
+  // - oparg == 2 : raise exc from cause（MVP：记录 cause 但不实现链路）
+  //
+  // 注意：
+  // - pending_exception_pc_ 表示“当前 raise 指令”的位置，用于 handler 查找；
+  // - pending_exception_origin_pc_ 表示“异常最初发生点”，用于 push-lasti语义。
   INTERPRETER_HANDLER_WITH_SCOPE(RaiseVarargs, {
     Handle<PyObject> cause;
-    Handle<PyObject> exc;
-    const int current_ip_in_bytes = current_frame_->pc() - 2;
-    if (op_arg == 0) {
-      if (caught_exception_.is_null()) {
-        auto runtime_error_type = Handle<PyTypeObject>::cast(
-            builtins()->Get(PyString::NewInstance("RuntimeError")));
-        exc = runtime_error_type->own_klass()->ConstructInstance(
-            Handle<PyObject>::null(), Handle<PyObject>::null());
-        pending_exception_origin_ip_ = current_ip_in_bytes;
-      } else {
-        exc = handle(Tagged<PyObject>::cast(caught_exception_));
-        pending_exception_origin_ip_ = caught_exception_origin_ip_ >= 0
-                                           ? caught_exception_origin_ip_
-                                           : current_ip_in_bytes;
-      }
-      pending_exception_ip_ = current_ip_in_bytes;
-    } else if (op_arg == 1) {
-      exc = POP();
-      pending_exception_ip_ = current_ip_in_bytes;
-      pending_exception_origin_ip_ = current_ip_in_bytes;
-    } else if (op_arg == 2) {
-      cause = POP();
-      exc = POP();
-      pending_exception_ip_ = current_ip_in_bytes;
-      pending_exception_origin_ip_ = current_ip_in_bytes;
-    } else {
-      std::fprintf(stderr, "TypeError: invalid RAISE_VARARGS oparg=%d\n",
-                   op_arg);
-      std::exit(1);
+    Handle<PyObject> exception;
+
+    // raise指令所在的地址
+    pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
+
+    switch (op_arg) {
+      case 0:
+        if (caught_exception_.is_null()) {
+          auto runtime_error_type =
+              Handle<PyTypeObject>::cast(builtins()->Get(ST(runtime_err)));
+          exception = runtime_error_type->own_klass()->ConstructInstance(
+              Handle<PyObject>::null(), Handle<PyObject>::null());
+          pending_exception_origin_pc_ = pending_exception_pc_;
+        } else {
+          exception = handle(Tagged<PyObject>::cast(caught_exception_));
+          pending_exception_origin_pc_ = caught_exception_origin_pc_ >= 0
+                                             ? caught_exception_origin_pc_
+                                             : pending_exception_pc_;
+        }
+        break;
+      case 1:
+        exception = POP();
+        pending_exception_origin_pc_ = pending_exception_pc_;
+        break;
+      case 2:
+        cause = POP();
+        exception = POP();
+        pending_exception_origin_pc_ = pending_exception_pc_;
+        break;
+      default:
+        std::fprintf(stderr, "TypeError: invalid RAISE_VARARGS oparg=%d\n",
+                     op_arg);
+        std::exit(1);
     }
 
-    if (IsPyTypeObject(exc)) {
-      auto type_object = Handle<PyTypeObject>::cast(exc);
-      exc = type_object->own_klass()->ConstructInstance(
+    // 如果用户抛出的是类似于ValueError、RuntimeError之类的type object，
+    // 我们需要将其实例化。
+    if (IsPyTypeObject(exception)) {
+      auto type_object = Handle<PyTypeObject>::cast(exception);
+      exception = type_object->own_klass()->ConstructInstance(
           Handle<PyObject>::null(), Handle<PyObject>::null());
     }
 
-    SetPendingException(*exc);
+    SetPendingException(*exception);
   })
 
+  // 如果没匹配任何 except，重新抛出异常
+  // - oparg == 0：使用 caught_exception_origin_pc_ 作为 origin pc（用于
+  // push-lasti）
+  // - oparg != 0：从栈中弹出 lasti（code units），并将其作为 origin pc（用于
+  // push-lasti）
+  //
+  // 操作数栈结构:
+  //   oparg == 0 : before [..., exc]            after [...]
+  //   oparg != 0 : before [..., lasti, exc]     after [...]
   INTERPRETER_HANDLER_WITH_SCOPE(Reraise, {
-    Handle<PyObject> exc = POP();
-    const int current_ip_in_bytes = current_frame_->pc() - 2;
-    pending_exception_ip_ = current_ip_in_bytes;
+    Handle<PyObject> exception = POP();
+
+    pending_exception_pc_ = current_frame_->pc() - kInvalidProgramCounter;
+    pending_exception_origin_pc_ = pending_exception_pc_;
+
     if (op_arg != 0) {
       Handle<PyObject> lasti_obj = POP();
       if (IsPySmi(lasti_obj)) {
         int lasti = Tagged<PySmi>::cast(*lasti_obj).value();
-        pending_exception_origin_ip_ = lasti * 2;
-      } else {
-        pending_exception_origin_ip_ = current_ip_in_bytes;
+        pending_exception_origin_pc_ = lasti;
       }
     } else {
-      pending_exception_origin_ip_ = caught_exception_origin_ip_ >= 0
-                                         ? caught_exception_origin_ip_
-                                         : current_ip_in_bytes;
+      if (caught_exception_origin_pc_ != kInvalidProgramCounter) {
+        pending_exception_origin_pc_ = caught_exception_origin_pc_;
+      }
     }
-    SetPendingException(*exc);
+
+    SetPendingException(*exception);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinarySubscr, {
@@ -922,37 +911,45 @@ void Interpreter::EvalCurrentFrame() {
 #undef INTERPRETER_HANDLER
 
 pending_exception_unwind: {
+  // 异常展开（zero-cost exception table）：
+  // 1) 以 pending_exception_pc_ 作为查表位置，查询当前 frame 是否存在 handler；
+  // 2) 命中：恢复 value stack 深度；若 handler 要求 push-lasti，则把 origin
+  // ip(code units)
+  //    压栈；随后把异常对象压栈并跳转到 handler；
+  // 3) 未命中：销毁当前 frame，继续向 caller 传播。
   if (current_frame_ == nullptr) [[unlikely]] {
     goto exit_interpreter;
   }
 
-  const int offset_in_bytes = pending_exception_ip_ >= 0
-                                  ? pending_exception_ip_
-                                  : current_frame_->pc() - 2;
-  const int origin_ip_in_bytes = pending_exception_origin_ip_ >= 0
-                                     ? pending_exception_origin_ip_
-                                     : offset_in_bytes;
-  int stack_depth = 0;
-  int handler_offset_in_bytes = 0;
-  bool push_lasti = false;
+  if (pending_exception_pc_ == kInvalidProgramCounter) {
+    pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
+  }
 
-  bool found_handler =
-      FindExceptionHandler(current_frame_->code_object(), offset_in_bytes,
-                           stack_depth, handler_offset_in_bytes, push_lasti);
+  if (pending_exception_origin_pc_ == kInvalidProgramCounter) {
+    pending_exception_origin_pc_ = pending_exception_pc_;
+  }
 
-  if (found_handler) {
-    current_frame_->set_stack_top(stack_depth);
-    if (push_lasti) {
-      PUSH(Tagged<PyObject>::cast(
-          Tagged<PySmi>(static_cast<int64_t>(origin_ip_in_bytes / 2))));
+  // 如果在当前栈帧中成功找到有效的exception handler，那么跳转过去处理错误
+  ExceptionHandlerInfo handler_info;
+  if (ExceptionTable::LookupHandler(current_frame_->code_object(),
+                                    pending_exception_pc_, handler_info)) {
+    // 清理操作数栈上多余的元素，为执行exception handler做好准备
+    current_frame_->set_stack_top(handler_info.stack_depth);
+
+    if (handler_info.need_push_lasti) {
+      PUSH(PySmi::FromInt(pending_exception_origin_pc_));
     }
     PUSH(pending_exception_tagged());
-    stack_exception_origin_ip_ = origin_ip_in_bytes;
+
+    stack_exception_origin_pc_ = pending_exception_origin_pc_;
+
     ClearPendingException();
-    current_frame_->set_pc(handler_offset_in_bytes);
+
+    current_frame_->set_pc(handler_info.handler_pc);
     DISPATCH();
   }
 
+  // 否则继续向上回溯函数调用栈
   if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
     goto exit_interpreter;
   }
@@ -1059,10 +1056,15 @@ void Interpreter::DestroyCurrentFrame() {
 }
 
 void Interpreter::UnwindCurrentFrameForException() {
+  // 当前栈帧已经发生错误，因此强制回溯到上一层栈帧
   DestroyCurrentFrame();
   ret_value_ = Tagged<PyObject>::null();
-  pending_exception_ip_ =
-      current_frame_ == nullptr ? -1 : current_frame_->pc() - 2;
+
+  pending_exception_pc_ = kInvalidProgramCounter;
+  // 重要：将pending_exception_ip_回溯为上一层栈帧的函数调用点地址
+  if (current_frame_ != nullptr) {
+    pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
+  }
 }
 
 }  // namespace saauso::internal

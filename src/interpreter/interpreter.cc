@@ -84,8 +84,8 @@ void Interpreter::SetPendingException(Tagged<PyObject> exception) {
 
 void Interpreter::ClearPendingException() {
   pending_exception_ = Tagged<PyObject>::null();
-  pending_exception_ip_ = -1;
-  pending_exception_origin_ip_ = -1;
+  pending_exception_pc_ = kInvalidProgramCounter;
+  pending_exception_origin_pc_ = kInvalidProgramCounter;
 }
 
 Handle<PyDict> Interpreter::CurrentFrameGlobals() const {

@@ -138,6 +138,8 @@ source_set("saauso_core") {
     "//src/interpreter/builtin-bootstrapper.cc",
     "//src/interpreter/builtin-bootstrapper.h",
     "//src/interpreter/bytecodes.h",
+    "//src/interpreter/exception-table.cc",
+    "//src/interpreter/exception-table.h",
     "//src/interpreter/frame-object-builder.cc",
     "//src/interpreter/frame-object-builder.h",
     "//src/interpreter/frame-object.cc",

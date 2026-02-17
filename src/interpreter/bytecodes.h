@@ -6,8 +6,10 @@
 
 namespace saauso::internal {
 
-// 参见CPython源代码中的Include/opcode.h
+// 单个字节码的长度（含操作码和参数）
+inline constexpr int kBytecodeSizeInBytes = 2;
 
+// 参见CPython源代码中的Include/opcode.h
 #define BYTECODE_LIST(V)   \
   V(Cache, 0)              \
   V(PopTop, 1)             \
