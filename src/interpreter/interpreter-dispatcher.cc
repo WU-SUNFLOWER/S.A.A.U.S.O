@@ -131,7 +131,7 @@ void Interpreter::EvalCurrentFrame() {
     // 保存更旧的exception的信息
     PUSH(caught_exception_);
     caught_exception_origin_pc_stack_.PushBack(caught_exception_origin_pc_);
-    
+
     // 将当前最新的exception重新压回栈顶，并更新caught_exception_
     // 和caught_exception_origin_pc_，以便接下来RaiseVarargs
     // 字节码可以无参数场景下正确处理之。
@@ -167,7 +167,12 @@ void Interpreter::EvalCurrentFrame() {
   //   before: [..., exc, match_type]
   //   after : [..., exc, bool]
   INTERPRETER_HANDLER_WITH_SCOPE(CheckExcMatch, {
+    // 消费压到栈顶的目标match_type，如ValueError，RuntimeError等
     Handle<PyObject> match_type = POP();
+    // 在Python3.12中，待匹配的实际exception在本字节码中只访问不消费。
+    // - 一般情况下，**若成功匹配**，则它会被后续的一条PopTop字节码消费掉；
+    // - 如果最终没有匹配到当前的任何except块，它就会被保留在操作数栈上，
+    //   以便于解释器进一步借助Reraise字节码继续向上传播该异常。
     Handle<PyObject> exception = TOP();
 
     bool matched = false;
