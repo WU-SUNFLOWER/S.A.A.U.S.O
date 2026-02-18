@@ -127,7 +127,14 @@ void Interpreter::EvalCurrentFrame() {
   //   after : [..., prev_exc, exc]
   INTERPRETER_HANDLER_WITH_SCOPE(PushExcInfo, {
     Handle<PyObject> new_exception = POP();
+
+    // 保存更旧的exception的信息
     PUSH(caught_exception_);
+    caught_exception_origin_pc_stack_.PushBack(caught_exception_origin_pc_);
+    
+    // 将当前最新的exception重新压回栈顶，并更新caught_exception_
+    // 和caught_exception_origin_pc_，以便接下来RaiseVarargs
+    // 字节码可以无参数场景下正确处理之。
     PUSH(new_exception);
     caught_exception_ = *new_exception;
     caught_exception_origin_pc_ = stack_exception_origin_pc_;
@@ -139,10 +146,18 @@ void Interpreter::EvalCurrentFrame() {
   //   before: [..., prev_exc]
   //   after : [...]
   INTERPRETER_HANDLER_WITH_SCOPE(PopExcept, {
-    Handle<PyObject> restore_exc = POP();
+    // 注意：在 CPython 生成的 except handler 代码序列中，
+    // new exception 会在 handler 内被 POP_TOP 清理掉，因此此处栈顶保存的是
+    // prev_exc。
+    Handle<PyObject> prev_exc = POP();
     caught_exception_ =
-        restore_exc.is_null() ? Tagged<PyObject>::null() : *restore_exc;
-    caught_exception_origin_pc_ = kInvalidProgramCounter;
+        prev_exc.is_null() ? Tagged<PyObject>::null() : *prev_exc;
+    if (!caught_exception_origin_pc_stack_.IsEmpty()) {
+      caught_exception_origin_pc_ = caught_exception_origin_pc_stack_.GetBack();
+      caught_exception_origin_pc_stack_.PopBack();
+    } else {
+      caught_exception_origin_pc_ = kInvalidProgramCounter;
+    }
   })
 
   // 判断异常对象是否匹配某个异常类型（或 tuple-of-types），并把bool压栈。

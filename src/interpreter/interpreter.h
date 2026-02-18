@@ -6,6 +6,7 @@
 #define SAAUSO_RUNTIME_INTERPRETER_H_
 
 #include "src/handles/handles.h"
+#include "src/utils/vector.h"
 
 namespace saauso::internal {
 
@@ -128,6 +129,7 @@ class Interpreter {
   // caught_exception_对应的 origin ip，供
   // `raise`(无参)再抛时恢复 lasti 语义。
   int caught_exception_origin_pc_{kInvalidProgramCounter};
+  Vector<int> caught_exception_origin_pc_stack_;
 
   FrameObject* current_frame_{nullptr};
 
