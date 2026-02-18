@@ -162,27 +162,26 @@ void Interpreter::EvalCurrentFrame() {
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
 
+      // 对齐原版Python行为：
+      // 整个tuple都需要完整遍历一遍，
+      // 如果出现非法的elem，则直接抛出错误！
       for (auto i = 0; i < tuple->length(); ++i) {
         auto elem = tuple->Get(i);
-        if (!IsPyTypeObject(elem)) {
-          auto type_error_type =
-              Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
-          auto type_error = type_error_type->own_klass()->ConstructInstance(
-              Handle<PyObject>::null(), Handle<PyObject>::null());
-          SetPendingException(*type_error);
-          pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
-          pending_exception_origin_pc_ = pending_exception_pc_;
-          goto pending_exception_unwind;
-        }
-      }
 
-      for (auto i = 0; i < tuple->length(); ++i) {
-        auto elem = tuple->Get(i);
-        if (Runtime_IsInstanceOfTypeObject(exc,
-                                           Handle<PyTypeObject>::cast(elem))) {
-          matched = true;
-          break;
+        if (IsPyTypeObject(elem)) {
+          matched |= Runtime_IsInstanceOfTypeObject(
+              exc, Handle<PyTypeObject>::cast(elem));
+          continue;
         }
+
+        auto type_error_type =
+            Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
+        auto type_error = type_error_type->own_klass()->ConstructInstance(
+            Handle<PyObject>::null(), Handle<PyObject>::null());
+        SetPendingException(*type_error);
+        pending_exception_pc_ = current_frame_->pc() - kBytecodeSizeInBytes;
+        pending_exception_origin_pc_ = pending_exception_pc_;
+        goto pending_exception_unwind;
       }
     } else {
       auto type_error_type =
@@ -908,7 +907,6 @@ void Interpreter::EvalCurrentFrame() {
         std::exit(1);
     }
   })
-
 #undef INTERPRETER_HANDLER_NOOP
 #undef INTERPRETER_HANDLER_WITH_SCOPE
 #undef INTERPRETER_HANDLER_DISPATCH
