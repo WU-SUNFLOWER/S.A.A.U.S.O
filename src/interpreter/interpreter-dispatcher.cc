@@ -126,10 +126,10 @@ void Interpreter::EvalCurrentFrame() {
   //   before: [..., exc]
   //   after : [..., prev_exc, exc]
   INTERPRETER_HANDLER_WITH_SCOPE(PushExcInfo, {
-    Handle<PyObject> new_exc = POP();
+    Handle<PyObject> new_exception = POP();
     PUSH(caught_exception_);
-    PUSH(new_exc);
-    caught_exception_ = *new_exc;
+    PUSH(new_exception);
+    caught_exception_ = *new_exception;
     caught_exception_origin_pc_ = stack_exception_origin_pc_;
   })
 
@@ -199,8 +199,8 @@ void Interpreter::EvalCurrentFrame() {
 
   // 设置 pending_exception_ 并触发异常展开（由 DISPATCH 统一跳转到
   // pending_exception_unwind）。
-  // - oparg == 0 : raise（无参数）→ 再抛 caught_exception_；若为空则抛
-  // RuntimeError
+  // - oparg == 0 : raise（无参数）→ 重抛 caught_exception_；
+  //                                若为空则抛RuntimeError
   // - oparg == 1 : raise exc
   // - oparg == 2 : raise exc from cause（MVP：记录 cause 但不实现链路）
   //
@@ -216,17 +216,18 @@ void Interpreter::EvalCurrentFrame() {
 
     switch (op_arg) {
       case 0:
-        if (caught_exception_.is_null()) {
+        if (!caught_exception_.is_null()) [[likely]] {
+          exception = handle(caught_exception_);
+          if (caught_exception_origin_pc_ == kInvalidProgramCounter)
+              [[unlikely]] {
+            pending_exception_origin_pc_ = pending_exception_pc_;
+          }
+        } else {
           auto runtime_error_type =
               Handle<PyTypeObject>::cast(builtins()->Get(ST(runtime_err)));
           exception = runtime_error_type->own_klass()->ConstructInstance(
               Handle<PyObject>::null(), Handle<PyObject>::null());
           pending_exception_origin_pc_ = pending_exception_pc_;
-        } else {
-          exception = handle(Tagged<PyObject>::cast(caught_exception_));
-          pending_exception_origin_pc_ = caught_exception_origin_pc_ >= 0
-                                             ? caught_exception_origin_pc_
-                                             : pending_exception_pc_;
         }
         break;
       case 1:
@@ -939,14 +940,19 @@ pending_exception_unwind: {
     current_frame_->set_stack_top(handler_info.stack_depth);
 
     if (handler_info.need_push_lasti) {
+      // handler中的第一条Reraise字节码会消费lasti
       PUSH(PySmi::FromInt(pending_exception_origin_pc_));
     }
+    // handler中的第一条PushExcInfo或Reraise字节码会消费exception对象
     PUSH(pending_exception_tagged());
-
+    //  handler中的第一条PushExcInfo字节码会消费exception origin pc
     stack_exception_origin_pc_ = pending_exception_origin_pc_;
 
+    // exception已经被提交给handler处理，撤销虚拟机中存在
+    // 待处理的pending exception的状态。
     ClearPendingException();
 
+    // 跳转到目标handler
     current_frame_->set_pc(handler_info.handler_pc);
     DISPATCH();
   }
