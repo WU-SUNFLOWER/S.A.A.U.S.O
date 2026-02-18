@@ -164,8 +164,8 @@ void Interpreter::EvalCurrentFrame() {
       for (auto i = 0; i < tuple->length(); ++i) {
         auto elem = tuple->Get(i);
         if (!IsPyTypeObject(elem)) {
-          auto type_error_type = Handle<PyTypeObject>::cast(
-              builtins()->Get(PyString::NewInstance("TypeError")));
+          auto type_error_type =
+              Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
           auto type_error = type_error_type->own_klass()->ConstructInstance(
               Handle<PyObject>::null(), Handle<PyObject>::null());
           SetPendingException(*type_error);
@@ -173,7 +173,10 @@ void Interpreter::EvalCurrentFrame() {
           pending_exception_origin_pc_ = pending_exception_pc_;
           goto pending_exception_unwind;
         }
+      }
 
+      for (auto i = 0; i < tuple->length(); ++i) {
+        auto elem = tuple->Get(i);
         if (Runtime_IsInstanceOfTypeObject(exc,
                                            Handle<PyTypeObject>::cast(elem))) {
           matched = true;
@@ -181,8 +184,8 @@ void Interpreter::EvalCurrentFrame() {
         }
       }
     } else {
-      auto type_error_type = Handle<PyTypeObject>::cast(
-          builtins()->Get(PyString::NewInstance("TypeError")));
+      auto type_error_type =
+          Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
       auto type_error = type_error_type->own_klass()->ConstructInstance(
           Handle<PyObject>::null(), Handle<PyObject>::null());
       SetPendingException(*type_error);

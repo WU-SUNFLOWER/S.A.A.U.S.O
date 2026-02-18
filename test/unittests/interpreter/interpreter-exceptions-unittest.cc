@@ -106,5 +106,170 @@ print("after")
   ExpectPrintResult(expected);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, TryFinallyNoException) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+try:
+  print("try")
+finally:
+  print("finally")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("try"));
+  AppendExpected(expected, PyString::NewInstance("finally"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, TryFinallyReturnRunsFinally) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def f():
+  try:
+    print("try")
+    return "ret"
+  finally:
+    print("finally")
+
+print(f())
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("try"));
+  AppendExpected(expected, PyString::NewInstance("finally"));
+  AppendExpected(expected, PyString::NewInstance("ret"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, TryExceptTupleOfTypes) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  raise RuntimeError
+except (ValueError, RuntimeError):
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, TryExceptSubclassMatch) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  raise ValueError
+except Exception:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, TryExceptMismatchPropagatesButFinallyRuns) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  try:
+    raise RuntimeError
+  except ValueError:
+    print("except")
+  finally:
+    print("finally")
+except RuntimeError:
+  print("outer")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("finally"));
+  AppendExpected(expected, PyString::NewInstance("outer"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, CheckExcMatchInvalidTupleElementRaisesTypeError) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  try:
+    raise ValueError
+  except (ValueError, 1):
+    print("unreachable")
+except TypeError:
+  print("type_error")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("type_error"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, RaiseInstance) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  raise ValueError()
+except ValueError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, RaiseFrom) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  raise ValueError from RuntimeError
+except ValueError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+}  // namespace saauso::internal
