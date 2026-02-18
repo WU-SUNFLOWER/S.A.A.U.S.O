@@ -153,12 +153,12 @@ void Interpreter::EvalCurrentFrame() {
   //   after : [..., exc, bool]
   INTERPRETER_HANDLER_WITH_SCOPE(CheckExcMatch, {
     Handle<PyObject> match_type = POP();
-    Handle<PyObject> exc = TOP();
+    Handle<PyObject> exception = TOP();
 
     bool matched = false;
     if (IsPyTypeObject(match_type)) {
       matched = Runtime_IsInstanceOfTypeObject(
-          exc, Handle<PyTypeObject>::cast(match_type));
+          exception, Handle<PyTypeObject>::cast(match_type));
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
 
@@ -168,9 +168,9 @@ void Interpreter::EvalCurrentFrame() {
       for (auto i = 0; i < tuple->length(); ++i) {
         auto elem = tuple->Get(i);
 
-        if (IsPyTypeObject(elem)) {
+        if (IsPyTypeObject(elem)) [[likely]] {
           matched |= Runtime_IsInstanceOfTypeObject(
-              exc, Handle<PyTypeObject>::cast(elem));
+              exception, Handle<PyTypeObject>::cast(elem));
           continue;
         }
 
