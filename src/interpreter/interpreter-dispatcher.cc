@@ -161,6 +161,7 @@ void Interpreter::EvalCurrentFrame() {
           exc, Handle<PyTypeObject>::cast(match_type));
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
+
       for (auto i = 0; i < tuple->length(); ++i) {
         auto elem = tuple->Get(i);
         if (!IsPyTypeObject(elem)) {

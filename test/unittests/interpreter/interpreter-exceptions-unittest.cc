@@ -272,4 +272,144 @@ print("after")
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, UnwindAcrossFunctionsCatchInCaller) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def g():
+  raise ValueError
+
+def f():
+  g()
+
+try:
+  f()
+except ValueError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, UnwindFinallyOrderIsInnerToOuter) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def g():
+  try:
+    raise ValueError
+  finally:
+    print("g.finally")
+
+def f():
+  try:
+    g()
+  finally:
+    print("f.finally")
+
+try:
+  f()
+except ValueError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("g.finally"));
+  AppendExpected(expected, PyString::NewInstance("f.finally"));
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, UnwindMismatchPropagatesAcrossFrames) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+def g():
+  raise RuntimeError
+
+def f():
+  try:
+    g()
+  except ValueError:
+    print("unreachable")
+  finally:
+    print("f.finally")
+
+try:
+  f()
+except RuntimeError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("f.finally"));
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, ExceptRaisesNewExceptionAndUnwinds) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  try:
+    raise ValueError
+  except ValueError:
+    print("except")
+    raise RuntimeError
+  finally:
+    print("finally")
+except RuntimeError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("except"));
+  AppendExpected(expected, PyString::NewInstance("finally"));
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, FinallyRaisesOverridesOriginalException) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  try:
+    raise ValueError
+  finally:
+    print("finally")
+    raise RuntimeError
+except RuntimeError:
+  print("caught")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("finally"));
+  AppendExpected(expected, PyString::NewInstance("caught"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
 }  // namespace saauso::internal
