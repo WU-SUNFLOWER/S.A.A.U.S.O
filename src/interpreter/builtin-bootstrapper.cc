@@ -4,8 +4,11 @@
 
 #include "src/interpreter/builtin-bootstrapper.h"
 
+#include <string>
+
 #include "src/builtins/builtins-definitions.h"
 #include "src/execution/isolate.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
@@ -22,7 +25,8 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -43,6 +47,91 @@ struct BuiltinFunctionEntry {
   Handle<PyString> name;
   NativeFuncPointer func;
 };
+
+// BaseException.__str__ 的最小实现：返回 message 字段。
+// 该实现用于提升 MVP 阶段的可用性，使用户能够通过 str(e) 获取错误原因。
+Handle<PyObject> Native_BaseExceptionStr(Handle<PyObject> host,
+                                         Handle<PyTuple> args,
+                                         Handle<PyDict> kwargs) {
+  EscapableHandleScope scope;
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
+    Runtime_ThrowTypeError(
+        "BaseException.__str__() takes no keyword arguments");
+    return Handle<PyObject>::null();
+  }
+
+  if (!args.is_null() && args->length() != 0) [[unlikely]] {
+    Runtime_ThrowTypeError("BaseException.__str__() takes no arguments");
+    return Handle<PyObject>::null();
+  }
+
+  if (host.is_null()) [[unlikely]] {
+    Runtime_ThrowTypeError(
+        "BaseException.__str__() expects a non-null receiver");
+    return Handle<PyObject>::null();
+  }
+
+  Handle<PyDict> properties = PyObject::GetProperties(host);
+  if (!properties.is_null()) {
+    Handle<PyObject> message = properties->Get(ST(message));
+    if (!message.is_null() && IsPyString(*message)) {
+      return scope.Escape(Handle<PyString>::cast(message));
+    }
+  }
+
+  return scope.Escape(PyString::NewInstance(""));
+}
+
+// BaseException.__repr__ 的最小实现：返回 "<TypeName: message>"（message
+// 为空则省略）。 该实现主要用于调试与单测断言，MVP 阶段不追求完全对齐 CPython
+// repr。
+Handle<PyObject> Native_BaseExceptionRepr(Handle<PyObject> host,
+                                          Handle<PyTuple> args,
+                                          Handle<PyDict> kwargs) {
+  EscapableHandleScope scope;
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
+    Runtime_ThrowTypeError(
+        "BaseException.__repr__() takes no keyword arguments");
+    return Handle<PyObject>::null();
+  }
+
+  if (!args.is_null() && args->length() != 0) [[unlikely]] {
+    Runtime_ThrowTypeError("BaseException.__repr__() takes no arguments");
+    return Handle<PyObject>::null();
+  }
+
+  if (host.is_null()) [[unlikely]] {
+    Runtime_ThrowTypeError(
+        "BaseException.__repr__() expects a non-null receiver");
+    return Handle<PyObject>::null();
+  }
+
+  Handle<PyString> type_name = PyObject::GetKlass(host)->name();
+  Handle<PyObject> message_obj = Native_BaseExceptionStr(host, args, kwargs);
+  if (Isolate::Current()->interpreter()->HasPendingException()) {
+    return Handle<PyObject>::null();
+  }
+  Handle<PyString> message = message_obj.is_null()
+                                 ? Handle<PyString>::null()
+                                 : Handle<PyString>::cast(message_obj);
+
+  std::string buf;
+  if (message.is_null() || message->IsEmpty()) {
+    buf = "<";
+    buf.append(type_name->buffer(), static_cast<size_t>(type_name->length()));
+    buf.append(">");
+  } else {
+    buf = "<";
+    buf.append(type_name->buffer(), static_cast<size_t>(type_name->length()));
+    buf.append(": ");
+    buf.append(message->buffer(), static_cast<size_t>(message->length()));
+    buf.append(">");
+  }
+  return scope.Escape(
+      PyString::NewInstance(buf.c_str(), static_cast<int64_t>(buf.size())));
+}
 
 }  // namespace
 
@@ -152,6 +241,8 @@ void BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
   RegisterSimpleTypeToBuiltins(ST(index_err), exception_type);
   RegisterSimpleTypeToBuiltins(ST(key_err), exception_type);
   RegisterSimpleTypeToBuiltins(ST(runtime_err), exception_type);
+  RegisterSimpleTypeToBuiltins(ST(div_zero), exception_type);
+  RegisterSimpleTypeToBuiltins(ST(stop_iter), exception_type);
 }
 
 void BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
@@ -160,8 +251,16 @@ void BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
 
   auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, object_type);
+  Handle<PyDict> base_exception_dict = PyDict::NewInstance();
   Handle<PyTypeObject> base_exception = Runtime_CreatePythonClass(
-      ST(base_exception), PyDict::NewInstance(), supers);
+      ST(base_exception), base_exception_dict, supers);
+
+  // 注入 BaseException.__str__/__repr__，用于让异常对象在 Python 层具备最小的
+  // 可读性（str(e) 返回 message）。
+  PyDict::Put(base_exception_dict, ST(str),
+              PyFunction::NewInstance(&Native_BaseExceptionStr, ST(str)));
+  PyDict::Put(base_exception_dict, ST(repr),
+              PyFunction::NewInstance(&Native_BaseExceptionRepr, ST(repr)));
 
   supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);

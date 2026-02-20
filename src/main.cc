@@ -21,6 +21,7 @@
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 
 using namespace saauso::internal;
 
@@ -47,6 +48,8 @@ c.say()    # "I am A"
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
 int main(int argc, char** argv) {
+  int exit_code = 0;
+
   saauso::Saauso::Initialize();
   Isolate* isolate = Isolate::New();
 
@@ -69,8 +72,16 @@ int main(int argc, char** argv) {
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
     isolate->interpreter()->Run(boilerplate);
+    if (isolate->exception_state()->HasPendingException()) {
+      Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+      std::fprintf(stderr, "%.*s\n", static_cast<int>(formatted->length()),
+                   formatted->buffer());
+      isolate->exception_state()->Clear();
+      exit_code = 1;
+    }
   }
 
   Isolate::Dispose(isolate);
   saauso::Saauso::Dispose();
+  return exit_code;
 }

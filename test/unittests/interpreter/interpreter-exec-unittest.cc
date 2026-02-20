@@ -7,6 +7,7 @@
 #include "src/handles/handles.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -80,5 +81,41 @@ print(l["y"])
   ExpectPrintResult(expected_printv_result);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, ExecGlobalsMustBeDictIsCatchable) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+try:
+  exec("x = 1", 1)
+except TypeError as e:
+  print(str(e))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(
+      expected_printv_result,
+      PyString::NewInstance("exec() globals must be a dict, not int"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ExecKeywordsMustBeStringsIsCatchable) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  exec("x = 1", **{1: 2})
+except TypeError as e:
+  print(str(e))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result,
+                 PyString::NewInstance("keywords must be strings"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+}  // namespace saauso::internal

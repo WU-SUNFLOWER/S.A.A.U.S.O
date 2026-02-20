@@ -47,6 +47,7 @@ source_set("saauso_core") {
     "//src/handles/handle_scope_implementer.h",
     "//src/handles/handles.cc",
     "//src/handles/handles.h",
+    "//src/handles/maybe-handles.h",
     "//src/handles/tagged.h",
 
     # heap (堆管理)
@@ -147,26 +148,41 @@ source_set("saauso_core") {
     "//src/interpreter/interpreter-dispatcher.cc",
     "//src/interpreter/interpreter.cc",
     "//src/interpreter/interpreter.h",
+    "//src/interpreter/try-catch.h",
 
     # init
     "//src/init/saauso.cc",
 
     # execution
+    "//src/execution/exception-state.cc",
+    "//src/execution/exception-state.h",
+    "//src/execution/execution.cc",
+    "//src/execution/execution.h",
     "//src/execution/isolate-klass-list.h",
     "//src/execution/isolate.cc",
     "//src/execution/isolate.h",
 
     # runtime (运行时)
     "//src/runtime/runtime-conversions.cc",
+    "//src/runtime/runtime-conversions.h",
+    "//src/runtime/runtime-exceptions.cc",
+    "//src/runtime/runtime-exceptions.h",
     "//src/runtime/runtime-exec.cc",
+    "//src/runtime/runtime-exec.h",
     "//src/runtime/runtime-intrinsics.cc",
+    "//src/runtime/runtime-intrinsics.h",
     "//src/runtime/runtime-iterable.cc",
+    "//src/runtime/runtime-iterable.h",
     "//src/runtime/runtime-py-dict.cc",
+    "//src/runtime/runtime-py-dict.h",
     "//src/runtime/runtime-py-smi.cc",
+    "//src/runtime/runtime-py-smi.h",
     "//src/runtime/runtime-py-string.cc",
+    "//src/runtime/runtime-py-string.h",
     "//src/runtime/runtime-reflection.cc",
+    "//src/runtime/runtime-reflection.h",
     "//src/runtime/runtime-truthiness.cc",
-    "//src/runtime/runtime.h",
+    "//src/runtime/runtime-truthiness.h",
     "//src/runtime/string-table.cc",
     "//src/runtime/string-table.h",
 

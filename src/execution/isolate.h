@@ -7,7 +7,9 @@
 
 #include <thread>
 
+#include "src/execution/exception-state.h"
 #include "src/execution/isolate-klass-list.h"
+#include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/utils/vector.h"
 
@@ -104,6 +106,8 @@ class Isolate {
   Interpreter* interpreter() const { return interpreter_; }
   ModuleManager* module_manager() const { return module_manager_; }
   StringTable* string_table() const { return string_table_; }
+  ExceptionState* exception_state() { return &exception_state_; }
+  const ExceptionState* exception_state() const { return &exception_state_; }
 
   // 获取全局单例对象（None, True, False）
   Tagged<PyNone> py_none_object() const { return py_none_object_; }
@@ -137,6 +141,7 @@ class Isolate {
   Interpreter* interpreter_{nullptr};
   ModuleManager* module_manager_{nullptr};
   StringTable* string_table_{nullptr};
+  ExceptionState exception_state_;
 
   Tagged<PyNone> py_none_object_;
   Tagged<PyBoolean> py_true_object_;

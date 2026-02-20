@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/runtime/runtime-py-smi.h"
+
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -9,7 +11,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-conversions.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
 

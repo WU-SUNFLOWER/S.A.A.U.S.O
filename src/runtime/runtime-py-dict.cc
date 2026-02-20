@@ -2,10 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/runtime/runtime-py-dict.h"
+
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-py-string.h"
 
 namespace saauso::internal {
 

@@ -85,6 +85,7 @@ class ObjectVisitor;
   V(pyc, ".pyc")                \
   V(so, LIB_EXT)                \
   V(builtins, "__builtins__")   \
+  V(message, "message")         \
   V(end, "end")                 \
   V(eol, "eol")                 \
   V(sep, "sep")

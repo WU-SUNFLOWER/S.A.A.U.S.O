@@ -8,9 +8,9 @@
 #include <cstdio>
 #include <vector>
 
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -21,7 +21,8 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-truthiness.h"
 #include "src/utils/stable-merge-sort.h"
 
 namespace saauso::internal {
@@ -255,8 +256,9 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       }
       Handle<PyObject> elem = list->Get(i);
       key_args->SetInternal(0, elem);
-      Handle<PyObject> key = Isolate::Current()->interpreter()->CallPython(
-          key_func, Handle<PyObject>::null(), key_args, empty_kwargs);
+      Handle<PyObject> key =
+          Execution::Call(Isolate::Current(), key_func,
+                          Handle<PyObject>::null(), key_args, empty_kwargs);
       keys->Set(i, key);
     }
   }

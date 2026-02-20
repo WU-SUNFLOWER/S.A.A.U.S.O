@@ -21,7 +21,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-exec.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {

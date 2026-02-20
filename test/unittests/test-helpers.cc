@@ -17,6 +17,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-utils.h"
 
 namespace saauso::internal {
@@ -80,12 +81,21 @@ void BasicInterpreterTest::TearDownTestSuite() {
 void BasicInterpreterTest::SetUp() {
   HandleScope scope;
   printv_result_ = PyList::NewInstance();
+  isolate_->interpreter()->ClearPendingException();
 }
 
 void BasicInterpreterTest::RunScript(std::string_view source,
                                      std::string_view file_name) {
   isolate_->interpreter()->Run(
       Compiler::CompileSource(isolate_, source, file_name));
+  if (isolate_->exception_state()->HasPendingException()) {
+    HandleScope scope;
+    Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+    ADD_FAILURE() << "Uncaught exception escaped interpreter: "
+                  << std::string_view(formatted->buffer(),
+                                      static_cast<size_t>(formatted->length()));
+    isolate_->exception_state()->Clear();
+  }
 }
 
 Handle<PyObject> BasicInterpreterTest::Native_PrintV(Handle<PyObject> host,

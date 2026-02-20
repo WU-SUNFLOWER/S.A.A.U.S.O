@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-truthiness.h"
 
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -68,4 +68,3 @@ bool Runtime_IsPyObjectCallable(Tagged<PyObject> object) {
 }
 
 }  // namespace saauso::internal
-

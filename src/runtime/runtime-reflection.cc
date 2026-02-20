@@ -2,11 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/runtime/runtime-reflection.h"
+
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -15,7 +17,6 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime.h"
 
 namespace saauso::internal {
 
@@ -94,8 +95,8 @@ Handle<PyObject> Runtime_InvokeMagicOperationMethod(
   Handle<PyObject> method =
       Runtime_FindPropertyInInstanceTypeMro(object, func_name);
   if (!method.is_null()) {
-    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-        method, object, args, kwargs);
+    Handle<PyObject> result =
+        Execution::Call(Isolate::Current(), method, object, args, kwargs);
     return scope.Escape(result);
   }
 
@@ -104,6 +105,12 @@ Handle<PyObject> Runtime_InvokeMagicOperationMethod(
   std::exit(1);
 
   return Handle<PyObject>::null();
+}
+
+Handle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
+                                   Handle<PyObject> args,
+                                   Handle<PyObject> kwargs) {
+  return type_object->own_klass()->ConstructInstance(args, kwargs);
 }
 
 Handle<PyObject> Runtime_NewType(Handle<PyObject> args,

@@ -36,7 +36,6 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/runtime.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -67,25 +66,19 @@ Handle<PyObject> Interpreter::caught_exception() const {
 }
 
 bool Interpreter::HasPendingException() const {
-  return !pending_exception_tagged().is_null();
+  return isolate_->exception_state()->HasPendingException();
 }
 
 Tagged<PyObject> Interpreter::pending_exception_tagged() const {
-  return Tagged<PyObject>::cast(pending_exception_);
+  return isolate_->exception_state()->pending_exception_tagged();
 }
 
 Handle<PyObject> Interpreter::pending_exception() const {
-  return handle(pending_exception_tagged());
-}
-
-void Interpreter::SetPendingException(Tagged<PyObject> exception) {
-  pending_exception_ = exception;
+  return isolate_->exception_state()->pending_exception();
 }
 
 void Interpreter::ClearPendingException() {
-  pending_exception_ = Tagged<PyObject>::null();
-  pending_exception_pc_ = kInvalidProgramCounter;
-  pending_exception_origin_pc_ = kInvalidProgramCounter;
+  isolate_->exception_state()->Clear();
 }
 
 Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
@@ -237,7 +230,6 @@ void Interpreter::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&ret_value_);
   v->VisitPointer(&kwarg_keys_);
   v->VisitPointer(&caught_exception_);
-  v->VisitPointer(&pending_exception_);
 
   FrameObject* frame = current_frame_;
   // 遍历函数调用栈

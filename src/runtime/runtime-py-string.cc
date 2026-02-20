@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-py-string.h"
 
 #include <cassert>
 #include <cctype>
@@ -11,8 +11,8 @@
 #include <cstring>
 #include <limits>
 
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -20,14 +20,17 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-py-string.h"
+#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/string-search.h"
 
 namespace saauso::internal {
 
 Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
-                                    Handle<PyObject> sep_or_null,
-                                    int64_t maxsplit) {
+                                     Handle<PyObject> sep_or_null,
+                                     int64_t maxsplit) {
   EscapableHandleScope scope;
 
   Handle<PyList> result = PyList::NewInstance();
@@ -148,7 +151,7 @@ Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 }
 
 Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
-                                     Handle<PyObject> iterable) {
+                                      Handle<PyObject> iterable) {
   EscapableHandleScope scope;
 
   if (iterable.is_null()) {
@@ -236,10 +239,12 @@ Handle<PyString> Runtime_NewStr(Handle<PyObject> value) {
     return scope.Escape(PyString::NewInstance("None"));
   }
 
-  Handle<PyObject> method = Runtime_FindPropertyInInstanceTypeMro(value, ST(str));
+  Handle<PyObject> method =
+      Runtime_FindPropertyInInstanceTypeMro(value, ST(str));
   if (!method.is_null()) {
-    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-        method, value, Handle<PyTuple>::null(), Handle<PyDict>::null());
+    Handle<PyObject> result =
+        Execution::Call(Isolate::Current(), method, value,
+                        Handle<PyTuple>::null(), Handle<PyDict>::null());
     if (!IsPyString(result)) {
       std::fprintf(stderr, "TypeError: __str__ returned non-string\n");
       std::exit(1);
@@ -254,4 +259,3 @@ Handle<PyString> Runtime_NewStr(Handle<PyObject> value) {
 }
 
 }  // namespace saauso::internal
-

@@ -426,28 +426,31 @@ print(isinstance(b, dict))
 }
 
 TEST_F(BasicInterpreterTest, BuildClassErrors) {
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
-__build_class__()
-)";
-        RunScript(kSource, kInterpreterTestFileName);
-      },
-      "__build_class__");
+  HandleScope scope;
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  constexpr std::string_view kSource = R"(
+try:
+    __build_class__()
+except TypeError as e:
+    print(str(e))
+
 def body():
     pass
 
-__build_class__(body, 1)
+try:
+    __build_class__(body, 1)
+except TypeError as e:
+    print(str(e))
 )";
-        RunScript(kSource, kInterpreterTestFileName);
-      },
-      "name is not a string");
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result,
+                 PyString::NewInstance("__build_class__: not enough arguments"));
+  AppendExpected(expected_printv_result,
+                 PyString::NewInstance("__build_class__: name is not a string"));
+  ExpectPrintResult(expected_printv_result);
 }
 
 TEST_F(BasicInterpreterTest, TypeObjectMroSingleInheritanceIsC3Linearized) {

@@ -26,6 +26,7 @@ inline constexpr int kBytecodeSizeInBytes = 2;
   V(ReturnValue, 83)       \
   V(PopExcept, 89)         \
   V(StoreName, 90)         \
+  V(DeleteName, 91)        \
   V(UnpackSequence, 92)    \
   V(ForIter, 93)           \
   V(StoreAttr, 95)         \

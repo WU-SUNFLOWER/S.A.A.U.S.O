@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-intrinsics.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -92,4 +92,3 @@ void Runtime_IntrinsicImportStar(Handle<PyObject> module,
 }
 
 }  // namespace saauso::internal
-

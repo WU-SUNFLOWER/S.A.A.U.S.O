@@ -14,7 +14,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-conversions.h"
 
 namespace saauso::internal {
 

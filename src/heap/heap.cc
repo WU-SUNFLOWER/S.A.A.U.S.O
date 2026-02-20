@@ -176,6 +176,9 @@ void Heap::IterateRoots(ObjectVisitor* v) {
     isolate_->interpreter()->Iterate(v);
   }
 
+  // 遍历 Isolate 级别的异常状态（pending exception）。
+  isolate_->exception_state()->Iterate(v);
+
   // 遍历模块系统中持有的引用（sys.modules/sys.path）
   if (isolate_->module_manager() != nullptr) {
     isolate_->module_manager()->Iterate(v);

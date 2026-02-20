@@ -20,7 +20,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-py-smi.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {

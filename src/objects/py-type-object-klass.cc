@@ -17,7 +17,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {

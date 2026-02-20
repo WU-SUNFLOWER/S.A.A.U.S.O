@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -13,7 +13,8 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-reflection.h"
+#include "src/runtime/runtime-truthiness.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -69,8 +70,9 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
   }
 
   if (!method.is_null()) {
-    Handle<PyObject> s = Isolate::Current()->interpreter()->CallPython(
-        method, self, Handle<PyTuple>::null(), Handle<PyDict>::null());
+    Handle<PyObject> s =
+        Execution::Call(Isolate::Current(), method, self,
+                        Handle<PyTuple>::null(), Handle<PyDict>::null());
     PyObject::Print(Handle<PyString>::cast(s));
     return;
   }
@@ -101,9 +103,9 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
     std::exit(1);
   }
 
-  return Isolate::Current()->interpreter()->CallPython(
-      callable, host, Handle<PyTuple>::cast(args),
-      Handle<PyDict>::cast(kwargs));
+  return Execution::Call(Isolate::Current(), callable, host,
+                         Handle<PyTuple>::cast(args),
+                         Handle<PyDict>::cast(kwargs));
 }
 
 Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
@@ -145,8 +147,8 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, prop_name);
 
-    return Isolate::Current()->interpreter()->CallPython(
-        getattr_func, self, args, Handle<PyDict>::null());
+    return Execution::Call(Isolate::Current(), getattr_func, self, args,
+                           Handle<PyDict>::null());
   }
 
   // 4-1 如果是虚拟机内部查询请求，直接返回null
@@ -259,8 +261,8 @@ bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
 
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-      callable, self, args, Handle<PyDict>::null());
+  Handle<PyObject> result = Execution::Call(Isolate::Current(), callable, self,
+                                            args, Handle<PyDict>::null());
   return Runtime_PyObjectIsTrue(result);
 }
 
@@ -274,8 +276,8 @@ bool Klass::Virtual_Default_Less(Handle<PyObject> self,
 
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
-  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-      callable, self, args, Handle<PyDict>::null());
+  Handle<PyObject> result = Execution::Call(Isolate::Current(), callable, self,
+                                            args, Handle<PyDict>::null());
   return Runtime_PyObjectIsTrue(result);
 }
 
@@ -294,8 +296,8 @@ bool Klass::Virtual_Default_Equal(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
-  Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-      callable, self, args, Handle<PyDict>::null());
+  Handle<PyObject> result = Execution::Call(Isolate::Current(), callable, self,
+                                            args, Handle<PyDict>::null());
 
   return Runtime_PyObjectIsTrue(result);
 }
@@ -307,8 +309,8 @@ bool Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
-    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-        callable, self, args, Handle<PyDict>::null());
+    Handle<PyObject> result = Execution::Call(
+        Isolate::Current(), callable, self, args, Handle<PyDict>::null());
     return Runtime_PyObjectIsTrue(result);
   }
 
@@ -322,8 +324,8 @@ bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
-    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-        callable, self, args, Handle<PyDict>::null());
+    Handle<PyObject> result = Execution::Call(
+        Isolate::Current(), callable, self, args, Handle<PyDict>::null());
     return Runtime_PyObjectIsTrue(result);
   }
 
@@ -338,8 +340,8 @@ bool Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
-    Handle<PyObject> result = Isolate::Current()->interpreter()->CallPython(
-        callable, self, args, Handle<PyDict>::null());
+    Handle<PyObject> result = Execution::Call(
+        Isolate::Current(), callable, self, args, Handle<PyDict>::null());
     return Runtime_PyObjectIsTrue(result);
   }
 
@@ -371,9 +373,8 @@ Handle<PyObject> Klass::Virtual_Default_ConstructInstance(
   // 如果用户自定义类有__init__方法，那么调用之
   auto init_method = Runtime_FindPropertyInInstanceTypeMro(instance, ST(init));
   if (!init_method.is_null()) {
-    Isolate::Current()->interpreter()->CallPython(init_method, instance,
-                                                  Handle<PyTuple>::cast(args),
-                                                  Handle<PyDict>::cast(kwargs));
+    Execution::Call(Isolate::Current(), init_method, instance,
+                    Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs));
   }
 
   return instance;

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/runtime/runtime-conversions.h"
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -14,7 +16,6 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/runtime/runtime.h"
 
 namespace saauso::internal {
 
@@ -32,6 +33,5 @@ int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
                static_cast<int>(type_name->length()), type_name->buffer());
   std::exit(1);
 }
-
 
 }  // namespace saauso::internal

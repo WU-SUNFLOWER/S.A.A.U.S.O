@@ -5,26 +5,43 @@
 #include <cinttypes>
 
 #include "src/builtins/builtins-utils.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
-#include "src/interpreter/interpreter.h"
+#include "src/handles/maybe-handles.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime.h"
+#include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-exec.h"
 
 namespace saauso::internal {
 
 namespace {
-void NormalizeExecArgs(Handle<PyDict> kwargs,
+
+// 将 obj 解析为 dict。失败时抛出 TypeError 并返回 null。
+MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
+                                               const char* role_name) {
+  if (IsPyDict(*obj)) {
+    return MaybeHandle<PyDict>(Handle<PyDict>::cast(obj));
+  }
+
+  Handle<PyString> type_name = PyObject::GetKlass(obj)->name();
+  Runtime_ThrowTypeErrorf("exec() %s must be a dict, not %.*s", role_name,
+                          static_cast<int>(type_name->length()),
+                          type_name->buffer());
+  return MaybeHandle<PyDict>::Null();
+}
+
+bool NormalizeExecArgs(Handle<PyDict> kwargs,
                        Handle<PyObject>& globals,
                        Handle<PyObject>& locals,
                        bool globals_from_positional,
                        bool locals_from_positional) {
   if (kwargs.is_null()) {
-    return;
+    return true;
   }
 
   // 这里的作用是：
@@ -44,8 +61,8 @@ void NormalizeExecArgs(Handle<PyDict> kwargs,
 
     auto key = item->Get(0);
     if (!IsPyString(key)) {
-      std::fprintf(stderr, "TypeError: keywords must be strings\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("keywords must be strings");
+      return false;
     }
 
     if (PyObject::EqualBool(key, globals_key) ||
@@ -54,19 +71,18 @@ void NormalizeExecArgs(Handle<PyDict> kwargs,
     }
 
     auto key_str = Handle<PyString>::cast(key);
-    std::fprintf(
-        stderr, "TypeError: exec() got an unexpected keyword argument '%.*s'\n",
-        static_cast<int>(key_str->length()), key_str->buffer());
-    std::exit(1);
+    Runtime_ThrowTypeErrorf("exec() got an unexpected keyword argument '%.*s'",
+                            static_cast<int>(key_str->length()),
+                            key_str->buffer());
+    return false;
   }
 
   Handle<PyObject> globals_from_kwargs = kwargs->Get(globals_key);
   if (!globals_from_kwargs.is_null()) {
     if (globals_from_positional) {
-      std::fprintf(stderr,
-                   "TypeError: exec() got multiple values for argument "
-                   "'globals'\n");
-      std::exit(1);
+      Runtime_ThrowTypeError(
+          "exec() got multiple values for argument 'globals'");
+      return false;
     }
     globals = globals_from_kwargs;
   }
@@ -74,13 +90,14 @@ void NormalizeExecArgs(Handle<PyDict> kwargs,
   Handle<PyObject> locals_from_kwargs = kwargs->Get(locals_key);
   if (!locals_from_kwargs.is_null()) {
     if (locals_from_positional) {
-      std::fprintf(stderr,
-                   "TypeError: exec() got multiple values for argument "
-                   "'locals'\n");
-      std::exit(1);
+      Runtime_ThrowTypeError(
+          "exec() got multiple values for argument 'locals'");
+      return false;
     }
     locals = locals_from_kwargs;
   }
+
+  return true;
 }
 }  // namespace
 
@@ -90,12 +107,16 @@ BUILTIN(Exec) {
   // 位置参数：exec(obj) / exec(obj, globals) / exec(obj, globals, locals)。
   const int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1 || argc > 3) [[unlikely]] {
-    std::fprintf(
-        stderr,
-        "TypeError: exec() takes at most 3 positional arguments (%" PRId64
-        " given)\n",
-        argc);
-    std::exit(1);
+    if (argc < 1) {
+      Runtime_ThrowTypeErrorf(
+          "exec() takes at least 1 positional argument (%" PRId64 " given)",
+          argc);
+    } else {
+      Runtime_ThrowTypeErrorf(
+          "exec() takes at most 3 positional arguments (%" PRId64 " given)",
+          argc);
+    }
+    return Handle<PyObject>::null();
   }
 
   Handle<PyObject> source_or_code = args->Get(0);
@@ -114,25 +135,25 @@ BUILTIN(Exec) {
     locals_from_positional = true;
   }
 
-  NormalizeExecArgs(kwargs, globals_obj, locals_obj, globals_from_positional,
-                    locals_from_positional);
+  if (!NormalizeExecArgs(kwargs, globals_obj, locals_obj,
+                         globals_from_positional, locals_from_positional)) {
+    return Handle<PyObject>::null();
+  }
 
-  Interpreter* interpreter = Isolate::Current()->interpreter();
+  Isolate* isolate = Isolate::Current();
   const bool globals_explicit =
       !globals_obj.is_null() && !IsPyNone(*globals_obj);
 
   // 解析 globals：省略或传 None 时使用当前帧 globals；否则必须为 dict。
   Handle<PyDict> globals_dict;
   if (globals_obj.is_null() || IsPyNone(*globals_obj)) {
-    globals_dict = interpreter->CurrentFrameGlobals();
+    globals_dict = Execution::CurrentFrameGlobals(isolate);
   } else {
-    if (!IsPyDict(*globals_obj)) {
-      auto type_name = PyObject::GetKlass(globals_obj)->name();
-      std::fprintf(stderr, "TypeError: exec() globals must be a dict, not %s\n",
-                   type_name->buffer());
-      std::exit(1);
+    auto maybe_globals = CastToDictOrThrowTypeError(globals_obj, "globals");
+    if (maybe_globals.is_null()) {
+      return Handle<PyObject>::null();
     }
-    globals_dict = Handle<PyDict>::cast(globals_obj);
+    globals_dict = maybe_globals.ToHandleChecked();
   }
 
   // 解析 locals：
@@ -145,19 +166,17 @@ BUILTIN(Exec) {
     if (globals_from_positional || globals_explicit) {
       locals_dict = globals_dict;
     } else {
-      locals_dict = interpreter->CurrentFrameLocals();
+      locals_dict = Execution::CurrentFrameLocals(isolate);
       if (locals_dict.is_null()) {
         locals_dict = globals_dict;
       }
     }
   } else {
-    if (!IsPyDict(*locals_obj)) {
-      auto type_name = PyObject::GetKlass(locals_obj)->name();
-      std::fprintf(stderr, "TypeError: exec() locals must be a dict, not %s\n",
-                   type_name->buffer());
-      std::exit(1);
+    auto maybe_locals = CastToDictOrThrowTypeError(locals_obj, "locals");
+    if (maybe_locals.is_null()) {
+      return Handle<PyObject>::null();
     }
-    locals_dict = Handle<PyDict>::cast(locals_obj);
+    locals_dict = maybe_locals.ToHandleChecked();
   }
 
   // 根据第一个参数类型分发：
@@ -166,25 +185,28 @@ BUILTIN(Exec) {
   // - 其它类型：报错。
   if (IsPyString(*source_or_code)) {
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-    Runtime_ExecutePythonSourceCode(Handle<PyString>::cast(source_or_code),
-                                    locals_dict, globals_dict);
+    (void)Runtime_ExecutePythonSourceCode(
+        Handle<PyString>::cast(source_or_code), locals_dict, globals_dict);
 #else
-    std::fprintf(stderr,
-                 "RuntimeError: exec(str) requires embedded CPython compiler; "
-                 "build with saauso_enable_cpython_compiler=true\n");
-    std::exit(1);
+    Runtime_ThrowRuntimeError(
+        "exec(str) requires embedded CPython compiler; build with "
+        "saauso_enable_cpython_compiler=true");
+    return Handle<PyObject>::null();
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
   } else if (IsPyCodeObject(*source_or_code)) {
-    Runtime_ExecutePyCodeObject(Handle<PyCodeObject>::cast(source_or_code),
-                                locals_dict, globals_dict);
+    (void)Runtime_ExecutePyCodeObject(
+        Handle<PyCodeObject>::cast(source_or_code), locals_dict, globals_dict);
   } else {
-    std::fprintf(stderr,
-                 "TypeError: exec() arg 1 must be a string or code object\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("exec() arg 1 must be a string or code object");
+    return Handle<PyObject>::null();
+  }
+
+  if (isolate->exception_state()->HasPendingException()) {
+    return Handle<PyObject>::null();
   }
 
   // 对齐 CPython：exec 总是返回 None。
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 }  // namespace saauso::internal
