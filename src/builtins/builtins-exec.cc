@@ -32,7 +32,7 @@ MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
   Runtime_ThrowTypeErrorf("exec() %s must be a dict, not %.*s", role_name,
                           static_cast<int>(type_name->length()),
                           type_name->buffer());
-  return MaybeHandle<PyDict>::Null();
+  return MaybeHandle<PyDict>::null();
 }
 
 bool NormalizeExecArgs(Handle<PyDict> kwargs,

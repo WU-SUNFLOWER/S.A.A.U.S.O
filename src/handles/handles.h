@@ -51,7 +51,7 @@ class HandleScope {
   bool is_closed_{false};
 };
 
-template <typename T>
+template <typename>
 class Handle;
 
 class EscapableHandleScope final : public HandleScope {
@@ -71,12 +71,12 @@ template <typename T>
 class Handle {
  public:
   Handle() = default;
-  explicit Handle(Address* location) : location_(location) {}
   explicit Handle(Tagged<T> tagged) {
     if (!tagged.is_null()) {
       location_ = HandleScope::CreateHandle(tagged.ptr());
     }
   }
+  explicit Handle(Address* location) : location_(location) {}
 
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>

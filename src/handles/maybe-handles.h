@@ -25,6 +25,7 @@ class MaybeHandle {
   MaybeHandle() = default;
 
   explicit MaybeHandle(NullMaybeHandleType) : MaybeHandle() {}
+  explicit MaybeHandle(Address* location) : location_(location) {}
 
   // 支持将Handle向下转换为MaybeHandle
   // 例如将Handle<PyList>转换成MaybeHandle<PyObject>
