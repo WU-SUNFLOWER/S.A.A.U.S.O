@@ -148,7 +148,6 @@ source_set("saauso_core") {
     "//src/interpreter/interpreter-dispatcher.cc",
     "//src/interpreter/interpreter.cc",
     "//src/interpreter/interpreter.h",
-    "//src/interpreter/try-catch.h",
 
     # init
     "//src/init/saauso.cc",

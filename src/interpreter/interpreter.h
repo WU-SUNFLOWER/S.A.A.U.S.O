@@ -20,7 +20,6 @@ class PyDict;
 class PyTuple;
 class PyString;
 class ObjectVisitor;
-class TryCatch;
 
 class Interpreter {
  public:
@@ -62,8 +61,6 @@ class Interpreter {
 
  private:
   static constexpr int kInvalidProgramCounter = -1;
-
-  friend class TryCatch;
 
   void InvokeCallable(Handle<PyObject> callable,
                       Handle<PyObject> host,
