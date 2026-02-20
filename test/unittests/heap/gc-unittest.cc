@@ -7,7 +7,7 @@
 
 #include "gtest/gtest.h"
 #include "src/execution/isolate.h"
-#include "src/handles/handle_scope_implementer.h"
+#include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -19,7 +19,6 @@
 #include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
-
 
 namespace saauso::internal {
 

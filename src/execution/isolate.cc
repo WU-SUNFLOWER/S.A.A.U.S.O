@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "include/saauso.h"
-#include "src/handles/handle_scope_implementer.h"
+#include "src/handles/handle-scope-implementer.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"

@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 #include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
-#include "src/handles/handle_scope_implementer.h"
+#include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-object.h"

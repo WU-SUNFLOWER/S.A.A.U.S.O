@@ -5,12 +5,11 @@
 #include <thread>
 
 #include "src/execution/isolate.h"
-#include "src/handles/handle_scope_implementer.h"
+#include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-smi.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
-
 
 namespace saauso::internal {
 

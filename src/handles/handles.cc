@@ -8,8 +8,7 @@
 
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
-#include "src/handles/handle_scope_implementer.h"
-
+#include "src/handles/handle-scope-implementer.h"
 
 namespace saauso::internal {
 

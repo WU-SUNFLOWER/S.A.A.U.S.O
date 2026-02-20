@@ -8,7 +8,7 @@
 #include <cassert>
 
 #include "src/execution/isolate.h"
-#include "src/handles/handle_scope_implementer.h"
+#include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 
 namespace saauso::internal {
