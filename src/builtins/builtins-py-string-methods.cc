@@ -87,19 +87,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
   int64_t length = str_object->length();
   int64_t begin = 0;
   int64_t end = length;
+
+  auto* isolate = Isolate::Current();
   if (argc >= 2) {
-    Maybe<int64_t> maybe_begin = Runtime_DecodeIntLike(args->GetTagged(1));
-    if (maybe_begin.IsNothing()) {
-      return kNullMaybe;
-    }
-    begin = maybe_begin.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
+                               Runtime_DecodeIntLike(args->GetTagged(1)));
   }
   if (argc >= 3) {
-    Maybe<int64_t> maybe_end = Runtime_DecodeIntLike(args->GetTagged(2));
-    if (maybe_end.IsNothing()) {
-      return kNullMaybe;
-    }
-    end = maybe_end.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
+                               Runtime_DecodeIntLike(args->GetTagged(2)));
   }
 
   if (begin < 0) {
@@ -161,19 +157,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
   int64_t length = str_object->length();
   int64_t begin = 0;
   int64_t end = length;
+
+  auto* isolate = Isolate::Current();
   if (argc >= 2) {
-    Maybe<int64_t> maybe_begin = Runtime_DecodeIntLike(args->GetTagged(1));
-    if (maybe_begin.IsNothing()) {
-      return kNullMaybe;
-    }
-    begin = maybe_begin.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
+                               Runtime_DecodeIntLike(args->GetTagged(1)));
   }
   if (argc >= 3) {
-    Maybe<int64_t> maybe_end = Runtime_DecodeIntLike(args->GetTagged(2));
-    if (maybe_end.IsNothing()) {
-      return kNullMaybe;
-    }
-    end = maybe_end.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
+                               Runtime_DecodeIntLike(args->GetTagged(2)));
   }
 
   if (begin < 0) {
@@ -234,19 +226,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
   int64_t length = str_object->length();
   int64_t begin = 0;
   int64_t end = length;
+
+  auto* isolate = Isolate::Current();
   if (argc >= 2) {
-    Maybe<int64_t> maybe_begin = Runtime_DecodeIntLike(args->GetTagged(1));
-    if (maybe_begin.IsNothing()) {
-      return kNullMaybe;
-    }
-    begin = maybe_begin.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
+                               Runtime_DecodeIntLike(args->GetTagged(1)));
   }
   if (argc >= 3) {
-    Maybe<int64_t> maybe_end = Runtime_DecodeIntLike(args->GetTagged(2));
-    if (maybe_end.IsNothing()) {
-      return kNullMaybe;
-    }
-    end = maybe_end.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
+                               Runtime_DecodeIntLike(args->GetTagged(2)));
   }
 
   if (begin < 0) {
@@ -288,16 +276,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   Handle<PyObject> sep_obj = Handle<PyObject>::null();
   int64_t maxsplit = -1;
 
+  auto* isolate = Isolate::Current();
+
   if (argc >= 1) {
     sep_obj = args->Get(0);
     sep_from_positional = true;
   }
   if (argc == 2) {
-    Maybe<int64_t> maybe_maxsplit = Runtime_DecodeIntLike(args->GetTagged(1));
-    if (maybe_maxsplit.IsNothing()) {
-      return kNullMaybe;
-    }
-    maxsplit = maybe_maxsplit.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit,
+                               Runtime_DecodeIntLike(args->GetTagged(1)));
     maxsplit_from_positional = true;
   }
 
@@ -349,12 +336,9 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
                      "'maxsplit'\n");
         std::exit(1);
       }
-      Maybe<int64_t> maybe_maxsplit =
-          Runtime_DecodeIntLike(*maxsplit_from_kwargs);
-      if (maybe_maxsplit.IsNothing()) {
-        return kNullMaybe;
-      }
-      maxsplit = maybe_maxsplit.ToChecked();
+
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit,
+                                 Runtime_DecodeIntLike(*maxsplit_from_kwargs));
     }
   }
 

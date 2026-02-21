@@ -13,9 +13,9 @@
 
 namespace saauso::internal {
 
-struct NullMaybeType {};
+struct NullMaybeHandleType {};
 
-inline constexpr NullMaybeType kNullMaybe;
+inline constexpr NullMaybeHandleType kNullMaybeHandle;
 
 // 用于表示“可能成功也可能失败”的 Handle 返回值。
 // 该类型本身不携带错误信息，错误信息由Isolate的异常状态容器统一持有与传播。
@@ -24,7 +24,7 @@ class [[nodiscard]] MaybeHandle {
  public:
   MaybeHandle() = default;
 
-  MaybeHandle(NullMaybeType) : MaybeHandle() {}
+  MaybeHandle(NullMaybeHandleType) : MaybeHandle() {}
   explicit MaybeHandle(Address* location) : location_(location) {}
 
   // 支持将Handle向下转换为MaybeHandle

@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/execution/exception-utils.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -55,19 +57,15 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t begin = 0;
   int64_t end = length;
 
+  auto* isolate = Isolate::Current();
+
   if (argc >= 2) {
-    Maybe<int64_t> maybe_begin = Runtime_DecodeIntLike(args->GetTagged(1));
-    if (maybe_begin.IsNothing()) {
-      return kNullMaybe;
-    }
-    begin = maybe_begin.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
+                               Runtime_DecodeIntLike(args->GetTagged(1)));
   }
   if (argc >= 3) {
-    Maybe<int64_t> maybe_end = Runtime_DecodeIntLike(args->GetTagged(2));
-    if (maybe_end.IsNothing()) {
-      return kNullMaybe;
-    }
-    end = maybe_end.ToChecked();
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
+                               Runtime_DecodeIntLike(args->GetTagged(2)));
   }
 
   if (begin < 0) {

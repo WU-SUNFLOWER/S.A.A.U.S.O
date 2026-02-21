@@ -10,11 +10,16 @@
 
 namespace saauso::internal {
 
+struct NullMaybeType {};
+
+constexpr NullMaybeType kNullMaybe;
+
 template <typename T>
 class [[nodiscard]] Maybe {
  public:
   Maybe() = default;
   explicit Maybe(T value) : has_value_(true), value_(value) {}
+  Maybe(NullMaybeType) : Maybe() {}
 
   static Maybe<T> Nothing() { return Maybe<T>(); }
 

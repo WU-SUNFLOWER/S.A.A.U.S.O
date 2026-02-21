@@ -28,11 +28,11 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
 
   if (code.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("code object must not be null");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("locals and globals must not be null");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   // 对齐 CPython：若 globals 未提供 __builtins__，则自动注入当前解释器的
@@ -64,7 +64,7 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
     Handle<PyDict> globals,
     std::string_view filename) {
   if (source.is_null()) {
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   return Runtime_ExecutePythonSourceCode(
       std::string_view(source->buffer(), static_cast<size_t>(source->length())),
@@ -81,14 +81,14 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("locals and globals must not be null");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
 #if !SAAUSO_ENABLE_CPYTHON_COMPILER
   Runtime_ThrowRuntimeError(
       "executing Python source requires embedded CPython compiler; build with "
       "saauso_enable_cpython_compiler=true");
-  return kNullMaybe;
+  return kNullMaybeHandle;
 #else  // !SAAUSO_ENABLE_CPYTHON_COMPILER
 
   // 对齐 CPython：若 globals 未提供 __builtins__，则自动注入当前解释器的
@@ -121,7 +121,7 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("locals and globals must not be null");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   if (globals->Get(ST(builtins)).is_null()) {

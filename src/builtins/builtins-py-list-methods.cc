@@ -183,7 +183,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
   if (Runtime_ExtendListByItratableObject(Handle<PyList>::cast(self),
                                           args->Get(0))
           .IsEmpty()) {
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   return handle(Isolate::Current()->py_none_object());
 }

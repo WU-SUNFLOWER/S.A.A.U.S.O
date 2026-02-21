@@ -27,10 +27,10 @@ Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowTypeErrorf(
-      "'%.*s' object cannot be interpreted as an integer",
-      static_cast<int>(type_name->length()), type_name->buffer());
-  return Maybe<int64_t>::Nothing();
+  Runtime_ThrowTypeErrorf("'%s' object cannot be interpreted as an integer",
+                          type_name->buffer());
+
+  return kNullMaybe;
 }
 
 }  // namespace saauso::internal

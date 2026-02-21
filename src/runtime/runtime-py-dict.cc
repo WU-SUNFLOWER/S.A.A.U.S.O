@@ -25,7 +25,7 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
   if (argc > 1) {
     Runtime_ThrowTypeErrorf("dict expected at most 1 argument, got %lld",
                             static_cast<long long>(argc));
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   Handle<PyDict> result = PyDict::NewInstance();
@@ -48,7 +48,7 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
               "cannot convert dictionary update sequence "
               "element #%lld to a sequence",
               static_cast<long long>(i));
-          return kNullMaybe;
+          return kNullMaybeHandle;
         }
 
         PyDict::Put(result, pair->Get(0), pair->Get(1));
@@ -69,7 +69,7 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
         if (!IsPyString(key)) {
           Handle<PyString> key_str;
           if (!Runtime_NewStr(key).ToHandle(&key_str)) {
-            return kNullMaybe;
+            return kNullMaybeHandle;
           }
           key = key_str;
         }

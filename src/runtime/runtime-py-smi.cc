@@ -4,6 +4,7 @@
 
 #include "src/runtime/runtime-py-smi.h"
 
+#include "src/execution/exception-utils.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -25,7 +26,7 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowTypeError("int() takes no keyword arguments");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -36,7 +37,7 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   if (argc > 2) {
     Runtime_ThrowTypeErrorf("int() takes at most 2 arguments (%lld given)",
                             static_cast<long long>(argc));
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   Handle<PyObject> value = pos_args->Get(0);
@@ -45,19 +46,18 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
     if (!IsPyString(value)) {
       Runtime_ThrowTypeError(
           "int() can't convert non-string with explicit base");
-      return kNullMaybe;
+      return kNullMaybeHandle;
     }
 
-    Maybe<int64_t> maybe_base = Runtime_DecodeIntLike(pos_args->GetTagged(1));
-    if (maybe_base.IsNothing()) {
-      return Handle<PyObject>::null();
-    }
-    int64_t base = maybe_base.ToChecked();
+    int64_t base = -1;
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), base,
+                               Runtime_DecodeIntLike(pos_args->GetTagged(1)));
+
     if (!(base == 0 || (2 <= base && base <= 36))) {
       Runtime_ThrowNewException(
           ST(value_err),
           PyString::NewInstance("int() base must be >= 2 and <= 36, or 0"));
-      return kNullMaybe;
+      return kNullMaybeHandle;
     }
 
     auto s = Handle<PyString>::cast(value);
@@ -70,26 +70,26 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
         Runtime_ThrowNewException(
             ST(value_err),
             PyString::NewInstance("int too large to convert to Smi"));
-        return kNullMaybe;
+        return kNullMaybeHandle;
       }
       if (err == StringToIntError::kInvalidBase) {
         Runtime_ThrowNewException(
             ST(value_err),
             PyString::NewInstance("int() base must be >= 2 and <= 36, or 0"));
-        return kNullMaybe;
+        return kNullMaybeHandle;
       }
       Runtime_ThrowNewException(
-          ST(value_err),
-          PyString::NewInstance(
-              "invalid literal for int() with explicit base"));
-      return kNullMaybe;
+          ST(value_err), PyString::NewInstance(
+                             "invalid literal for int() with explicit base"));
+      return kNullMaybeHandle;
     }
 
     if (!InRangeWithRightClose(parsed_value, PySmi::kSmiMinValue,
                                PySmi::kSmiMaxValue)) {
       Runtime_ThrowNewException(
-          ST(value_err), PyString::NewInstance("int too large to convert to Smi"));
-      return kNullMaybe;
+          ST(value_err),
+          PyString::NewInstance("int too large to convert to Smi"));
+      return kNullMaybeHandle;
     }
     return scope.Escape(handle(PySmi::FromInt(parsed_value)));
   }
@@ -105,29 +105,32 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
     double v = Handle<PyFloat>::cast(value)->value();
     if (std::isnan(v)) {
       Runtime_ThrowNewException(
-          ST(value_err), PyString::NewInstance("cannot convert float NaN to integer"));
-      return kNullMaybe;
+          ST(value_err),
+          PyString::NewInstance("cannot convert float NaN to integer"));
+      return kNullMaybeHandle;
     }
     if (std::isinf(v)) {
       Runtime_ThrowNewException(
           ST(value_err),
           PyString::NewInstance("cannot convert float infinity to integer"));
-      return kNullMaybe;
+      return kNullMaybeHandle;
     }
 
     double truncated = std::trunc(v);
     if (truncated < static_cast<double>(std::numeric_limits<int64_t>::min()) ||
         truncated > static_cast<double>(std::numeric_limits<int64_t>::max())) {
       Runtime_ThrowNewException(
-          ST(value_err), PyString::NewInstance("int too large to convert to Smi"));
-      return kNullMaybe;
+          ST(value_err),
+          PyString::NewInstance("int too large to convert to Smi"));
+      return kNullMaybeHandle;
     }
     int64_t int_value = static_cast<int64_t>(truncated);
     if (!InRangeWithRightClose(int_value, PySmi::kSmiMinValue,
                                PySmi::kSmiMaxValue)) {
       Runtime_ThrowNewException(
-          ST(value_err), PyString::NewInstance("int too large to convert to Smi"));
-      return kNullMaybe;
+          ST(value_err),
+          PyString::NewInstance("int too large to convert to Smi"));
+      return kNullMaybeHandle;
     }
     return scope.Escape(handle(PySmi::FromInt(int_value)));
   }
@@ -140,7 +143,7 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
       "int() argument must be a string, a bytes-like object or a real number, "
       "not '%.*s'",
       static_cast<int>(type_name->length()), type_name->buffer());
-  return kNullMaybe;
+  return kNullMaybeHandle;
 }
 
 }  // namespace saauso::internal

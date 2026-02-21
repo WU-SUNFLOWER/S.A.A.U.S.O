@@ -156,7 +156,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     DestroyCurrentFrame();
 
     if (isolate_->exception_state()->HasPendingException()) {
-      return kNullMaybe;
+      return kNullMaybeHandle;
     }
 
     return scope.Escape(result);
@@ -177,7 +177,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   // 类似于TypeError: 'xxx' object is not callable
   result = PyObject::Call(callable, host, pos_args, kw_args);
   if (isolate_->exception_state()->HasPendingException()) {
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   return scope.Escape(result);
 }

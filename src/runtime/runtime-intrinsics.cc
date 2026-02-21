@@ -20,7 +20,7 @@ MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
 
   if (!IsPyList(object)) {
     Runtime_ThrowTypeError("INTRINSIC_LIST_TO_TUPLE expected a list");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   auto list = Handle<PyList>::cast(object);

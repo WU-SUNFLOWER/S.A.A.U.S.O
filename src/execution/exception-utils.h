@@ -12,26 +12,24 @@
 
 #define ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, dst, call, value) \
   do {                                                              \
-    auto _maybe_handle_ = (call);                                   \
-    if (!_maybe_handle_.To(&dst)) {                                 \
+    if (!(call).To(&dst)) {                                         \
       assert((isolate)->exception_state()->HasPendingException());  \
       return value;                                                 \
     }                                                               \
   } while (false)
 
 #define ASSIGN_RETURN_ON_EXCEPTION(isolate, dst, call) \
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, dst, call, kNullMaybe)
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, dst, call, kNullMaybeHandle)
 
 #define RETURN_ON_EXCEPTION_VALUE(isolate, call, value)            \
   do {                                                             \
-    auto _maybe_handle_ = (call);                                  \
-    if (_maybe_handle_.IsEmpty()) {                                \
+    if ((call).IsEmpty()) {                                        \
       assert((isolate)->exception_state()->HasPendingException()); \
       return value;                                                \
     }                                                              \
   } while (false)
 
 #define RETURN_ON_EXCEPTION(isolate, call) \
-  RETURN_ON_EXCEPTION_VALUE(isolate, call, kNullMaybe)
+  RETURN_ON_EXCEPTION_VALUE(isolate, call, kNullMaybeHandle)
 
 #endif  // SAAUSO_EXECUTION_EXCEPTION_UTILS_H_

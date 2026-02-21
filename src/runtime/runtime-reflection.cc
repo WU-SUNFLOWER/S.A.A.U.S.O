@@ -107,7 +107,7 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
 
   Runtime_ThrowTypeErrorf("unsupported operation for class %s",
                           PyObject::GetKlass(object)->name()->buffer());
-  return kNullMaybe;
+  return kNullMaybeHandle;
 }
 
 MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
@@ -117,7 +117,7 @@ MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
       type_object->own_klass()->ConstructInstance(args, kwargs);
   if (result.is_null() &&
       Isolate::Current()->exception_state()->HasPendingException()) {
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   return result;
 }
@@ -130,13 +130,13 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (!(argc == 1 || argc == 3)) {
     Runtime_ThrowTypeError("type() takes 1 or 3 arguments");
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   if (argc == 1) {
     if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
       Runtime_ThrowTypeError("type() takes 1 or 3 arguments");
-      return kNullMaybe;
+      return kNullMaybeHandle;
     }
 
     Handle<PyObject> obj = pos_args->Get(0);
@@ -152,21 +152,21 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
         "type() argument 1 must be str, not '%.*s'",
         static_cast<int>(PyObject::GetKlass(name_obj)->name()->length()),
         PyObject::GetKlass(name_obj)->name()->buffer());
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   if (!IsPyTuple(bases_obj)) {
     Runtime_ThrowTypeErrorf(
         "type() argument 2 must be tuple, not '%.*s'",
         static_cast<int>(PyObject::GetKlass(bases_obj)->name()->length()),
         PyObject::GetKlass(bases_obj)->name()->buffer());
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
   if (!IsPyDict(dict_obj)) {
     Runtime_ThrowTypeErrorf(
         "type() argument 3 must be dict, not '%.*s'",
         static_cast<int>(PyObject::GetKlass(dict_obj)->name()->length()),
         PyObject::GetKlass(dict_obj)->name()->buffer());
-    return kNullMaybe;
+    return kNullMaybeHandle;
   }
 
   Handle<PyString> name = Handle<PyString>::cast(name_obj);
@@ -183,7 +183,7 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
       Handle<PyObject> base = bases_tuple->Get(i);
       if (!IsPyTypeObject(base)) {
         Runtime_ThrowTypeError("type() bases must be types");
-        return kNullMaybe;
+        return kNullMaybeHandle;
       }
       PyList::Append(supers, base);
     }
