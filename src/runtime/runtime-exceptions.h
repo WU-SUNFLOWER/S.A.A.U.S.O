@@ -6,14 +6,18 @@
 #define SRC_RUNTIME_RUNTIME_EXCEPTIONS_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
 class PyObject;
 class PyString;
 
-Handle<PyObject> Runtime_NewExceptionInstance(Handle<PyString> exception_type_name,
-                                              Handle<PyString> message_or_null);
+// 创建一个新的异常实例。
+// - 失败时返回 empty，并保证已设置 pending exception。
+MaybeHandle<PyObject> Runtime_NewExceptionInstance(
+    Handle<PyString> exception_type_name,
+    Handle<PyString> message_or_null);
 
 void Runtime_ThrowNewException(Handle<PyString> exception_type_name,
                                Handle<PyString> message_or_null);

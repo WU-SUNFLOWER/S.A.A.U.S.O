@@ -81,7 +81,11 @@ Handle<PyObject> PySmiKlass::Virtual_ConstructInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PySmiKlass::GetInstance());
-  return Runtime_NewSmi(args, kwargs);
+  Handle<PyObject> result;
+  if (!Runtime_NewSmi(args, kwargs).ToHandle(&result)) {
+    return Handle<PyObject>::null();
+  }
+  return result;
 }
 
 void PySmiKlass::Virtual_Print(Handle<PyObject> self) {

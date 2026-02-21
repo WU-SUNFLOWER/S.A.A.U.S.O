@@ -16,18 +16,19 @@ class PyList;
 
 // 将一个 Python 字符串按指定分隔符拆分为 list。
 // - sep_or_null 为 null 表示按空白拆分（行为对齐 CPython 的子集语义）。
-// - sep_or_null 非 null 时必须为 str；空字符串分隔符会触发 ValueError 并
-// fail-fast。
+// - sep_or_null 非 null 时必须为 str；空字符串分隔符会触发 ValueError。
 // - maxsplit < 0 表示不限次数；maxsplit == 0 返回至多一个元素（保留现有行为）。
-Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
-                                     Handle<PyObject> sep_or_null,
-                                     int64_t maxsplit);
+// - 失败时返回 empty，并保证已设置 pending exception。
+MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
+                                          Handle<PyObject> sep_or_null,
+                                          int64_t maxsplit);
 
 // 将一个可迭代对象按 Python 语义用分隔符连接为 str。
-// - iterable 必须为非空且可被展开；否则会在下层 fail-fast。
-// - iterable 的每个元素必须为 str，否则会打印 TypeError 并 fail-fast。
-Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
-                                      Handle<PyObject> iterable);
+// - iterable 必须为非空且可被展开。
+// - iterable 的每个元素必须为 str。
+// - 失败时返回 empty，并保证已设置 pending exception。
+MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
+                                           Handle<PyObject> iterable);
 
 // 按 Python 语义将任意对象转换为 str。
 // - 支持 str/int/float/bool/None 的快速路径。

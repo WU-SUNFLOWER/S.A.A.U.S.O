@@ -4,25 +4,23 @@
 
 #include "src/runtime/runtime-intrinsics.h"
 
-#include <cstdio>
-#include <cstdlib>
-
+#include "src/execution/isolate.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
-Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
+MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   EscapableHandleScope scope;
 
   if (!IsPyList(object)) {
-    std::fprintf(stderr,
-                 "TypeError: INTRINSIC_LIST_TO_TUPLE expected a list\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("INTRINSIC_LIST_TO_TUPLE expected a list");
+    return kNullMaybe;
   }
 
   auto list = Handle<PyList>::cast(object);
@@ -36,21 +34,21 @@ Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
 void Runtime_IntrinsicImportStar(Handle<PyObject> module,
                                  Handle<PyDict> locals) {
   if (locals.is_null()) [[unlikely]] {
-    std::fprintf(stderr, "RuntimeError: no locals for import *\n");
-    std::exit(1);
+    Runtime_ThrowRuntimeError("no locals for import *");
+    return;
   }
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   if (module_dict.is_null()) [[unlikely]] {
-    std::fprintf(stderr, "TypeError: module has no __dict__\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("module has no __dict__");
+    return;
   }
 
   auto import_name = [&](Handle<PyObject> name_obj,
                          bool ignore_private_member) {
     if (!IsPyString(name_obj)) [[unlikely]] {
-      std::fprintf(stderr, "TypeError: import * name must be a string\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("import * name must be a string");
+      return;
     }
 
     auto name = Handle<PyString>::cast(name_obj);
@@ -71,15 +69,21 @@ void Runtime_IntrinsicImportStar(Handle<PyObject> module,
       auto names = Handle<PyTuple>::cast(all);
       for (int64_t i = 0; i < names->length(); ++i) {
         import_name(names->Get(i), false);
+        if (Isolate::Current()->exception_state()->HasPendingException()) {
+          return;
+        }
       }
     } else if (IsPyList(all)) {
       auto names = Handle<PyList>::cast(all);
       for (int64_t i = 0; i < names->length(); ++i) {
         import_name(names->Get(i), false);
+        if (Isolate::Current()->exception_state()->HasPendingException()) {
+          return;
+        }
       }
     } else {
-      std::fprintf(stderr, "TypeError: __all__ must be a tuple or list\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("__all__ must be a tuple or list");
+      return;
     }
     return;
   }
@@ -88,6 +92,9 @@ void Runtime_IntrinsicImportStar(Handle<PyObject> module,
   Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict);
   for (int64_t i = 0; i < keys->length(); ++i) {
     import_name(keys->Get(i), true);
+    if (Isolate::Current()->exception_state()->HasPendingException()) {
+      return;
+    }
   }
 }
 

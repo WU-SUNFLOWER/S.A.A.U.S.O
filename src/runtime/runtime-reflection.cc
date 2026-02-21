@@ -4,8 +4,6 @@
 
 #include "src/runtime/runtime-reflection.h"
 
-#include <cstdio>
-
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
@@ -107,8 +105,6 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     return scope.Escape(result);
   }
 
-  std::fprintf(stderr, "class %s Error : unsupport operation for class",
-               PyObject::GetKlass(object)->name()->buffer());
   Runtime_ThrowTypeErrorf("unsupported operation for class %s",
                           PyObject::GetKlass(object)->name()->buffer());
   return kNullMaybe;

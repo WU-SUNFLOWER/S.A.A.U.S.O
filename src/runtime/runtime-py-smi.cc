@@ -12,18 +12,20 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-conversions.h"
+#include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
 
-Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
-                                Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
+                                     Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    std::fprintf(stderr, "TypeError: int() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("int() takes no keyword arguments");
+    return kNullMaybe;
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -32,20 +34,18 @@ Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
     return scope.Escape(handle(PySmi::FromInt(0)));
   }
   if (argc > 2) {
-    std::fprintf(stderr,
-                 "TypeError: int() takes at most 2 arguments (%lld given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf("int() takes at most 2 arguments (%lld given)",
+                            static_cast<long long>(argc));
+    return kNullMaybe;
   }
 
   Handle<PyObject> value = pos_args->Get(0);
 
   if (argc == 2) {
     if (!IsPyString(value)) {
-      std::fprintf(
-          stderr,
-          "TypeError: int() can't convert non-string with explicit base\n");
-      std::exit(1);
+      Runtime_ThrowTypeError(
+          "int() can't convert non-string with explicit base");
+      return kNullMaybe;
     }
 
     Maybe<int64_t> maybe_base = Runtime_DecodeIntLike(pos_args->GetTagged(1));
@@ -54,9 +54,10 @@ Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
     }
     int64_t base = maybe_base.ToChecked();
     if (!(base == 0 || (2 <= base && base <= 36))) {
-      std::fprintf(stderr,
-                   "ValueError: int() base must be >= 2 and <= 36, or 0\n");
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err),
+          PyString::NewInstance("int() base must be >= 2 and <= 36, or 0"));
+      return kNullMaybe;
     }
 
     auto s = Handle<PyString>::cast(value);
@@ -66,27 +67,29 @@ Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
         StringToIntWithBase(text, static_cast<int>(base), &parsed_value);
     if (err != StringToIntError::kOk) {
       if (err == StringToIntError::kOverflow) {
-        std::fprintf(stderr,
-                     "OverflowError: int too large to convert to Smi\n");
-        std::exit(1);
+        Runtime_ThrowNewException(
+            ST(value_err),
+            PyString::NewInstance("int too large to convert to Smi"));
+        return kNullMaybe;
       }
       if (err == StringToIntError::kInvalidBase) {
-        std::fprintf(stderr,
-                     "ValueError: int() base must be >= 2 and <= 36, or 0\n");
-        std::exit(1);
+        Runtime_ThrowNewException(
+            ST(value_err),
+            PyString::NewInstance("int() base must be >= 2 and <= 36, or 0"));
+        return kNullMaybe;
       }
-      std::fprintf(
-          stderr,
-          "ValueError: invalid literal for int() with base %lld: '%.*s'\n",
-          static_cast<long long>(base), static_cast<int>(s->length()),
-          s->buffer());
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err),
+          PyString::NewInstance(
+              "invalid literal for int() with explicit base"));
+      return kNullMaybe;
     }
 
     if (!InRangeWithRightClose(parsed_value, PySmi::kSmiMinValue,
                                PySmi::kSmiMaxValue)) {
-      std::fprintf(stderr, "OverflowError: int too large to convert to Smi\n");
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err), PyString::NewInstance("int too large to convert to Smi"));
+      return kNullMaybe;
     }
     return scope.Escape(handle(PySmi::FromInt(parsed_value)));
   }
@@ -101,26 +104,30 @@ Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   if (IsPyFloat(value)) {
     double v = Handle<PyFloat>::cast(value)->value();
     if (std::isnan(v)) {
-      std::fprintf(stderr, "ValueError: cannot convert float NaN to integer\n");
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err), PyString::NewInstance("cannot convert float NaN to integer"));
+      return kNullMaybe;
     }
     if (std::isinf(v)) {
-      std::fprintf(stderr,
-                   "OverflowError: cannot convert float infinity to integer\n");
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err),
+          PyString::NewInstance("cannot convert float infinity to integer"));
+      return kNullMaybe;
     }
 
     double truncated = std::trunc(v);
     if (truncated < static_cast<double>(std::numeric_limits<int64_t>::min()) ||
         truncated > static_cast<double>(std::numeric_limits<int64_t>::max())) {
-      std::fprintf(stderr, "OverflowError: int too large to convert to Smi\n");
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err), PyString::NewInstance("int too large to convert to Smi"));
+      return kNullMaybe;
     }
     int64_t int_value = static_cast<int64_t>(truncated);
     if (!InRangeWithRightClose(int_value, PySmi::kSmiMinValue,
                                PySmi::kSmiMaxValue)) {
-      std::fprintf(stderr, "OverflowError: int too large to convert to Smi\n");
-      std::exit(1);
+      Runtime_ThrowNewException(
+          ST(value_err), PyString::NewInstance("int too large to convert to Smi"));
+      return kNullMaybe;
     }
     return scope.Escape(handle(PySmi::FromInt(int_value)));
   }
@@ -129,12 +136,11 @@ Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  std::fprintf(
-      stderr,
-      "TypeError: int() argument must be a string, a bytes-like object "
-      "or a real number, not '%.*s'\n",
+  Runtime_ThrowTypeErrorf(
+      "int() argument must be a string, a bytes-like object or a real number, "
+      "not '%.*s'",
       static_cast<int>(type_name->length()), type_name->buffer());
-  std::exit(1);
+  return kNullMaybe;
 }
 
 }  // namespace saauso::internal

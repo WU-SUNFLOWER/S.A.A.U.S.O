@@ -91,9 +91,15 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
 int(x=1)
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError: int\\(\\) takes no keyword arguments");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  auto formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("TypeError: int() takes no keyword arguments"),
+            std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
@@ -115,9 +121,15 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
 int("0x10", 10)
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "ValueError: invalid literal for int\\(\\) with base 10: '0x10'");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  auto formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("ValueError: invalid literal for int()"),
+            std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsListAndTuple) {

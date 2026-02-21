@@ -962,11 +962,18 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> arg = POP();
     switch (op_arg) {
       case UnaryIntrinsic::kListToTuple: {
-        PUSH(Runtime_IntrinsicListToTuple(arg));
+        Handle<PyTuple> tuple_result;
+        if (!Runtime_IntrinsicListToTuple(arg).ToHandle(&tuple_result)) {
+          goto pending_exception_unwind;
+        }
+        PUSH(tuple_result);
         break;
       }
       case UnaryIntrinsic::kImportStar: {
         Runtime_IntrinsicImportStar(arg, current_frame_->locals());
+        if (HasPendingException()) {
+          goto pending_exception_unwind;
+        }
         PUSH(handle(isolate_->py_none_object()));
         break;
       }

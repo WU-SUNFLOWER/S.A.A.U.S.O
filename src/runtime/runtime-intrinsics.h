@@ -6,6 +6,7 @@
 #define SSAUSO_RUNTIME_RUNTIME_INTRINSICS_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -13,8 +14,9 @@ class PyTuple;
 class PyDict;
 
 // intrinsic：将一个 list 转换为 tuple。
-// - object 必须是 list，否则 fail-fast。
-Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
+// - object 必须是 list，否则抛出 TypeError。
+// - 失败时返回 empty，并保证已设置 pending exception。
+MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 
 // 导入某个模块名下的所有子模块到解释器栈帧的locals
 // 注意：
@@ -23,6 +25,7 @@ Handle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 // 式导入，那么执行`from package import *`后，虚拟机
 // 实际上不会主动查找package目录下的模块文件或子包目录。
 // 因此用户也无法直接使用package名下的子模块。
+// - 该函数返回后，调用方必须检查 pending exception。
 void Runtime_IntrinsicImportStar(Handle<PyObject> module,
                                  Handle<PyDict> locals);
 

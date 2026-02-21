@@ -22,6 +22,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-string.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
@@ -29,9 +30,9 @@
 
 namespace saauso::internal {
 
-Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
-                                     Handle<PyObject> sep_or_null,
-                                     int64_t maxsplit) {
+MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
+                                          Handle<PyObject> sep_or_null,
+                                          int64_t maxsplit) {
   EscapableHandleScope scope;
 
   Handle<PyList> result = PyList::NewInstance();
@@ -127,8 +128,8 @@ Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 
   Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
-    std::fprintf(stderr, "ValueError: empty separator\n");
-    std::exit(1);
+    Runtime_ThrowNewException(ST(value_err), PyString::NewInstance("empty separator"));
+    return kNullMaybe;
   }
 
   int64_t splits_left = max_splits;
@@ -151,19 +152,19 @@ Handle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
   return scope.Escape(result);
 }
 
-Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
-                                      Handle<PyObject> iterable) {
+MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
+                                           Handle<PyObject> iterable) {
   EscapableHandleScope scope;
 
   if (iterable.is_null()) {
-    std::fprintf(stderr, "TypeError: can only join an iterable\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("can only join an iterable");
+    return kNullMaybe;
   }
 
   Handle<PyTuple> parts;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      Isolate::Current(), parts, Runtime_UnpackIterableObjectToTuple(iterable),
-      Handle<PyString>::null());
+  ASSIGN_RETURN_ON_EXCEPTION(
+      Isolate::Current(), parts, Runtime_UnpackIterableObjectToTuple(iterable));
+      
   const int64_t num_parts = parts->length();
   if (num_parts == 0) {
     return scope.Escape(PyString::NewInstance(static_cast<int64_t>(0)));
@@ -176,24 +177,25 @@ Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
     Handle<PyObject> item = parts->Get(i);
     if (!IsPyString(*item)) {
       auto type_name = PyObject::GetKlass(item)->name();
-      std::fprintf(stderr,
-                   "TypeError: sequence item %lld: expected str instance, %s "
-                   "found\n",
-                   static_cast<long long>(i), type_name->buffer());
-      std::exit(1);
+      Runtime_ThrowTypeErrorf(
+          "sequence item %lld: expected str instance, %s found",
+          static_cast<long long>(i), type_name->buffer());
+      return kNullMaybe;
     }
 
     int64_t item_length = Handle<PyString>::cast(item)->length();
     if (item_length > std::numeric_limits<int64_t>::max() - total_length) {
-      std::fprintf(stderr, "OverflowError: join() result is too long\n");
-      std::exit(1);
+      Runtime_ThrowNewException(ST(value_err),
+                                PyString::NewInstance("join() result is too long"));
+      return kNullMaybe;
     }
     total_length += item_length;
 
     if (i + 1 < num_parts) {
       if (sep_length > std::numeric_limits<int64_t>::max() - total_length) {
-        std::fprintf(stderr, "OverflowError: join() result is too long\n");
-        std::exit(1);
+        Runtime_ThrowNewException(ST(value_err),
+                                  PyString::NewInstance("join() result is too long"));
+        return kNullMaybe;
       }
       total_length += sep_length;
     }
@@ -222,8 +224,8 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
   EscapableHandleScope scope;
 
   if (value.is_null()) {
-    std::fprintf(stderr, "TypeError: str() argument must not be null\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("str() argument must not be null");
+    return kNullMaybe;
   }
 
   if (IsPyString(value)) {
@@ -256,8 +258,8 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
                         Handle<PyDict>::null()));
 
     if (!IsPyString(result)) {
-      std::fprintf(stderr, "TypeError: __str__ returned non-string\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("__str__ returned non-string");
+      return kNullMaybe;
     }
 
     return scope.Escape(Handle<PyString>::cast(result));

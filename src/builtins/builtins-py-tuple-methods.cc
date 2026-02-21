@@ -56,10 +56,18 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t end = length;
 
   if (argc >= 2) {
-    begin = Runtime_DecodeIntLikeOrDie(args->GetTagged(1));
+    Maybe<int64_t> maybe_begin = Runtime_DecodeIntLike(args->GetTagged(1));
+    if (maybe_begin.IsNothing()) {
+      return kNullMaybe;
+    }
+    begin = maybe_begin.ToChecked();
   }
   if (argc >= 3) {
-    end = Runtime_DecodeIntLikeOrDie(args->GetTagged(2));
+    Maybe<int64_t> maybe_end = Runtime_DecodeIntLike(args->GetTagged(2));
+    if (maybe_end.IsNothing()) {
+      return kNullMaybe;
+    }
+    end = maybe_end.ToChecked();
   }
 
   if (begin < 0) {

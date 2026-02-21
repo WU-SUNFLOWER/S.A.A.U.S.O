@@ -4,11 +4,15 @@
 
 #include <string_view>
 
+#include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -291,9 +295,14 @@ TEST_F(BasicInterpreterTest, SplitMethodErrors) {
   constexpr std::string_view kEmptySep = R"(
 "abc".split("")
 )";
-  EXPECT_EXIT(
-      { RunScript(kEmptySep, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "ValueError: empty separator");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kEmptySep, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  auto formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("ValueError: empty separator"), std::string::npos);
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kUnexpectedKeyword = R"(
 "a".split(foo=1)
@@ -338,10 +347,15 @@ TEST_F(BasicInterpreterTest, JoinMethodErrors) {
   constexpr std::string_view kElementNotStr = R"(
 print(",".join(["a", 1]))
 )";
-  EXPECT_EXIT(
-      { RunScript(kElementNotStr, kTestFileName); },
-      ::testing::ExitedWithCode(1),
-      "TypeError: sequence item 1: expected str instance");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kElementNotStr, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  auto formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("TypeError: sequence item 1: expected str instance"),
+            std::string::npos);
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kKeyword = R"(
 "-".join(iterable=["a", "b"])

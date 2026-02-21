@@ -6,10 +6,14 @@
 #define SAAUSO_RUNTIME_RUNTIME_PY_SMI_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
-Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args, Handle<PyObject> kwargs);
+// 按 Python 语义构造 int 对象。
+// - 失败时返回 empty，并保证已设置 pending exception。
+MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
+                                     Handle<PyObject> kwargs);
 
 }
 

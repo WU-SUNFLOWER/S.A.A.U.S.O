@@ -21,7 +21,7 @@
 
 namespace saauso::internal {
 
-Handle<PyObject> Runtime_NewExceptionInstance(
+MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyString> exception_type_name,
     Handle<PyString> message_or_null) {
   EscapableHandleScope scope;
@@ -29,13 +29,11 @@ Handle<PyObject> Runtime_NewExceptionInstance(
   Handle<PyObject> exception_type = builtins->Get(exception_type_name);
   assert(!exception_type.is_null());
 
-  Handle<PyObject> exception =
-      Handle<PyObject>::null();
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+  Handle<PyObject> exception = Handle<PyObject>::null();
+  ASSIGN_RETURN_ON_EXCEPTION(
       Isolate::Current(), exception,
       Runtime_NewObject(Handle<PyTypeObject>::cast(exception_type),
-                        Handle<PyObject>::null(), Handle<PyObject>::null()),
-      Handle<PyObject>::null());
+                        Handle<PyObject>::null(), Handle<PyObject>::null()));
 
   if (!message_or_null.is_null()) {
     Handle<PyDict> properties = PyObject::GetProperties(exception);
@@ -53,8 +51,14 @@ void Runtime_ThrowNewException(Handle<PyString> exception_type_name,
   if (state->HasPendingException()) {
     return;
   }
-  Handle<PyObject> exception =
-      Runtime_NewExceptionInstance(exception_type_name, message_or_null);
+
+  auto* isolate = Isolate::Current();
+  Handle<PyObject> exception;
+
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, exception,
+      Runtime_NewExceptionInstance(exception_type_name, message_or_null), );
+
   state->Throw(*exception);
 }
 
