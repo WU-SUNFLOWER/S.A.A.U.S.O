@@ -29,7 +29,7 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
   }
 
   auto name = Handle<PyString>::cast(name_obj);
-  if (!ignore_private_member && name->length() > 0 && name->Get(0) == '_') {
+  if (ignore_private_member && name->length() > 0 && name->Get(0) == '_') {
     return Maybe<bool>(false);
   }
 
@@ -40,6 +40,30 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
   }
 
   return Maybe<bool>(false);
+}
+
+Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
+                                   Handle<PyObject> all,
+                                   Handle<PyDict> module_dict,
+                                   Handle<PyDict> locals) {
+  if (IsPyTuple(all)) {
+    auto names = Handle<PyTuple>::cast(all);
+    for (int64_t i = 0; i < names->length(); ++i) {
+      RETURN_ON_EXCEPTION(
+          isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
+    }
+  } else if (IsPyList(all)) {
+    auto names = Handle<PyList>::cast(all);
+    for (int64_t i = 0; i < names->length(); ++i) {
+      RETURN_ON_EXCEPTION(
+          isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
+    }
+  } else {
+    Runtime_ThrowTypeError("__all__ must be a tuple or list");
+    return kNullMaybe;
+  }
+
+  return Maybe<bool>(true);
 }
 
 }  // namespace
@@ -75,32 +99,19 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Handle<PyObject> module,
     return kNullMaybeHandle;
   }
 
-  // 优先尝试根据__all__定向导入子模块
   Handle<PyObject> all = module_dict->Get(ST(all));
-  if (!all.is_null()) {
-    if (IsPyTuple(all)) {
-      auto names = Handle<PyTuple>::cast(all);
-      for (int64_t i = 0; i < names->length(); ++i) {
-        RETURN_ON_EXCEPTION(
-            isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
-      }
-    } else if (IsPyList(all)) {
-      auto names = Handle<PyList>::cast(all);
-      for (int64_t i = 0; i < names->length(); ++i) {
-        RETURN_ON_EXCEPTION(
-            isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
-      }
-    } else {
-      Runtime_ThrowTypeError("__all__ must be a tuple or list");
-      return kNullMaybeHandle;
-    }
-  }
 
-  // 没有显式的__all__，那么无脑遍历dict并批量导入
-  Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict);
-  for (int64_t i = 0; i < keys->length(); ++i) {
+  // 1. 如果存在__all__，那么据此定向导入子模块
+  // 2. 没有显式的__all__，那么无脑遍历dict并批量导入
+  if (!all.is_null()) {
     RETURN_ON_EXCEPTION(
-        isolate, ImportNameImpl(module_dict, locals, keys->Get(i), true));
+        isolate, ImportModulesByAllImpl(isolate, all, module_dict, locals));
+  } else {
+    Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict);
+    for (int64_t i = 0; i < keys->length(); ++i) {
+      RETURN_ON_EXCEPTION(
+          isolate, ImportNameImpl(module_dict, locals, keys->Get(i), true));
+    }
   }
 
   return handle(isolate->py_none_object());
