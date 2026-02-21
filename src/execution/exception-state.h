@@ -23,6 +23,8 @@ class PyObject;
 //   查表逻辑保持一致。
 class ExceptionState final {
  public:
+  static constexpr int kInvalidProgramCounter = -1;
+
   ExceptionState() = default;
 
   bool HasPendingException() const { return !pending_exception_.is_null(); }
@@ -64,8 +66,6 @@ class ExceptionState final {
   void Iterate(ObjectVisitor* v);
 
  private:
-  static constexpr int kInvalidProgramCounter = -1;
-
   Tagged<PyObject> pending_exception_{kNullAddress};
   int pending_exception_pc_{kInvalidProgramCounter};
   int pending_exception_origin_pc_{kInvalidProgramCounter};

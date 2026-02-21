@@ -60,7 +60,11 @@ Handle<PyObject> Runtime_NewDict(Handle<PyObject> args,
 
         Handle<PyObject> key = item->Get(0);
         if (!IsPyString(key)) {
-          key = Runtime_NewStr(key);
+          Handle<PyString> key_str;
+          if (!Runtime_NewStr(key).ToHandle(&key_str)) {
+            return Handle<PyObject>::null();
+          }
+          key = key_str;
         }
 
         PyDict::Put(result, key, item->Get(1));

@@ -5,6 +5,7 @@
 #include "src/runtime/runtime-exec.h"
 
 #include "src/code/compiler.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-code-object.h"
@@ -20,18 +21,18 @@ namespace saauso::internal {
 
 // 执行一个 code object，并显式指定其运行环境（locals/globals）。
 // 该函数的核心用途是为内建 exec 等路径提供“在指定字典中执行代码”的能力。
-Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
-                                             Handle<PyDict> locals,
-                                             Handle<PyDict> globals) {
+MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
+                                                  Handle<PyDict> locals,
+                                                  Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
   if (code.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("code object must not be null");
-    return Handle<PyObject>::null();
+    return kNullMaybe;
   }
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("locals and globals must not be null");
-    return Handle<PyObject>::null();
+    return kNullMaybe;
   }
 
   // 对齐 CPython：若 globals 未提供 __builtins__，则自动注入当前解释器的
@@ -45,19 +46,25 @@ Handle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
   Handle<PyFunction> func = PyFunction::NewInstance(code);
   func->set_func_globals(globals);
 
-  Handle<PyObject> result =
+  auto* isolate = Isolate::Current();
+  Handle<PyObject> result;
+
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
       Execution::Call(Isolate::Current(), func, Handle<PyObject>::null(),
-                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals);
+                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+
   return scope.Escape(result);
 }
 
 // PyString 重载仅用于做薄封装，最终走 string_view 版本统一实现。
-Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
-                                                 Handle<PyDict> locals,
-                                                 Handle<PyDict> globals,
-                                                 std::string_view filename) {
+MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
+    Handle<PyString> source,
+    Handle<PyDict> locals,
+    Handle<PyDict> globals,
+    std::string_view filename) {
   if (source.is_null()) {
-    return Handle<PyObject>::null();
+    return kNullMaybe;
   }
   return Runtime_ExecutePythonSourceCode(
       std::string_view(source->buffer(), static_cast<size_t>(source->length())),
@@ -65,22 +72,23 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(Handle<PyString> source,
 }
 
 // 编译并执行一段 Python 源码，并显式指定其运行环境（locals/globals）。
-Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
-                                                 Handle<PyDict> locals,
-                                                 Handle<PyDict> globals,
-                                                 std::string_view filename) {
+MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
+    std::string_view source,
+    Handle<PyDict> locals,
+    Handle<PyDict> globals,
+    std::string_view filename) {
   EscapableHandleScope scope;
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("locals and globals must not be null");
-    return Handle<PyObject>::null();
+    return kNullMaybe;
   }
 
 #if !SAAUSO_ENABLE_CPYTHON_COMPILER
   Runtime_ThrowRuntimeError(
       "executing Python source requires embedded CPython compiler; build with "
       "saauso_enable_cpython_compiler=true");
-  return Handle<PyObject>::null();
+  return kNullMaybe;
 #else  // !SAAUSO_ENABLE_CPYTHON_COMPILER
 
   // 对齐 CPython：若 globals 未提供 __builtins__，则自动注入当前解释器的
@@ -94,21 +102,26 @@ Handle<PyObject> Runtime_ExecutePythonSourceCode(std::string_view source,
       Compiler::CompileSource(Isolate::Current(), source, filename);
   func->set_func_globals(globals);
 
-  Handle<PyObject> result =
-      Execution::Call(Isolate::Current(), func, Handle<PyObject>::null(),
-                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals);
+  auto* isolate = Isolate::Current();
+  Handle<PyObject> result;
+
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      Execution::Call(isolate, func, Handle<PyObject>::null(),
+                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+
   return scope.Escape(result);
 #endif
 }
 
-Handle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
-                                              Handle<PyDict> locals,
-                                              Handle<PyDict> globals) {
+MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
+                                                   Handle<PyDict> locals,
+                                                   Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowTypeError("locals and globals must not be null");
-    return Handle<PyObject>::null();
+    return kNullMaybe;
   }
 
   if (globals->Get(ST(builtins)).is_null()) {
@@ -120,9 +133,14 @@ Handle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
       Compiler::CompilePyc(Isolate::Current(), filename_str.c_str());
   func->set_func_globals(globals);
 
-  Handle<PyObject> result =
+  auto* isolate = Isolate::Current();
+  Handle<PyObject> result;
+
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
       Execution::Call(Isolate::Current(), func, Handle<PyObject>::null(),
-                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals);
+                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+
   return scope.Escape(result);
 }
 

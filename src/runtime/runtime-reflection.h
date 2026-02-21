@@ -6,6 +6,7 @@
 #define SSAUSO_RUNTIME_RUNTIME_REFLECTION_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -45,10 +46,10 @@ Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
 // - func_name 必须为非空的 str。
 // - args/kwargs 允许为 null。
 // - 若未找到对应方法，则打印错误信息并 fail-fast。
-Handle<PyObject> Runtime_InvokeMagicOperationMethod(Handle<PyObject> object,
-                                                    Handle<PyTuple> args,
-                                                    Handle<PyDict> kwargs,
-                                                    Handle<PyObject> func_name);
+MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(Handle<PyObject> object,
+                                                         Handle<PyTuple> args,
+                                                         Handle<PyDict> kwargs,
+                                                         Handle<PyObject> func_name);
 
 Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
                                  Handle<PyObject> kwargs);

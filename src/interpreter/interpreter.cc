@@ -110,33 +110,33 @@ void Interpreter::Run(Handle<PyFunction> boilerplate) {
   DestroyCurrentFrame();
 }
 
-Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
-                                         Handle<PyObject> host,
-                                         Handle<PyTuple> pos_args,
-                                         Handle<PyDict> kw_args) {
+MaybeHandle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
+                                              Handle<PyObject> host,
+                                              Handle<PyTuple> pos_args,
+                                              Handle<PyDict> kw_args) {
   return CallPythonImpl(callable, host, pos_args, kw_args);
 }
 
-Handle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
-                                         Handle<PyObject> host,
-                                         Handle<PyTuple> pos_args,
-                                         Handle<PyDict> kw_args,
-                                         Handle<PyDict> bound_locals) {
+MaybeHandle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
+                                              Handle<PyObject> host,
+                                              Handle<PyTuple> pos_args,
+                                              Handle<PyDict> kw_args,
+                                              Handle<PyDict> bound_locals) {
   return CallPythonImpl(callable, host, pos_args, kw_args, bound_locals);
 }
 
 // private
 template <typename... ExtendArgs>
-Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
-                                             Handle<PyObject> host,
-                                             Handle<PyTuple> pos_args,
-                                             Handle<PyDict> kw_args,
-                                             ExtendArgs... extend_args) {
+MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
+                                                  Handle<PyObject> host,
+                                                  Handle<PyTuple> pos_args,
+                                                  Handle<PyDict> kw_args,
+                                                  ExtendArgs... extend_args) {
   EscapableHandleScope scope;
 
   NormalizeCallable(callable, host);
 
-  Handle<PyObject> result;
+  Handle<PyObject> result = Handle<PyObject>::null();
 
   // 如果是普通的python函数，那么请求解释器进行处理
   if (IsNormalPyFunction(callable)) {
@@ -154,6 +154,10 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     result = ReleaseReturnValue();
     DestroyCurrentFrame();
 
+    if (isolate_->exception_state()->HasPendingException()) {
+      return kNullMaybe;
+    }
+
     return scope.Escape(result);
   }
 
@@ -161,7 +165,13 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   if (IsNativePyFunction(callable)) {
     auto func_object = Handle<PyFunction>::cast(callable);
     auto* native_func_ptr = func_object->native_func();
+    
     result = native_func_ptr(host, pos_args, kw_args);
+
+    if (isolate_->exception_state()->HasPendingException()) {
+      return kNullMaybe;
+    }
+
     return scope.Escape(result);
   }
 
@@ -169,6 +179,9 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   // 如果对象无法被调用，执行PyObject::Call后会抛出错误。
   // 类似于TypeError: 'xxx' object is not callable
   result = PyObject::Call(callable, host, pos_args, kw_args);
+  if (isolate_->exception_state()->HasPendingException()) {
+    return kNullMaybe;
+  }
   return scope.Escape(result);
 }
 

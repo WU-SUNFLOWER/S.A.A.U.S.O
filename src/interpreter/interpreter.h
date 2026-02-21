@@ -5,7 +5,9 @@
 #ifndef SAAUSO_RUNTIME_INTERPRETER_H_
 #define SAAUSO_RUNTIME_INTERPRETER_H_
 
+#include "src/execution/exception-state.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
@@ -27,16 +29,16 @@ class Interpreter {
 
   void Run(Handle<PyFunction> boilerplate);
 
-  Handle<PyObject> CallPython(Handle<PyObject> callable,
-                              Handle<PyObject> host,
-                              Handle<PyTuple> pos_args,
-                              Handle<PyDict> kw_args);
+  MaybeHandle<PyObject> CallPython(Handle<PyObject> callable,
+                                   Handle<PyObject> host,
+                                   Handle<PyTuple> pos_args,
+                                   Handle<PyDict> kw_args);
 
-  Handle<PyObject> CallPython(Handle<PyObject> callable,
-                              Handle<PyObject> host,
-                              Handle<PyTuple> pos_args,
-                              Handle<PyDict> kw_args,
-                              Handle<PyDict> bound_locals);
+  MaybeHandle<PyObject> CallPython(Handle<PyObject> callable,
+                                   Handle<PyObject> host,
+                                   Handle<PyTuple> pos_args,
+                                   Handle<PyDict> kw_args,
+                                   Handle<PyDict> bound_locals);
 
   Handle<PyDict> CurrentFrameGlobals() const;
   Handle<PyDict> CurrentFrameLocals() const;
@@ -60,8 +62,6 @@ class Interpreter {
   void Iterate(ObjectVisitor* v);
 
  private:
-  static constexpr int kInvalidProgramCounter = -1;
-
   void InvokeCallable(Handle<PyObject> callable,
                       Handle<PyObject> host,
                       Handle<PyTuple> actual_args,
@@ -73,11 +73,11 @@ class Interpreter {
                                         Handle<PyDict> kw_args);
 
   template <typename... ExtendArgs>
-  Handle<PyObject> CallPythonImpl(Handle<PyObject> callable,
-                                  Handle<PyObject> host,
-                                  Handle<PyTuple> args,
-                                  Handle<PyDict> kwargs,
-                                  ExtendArgs... extend_args);
+  MaybeHandle<PyObject> CallPythonImpl(Handle<PyObject> callable,
+                                       Handle<PyObject> host,
+                                       Handle<PyTuple> args,
+                                       Handle<PyDict> kwargs,
+                                       ExtendArgs... extend_args);
 
   void NormalizeCallable(Handle<PyObject>& callable, Handle<PyObject>& host);
   void NormalizeArguments(Handle<PyTuple> actual_args,
@@ -109,14 +109,14 @@ class Interpreter {
 
   // 当进入某个 handler 时，把其 lasti
   // 语义临时缓存下来，供随后 PUSH_EXC_INFO 写入 caught_exception_origin_ip_。
-  int stack_exception_origin_pc_{kInvalidProgramCounter};
+  int stack_exception_origin_pc_{ExceptionState::kInvalidProgramCounter};
 
   // 当前处于“已捕获态”的异常。即当前 except 块正在处理/持有的异常。
   // 用于 PUSH_EXC_INFO/POP_EXCEPT 恢复。
   Tagged<PyObject> caught_exception_{kNullAddress};
   // caught_exception_对应的 origin ip，供
   // `raise`(无参)再抛时恢复 lasti 语义。
-  int caught_exception_origin_pc_{kInvalidProgramCounter};
+  int caught_exception_origin_pc_{ExceptionState::kInvalidProgramCounter};
   Vector<int> caught_exception_origin_pc_stack_;
 
   FrameObject* current_frame_{nullptr};

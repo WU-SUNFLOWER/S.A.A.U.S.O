@@ -185,8 +185,11 @@ BUILTIN(Exec) {
   // - 其它类型：报错。
   if (IsPyString(*source_or_code)) {
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-    (void)Runtime_ExecutePythonSourceCode(
-        Handle<PyString>::cast(source_or_code), locals_dict, globals_dict);
+    if (Runtime_ExecutePythonSourceCode(Handle<PyString>::cast(source_or_code),
+                                        locals_dict, globals_dict)
+            .IsEmpty()) {
+      return Handle<PyObject>::null();
+    }
 #else
     Runtime_ThrowRuntimeError(
         "exec(str) requires embedded CPython compiler; build with "
@@ -194,8 +197,11 @@ BUILTIN(Exec) {
     return Handle<PyObject>::null();
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
   } else if (IsPyCodeObject(*source_or_code)) {
-    (void)Runtime_ExecutePyCodeObject(
-        Handle<PyCodeObject>::cast(source_or_code), locals_dict, globals_dict);
+    if (Runtime_ExecutePyCodeObject(Handle<PyCodeObject>::cast(source_or_code),
+                                    locals_dict, globals_dict)
+            .IsEmpty()) {
+      return Handle<PyObject>::null();
+    }
   } else {
     Runtime_ThrowTypeError("exec() arg 1 must be a string or code object");
     return Handle<PyObject>::null();

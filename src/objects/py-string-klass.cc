@@ -115,7 +115,11 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
 
   if (argc == 1) {
     Handle<PyObject> value = pos_args->Get(0);
-    return Runtime_NewStr(value);
+    Handle<PyString> result;
+    if (!Runtime_NewStr(value).ToHandle(&result)) {
+      return Handle<PyObject>::null();
+    }
+    return result;
   }
 
   if (argc == 2 || argc == 3) {

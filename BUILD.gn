@@ -155,6 +155,7 @@ source_set("saauso_core") {
     # execution
     "//src/execution/exception-state.cc",
     "//src/execution/exception-state.h",
+    "//src/execution/exception-utils.h",
     "//src/execution/execution.cc",
     "//src/execution/execution.h",
     "//src/execution/isolate-klass-list.h",

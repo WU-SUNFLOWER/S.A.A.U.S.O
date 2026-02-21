@@ -256,9 +256,12 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       }
       Handle<PyObject> elem = list->Get(i);
       key_args->SetInternal(0, elem);
-      Handle<PyObject> key =
-          Execution::Call(Isolate::Current(), key_func,
-                          Handle<PyObject>::null(), key_args, empty_kwargs);
+      Handle<PyObject> key;
+      if (!Execution::Call(Isolate::Current(), key_func,
+                           Handle<PyObject>::null(), key_args, empty_kwargs)
+               .ToHandle(&key)) {
+        return Handle<PyObject>::null();
+      }
       keys->Set(i, key);
     }
   }

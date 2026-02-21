@@ -160,7 +160,7 @@ void Interpreter::EvalCurrentFrame() {
       caught_exception_origin_pc_ = caught_exception_origin_pc_stack_.GetBack();
       caught_exception_origin_pc_stack_.PopBack();
     } else {
-      caught_exception_origin_pc_ = kInvalidProgramCounter;
+      caught_exception_origin_pc_ = ExceptionState::kInvalidProgramCounter;
     }
   })
 
@@ -246,7 +246,7 @@ void Interpreter::EvalCurrentFrame() {
       case 0:
         if (!caught_exception_.is_null()) [[likely]] {
           exception = handle(caught_exception_);
-          if (caught_exception_origin_pc_ == kInvalidProgramCounter)
+          if (caught_exception_origin_pc_ == ExceptionState::kInvalidProgramCounter)
               [[unlikely]] {
             isolate_->exception_state()->set_pending_exception_origin_pc(
                 raise_pc);
@@ -310,7 +310,7 @@ void Interpreter::EvalCurrentFrame() {
         isolate_->exception_state()->set_pending_exception_origin_pc(lasti);
       }
     } else {
-      if (caught_exception_origin_pc_ != kInvalidProgramCounter) {
+      if (caught_exception_origin_pc_ != ExceptionState::kInvalidProgramCounter) {
         isolate_->exception_state()->set_pending_exception_origin_pc(
             caught_exception_origin_pc_);
       }
@@ -551,6 +551,10 @@ void Interpreter::EvalCurrentFrame() {
       default:
         std::fprintf(stderr, "unknown compare op type: %d\n", compare_op_type);
         std::exit(1);
+    }
+    if (isolate_->exception_state()->HasPendingException()) {
+      POP();
+      goto pending_exception_unwind;
     }
   })
 
@@ -970,13 +974,13 @@ pending_exception_unwind: {
   }
 
   auto* exception_state = isolate_->exception_state();
-  if (exception_state->pending_exception_pc() == kInvalidProgramCounter) {
+  if (exception_state->pending_exception_pc() == ExceptionState::kInvalidProgramCounter) {
     exception_state->set_pending_exception_pc(current_frame_->pc() -
                                               kBytecodeSizeInBytes);
   }
 
   if (exception_state->pending_exception_origin_pc() ==
-      kInvalidProgramCounter) {
+      ExceptionState::kInvalidProgramCounter) {
     exception_state->set_pending_exception_origin_pc(
         exception_state->pending_exception_pc());
   }
@@ -1118,7 +1122,7 @@ void Interpreter::UnwindCurrentFrameForException() {
   DestroyCurrentFrame();
   ret_value_ = Tagged<PyObject>::null();
 
-  isolate_->exception_state()->set_pending_exception_pc(kInvalidProgramCounter);
+  isolate_->exception_state()->set_pending_exception_pc(ExceptionState::kInvalidProgramCounter);
   // 重要：将 pending_exception_pc 回溯为上一层栈帧的函数调用点地址
   if (current_frame_ != nullptr) {
     isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -

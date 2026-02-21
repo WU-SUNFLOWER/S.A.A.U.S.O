@@ -13,9 +13,9 @@
 
 namespace saauso::internal {
 
-struct NullMaybeHandleType {};
+struct NullMaybeType {};
 
-inline constexpr NullMaybeHandleType kNullMaybeHandle;
+inline constexpr NullMaybeType kNullMaybe;
 
 // 用于表示“可能成功也可能失败”的 Handle 返回值。
 // 该类型本身不携带错误信息，错误信息由Isolate的异常状态容器统一持有与传播。
@@ -24,7 +24,7 @@ class MaybeHandle {
  public:
   MaybeHandle() = default;
 
-  explicit MaybeHandle(NullMaybeHandleType) : MaybeHandle() {}
+  MaybeHandle(NullMaybeType) : MaybeHandle() {}
   explicit MaybeHandle(Address* location) : location_(location) {}
 
   // 支持将Handle向下转换为MaybeHandle
@@ -44,7 +44,7 @@ class MaybeHandle {
   explicit MaybeHandle(Tagged<T> tagged) : MaybeHandle(handle(tagged)) {};
 
   void Check() const {
-    if (is_null()) {
+    if (IsEmpty()) {
       std::fprintf(stderr, "fatal null MaybeHandle");
       std::exit(1);
     }
@@ -58,18 +58,20 @@ class MaybeHandle {
   // 常规API: 将MaybeHandle转换为普通Handle。
   // 调用该API时，要求T可以向下转换为S，否则编译阶段即会报错！
   template <typename S>
-  bool ToHandle(Handle<S>* out) const {
+  [[nodiscard]] bool ToHandle(Handle<S>* out) const {
     if (is_null()) {
-      *out = Handle<T>::null();
+      *out = Handle<S>::null();
       return false;
     } else {
-      *out = Handle<T>(location_);
+      *out = Handle<S>(location_);
       return true;
     }
   }
 
   constexpr bool is_null() const { return location_ == nullptr; }
   constexpr static MaybeHandle<T> null() { return MaybeHandle<T>(); }
+
+  constexpr bool IsEmpty() const { return is_null(); }
 
   constexpr Address* location() const { return location_; }
 

@@ -6,6 +6,7 @@
 #define SAAUSO_RUNTIME_RUNTIME_PY_STRING_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -31,7 +32,7 @@ Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 // 按 Python 语义将任意对象转换为 str。
 // - 支持 str/int/float/bool/None 的快速路径。
 // - 其它对象会尝试调用 __str__；若找不到 __str__，回退为 "<object at 0x...>"。
-Handle<PyString> Runtime_NewStr(Handle<PyObject> value);
+MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value);
 
 }  // namespace saauso::internal
 

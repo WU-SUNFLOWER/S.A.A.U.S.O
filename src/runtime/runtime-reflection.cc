@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/klass.h"
@@ -85,7 +86,7 @@ Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
   return Handle<PyObject>::null();
 }
 
-Handle<PyObject> Runtime_InvokeMagicOperationMethod(
+MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     Handle<PyObject> object,
     Handle<PyTuple> args,
     Handle<PyDict> kwargs,
@@ -94,9 +95,15 @@ Handle<PyObject> Runtime_InvokeMagicOperationMethod(
 
   Handle<PyObject> method =
       Runtime_FindPropertyInInstanceTypeMro(object, func_name);
+
   if (!method.is_null()) {
-    Handle<PyObject> result =
-        Execution::Call(Isolate::Current(), method, object, args, kwargs);
+    auto* isolate = Isolate::Current();
+    Handle<PyObject> result;
+
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result,
+        Execution::Call(isolate, method, object, args, kwargs));
+
     return scope.Escape(result);
   }
 
@@ -104,7 +111,7 @@ Handle<PyObject> Runtime_InvokeMagicOperationMethod(
                PyObject::GetKlass(object)->name()->buffer());
   std::exit(1);
 
-  return Handle<PyObject>::null();
+  return kNullMaybe;
 }
 
 Handle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,

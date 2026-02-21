@@ -11,6 +11,7 @@
 #include <cstring>
 #include <limits>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-float.h"
@@ -214,7 +215,7 @@ Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
   return scope.Escape(result);
 }
 
-Handle<PyString> Runtime_NewStr(Handle<PyObject> value) {
+MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
   EscapableHandleScope scope;
 
   if (value.is_null()) {
@@ -241,14 +242,21 @@ Handle<PyString> Runtime_NewStr(Handle<PyObject> value) {
 
   Handle<PyObject> method =
       Runtime_FindPropertyInInstanceTypeMro(value, ST(str));
+
   if (!method.is_null()) {
-    Handle<PyObject> result =
-        Execution::Call(Isolate::Current(), method, value,
-                        Handle<PyTuple>::null(), Handle<PyDict>::null());
+    auto* isolate = Isolate::Current();
+    Handle<PyObject> result;
+
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result,
+        Execution::Call(isolate, method, value, Handle<PyTuple>::null(),
+                        Handle<PyDict>::null()));
+
     if (!IsPyString(result)) {
       std::fprintf(stderr, "TypeError: __str__ returned non-string\n");
       std::exit(1);
     }
+
     return scope.Escape(Handle<PyString>::cast(result));
   }
 

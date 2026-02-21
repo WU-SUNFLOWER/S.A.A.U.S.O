@@ -96,10 +96,10 @@ BUILTIN(BuildTypeObject) {
   }
 
   auto class_properties = PyDict::NewInstance();
-  Execution::Call(Isolate::Current(), class_builder, Handle<PyTuple>::null(),
-                  Handle<PyTuple>::null(), Handle<PyDict>::null(),
-                  class_properties);
-  if (Isolate::Current()->exception_state()->HasPendingException()) {
+  if (Execution::Call(Isolate::Current(), class_builder,
+                      Handle<PyTuple>::null(), Handle<PyTuple>::null(),
+                      Handle<PyDict>::null(), class_properties)
+          .IsEmpty()) {
     return Handle<PyObject>::null();
   }
 

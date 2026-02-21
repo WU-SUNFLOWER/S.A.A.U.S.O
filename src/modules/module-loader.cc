@@ -172,7 +172,10 @@ Handle<PyModule> ModuleLoader::ExecuteModuleFromSource(
   InitializeModuleDict(module, fullname, loc);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  Runtime_ExecutePythonSourceCode(source, module_dict, module_dict, loc.origin);
+  if (Runtime_ExecutePythonSourceCode(source, module_dict, module_dict, loc.origin)
+          .IsEmpty()) {
+    return Handle<PyModule>::null();
+  }
 
   return module;
 }
@@ -183,7 +186,10 @@ Handle<PyModule> ModuleLoader::ExecuteModuleFromPyc(Handle<PyString> fullname,
   InitializeModuleDict(module, fullname, loc);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  Runtime_ExecutePythonPycFile(loc.origin, module_dict, module_dict);
+  if (Runtime_ExecutePythonPycFile(loc.origin, module_dict, module_dict)
+          .IsEmpty()) {
+    return Handle<PyModule>::null();
+  }
 
   return module;
 }

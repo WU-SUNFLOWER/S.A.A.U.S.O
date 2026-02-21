@@ -7,6 +7,7 @@
 
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -20,18 +21,18 @@ class PyTypeObject;
 // 该门面本身不维护任何状态，状态归属由 Isolate/ExceptionState 等类型承载。
 class Execution final : public AllStatic {
  public:
-  static Handle<PyObject> Call(Isolate* isolate,
-                               Handle<PyObject> callable,
-                               Handle<PyObject> host,
-                               Handle<PyTuple> pos_args,
-                               Handle<PyDict> kw_args);
+  static MaybeHandle<PyObject> Call(Isolate* isolate,
+                                    Handle<PyObject> callable,
+                                    Handle<PyObject> host,
+                                    Handle<PyTuple> pos_args,
+                                    Handle<PyDict> kw_args);
 
-  static Handle<PyObject> Call(Isolate* isolate,
-                               Handle<PyObject> callable,
-                               Handle<PyObject> host,
-                               Handle<PyTuple> pos_args,
-                               Handle<PyDict> kw_args,
-                               Handle<PyDict> bound_locals);
+  static MaybeHandle<PyObject> Call(Isolate* isolate,
+                                    Handle<PyObject> callable,
+                                    Handle<PyObject> host,
+                                    Handle<PyTuple> pos_args,
+                                    Handle<PyDict> kw_args,
+                                    Handle<PyDict> bound_locals);
 
   static Handle<PyDict> builtins(Isolate* isolate);
 
