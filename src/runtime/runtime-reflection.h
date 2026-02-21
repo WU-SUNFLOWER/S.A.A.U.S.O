@@ -33,30 +33,33 @@ bool Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
 
 // 沿着 instance 的 type mro 查找属性。
 // - 命中返回属性值；未命中返回 null。
+// - 该函数不会抛出 Python 异常；返回 null 仅表示缺失（not found）。
 Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
     Handle<PyObject> instance,
     Handle<PyObject> prop_name);
 
 // 沿着 klass 的 mro 查找属性。
 // - 命中返回属性值；未命中返回 null。
+// - 该函数不会抛出 Python 异常；返回 null 仅表示缺失（not found）。
 Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
                                                 Handle<PyObject> prop_name);
 
 // 沿着对象的 type mro 查找某个 magic method 并立即调用。
 // - func_name 必须为非空的 str。
 // - args/kwargs 允许为 null。
-// - 若未找到对应方法，则打印错误信息并 fail-fast。
-MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(Handle<PyObject> object,
-                                                         Handle<PyTuple> args,
-                                                         Handle<PyDict> kwargs,
-                                                         Handle<PyObject> func_name);
+// - 若未找到对应方法，则抛出 TypeError。
+MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
+    Handle<PyObject> object,
+    Handle<PyTuple> args,
+    Handle<PyDict> kwargs,
+    Handle<PyObject> func_name);
 
-Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
-                                 Handle<PyObject> kwargs);
+MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
+                                      Handle<PyObject> kwargs);
 
-Handle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
-                                   Handle<PyObject> args,
-                                   Handle<PyObject> kwargs);
+MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
+                                        Handle<PyObject> args,
+                                        Handle<PyObject> kwargs);
 
 }  // namespace saauso::internal
 

@@ -5,7 +5,6 @@
 #include "src/runtime/runtime-reflection.h"
 
 #include <cstdio>
-#include <cstdlib>
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -18,6 +17,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso::internal {
 
@@ -109,32 +109,38 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
 
   std::fprintf(stderr, "class %s Error : unsupport operation for class",
                PyObject::GetKlass(object)->name()->buffer());
-  std::exit(1);
-
+  Runtime_ThrowTypeErrorf("unsupported operation for class %s",
+                          PyObject::GetKlass(object)->name()->buffer());
   return kNullMaybe;
 }
 
-Handle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
-                                   Handle<PyObject> args,
-                                   Handle<PyObject> kwargs) {
-  return type_object->own_klass()->ConstructInstance(args, kwargs);
+MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
+                                        Handle<PyObject> args,
+                                        Handle<PyObject> kwargs) {
+  Handle<PyObject> result =
+      type_object->own_klass()->ConstructInstance(args, kwargs);
+  if (result.is_null() &&
+      Isolate::Current()->exception_state()->HasPendingException()) {
+    return kNullMaybe;
+  }
+  return result;
 }
 
-Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
-                                 Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
+                                      Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (!(argc == 1 || argc == 3)) {
-    std::fprintf(stderr, "TypeError: type() takes 1 or 3 arguments\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("type() takes 1 or 3 arguments");
+    return kNullMaybe;
   }
 
   if (argc == 1) {
     if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      std::fprintf(stderr, "TypeError: type() takes 1 or 3 arguments\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("type() takes 1 or 3 arguments");
+      return kNullMaybe;
     }
 
     Handle<PyObject> obj = pos_args->Get(0);
@@ -146,25 +152,25 @@ Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
   Handle<PyObject> dict_obj = pos_args->Get(2);
 
   if (!IsPyString(name_obj)) {
-    std::fprintf(
-        stderr, "TypeError: type() argument 1 must be str, not '%.*s'\n",
+    Runtime_ThrowTypeErrorf(
+        "type() argument 1 must be str, not '%.*s'",
         static_cast<int>(PyObject::GetKlass(name_obj)->name()->length()),
         PyObject::GetKlass(name_obj)->name()->buffer());
-    std::exit(1);
+    return kNullMaybe;
   }
   if (!IsPyTuple(bases_obj)) {
-    std::fprintf(
-        stderr, "TypeError: type() argument 2 must be tuple, not '%.*s'\n",
+    Runtime_ThrowTypeErrorf(
+        "type() argument 2 must be tuple, not '%.*s'",
         static_cast<int>(PyObject::GetKlass(bases_obj)->name()->length()),
         PyObject::GetKlass(bases_obj)->name()->buffer());
-    std::exit(1);
+    return kNullMaybe;
   }
   if (!IsPyDict(dict_obj)) {
-    std::fprintf(
-        stderr, "TypeError: type() argument 3 must be dict, not '%.*s'\n",
+    Runtime_ThrowTypeErrorf(
+        "type() argument 3 must be dict, not '%.*s'",
         static_cast<int>(PyObject::GetKlass(dict_obj)->name()->length()),
         PyObject::GetKlass(dict_obj)->name()->buffer());
-    std::exit(1);
+    return kNullMaybe;
   }
 
   Handle<PyString> name = Handle<PyString>::cast(name_obj);
@@ -180,8 +186,8 @@ Handle<PyObject> Runtime_NewType(Handle<PyObject> args,
     for (int64_t i = 0; i < bases_tuple->length(); ++i) {
       Handle<PyObject> base = bases_tuple->Get(i);
       if (!IsPyTypeObject(base)) {
-        std::fprintf(stderr, "TypeError: type() bases must be types\n");
-        std::exit(1);
+        Runtime_ThrowTypeError("type() bases must be types");
+        return kNullMaybe;
       }
       PyList::Append(supers, base);
     }

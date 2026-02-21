@@ -4,15 +4,19 @@
 
 #include "src/runtime/runtime-iterable.h"
 
+#include "src/execution/exception-utils.h"
+#include "src/execution/isolate.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-tuple.h"
 
 namespace saauso::internal {
 
-void Runtime_ExtendListByItratableObject(Handle<PyList> list,
-                                         Handle<PyObject> iteratable) {
+MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
+    Handle<PyList> list,
+    Handle<PyObject> iteratable) {
   HandleScope scope;
+  auto* isolate = Isolate::Current();
 
   // Fast Path: 直接展开tuple
   if (IsPyTuple(iteratable)) {
@@ -20,7 +24,7 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
     for (int64_t i = 0; i < tuple->length(); ++i) {
       PyList::Append(list, tuple->Get(i));
     }
-    return;
+    return handle(isolate->py_none_object());
   }
 
   // Fast Path: 直接展开list
@@ -29,18 +33,30 @@ void Runtime_ExtendListByItratableObject(Handle<PyList> list,
     for (int64_t i = 0; i < source->length(); ++i) {
       PyList::Append(list, source->Get(i));
     }
-    return;
+    return handle(isolate->py_none_object());
   }
 
   auto iterator = PyObject::Iter(iteratable);
+  if (iterator.is_null()) {
+    if (isolate->exception_state()->HasPendingException()) {
+      return kNullMaybe;
+    }
+    return handle(isolate->py_none_object());
+  }
+
   auto elem = PyObject::Next(iterator);
   while (!elem.is_null()) {
     PyList::Append(list, elem);
     elem = PyObject::Next(iterator);
   }
+  if (isolate->exception_state()->HasPendingException()) {
+    return kNullMaybe;
+  }
+  return handle(isolate->py_none_object());
 }
 
-Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
+MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
+    Handle<PyObject> iterable) {
   EscapableHandleScope scope;
   Handle<PyTuple> tuple;
   // Fast Path: List转Tuple
@@ -55,7 +71,8 @@ Handle<PyTuple> Runtime_UnpackIterableObjectToTuple(Handle<PyObject> iterable) {
 
   // Fallback: 通过迭代器进行转换
   Handle<PyList> tmp = PyList::NewInstance();
-  Runtime_ExtendListByItratableObject(tmp, iterable);
+  RETURN_ON_EXCEPTION(Isolate::Current(),
+                      Runtime_ExtendListByItratableObject(tmp, iterable));
   tuple = PyTuple::NewInstance(tmp->length());
   for (auto i = 0; i < tmp->length(); ++i) {
     tuple->SetInternal(i, tmp->Get(i));

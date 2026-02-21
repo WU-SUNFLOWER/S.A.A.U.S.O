@@ -4,25 +4,28 @@
 
 #include "src/runtime/runtime-py-dict.h"
 
+#include "src/execution/exception-utils.h"
+#include "src/execution/isolate.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-py-string.h"
 
 namespace saauso::internal {
 
-Handle<PyObject> Runtime_NewDict(Handle<PyObject> args,
-                                 Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
+                                      Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
+  auto* isolate = Isolate::Current();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc > 1) {
-    std::fprintf(stderr,
-                 "TypeError: dict expected at most 1 argument, got %lld\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf("dict expected at most 1 argument, got %lld",
+                            static_cast<long long>(argc));
+    return kNullMaybe;
   }
 
   Handle<PyDict> result = PyDict::NewInstance();
@@ -32,16 +35,20 @@ Handle<PyObject> Runtime_NewDict(Handle<PyObject> args,
     if (IsPyDict(input)) {
       result = PyDict::Clone(Handle<PyDict>::cast(input));
     } else {
-      Handle<PyTuple> elements = Runtime_UnpackIterableObjectToTuple(input);
+      Handle<PyTuple> elements;
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, elements,
+                                 Runtime_UnpackIterableObjectToTuple(input));
       for (int64_t i = 0; i < elements->length(); ++i) {
         Handle<PyObject> elem = elements->Get(i);
-        Handle<PyTuple> pair = Runtime_UnpackIterableObjectToTuple(elem);
+        Handle<PyTuple> pair;
+        ASSIGN_RETURN_ON_EXCEPTION(isolate, pair,
+                                   Runtime_UnpackIterableObjectToTuple(elem));
         if (pair->length() != 2) {
-          std::fprintf(stderr,
-                       "TypeError: cannot convert dictionary update sequence "
-                       "element #%lld to a sequence\n",
-                       static_cast<long long>(i));
-          std::exit(1);
+          Runtime_ThrowTypeErrorf(
+              "cannot convert dictionary update sequence "
+              "element #%lld to a sequence",
+              static_cast<long long>(i));
+          return kNullMaybe;
         }
 
         PyDict::Put(result, pair->Get(0), pair->Get(1));
@@ -62,7 +69,7 @@ Handle<PyObject> Runtime_NewDict(Handle<PyObject> args,
         if (!IsPyString(key)) {
           Handle<PyString> key_str;
           if (!Runtime_NewStr(key).ToHandle(&key_str)) {
-            return Handle<PyObject>::null();
+            return kNullMaybe;
           }
           key = key_str;
         }

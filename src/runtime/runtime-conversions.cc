@@ -16,22 +16,23 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso::internal {
 
-int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
+Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
   if (IsPySmi(value)) {
-    return PySmi::ToInt(Tagged<PySmi>::cast(value));
+    return Maybe<int64_t>(PySmi::ToInt(Tagged<PySmi>::cast(value)));
   }
   if (IsPyBoolean(value)) {
-    return Tagged<PyBoolean>::cast(value)->value() ? 1 : 0;
+    return Maybe<int64_t>(Tagged<PyBoolean>::cast(value)->value() ? 1 : 0);
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  std::fprintf(stderr,
-               "TypeError: '%.*s' object cannot be interpreted as an integer\n",
-               static_cast<int>(type_name->length()), type_name->buffer());
-  std::exit(1);
+  Runtime_ThrowTypeErrorf(
+      "'%.*s' object cannot be interpreted as an integer",
+      static_cast<int>(type_name->length()), type_name->buffer());
+  return Maybe<int64_t>::Nothing();
 }
 
 }  // namespace saauso::internal

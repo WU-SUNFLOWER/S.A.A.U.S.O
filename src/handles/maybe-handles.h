@@ -20,7 +20,7 @@ inline constexpr NullMaybeType kNullMaybe;
 // 用于表示“可能成功也可能失败”的 Handle 返回值。
 // 该类型本身不携带错误信息，错误信息由Isolate的异常状态容器统一持有与传播。
 template <typename T>
-class MaybeHandle {
+class [[nodiscard]] MaybeHandle {
  public:
   MaybeHandle() = default;
 

@@ -6,13 +6,14 @@
 #define SAAUSO_RUNTIME_RUNTIME_PY_DICT_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
 class PyObject;
 
-Handle<PyObject> Runtime_NewDict(Handle<PyObject> args,
-                                 Handle<PyObject> kwargs);
+MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
+                                      Handle<PyObject> kwargs);
 
 }  // namespace saauso::internal
 
