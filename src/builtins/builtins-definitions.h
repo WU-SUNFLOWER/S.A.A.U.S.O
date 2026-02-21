@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_BUILTINS_BUILTINS_DEFINITIONS_H_
-#define SRC_BUILTINS_BUILTINS_DEFINITIONS_H_
+#ifndef SAAUSO_BUILTINS_BUILTINS_DEFINITIONS_H_
+#define SAAUSO_BUILTINS_BUILTINS_DEFINITIONS_H_
 
 #include "src/builtins/builtins-utils.h"
 
@@ -25,4 +25,4 @@ BUILTIN(Sysgc);
 
 }  // namespace saauso::internal
 
-#endif  // SRC_BUILTINS_BUILTINS_DEFINITIONS_H_
+#endif  // SAAUSO_BUILTINS_BUILTINS_DEFINITIONS_H_

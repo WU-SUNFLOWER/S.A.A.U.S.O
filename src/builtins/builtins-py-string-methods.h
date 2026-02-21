@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_BUILTINS_BUILTINS_PY_STRING_METHODS_H_
-#define SRC_BUILTINS_BUILTINS_PY_STRING_METHODS_H_
+#ifndef SAAUSO_BUILTINS_BUILTINS_PY_STRING_METHODS_H_
+#define SAAUSO_BUILTINS_BUILTINS_PY_STRING_METHODS_H_
 
 #include "src/builtins/builtins-utils.h"
 #include "src/common/globals.h"
@@ -28,4 +28,4 @@ class PyStringBuiltinMethods : public AllStatic {
 
 }  // namespace saauso::internal
 
-#endif  // SRC_BUILTINS_BUILTINS_PY_STRING_METHODS_H_
+#endif  // SAAUSO_BUILTINS_BUILTINS_PY_STRING_METHODS_H_

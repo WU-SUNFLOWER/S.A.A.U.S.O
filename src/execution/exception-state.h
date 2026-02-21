@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_EXECUTION_EXCEPTION_STATE_H_
-#define SRC_EXECUTION_EXCEPTION_STATE_H_
+#ifndef SAAUSO_EXECUTION_EXCEPTION_STATE_H_
+#define SAAUSO_EXECUTION_EXCEPTION_STATE_H_
 
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -73,4 +73,4 @@ class ExceptionState final {
 
 }  // namespace saauso::internal
 
-#endif  // SRC_EXECUTION_EXCEPTION_STATE_H_
+#endif  // SAAUSO_EXECUTION_EXCEPTION_STATE_H_

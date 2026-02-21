@@ -68,9 +68,16 @@ class [[nodiscard]] MaybeHandle {
     }
   }
 
+  // 便于MaybeHandle适配ASSIGN_RETURN_ON_EXCEPTION_VALUE宏
+  template <typename S>
+  [[nodiscard]] bool To(Handle<S>* out) const {
+    return ToHandle(out);
+  }
+
   constexpr bool is_null() const { return location_ == nullptr; }
   constexpr static MaybeHandle<T> null() { return MaybeHandle<T>(); }
 
+  // 便于MaybeHandle适配RETURN_ON_EXCEPTION_VALUE宏
   constexpr bool IsEmpty() const { return is_null(); }
 
   constexpr Address* location() const { return location_; }

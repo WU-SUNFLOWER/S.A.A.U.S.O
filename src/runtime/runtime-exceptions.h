@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_RUNTIME_RUNTIME_EXCEPTIONS_H_
-#define SRC_RUNTIME_RUNTIME_EXCEPTIONS_H_
+#ifndef SAAUSO_RUNTIME_RUNTIME_EXCEPTIONS_H_
+#define SAAUSO_RUNTIME_RUNTIME_EXCEPTIONS_H_
 
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -31,5 +31,4 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr();
 
 }  // namespace saauso::internal
 
-#endif  // SRC_RUNTIME_RUNTIME_EXCEPTIONS_H_
-
+#endif  // SAAUSO_RUNTIME_RUNTIME_EXCEPTIONS_H_

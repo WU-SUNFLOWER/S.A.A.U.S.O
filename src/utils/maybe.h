@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_UTILS_MAYBE_H_
-#define SRC_UTILS_MAYBE_H_
+#ifndef SAAUSO_UTILS_MAYBE_H_
+#define SAAUSO_UTILS_MAYBE_H_
 
 #include <cassert>
 #include <utility>
@@ -20,6 +20,9 @@ class [[nodiscard]] Maybe {
 
   bool IsNothing() const { return !has_value_; }
   bool IsJust() const { return has_value_; }
+
+  // 便于Maybe适配RETURN_ON_EXCEPTION_VALUE宏
+  bool IsEmpty() const { return IsNothing(); }
 
   bool To(T* out) const {
     if (!has_value_) {
@@ -49,4 +52,4 @@ class [[nodiscard]] Maybe {
 
 }  // namespace saauso::internal
 
-#endif  // SRC_UTILS_MAYBE_H_
+#endif  // SAAUSO_UTILS_MAYBE_H_

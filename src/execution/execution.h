@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_EXECUTION_EXECUTION_H_
-#define SRC_EXECUTION_EXECUTION_H_
+#ifndef SAAUSO_EXECUTION_EXECUTION_H_
+#define SAAUSO_EXECUTION_EXECUTION_H_
 
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
@@ -42,4 +42,4 @@ class Execution final : public AllStatic {
 
 }  // namespace saauso::internal
 
-#endif  // SRC_EXECUTION_EXECUTION_H_
+#endif  // SAAUSO_EXECUTION_EXECUTION_H_

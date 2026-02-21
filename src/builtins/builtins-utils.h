@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SRC_BUILTINS_BUILTINS_UTILS_H_
-#define SRC_BUILTINS_BUILTINS_UTILS_H_
+#ifndef SAAUSO_BUILTINS_BUILTINS_UTILS_H_
+#define SAAUSO_BUILTINS_BUILTINS_UTILS_H_
 
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -20,13 +20,13 @@ class PyDict;
 
 #define BUILTIN_FUNC_NAME(name) Builtin_##name
 
-#define BUILTIN(name)                       \
+#define BUILTIN(name)                            \
   MaybeHandle<PyObject> BUILTIN_FUNC_NAME(name)( \
       Handle<PyObject> host, Handle<PyTuple> args, Handle<PyDict> kwargs)
 
 #define DECL_BUILTIN_METHOD(name, _) static BUILTIN(name);
 
-#define BUILTIN_METHOD(type, name)                \
+#define BUILTIN_METHOD(type, name)                     \
   MaybeHandle<PyObject> type::BUILTIN_FUNC_NAME(name)( \
       Handle<PyObject> self, Handle<PyTuple> args, Handle<PyDict> kwargs)
 
@@ -40,4 +40,4 @@ class PyDict;
 
 }  // namespace saauso::internal
 
-#endif  // SRC_BUILTINS_BUILTINS_UTILS_H_
+#endif  // SAAUSO_BUILTINS_BUILTINS_UTILS_H_
