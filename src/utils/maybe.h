@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 struct NullMaybeType {};
 
-constexpr NullMaybeType kNullMaybe;
+inline constexpr NullMaybeType kNullMaybe;
 
 template <typename T>
 class [[nodiscard]] Maybe {

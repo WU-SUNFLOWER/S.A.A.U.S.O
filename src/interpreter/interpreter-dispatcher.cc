@@ -2,6 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -27,8 +28,8 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime-intrinsics.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-intrinsics.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/runtime-truthiness.h"
@@ -90,6 +91,12 @@ void Interpreter::EvalCurrentFrame() {
   dispatch_table_[bytecode] = &&handler_##bytecode;
     BYTECODE_LIST(REGISTER_INTERPRETER_HANDLER);
 #undef REGISTER_INTERPRETER_HANDLER
+
+#define ASSIGN_GOTO_ON_EXCEPTION(dst, call) \
+  ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, dst, call, pending_exception_unwind)
+
+#define GOTO_ON_EXCEPTION(call) \
+  GOTO_ON_EXCEPTION_TARGET(isolate_, call, pending_exception_unwind)
 
     dispatch_table_initialized_ = true;
   }
@@ -202,11 +209,12 @@ void Interpreter::EvalCurrentFrame() {
         auto type_error_type =
             Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
         Handle<PyObject> type_error;
-        if (!Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
-                               Handle<PyObject>::null())
-                 .ToHandle(&type_error)) {
-          goto pending_exception_unwind;
-        }
+
+        ASSIGN_GOTO_ON_EXCEPTION(
+            type_error,
+            Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
+                              Handle<PyObject>::null()));
+
         const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
         isolate_->exception_state()->Throw(*type_error);
         isolate_->exception_state()->set_pending_exception_pc(raise_pc);
@@ -217,11 +225,12 @@ void Interpreter::EvalCurrentFrame() {
       auto type_error_type =
           Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
       Handle<PyObject> type_error;
-      if (!Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
-                             Handle<PyObject>::null())
-               .ToHandle(&type_error)) {
-        goto pending_exception_unwind;
-      }
+
+      ASSIGN_GOTO_ON_EXCEPTION(
+          type_error,
+          Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
+                            Handle<PyObject>::null()));
+
       const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
       isolate_->exception_state()->Throw(*type_error);
       isolate_->exception_state()->set_pending_exception_pc(raise_pc);
@@ -262,11 +271,12 @@ void Interpreter::EvalCurrentFrame() {
         } else {
           auto runtime_error_type =
               Handle<PyTypeObject>::cast(builtins()->Get(ST(runtime_err)));
-          if (Runtime_NewObject(runtime_error_type, Handle<PyObject>::null(),
-                                Handle<PyObject>::null())
-                  .ToHandle(&exception) == false) {
-            goto pending_exception_unwind;
-          }
+
+          ASSIGN_GOTO_ON_EXCEPTION(
+              exception,
+              Runtime_NewObject(runtime_error_type, Handle<PyObject>::null(),
+                                Handle<PyObject>::null()));
+
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }
@@ -289,11 +299,9 @@ void Interpreter::EvalCurrentFrame() {
     // 我们需要将其实例化。
     if (IsPyTypeObject(exception)) {
       auto type_object = Handle<PyTypeObject>::cast(exception);
-      if (!Runtime_NewObject(type_object, Handle<PyObject>::null(),
-                             Handle<PyObject>::null())
-               .ToHandle(&exception)) {
-        goto pending_exception_unwind;
-      }
+      ASSIGN_GOTO_ON_EXCEPTION(
+          exception, Runtime_NewObject(type_object, Handle<PyObject>::null(),
+                                       Handle<PyObject>::null()));
     }
 
     isolate_->exception_state()->Throw(*exception);
@@ -871,10 +879,8 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ListExtend, {
     Handle<PyObject> source = POP();
     Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
-    if (Runtime_ExtendListByItratableObject(Handle<PyList>::cast(list), source)
-            .IsEmpty()) {
-      goto pending_exception_unwind;
-    }
+    GOTO_ON_EXCEPTION(Runtime_ExtendListByItratableObject(
+        Handle<PyList>::cast(list), source));
   })
 
   // 当使用*或**尝试展开iterable object或dict时，
@@ -928,9 +934,9 @@ void Interpreter::EvalCurrentFrame() {
     if (!args_obj.is_null()) {
       if (IsPyTuple(args_obj)) {
         pos_args = Handle<PyTuple>::cast(args_obj);
-      } else if (!Runtime_UnpackIterableObjectToTuple(args_obj)
-                      .ToHandle(&pos_args)) {
-        goto pending_exception_unwind;
+      } else {
+        ASSIGN_GOTO_ON_EXCEPTION(pos_args,
+                                 Runtime_UnpackIterableObjectToTuple(args_obj));
       }
     }
 
@@ -963,17 +969,14 @@ void Interpreter::EvalCurrentFrame() {
     switch (op_arg) {
       case UnaryIntrinsic::kListToTuple: {
         Handle<PyTuple> tuple_result;
-        if (!Runtime_IntrinsicListToTuple(arg).ToHandle(&tuple_result)) {
-          goto pending_exception_unwind;
-        }
+        ASSIGN_GOTO_ON_EXCEPTION(tuple_result,
+                                 Runtime_IntrinsicListToTuple(arg));
         PUSH(tuple_result);
         break;
       }
       case UnaryIntrinsic::kImportStar: {
-        Runtime_IntrinsicImportStar(arg, current_frame_->locals());
-        if (HasPendingException()) {
-          goto pending_exception_unwind;
-        }
+        GOTO_ON_EXCEPTION(
+            Runtime_IntrinsicImportStar(arg, current_frame_->locals()));
         PUSH(handle(isolate_->py_none_object()));
         break;
       }
@@ -983,6 +986,9 @@ void Interpreter::EvalCurrentFrame() {
         std::exit(1);
     }
   })
+
+#undef GOTO_ON_EXCEPTION
+#undef ASSIGN_GOTO_ON_EXCEPTION
 #undef INTERPRETER_HANDLER_NOOP
 #undef INTERPRETER_HANDLER_WITH_SCOPE
 #undef INTERPRETER_HANDLER_DISPATCH

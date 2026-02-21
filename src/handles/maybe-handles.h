@@ -10,6 +10,7 @@
 #include <cstdlib>
 
 #include "src/handles/handles.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -24,7 +25,9 @@ class [[nodiscard]] MaybeHandle {
  public:
   MaybeHandle() = default;
 
+  MaybeHandle(NullMaybeType) : MaybeHandle() {}
   MaybeHandle(NullMaybeHandleType) : MaybeHandle() {}
+
   explicit MaybeHandle(Address* location) : location_(location) {}
 
   // 支持将Handle向下转换为MaybeHandle
