@@ -32,4 +32,5 @@ Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
       static_cast<int>(type_name->length()), type_name->buffer());
   return Maybe<int64_t>::Nothing();
 }
+
 }  // namespace saauso::internal
