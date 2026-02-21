@@ -6,6 +6,7 @@
 #define SRC_UTILS_MAYBE_H_
 
 #include <cassert>
+#include <utility>
 
 namespace saauso::internal {
 
@@ -20,11 +21,19 @@ class [[nodiscard]] Maybe {
   bool IsNothing() const { return !has_value_; }
   bool IsJust() const { return has_value_; }
 
-  bool ToValue(T* out) const {
+  bool To(T* out) const {
     if (!has_value_) {
       return false;
     }
     *out = value_;
+    return true;
+  }
+
+  bool MoveTo(T* out) && {
+    if (!has_value_) {
+      return false;
+    }
+    *out = std::move(value_);
     return true;
   }
 
@@ -41,4 +50,3 @@ class [[nodiscard]] Maybe {
 }  // namespace saauso::internal
 
 #endif  // SRC_UTILS_MAYBE_H_
-
