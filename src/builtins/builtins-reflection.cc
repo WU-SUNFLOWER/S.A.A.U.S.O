@@ -31,7 +31,7 @@ BUILTIN(IsInstance) {
   if (args_length != 2) [[unlikely]] {
     Runtime_ThrowTypeErrorf("isinstance expected 2 arguments, got %" PRId64,
                             static_cast<int64_t>(args_length));
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   auto object = args->Get(0);
@@ -49,7 +49,7 @@ BUILTIN(IsInstance) {
       if (!IsPyTypeObject(elem)) [[unlikely]] {
         Runtime_ThrowTypeError(
             "isinstance() arg 2 must be a type or tuple of types");
-        return Handle<PyObject>::null();
+        return kNullMaybeHandle;
       }
       if (Runtime_IsInstanceOfTypeObject(object,
                                          Handle<PyTypeObject>::cast(elem))) {
@@ -60,7 +60,7 @@ BUILTIN(IsInstance) {
   } else {
     Runtime_ThrowTypeError(
         "isinstance() arg 2 must be a type or tuple of types");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   auto result = handle(Isolate::ToPyBoolean(matched));
@@ -73,20 +73,20 @@ BUILTIN(BuildTypeObject) {
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length < 2) [[unlikely]] {
     Runtime_ThrowTypeError("__build_class__: not enough arguments");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   auto class_builder_obj = args->Get(0);
   if (!IsPyFunction(class_builder_obj)) [[unlikely]] {
     Runtime_ThrowTypeError("__build_class__: func is not a function");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   auto class_builder = Handle<PyFunction>::cast(class_builder_obj);
 
   auto class_name_obj = args->Get(1);
   if (!IsPyString(class_name_obj)) [[unlikely]] {
     Runtime_ThrowTypeError("__build_class__: name is not a string");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   auto class_name = Handle<PyString>::cast(class_name_obj);
 
@@ -100,7 +100,7 @@ BUILTIN(BuildTypeObject) {
                       Handle<PyTuple>::null(), Handle<PyTuple>::null(),
                       Handle<PyDict>::null(), class_properties)
           .IsEmpty()) {
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyTypeObject> type_object =

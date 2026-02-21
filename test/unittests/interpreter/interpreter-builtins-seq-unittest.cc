@@ -307,18 +307,31 @@ TEST_F(BasicInterpreterTest, SplitMethodErrors) {
   constexpr std::string_view kUnexpectedKeyword = R"(
 "a".split(foo=1)
 )";
-  EXPECT_EXIT(
-      { RunScript(kUnexpectedKeyword, kTestFileName); },
-      ::testing::ExitedWithCode(1),
-      "TypeError: str.split\\(\\) got an unexpected keyword argument");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kUnexpectedKeyword, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("str.split() got an unexpected keyword argument"),
+              std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kMultipleValues = R"(
 "a".split(",", sep=",")
 )";
-  EXPECT_EXIT(
-      { RunScript(kMultipleValues, kTestFileName); },
-      ::testing::ExitedWithCode(1),
-      "TypeError: str.split\\(\\) got multiple values for argument 'sep'");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kMultipleValues, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(
+        msg.find("str.split() got multiple values for argument 'sep'"),
+        std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, JoinMethod) {
@@ -360,9 +373,16 @@ print(",".join(["a", 1]))
   constexpr std::string_view kKeyword = R"(
 "-".join(iterable=["a", "b"])
 )";
-  EXPECT_EXIT(
-      { RunScript(kKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError: str.join\\(\\) takes no keyword arguments");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kKeyword, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("str.join() takes no keyword arguments"),
+              std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, IndexMethodErrors) {
@@ -371,30 +391,55 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
   constexpr std::string_view kStrNotFound = R"(
 "abc".index("d")
 )";
-  EXPECT_EXIT(
-      { RunScript(kStrNotFound, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "ValueError: substring not found");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kStrNotFound, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("substring not found"), std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kListNotFound = R"(
 [1].index(2)
 )";
-  EXPECT_EXIT(
-      { RunScript(kListNotFound, kTestFileName); },
-      ::testing::ExitedWithCode(1), "ValueError");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kListNotFound, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("ValueError"), std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kTupleNotFound = R"(
 (1,).index(2)
 )";
-  EXPECT_EXIT(
-      { RunScript(kTupleNotFound, kTestFileName); },
-      ::testing::ExitedWithCode(1), "tuple.index\\(x\\): x not in tuple");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kTupleNotFound, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("tuple.index(x): x not in tuple"), std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kStrKeyword = R"(
 "abc".index(sub="a")
 )";
-  EXPECT_EXIT(
-      { RunScript(kStrKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError: str.index\\(\\) takes no keyword arguments");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kStrKeyword, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("str.index() takes no keyword arguments"),
+              std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
@@ -403,17 +448,30 @@ TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
   constexpr std::string_view kFindKeyword = R"(
 "abc".find(sub="a")
 )";
-  EXPECT_EXIT(
-      { RunScript(kFindKeyword, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError: str.find\\(\\) takes no keyword arguments");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kFindKeyword, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("str.find() takes no keyword arguments"),
+              std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 
   constexpr std::string_view kRfindKeyword = R"(
 "abc".rfind(sub="a")
 )";
-  EXPECT_EXIT(
-      { RunScript(kRfindKeyword, kTestFileName); },
-      ::testing::ExitedWithCode(1),
-      "TypeError: str.rfind\\(\\) takes no keyword arguments");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kRfindKeyword, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  {
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find("str.rfind() takes no keyword arguments"),
+              std::string::npos);
+  }
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, ListPop) {

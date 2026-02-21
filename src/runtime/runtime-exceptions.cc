@@ -78,37 +78,102 @@ void Runtime_ThrowRuntimeError(const char* message) {
   Runtime_ThrowNewException(ST(runtime_err), PyString::NewInstance(message));
 }
 
+void Runtime_ThrowValueError(const char* message) {
+  if (message == nullptr) {
+    Runtime_ThrowNewException(ST(value_err), Handle<PyString>::null());
+    return;
+  }
+  Runtime_ThrowNewException(ST(value_err), PyString::NewInstance(message));
+}
+
+void Runtime_ThrowIndexError(const char* message) {
+  if (message == nullptr) {
+    Runtime_ThrowNewException(ST(index_err), Handle<PyString>::null());
+    return;
+  }
+  Runtime_ThrowNewException(ST(index_err), PyString::NewInstance(message));
+}
+
+void Runtime_ThrowKeyError(const char* message) {
+  if (message == nullptr) {
+    Runtime_ThrowNewException(ST(key_err), Handle<PyString>::null());
+    return;
+  }
+  Runtime_ThrowNewException(ST(key_err), PyString::NewInstance(message));
+}
+
+namespace {
+
+// 将 va_list 格式化为字符串并调用 throw_fn 抛出异常。
+// 内部复用栈上 256 字节缓冲，仅在超长消息时回退到堆分配。
+void ThrowFormattedError(void (*throw_fn)(const char*),
+                         const char* fmt,
+                         va_list ap) {
+  char buf[256];
+  va_list ap_copy;
+  va_copy(ap_copy, ap);
+  const int len = std::vsnprintf(buf, sizeof(buf), fmt, ap_copy);
+  va_end(ap_copy);
+
+  if (len < 0) {
+    throw_fn(nullptr);
+    return;
+  }
+
+  if (len < static_cast<int>(sizeof(buf))) {
+    throw_fn(buf);
+    return;
+  }
+
+  std::string dynamic(static_cast<size_t>(len) + 1, '\0');
+  (void)std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
+  throw_fn(dynamic.c_str());
+}
+
+}  // namespace
+
 void Runtime_ThrowTypeErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
     Runtime_ThrowTypeError(nullptr);
     return;
   }
-
   va_list ap;
   va_start(ap, fmt);
-
-  char buf[256];
-  const int len = std::vsnprintf(buf, sizeof(buf), fmt, ap);
-
+  ThrowFormattedError(Runtime_ThrowTypeError, fmt, ap);
   va_end(ap);
+}
 
-  if (len < 0) {
-    Runtime_ThrowTypeError(nullptr);
+void Runtime_ThrowValueErrorf(const char* fmt, ...) {
+  if (fmt == nullptr) {
+    Runtime_ThrowValueError(nullptr);
     return;
   }
-
-  if (len < static_cast<int>(sizeof(buf))) {
-    Runtime_ThrowTypeError(buf);
-    return;
-  }
-
-  std::string dynamic(static_cast<size_t>(len) + 1, '\0');
-
+  va_list ap;
   va_start(ap, fmt);
-  (void)std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
+  ThrowFormattedError(Runtime_ThrowValueError, fmt, ap);
   va_end(ap);
+}
 
-  Runtime_ThrowTypeError(dynamic.c_str());
+void Runtime_ThrowIndexErrorf(const char* fmt, ...) {
+  if (fmt == nullptr) {
+    Runtime_ThrowIndexError(nullptr);
+    return;
+  }
+  va_list ap;
+  va_start(ap, fmt);
+  ThrowFormattedError(Runtime_ThrowIndexError, fmt, ap);
+  va_end(ap);
+}
+
+void Runtime_ThrowKeyErrorf(const char* fmt, ...) {
+  if (fmt == nullptr) {
+    Runtime_ThrowKeyError(nullptr);
+    return;
+  }
+  va_list ap;
+  va_start(ap, fmt);
+  ThrowFormattedError(Runtime_ThrowKeyError, fmt, ap);
+  va_end(ap);
 }
 
 Handle<PyString> Runtime_FormatPendingExceptionForStderr() {

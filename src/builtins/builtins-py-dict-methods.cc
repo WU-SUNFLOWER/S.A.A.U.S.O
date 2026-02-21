@@ -4,8 +4,7 @@
 
 #include "src/builtins/builtins-py-dict-methods.h"
 
-#include <cstdio>
-#include <cstdlib>
+#include <cinttypes>
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -16,6 +15,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso::internal {
 
@@ -50,10 +50,9 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
   EscapableHandleScope scope;
 
   if (args->length() < 1 || args->length() > 2) {
-    std::fprintf(stderr,
-                 "TypeError: pop expected at most 2 arguments, got %lld\n",
-                 static_cast<long long>(args->length()));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "pop expected at most 2 arguments, got %" PRId64, args->length());
+    return kNullMaybeHandle;
   }
 
   auto dict = Handle<PyDict>::cast(self);
@@ -68,10 +67,10 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
     return scope.Escape(args->Get(1));
   }
 
-  std::printf("KeyError: ");
-  PyObject::Print(key);
-  std::printf("\n");
-  std::exit(1);
+  // 对齐 CPython：dict.pop() 在 key 不存在且无默认值时抛出 KeyError。
+  // TODO: 当 repr 机制完善后，改为携带 key 的 repr 信息。
+  Runtime_ThrowKeyError(nullptr);
+  return kNullMaybeHandle;
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Keys) {

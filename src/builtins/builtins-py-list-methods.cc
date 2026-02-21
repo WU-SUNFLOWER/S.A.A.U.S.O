@@ -5,7 +5,7 @@
 #include "src/builtins/builtins-py-list-methods.h"
 
 #include <algorithm>
-#include <cstdio>
+#include <cinttypes>
 #include <vector>
 
 #include "src/execution/exception-utils.h"
@@ -23,40 +23,12 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-conversions.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/utils/stable-merge-sort.h"
 
 namespace saauso::internal {
-
-namespace {
-
-void PrintObjectForError(FILE* out, Handle<PyObject> value) {
-  if (IsPySmi(value)) {
-    std::fprintf(
-        out, "%lld",
-        static_cast<long long>(PySmi::ToInt(Handle<PySmi>::cast(value))));
-    return;
-  }
-  if (IsPyBoolean(value)) {
-    std::fprintf(out, "%s",
-                 Handle<PyBoolean>::cast(value)->value() ? "True" : "False");
-    return;
-  }
-  if (IsPyNone(value)) {
-    std::fprintf(out, "None");
-    return;
-  }
-  if (IsPyString(value)) {
-    auto s = Handle<PyString>::cast(value);
-    std::fprintf(out, "%.*s", static_cast<int>(s->length()), s->buffer());
-    return;
-  }
-
-  PyObject::Print(value);
-}
-
-}  // namespace
 
 void PyListBuiltinMethods::Install(Handle<PyDict> target) {
   PY_LIST_BUILTINS(INSTALL_BUILTIN_METHOD);
@@ -75,8 +47,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
   EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   if (object->IsEmpty()) {
-    std::fprintf(stderr, "IndexError: pop from empty list\n");
-    std::exit(1);
+    Runtime_ThrowIndexError("pop from empty list");
+    return kNullMaybeHandle;
   }
   return scope.Escape(object->Pop());
 }
@@ -94,25 +66,20 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   auto list = Handle<PyList>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    std::fprintf(stderr,
-                 "TypeError: list.index() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("list.index() takes no keyword arguments");
+    return kNullMaybeHandle;
   }
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
-    std::fprintf(
-        stderr,
-        "TypeError: list.index() takes at least 1 argument (%lld given)\n",
-        static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "list.index() takes at least 1 argument (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
   }
   if (argc > 3) {
-    std::fprintf(
-        stderr,
-        "TypeError: list.index() takes at most 3 arguments (%lld given)\n",
-        static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "list.index() takes at most 3 arguments (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
   }
 
   auto target = args->Get(0);
@@ -147,10 +114,10 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
     result = list->IndexOf(target, begin, end);
   }
   if (result == PyList::kNotFound) {
-    std::fprintf(stderr, "ValueError: ");
-    PrintObjectForError(stderr, target);
-    std::fprintf(stderr, " is not in list\n");
-    std::exit(1);
+    // 对齐 CPython：list.index(x) 未找到时抛出 ValueError。
+    // TODO: 当 repr 机制完善后，改为携带 x 的 repr 信息。
+    Runtime_ThrowValueError("x not in list");
+    return kNullMaybeHandle;
   }
 
   return scope.Escape(handle(PySmi::FromInt(result)));
@@ -183,17 +150,18 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   EscapableHandleScope scope;
 
   if (!args.is_null() && args->length() != 0) {
-    std::fprintf(stderr, "TypeError: sort() takes no positional arguments\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("sort() takes no positional arguments");
+    return kNullMaybeHandle;
   }
 
+  auto* isolate = Isolate::Current();
   auto list = Handle<PyList>::cast(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {
-    return scope.Escape(handle(Isolate::Current()->py_none_object()));
+    return scope.Escape(handle(isolate->py_none_object()));
   }
 
-  Handle<PyObject> key_func = handle(Isolate::Current()->py_none_object());
+  Handle<PyObject> key_func = handle(isolate->py_none_object());
   bool reverse = false;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -206,14 +174,14 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
         continue;
       }
       if (!IsPyString(*k)) {
-        std::fprintf(stderr, "TypeError: sort() keywords must be strings\n");
-        std::exit(1);
+        Runtime_ThrowTypeError("sort() keywords must be strings");
+        return kNullMaybeHandle;
       }
       auto key_str = Handle<PyString>::cast(k);
       if (!key_str->IsEqualTo(*key_name) &&
           !key_str->IsEqualTo(*reverse_name)) {
-        std::fprintf(stderr, "TypeError: sort() got an unexpected keyword\n");
-        std::exit(1);
+        Runtime_ThrowTypeErrorf("sort() got an unexpected keyword argument");
+        return kNullMaybeHandle;
       }
     }
 
@@ -230,8 +198,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   if (!IsPyNone(*key_func) && !IsNormalPyFunction(key_func) &&
       !IsPyNativeFunction(*key_func) && !IsMethodObject(*key_func)) {
-    std::fprintf(stderr, "TypeError: key must be callable\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("key must be callable");
+    return kNullMaybeHandle;
   }
 
   Handle<FixedArray> keys = FixedArray::NewInstance(expected_length);
@@ -246,16 +214,16 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
     for (int64_t i = 0; i < expected_length; ++i) {
       if (list->length() != expected_length) {
-        std::fprintf(stderr, "ValueError: list modified during sort (key)\n");
-        std::exit(1);
+        Runtime_ThrowValueError("list modified during sort (key)");
+        return kNullMaybeHandle;
       }
       Handle<PyObject> elem = list->Get(i);
       key_args->SetInternal(0, elem);
       Handle<PyObject> key;
-      if (!Execution::Call(Isolate::Current(), key_func,
+      if (!Execution::Call(isolate, key_func,
                            Handle<PyObject>::null(), key_args, empty_kwargs)
                .ToHandle(&key)) {
-        return Handle<PyObject>::null();
+        return kNullMaybeHandle;
       }
       keys->Set(i, key);
     }
@@ -274,11 +242,13 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   CompareContext context{list, keys, expected_length};
 
+  // 排序比较回调。若排序期间检测到 list 长度被修改，则抛出 ValueError 并
+  // 返回 false。排序完成后由外层检查 pending exception 进行 unwind。
   auto less = [](int64_t a, int64_t b, void* ctx) -> bool {
     auto* c = static_cast<CompareContext*>(ctx);
     if (c->list->length() != c->expected_length) {
-      std::fprintf(stderr, "ValueError: list modified during sort\n");
-      std::exit(1);
+      Runtime_ThrowValueError("list modified during sort");
+      return false;
     }
     HandleScope scope;
     Handle<PyObject> ka = handle(c->keys->Get(a));
@@ -287,6 +257,12 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   };
 
   StableMergeSort::Sort(indices.data(), expected_length, less, &context);
+
+  // 排序回调中可能已设置 pending exception（list 被修改等），此时排序结果
+  // 无意义，直接传播异常。
+  if (isolate->exception_state()->HasPendingException()) {
+    return kNullMaybeHandle;
+  }
 
   Handle<FixedArray> tmp = FixedArray::NewInstance(expected_length);
   for (int64_t i = 0; i < expected_length; ++i) {
@@ -304,7 +280,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     }
   }
 
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 }  // namespace saauso::internal

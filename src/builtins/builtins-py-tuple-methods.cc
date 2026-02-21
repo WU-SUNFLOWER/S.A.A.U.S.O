@@ -5,8 +5,7 @@
 #include "src/builtins/builtins-py-tuple-methods.h"
 
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
+#include <cinttypes>
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
@@ -17,6 +16,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-conversions.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso::internal {
 
@@ -31,25 +31,20 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   auto tuple = Handle<PyTuple>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    std::fprintf(stderr,
-                 "TypeError: tuple.index() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowTypeError("tuple.index() takes no keyword arguments");
+    return kNullMaybeHandle;
   }
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
-    std::fprintf(
-        stderr,
-        "TypeError: tuple.index() takes at least 1 argument (%lld given)\n",
-        static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "tuple.index() takes at least 1 argument (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
   }
   if (argc > 3) {
-    std::fprintf(
-        stderr,
-        "TypeError: tuple.index() takes at most 3 arguments (%lld given)\n",
-        static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "tuple.index() takes at most 3 arguments (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
   }
 
   auto target = args->Get(0);
@@ -83,8 +78,8 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
     result = tuple->IndexOf(target, begin, end);
   }
   if (result == PyTuple::kNotFound) {
-    std::fprintf(stderr, "ValueError: tuple.index(x): x not in tuple\n");
-    std::exit(1);
+    Runtime_ThrowValueError("tuple.index(x): x not in tuple");
+    return kNullMaybeHandle;
   }
 
   return scope.Escape(handle(PySmi::FromInt(result)));

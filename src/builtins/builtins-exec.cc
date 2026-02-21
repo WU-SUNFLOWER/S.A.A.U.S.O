@@ -32,7 +32,7 @@ MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
   Runtime_ThrowTypeErrorf("exec() %s must be a dict, not %.*s", role_name,
                           static_cast<int>(type_name->length()),
                           type_name->buffer());
-  return MaybeHandle<PyDict>::null();
+  return kNullMaybeHandle;
 }
 
 bool NormalizeExecArgs(Handle<PyDict> kwargs,
@@ -116,7 +116,7 @@ BUILTIN(Exec) {
           "exec() takes at most 3 positional arguments (%" PRId64 " given)",
           argc);
     }
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyObject> source_or_code = args->Get(0);
@@ -137,7 +137,7 @@ BUILTIN(Exec) {
 
   if (!NormalizeExecArgs(kwargs, globals_obj, locals_obj,
                          globals_from_positional, locals_from_positional)) {
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Isolate* isolate = Isolate::Current();
@@ -151,7 +151,7 @@ BUILTIN(Exec) {
   } else {
     auto maybe_globals = CastToDictOrThrowTypeError(globals_obj, "globals");
     if (maybe_globals.is_null()) {
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
     globals_dict = maybe_globals.ToHandleChecked();
   }
@@ -174,7 +174,7 @@ BUILTIN(Exec) {
   } else {
     auto maybe_locals = CastToDictOrThrowTypeError(locals_obj, "locals");
     if (maybe_locals.is_null()) {
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
     locals_dict = maybe_locals.ToHandleChecked();
   }
@@ -188,27 +188,27 @@ BUILTIN(Exec) {
     if (Runtime_ExecutePythonSourceCode(Handle<PyString>::cast(source_or_code),
                                         locals_dict, globals_dict)
             .IsEmpty()) {
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
 #else
     Runtime_ThrowRuntimeError(
         "exec(str) requires embedded CPython compiler; build with "
         "saauso_enable_cpython_compiler=true");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
   } else if (IsPyCodeObject(*source_or_code)) {
     if (Runtime_ExecutePyCodeObject(Handle<PyCodeObject>::cast(source_or_code),
                                     locals_dict, globals_dict)
             .IsEmpty()) {
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
   } else {
     Runtime_ThrowTypeError("exec() arg 1 must be a string or code object");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   if (isolate->exception_state()->HasPendingException()) {
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   // 对齐 CPython：exec 总是返回 None。
