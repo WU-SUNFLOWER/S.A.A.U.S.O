@@ -131,8 +131,13 @@ Handle<PyObject> NativeFunctionKlass::Virtual_Call(Handle<PyObject> self,
                                                    Handle<PyObject> kwargs) {
   assert(IsPyNativeFunction(self));
   auto func = Handle<PyFunction>::cast(self);
-  return func->native_func_(host, Handle<PyTuple>::cast(args),
-                            Handle<PyDict>::cast(kwargs));
+  Handle<PyObject> result;
+  if (!func->native_func_(host, Handle<PyTuple>::cast(args),
+                          Handle<PyDict>::cast(kwargs))
+           .ToHandle(&result)) {
+    return Handle<PyObject>::null();
+  }
+  return result;
 }
 
 size_t NativeFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

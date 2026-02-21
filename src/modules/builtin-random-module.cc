@@ -76,9 +76,9 @@ void InstallFunc(Handle<PyDict> module_dict,
   PyDict::Put(module_dict, py_name, PyFunction::NewInstance(func, py_name));
 }
 
-Handle<PyObject> Random_Seed(Handle<PyObject> host,
-                             Handle<PyTuple> args,
-                             Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
+                                  Handle<PyTuple> args,
+                                  Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("seed");
@@ -116,9 +116,9 @@ Handle<PyObject> Random_Seed(Handle<PyObject> host,
   return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> Random_Random(Handle<PyObject> host,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_Random(Handle<PyObject> host,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("random");
@@ -137,9 +137,9 @@ Handle<PyObject> Random_Random(Handle<PyObject> host,
   return PyFloat::NewInstance(g_rng.NextDouble01());
 }
 
-Handle<PyObject> Random_RandInt(Handle<PyObject> host,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> host,
+                                     Handle<PyTuple> args,
+                                     Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("randint");
@@ -167,9 +167,9 @@ Handle<PyObject> Random_RandInt(Handle<PyObject> host,
   return handle(PySmi::FromInt(result));
 }
 
-Handle<PyObject> Random_RandRange(Handle<PyObject> host,
-                                  Handle<PyTuple> args,
-                                  Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
+                                       Handle<PyTuple> args,
+                                       Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("randrange");
@@ -230,9 +230,9 @@ Handle<PyObject> Random_RandRange(Handle<PyObject> host,
   return handle(PySmi::FromInt(result));
 }
 
-Handle<PyObject> Random_GetRandBits(Handle<PyObject> host,
-                                    Handle<PyTuple> args,
-                                    Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> host,
+                                         Handle<PyTuple> args,
+                                         Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("getrandbits");
@@ -270,9 +270,9 @@ Handle<PyObject> Random_GetRandBits(Handle<PyObject> host,
   return handle(PySmi::FromInt(static_cast<int64_t>(x)));
 }
 
-Handle<PyObject> Random_Choice(Handle<PyObject> host,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("choice");
@@ -333,9 +333,9 @@ Handle<PyObject> Random_Choice(Handle<PyObject> host,
   return Handle<PyObject>::null();
 }
 
-Handle<PyObject> Random_Shuffle(Handle<PyObject> host,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> host,
+                                     Handle<PyTuple> args,
+                                     Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("shuffle");

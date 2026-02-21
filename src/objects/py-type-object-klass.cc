@@ -135,7 +135,11 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_ConstructInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
-  return Runtime_NewType(args, kwargs);
+  Handle<PyObject> result;
+  if (!Runtime_NewType(args, kwargs).ToHandle(&result)) {
+    return Handle<PyObject>::null();
+  }
+  return result;
 }
 
 Handle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,

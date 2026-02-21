@@ -79,9 +79,9 @@ void InstallFunc(Handle<PyDict> module_dict,
   PyDict::Put(module_dict, py_name, PyFunction::NewInstance(func, py_name));
 }
 
-Handle<PyObject> Math_Sqrt(Handle<PyObject> host,
-                           Handle<PyTuple> args,
-                           Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> host,
+                                Handle<PyTuple> args,
+                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("sqrt");
   }
@@ -99,9 +99,9 @@ Handle<PyObject> Math_Sqrt(Handle<PyObject> host,
   return PyFloat::NewInstance(std::sqrt(x));
 }
 
-Handle<PyObject> Math_Floor(Handle<PyObject> host,
-                            Handle<PyTuple> args,
-                            Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Floor(Handle<PyObject> host,
+                                 Handle<PyTuple> args,
+                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("floor");
   }
@@ -115,9 +115,9 @@ Handle<PyObject> Math_Floor(Handle<PyObject> host,
   return ReturnPyIntFromDouble(std::floor(x), "floor");
 }
 
-Handle<PyObject> Math_Ceil(Handle<PyObject> host,
-                           Handle<PyTuple> args,
-                           Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Ceil(Handle<PyObject> host,
+                                Handle<PyTuple> args,
+                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("ceil");
   }
@@ -131,9 +131,9 @@ Handle<PyObject> Math_Ceil(Handle<PyObject> host,
   return ReturnPyIntFromDouble(std::ceil(x), "ceil");
 }
 
-Handle<PyObject> Math_Fabs(Handle<PyObject> host,
-                           Handle<PyTuple> args,
-                           Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Fabs(Handle<PyObject> host,
+                                Handle<PyTuple> args,
+                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("fabs");
   }
@@ -147,9 +147,9 @@ Handle<PyObject> Math_Fabs(Handle<PyObject> host,
   return PyFloat::NewInstance(std::fabs(x));
 }
 
-Handle<PyObject> Math_Sin(Handle<PyObject> host,
-                          Handle<PyTuple> args,
-                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Sin(Handle<PyObject> host,
+                               Handle<PyTuple> args,
+                               Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("sin");
   }
@@ -163,9 +163,9 @@ Handle<PyObject> Math_Sin(Handle<PyObject> host,
   return PyFloat::NewInstance(std::sin(x));
 }
 
-Handle<PyObject> Math_Cos(Handle<PyObject> host,
-                          Handle<PyTuple> args,
-                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Cos(Handle<PyObject> host,
+                               Handle<PyTuple> args,
+                               Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("cos");
   }
@@ -179,9 +179,9 @@ Handle<PyObject> Math_Cos(Handle<PyObject> host,
   return PyFloat::NewInstance(std::cos(x));
 }
 
-Handle<PyObject> Math_Tan(Handle<PyObject> host,
-                          Handle<PyTuple> args,
-                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Tan(Handle<PyObject> host,
+                               Handle<PyTuple> args,
+                               Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("tan");
   }
@@ -195,9 +195,9 @@ Handle<PyObject> Math_Tan(Handle<PyObject> host,
   return PyFloat::NewInstance(std::tan(x));
 }
 
-Handle<PyObject> Math_Exp(Handle<PyObject> host,
-                          Handle<PyTuple> args,
-                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Exp(Handle<PyObject> host,
+                               Handle<PyTuple> args,
+                               Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("exp");
   }
@@ -211,9 +211,9 @@ Handle<PyObject> Math_Exp(Handle<PyObject> host,
   return PyFloat::NewInstance(std::exp(x));
 }
 
-Handle<PyObject> Math_Log(Handle<PyObject> host,
-                          Handle<PyTuple> args,
-                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Log(Handle<PyObject> host,
+                               Handle<PyTuple> args,
+                               Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("log");
   }
@@ -231,9 +231,9 @@ Handle<PyObject> Math_Log(Handle<PyObject> host,
   return PyFloat::NewInstance(std::log(x));
 }
 
-Handle<PyObject> Math_Log2(Handle<PyObject> host,
-                           Handle<PyTuple> args,
-                           Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Log2(Handle<PyObject> host,
+                                Handle<PyTuple> args,
+                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("log2");
   }
@@ -251,9 +251,9 @@ Handle<PyObject> Math_Log2(Handle<PyObject> host,
   return PyFloat::NewInstance(std::log2(x));
 }
 
-Handle<PyObject> Math_Log10(Handle<PyObject> host,
-                            Handle<PyTuple> args,
-                            Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Log10(Handle<PyObject> host,
+                                 Handle<PyTuple> args,
+                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("log10");
   }
@@ -271,9 +271,9 @@ Handle<PyObject> Math_Log10(Handle<PyObject> host,
   return PyFloat::NewInstance(std::log10(x));
 }
 
-Handle<PyObject> Math_Pow(Handle<PyObject> host,
-                          Handle<PyTuple> args,
-                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_Pow(Handle<PyObject> host,
+                               Handle<PyTuple> args,
+                               Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("pow");
   }
@@ -292,9 +292,9 @@ Handle<PyObject> Math_Pow(Handle<PyObject> host,
   return PyFloat::NewInstance(std::pow(x, y));
 }
 
-Handle<PyObject> Math_IsFinite(Handle<PyObject> host,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_IsFinite(Handle<PyObject> host,
+                                    Handle<PyTuple> args,
+                                    Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("isfinite");
   }
@@ -308,9 +308,9 @@ Handle<PyObject> Math_IsFinite(Handle<PyObject> host,
   return handle(Isolate::ToPyBoolean(std::isfinite(x)));
 }
 
-Handle<PyObject> Math_IsNaN(Handle<PyObject> host,
-                            Handle<PyTuple> args,
-                            Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_IsNaN(Handle<PyObject> host,
+                                 Handle<PyTuple> args,
+                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("isnan");
   }
@@ -324,9 +324,9 @@ Handle<PyObject> Math_IsNaN(Handle<PyObject> host,
   return handle(Isolate::ToPyBoolean(std::isnan(x)));
 }
 
-Handle<PyObject> Math_IsInf(Handle<PyObject> host,
-                            Handle<PyTuple> args,
-                            Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Math_IsInf(Handle<PyObject> host,
+                                 Handle<PyTuple> args,
+                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("isinf");
   }

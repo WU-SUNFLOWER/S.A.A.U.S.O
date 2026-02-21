@@ -6,6 +6,7 @@
 #define SRC_BUILTINS_BUILTINS_UTILS_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -20,13 +21,13 @@ class PyDict;
 #define BUILTIN_FUNC_NAME(name) Builtin_##name
 
 #define BUILTIN(name)                       \
-  Handle<PyObject> BUILTIN_FUNC_NAME(name)( \
+  MaybeHandle<PyObject> BUILTIN_FUNC_NAME(name)( \
       Handle<PyObject> host, Handle<PyTuple> args, Handle<PyDict> kwargs)
 
 #define DECL_BUILTIN_METHOD(name, _) static BUILTIN(name);
 
 #define BUILTIN_METHOD(type, name)                \
-  Handle<PyObject> type::BUILTIN_FUNC_NAME(name)( \
+  MaybeHandle<PyObject> type::BUILTIN_FUNC_NAME(name)( \
       Handle<PyObject> self, Handle<PyTuple> args, Handle<PyDict> kwargs)
 
 #define INSTALL_BUILTIN_METHOD(func_name, method_name)                      \

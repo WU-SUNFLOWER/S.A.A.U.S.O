@@ -260,8 +260,12 @@ void Klass::Virtual_Default_StoreSubscr(Handle<PyObject> self,
   args->SetInternal(0, subscr);
   args->SetInternal(1, value);
 
-  Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                     ST(setitem));
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(setitem))
+           .ToHandle(&result)) {
+    return;
+  }
 }
 
 void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
@@ -269,8 +273,12 @@ void Klass::Virtual_Default_Delete_Subscr(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
 
-  Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                     ST(delitem));
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(delitem))
+           .ToHandle(&result)) {
+    return;
+  }
 }
 
 Handle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,

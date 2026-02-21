@@ -105,7 +105,11 @@ Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     return iterable;
   }
 
-  return Runtime_UnpackIterableObjectToTuple(iterable);
+  Handle<PyTuple> result;
+  if (!Runtime_UnpackIterableObjectToTuple(iterable).ToHandle(&result)) {
+    return Handle<PyObject>::null();
+  }
+  return result;
 }
 
 Handle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {

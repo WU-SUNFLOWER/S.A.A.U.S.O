@@ -18,9 +18,9 @@ namespace saauso::internal {
 class CellTest : public VmTestBase {};
 
 namespace {
-Handle<PyObject> DummyNative(Handle<PyObject>,
-                             Handle<PyTuple>,
-                             Handle<PyDict>) {
+MaybeHandle<PyObject> DummyNative(Handle<PyObject>,
+                                  Handle<PyTuple>,
+                                  Handle<PyDict>) {
   return Handle<PyObject>::null();
 }
 }  // namespace

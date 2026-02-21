@@ -7,6 +7,7 @@
 #include <string>
 
 #include "src/builtins/builtins-definitions.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict-klass.h"
@@ -50,9 +51,9 @@ struct BuiltinFunctionEntry {
 
 // BaseException.__str__ 的最小实现：返回 message 字段。
 // 该实现用于提升 MVP 阶段的可用性，使用户能够通过 str(e) 获取错误原因。
-Handle<PyObject> Native_BaseExceptionStr(Handle<PyObject> host,
-                                         Handle<PyTuple> args,
-                                         Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Native_BaseExceptionStr(Handle<PyObject> host,
+                                              Handle<PyTuple> args,
+                                              Handle<PyDict> kwargs) {
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
@@ -86,9 +87,9 @@ Handle<PyObject> Native_BaseExceptionStr(Handle<PyObject> host,
 // BaseException.__repr__ 的最小实现：返回 "<TypeName: message>"（message
 // 为空则省略）。 该实现主要用于调试与单测断言，MVP 阶段不追求完全对齐 CPython
 // repr。
-Handle<PyObject> Native_BaseExceptionRepr(Handle<PyObject> host,
-                                          Handle<PyTuple> args,
-                                          Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Native_BaseExceptionRepr(Handle<PyObject> host,
+                                               Handle<PyTuple> args,
+                                               Handle<PyDict> kwargs) {
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
@@ -109,10 +110,9 @@ Handle<PyObject> Native_BaseExceptionRepr(Handle<PyObject> host,
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(host)->name();
-  Handle<PyObject> message_obj = Native_BaseExceptionStr(host, args, kwargs);
-  if (Isolate::Current()->interpreter()->HasPendingException()) {
-    return Handle<PyObject>::null();
-  }
+  Handle<PyObject> message_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), message_obj,
+                             Native_BaseExceptionStr(host, args, kwargs));
   Handle<PyString> message = message_obj.is_null()
                                  ? Handle<PyString>::null()
                                  : Handle<PyString>::cast(message_obj);

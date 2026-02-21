@@ -68,9 +68,9 @@ void InstallFunc(Handle<PyDict> module_dict,
   PyDict::Put(module_dict, py_name, PyFunction::NewInstance(func, py_name));
 }
 
-Handle<PyObject> Time_Time(Handle<PyObject> host,
-                           Handle<PyTuple> args,
-                           Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Time_Time(Handle<PyObject> host,
+                                Handle<PyTuple> args,
+                                Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("time");
@@ -88,9 +88,9 @@ Handle<PyObject> Time_Time(Handle<PyObject> host,
   return PyFloat::NewInstance(WallTimeSeconds());
 }
 
-Handle<PyObject> Time_PerfCounter(Handle<PyObject> host,
-                                  Handle<PyTuple> args,
-                                  Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> host,
+                                       Handle<PyTuple> args,
+                                       Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("perf_counter");
@@ -109,15 +109,15 @@ Handle<PyObject> Time_PerfCounter(Handle<PyObject> host,
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
-Handle<PyObject> Time_Monotonic(Handle<PyObject> host,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Time_Monotonic(Handle<PyObject> host,
+                                     Handle<PyTuple> args,
+                                     Handle<PyDict> kwargs) {
   return Time_PerfCounter(host, args, kwargs);
 }
 
-Handle<PyObject> Time_Sleep(Handle<PyObject> host,
-                            Handle<PyTuple> args,
-                            Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> host,
+                                 Handle<PyTuple> args,
+                                 Handle<PyDict> kwargs) {
   (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("sleep");

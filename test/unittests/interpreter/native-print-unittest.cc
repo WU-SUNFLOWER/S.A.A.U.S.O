@@ -24,7 +24,8 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
   auto kwargs = PyDict::NewInstance();
 
   testing::internal::CaptureStdout();
-  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b\n");
 }
@@ -39,7 +40,8 @@ TEST_F(NativePrintTest, EndParameter) {
   PyDict::Put(kwargs, ST(end), PyString::NewInstance("!"));
 
   testing::internal::CaptureStdout();
-  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b!");
 }
@@ -54,7 +56,8 @@ TEST_F(NativePrintTest, EolAliasParameter) {
   PyDict::Put(kwargs, ST(eol), PyString::NewInstance("??"));
 
   testing::internal::CaptureStdout();
-  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b??");
 }
@@ -70,7 +73,8 @@ TEST_F(NativePrintTest, SepParameter) {
   PyDict::Put(kwargs, ST(sep), PyString::NewInstance(","));
 
   testing::internal::CaptureStdout();
-  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a,b,c\n");
 }
@@ -83,7 +87,8 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
   PyDict::Put(kwargs, ST(end), PyString::NewInstance("X"));
 
   testing::internal::CaptureStdout();
-  BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "X");
 }

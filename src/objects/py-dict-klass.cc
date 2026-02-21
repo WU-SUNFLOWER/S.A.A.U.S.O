@@ -200,7 +200,11 @@ Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyDictKlass::GetInstance());
-  return Runtime_NewDict(args, kwargs);
+  Handle<PyObject> result;
+  if (!Runtime_NewDict(args, kwargs).ToHandle(&result)) {
+    return Handle<PyObject>::null();
+  }
+  return result;
 }
 
 // static

@@ -8,6 +8,7 @@
 #include "src/execution/isolate.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
 
 namespace saauso::internal {

@@ -4,12 +4,16 @@
 
 #include <string_view>
 
+#include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -180,9 +184,16 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArgCountError) {
 type()
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError: type\\(\\) takes 1 or 3 arguments");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+
+  auto formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("TypeError: type() takes 1 or 3 arguments"),
+            std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 }  // namespace saauso::internal

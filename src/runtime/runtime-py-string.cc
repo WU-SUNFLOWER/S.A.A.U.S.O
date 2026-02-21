@@ -160,7 +160,10 @@ Handle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
     std::exit(1);
   }
 
-  Handle<PyTuple> parts = Runtime_UnpackIterableObjectToTuple(iterable);
+  Handle<PyTuple> parts;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      Isolate::Current(), parts, Runtime_UnpackIterableObjectToTuple(iterable),
+      Handle<PyString>::null());
   const int64_t num_parts = parts->length();
   if (num_parts == 0) {
     return scope.Escape(PyString::NewInstance(static_cast<int64_t>(0)));

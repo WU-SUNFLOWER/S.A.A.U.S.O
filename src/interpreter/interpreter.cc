@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include "src/builtins/builtins-definitions.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -165,12 +166,8 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   if (IsNativePyFunction(callable)) {
     auto func_object = Handle<PyFunction>::cast(callable);
     auto* native_func_ptr = func_object->native_func();
-    
-    result = native_func_ptr(host, pos_args, kw_args);
-
-    if (isolate_->exception_state()->HasPendingException()) {
-      return kNullMaybe;
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
+                               native_func_ptr(host, pos_args, kw_args));
 
     return scope.Escape(result);
   }

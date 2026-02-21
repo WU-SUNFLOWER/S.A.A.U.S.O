@@ -98,9 +98,9 @@ void BasicInterpreterTest::RunScript(std::string_view source,
   }
 }
 
-Handle<PyObject> BasicInterpreterTest::Native_PrintV(Handle<PyObject> host,
-                                                     Handle<PyTuple> args,
-                                                     Handle<PyDict> kwargs) {
+MaybeHandle<PyObject> BasicInterpreterTest::Native_PrintV(Handle<PyObject> host,
+                                                           Handle<PyTuple> args,
+                                                           Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
     PyList::Append(printv_result_.Get(), args->Get(i));

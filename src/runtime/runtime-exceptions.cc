@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <string>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/klass.h"
@@ -29,8 +30,12 @@ Handle<PyObject> Runtime_NewExceptionInstance(
   assert(!exception_type.is_null());
 
   Handle<PyObject> exception =
+      Handle<PyObject>::null();
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      Isolate::Current(), exception,
       Runtime_NewObject(Handle<PyTypeObject>::cast(exception_type),
-                        Handle<PyObject>::null(), Handle<PyObject>::null());
+                        Handle<PyObject>::null(), Handle<PyObject>::null()),
+      Handle<PyObject>::null());
 
   if (!message_or_null.is_null()) {
     Handle<PyDict> properties = PyObject::GetProperties(exception);

@@ -21,6 +21,9 @@ class Global;
 template <typename T>
 class Handle;
 
+template <typename T>
+class MaybeHandle;
+
 class Isolate;
 class PyDict;
 class PyList;
@@ -75,9 +78,9 @@ class BasicInterpreterTest : public VmTestBase {
 
  private:
   // 测试用 native print：把 args 中的每个实参追加到 printv_result_。
-  static Handle<PyObject> Native_PrintV(Handle<PyObject> host,
-                                        Handle<PyTuple> args,
-                                        Handle<PyDict> kwargs);
+  static MaybeHandle<PyObject> Native_PrintV(Handle<PyObject> host,
+                                             Handle<PyTuple> args,
+                                             Handle<PyDict> kwargs);
 
   static Global<PyList> printv_result_;
 };

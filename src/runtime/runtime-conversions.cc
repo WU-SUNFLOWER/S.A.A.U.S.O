@@ -35,4 +35,20 @@ Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
   return Maybe<int64_t>::Nothing();
 }
 
+int64_t Runtime_DecodeIntLikeOrDie(Tagged<PyObject> value) {
+  Maybe<int64_t> maybe_value = Runtime_DecodeIntLike(value);
+  if (maybe_value.IsJust()) {
+    return maybe_value.ToChecked();
+  }
+
+  Handle<PyString> message = Runtime_FormatPendingExceptionForStderr();
+  if (!message.is_null()) {
+    std::fprintf(stderr, "%.*s\n", static_cast<int>(message->length()),
+                 message->buffer());
+  } else {
+    std::fprintf(stderr, "TypeError: object cannot be interpreted as integer\n");
+  }
+  std::exit(1);
+}
+
 }  // namespace saauso::internal

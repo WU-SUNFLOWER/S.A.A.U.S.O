@@ -5,15 +5,16 @@
 #ifndef SAAUSO_OBJECTS_PY_FUNCTION_H_
 #define SAAUSO_OBJECTS_PY_FUNCTION_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/py-object.h"
 
 namespace saauso::internal {
 
 using PyFuncFlags = uint32_t;
 
-using NativeFuncPointer = Handle<PyObject> (*)(Handle<PyObject> host,
-                                               Handle<PyTuple> args,
-                                               Handle<PyDict> kwargs);
+using NativeFuncPointer = MaybeHandle<PyObject> (*)(Handle<PyObject> host,
+                                                    Handle<PyTuple> args,
+                                                    Handle<PyDict> kwargs);
 
 class PyFunction : public PyObject {
  public:

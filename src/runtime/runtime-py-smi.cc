@@ -48,7 +48,11 @@ Handle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
       std::exit(1);
     }
 
-    int64_t base = Runtime_DecodeIntLikeOrDie(pos_args->GetTagged(1));
+    Maybe<int64_t> maybe_base = Runtime_DecodeIntLike(pos_args->GetTagged(1));
+    if (maybe_base.IsNothing()) {
+      return Handle<PyObject>::null();
+    }
+    int64_t base = maybe_base.ToChecked();
     if (!(base == 0 || (2 <= base && base <= 36))) {
       std::fprintf(stderr,
                    "ValueError: int() base must be >= 2 and <= 36, or 0\n");

@@ -28,6 +28,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-intrinsics.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/runtime-truthiness.h"
@@ -870,7 +871,10 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ListExtend, {
     Handle<PyObject> source = POP();
     Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
-    Runtime_ExtendListByItratableObject(Handle<PyList>::cast(list), source);
+    if (Runtime_ExtendListByItratableObject(Handle<PyList>::cast(list), source)
+            .IsEmpty()) {
+      goto pending_exception_unwind;
+    }
   })
 
   // 当使用*或**尝试展开iterable object或dict时，
@@ -922,9 +926,12 @@ void Interpreter::EvalCurrentFrame() {
 
     Handle<PyTuple> pos_args;
     if (!args_obj.is_null()) {
-      pos_args = IsPyTuple(args_obj)
-                     ? Handle<PyTuple>::cast(args_obj)
-                     : Runtime_UnpackIterableObjectToTuple(args_obj);
+      if (IsPyTuple(args_obj)) {
+        pos_args = Handle<PyTuple>::cast(args_obj);
+      } else if (!Runtime_UnpackIterableObjectToTuple(args_obj)
+                      .ToHandle(&pos_args)) {
+        goto pending_exception_unwind;
+      }
     }
 
     InvokeCallableWithNormalizedArgs(callable, host, pos_args, kw_args);
@@ -1084,7 +1091,13 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
   if (IsNativePyFunction(callable)) {
     auto func_object = Handle<PyFunction>::cast(callable);
     auto* native_func_ptr = func_object->native_func();
-    PUSH(native_func_ptr(host, pos_args, kw_args));
+
+    Handle<PyObject> result;
+    if (!native_func_ptr(host, pos_args, kw_args).ToHandle(&result)) {
+      return;
+    }
+
+    PUSH(result);
     return;
   }
 

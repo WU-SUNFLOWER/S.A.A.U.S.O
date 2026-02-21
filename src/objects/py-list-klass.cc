@@ -119,7 +119,11 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
 
   Handle<PyList> result = PyList::NewInstance();
   // list(iterable)：从可迭代对象中逐个追加元素；对 list/tuple 走 fast path。
-  Runtime_ExtendListByItratableObject(result, pos_args->Get(0));
+  Handle<PyObject> extend_result;
+  if (!Runtime_ExtendListByItratableObject(result, pos_args->Get(0))
+           .ToHandle(&extend_result)) {
+    return Handle<PyObject>::null();
+  }
   return result;
 }
 

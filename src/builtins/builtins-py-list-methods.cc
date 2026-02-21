@@ -180,7 +180,11 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
-  Runtime_ExtendListByItratableObject(Handle<PyList>::cast(self), args->Get(0));
+  if (Runtime_ExtendListByItratableObject(Handle<PyList>::cast(self),
+                                          args->Get(0))
+          .IsEmpty()) {
+    return kNullMaybe;
+  }
   return handle(Isolate::Current()->py_none_object());
 }
 
