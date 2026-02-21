@@ -13,15 +13,6 @@ namespace saauso::internal {
 class PyObject;
 class PyString;
 
-// 创建一个新的异常实例。
-// - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PyObject> Runtime_NewExceptionInstance(
-    Handle<PyString> exception_type_name,
-    Handle<PyString> message_or_null);
-
-void Runtime_ThrowNewException(Handle<PyString> exception_type_name,
-                               Handle<PyString> message_or_null);
-
 void Runtime_ThrowTypeError(const char* message);
 void Runtime_ThrowRuntimeError(const char* message);
 void Runtime_ThrowValueError(const char* message);

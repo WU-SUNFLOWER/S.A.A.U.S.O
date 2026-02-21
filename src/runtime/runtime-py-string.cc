@@ -128,8 +128,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 
   Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
-    Runtime_ThrowNewException(ST(value_err),
-                              PyString::NewInstance("empty separator"));
+    Runtime_ThrowValueError("empty separator");
     return kNullMaybeHandle;
   }
 
@@ -186,16 +185,14 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 
     int64_t item_length = Handle<PyString>::cast(item)->length();
     if (item_length > std::numeric_limits<int64_t>::max() - total_length) {
-      Runtime_ThrowNewException(
-          ST(value_err), PyString::NewInstance("join() result is too long"));
+      Runtime_ThrowValueError("join() result is too long");
       return kNullMaybeHandle;
     }
     total_length += item_length;
 
     if (i + 1 < num_parts) {
       if (sep_length > std::numeric_limits<int64_t>::max() - total_length) {
-        Runtime_ThrowNewException(
-            ST(value_err), PyString::NewInstance("join() result is too long"));
+        Runtime_ThrowValueError("join() result is too long");
         return kNullMaybeHandle;
       }
       total_length += sep_length;

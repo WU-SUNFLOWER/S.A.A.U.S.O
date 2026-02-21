@@ -21,10 +21,12 @@
 
 namespace saauso::internal {
 
-MaybeHandle<PyObject> Runtime_NewExceptionInstance(
-    Handle<PyString> exception_type_name,
-    Handle<PyString> message_or_null) {
-  EscapableHandleScope scope;
+namespace {
+
+// 创建一个新的异常实例。
+// - 失败时返回 empty，并保证已设置 pending exception。
+MaybeHandle<PyObject> NewExceptionInstance(Handle<PyString> exception_type_name,
+                                           Handle<PyString> message_or_null) {
   Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
   Handle<PyObject> exception_type = builtins->Get(exception_type_name);
   assert(!exception_type.is_null());
@@ -42,11 +44,11 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     }
   }
 
-  return scope.Escape(exception);
+  return exception;
 }
 
-void Runtime_ThrowNewException(Handle<PyString> exception_type_name,
-                               Handle<PyString> message_or_null) {
+void ThrowNewException(Handle<PyString> exception_type_name,
+                       Handle<PyString> message_or_null) {
   auto* state = Isolate::Current()->exception_state();
   if (state->HasPendingException()) {
     return;
@@ -57,52 +59,10 @@ void Runtime_ThrowNewException(Handle<PyString> exception_type_name,
 
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
       isolate, exception,
-      Runtime_NewExceptionInstance(exception_type_name, message_or_null), );
+      NewExceptionInstance(exception_type_name, message_or_null), );
 
   state->Throw(*exception);
 }
-
-void Runtime_ThrowTypeError(const char* message) {
-  if (message == nullptr) {
-    Runtime_ThrowNewException(ST(type_err), Handle<PyString>::null());
-    return;
-  }
-  Runtime_ThrowNewException(ST(type_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowRuntimeError(const char* message) {
-  if (message == nullptr) {
-    Runtime_ThrowNewException(ST(runtime_err), Handle<PyString>::null());
-    return;
-  }
-  Runtime_ThrowNewException(ST(runtime_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowValueError(const char* message) {
-  if (message == nullptr) {
-    Runtime_ThrowNewException(ST(value_err), Handle<PyString>::null());
-    return;
-  }
-  Runtime_ThrowNewException(ST(value_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowIndexError(const char* message) {
-  if (message == nullptr) {
-    Runtime_ThrowNewException(ST(index_err), Handle<PyString>::null());
-    return;
-  }
-  Runtime_ThrowNewException(ST(index_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowKeyError(const char* message) {
-  if (message == nullptr) {
-    Runtime_ThrowNewException(ST(key_err), Handle<PyString>::null());
-    return;
-  }
-  Runtime_ThrowNewException(ST(key_err), PyString::NewInstance(message));
-}
-
-namespace {
 
 // 将 va_list 格式化为字符串并调用 throw_fn 抛出异常。
 // 内部复用栈上 256 字节缓冲，仅在超长消息时回退到堆分配。
@@ -131,6 +91,46 @@ void ThrowFormattedError(void (*throw_fn)(const char*),
 }
 
 }  // namespace
+
+void Runtime_ThrowTypeError(const char* message) {
+  if (message == nullptr) {
+    ThrowNewException(ST(type_err), Handle<PyString>::null());
+    return;
+  }
+  ThrowNewException(ST(type_err), PyString::NewInstance(message));
+}
+
+void Runtime_ThrowRuntimeError(const char* message) {
+  if (message == nullptr) {
+    ThrowNewException(ST(runtime_err), Handle<PyString>::null());
+    return;
+  }
+  ThrowNewException(ST(runtime_err), PyString::NewInstance(message));
+}
+
+void Runtime_ThrowValueError(const char* message) {
+  if (message == nullptr) {
+    ThrowNewException(ST(value_err), Handle<PyString>::null());
+    return;
+  }
+  ThrowNewException(ST(value_err), PyString::NewInstance(message));
+}
+
+void Runtime_ThrowIndexError(const char* message) {
+  if (message == nullptr) {
+    ThrowNewException(ST(index_err), Handle<PyString>::null());
+    return;
+  }
+  ThrowNewException(ST(index_err), PyString::NewInstance(message));
+}
+
+void Runtime_ThrowKeyError(const char* message) {
+  if (message == nullptr) {
+    ThrowNewException(ST(key_err), Handle<PyString>::null());
+    return;
+  }
+  ThrowNewException(ST(key_err), PyString::NewInstance(message));
+}
 
 void Runtime_ThrowTypeErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
