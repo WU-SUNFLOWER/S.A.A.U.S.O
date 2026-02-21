@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -21,6 +22,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-conversions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/utils/stable-merge-sort.h"
@@ -28,21 +30,6 @@
 namespace saauso::internal {
 
 namespace {
-
-int64_t DecodeIntLikeOrDie(Handle<PyObject> value) {
-  if (IsPySmi(value)) {
-    return PySmi::ToInt(Handle<PySmi>::cast(value));
-  }
-  if (IsPyBoolean(value)) {
-    return Handle<PyBoolean>::cast(value)->value() ? 1 : 0;
-  }
-
-  auto type_name = PyObject::GetKlass(value)->name();
-  std::fprintf(stderr,
-               "TypeError: '%.*s' object cannot be interpreted as an integer\n",
-               static_cast<int>(type_name->length()), type_name->buffer());
-  std::exit(1);
-}
 
 void PrintObjectForError(FILE* out, Handle<PyObject> value) {
   if (IsPySmi(value)) {
@@ -134,11 +121,15 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   int64_t begin = 0;
   int64_t end = length;
 
+  auto* isolate = Isolate::Current();
+
   if (argc >= 2) {
-    begin = DecodeIntLikeOrDie(args->Get(1));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
+                               Runtime_DecodeIntLike(*args->Get(1)));
   }
   if (argc >= 3) {
-    end = DecodeIntLikeOrDie(args->Get(2));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
+                               Runtime_DecodeIntLike(*args->Get(2)));
   }
 
   if (begin < 0) {
