@@ -97,6 +97,16 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
   return ctx;
 }
 
+void LoadPosActualArgsToLocalsplus(FrameBuildContext& ctx,
+                                   Handle<PyTuple> actual_args,
+                                   int64_t actual_pos_args_cnt) {
+  int64_t valid_pos_args_cnt =
+      std::min(actual_pos_args_cnt, ctx.formal_pos_arg_cnt);
+  for (int64_t i = 0; i < valid_pos_args_cnt; ++i) {
+    ctx.localsplus->Set(ctx.localsplus_idx++, actual_args->Get(i));
+  }
+}
+
 void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
   // 使用默认值填充 localsplus 中的空洞（从尾部形参开始向前回填）。
   if (default_args.is_null()) {
@@ -331,11 +341,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置实参优先）。
   if (!actual_pos_args.is_null()) {
-    int64_t valid_pos_args_cnt =
-        std::min<int64_t>(actual_pos_args->length(), ctx.formal_pos_arg_cnt);
-    for (int64_t i = 0; i < valid_pos_args_cnt; ++i) {
-      ctx.localsplus->Set(ctx.localsplus_idx++, actual_pos_args->Get(i));
-    }
+    LoadPosActualArgsToLocalsplus(ctx, actual_pos_args,
+                                  actual_pos_args->length());
   }
 
   Handle<PyDict> kw_args;
@@ -390,11 +397,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   int64_t actual_kw_arg_cnt = kwarg_keys.is_null() ? 0 : kwarg_keys->length();
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置部分）。
-  int64_t valid_pos_args_cnt = std::min<int64_t>(
-      actual_arg_cnt - actual_kw_arg_cnt, ctx.formal_pos_arg_cnt);
-  for (int64_t i = 0; i < valid_pos_args_cnt; ++i) {
-    ctx.localsplus->Set(ctx.localsplus_idx++, actual_args->Get(i));
-  }
+  LoadPosActualArgsToLocalsplus(ctx, actual_args,
+                                actual_arg_cnt - actual_kw_arg_cnt);
 
   Handle<PyDict> kw_args;
   if (!AssignKwArgsFromActualArgs(ctx, actual_args, kwarg_keys, kw_args)) {
