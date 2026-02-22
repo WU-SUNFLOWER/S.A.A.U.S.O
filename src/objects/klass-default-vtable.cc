@@ -74,10 +74,10 @@ void Klass::Virtual_Default_Print(Handle<PyObject> self) {
     auto* isolate = Isolate::Current();
     Handle<PyObject> s;
 
-    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+    ASSIGN_RETURN_ON_EXCEPTION_VOID(
         isolate, s,
         Execution::Call(isolate, method, self, Handle<PyTuple>::null(),
-                        Handle<PyDict>::null()), );
+                        Handle<PyDict>::null()));
 
     PyObject::Print(s);
     return;

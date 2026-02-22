@@ -505,8 +505,7 @@ void Interpreter::EvalCurrentFrame() {
       auto value = item->Get(1);
 
       if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
-        Runtime_ThrowTypeError(
-            "got multiple values for keyword argument");
+        Runtime_ThrowTypeError("got multiple values for keyword argument");
         goto pending_exception_unwind;
       }
 
@@ -916,8 +915,7 @@ void Interpreter::EvalCurrentFrame() {
     if ((op_arg & 1) != 0) {
       Handle<PyObject> kw = POP();
       if (!IsPyDict(kw)) [[unlikely]] {
-        Runtime_ThrowTypeError(
-            "CALL_FUNCTION_EX expected a dict for **kwargs");
+        Runtime_ThrowTypeError("CALL_FUNCTION_EX expected a dict for **kwargs");
         goto pending_exception_unwind;
       }
       kw_args = Handle<PyDict>::cast(kw);
@@ -1088,9 +1086,12 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame = FrameObjectBuilder::BuildFastPath(
-        Handle<PyFunction>::cast(callable), host, actual_args, kwarg_keys);
-    if (frame == nullptr) return;
+    FrameObject* frame;
+    ASSIGN_RETURN_ON_EXCEPTION_VOID(
+        isolate_, frame,
+        FrameObjectBuilder::BuildFastPath(Handle<PyFunction>::cast(callable),
+                                          host, actual_args, kwarg_keys));
+
     EnterFrame(frame);
     return;
   }
@@ -1126,9 +1127,12 @@ void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
   NormalizeCallable(callable, host);
 
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
-        Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
-    if (frame == nullptr) return;
+    FrameObject* frame;
+    ASSIGN_RETURN_ON_EXCEPTION_VOID(
+        isolate_, frame,
+        FrameObjectBuilder::BuildSlowPath(Handle<PyFunction>::cast(callable),
+                                          host, pos_args, kw_args));
+
     EnterFrame(frame);
     return;
   }

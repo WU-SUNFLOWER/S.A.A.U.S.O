@@ -23,6 +23,9 @@ namespace saauso::internal {
 #define ASSIGN_RETURN_ON_EXCEPTION(isolate, dst, call) \
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, dst, call, kNullMaybe)
 
+#define ASSIGN_RETURN_ON_EXCEPTION_VOID(isolate, dst, call) \
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, dst, call, )
+
 //////////////////////////////////////////////////////////////////////////
 
 #define RETURN_ON_EXCEPTION_VALUE(isolate, call, value)            \

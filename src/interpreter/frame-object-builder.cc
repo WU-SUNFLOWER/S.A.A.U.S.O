@@ -10,7 +10,9 @@
 #include <cstdint>
 
 #include "include/saauso-internal.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/interpreter/frame-object.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object.h"
@@ -119,10 +121,10 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
 // 若缺失形参，抛出 TypeError 并返回 false；否则返回 true。
 bool CheckMissingArgs(const FrameBuildContext& ctx) {
   if (ctx.localsplus_idx < ctx.real_formal_pos_arg_cnt) {
-    Runtime_ThrowTypeErrorf(
-        "%s() missing %" PRId64 " required positional argument",
-        ctx.func_name->buffer(),
-        ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
+    Runtime_ThrowTypeErrorf("%s() missing %" PRId64
+                            " required positional argument",
+                            ctx.func_name->buffer(),
+                            ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
     return false;
   }
   return true;
@@ -134,8 +136,9 @@ int64_t ComputeExtraPosArgCountFromPosArgs(int64_t actual_pos_cnt,
   return std::max<int64_t>(0, actual_pos_cnt - formal_pos_arg_cnt);
 }
 
-Handle<PyTuple> PackExtraPosArgsFromPosArgs(FrameBuildContext& ctx,
-                                            Handle<PyTuple> actual_pos_args) {
+MaybeHandle<PyTuple> PackExtraPosArgsFromPosArgs(
+    FrameBuildContext& ctx,
+    Handle<PyTuple> actual_pos_args) {
   int64_t actual_pos_cnt =
       actual_pos_args.is_null() ? 0 : actual_pos_args->length();
   int64_t extra_pos_cnt = ComputeExtraPosArgCountFromPosArgs(
@@ -154,7 +157,7 @@ Handle<PyTuple> PackExtraPosArgsFromPosArgs(FrameBuildContext& ctx,
           " were given",
           ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
           actual_pos_cnt + ctx.self_arg_cnt);
-      return Handle<PyTuple>::null();
+      return kNullMaybeHandle;
     }
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
@@ -166,9 +169,9 @@ Handle<PyTuple> PackExtraPosArgsFromPosArgs(FrameBuildContext& ctx,
   return extend_pos_args;
 }
 
-Handle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
-                                               Handle<PyTuple> actual_args,
-                                               int64_t actual_kw_arg_cnt) {
+MaybeHandle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
+                                                    Handle<PyTuple> actual_args,
+                                                    int64_t actual_kw_arg_cnt) {
   int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();
   int64_t actual_pos_cnt = actual_arg_cnt - actual_kw_arg_cnt;
   int64_t extra_pos_cnt = ComputeExtraPosArgCountFromPosArgs(
@@ -187,7 +190,7 @@ Handle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
           " were given",
           ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
           actual_arg_cnt + ctx.self_arg_cnt);
-      return Handle<PyTuple>::null();
+      return kNullMaybeHandle;
     }
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
@@ -214,19 +217,21 @@ void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
 
 }  // namespace
 
-FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
-                                               Handle<PyObject> host,
-                                               Handle<PyTuple> actual_pos_args,
-                                               Handle<PyDict> actual_kw_args) {
+Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
+    Handle<PyFunction> func,
+    Handle<PyObject> host,
+    Handle<PyTuple> actual_pos_args,
+    Handle<PyDict> actual_kw_args) {
   return BuildSlowPath(func, host, actual_pos_args, actual_kw_args,
                        GetDefaultBoundLocals(func));
 }
 
-FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
-                                               Handle<PyObject> host,
-                                               Handle<PyTuple> actual_pos_args,
-                                               Handle<PyDict> actual_kw_args,
-                                               Handle<PyDict> bound_locals) {
+Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
+    Handle<PyFunction> func,
+    Handle<PyObject> host,
+    Handle<PyTuple> actual_pos_args,
+    Handle<PyDict> actual_kw_args,
+    Handle<PyDict> bound_locals) {
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
@@ -266,10 +271,9 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
       if (index_in_var_args != PyTuple::kNotFound) {
         // 不允许重复对形参赋值。
         if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-          Runtime_ThrowTypeErrorf(
-              "%s() got multiple values for argument '%s'",
-              ctx.func_name->buffer(), key->buffer());
-          return nullptr;
+          Runtime_ThrowTypeErrorf("%s() got multiple values for argument '%s'",
+                                  ctx.func_name->buffer(), key->buffer());
+          return kNullMaybe;
         }
 
         // 给形参赋值。
@@ -283,10 +287,9 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
         PyDict::Put(kw_args, key, value);
       } else {
         // 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误。
-        Runtime_ThrowTypeErrorf(
-            "%s() got an unexpected keyword argument '%s'",
-            ctx.func_name->buffer(), key->buffer());
-        return nullptr;
+        Runtime_ThrowTypeErrorf("%s() got an unexpected keyword argument '%s'",
+                                ctx.func_name->buffer(), key->buffer());
+        return kNullMaybe;
       }
 
       // 刷新迭代器。
@@ -295,36 +298,39 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
   }
 
   FillDefaultArgs(ctx, func->default_args());
-  if (!CheckMissingArgs(ctx)) return nullptr;
-
-  // 打包拓展参数（*args），并注入到 fast_locals。
-  Handle<PyTuple> extend_pos_args =
-      PackExtraPosArgsFromPosArgs(ctx, actual_pos_args);
-  if (extend_pos_args.is_null() &&
-      Isolate::Current()->exception_state()->HasPendingException()) {
-    return nullptr;
+  if (!CheckMissingArgs(ctx)) {
+    return kNullMaybe;
   }
+
+  // 打包拓展参数（*args）
+  Handle<PyTuple> extend_pos_args;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), extend_pos_args,
+                             PackExtraPosArgsFromPosArgs(ctx, actual_pos_args));
+
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
 
-  return FrameObject::Create(
+  auto* frame_object = FrameObject::Create(
       *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
       *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object, *ctx.func);
+  return Maybe<FrameObject*>(frame_object);
 }
 
-FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
-                                               Handle<PyObject> host,
-                                               Handle<PyTuple> actual_args,
-                                               Handle<PyTuple> kwarg_keys) {
+Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
+    Handle<PyFunction> func,
+    Handle<PyObject> host,
+    Handle<PyTuple> actual_args,
+    Handle<PyTuple> kwarg_keys) {
   return BuildFastPath(func, host, actual_args, kwarg_keys,
                        GetDefaultBoundLocals(func));
 }
 
-FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
-                                               Handle<PyObject> host,
-                                               Handle<PyTuple> actual_args,
-                                               Handle<PyTuple> kwarg_keys,
-                                               Handle<PyDict> bound_locals) {
+Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
+    Handle<PyFunction> func,
+    Handle<PyObject> host,
+    Handle<PyTuple> actual_args,
+    Handle<PyTuple> kwarg_keys,
+    Handle<PyDict> bound_locals) {
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
@@ -363,10 +369,9 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
     if (index_in_var_args != PyTuple::kNotFound) {
       // 不允许重复对形参赋值。
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-        Runtime_ThrowTypeErrorf(
-            "%s() got multiple values for argument '%s'",
-            ctx.func_name->buffer(), key->buffer());
-        return nullptr;
+        Runtime_ThrowTypeErrorf("%s() got multiple values for argument '%s'",
+                                ctx.func_name->buffer(), key->buffer());
+        return kNullMaybe;
       }
 
       // 检查通过，给形参赋值。
@@ -385,28 +390,29 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
     }
 
     // 3. 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误。
-    Runtime_ThrowTypeErrorf(
-        "%s() got an unexpected keyword argument '%s'",
-        ctx.func_name->buffer(), key->buffer());
-    return nullptr;
+    Runtime_ThrowTypeErrorf("%s() got an unexpected keyword argument '%s'",
+                            ctx.func_name->buffer(), key->buffer());
+    return kNullMaybe;
   }
 
   FillDefaultArgs(ctx, func->default_args());
-  if (!CheckMissingArgs(ctx)) return nullptr;
-
-  // 打包拓展参数（*args），并注入到 fast_locals。
-  Handle<PyTuple> extend_pos_args =
-      PackExtraPosArgsFromActualArgs(ctx, actual_args, actual_kw_arg_cnt);
-  if (extend_pos_args.is_null() &&
-      Isolate::Current()->exception_state()->HasPendingException()) {
-    return nullptr;
+  if (!CheckMissingArgs(ctx)) {
+    return kNullMaybe;
   }
+
+  // 打包拓展参数（*args）
+  Handle<PyTuple> extend_pos_args;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      Isolate::Current(), extend_pos_args,
+      PackExtraPosArgsFromActualArgs(ctx, actual_args, actual_kw_arg_cnt));
+
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
 
-  return FrameObject::Create(
+  auto* frame_object = FrameObject::Create(
       *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
       *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object, *ctx.func);
+  return Maybe<FrameObject*>(frame_object);
 }
 
 }  // namespace saauso::internal

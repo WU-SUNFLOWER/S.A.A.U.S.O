@@ -57,9 +57,9 @@ void ThrowNewException(Handle<PyString> exception_type_name,
   auto* isolate = Isolate::Current();
   Handle<PyObject> exception;
 
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+  ASSIGN_RETURN_ON_EXCEPTION_VOID(
       isolate, exception,
-      NewExceptionInstance(exception_type_name, message_or_null), );
+      NewExceptionInstance(exception_type_name, message_or_null));
 
   state->Throw(*exception);
 }

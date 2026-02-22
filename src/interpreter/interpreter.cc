@@ -6,7 +6,6 @@
 
 #include "src/builtins/builtins-definitions.h"
 #include "src/execution/exception-utils.h"
-#include "src/runtime/runtime-exceptions.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -35,6 +34,7 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -96,10 +96,12 @@ void Interpreter::Run(Handle<PyFunction> boilerplate) {
 
   boilerplate->set_func_globals(globals);
 
-  FrameObject* frame = FrameObjectBuilder::BuildFastPath(
-      boilerplate, Handle<PyObject>::null(), Handle<PyTuple>::null(),
-      Handle<PyTuple>::null(), globals);
-  if (frame == nullptr) return;
+  FrameObject* frame;
+  ASSIGN_RETURN_ON_EXCEPTION_VOID(
+      isolate_, frame,
+      FrameObjectBuilder::BuildFastPath(boilerplate, Handle<PyObject>::null(),
+                                        Handle<PyTuple>::null(),
+                                        Handle<PyTuple>::null(), globals));
 
   EnterFrame(frame);
   EvalCurrentFrame();
@@ -136,10 +138,12 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
 
   // 如果是普通的python函数，那么请求解释器进行处理
   if (IsNormalPyFunction(callable)) {
-    FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
-        Handle<PyFunction>::cast(callable), host, pos_args, kw_args,
-        extend_args...);
-    if (frame == nullptr) return kNullMaybeHandle;
+    FrameObject* frame;
+    // 构建栈帧
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
+                               FrameObjectBuilder::BuildSlowPath(
+                                   Handle<PyFunction>::cast(callable), host,
+                                   pos_args, kw_args, extend_args...));
 
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);
