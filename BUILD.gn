@@ -208,6 +208,8 @@ source_set("saauso_core") {
     "//src/modules/module-utils.h",
 
     # builtins (内建函数)
+    "//src/builtins/builtins-base-exception.cc",
+    "//src/builtins/builtins-base-exception.h",
     "//src/builtins/builtins-debug.cc",
     "//src/builtins/builtins-definitions.h",
     "//src/builtins/builtins-exec.cc",
