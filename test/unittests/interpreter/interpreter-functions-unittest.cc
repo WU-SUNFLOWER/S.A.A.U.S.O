@@ -2,10 +2,15 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <string>
 #include <string_view>
 
+#include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -450,114 +455,79 @@ print(merge_sort(data))
 }
 
 TEST_F(BasicInterpreterTest, FunctionCallErrors) {
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // 辅助：执行脚本并断言产生了包含 expected_substr 的 TypeError。
+  auto expect_type_error = [](std::string_view source,
+                              const char* expected_substr = "TypeError") {
+    HandleScope scope;
+    isolate()->interpreter()->Run(
+        Compiler::CompileSource(isolate(), source, kTestFileName));
+    ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+    auto f = Runtime_FormatPendingExceptionForStderr();
+    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+    EXPECT_NE(msg.find(expected_substr), std::string::npos) << "got: " << msg;
+    isolate()->exception_state()->Clear();
+  };
+
+  // 缺失必填位置参数
+  expect_type_error(R"(
 def foo(a, b = 1, c = 2):
     return a + b + c
-
 foo()
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // **kwargs 导致 "got multiple values for argument"
+  expect_type_error(R"(
 def foo(a, b, c):
     return a + b + c
-
 d = {"a": 2}
 foo(1, 2, 3, **d)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // DICT_MERGE 重复关键字
+  expect_type_error(R"(
 def foo(a, b, c):
     return a + b + c
-
 d1 = {"b": 2}
 d2 = {"b": 3}
 foo(1, **d1, **d2, c = 4)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // 关键字参数与 **kwargs 重复
+  expect_type_error(R"(
 def foo(a, b, c):
     return a + b + c
-
 d = {"b": 2}
 foo(1, b = 3, c = 4, **d)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // 位置参数过多
+  expect_type_error(R"(
 def bar(a, b, c):
     return a + b + c
-
 bar(1, 2, 3, 4)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // 位置参数与关键字参数重复
+  expect_type_error(R"(
 def bar(a, b, c):
     return a + b + c
-
 bar(1, a = 2, b = 3, c = 4)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // *args 展开后与关键字参数重复
+  expect_type_error(R"(
 def bar(a, b, c):
     return a + b + c
-
 t = (1, 2, 3)
 bar(*t, b = 2, c = 3)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  // 意外的关键字参数
+  expect_type_error(R"(
 def bar(a, b, c):
     return a + b + c
-
 bar(d = 1, a = 2, b = 3, c = 4)
-)";
-        RunScript(kSource, kTestFileName);
-      },
-      "TypeError");
+)");
 }
 
 }  // namespace saauso::internal

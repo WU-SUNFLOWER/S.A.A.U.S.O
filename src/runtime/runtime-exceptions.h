@@ -18,11 +18,14 @@ void Runtime_ThrowRuntimeError(const char* message);
 void Runtime_ThrowValueError(const char* message);
 void Runtime_ThrowIndexError(const char* message);
 void Runtime_ThrowKeyError(const char* message);
+void Runtime_ThrowNameError(const char* message);
 
 void Runtime_ThrowTypeErrorf(const char* fmt, ...);
+void Runtime_ThrowRuntimeErrorf(const char* fmt, ...);
 void Runtime_ThrowValueErrorf(const char* fmt, ...);
 void Runtime_ThrowIndexErrorf(const char* fmt, ...);
 void Runtime_ThrowKeyErrorf(const char* fmt, ...);
+void Runtime_ThrowNameErrorf(const char* fmt, ...);
 
 Handle<PyString> Runtime_FormatPendingExceptionForStderr();
 

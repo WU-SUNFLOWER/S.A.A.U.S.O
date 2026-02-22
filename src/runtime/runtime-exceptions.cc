@@ -132,6 +132,14 @@ void Runtime_ThrowKeyError(const char* message) {
   ThrowNewException(ST(key_err), PyString::NewInstance(message));
 }
 
+void Runtime_ThrowNameError(const char* message) {
+  if (message == nullptr) {
+    ThrowNewException(ST(name_err), Handle<PyString>::null());
+    return;
+  }
+  ThrowNewException(ST(name_err), PyString::NewInstance(message));
+}
+
 void Runtime_ThrowTypeErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
     Runtime_ThrowTypeError(nullptr);
@@ -140,6 +148,17 @@ void Runtime_ThrowTypeErrorf(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   ThrowFormattedError(Runtime_ThrowTypeError, fmt, ap);
+  va_end(ap);
+}
+
+void Runtime_ThrowRuntimeErrorf(const char* fmt, ...) {
+  if (fmt == nullptr) {
+    Runtime_ThrowRuntimeError(nullptr);
+    return;
+  }
+  va_list ap;
+  va_start(ap, fmt);
+  ThrowFormattedError(Runtime_ThrowRuntimeError, fmt, ap);
   va_end(ap);
 }
 
@@ -173,6 +192,17 @@ void Runtime_ThrowKeyErrorf(const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   ThrowFormattedError(Runtime_ThrowKeyError, fmt, ap);
+  va_end(ap);
+}
+
+void Runtime_ThrowNameErrorf(const char* fmt, ...) {
+  if (fmt == nullptr) {
+    Runtime_ThrowNameError(nullptr);
+    return;
+  }
+  va_list ap;
+  va_start(ap, fmt);
+  ThrowFormattedError(Runtime_ThrowNameError, fmt, ap);
   va_end(ap);
 }
 

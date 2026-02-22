@@ -25,8 +25,8 @@ class PyTuple;
 //    - FastPath：输入为 actual_args(tuple) + kwarg_keys(tuple)，仅用 tuple
 //    索引完成 kw 处理，
 //      避免 dict 迭代与额外中间结构，保证高性能。
-// 3) 当前错误处理策略与旧实现一致：stderr +
-// exit(1)，后续异常体系完善时再统一替换。
+// 3) 参数校验失败时通过 Runtime_Throw* 设置 pending exception 并返回
+//    nullptr，调用方需检查返回值。
 class FrameObjectBuilder {
  public:
   FrameObjectBuilder() = delete;

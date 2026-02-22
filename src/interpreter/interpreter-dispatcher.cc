@@ -380,9 +380,8 @@ void Interpreter::EvalCurrentFrame() {
     // Python中栈帧的locals是按需创建的。
     // 我们不保证一个函数栈帧当中一定有一个有效的locals字典！
     if (locals.is_null()) [[unlikely]] {
-      std::fprintf(stderr, "no locals found when storing %s\n",
-                   Handle<PyString>::cast(key)->buffer());
-      std::exit(1);
+      Runtime_ThrowRuntimeError("no locals found when storing name");
+      goto pending_exception_unwind;
     }
 
     PyDict::Put(locals, key, POP());
@@ -457,9 +456,9 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    std::fprintf(stderr, "NameError: name '%s' is not defined\n",
-                 Tagged<PyString>::cast(key)->buffer());
-    std::exit(1);
+    Runtime_ThrowNameErrorf("name '%s' is not defined",
+                            Tagged<PyString>::cast(key)->buffer());
+    goto pending_exception_unwind;
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildTuple, {
@@ -492,8 +491,8 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> update = POP();
     Handle<PyObject> target = TOP();
     if (!IsPyDict(*target) || !IsPyDict(*update)) {
-      std::fprintf(stderr, "TypeError: DICT_MERGE expected dict operands\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("DICT_MERGE expected dict operands");
+      goto pending_exception_unwind;
     }
 
     auto target_dict = Handle<PyDict>::cast(target);
@@ -506,9 +505,9 @@ void Interpreter::EvalCurrentFrame() {
       auto value = item->Get(1);
 
       if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
-        std::fprintf(stderr,
-                     "TypeError: got multiple values for keyword argument\n");
-        std::exit(1);
+        Runtime_ThrowTypeError(
+            "got multiple values for keyword argument");
+        goto pending_exception_unwind;
       }
 
       PyDict::Put(target_dict, key, value);
@@ -570,8 +569,9 @@ void Interpreter::EvalCurrentFrame() {
         PUSH(PyObject::GreaterEqual(l, r));
         break;
       default:
-        std::fprintf(stderr, "unknown compare op type: %d\n", compare_op_type);
-        std::exit(1);
+        Runtime_ThrowRuntimeErrorf("unknown compare op type: %d",
+                                   compare_op_type);
+        goto pending_exception_unwind;
     }
     if (isolate_->exception_state()->HasPendingException()) {
       POP();
@@ -621,8 +621,8 @@ void Interpreter::EvalCurrentFrame() {
     auto parent_module_name_obj =
         PyObject::GetAttr(parent_module, ST(name), false);
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
-      std::fprintf(stderr, "TypeError: module __name__ must be a string\n");
-      std::exit(1);
+      Runtime_ThrowTypeError("module __name__ must be a string");
+      goto pending_exception_unwind;
     }
 
     auto parent_module_name = Handle<PyString>::cast(parent_module_name_obj);
@@ -686,9 +686,9 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    std::fprintf(stderr, "NameError: name '%s' is not defined\n",
-                 Handle<PyString>::cast(key)->buffer());
-    std::exit(1);
+    Runtime_ThrowNameErrorf("name '%s' is not defined",
+                            Handle<PyString>::cast(key)->buffer());
+    goto pending_exception_unwind;
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {
@@ -819,17 +819,16 @@ void Interpreter::EvalCurrentFrame() {
         code_object->localsplusnames()->GetTagged(op_arg));
     char kind = code_object->localspluskinds()->Get(op_arg);
     if (kind & PyCodeObject::LocalsPlusKind::kFastFree) {
-      std::fprintf(stderr,
-                   "NameError: cannot access free variable '%s' where it is "
-                   "not associated with a value in enclosing scope\n",
-                   var_name->buffer());
+      Runtime_ThrowNameErrorf(
+          "cannot access free variable '%s' where it is "
+          "not associated with a value in enclosing scope",
+          var_name->buffer());
     } else {
-      std::fprintf(stderr,
-                   "UnboundLocalError: local variable '%s' referenced before "
-                   "assignment\n",
-                   var_name->buffer());
+      Runtime_ThrowNameErrorf(
+          "local variable '%s' referenced before assignment",
+          var_name->buffer());
     }
-    std::exit(1);
+    goto pending_exception_unwind;
   })
 
   // 修改cell对象所指向的实际值对象
@@ -916,11 +915,10 @@ void Interpreter::EvalCurrentFrame() {
     // `op_arg & 1`表示栈顶存在关键字参数字典
     if ((op_arg & 1) != 0) {
       Handle<PyObject> kw = POP();
-      if (!IsPyDict(*kw)) [[unlikely]] {
-        std::fprintf(
-            stderr,
-            "TypeError: CALL_FUNCTION_EX expected a dict for **kwargs\n");
-        std::exit(1);
+      if (!IsPyDict(kw)) [[unlikely]] {
+        Runtime_ThrowTypeError(
+            "CALL_FUNCTION_EX expected a dict for **kwargs");
+        goto pending_exception_unwind;
       }
       kw_args = Handle<PyDict>::cast(kw);
     }
@@ -981,9 +979,9 @@ void Interpreter::EvalCurrentFrame() {
         break;
       }
       default:
-        std::fprintf(stderr, "unsupported intrinsic for CALL_INTRINSIC_1: %d\n",
-                     op_arg);
-        std::exit(1);
+        Runtime_ThrowRuntimeErrorf(
+            "unsupported intrinsic for CALL_INTRINSIC_1: %d", op_arg);
+        goto pending_exception_unwind;
     }
   })
 
@@ -1055,8 +1053,9 @@ pending_exception_unwind: {
 #undef DISPATCH
 
 unknown_bytecode:
-  std::fprintf(stderr, "unknown bytecode %d, arguments %d\n", op_code, op_arg);
-  std::exit(1);
+  Runtime_ThrowRuntimeErrorf("unknown bytecode %d, arguments %d", op_code,
+                             op_arg);
+  goto pending_exception_unwind;
 
 exit_interpreter:
   return;
@@ -1091,6 +1090,7 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObjectBuilder::BuildFastPath(
         Handle<PyFunction>::cast(callable), host, actual_args, kwarg_keys);
+    if (frame == nullptr) return;
     EnterFrame(frame);
     return;
   }
@@ -1128,6 +1128,7 @@ void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
         Handle<PyFunction>::cast(callable), host, pos_args, kw_args);
+    if (frame == nullptr) return;
     EnterFrame(frame);
     return;
   }

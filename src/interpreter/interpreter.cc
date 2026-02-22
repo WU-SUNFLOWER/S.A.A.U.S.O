@@ -4,11 +4,9 @@
 
 #include "src/interpreter/interpreter.h"
 
-#include <cstdio>
-#include <cstdlib>
-
 #include "src/builtins/builtins-definitions.h"
 #include "src/execution/exception-utils.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -83,18 +81,12 @@ void Interpreter::ClearPendingException() {
 }
 
 Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
-  if (current_frame_ == nullptr) [[unlikely]] {
-    std::fprintf(stderr, "RuntimeError: no current frame\n");
-    std::exit(1);
-  }
+  assert(current_frame_ != nullptr);
   return current_frame_->globals();
 }
 
 Handle<PyDict> Interpreter::CurrentFrameLocals() const {
-  if (current_frame_ == nullptr) [[unlikely]] {
-    std::fprintf(stderr, "RuntimeError: no current frame\n");
-    std::exit(1);
-  }
+  assert(current_frame_ != nullptr);
   return current_frame_->locals();
 }
 
@@ -104,9 +96,12 @@ void Interpreter::Run(Handle<PyFunction> boilerplate) {
 
   boilerplate->set_func_globals(globals);
 
-  EnterFrame(FrameObjectBuilder::BuildFastPath(
+  FrameObject* frame = FrameObjectBuilder::BuildFastPath(
       boilerplate, Handle<PyObject>::null(), Handle<PyTuple>::null(),
-      Handle<PyTuple>::null(), globals));
+      Handle<PyTuple>::null(), globals);
+  if (frame == nullptr) return;
+
+  EnterFrame(frame);
   EvalCurrentFrame();
   DestroyCurrentFrame();
 }
@@ -144,6 +139,8 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     FrameObject* frame = FrameObjectBuilder::BuildSlowPath(
         Handle<PyFunction>::cast(callable), host, pos_args, kw_args,
         extend_args...);
+    if (frame == nullptr) return kNullMaybeHandle;
+
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);
 

@@ -2,8 +2,12 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -130,8 +134,13 @@ def outer():
 outer()
 )";
 
-  EXPECT_EXIT({ RunScript(kSource, kInterpreterTestFileName); },
-              ::testing::ExitedWithCode(1), "free variable 'x'");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
+  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  auto f = Runtime_FormatPendingExceptionForStderr();
+  std::string msg(f->buffer(), static_cast<size_t>(f->length()));
+  EXPECT_NE(msg.find("free variable"), std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, SharedCellAcrossClosures) {

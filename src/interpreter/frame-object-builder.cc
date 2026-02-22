@@ -8,9 +8,9 @@
 #include <cassert>
 #include <cinttypes>
 #include <cstdint>
-#include <cstdlib>
 
 #include "include/saauso-internal.h"
+#include "src/execution/isolate.h"
 #include "src/interpreter/frame-object.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object.h"
@@ -20,6 +20,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
@@ -114,16 +115,17 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
   }
 }
 
-void CheckMissingArgs(const FrameBuildContext& ctx) {
-  // 如果还有位置形参没有有效值，那么抛出错误。
+// 检查是否有位置形参没有有效值。
+// 若缺失形参，抛出 TypeError 并返回 false；否则返回 true。
+bool CheckMissingArgs(const FrameBuildContext& ctx) {
   if (ctx.localsplus_idx < ctx.real_formal_pos_arg_cnt) {
-    std::fprintf(stderr,
-                 "TypeError: %s() missing %" PRId64
-                 " required positional argument\n",
-                 ctx.func_name->buffer(),
-                 ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "%s() missing %" PRId64 " required positional argument",
+        ctx.func_name->buffer(),
+        ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
+    return false;
   }
+  return true;
 }
 
 int64_t ComputeExtraPosArgCountFromPosArgs(int64_t actual_pos_cnt,
@@ -147,12 +149,12 @@ Handle<PyTuple> PackExtraPosArgsFromPosArgs(FrameBuildContext& ctx,
   if (!actual_pos_args.is_null() && extra_pos_cnt > 0) {
     // 打包拓展参数：如果函数不接受扩展参数，直接报错。
     if (extend_pos_args.is_null()) {
-      std::fprintf(stderr,
-                   "TypeError: %s() takes %" PRId64
-                   " positional arguments but %" PRId64 " were given",
-                   ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
-                   actual_pos_cnt + ctx.self_arg_cnt);
-      std::exit(1);
+      Runtime_ThrowTypeErrorf(
+          "%s() takes %" PRId64 " positional arguments but %" PRId64
+          " were given",
+          ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
+          actual_pos_cnt + ctx.self_arg_cnt);
+      return Handle<PyTuple>::null();
     }
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
@@ -180,12 +182,12 @@ Handle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
   if (extra_pos_cnt > 0) {
     // 打包拓展参数：如果函数不接受扩展参数，直接报错。
     if (extend_pos_args.is_null()) {
-      std::fprintf(stderr,
-                   "TypeError: %s() takes %" PRId64
-                   " positional arguments but %" PRId64 " were given",
-                   ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
-                   actual_arg_cnt + ctx.self_arg_cnt);
-      std::exit(1);
+      Runtime_ThrowTypeErrorf(
+          "%s() takes %" PRId64 " positional arguments but %" PRId64
+          " were given",
+          ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
+          actual_arg_cnt + ctx.self_arg_cnt);
+      return Handle<PyTuple>::null();
     }
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
@@ -264,10 +266,10 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
       if (index_in_var_args != PyTuple::kNotFound) {
         // 不允许重复对形参赋值。
         if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-          std::fprintf(
-              stderr, "TypeError: %s() got multiple values for argument '%s'\n",
+          Runtime_ThrowTypeErrorf(
+              "%s() got multiple values for argument '%s'",
               ctx.func_name->buffer(), key->buffer());
-          std::exit(1);
+          return nullptr;
         }
 
         // 给形参赋值。
@@ -281,10 +283,10 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
         PyDict::Put(kw_args, key, value);
       } else {
         // 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误。
-        std::fprintf(
-            stderr, "TypeError: %s() got an unexpected keyword argument '%s'\n",
+        Runtime_ThrowTypeErrorf(
+            "%s() got an unexpected keyword argument '%s'",
             ctx.func_name->buffer(), key->buffer());
-        std::exit(1);
+        return nullptr;
       }
 
       // 刷新迭代器。
@@ -293,11 +295,15 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(Handle<PyFunction> func,
   }
 
   FillDefaultArgs(ctx, func->default_args());
-  CheckMissingArgs(ctx);
+  if (!CheckMissingArgs(ctx)) return nullptr;
 
   // 打包拓展参数（*args），并注入到 fast_locals。
   Handle<PyTuple> extend_pos_args =
       PackExtraPosArgsFromPosArgs(ctx, actual_pos_args);
+  if (extend_pos_args.is_null() &&
+      Isolate::Current()->exception_state()->HasPendingException()) {
+    return nullptr;
+  }
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
 
@@ -357,10 +363,10 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
     if (index_in_var_args != PyTuple::kNotFound) {
       // 不允许重复对形参赋值。
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-        std::fprintf(stderr,
-                     "TypeError: %s() got multiple values for argument '%s'\n",
-                     ctx.func_name->buffer(), key->buffer());
-        std::exit(1);
+        Runtime_ThrowTypeErrorf(
+            "%s() got multiple values for argument '%s'",
+            ctx.func_name->buffer(), key->buffer());
+        return nullptr;
       }
 
       // 检查通过，给形参赋值。
@@ -379,18 +385,22 @@ FrameObject* FrameObjectBuilder::BuildFastPath(Handle<PyFunction> func,
     }
 
     // 3. 键值对参数既没有命中形参，函数也不支持接收键值对参数包，那么抛出错误。
-    std::fprintf(stderr,
-                 "TypeError: %s() got an unexpected keyword argument '%s'\n",
-                 ctx.func_name->buffer(), key->buffer());
-    std::exit(1);
+    Runtime_ThrowTypeErrorf(
+        "%s() got an unexpected keyword argument '%s'",
+        ctx.func_name->buffer(), key->buffer());
+    return nullptr;
   }
 
   FillDefaultArgs(ctx, func->default_args());
-  CheckMissingArgs(ctx);
+  if (!CheckMissingArgs(ctx)) return nullptr;
 
   // 打包拓展参数（*args），并注入到 fast_locals。
   Handle<PyTuple> extend_pos_args =
       PackExtraPosArgsFromActualArgs(ctx, actual_args, actual_kw_arg_cnt);
+  if (extend_pos_args.is_null() &&
+      Isolate::Current()->exception_state()->HasPendingException()) {
+    return nullptr;
+  }
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
 
