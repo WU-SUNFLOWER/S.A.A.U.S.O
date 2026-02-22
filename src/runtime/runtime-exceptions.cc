@@ -67,24 +67,13 @@ void ThrowNewException(Handle<PyString> exception_type_name,
 // 辅助函数：根据枚举类型获取对应的异常类名字符串 Handle
 Handle<PyString> GetExceptionStringHandle(ExceptionType type) {
   switch (type) {
-    case ExceptionType::kTypeError:
-      return ST(type_err);
-    case ExceptionType::kRuntimeError:
-      return ST(runtime_err);
-    case ExceptionType::kValueError:
-      return ST(value_err);
-    case ExceptionType::kIndexError:
-      return ST(index_err);
-    case ExceptionType::kKeyError:
-      return ST(key_err);
-    case ExceptionType::kNameError:
-      return ST(name_err);
-    case ExceptionType::kAttributeError:
-      return ST(attr_err);
-    case ExceptionType::kZeroDivisionError:
-      return ST(div_zero);
-    case ExceptionType::kStopIteration:
-      return ST(stop_iter);
+#define DEFINE_EXCEPTION_TYPE_CASE(type, string_table_name, _) \
+  case ExceptionType::type:                                    \
+    return ST(string_table_name);
+
+    EXCEPTION_TYPE_LIST(DEFINE_EXCEPTION_TYPE_CASE)
+
+#undef DEFINE_EXCEPTION_TYPE_CASE
     default:
       // 默认回退到 RuntimeError
       return ST(runtime_err);

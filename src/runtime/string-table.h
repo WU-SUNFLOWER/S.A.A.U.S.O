@@ -7,6 +7,7 @@
 
 #include "src/build/build_config.h"
 #include "src/build/buildflag.h"
+#include "src/execution/exception-types.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-string.h"
@@ -59,19 +60,6 @@ class ObjectVisitor;
   V(func_sysgc, "sysgc")                 \
   V(func_exec, "exec")
 
-#define PY_EXCEPTION_TYPE_LIST(V)    \
-  V(base_exception, "BaseException") \
-  V(exception, "Exception")          \
-  V(type_err, "TypeError")           \
-  V(value_err, "ValueError")         \
-  V(name_err, "NameError")           \
-  V(attr_err, "AttributeError")      \
-  V(index_err, "IndexError")         \
-  V(key_err, "KeyError")             \
-  V(runtime_err, "RuntimeError")     \
-  V(div_zero, "ZeroDivisionError")   \
-  V(stop_iter, "StopIteration")
-
 #if BUILDFLAG(IS_WIN)
 #define LIB_EXT ".dll"
 #endif  // BUILDFLAG(IS_WIN)
@@ -95,11 +83,19 @@ class StringTable {
   StringTable();
   void Iterate(ObjectVisitor* v);
 
-#define DECLARE_STR_FIELD(name, _) Tagged<PyString> name##_str_{kNullAddress};
-  PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD)
-  PY_BUILTIN_FUNC_LIST(DECLARE_STR_FIELD)
-  PY_EXCEPTION_TYPE_LIST(DECLARE_STR_FIELD)
-  STRING_IN_TABLE_LIST(DECLARE_STR_FIELD)
+#define DECLARE_STR_FIELD(name) Tagged<PyString> name##_str_{kNullAddress};
+#define DECLARE_STR_FIELD_NORMAL(name, _) DECLARE_STR_FIELD(name)
+#define DECLARE_STR_FIELD_FOR_EXCEPTION(ignore1, name, ignore2) \
+  DECLARE_STR_FIELD(name)
+
+  PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD_NORMAL)
+  PY_BUILTIN_FUNC_LIST(DECLARE_STR_FIELD_NORMAL)
+  STRING_IN_TABLE_LIST(DECLARE_STR_FIELD_NORMAL)
+
+  EXCEPTION_TYPE_LIST(DECLARE_STR_FIELD_FOR_EXCEPTION);
+
+#undef DECLARE_STR_FIELD_FOR_EXCEPTION
+#undef DECLARE_STR_FIELD_NORMAL
 #undef DECLARE_STR_FIELD
 };
 
