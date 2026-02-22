@@ -136,15 +136,14 @@ int64_t ComputeExtraPosArgCountFromPosArgs(int64_t actual_pos_cnt,
   return std::max<int64_t>(0, actual_pos_cnt - formal_pos_arg_cnt);
 }
 
-MaybeHandle<PyTuple> PackExtraPosArgsFromPosArgs(
-    FrameBuildContext& ctx,
-    Handle<PyTuple> actual_pos_args) {
+bool PackExtraPosArgsFromPosArgs(const FrameBuildContext& ctx,
+                                 Handle<PyTuple> actual_pos_args,
+                                 Handle<PyTuple>& extend_pos_args) {
   int64_t actual_pos_cnt =
       actual_pos_args.is_null() ? 0 : actual_pos_args->length();
   int64_t extra_pos_cnt = ComputeExtraPosArgCountFromPosArgs(
       actual_pos_cnt, ctx.formal_pos_arg_cnt);
 
-  Handle<PyTuple> extend_pos_args;
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarArgs) {
     extend_pos_args = PyTuple::NewInstance(extra_pos_cnt);
   }
@@ -157,7 +156,7 @@ MaybeHandle<PyTuple> PackExtraPosArgsFromPosArgs(
           " were given",
           ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
           actual_pos_cnt + ctx.self_arg_cnt);
-      return kNullMaybeHandle;
+      return false;
     }
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
@@ -166,18 +165,18 @@ MaybeHandle<PyTuple> PackExtraPosArgsFromPosArgs(
     }
   }
 
-  return extend_pos_args;
+  return true;
 }
 
-MaybeHandle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
-                                                    Handle<PyTuple> actual_args,
-                                                    int64_t actual_kw_arg_cnt) {
+bool PackExtraPosArgsFromActualArgs(const FrameBuildContext& ctx,
+                                    Handle<PyTuple> actual_args,
+                                    int64_t actual_kw_arg_cnt,
+                                    Handle<PyTuple>& extend_pos_args) {
   int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();
   int64_t actual_pos_cnt = actual_arg_cnt - actual_kw_arg_cnt;
   int64_t extra_pos_cnt = ComputeExtraPosArgCountFromPosArgs(
       actual_pos_cnt, ctx.formal_pos_arg_cnt);
 
-  Handle<PyTuple> extend_pos_args;
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarArgs) {
     extend_pos_args = PyTuple::NewInstance(extra_pos_cnt);
   }
@@ -190,7 +189,7 @@ MaybeHandle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
           " were given",
           ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
           actual_arg_cnt + ctx.self_arg_cnt);
-      return kNullMaybeHandle;
+      return false;
     }
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
@@ -199,7 +198,7 @@ MaybeHandle<PyTuple> PackExtraPosArgsFromActualArgs(FrameBuildContext& ctx,
     }
   }
 
-  return extend_pos_args;
+  return true;
 }
 
 void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
@@ -302,10 +301,10 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
     return kNullMaybe;
   }
 
-  // 打包拓展参数（*args）
   Handle<PyTuple> extend_pos_args;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), extend_pos_args,
-                             PackExtraPosArgsFromPosArgs(ctx, actual_pos_args));
+  if (!PackExtraPosArgsFromPosArgs(ctx, actual_pos_args, extend_pos_args)) {
+    return kNullMaybe;
+  }
 
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
@@ -400,11 +399,11 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
     return kNullMaybe;
   }
 
-  // 打包拓展参数（*args）
   Handle<PyTuple> extend_pos_args;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), extend_pos_args,
-      PackExtraPosArgsFromActualArgs(ctx, actual_args, actual_kw_arg_cnt));
+  if (!PackExtraPosArgsFromActualArgs(ctx, actual_args, actual_kw_arg_cnt,
+                                      extend_pos_args)) {
+    return kNullMaybe;
+  }
 
   // 注入 *args/**kwargs。
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
