@@ -13,12 +13,28 @@ namespace saauso::internal {
 class PyObject;
 class PyString;
 
-void Runtime_ThrowTypeError(const char* message);
-void Runtime_ThrowRuntimeError(const char* message);
-void Runtime_ThrowValueError(const char* message);
-void Runtime_ThrowIndexError(const char* message);
-void Runtime_ThrowKeyError(const char* message);
-void Runtime_ThrowNameError(const char* message);
+// 定义所有支持的异常类型枚举。
+// 新增异常类型只需在此处添加枚举值，并在 runtime-exceptions.cc 的
+// GetExceptionStringHandle 中添加对应映射即可。
+enum class ExceptionType {
+  kTypeError,
+  kRuntimeError,
+  kValueError,
+  kIndexError,
+  kKeyError,
+  kNameError,
+  // 预留给未来扩展
+  kAttributeError,
+  kZeroDivisionError,
+  kStopIteration,
+};
+
+// 统一异常抛出 API
+void Runtime_ThrowError(ExceptionType type, const char* message);
+void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...);
+
+// --- 旧 API 兼容层 (Deprecated) ---
+// TODO: 逐步迁移调用点到统一 API，最终移除这些函数。
 
 void Runtime_ThrowTypeErrorf(const char* fmt, ...);
 void Runtime_ThrowRuntimeErrorf(const char* fmt, ...);

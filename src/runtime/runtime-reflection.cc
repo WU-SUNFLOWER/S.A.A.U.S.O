@@ -115,8 +115,7 @@ MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
                                         Handle<PyObject> kwargs) {
   Handle<PyObject> result =
       type_object->own_klass()->ConstructInstance(args, kwargs);
-  if (result.is_null() &&
-      Isolate::Current()->HasPendingException()) {
+  if (result.is_null() && Isolate::Current()->HasPendingException()) {
     return kNullMaybeHandle;
   }
   return result;
@@ -129,13 +128,15 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (!(argc == 1 || argc == 3)) {
-    Runtime_ThrowTypeError("type() takes 1 or 3 arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "type() takes 1 or 3 arguments");
     return kNullMaybeHandle;
   }
 
   if (argc == 1) {
     if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      Runtime_ThrowTypeError("type() takes 1 or 3 arguments");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "type() takes 1 or 3 arguments");
       return kNullMaybeHandle;
     }
 
@@ -182,7 +183,8 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
     for (int64_t i = 0; i < bases_tuple->length(); ++i) {
       Handle<PyObject> base = bases_tuple->Get(i);
       if (!IsPyTypeObject(base)) {
-        Runtime_ThrowTypeError("type() bases must be types");
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "type() bases must be types");
         return kNullMaybeHandle;
       }
       PyList::Append(supers, base);

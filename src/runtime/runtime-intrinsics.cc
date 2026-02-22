@@ -24,7 +24,8 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
                            Handle<PyObject> name_obj,
                            bool ignore_private_member) {
   if (!IsPyString(name_obj)) [[unlikely]] {
-    Runtime_ThrowTypeError("import * name must be a string");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "import * name must be a string");
     return kNullMaybe;
   }
 
@@ -59,7 +60,8 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
     }
   } else {
-    Runtime_ThrowTypeError("__all__ must be a tuple or list");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "__all__ must be a tuple or list");
     return kNullMaybe;
   }
 
@@ -72,7 +74,8 @@ MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   EscapableHandleScope scope;
 
   if (!IsPyList(object)) {
-    Runtime_ThrowTypeError("INTRINSIC_LIST_TO_TUPLE expected a list");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "INTRINSIC_LIST_TO_TUPLE expected a list");
     return kNullMaybeHandle;
   }
 
@@ -89,13 +92,13 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Handle<PyObject> module,
   auto* isolate = Isolate::Current();
 
   if (locals.is_null()) [[unlikely]] {
-    Runtime_ThrowRuntimeError("no locals for import *");
+    Runtime_ThrowError(ExceptionType::kRuntimeError, "no locals for import *");
     return kNullMaybeHandle;
   }
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   if (module_dict.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError("module has no __dict__");
+    Runtime_ThrowError(ExceptionType::kTypeError, "module has no __dict__");
     return kNullMaybeHandle;
   }
 

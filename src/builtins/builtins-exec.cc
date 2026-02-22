@@ -61,7 +61,7 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
 
     auto key = item->Get(0);
     if (!IsPyString(key)) {
-      Runtime_ThrowTypeError("keywords must be strings");
+      Runtime_ThrowError(ExceptionType::kTypeError, "keywords must be strings");
       return false;
     }
 
@@ -80,8 +80,8 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
   Handle<PyObject> globals_from_kwargs = kwargs->Get(globals_key);
   if (!globals_from_kwargs.is_null()) {
     if (globals_from_positional) {
-      Runtime_ThrowTypeError(
-          "exec() got multiple values for argument 'globals'");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "exec() got multiple values for argument 'globals'");
       return false;
     }
     globals = globals_from_kwargs;
@@ -90,8 +90,8 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
   Handle<PyObject> locals_from_kwargs = kwargs->Get(locals_key);
   if (!locals_from_kwargs.is_null()) {
     if (locals_from_positional) {
-      Runtime_ThrowTypeError(
-          "exec() got multiple values for argument 'locals'");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "exec() got multiple values for argument 'locals'");
       return false;
     }
     locals = locals_from_kwargs;
@@ -191,7 +191,8 @@ BUILTIN(Exec) {
       return kNullMaybeHandle;
     }
 #else
-    Runtime_ThrowRuntimeError(
+    Runtime_ThrowError(
+        ExceptionType::kRuntimeError,
         "exec(str) requires embedded CPython compiler; build with "
         "saauso_enable_cpython_compiler=true");
     return kNullMaybeHandle;
@@ -203,7 +204,8 @@ BUILTIN(Exec) {
       return kNullMaybeHandle;
     }
   } else {
-    Runtime_ThrowTypeError("exec() arg 1 must be a string or code object");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "exec() arg 1 must be a string or code object");
     return kNullMaybeHandle;
   }
 

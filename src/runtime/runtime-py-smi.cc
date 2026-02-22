@@ -25,7 +25,8 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowTypeError("int() takes no keyword arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "int() takes no keyword arguments");
     return kNullMaybeHandle;
   }
 
@@ -44,8 +45,8 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
 
   if (argc == 2) {
     if (!IsPyString(value)) {
-      Runtime_ThrowTypeError(
-          "int() can't convert non-string with explicit base");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "int() can't convert non-string with explicit base");
       return kNullMaybeHandle;
     }
 
@@ -54,7 +55,8 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
                                Runtime_DecodeIntLike(pos_args->GetTagged(1)));
 
     if (!(base == 0 || (2 <= base && base <= 36))) {
-      Runtime_ThrowValueError("int() base must be >= 2 and <= 36, or 0");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "int() base must be >= 2 and <= 36, or 0");
       return kNullMaybeHandle;
     }
 
@@ -65,20 +67,24 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
         StringToIntWithBase(text, static_cast<int>(base), &parsed_value);
     if (err != StringToIntError::kOk) {
       if (err == StringToIntError::kOverflow) {
-        Runtime_ThrowValueError("int too large to convert to Smi");
+        Runtime_ThrowError(ExceptionType::kValueError,
+                           "int too large to convert to Smi");
         return kNullMaybeHandle;
       }
       if (err == StringToIntError::kInvalidBase) {
-        Runtime_ThrowValueError("int() base must be >= 2 and <= 36, or 0");
+        Runtime_ThrowError(ExceptionType::kValueError,
+                           "int() base must be >= 2 and <= 36, or 0");
         return kNullMaybeHandle;
       }
-      Runtime_ThrowValueError("invalid literal for int() with explicit base");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "invalid literal for int() with explicit base");
       return kNullMaybeHandle;
     }
 
     if (!InRangeWithRightClose(parsed_value, PySmi::kSmiMinValue,
                                PySmi::kSmiMaxValue)) {
-      Runtime_ThrowValueError("int too large to convert to Smi");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "int too large to convert to Smi");
       return kNullMaybeHandle;
     }
     return scope.Escape(handle(PySmi::FromInt(parsed_value)));
@@ -94,24 +100,28 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   if (IsPyFloat(value)) {
     double v = Handle<PyFloat>::cast(value)->value();
     if (std::isnan(v)) {
-      Runtime_ThrowValueError("cannot convert float NaN to integer");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "cannot convert float NaN to integer");
       return kNullMaybeHandle;
     }
     if (std::isinf(v)) {
-      Runtime_ThrowValueError("cannot convert float infinity to integer");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "cannot convert float infinity to integer");
       return kNullMaybeHandle;
     }
 
     double truncated = std::trunc(v);
     if (truncated < static_cast<double>(std::numeric_limits<int64_t>::min()) ||
         truncated > static_cast<double>(std::numeric_limits<int64_t>::max())) {
-      Runtime_ThrowValueError("int too large to convert to Smi");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "int too large to convert to Smi");
       return kNullMaybeHandle;
     }
     int64_t int_value = static_cast<int64_t>(truncated);
     if (!InRangeWithRightClose(int_value, PySmi::kSmiMinValue,
                                PySmi::kSmiMaxValue)) {
-      Runtime_ThrowValueError("int too large to convert to Smi");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "int too large to convert to Smi");
       return kNullMaybeHandle;
     }
     return scope.Escape(handle(PySmi::FromInt(int_value)));

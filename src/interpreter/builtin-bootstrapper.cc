@@ -57,19 +57,20 @@ MaybeHandle<PyObject> Native_BaseExceptionStr(Handle<PyObject> host,
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowTypeError(
-        "BaseException.__str__() takes no keyword arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__str__() takes no keyword arguments");
     return Handle<PyObject>::null();
   }
 
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
-    Runtime_ThrowTypeError("BaseException.__str__() takes no arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__str__() takes no arguments");
     return Handle<PyObject>::null();
   }
 
   if (host.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError(
-        "BaseException.__str__() expects a non-null receiver");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__str__() expects a non-null receiver");
     return Handle<PyObject>::null();
   }
 
@@ -93,19 +94,20 @@ MaybeHandle<PyObject> Native_BaseExceptionRepr(Handle<PyObject> host,
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowTypeError(
-        "BaseException.__repr__() takes no keyword arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__repr__() takes no keyword arguments");
     return Handle<PyObject>::null();
   }
 
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
-    Runtime_ThrowTypeError("BaseException.__repr__() takes no arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__repr__() takes no arguments");
     return Handle<PyObject>::null();
   }
 
   if (host.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError(
-        "BaseException.__repr__() expects a non-null receiver");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__repr__() expects a non-null receiver");
     return Handle<PyObject>::null();
   }
 

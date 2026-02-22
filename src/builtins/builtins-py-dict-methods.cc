@@ -50,8 +50,8 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
   EscapableHandleScope scope;
 
   if (args->length() < 1 || args->length() > 2) {
-    Runtime_ThrowTypeErrorf(
-        "pop expected at most 2 arguments, got %" PRId64, args->length());
+    Runtime_ThrowTypeErrorf("pop expected at most 2 arguments, got %" PRId64,
+                            args->length());
     return kNullMaybeHandle;
   }
 
@@ -69,7 +69,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 
   // 对齐 CPython：dict.pop() 在 key 不存在且无默认值时抛出 KeyError。
   // TODO: 当 repr 机制完善后，改为携带 key 的 repr 信息。
-  Runtime_ThrowKeyError(nullptr);
+  Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
   return kNullMaybeHandle;
 }
 

@@ -64,11 +64,36 @@ void ThrowNewException(Handle<PyString> exception_type_name,
   state->Throw(*exception);
 }
 
-// 将 va_list 格式化为字符串并调用 throw_fn 抛出异常。
+// 辅助函数：根据枚举类型获取对应的异常类名字符串 Handle
+Handle<PyString> GetExceptionStringHandle(ExceptionType type) {
+  switch (type) {
+    case ExceptionType::kTypeError:
+      return ST(type_err);
+    case ExceptionType::kRuntimeError:
+      return ST(runtime_err);
+    case ExceptionType::kValueError:
+      return ST(value_err);
+    case ExceptionType::kIndexError:
+      return ST(index_err);
+    case ExceptionType::kKeyError:
+      return ST(key_err);
+    case ExceptionType::kNameError:
+      return ST(name_err);
+    case ExceptionType::kAttributeError:
+      return ST(attr_err);
+    case ExceptionType::kZeroDivisionError:
+      return ST(div_zero);
+    case ExceptionType::kStopIteration:
+      return ST(stop_iter);
+    default:
+      // 默认回退到 RuntimeError
+      return ST(runtime_err);
+  }
+}
+
+// 将 va_list 格式化为字符串并抛出指定类型的异常。
 // 内部复用栈上 256 字节缓冲，仅在超长消息时回退到堆分配。
-void ThrowFormattedError(void (*throw_fn)(const char*),
-                         const char* fmt,
-                         va_list ap) {
+void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
   char buf[256];
   va_list ap_copy;
   va_copy(ap_copy, ap);
@@ -76,133 +101,108 @@ void ThrowFormattedError(void (*throw_fn)(const char*),
   va_end(ap_copy);
 
   if (len < 0) {
-    throw_fn(nullptr);
+    Runtime_ThrowError(type, nullptr);
     return;
   }
 
   if (len < static_cast<int>(sizeof(buf))) {
-    throw_fn(buf);
+    Runtime_ThrowError(type, buf);
     return;
   }
 
   std::string dynamic(static_cast<size_t>(len) + 1, '\0');
   (void)std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
-  throw_fn(dynamic.c_str());
+  Runtime_ThrowError(type, dynamic.c_str());
 }
 
 }  // namespace
 
-void Runtime_ThrowTypeError(const char* message) {
+void Runtime_ThrowError(ExceptionType type, const char* message) {
+  Handle<PyString> type_name = GetExceptionStringHandle(type);
   if (message == nullptr) {
-    ThrowNewException(ST(type_err), Handle<PyString>::null());
+    ThrowNewException(type_name, Handle<PyString>::null());
     return;
   }
-  ThrowNewException(ST(type_err), PyString::NewInstance(message));
+  ThrowNewException(type_name, PyString::NewInstance(message));
 }
 
-void Runtime_ThrowRuntimeError(const char* message) {
-  if (message == nullptr) {
-    ThrowNewException(ST(runtime_err), Handle<PyString>::null());
-    return;
-  }
-  ThrowNewException(ST(runtime_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowValueError(const char* message) {
-  if (message == nullptr) {
-    ThrowNewException(ST(value_err), Handle<PyString>::null());
-    return;
-  }
-  ThrowNewException(ST(value_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowIndexError(const char* message) {
-  if (message == nullptr) {
-    ThrowNewException(ST(index_err), Handle<PyString>::null());
-    return;
-  }
-  ThrowNewException(ST(index_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowKeyError(const char* message) {
-  if (message == nullptr) {
-    ThrowNewException(ST(key_err), Handle<PyString>::null());
-    return;
-  }
-  ThrowNewException(ST(key_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowNameError(const char* message) {
-  if (message == nullptr) {
-    ThrowNewException(ST(name_err), Handle<PyString>::null());
-    return;
-  }
-  ThrowNewException(ST(name_err), PyString::NewInstance(message));
-}
-
-void Runtime_ThrowTypeErrorf(const char* fmt, ...) {
+void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowTypeError(nullptr);
+    Runtime_ThrowError(type, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(Runtime_ThrowTypeError, fmt, ap);
+  ThrowFormattedError(type, fmt, ap);
+  va_end(ap);
+}
+
+// --- 旧 API 兼容层实现 (Variadic functions) ---
+// 非 Variadic 版本已在头文件中内联实现。
+
+void Runtime_ThrowTypeErrorf(const char* fmt, ...) {
+  if (fmt == nullptr) {
+    Runtime_ThrowError(ExceptionType::kTypeError, nullptr);
+    return;
+  }
+  va_list ap;
+  va_start(ap, fmt);
+  ThrowFormattedError(ExceptionType::kTypeError, fmt, ap);
   va_end(ap);
 }
 
 void Runtime_ThrowRuntimeErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowRuntimeError(nullptr);
+    Runtime_ThrowError(ExceptionType::kRuntimeError, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(Runtime_ThrowRuntimeError, fmt, ap);
+  ThrowFormattedError(ExceptionType::kRuntimeError, fmt, ap);
   va_end(ap);
 }
 
 void Runtime_ThrowValueErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowValueError(nullptr);
+    Runtime_ThrowError(ExceptionType::kValueError, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(Runtime_ThrowValueError, fmt, ap);
+  ThrowFormattedError(ExceptionType::kValueError, fmt, ap);
   va_end(ap);
 }
 
 void Runtime_ThrowIndexErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowIndexError(nullptr);
+    Runtime_ThrowError(ExceptionType::kIndexError, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(Runtime_ThrowIndexError, fmt, ap);
+  ThrowFormattedError(ExceptionType::kIndexError, fmt, ap);
   va_end(ap);
 }
 
 void Runtime_ThrowKeyErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowKeyError(nullptr);
+    Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(Runtime_ThrowKeyError, fmt, ap);
+  ThrowFormattedError(ExceptionType::kKeyError, fmt, ap);
   va_end(ap);
 }
 
 void Runtime_ThrowNameErrorf(const char* fmt, ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowNameError(nullptr);
+    Runtime_ThrowError(ExceptionType::kNameError, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(Runtime_ThrowNameError, fmt, ap);
+  ThrowFormattedError(ExceptionType::kNameError, fmt, ap);
   va_end(ap);
 }
 

@@ -128,7 +128,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 
   Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
-    Runtime_ThrowValueError("empty separator");
+    Runtime_ThrowError(ExceptionType::kValueError, "empty separator");
     return kNullMaybeHandle;
   }
 
@@ -157,7 +157,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
   EscapableHandleScope scope;
 
   if (iterable.is_null()) {
-    Runtime_ThrowTypeError("can only join an iterable");
+    Runtime_ThrowError(ExceptionType::kTypeError, "can only join an iterable");
     return kNullMaybeHandle;
   }
 
@@ -185,14 +185,16 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 
     int64_t item_length = Handle<PyString>::cast(item)->length();
     if (item_length > std::numeric_limits<int64_t>::max() - total_length) {
-      Runtime_ThrowValueError("join() result is too long");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "join() result is too long");
       return kNullMaybeHandle;
     }
     total_length += item_length;
 
     if (i + 1 < num_parts) {
       if (sep_length > std::numeric_limits<int64_t>::max() - total_length) {
-        Runtime_ThrowValueError("join() result is too long");
+        Runtime_ThrowError(ExceptionType::kValueError,
+                           "join() result is too long");
         return kNullMaybeHandle;
       }
       total_length += sep_length;
@@ -222,7 +224,8 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
   EscapableHandleScope scope;
 
   if (value.is_null()) {
-    Runtime_ThrowTypeError("str() argument must not be null");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "str() argument must not be null");
     return kNullMaybeHandle;
   }
 
@@ -256,7 +259,8 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
                         Handle<PyDict>::null()));
 
     if (!IsPyString(result)) {
-      Runtime_ThrowTypeError("__str__ returned non-string");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "__str__ returned non-string");
       return kNullMaybeHandle;
     }
 

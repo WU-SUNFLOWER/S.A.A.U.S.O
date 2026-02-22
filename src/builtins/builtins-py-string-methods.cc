@@ -146,7 +146,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
     result = str_object->IndexOf(target_str, begin, end);
   }
   if (result == PyString::kNotFound) {
-    Runtime_ThrowValueError("substring not found");
+    Runtime_ThrowError(ExceptionType::kValueError, "substring not found");
     return kNullMaybeHandle;
   }
 
@@ -249,7 +249,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
       auto key = item->Get(0);
       if (!IsPyString(key)) {
-        Runtime_ThrowTypeError("keywords must be strings");
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "keywords must be strings");
         return kNullMaybeHandle;
       }
 
@@ -268,7 +269,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     Handle<PyObject> sep_from_kwargs = kwargs->Get(sep_key);
     if (!sep_from_kwargs.is_null()) {
       if (sep_from_positional) {
-        Runtime_ThrowTypeError(
+        Runtime_ThrowError(
+            ExceptionType::kTypeError,
             "str.split() got multiple values for argument 'sep'");
         return kNullMaybeHandle;
       }
@@ -278,7 +280,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     Handle<PyObject> maxsplit_from_kwargs = kwargs->Get(maxsplit_key);
     if (!maxsplit_from_kwargs.is_null()) {
       if (maxsplit_from_positional) {
-        Runtime_ThrowTypeError(
+        Runtime_ThrowError(
+            ExceptionType::kTypeError,
             "str.split() got multiple values for argument 'maxsplit'");
         return kNullMaybeHandle;
       }
@@ -313,7 +316,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
   auto str_object = Handle<PyString>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowTypeError("str.join() takes no keyword arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "str.join() takes no keyword arguments");
     return kNullMaybeHandle;
   }
 

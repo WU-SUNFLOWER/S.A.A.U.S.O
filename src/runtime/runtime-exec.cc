@@ -27,11 +27,13 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
   EscapableHandleScope scope;
 
   if (code.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError("code object must not be null");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "code object must not be null");
     return kNullMaybeHandle;
   }
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError("locals and globals must not be null");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "locals and globals must not be null");
     return kNullMaybeHandle;
   }
 
@@ -80,12 +82,14 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
   EscapableHandleScope scope;
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError("locals and globals must not be null");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "locals and globals must not be null");
     return kNullMaybeHandle;
   }
 
 #if !SAAUSO_ENABLE_CPYTHON_COMPILER
-  Runtime_ThrowRuntimeError(
+  Runtime_ThrowError(
+      ExceptionType::kRuntimeError,
       "executing Python source requires embedded CPython compiler; build with "
       "saauso_enable_cpython_compiler=true");
   return kNullMaybeHandle;
@@ -120,7 +124,8 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
   EscapableHandleScope scope;
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
-    Runtime_ThrowTypeError("locals and globals must not be null");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "locals and globals must not be null");
     return kNullMaybeHandle;
   }
 

@@ -47,7 +47,8 @@ BUILTIN(IsInstance) {
     for (auto i = 0; i < tuple->length(); ++i) {
       auto elem = tuple->Get(i);
       if (!IsPyTypeObject(elem)) [[unlikely]] {
-        Runtime_ThrowTypeError(
+        Runtime_ThrowError(
+            ExceptionType::kTypeError,
             "isinstance() arg 2 must be a type or tuple of types");
         return kNullMaybeHandle;
       }
@@ -58,8 +59,8 @@ BUILTIN(IsInstance) {
       }
     }
   } else {
-    Runtime_ThrowTypeError(
-        "isinstance() arg 2 must be a type or tuple of types");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "isinstance() arg 2 must be a type or tuple of types");
     return kNullMaybeHandle;
   }
 
@@ -72,20 +73,23 @@ BUILTIN(BuildTypeObject) {
 
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length < 2) [[unlikely]] {
-    Runtime_ThrowTypeError("__build_class__: not enough arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "__build_class__: not enough arguments");
     return kNullMaybeHandle;
   }
 
   auto class_builder_obj = args->Get(0);
   if (!IsPyFunction(class_builder_obj)) [[unlikely]] {
-    Runtime_ThrowTypeError("__build_class__: func is not a function");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "__build_class__: func is not a function");
     return kNullMaybeHandle;
   }
   auto class_builder = Handle<PyFunction>::cast(class_builder_obj);
 
   auto class_name_obj = args->Get(1);
   if (!IsPyString(class_name_obj)) [[unlikely]] {
-    Runtime_ThrowTypeError("__build_class__: name is not a string");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "__build_class__: name is not a string");
     return kNullMaybeHandle;
   }
   auto class_name = Handle<PyString>::cast(class_name_obj);

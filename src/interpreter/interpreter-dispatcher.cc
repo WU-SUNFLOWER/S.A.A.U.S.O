@@ -380,7 +380,8 @@ void Interpreter::EvalCurrentFrame() {
     // Python中栈帧的locals是按需创建的。
     // 我们不保证一个函数栈帧当中一定有一个有效的locals字典！
     if (locals.is_null()) [[unlikely]] {
-      Runtime_ThrowRuntimeError("no locals found when storing name");
+      Runtime_ThrowError(ExceptionType::kRuntimeError,
+                         "no locals found when storing name");
       goto pending_exception_unwind;
     }
 
@@ -491,7 +492,8 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> update = POP();
     Handle<PyObject> target = TOP();
     if (!IsPyDict(*target) || !IsPyDict(*update)) {
-      Runtime_ThrowTypeError("DICT_MERGE expected dict operands");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "DICT_MERGE expected dict operands");
       goto pending_exception_unwind;
     }
 
@@ -505,7 +507,8 @@ void Interpreter::EvalCurrentFrame() {
       auto value = item->Get(1);
 
       if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
-        Runtime_ThrowTypeError("got multiple values for keyword argument");
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "got multiple values for keyword argument");
         goto pending_exception_unwind;
       }
 
@@ -620,7 +623,8 @@ void Interpreter::EvalCurrentFrame() {
     auto parent_module_name_obj =
         PyObject::GetAttr(parent_module, ST(name), false);
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
-      Runtime_ThrowTypeError("module __name__ must be a string");
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "module __name__ must be a string");
       goto pending_exception_unwind;
     }
 
@@ -915,7 +919,8 @@ void Interpreter::EvalCurrentFrame() {
     if ((op_arg & 1) != 0) {
       Handle<PyObject> kw = POP();
       if (!IsPyDict(kw)) [[unlikely]] {
-        Runtime_ThrowTypeError("CALL_FUNCTION_EX expected a dict for **kwargs");
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "CALL_FUNCTION_EX expected a dict for **kwargs");
         goto pending_exception_unwind;
       }
       kw_args = Handle<PyDict>::cast(kw);

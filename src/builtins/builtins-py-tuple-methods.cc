@@ -31,7 +31,8 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   auto tuple = Handle<PyTuple>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowTypeError("tuple.index() takes no keyword arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "tuple.index() takes no keyword arguments");
     return kNullMaybeHandle;
   }
 
@@ -78,7 +79,8 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
     result = tuple->IndexOf(target, begin, end);
   }
   if (result == PyTuple::kNotFound) {
-    Runtime_ThrowValueError("tuple.index(x): x not in tuple");
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "tuple.index(x): x not in tuple");
     return kNullMaybeHandle;
   }
 

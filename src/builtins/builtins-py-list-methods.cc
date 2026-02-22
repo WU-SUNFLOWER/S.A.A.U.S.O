@@ -47,7 +47,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
   EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   if (object->IsEmpty()) {
-    Runtime_ThrowIndexError("pop from empty list");
+    Runtime_ThrowError(ExceptionType::kIndexError, "pop from empty list");
     return kNullMaybeHandle;
   }
   return scope.Escape(object->Pop());
@@ -66,7 +66,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   auto list = Handle<PyList>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowTypeError("list.index() takes no keyword arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "list.index() takes no keyword arguments");
     return kNullMaybeHandle;
   }
 
@@ -116,7 +117,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   if (result == PyList::kNotFound) {
     // 对齐 CPython：list.index(x) 未找到时抛出 ValueError。
     // TODO: 当 repr 机制完善后，改为携带 x 的 repr 信息。
-    Runtime_ThrowValueError("x not in list");
+    Runtime_ThrowError(ExceptionType::kValueError, "x not in list");
     return kNullMaybeHandle;
   }
 
@@ -150,7 +151,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   EscapableHandleScope scope;
 
   if (!args.is_null() && args->length() != 0) {
-    Runtime_ThrowTypeError("sort() takes no positional arguments");
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "sort() takes no positional arguments");
     return kNullMaybeHandle;
   }
 
@@ -174,7 +176,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
         continue;
       }
       if (!IsPyString(*k)) {
-        Runtime_ThrowTypeError("sort() keywords must be strings");
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "sort() keywords must be strings");
         return kNullMaybeHandle;
       }
       auto key_str = Handle<PyString>::cast(k);
@@ -198,7 +201,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   if (!IsPyNone(*key_func) && !IsNormalPyFunction(key_func) &&
       !IsPyNativeFunction(*key_func) && !IsMethodObject(*key_func)) {
-    Runtime_ThrowTypeError("key must be callable");
+    Runtime_ThrowError(ExceptionType::kTypeError, "key must be callable");
     return kNullMaybeHandle;
   }
 
@@ -214,14 +217,15 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
     for (int64_t i = 0; i < expected_length; ++i) {
       if (list->length() != expected_length) {
-        Runtime_ThrowValueError("list modified during sort (key)");
+        Runtime_ThrowError(ExceptionType::kValueError,
+                           "list modified during sort (key)");
         return kNullMaybeHandle;
       }
       Handle<PyObject> elem = list->Get(i);
       key_args->SetInternal(0, elem);
       Handle<PyObject> key;
-      if (!Execution::Call(isolate, key_func,
-                           Handle<PyObject>::null(), key_args, empty_kwargs)
+      if (!Execution::Call(isolate, key_func, Handle<PyObject>::null(),
+                           key_args, empty_kwargs)
                .ToHandle(&key)) {
         return kNullMaybeHandle;
       }
@@ -247,7 +251,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   auto less = [](int64_t a, int64_t b, void* ctx) -> bool {
     auto* c = static_cast<CompareContext*>(ctx);
     if (c->list->length() != c->expected_length) {
-      Runtime_ThrowValueError("list modified during sort");
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "list modified during sort");
       return false;
     }
     HandleScope scope;

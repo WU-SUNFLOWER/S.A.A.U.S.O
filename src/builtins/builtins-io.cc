@@ -39,7 +39,7 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
 
     auto key = item->Get(0);
     if (!IsPyString(*key)) {
-      Runtime_ThrowTypeError("keywords must be strings");
+      Runtime_ThrowError(ExceptionType::kTypeError, "keywords must be strings");
       return false;
     }
 
@@ -50,9 +50,9 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
     }
 
     auto key_str = Handle<PyString>::cast(key);
-    Runtime_ThrowTypeErrorf(
-        "'print' got an unexpected keyword argument '%.*s'",
-        static_cast<int>(key_str->length()), key_str->buffer());
+    Runtime_ThrowTypeErrorf("'print' got an unexpected keyword argument '%.*s'",
+                            static_cast<int>(key_str->length()),
+                            key_str->buffer());
     return false;
   }
 
@@ -68,7 +68,8 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
   end = kwargs->Get(end_key);
   eol = kwargs->Get(eol_key);
   if (!end.is_null() && !eol.is_null()) {
-    Runtime_ThrowTypeError(
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
         "print() got multiple values for keyword argument 'end'");
     return false;
   }
