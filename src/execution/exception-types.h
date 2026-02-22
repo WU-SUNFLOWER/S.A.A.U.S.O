@@ -8,17 +8,19 @@
 namespace saauso::internal {
 
 // 定义所有支持的异常类型枚举。
-#define EXCEPTION_TYPE_LIST(V)                         \
-  V(kBaseException, base_exception, "BaseException")   \
-  V(kException, exception, "Exception")                \
-  V(kTypeError, type_err, "TypeError")                 \
-  V(kRuntimeError, runtime_err, "RuntimeError")        \
-  V(kValueError, value_err, "ValueError")              \
-  V(kIndexError, index_err, "IndexError")              \
-  V(kKeyError, key_err, "KeyError")                    \
-  V(kNameError, name_err, "NameError")                 \
-  V(kAttributeError, attr_err, "AttributeError")       \
-  V(kZeroDivisionError, div_zero, "ZeroDivisionError") \
+#define EXCEPTION_TYPE_LIST(V)                                         \
+  V(kBaseException, base_exception, "BaseException")                   \
+  V(kException, exception, "Exception")                                \
+  V(kTypeError, type_err, "TypeError")                                 \
+  V(kRuntimeError, runtime_err, "RuntimeError")                        \
+  V(kValueError, value_err, "ValueError")                              \
+  V(kIndexError, index_err, "IndexError")                              \
+  V(kKeyError, key_err, "KeyError")                                    \
+  V(kNameError, name_err, "NameError")                                 \
+  V(kAttributeError, attr_err, "AttributeError")                       \
+  V(kZeroDivisionError, div_zero, "ZeroDivisionError")                 \
+  V(kImportError, import_err, "ImportError")                           \
+  V(kModuleNotFoundError, module_not_found_err, "ModuleNotFoundError") \
   V(kStopIteration, stop_iter, "StopIteration")
 
 enum class ExceptionType {
