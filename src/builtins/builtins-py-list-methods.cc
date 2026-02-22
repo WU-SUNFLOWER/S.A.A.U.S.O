@@ -260,7 +260,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   // 排序回调中可能已设置 pending exception（list 被修改等），此时排序结果
   // 无意义，直接传播异常。
-  if (isolate->exception_state()->HasPendingException()) {
+  if (isolate->HasPendingException()) {
     return kNullMaybeHandle;
   }
 

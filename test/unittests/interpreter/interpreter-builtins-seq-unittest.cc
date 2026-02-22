@@ -297,7 +297,7 @@ TEST_F(BasicInterpreterTest, SplitMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kEmptySep, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   auto formatted = Runtime_FormatPendingExceptionForStderr();
   std::string message(formatted->buffer(),
                       static_cast<size_t>(formatted->length()));
@@ -309,7 +309,7 @@ TEST_F(BasicInterpreterTest, SplitMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kUnexpectedKeyword, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -323,13 +323,12 @@ TEST_F(BasicInterpreterTest, SplitMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kMultipleValues, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
-    EXPECT_NE(
-        msg.find("str.split() got multiple values for argument 'sep'"),
-        std::string::npos);
+    EXPECT_NE(msg.find("str.split() got multiple values for argument 'sep'"),
+              std::string::npos);
   }
   isolate()->exception_state()->Clear();
 }
@@ -362,7 +361,7 @@ print(",".join(["a", 1]))
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kElementNotStr, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   auto formatted = Runtime_FormatPendingExceptionForStderr();
   std::string message(formatted->buffer(),
                       static_cast<size_t>(formatted->length()));
@@ -375,7 +374,7 @@ print(",".join(["a", 1]))
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kKeyword, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -393,7 +392,7 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kStrNotFound, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -406,7 +405,7 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kListNotFound, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -419,7 +418,7 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kTupleNotFound, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -432,7 +431,7 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kStrKeyword, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -450,7 +449,7 @@ TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kFindKeyword, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
@@ -464,7 +463,7 @@ TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
 )";
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kRfindKeyword, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   {
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));

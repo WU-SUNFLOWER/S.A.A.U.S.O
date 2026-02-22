@@ -88,7 +88,7 @@ void BasicInterpreterTest::RunScript(std::string_view source,
                                      std::string_view file_name) {
   isolate_->interpreter()->Run(
       Compiler::CompileSource(isolate_, source, file_name));
-  if (isolate_->exception_state()->HasPendingException()) {
+  if (isolate_->HasPendingException()) {
     HandleScope scope;
     Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
     ADD_FAILURE() << "Uncaught exception escaped interpreter: "

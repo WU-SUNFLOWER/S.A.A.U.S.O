@@ -64,10 +64,6 @@ Handle<PyObject> Interpreter::caught_exception() const {
   return handle(caught_exception_tagged());
 }
 
-bool Interpreter::HasPendingException() const {
-  return isolate_->exception_state()->HasPendingException();
-}
-
 Tagged<PyObject> Interpreter::pending_exception_tagged() const {
   return isolate_->exception_state()->pending_exception_tagged();
 }
@@ -156,7 +152,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     result = ReleaseReturnValue();
     DestroyCurrentFrame();
 
-    if (isolate_->exception_state()->HasPendingException()) {
+    if (isolate_->HasPendingException()) {
       return kNullMaybeHandle;
     }
 
@@ -177,7 +173,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   // 如果对象无法被调用，执行PyObject::Call后会抛出错误。
   // 类似于TypeError: 'xxx' object is not callable
   result = PyObject::Call(callable, host, pos_args, kw_args);
-  if (isolate_->exception_state()->HasPendingException()) {
+  if (isolate_->HasPendingException()) {
     return kNullMaybeHandle;
   }
   return scope.Escape(result);

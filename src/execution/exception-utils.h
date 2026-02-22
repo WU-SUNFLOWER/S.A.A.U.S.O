@@ -15,7 +15,7 @@ namespace saauso::internal {
 #define ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, dst, call, value) \
   do {                                                              \
     if (!(call).To(&dst)) {                                         \
-      assert((isolate)->exception_state()->HasPendingException());  \
+      assert((isolate)->HasPendingException());                     \
       return value;                                                 \
     }                                                               \
   } while (false)
@@ -28,12 +28,12 @@ namespace saauso::internal {
 
 //////////////////////////////////////////////////////////////////////////
 
-#define RETURN_ON_EXCEPTION_VALUE(isolate, call, value)            \
-  do {                                                             \
-    if ((call).IsEmpty()) {                                        \
-      assert((isolate)->exception_state()->HasPendingException()); \
-      return value;                                                \
-    }                                                              \
+#define RETURN_ON_EXCEPTION_VALUE(isolate, call, value) \
+  do {                                                  \
+    if ((call).IsEmpty()) {                             \
+      assert((isolate)->HasPendingException());         \
+      return value;                                     \
+    }                                                   \
   } while (false)
 
 #define RETURN_ON_EXCEPTION(isolate, call) \
@@ -44,17 +44,17 @@ namespace saauso::internal {
 #define ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate, dst, call, target) \
   do {                                                              \
     if (!(call).To(&dst)) {                                         \
-      assert((isolate)->exception_state()->HasPendingException());  \
+      assert((isolate)->HasPendingException());                     \
       goto target;                                                  \
     }                                                               \
   } while (false)
 
-#define GOTO_ON_EXCEPTION_TARGET(isolate, call, target)            \
-  do {                                                             \
-    if ((call).IsEmpty()) {                                        \
-      assert((isolate)->exception_state()->HasPendingException()); \
-      goto target;                                                 \
-    }                                                              \
+#define GOTO_ON_EXCEPTION_TARGET(isolate, call, target) \
+  do {                                                  \
+    if ((call).IsEmpty()) {                             \
+      assert((isolate)->HasPendingException());         \
+      goto target;                                      \
+    }                                                   \
   } while (false)
 
 }  // namespace saauso::internal

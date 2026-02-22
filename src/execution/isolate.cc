@@ -245,6 +245,10 @@ void Isolate::InitMetaArea() {
 #undef INIT_PY_KLASS
 }
 
+bool Isolate::HasPendingException() const {
+  return exception_state_.HasPendingException();
+}
+
 void Isolate::TearDown() {
   Scope isolate_scope(this);
 

@@ -207,7 +207,7 @@ BUILTIN(Exec) {
     return kNullMaybeHandle;
   }
 
-  if (isolate->exception_state()->HasPendingException()) {
+  if (isolate->HasPendingException()) {
     return kNullMaybeHandle;
   }
 

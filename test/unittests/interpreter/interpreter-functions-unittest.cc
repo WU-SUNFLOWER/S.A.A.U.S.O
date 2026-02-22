@@ -10,10 +10,10 @@
 #include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
-#include "src/runtime/runtime-exceptions.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -81,8 +81,6 @@ print(add5(10))
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(15)));
   ExpectPrintResult(expected_printv_result);
 }
-
-
 
 TEST_F(BasicInterpreterTest, FunctionWithDefaultArgsWithKwOverride) {
   HandleScope scope;
@@ -461,7 +459,7 @@ TEST_F(BasicInterpreterTest, FunctionCallErrors) {
     HandleScope scope;
     isolate()->interpreter()->Run(
         Compiler::CompileSource(isolate(), source, kTestFileName));
-    ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+    ASSERT_TRUE(isolate()->HasPendingException());
     auto f = Runtime_FormatPendingExceptionForStderr();
     std::string msg(f->buffer(), static_cast<size_t>(f->length()));
     EXPECT_NE(msg.find(expected_substr), std::string::npos) << "got: " << msg;

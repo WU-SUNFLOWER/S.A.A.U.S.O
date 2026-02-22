@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
     isolate->interpreter()->Run(boilerplate);
-    if (isolate->exception_state()->HasPendingException()) {
+    if (isolate->HasPendingException()) {
       Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
       std::fprintf(stderr, "%.*s\n", static_cast<int>(formatted->length()),
                    formatted->buffer());

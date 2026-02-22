@@ -39,7 +39,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
 
   auto iterator = PyObject::Iter(iteratable);
   if (iterator.is_null()) {
-    if (isolate->exception_state()->HasPendingException()) {
+    if (isolate->HasPendingException()) {
       return kNullMaybeHandle;
     }
     return handle(isolate->py_none_object());
@@ -50,7 +50,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     PyList::Append(list, elem);
     elem = PyObject::Next(iterator);
   }
-  if (isolate->exception_state()->HasPendingException()) {
+  if (isolate->HasPendingException()) {
     return kNullMaybeHandle;
   }
   return handle(isolate->py_none_object());

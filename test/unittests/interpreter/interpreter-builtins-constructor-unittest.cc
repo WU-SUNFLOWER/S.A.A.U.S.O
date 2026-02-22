@@ -93,7 +93,7 @@ int(x=1)
 
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   auto formatted = Runtime_FormatPendingExceptionForStderr();
   std::string message(formatted->buffer(),
                       static_cast<size_t>(formatted->length()));
@@ -123,7 +123,7 @@ int("0x10", 10)
 
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   auto formatted = Runtime_FormatPendingExceptionForStderr();
   std::string message(formatted->buffer(),
                       static_cast<size_t>(formatted->length()));
@@ -198,7 +198,7 @@ type()
 
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
 
   auto formatted = Runtime_FormatPendingExceptionForStderr();
   std::string message(formatted->buffer(),

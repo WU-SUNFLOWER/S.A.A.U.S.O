@@ -116,7 +116,7 @@ MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
   Handle<PyObject> result =
       type_object->own_klass()->ConstructInstance(args, kwargs);
   if (result.is_null() &&
-      Isolate::Current()->exception_state()->HasPendingException()) {
+      Isolate::Current()->HasPendingException()) {
     return kNullMaybeHandle;
   }
   return result;

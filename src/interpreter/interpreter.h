@@ -52,8 +52,6 @@ class Interpreter {
   Tagged<PyObject> caught_exception_tagged() const;
   Handle<PyObject> caught_exception() const;
 
-  // 当前解释器中是否存在处于“传播态”的异常对象。
-  bool HasPendingException() const;
   Tagged<PyObject> pending_exception_tagged() const;
   Handle<PyObject> pending_exception() const;
   void ClearPendingException();

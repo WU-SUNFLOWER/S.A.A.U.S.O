@@ -123,6 +123,8 @@ class Isolate {
   ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_ACCESSORS)
 #undef DECLARE_ISOLATE_KLASS_ACCESSORS
 
+  bool HasPendingException() const;
+
  private:
   Isolate() = default;
 

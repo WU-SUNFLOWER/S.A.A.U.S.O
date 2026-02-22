@@ -7,10 +7,10 @@
 #include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
-#include "src/runtime/runtime-exceptions.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -136,7 +136,7 @@ outer()
 
   isolate()->interpreter()->Run(
       Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
-  ASSERT_TRUE(isolate()->exception_state()->HasPendingException());
+  ASSERT_TRUE(isolate()->HasPendingException());
   auto f = Runtime_FormatPendingExceptionForStderr();
   std::string msg(f->buffer(), static_cast<size_t>(f->length()));
   EXPECT_NE(msg.find("free variable"), std::string::npos);

@@ -55,7 +55,7 @@ void Interpreter::EvalCurrentFrame() {
 
 #define DISPATCH()                                      \
   do {                                                  \
-    if (HasPendingException()) [[unlikely]] {           \
+    if (isolate_->HasPendingException()) [[unlikely]] { \
       goto pending_exception_unwind;                    \
     }                                                   \
     if (!current_frame_->HasMoreCodes()) [[unlikely]] { \
@@ -572,7 +572,7 @@ void Interpreter::EvalCurrentFrame() {
                                    compare_op_type);
         goto pending_exception_unwind;
     }
-    if (isolate_->exception_state()->HasPendingException()) {
+    if (isolate_->HasPendingException()) {
       POP();
       goto pending_exception_unwind;
     }
