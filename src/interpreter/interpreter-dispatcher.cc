@@ -291,7 +291,8 @@ void Interpreter::EvalCurrentFrame() {
         isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
         break;
       default:
-        Runtime_ThrowTypeErrorf("invalid RAISE_VARARGS oparg=%d", op_arg);
+        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                            "invalid RAISE_VARARGS oparg=%d", op_arg);
         goto pending_exception_unwind;
     }
 
@@ -457,8 +458,8 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    Runtime_ThrowNameErrorf("name '%s' is not defined",
-                            Tagged<PyString>::cast(key)->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
+                        Tagged<PyString>::cast(key)->buffer());
     goto pending_exception_unwind;
   })
 
@@ -571,8 +572,8 @@ void Interpreter::EvalCurrentFrame() {
         PUSH(PyObject::GreaterEqual(l, r));
         break;
       default:
-        Runtime_ThrowRuntimeErrorf("unknown compare op type: %d",
-                                   compare_op_type);
+        Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
+                            "unknown compare op type: %d", compare_op_type);
         goto pending_exception_unwind;
     }
     if (isolate_->HasPendingException()) {
@@ -689,8 +690,8 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    Runtime_ThrowNameErrorf("name '%s' is not defined",
-                            Handle<PyString>::cast(key)->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
+                        Handle<PyString>::cast(key)->buffer());
     goto pending_exception_unwind;
   })
 
@@ -822,14 +823,14 @@ void Interpreter::EvalCurrentFrame() {
         code_object->localsplusnames()->GetTagged(op_arg));
     char kind = code_object->localspluskinds()->Get(op_arg);
     if (kind & PyCodeObject::LocalsPlusKind::kFastFree) {
-      Runtime_ThrowNameErrorf(
-          "cannot access free variable '%s' where it is "
-          "not associated with a value in enclosing scope",
-          var_name->buffer());
+      Runtime_ThrowErrorf(ExceptionType::kNameError,
+                          "cannot access free variable '%s' where it is "
+                          "not associated with a value in enclosing scope",
+                          var_name->buffer());
     } else {
-      Runtime_ThrowNameErrorf(
-          "local variable '%s' referenced before assignment",
-          var_name->buffer());
+      Runtime_ThrowErrorf(ExceptionType::kNameError,
+                          "local variable '%s' referenced before assignment",
+                          var_name->buffer());
     }
     goto pending_exception_unwind;
   })
@@ -982,8 +983,9 @@ void Interpreter::EvalCurrentFrame() {
         break;
       }
       default:
-        Runtime_ThrowRuntimeErrorf(
-            "unsupported intrinsic for CALL_INTRINSIC_1: %d", op_arg);
+        Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
+                            "unsupported intrinsic for CALL_INTRINSIC_1: %d",
+                            op_arg);
         goto pending_exception_unwind;
     }
   })
@@ -1056,8 +1058,8 @@ pending_exception_unwind: {
 #undef DISPATCH
 
 unknown_bytecode:
-  Runtime_ThrowRuntimeErrorf("unknown bytecode %d, arguments %d", op_code,
-                             op_arg);
+  Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
+                      "unknown bytecode %d, arguments %d", op_code, op_arg);
   goto pending_exception_unwind;
 
 exit_interpreter:

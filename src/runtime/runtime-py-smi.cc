@@ -36,8 +36,9 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
     return scope.Escape(handle(PySmi::FromInt(0)));
   }
   if (argc > 2) {
-    Runtime_ThrowTypeErrorf("int() takes at most 2 arguments (%lld given)",
-                            static_cast<long long>(argc));
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "int() takes at most 2 arguments (%lld given)",
+                        static_cast<long long>(argc));
     return kNullMaybeHandle;
   }
 
@@ -131,7 +132,8 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowTypeErrorf(
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError,
       "int() argument must be a string, a bytes-like object or a real number, "
       "not '%s'",
       type_name->buffer());

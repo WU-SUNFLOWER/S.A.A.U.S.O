@@ -73,12 +73,14 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
-    Runtime_ThrowTypeErrorf(
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
         "list.index() takes at least 1 argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   if (argc > 3) {
-    Runtime_ThrowTypeErrorf(
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
         "list.index() takes at most 3 arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -183,7 +185,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       auto key_str = Handle<PyString>::cast(k);
       if (!key_str->IsEqualTo(*key_name) &&
           !key_str->IsEqualTo(*reverse_name)) {
-        Runtime_ThrowTypeErrorf("sort() got an unexpected keyword argument");
+        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                            "sort() got an unexpected keyword argument");
         return kNullMaybeHandle;
       }
     }

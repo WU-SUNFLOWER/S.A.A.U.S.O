@@ -177,9 +177,9 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
     Handle<PyObject> item = parts->Get(i);
     if (!IsPyString(*item)) {
       auto type_name = PyObject::GetKlass(item)->name();
-      Runtime_ThrowTypeErrorf(
-          "sequence item %lld: expected str instance, %s found",
-          static_cast<long long>(i), type_name->buffer());
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "sequence item %lld: expected str instance, %s found",
+                          static_cast<long long>(i), type_name->buffer());
       return kNullMaybeHandle;
     }
 

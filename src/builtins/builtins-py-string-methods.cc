@@ -58,19 +58,22 @@ bool ValidateStringSearchArgs(Handle<PyDict> kwargs,
                               const char* method_name,
                               int64_t& argc) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowTypeErrorf("%s takes no keyword arguments", method_name);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s takes no keyword arguments", method_name);
     return false;
   }
 
   argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
-    Runtime_ThrowTypeErrorf("%s takes at least 1 argument (%" PRId64 " given)",
-                            method_name, argc);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s takes at least 1 argument (%" PRId64 " given)",
+                        method_name, argc);
     return false;
   }
   if (argc > 3) {
-    Runtime_ThrowTypeErrorf("%s takes at most 3 arguments (%" PRId64 " given)",
-                            method_name, argc);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s takes at most 3 arguments (%" PRId64 " given)",
+                        method_name, argc);
     return false;
   }
 
@@ -88,9 +91,9 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
   auto target = args->Get(0);
   if (!IsPyString(target)) {
     auto type_name = PyObject::GetKlass(target)->name();
-    Runtime_ThrowTypeErrorf("must be str, not %.*s",
-                            static_cast<int>(type_name->length()),
-                            type_name->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %.*s",
+                        static_cast<int>(type_name->length()),
+                        type_name->buffer());
     return false;
   }
   target_str = Handle<PyString>::cast(target);
@@ -215,7 +218,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc > 2) {
-    Runtime_ThrowTypeErrorf(
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
         "str.split() takes at most 2 arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -260,9 +264,9 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       auto key_str = Handle<PyString>::cast(key);
-      Runtime_ThrowTypeErrorf(
-          "str.split() got an unexpected keyword argument '%s'",
-          key_str->buffer());
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "str.split() got an unexpected keyword argument '%s'",
+                          key_str->buffer());
       return kNullMaybeHandle;
     }
 
@@ -295,9 +299,9 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
     if (!IsPyString(*sep_obj)) {
       auto type_name = PyObject::GetKlass(sep_obj)->name();
-      Runtime_ThrowTypeErrorf("must be str or None, not %.*s",
-                              static_cast<int>(type_name->length()),
-                              type_name->buffer());
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError, "must be str or None, not %.*s",
+          static_cast<int>(type_name->length()), type_name->buffer());
       return kNullMaybeHandle;
     }
     sep_or_null = sep_obj;
@@ -323,7 +327,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
-    Runtime_ThrowTypeErrorf(
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
         "str.join() takes exactly one argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }

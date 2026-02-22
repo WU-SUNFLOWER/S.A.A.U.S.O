@@ -38,12 +38,14 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
-    Runtime_ThrowTypeErrorf(
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
         "tuple.index() takes at least 1 argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   if (argc > 3) {
-    Runtime_ThrowTypeErrorf(
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
         "tuple.index() takes at most 3 arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }

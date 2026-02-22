@@ -23,8 +23,9 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc > 1) {
-    Runtime_ThrowTypeErrorf("dict expected at most 1 argument, got %lld",
-                            static_cast<long long>(argc));
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "dict expected at most 1 argument, got %lld",
+                        static_cast<long long>(argc));
     return kNullMaybeHandle;
   }
 
@@ -44,10 +45,10 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
         ASSIGN_RETURN_ON_EXCEPTION(isolate, pair,
                                    Runtime_UnpackIterableObjectToTuple(elem));
         if (pair->length() != 2) {
-          Runtime_ThrowTypeErrorf(
-              "cannot convert dictionary update sequence "
-              "element #%lld to a sequence",
-              static_cast<long long>(i));
+          Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                              "cannot convert dictionary update sequence "
+                              "element #%lld to a sequence",
+                              static_cast<long long>(i));
           return kNullMaybeHandle;
         }
 

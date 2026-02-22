@@ -29,9 +29,9 @@ MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(obj)->name();
-  Runtime_ThrowTypeErrorf("exec() %s must be a dict, not %.*s", role_name,
-                          static_cast<int>(type_name->length()),
-                          type_name->buffer());
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError, "exec() %s must be a dict, not %.*s",
+      role_name, static_cast<int>(type_name->length()), type_name->buffer());
   return kNullMaybeHandle;
 }
 
@@ -71,9 +71,9 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
     }
 
     auto key_str = Handle<PyString>::cast(key);
-    Runtime_ThrowTypeErrorf("exec() got an unexpected keyword argument '%.*s'",
-                            static_cast<int>(key_str->length()),
-                            key_str->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "exec() got an unexpected keyword argument '%.*s'",
+                        static_cast<int>(key_str->length()), key_str->buffer());
     return false;
   }
 
@@ -108,11 +108,13 @@ BUILTIN(Exec) {
   const int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1 || argc > 3) [[unlikely]] {
     if (argc < 1) {
-      Runtime_ThrowTypeErrorf(
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
           "exec() takes at least 1 positional argument (%" PRId64 " given)",
           argc);
     } else {
-      Runtime_ThrowTypeErrorf(
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
           "exec() takes at most 3 positional arguments (%" PRId64 " given)",
           argc);
     }

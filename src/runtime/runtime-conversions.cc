@@ -27,8 +27,9 @@ Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowTypeErrorf("'%s' object cannot be interpreted as an integer",
-                          type_name->buffer());
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "'%s' object cannot be interpreted as an integer",
+                      type_name->buffer());
 
   return kNullMaybe;
 }

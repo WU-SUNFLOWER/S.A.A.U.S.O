@@ -33,16 +33,6 @@ enum class ExceptionType {
 void Runtime_ThrowError(ExceptionType type, const char* message);
 void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...);
 
-// --- 旧 API 兼容层 (Deprecated) ---
-// TODO: 逐步迁移调用点到统一 API，最终移除这些函数。
-
-void Runtime_ThrowTypeErrorf(const char* fmt, ...);
-void Runtime_ThrowRuntimeErrorf(const char* fmt, ...);
-void Runtime_ThrowValueErrorf(const char* fmt, ...);
-void Runtime_ThrowIndexErrorf(const char* fmt, ...);
-void Runtime_ThrowKeyErrorf(const char* fmt, ...);
-void Runtime_ThrowNameErrorf(const char* fmt, ...);
-
 Handle<PyString> Runtime_FormatPendingExceptionForStderr();
 
 }  // namespace saauso::internal

@@ -50,18 +50,18 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
     }
 
     auto key_str = Handle<PyString>::cast(key);
-    Runtime_ThrowTypeErrorf("'print' got an unexpected keyword argument '%.*s'",
-                            static_cast<int>(key_str->length()),
-                            key_str->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "'print' got an unexpected keyword argument '%.*s'",
+                        static_cast<int>(key_str->length()), key_str->buffer());
     return false;
   }
 
   sep = kwargs->Get(sep_key);
   if (!sep.is_null() && !IsPyString(*sep)) {
     auto type_name = PyObject::GetKlass(sep)->name();
-    Runtime_ThrowTypeErrorf("sep must be str, not %.*s",
-                            static_cast<int>(type_name->length()),
-                            type_name->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError, "sep must be str, not %.*s",
+                        static_cast<int>(type_name->length()),
+                        type_name->buffer());
     return false;
   }
 
@@ -80,9 +80,9 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
 
   if (!end.is_null() && !IsPyString(*end)) {
     auto type_name = PyObject::GetKlass(end)->name();
-    Runtime_ThrowTypeErrorf("end must be str, not %.*s",
-                            static_cast<int>(type_name->length()),
-                            type_name->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError, "end must be str, not %.*s",
+                        static_cast<int>(type_name->length()),
+                        type_name->buffer());
     return false;
   }
 

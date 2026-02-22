@@ -131,10 +131,10 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
 // 若缺失形参，抛出 TypeError 并返回 false；否则返回 true。
 bool CheckMissingArgs(const FrameBuildContext& ctx) {
   if (ctx.localsplus_idx < ctx.real_formal_pos_arg_cnt) {
-    Runtime_ThrowTypeErrorf("%s() missing %" PRId64
-                            " required positional argument",
-                            ctx.func_name->buffer(),
-                            ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s() missing %" PRId64 " required positional argument",
+                        ctx.func_name->buffer(),
+                        ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
     return false;
   }
   return true;
@@ -161,11 +161,11 @@ bool PackExtraPosArgsFromPosArgs(const FrameBuildContext& ctx,
   if (!actual_pos_args.is_null() && extra_pos_cnt > 0) {
     // 打包拓展参数：如果函数不接受扩展参数，直接报错。
     if (extend_pos_args.is_null()) {
-      Runtime_ThrowTypeErrorf(
-          "%s() takes %" PRId64 " positional arguments but %" PRId64
-          " were given",
-          ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
-          actual_pos_cnt + ctx.self_arg_cnt);
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s() takes %" PRId64
+                          " positional arguments but %" PRId64 " were given",
+                          ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
+                          actual_pos_cnt + ctx.self_arg_cnt);
       return false;
     }
 
@@ -194,11 +194,11 @@ bool PackExtraPosArgsFromActualArgs(const FrameBuildContext& ctx,
   if (extra_pos_cnt > 0) {
     // 打包拓展参数：如果函数不接受扩展参数，直接报错。
     if (extend_pos_args.is_null()) {
-      Runtime_ThrowTypeErrorf(
-          "%s() takes %" PRId64 " positional arguments but %" PRId64
-          " were given",
-          ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
-          actual_arg_cnt + ctx.self_arg_cnt);
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s() takes %" PRId64
+                          " positional arguments but %" PRId64 " were given",
+                          ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
+                          actual_arg_cnt + ctx.self_arg_cnt);
       return false;
     }
 
@@ -246,8 +246,9 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
 
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-        Runtime_ThrowTypeErrorf("%s() got multiple values for argument '%s'",
-                                ctx.func_name->buffer(), key->buffer());
+        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                            "%s() got multiple values for argument '%s'",
+                            ctx.func_name->buffer(), key->buffer());
         return false;
       }
 
@@ -256,8 +257,9 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
     } else if (!kw_args.is_null()) {
       PyDict::Put(kw_args, key, value);
     } else {
-      Runtime_ThrowTypeErrorf("%s() got an unexpected keyword argument '%s'",
-                              ctx.func_name->buffer(), key->buffer());
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s() got an unexpected keyword argument '%s'",
+                          ctx.func_name->buffer(), key->buffer());
       return false;
     }
 
@@ -292,8 +294,9 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
         ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-        Runtime_ThrowTypeErrorf("%s() got multiple values for argument '%s'",
-                                ctx.func_name->buffer(), key->buffer());
+        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                            "%s() got multiple values for argument '%s'",
+                            ctx.func_name->buffer(), key->buffer());
         return false;
       }
 
@@ -307,8 +310,9 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
       continue;
     }
 
-    Runtime_ThrowTypeErrorf("%s() got an unexpected keyword argument '%s'",
-                            ctx.func_name->buffer(), key->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s() got an unexpected keyword argument '%s'",
+                        ctx.func_name->buffer(), key->buffer());
     return false;
   }
 

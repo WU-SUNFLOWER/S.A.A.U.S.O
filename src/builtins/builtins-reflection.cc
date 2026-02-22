@@ -29,8 +29,9 @@ BUILTIN(IsInstance) {
 
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length != 2) [[unlikely]] {
-    Runtime_ThrowTypeErrorf("isinstance expected 2 arguments, got %" PRId64,
-                            static_cast<int64_t>(args_length));
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "isinstance expected 2 arguments, got %" PRId64,
+                        static_cast<int64_t>(args_length));
     return kNullMaybeHandle;
   }
 

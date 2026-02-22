@@ -50,8 +50,9 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
   EscapableHandleScope scope;
 
   if (args->length() < 1 || args->length() > 2) {
-    Runtime_ThrowTypeErrorf("pop expected at most 2 arguments, got %" PRId64,
-                            args->length());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "pop expected at most 2 arguments, got %" PRId64,
+                        args->length());
     return kNullMaybeHandle;
   }
 
