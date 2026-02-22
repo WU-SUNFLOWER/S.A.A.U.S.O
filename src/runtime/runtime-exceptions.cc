@@ -23,6 +23,8 @@ namespace saauso::internal {
 
 namespace {
 
+constexpr size_t kFormattedErrorBufferSize = 256;
+
 // 创建一个新的异常实例。
 // - 失败时返回 empty，并保证已设置 pending exception。
 MaybeHandle<PyObject> NewExceptionInstance(Handle<PyString> exception_type_name,
@@ -49,14 +51,14 @@ MaybeHandle<PyObject> NewExceptionInstance(Handle<PyString> exception_type_name,
 
 void ThrowNewException(Handle<PyString> exception_type_name,
                        Handle<PyString> message_or_null) {
-  auto* state = Isolate::Current()->exception_state();
+  auto* isolate = Isolate::Current();
+
+  auto* state = isolate->exception_state();
   if (state->HasPendingException()) {
     return;
   }
 
-  auto* isolate = Isolate::Current();
   Handle<PyObject> exception;
-
   ASSIGN_RETURN_ON_EXCEPTION_VOID(
       isolate, exception,
       NewExceptionInstance(exception_type_name, message_or_null));
@@ -83,7 +85,7 @@ Handle<PyString> GetExceptionStringHandle(ExceptionType type) {
 // 将 va_list 格式化为字符串并抛出指定类型的异常。
 // 内部复用栈上 256 字节缓冲，仅在超长消息时回退到堆分配。
 void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
-  char buf[256];
+  char buf[kFormattedErrorBufferSize];
   va_list ap_copy;
   va_copy(ap_copy, ap);
   const int len = std::vsnprintf(buf, sizeof(buf), fmt, ap_copy);
@@ -100,19 +102,20 @@ void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
   }
 
   std::string dynamic(static_cast<size_t>(len) + 1, '\0');
-  (void)std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
+  std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
   Runtime_ThrowError(type, dynamic.c_str());
 }
 
 }  // namespace
 
+//////////////////////////////////////////////////////////////////////////
+
 void Runtime_ThrowError(ExceptionType type, const char* message) {
   Handle<PyString> type_name = GetExceptionStringHandle(type);
-  if (message == nullptr) {
-    ThrowNewException(type_name, Handle<PyString>::null());
-    return;
-  }
-  ThrowNewException(type_name, PyString::NewInstance(message));
+  Handle<PyString> wrapped_message = message != nullptr
+                                         ? PyString::NewInstance(message)
+                                         : Handle<PyString>::null();
+  ThrowNewException(type_name, wrapped_message);
 }
 
 void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
@@ -125,9 +128,6 @@ void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
   ThrowFormattedError(type, fmt, ap);
   va_end(ap);
 }
-
-// --- 旧 API 兼容层实现 (Variadic functions) ---
-// 非 Variadic 版本已在头文件中内联实现。
 
 Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
   EscapableHandleScope scope;
@@ -153,15 +153,11 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
     return scope.Escape(type_name);
   }
 
-  std::string formatted;
-  formatted.reserve(static_cast<size_t>(type_name->length()) + 2 +
-                    static_cast<size_t>(message->length()));
-  formatted.append(type_name->buffer(),
-                   static_cast<size_t>(type_name->length()));
-  formatted.append(": ");
-  formatted.append(message->buffer(), static_cast<size_t>(message->length()));
-  return scope.Escape(PyString::NewInstance(
-      formatted.c_str(), static_cast<int64_t>(formatted.size())));
+  Handle<PyString> formatted = PyString::Clone(type_name);
+  formatted = PyString::Append(formatted, PyString::NewInstance(": "));
+  formatted = PyString::Append(formatted, message);
+
+  return scope.Escape(formatted);
 }
 
 }  // namespace saauso::internal
