@@ -160,4 +160,24 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
   return scope.Escape(formatted);
 }
 
+bool Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
+  auto* state = isolate->exception_state();
+  if (!state->HasPendingException()) {
+    return false;
+  }
+  HandleScope scope;
+  Handle<PyObject> pending = state->pending_exception();
+  Handle<PyDict> builtins = Execution::builtins(isolate);
+  Handle<PyObject> stop_iter_type = builtins->Get(ST(stop_iter));
+  if (stop_iter_type.is_null()) {
+    return false;
+  }
+  if (!Runtime_IsInstanceOfTypeObject(pending,
+                                     Handle<PyTypeObject>::cast(stop_iter_type))) {
+    return false;
+  }
+  state->Clear();
+  return true;
+}
+
 }  // namespace saauso::internal

@@ -416,9 +416,19 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> iterator = TOP();
     Handle<PyObject> next_result = PyObject::Next(iterator);
     if (next_result.is_null()) {
-      current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
-      POP();
-      break;
+      // 用户自定义迭代器通过 raise StopIteration 终止迭代时，Next 会设置 pending
+      // 异常。此处若为 StopIteration 则视为正常结束循环并清除异常；否则展开。
+      if (isolate_->HasPendingException() &&
+          Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
+        POP();
+        break;
+      }
+      // 异常来自嵌套的 __next__ 调用，需显式设置 faulting PC 为当前 ForIter，
+      // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
+      isolate_->exception_state()->set_pending_exception_pc(
+          current_frame_->pc() - kBytecodeSizeInBytes);
+      goto pending_exception_unwind;
     }
     PUSH(next_result);
   })

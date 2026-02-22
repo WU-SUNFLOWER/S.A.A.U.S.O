@@ -400,7 +400,7 @@ bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
 
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate, result,
-        Execution::Call(Isolate::Current(), callable, self, args,
+        Execution::Call(isolate, callable, self, args,
                         Handle<PyDict>::null()),
         false);
 
