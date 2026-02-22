@@ -83,7 +83,6 @@ Handle<PyString> GetExceptionStringHandle(ExceptionType type) {
 }
 
 // 将 va_list 格式化为字符串并抛出指定类型的异常。
-// 内部复用栈上 256 字节缓冲，仅在超长消息时回退到堆分配。
 void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
   char buf[kFormattedErrorBufferSize];
   va_list ap_copy;
@@ -101,6 +100,7 @@ void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
     return;
   }
 
+  // 在超长消息时回退到使用std::string缓冲。
   std::string dynamic(static_cast<size_t>(len) + 1, '\0');
   std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
   Runtime_ThrowError(type, dynamic.c_str());
