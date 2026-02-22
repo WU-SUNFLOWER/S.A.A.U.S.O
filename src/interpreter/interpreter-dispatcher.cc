@@ -415,22 +415,32 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
     Handle<PyObject> iterator = TOP();
     Handle<PyObject> next_result = PyObject::Next(iterator);
-    if (next_result.is_null()) {
-      // 用户自定义迭代器通过 raise StopIteration 终止迭代时，Next 会设置 pending
-      // 异常。此处若为 StopIteration 则视为正常结束循环并清除异常；否则展开。
-      if (isolate_->HasPendingException() &&
-          Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
-        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
-        POP();
-        break;
-      }
-      // 异常来自嵌套的 __next__ 调用，需显式设置 faulting PC 为当前 ForIter，
-      // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
-      isolate_->exception_state()->set_pending_exception_pc(
-          current_frame_->pc() - kBytecodeSizeInBytes);
-      goto pending_exception_unwind;
+    // 迭代器成功返回了有效值，压栈后立即执行下一条字节码
+    if (!next_result.is_null()) {
+      PUSH(next_result);
+      break;
     }
-    PUSH(next_result);
+
+    // 正常结束迭代有两种情况：
+    // 1. 内建迭代器（如 tuple iterator）出于性能考虑，耗尽时直接返回
+    //    null，不设置异常；
+    // 2. 用户自定义迭代器会执行raise StopIteration`抛出pending异常，
+    //    因此需要立即进行消费。
+    //
+    // 其他异常则需展开。
+    if (!isolate_->HasPendingException() ||
+        Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+      current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
+      POP();
+      break;
+    }
+
+    // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到 
+    // Exection::Call 发起调用的根栈帧就截止了，所以这里需手工设置
+    // faulting PC 为当前 ForIter。
+    // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
+    isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
+                                                          kBytecodeSizeInBytes);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {

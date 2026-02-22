@@ -17,6 +17,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
