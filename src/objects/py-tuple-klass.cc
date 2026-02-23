@@ -5,6 +5,7 @@
 #include "src/objects/py-tuple-klass.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -94,8 +95,9 @@ Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
   }
   if (argc > 1) {
     std::fprintf(stderr,
-                 "TypeError: tuple expected at most 1 argument, got %lld\n",
-                 static_cast<long long>(argc));
+                 "TypeError: tuple expected at most 1 argument, got %" PRId64
+                 "\n",
+                 argc);
     std::exit(1);
   }
 

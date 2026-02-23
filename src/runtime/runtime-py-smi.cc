@@ -4,6 +4,8 @@
 
 #include "src/runtime/runtime-py-smi.h"
 
+#include <cinttypes>
+
 #include "src/execution/exception-utils.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -37,8 +39,8 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   }
   if (argc > 2) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "int() takes at most 2 arguments (%lld given)",
-                        static_cast<long long>(argc));
+                        "int() takes at most 2 arguments (%" PRId64 " given)",
+                        argc);
     return kNullMaybeHandle;
   }
 

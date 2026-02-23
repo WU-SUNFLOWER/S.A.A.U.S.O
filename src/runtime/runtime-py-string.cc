@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cctype>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -178,8 +179,9 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
     if (!IsPyString(*item)) {
       auto type_name = PyObject::GetKlass(item)->name();
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "sequence item %lld: expected str instance, %s found",
-                          static_cast<long long>(i), type_name->buffer());
+                          "sequence item %" PRId64
+                          ": expected str instance, %s found",
+                          i, type_name->buffer());
       return kNullMaybeHandle;
     }
 

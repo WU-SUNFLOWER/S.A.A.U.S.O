@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <chrono>
+#include <cinttypes>
 #include <cstdint>
 #include <thread>
 
@@ -80,9 +81,10 @@ MaybeHandle<PyObject> Time_Time(Handle<PyObject> host,
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "time.time() takes 0 positional arguments but %lld "
+                        "time.time() takes 0 positional arguments but %" PRId64
+                        " "
                         "were given",
-                        static_cast<long long>(argc));
+                        argc);
     return kNullMaybe;
   }
   return PyFloat::NewInstance(WallTimeSeconds());
@@ -99,8 +101,8 @@ MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> host,
   if (argc != 0) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "time.perf_counter() takes 0 positional arguments but "
-                        "%lld were given",
-                        static_cast<long long>(argc));
+                        "%" PRId64 " were given",
+                        argc);
     return kNullMaybe;
   }
   return PyFloat::NewInstance(MonotonicSeconds());
@@ -121,9 +123,9 @@ MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> host,
   }
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "time.sleep() takes exactly 1 argument (%lld given)",
-                        static_cast<long long>(argc));
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "time.sleep() takes exactly 1 argument (%" PRId64 " given)", argc);
     return kNullMaybe;
   }
 

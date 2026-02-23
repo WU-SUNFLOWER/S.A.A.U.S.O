@@ -5,6 +5,7 @@
 #include "src/objects/py-string-klass.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 
@@ -136,9 +137,9 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     std::exit(1);
   }
 
-  std::fprintf(stderr,
-               "TypeError: str() takes at most 3 arguments (%lld given)\n",
-               static_cast<long long>(argc));
+  std::fprintf(
+      stderr,
+      "TypeError: str() takes at most 3 arguments (%" PRId64 " given)\n", argc);
   std::exit(1);
 }
 

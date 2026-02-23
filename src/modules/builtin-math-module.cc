@@ -326,10 +326,9 @@ MaybeHandle<PyObject> Math_Pow(Handle<PyObject> host,
   }
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 2) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "math.pow() takes exactly 2 arguments (%" PRId64
-                        " given)",
-                        static_cast<long long>(argc));
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "math.pow() takes exactly 2 arguments (%" PRId64 " given)", argc);
     return kNullMaybe;
   }
 

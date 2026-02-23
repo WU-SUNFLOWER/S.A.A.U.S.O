@@ -4,6 +4,8 @@
 
 #include "src/runtime/runtime-py-dict.h"
 
+#include <cinttypes>
+
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-dict.h"
@@ -24,8 +26,7 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc > 1) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "dict expected at most 1 argument, got %lld",
-                        static_cast<long long>(argc));
+                        "dict expected at most 1 argument, got %" PRId64, argc);
     return kNullMaybeHandle;
   }
 
@@ -47,8 +48,8 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
         if (pair->length() != 2) {
           Runtime_ThrowErrorf(ExceptionType::kTypeError,
                               "cannot convert dictionary update sequence "
-                              "element #%lld to a sequence",
-                              static_cast<long long>(i));
+                              "element #%" PRId64 " to a sequence",
+                              i);
           return kNullMaybeHandle;
         }
 

@@ -5,6 +5,7 @@
 #include "src/objects/py-list-klass.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstdio>
 #include <vector>
 
@@ -111,9 +112,9 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
     return PyList::NewInstance();
   }
   if (argc > 1) {
-    std::fprintf(stderr,
-                 "TypeError: list expected at most 1 argument, got %lld\n",
-                 static_cast<long long>(argc));
+    std::fprintf(
+        stderr,
+        "TypeError: list expected at most 1 argument, got %" PRId64 "\n", argc);
     std::exit(1);
   }
 

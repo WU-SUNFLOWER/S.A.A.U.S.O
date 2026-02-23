@@ -5,6 +5,7 @@
 #include "src/code/cpython312-pyc-file-parser.h"
 
 #include <cassert>
+#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -340,8 +341,8 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       }
       value *= sign;
       if (value > INT32_MAX || value < INT32_MIN) {
-        std::fprintf(stderr, "marshal long out of int32 range: %lld\n",
-                     static_cast<long long>(value));
+        std::fprintf(stderr, "marshal long out of int32 range: %" PRId64 "\n",
+                     value);
         std::exit(1);
       }
       object = Handle<PyObject>(PySmi::FromInt(static_cast<int>(value)));

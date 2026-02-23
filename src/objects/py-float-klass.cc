@@ -4,6 +4,7 @@
 
 #include "src/objects/py-float-klass.h"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 
@@ -21,7 +22,6 @@
 #include "src/objects/visitors.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
-
 
 namespace saauso::internal {
 
@@ -126,8 +126,9 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
   }
   if (argc != 1) {
     std::fprintf(stderr,
-                 "TypeError: float() takes at most 1 argument (%lld given)\n",
-                 static_cast<long long>(argc));
+                 "TypeError: float() takes at most 1 argument (%" PRId64
+                 " given)\n",
+                 argc);
     std::exit(1);
   }
 
