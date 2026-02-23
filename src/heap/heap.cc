@@ -199,10 +199,6 @@ void Heap::DoScavenge() {
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   IterateRoots(&visitor);
 
-#ifdef _DEBUG
-  std::cout << "finish to iterate root" << std::endl;
-#endif  //_DEBUG
-
   // 此时：
   // new_space_->SurvivorSpaceBase() 指向第一个被拷贝的root对象
   // new_space_->SurvivorSpaceTop() 指向最后一个被拷贝的root对象的末尾
