@@ -42,7 +42,6 @@
 #include "src/objects/visitors.h"
 #include "src/utils/utils.h"
 
-
 namespace saauso::internal {
 
 MarkWord PyObject::GetMarkWord(Tagged<PyObject> object) {
@@ -283,11 +282,9 @@ Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
   if (floor_div == nullptr) [[unlikely]] {
     auto self_name = GetKlass(self)->name();
     auto other_name = GetKlass(other)->name();
-    std::fprintf(
-        stderr,
-        "TypeError: unsupported operand type(s) for //: '%.*s' and '%.*s'",
-        static_cast<int>(self_name->length()), self_name->buffer(),
-        static_cast<int>(other_name->length()), other_name->buffer());
+    std::fprintf(stderr,
+                 "TypeError: unsupported operand type(s) for //: '%s' and '%s'",
+                 self_name->buffer(), other_name->buffer());
     std::exit(1);
   }
 

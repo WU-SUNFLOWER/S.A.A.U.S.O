@@ -29,9 +29,8 @@ void PrintCompareUnsupported(Handle<PyObject> self,
   auto other_name = PyObject::GetKlass(other)->name();
   std::fprintf(
       stderr,
-      "TypeError: '%s' not supported between instances of '%.*s' and '%.*s'\n",
-      op, static_cast<int>(self_name->length()), self_name->buffer(),
-      static_cast<int>(other_name->length()), other_name->buffer());
+      "TypeError: '%s' not supported between instances of '%s' and '%s'\n", op,
+      self_name->buffer(), other_name->buffer());
   std::exit(1);
 }
 
@@ -400,8 +399,7 @@ bool Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
 
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate, result,
-        Execution::Call(isolate, callable, self, args,
-                        Handle<PyDict>::null()),
+        Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()),
         false);
 
     return Runtime_PyObjectIsTrue(result);

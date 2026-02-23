@@ -36,11 +36,9 @@ double ExtractValue(Handle<PyObject> object) {
     return PySmi::ToInt(Handle<PySmi>::cast(object));
   }
 
-  std::fprintf(
-      stderr,
-      "TypeError: unsupported operand type(s) for +: 'float' and '%.*s'",
-      static_cast<int>(PyObject::GetKlass(object)->name()->length()),
-      PyObject::GetKlass(object)->name()->buffer());
+  std::fprintf(stderr,
+               "TypeError: unsupported operand type(s) for +: 'float' and '%s'",
+               PyObject::GetKlass(object)->name()->buffer());
   std::exit(1);
 
   return 0;
@@ -150,8 +148,8 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
     std::optional<double> parsed = StringToDouble(text);
     if (!parsed) {
       std::fprintf(stderr,
-                   "ValueError: could not convert string to float: '%.*s'\n",
-                   static_cast<int>(s->length()), s->buffer());
+                   "ValueError: could not convert string to float: '%s'\n",
+                   s->buffer());
       std::exit(1);
     }
     return PyFloat::NewInstance(*parsed);
@@ -160,8 +158,8 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
   auto type_name = PyObject::GetKlass(value)->name();
   std::fprintf(stderr,
                "TypeError: float() argument must be a string or a real number, "
-               "not '%.*s'\n",
-               static_cast<int>(type_name->length()), type_name->buffer());
+               "not '%s'\n",
+               type_name->buffer());
   std::exit(1);
 }
 

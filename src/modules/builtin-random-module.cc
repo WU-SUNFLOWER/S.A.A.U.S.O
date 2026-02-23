@@ -64,9 +64,9 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError, "%s() argument must be int, not '%.*s'",
-      func_name, static_cast<int>(type_name->length()), type_name->buffer());
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "%s() argument must be int, not '%s'", func_name,
+                      type_name->buffer());
 
   return kNullMaybe;
 }
@@ -324,9 +324,9 @@ MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(seq)->name();
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError, "choice() unsupported sequence type '%.*s'",
-      static_cast<int>(type_name->length()), type_name->buffer());
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "choice() unsupported sequence type '%s'",
+                      type_name->buffer());
   return kNullMaybe;
 }
 

@@ -105,8 +105,7 @@ Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
   }
 
   std::fprintf(stderr,
-               "TypeError: unsupported operand type(s) for +: 'int' and '%.*s'",
-               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+               "TypeError: unsupported operand type(s) for +: 'int' and '%s'",
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
@@ -126,8 +125,7 @@ Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
   }
 
   std::fprintf(stderr,
-               "TypeError: unsupported operand type(s) for -: 'int' and '%.*s'",
-               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+               "TypeError: unsupported operand type(s) for -: 'int' and '%s'",
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
@@ -147,8 +145,7 @@ Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
   }
 
   std::fprintf(stderr,
-               "TypeError: unsupported operand type(s) for *: 'int' and '%.*s'",
-               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+               "TypeError: unsupported operand type(s) for *: 'int' and '%s'",
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
@@ -175,8 +172,7 @@ Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
   }
 
   std::fprintf(stderr,
-               "TypeError: unsupported operand type(s) for /: 'int' and '%.*s'",
-               static_cast<int>(PyObject::GetKlass(other)->name()->length()),
+               "TypeError: unsupported operand type(s) for /: 'int' and '%s'",
                PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
@@ -209,10 +205,9 @@ Handle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
     return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
   }
 
-  std::fprintf(
-      stderr, "TypeError: unsupported operand type(s) for //: 'int' and '%.*s'",
-      static_cast<int>(PyObject::GetKlass(other)->name()->length()),
-      PyObject::GetKlass(other)->name()->buffer());
+  std::fprintf(stderr,
+               "TypeError: unsupported operand type(s) for //: 'int' and '%s'",
+               PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
   return Handle<PyObject>::null();
@@ -231,10 +226,9 @@ Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
     return PyFloat::NewInstance(value);
   }
 
-  std::fprintf(
-      stderr, "TypeError: unsupported operand type(s) for %%: 'int' and '%.*s'",
-      static_cast<int>(PyObject::GetKlass(other)->name()->length()),
-      PyObject::GetKlass(other)->name()->buffer());
+  std::fprintf(stderr,
+               "TypeError: unsupported operand type(s) for %%: 'int' and '%s'",
+               PyObject::GetKlass(other)->name()->buffer());
   std::exit(1);
 
   return Handle<PyObject>::null();
@@ -259,8 +253,8 @@ bool PySmiKlass::Virtual_Greater(Handle<PyObject> self,
   auto other_name = PyObject::GetKlass(other)->name();
   std::fprintf(stderr,
                "TypeError: '>' not supported between instances of 'int' and "
-               "'%.*s'\n",
-               static_cast<int>(other_name->length()), other_name->buffer());
+               "'%s'\n",
+               other_name->buffer());
   std::exit(1);
   return false;
 }
@@ -278,8 +272,8 @@ bool PySmiKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
   auto other_name = PyObject::GetKlass(other)->name();
   std::fprintf(stderr,
                "TypeError: '<' not supported between instances of 'int' and "
-               "'%.*s'\n",
-               static_cast<int>(other_name->length()), other_name->buffer());
+               "'%s'\n",
+               other_name->buffer());
   std::exit(1);
   return false;
 }

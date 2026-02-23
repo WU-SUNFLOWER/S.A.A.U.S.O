@@ -17,7 +17,6 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 
-
 namespace saauso::internal {
 
 // static
@@ -68,9 +67,8 @@ void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   }
 
   auto file_name = handle(Tagged<PyString>::cast(file_name_obj));
-  std::printf("<code object greet at 0x%p, file \"%.*s\", line %d>",
-              reinterpret_cast<void*>((*code).ptr()),
-              static_cast<int>(file_name->length()), file_name->buffer(),
+  std::printf("<code object greet at 0x%p, file \"%s\", line %d>",
+              reinterpret_cast<void*>((*code).ptr()), file_name->buffer(),
               code->line_no_);
 }
 

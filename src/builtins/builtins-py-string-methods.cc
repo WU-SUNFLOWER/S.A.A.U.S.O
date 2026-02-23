@@ -91,8 +91,7 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
   auto target = args->Get(0);
   if (!IsPyString(target)) {
     auto type_name = PyObject::GetKlass(target)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %.*s",
-                        static_cast<int>(type_name->length()),
+    Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %s",
                         type_name->buffer());
     return false;
   }
@@ -299,9 +298,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
     if (!IsPyString(*sep_obj)) {
       auto type_name = PyObject::GetKlass(sep_obj)->name();
-      Runtime_ThrowErrorf(
-          ExceptionType::kTypeError, "must be str or None, not %.*s",
-          static_cast<int>(type_name->length()), type_name->buffer());
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "must be str or None, not %s", type_name->buffer());
       return kNullMaybeHandle;
     }
     sep_or_null = sep_obj;

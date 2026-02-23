@@ -132,8 +132,8 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     auto type_name = PyObject::GetKlass(value)->name();
     std::fprintf(
         stderr,
-        "TypeError: decoding to str: need a bytes-like object, %.*s found\n",
-        static_cast<int>(type_name->length()), type_name->buffer());
+        "TypeError: decoding to str: need a bytes-like object, %s found\n",
+        type_name->buffer());
     std::exit(1);
   }
 
@@ -174,8 +174,8 @@ bool PyStringKlass::Virtual_Less(Handle<PyObject> self,
     auto other_name = PyObject::GetKlass(other)->name();
     std::fprintf(stderr,
                  "TypeError: '<' not supported between instances of 'str' and "
-                 "'%.*s'\n",
-                 static_cast<int>(other_name->length()), other_name->buffer());
+                 "'%s'\n",
+                 other_name->buffer());
     std::exit(1);
   }
   auto s1 = Handle<PyString>::cast(self);
@@ -189,8 +189,8 @@ bool PyStringKlass::Virtual_Greater(Handle<PyObject> self,
     auto other_name = PyObject::GetKlass(other)->name();
     std::fprintf(stderr,
                  "TypeError: '>' not supported between instances of 'str' and "
-                 "'%.*s'\n",
-                 static_cast<int>(other_name->length()), other_name->buffer());
+                 "'%s'\n",
+                 other_name->buffer());
     std::exit(1);
   }
   auto s1 = Handle<PyString>::cast(self);
@@ -204,8 +204,8 @@ bool PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
     auto other_name = PyObject::GetKlass(other)->name();
     std::fprintf(stderr,
                  "TypeError: '<=' not supported between instances of 'str' and "
-                 "'%.*s'\n",
-                 static_cast<int>(other_name->length()), other_name->buffer());
+                 "'%s'\n",
+                 other_name->buffer());
     std::exit(1);
   }
   auto s1 = Handle<PyString>::cast(self);
@@ -219,8 +219,8 @@ bool PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
     auto other_name = PyObject::GetKlass(other)->name();
     std::fprintf(stderr,
                  "TypeError: '>=' not supported between instances of 'str' and "
-                 "'%.*s'\n",
-                 static_cast<int>(other_name->length()), other_name->buffer());
+                 "'%s'\n",
+                 other_name->buffer());
     std::exit(1);
   }
   auto s1 = Handle<PyString>::cast(self);
@@ -259,8 +259,7 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
     std::fprintf(stderr,
-                 "TypeError: can only concatenate str (not \"%.*s\") to str\n",
-                 static_cast<int>(other_klass->name()->length()),
+                 "TypeError: can only concatenate str (not \"%s\") to str\n",
                  other_klass->name()->buffer());
     std::exit(1);
   }
@@ -272,7 +271,7 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
 
 void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
   auto s = Handle<PyString>::cast(self);
-  std::printf("%.*s", static_cast<int>(s->length()), s->buffer());
+  std::printf("%s", s->buffer());
 }
 
 uint64_t PyStringKlass::Virtual_Hash(Handle<PyObject> self) {

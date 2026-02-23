@@ -74,8 +74,7 @@ int main(int argc, char** argv) {
     isolate->interpreter()->Run(boilerplate);
     if (isolate->HasPendingException()) {
       Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-      std::fprintf(stderr, "%.*s\n", static_cast<int>(formatted->length()),
-                   formatted->buffer());
+      std::fprintf(stderr, "%s\n", formatted->buffer());
       isolate->exception_state()->Clear();
       exit_code = 1;
     }

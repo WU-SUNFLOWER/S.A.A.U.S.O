@@ -52,8 +52,8 @@ Tagged<PySmi> PySmi::FromPyString(Tagged<PyString> py_string) {
       std::exit(1);
     }
     std::fprintf(stderr,
-                 "ValueError: invalid literal for int() with base 10: '%.*s'\n",
-                 static_cast<int>(py_string->length()), py_string->buffer());
+                 "ValueError: invalid literal for int() with base 10: '%s'\n",
+                 py_string->buffer());
     std::exit(1);
   }
 

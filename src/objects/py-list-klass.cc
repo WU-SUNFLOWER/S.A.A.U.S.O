@@ -169,8 +169,7 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
                                           Handle<PyObject> coeff) {
   if (!IsPySmi(coeff)) {
-    std::fprintf(stderr, "can't multiply sequence by non-int of type '%.*s'",
-                 static_cast<int>(PyObject::GetKlass(coeff)->name()->length()),
+    std::fprintf(stderr, "can't multiply sequence by non-int of type '%s'",
                  PyObject::GetKlass(coeff)->name()->buffer());
     std::exit(1);
   }
@@ -192,8 +191,7 @@ Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
   if (!IsPySmi(subscr)) {
-    std::fprintf(stderr, "list indices must be integers or slices, not %.*s",
-                 static_cast<int>(PyObject::GetKlass(subscr)->name()->length()),
+    std::fprintf(stderr, "list indices must be integers or slices, not %s",
                  PyObject::GetKlass(subscr)->name()->buffer());
     std::exit(1);
   }

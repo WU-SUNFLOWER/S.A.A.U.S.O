@@ -46,8 +46,7 @@ Maybe<double> ExtractSeconds(Handle<PyObject> value, const char* func_name) {
 
   Handle<PyString> type_name = PyObject::GetKlass(value)->name();
   Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "%s() argument must be int or float, not '%.*s'",
-                      func_name, static_cast<int>(type_name->length()),
+                      "%s() argument must be int or float, not '%s'", func_name,
                       type_name->buffer());
   return kNullMaybe;
 }

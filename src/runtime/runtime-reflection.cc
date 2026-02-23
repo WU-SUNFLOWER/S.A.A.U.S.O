@@ -150,25 +150,21 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
   Handle<PyObject> dict_obj = pos_args->Get(2);
 
   if (!IsPyString(name_obj)) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError, "type() argument 1 must be str, not '%.*s'",
-        static_cast<int>(PyObject::GetKlass(name_obj)->name()->length()),
-        PyObject::GetKlass(name_obj)->name()->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "type() argument 1 must be str, not '%s'",
+                        PyObject::GetKlass(name_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
   if (!IsPyTuple(bases_obj)) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "type() argument 2 must be tuple, not '%.*s'",
-        static_cast<int>(PyObject::GetKlass(bases_obj)->name()->length()),
-        PyObject::GetKlass(bases_obj)->name()->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "type() argument 2 must be tuple, not '%s'",
+                        PyObject::GetKlass(bases_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
   if (!IsPyDict(dict_obj)) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError, "type() argument 3 must be dict, not '%.*s'",
-        static_cast<int>(PyObject::GetKlass(dict_obj)->name()->length()),
-        PyObject::GetKlass(dict_obj)->name()->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "type() argument 3 must be dict, not '%s'",
+                        PyObject::GetKlass(dict_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
 

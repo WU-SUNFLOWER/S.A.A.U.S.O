@@ -29,9 +29,9 @@ MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(obj)->name();
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError, "exec() %s must be a dict, not %.*s",
-      role_name, static_cast<int>(type_name->length()), type_name->buffer());
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "exec() %s must be a dict, not %s", role_name,
+                      type_name->buffer());
   return kNullMaybeHandle;
 }
 
@@ -72,8 +72,8 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
 
     auto key_str = Handle<PyString>::cast(key);
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "exec() got an unexpected keyword argument '%.*s'",
-                        static_cast<int>(key_str->length()), key_str->buffer());
+                        "exec() got an unexpected keyword argument '%s'",
+                        key_str->buffer());
     return false;
   }
 

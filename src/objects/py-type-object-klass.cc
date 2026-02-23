@@ -80,8 +80,7 @@ void PyTypeObjectKlass::Finalize() {
 void PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto type_object = Handle<PyTypeObject>::cast(self);
   auto type_name = type_object->own_klass()->name();
-  std::printf("<class '%.*s'>", static_cast<int>(type_name->length()),
-              type_name->buffer());
+  std::printf("<class '%s'>", type_name->buffer());
 }
 
 Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
