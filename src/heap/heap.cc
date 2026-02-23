@@ -196,15 +196,6 @@ void Heap::IterateRoots(ObjectVisitor* v) {
 void Heap::DoScavenge() {
   ScavenageVisitor visitor;
 
-#ifdef _DEBUG
-  std::cout << "new_space_.SurvivorSpaceBase() = "
-            << new_space_.SurvivorSpaceBase() << std::endl;
-  std::cout << "new_space_.SurvivorSpaceTop() = "
-            << new_space_.SurvivorSpaceTop() << std::endl;
-
-  std::cout << "start to iterate root" << std::endl;
-#endif  //_DEBUG
-
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   IterateRoots(&visitor);
 
