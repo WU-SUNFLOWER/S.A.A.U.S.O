@@ -86,8 +86,14 @@ class [[nodiscard]] MaybeHandle {
   constexpr Address* location() const { return location_; }
 
   // 快速检测两个MaybeHandle是否指向同一个对象
-  constexpr bool is_identical_to(const MaybeHandle<T> other) const {
-    return location() == other.location() || operator*() == *other;
+  constexpr bool is_identical_to(const MaybeHandle<T> that) const {
+    if (location_ == that.location_) {
+      return true;
+    }
+    if (location_ == nullptr || that.location_ == nullptr) {
+      return false;
+    }
+    return Tagged<T>(*this->location_) == Tagged<T>(*that.location_);
   }
 
  private:

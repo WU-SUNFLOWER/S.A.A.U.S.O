@@ -30,7 +30,7 @@ executable("ut") {
       "./code/pyc-file-parser-unittest.cc",
 
       # GC压力测试运行时间太久了，这里先暂时注释掉
-      # "./heap/gc-interpreter-stress-unittest.cc",
+      "./heap/gc-interpreter-stress-unittest.cc",
       "./interpreter/interpreter-builtins-bootstrap-unittest.cc",
       "./interpreter/interpreter-builtins-constructor-unittest.cc",
       "./interpreter/interpreter-builtins-seq-unittest.cc",
