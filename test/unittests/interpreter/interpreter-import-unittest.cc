@@ -12,7 +12,7 @@
 #include "src/code/cpython312-pyc-compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/runtime/runtime-exceptions.h"
+#include "src/handles/maybe-handles.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -20,8 +20,8 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/handles/maybe-handles.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -218,7 +218,8 @@ print(pkg.sub.answer)
   ExpectPrintResult(expected);
 }
 
-// 无效模块名（如 "a..b"）会设置 ModuleNotFoundError 并返回空 MaybeHandle，不再 exit。
+// 无效模块名（如 "a..b"）会设置 ModuleNotFoundError 并返回空 MaybeHandle，不再
+// exit。
 TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
   HandleScope scope;
   Handle<PyString> invalid = PyString::NewInstance("a..b");
@@ -226,13 +227,10 @@ TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
   MaybeHandle<PyObject> result = isolate()->module_manager()->ImportModule(
       invalid, Handle<PyTuple>::null(), 0, Handle<PyDict>::null());
   ASSERT_TRUE(result.IsEmpty());
-  
-  ASSERT_TRUE(isolate()->HasPendingException());
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  ASSERT_FALSE(formatted.is_null());
-  std::string msg = formatted->ToStdString();
-  EXPECT_NE(msg.find("invalid module name"), std::string::npos);
-  isolate()->exception_state()->Clear();
+
+  std::string msg = ExpectedAndTakePendingExceptionMessage();
+  EXPECT_NE(msg.find("invalid module name"), std::string::npos)
+      << "got: " << msg;
 }
 
 TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {

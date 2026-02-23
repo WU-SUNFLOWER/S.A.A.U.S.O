@@ -66,16 +66,9 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsFloatParseError) {
   constexpr std::string_view kSource = R"(
 float("bad")
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("ValueError: could not convert string to float: 'bad'"),
-            std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(
+      kSource, "ValueError: could not convert string to float: 'bad'",
+      kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
@@ -84,16 +77,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
   constexpr std::string_view kSource = R"(
 str("abc", "utf-8")
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("TypeError: decoding str is not supported"),
-            std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "TypeError: decoding str is not supported",
+                                  kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
@@ -102,16 +87,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
   constexpr std::string_view kSource = R"(
 int(x=1)
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  auto formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("TypeError: int() takes no keyword arguments"),
-            std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "TypeError: int() takes no keyword arguments",
+                                  kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
@@ -120,15 +97,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
   constexpr std::string_view kSource = R"(
 int("4611686018427387904")
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("int too large to convert to Smi"), std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "int too large to convert to Smi",
+                                  kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
@@ -137,16 +107,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
   constexpr std::string_view kSource = R"(
 int("0x10", 10)
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  auto formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("ValueError: invalid literal for int()"),
-            std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "ValueError: invalid literal for int()",
+                                  kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsListAndTuple) {
@@ -212,17 +174,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArgCountError) {
   constexpr std::string_view kSource = R"(
 type()
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-
-  auto formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("TypeError: type() takes 1 or 3 arguments"),
-            std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "TypeError: type() takes 1 or 3 arguments",
+                                  kTestFileName);
 }
 
 }  // namespace saauso::internal

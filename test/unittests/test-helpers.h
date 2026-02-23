@@ -5,6 +5,7 @@
 #ifndef TEST_UNITTESTS_TEST_HELPERS_H_
 #define TEST_UNITTESTS_TEST_HELPERS_H_
 
+#include <string>
 #include <string_view>
 
 #include "testing/gtest/include/gtest/gtest.h"
@@ -13,8 +14,8 @@ namespace saauso::internal {
 
 // 单元测试夹具与公共测试基类。
 //
-// 该文件聚焦于测试生命周期与运行环境搭建（Initialize/Dispose、Isolate 创建等）；
-// 与之配套的无状态断言与小工具函数见 test-utils.{h,cc}。
+// 该文件聚焦于测试生命周期与运行环境搭建（Initialize/Dispose、Isolate
+// 创建等）； 与之配套的无状态断言与小工具函数见 test-utils.{h,cc}。
 template <typename T>
 class Global;
 
@@ -54,7 +55,7 @@ class IsolateOnlyTestBase : public ::testing::Test {
   static Isolate* isolate_;
 };
 
-// 基础解释器端到端测试夹具：将 builtins.print 注入为 Native_PrintV，
+// 基础解释器端到端测试夹具：将 builtins.print 注入为 Builtin_PrintV，
 // 并把每次 print 的实参收集到列表中供断言使用。
 class BasicInterpreterTest : public VmTestBase {
  protected:
@@ -70,6 +71,12 @@ class BasicInterpreterTest : public VmTestBase {
   // 编译并运行指定 Python 源码（CPython 3.12 字节码）。
   static void RunScript(std::string_view source, std::string_view file_name);
 
+  static std::string ExpectedAndTakePendingExceptionMessage();
+
+  static void RunScriptExpectExceptionContains(std::string_view source,
+                                               std::string_view expected_substr,
+                                               std::string_view file_name);
+
   // 断言当前用例收集到的 print 实参序列与 expected 相等。
   static void ExpectPrintResult(Handle<PyList> expected);
 
@@ -78,9 +85,9 @@ class BasicInterpreterTest : public VmTestBase {
 
  private:
   // 测试用 native print：把 args 中的每个实参追加到 printv_result_。
-  static MaybeHandle<PyObject> Native_PrintV(Handle<PyObject> host,
-                                             Handle<PyTuple> args,
-                                             Handle<PyDict> kwargs);
+  static MaybeHandle<PyObject> Builtin_PrintV(Handle<PyObject> host,
+                                              Handle<PyTuple> args,
+                                              Handle<PyDict> kwargs);
 
   static Global<PyList> printv_result_;
 };

@@ -68,9 +68,9 @@ void BasicInterpreterTest::SetUpTestSuite() {
 
   HandleScope scope;
   Handle<PyString> func_name = PyString::NewInstance("print");
-  // 将 builtins.print 替换为 Native_PrintV，用于捕获解释器侧的打印参数。
+  // 将 builtins.print 替换为 Builtin_PrintV，用于捕获解释器侧的打印参数。
   PyDict::Put(isolate_->interpreter()->builtins(), func_name,
-              PyFunction::NewInstance(&Native_PrintV, func_name));
+              PyFunction::NewInstance(&Builtin_PrintV, func_name));
 }
 
 void BasicInterpreterTest::TearDownTestSuite() {
@@ -92,15 +92,50 @@ void BasicInterpreterTest::RunScript(std::string_view source,
     HandleScope scope;
     Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
     ADD_FAILURE() << "Uncaught exception escaped interpreter: "
-                  << std::string_view(formatted->buffer(),
-                                      static_cast<size_t>(formatted->length()));
+                  << formatted->ToStdString();
     isolate_->exception_state()->Clear();
   }
 }
 
-MaybeHandle<PyObject> BasicInterpreterTest::Native_PrintV(Handle<PyObject> host,
-                                                           Handle<PyTuple> args,
-                                                           Handle<PyDict> kwargs) {
+std::string BasicInterpreterTest::ExpectedAndTakePendingExceptionMessage() {
+  HandleScope scope;
+
+  if (!isolate_->HasPendingException()) {
+    ADD_FAILURE() << "Expected pending exception, but none is present";
+    return std::string();
+  }
+
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  if (formatted.is_null()) {
+    ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr returned null";
+    isolate_->exception_state()->Clear();
+    return std::string();
+  }
+
+  std::string msg = formatted->ToStdString();
+  isolate_->exception_state()->Clear();
+  return msg;
+}
+
+void BasicInterpreterTest::RunScriptExpectExceptionContains(
+    std::string_view source,
+    std::string_view expected_substr,
+    std::string_view file_name) {
+  HandleScope scope;
+
+  isolate_->interpreter()->Run(
+      Compiler::CompileSource(isolate_, source, file_name));
+  ASSERT_TRUE(isolate_->HasPendingException());
+
+  std::string msg = ExpectedAndTakePendingExceptionMessage();
+  ASSERT_FALSE(msg.empty());
+  EXPECT_NE(msg.find(expected_substr), std::string::npos) << "got: " << msg;
+}
+
+MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
+    Handle<PyObject> host,
+    Handle<PyTuple> args,
+    Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
     PyList::Append(printv_result_.Get(), args->Get(i));

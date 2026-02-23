@@ -453,79 +453,74 @@ print(merge_sort(data))
 }
 
 TEST_F(BasicInterpreterTest, FunctionCallErrors) {
-  // 辅助：执行脚本并断言产生了包含 expected_substr 的 TypeError。
-  auto expect_type_error = [](std::string_view source,
-                              const char* expected_substr = "TypeError") {
-    HandleScope scope;
-    isolate()->interpreter()->Run(
-        Compiler::CompileSource(isolate(), source, kTestFileName));
-    ASSERT_TRUE(isolate()->HasPendingException());
-    auto f = Runtime_FormatPendingExceptionForStderr();
-    std::string msg(f->buffer(), static_cast<size_t>(f->length()));
-    EXPECT_NE(msg.find(expected_substr), std::string::npos) << "got: " << msg;
-    isolate()->exception_state()->Clear();
-  };
-
   // 缺失必填位置参数
-  expect_type_error(R"(
+  std::string source = R"(
 def foo(a, b = 1, c = 2):
     return a + b + c
 foo()
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // **kwargs 导致 "got multiple values for argument"
-  expect_type_error(R"(
+  source = R"(
 def foo(a, b, c):
     return a + b + c
 d = {"a": 2}
 foo(1, 2, 3, **d)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // DICT_MERGE 重复关键字
-  expect_type_error(R"(
+  source = R"(
 def foo(a, b, c):
     return a + b + c
 d1 = {"b": 2}
 d2 = {"b": 3}
 foo(1, **d1, **d2, c = 4)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // 关键字参数与 **kwargs 重复
-  expect_type_error(R"(
+  source = R"(
 def foo(a, b, c):
     return a + b + c
 d = {"b": 2}
 foo(1, b = 3, c = 4, **d)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // 位置参数过多
-  expect_type_error(R"(
+  source = R"(
 def bar(a, b, c):
     return a + b + c
 bar(1, 2, 3, 4)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // 位置参数与关键字参数重复
-  expect_type_error(R"(
+  source = R"(
 def bar(a, b, c):
     return a + b + c
 bar(1, a = 2, b = 3, c = 4)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // *args 展开后与关键字参数重复
-  expect_type_error(R"(
+  source = R"(
 def bar(a, b, c):
     return a + b + c
 t = (1, 2, 3)
 bar(*t, b = 2, c = 3)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 
   // 意外的关键字参数
-  expect_type_error(R"(
+  source = R"(
 def bar(a, b, c):
     return a + b + c
 bar(d = 1, a = 2, b = 3, c = 4)
-)");
+)";
+  RunScriptExpectExceptionContains(source, "TypeError", kTestFileName);
 }
 
 }  // namespace saauso::internal

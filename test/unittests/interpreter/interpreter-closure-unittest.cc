@@ -133,14 +133,8 @@ def outer():
     x = 1
 outer()
 )";
-
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  auto f = Runtime_FormatPendingExceptionForStderr();
-  std::string msg(f->buffer(), static_cast<size_t>(f->length()));
-  EXPECT_NE(msg.find("free variable"), std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "free variable",
+                                  kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, SharedCellAcrossClosures) {

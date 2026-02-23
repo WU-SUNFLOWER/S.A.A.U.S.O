@@ -329,14 +329,8 @@ class A:
 a = A()
 print(a.miss)
 )";
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("AttributeError"), std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "AttributeError",
+                                  kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
@@ -561,14 +555,8 @@ class A(object):
 
 print(A.miss)
 )";
-  isolate()->interpreter()->Run(
-      Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
-  ASSERT_TRUE(isolate()->HasPendingException());
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  std::string message(formatted->buffer(),
-                      static_cast<size_t>(formatted->length()));
-  EXPECT_NE(message.find("AttributeError"), std::string::npos);
-  isolate()->exception_state()->Clear();
+  RunScriptExpectExceptionContains(kSource, "AttributeError",
+                                  kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnInstanceFallsBackToClassMroProperty) {

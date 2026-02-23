@@ -82,6 +82,7 @@ class PyString : public PyObject {
   }
 
   std::string ToStdString() const;
+  const char* ToCString() const { return buffer(); }
 
   static Handle<PyString> Slice(Handle<PyString> self, int64_t from);
   static Handle<PyString> Slice(Handle<PyString> self,
