@@ -7,6 +7,7 @@
 
 #include <string_view>
 
+#include "src/common/globals.h"
 #include "src/handles/handles.h"
 
 namespace saauso::internal {
@@ -16,7 +17,7 @@ class PyList;
 class PyObject;
 class PyString;
 
-class ModuleUtils final {
+class ModuleUtils final : public AllStatic {
  public:
   static Handle<PyString> NewPyString(std::string_view s);
 
