@@ -206,13 +206,6 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
   int header1 [[maybe_unused]] = ReadInt32();
   int header2 [[maybe_unused]] = ReadInt32();
 
-#ifdef _DEBUG
-  std::printf("magic number is 0x%x\n", magic_number);
-  std::printf("flags is 0x%x\n", flags);
-  std::printf("header1 is %d\n", header1);
-  std::printf("header2 is %d\n", header2);
-#endif  // _DEBUG
-
   uint8_t raw_object_type =
       static_cast<uint8_t>(static_cast<unsigned char>(reader_->ReadByte()));
   bool ref_flag = HasRefFlag(raw_object_type);
