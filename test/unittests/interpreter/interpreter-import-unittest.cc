@@ -12,12 +12,15 @@
 #include "src/code/cpython312-pyc-compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/handles/maybe-handles.h"
 #include "src/objects/py-tuple.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
@@ -101,8 +104,11 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
 
   Handle<PyString> name = PyString::NewInstance("pkg.sub");
   Handle<PyTuple> non_empty_fromlist = PyTuple::NewInstance(1);
-  isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
-                                            Handle<PyDict>::null());
+
+  MaybeHandle<PyObject> imported_module =
+      isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
+                                                Handle<PyDict>::null());
+  ASSERT_FALSE(imported_module.IsEmpty());
 
   Handle<PyDict> modules = isolate()->module_manager()->modules();
   Handle<PyObject> pkg_module = modules->Get(PyString::NewInstance("pkg"));
@@ -115,8 +121,9 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   pkg_dict->Remove(sub_short_name);
   EXPECT_TRUE(pkg_dict->Get(sub_short_name).is_null());
 
-  isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
-                                            Handle<PyDict>::null());
+  imported_module = isolate()->module_manager()->ImportModule(
+      name, non_empty_fromlist, 0, Handle<PyDict>::null());
+  ASSERT_FALSE(imported_module.IsEmpty());
 
   Handle<PyObject> pkg_sub_module = modules->Get(name);
   Handle<PyObject> bound = pkg_dict->Get(sub_short_name);
@@ -211,15 +218,21 @@ print(pkg.sub.answer)
   ExpectPrintResult(expected);
 }
 
+// 无效模块名（如 "a..b"）会设置 ModuleNotFoundError 并返回空 MaybeHandle，不再 exit。
 TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        Handle<PyString> invalid = PyString::NewInstance("a..b");
-        isolate()->module_manager()->ImportModule(
-            invalid, Handle<PyTuple>::null(), 0, Handle<PyDict>::null());
-      },
-      "invalid module name");
+  HandleScope scope;
+  Handle<PyString> invalid = PyString::NewInstance("a..b");
+
+  MaybeHandle<PyObject> result = isolate()->module_manager()->ImportModule(
+      invalid, Handle<PyTuple>::null(), 0, Handle<PyDict>::null());
+  ASSERT_TRUE(result.IsEmpty());
+  
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  ASSERT_FALSE(formatted.is_null());
+  std::string msg = formatted->ToStdString();
+  EXPECT_NE(msg.find("invalid module name"), std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {

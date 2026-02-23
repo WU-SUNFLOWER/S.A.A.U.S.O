@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 #include <chrono>
+#include <cinttypes>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/modules/module-manager.h"
@@ -21,7 +21,9 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 #include "src/utils/random-number-generator.h"
 
 namespace saauso::internal {
@@ -46,27 +48,27 @@ void EnsureSeeded() {
 }
 
 void FailNoKeywordArgs(const char* func_name) {
-  std::fprintf(stderr, "TypeError: random.%s() takes no keyword arguments\n",
-               func_name);
-  std::exit(1);
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "random.%s() takes no keyword arguments", func_name);
 }
 
 void FailArgRangeEmpty(const char* func_name) {
-  std::fprintf(stderr, "ValueError: empty range for %s()\n", func_name);
-  std::exit(1);
+  Runtime_ThrowErrorf(ExceptionType::kValueError, "empty range for %s()",
+                      func_name);
 }
 
-int64_t ExtractSmi(Handle<PyObject> value, const char* func_name) {
+// 成功时返回 true 并写入 *out；类型不符时抛 TypeError 并返回 false。
+Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
   if (IsPySmi(value)) {
-    return PySmi::ToInt(Handle<PySmi>::cast(value));
+    return Maybe<int64_t>(PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
 
-  auto type_name = PyObject::GetKlass(value)->name();
-  std::fprintf(stderr, "TypeError: %s() argument must be int, not '%.*s'\n",
-               func_name, static_cast<int>(type_name->length()),
-               type_name->buffer());
-  std::exit(1);
-  return 0;
+  Handle<PyString> type_name = PyObject::GetKlass(value)->name();
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError, "%s() argument must be int, not '%.*s'",
+      func_name, static_cast<int>(type_name->length()), type_name->buffer());
+
+  return kNullMaybe;
 }
 
 void InstallFunc(Handle<PyDict> module_dict,
@@ -79,20 +81,17 @@ void InstallFunc(Handle<PyDict> module_dict,
 MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("seed");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc > 1) {
-    std::fprintf(stderr,
-                 "TypeError: random.seed() takes at most 1 argument (%lld "
-                 "given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "random.seed() takes at most 1 argument (" PRId64 " given)", argc);
+    return kNullMaybe;
   }
-
   uint64_t seed = 0;
   if (argc == 0) {
     seed = NowSeed();
@@ -100,17 +99,13 @@ MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
     Handle<PyObject> a = args->Get(0);
     if (IsPyNone(a)) {
       seed = NowSeed();
-    } else if (IsPySmi(a)) {
-      seed = static_cast<uint64_t>(PySmi::ToInt(Handle<PySmi>::cast(a)));
     } else {
-      auto type_name = PyObject::GetKlass(a)->name();
-      std::fprintf(stderr,
-                   "TypeError: seed() argument must be int, not '%.*s'\n",
-                   static_cast<int>(type_name->length()), type_name->buffer());
-      std::exit(1);
+      int64_t val = 0;
+      ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), val,
+                                 ExtractSmi(a, "seed"));
+      seed = static_cast<uint64_t>(val);
     }
   }
-
   g_rng.Seed(seed);
   g_seeded = true;
   return handle(Isolate::Current()->py_none_object());
@@ -119,20 +114,18 @@ MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
 MaybeHandle<PyObject> Random_Random(Handle<PyObject> host,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("random");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    std::fprintf(stderr,
-                 "TypeError: random.random() takes 0 positional arguments but "
-                 "%lld were given\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "random.random() takes 0 positional arguments but "
+                        "%" PRId64 " were given",
+                        argc);
+    return kNullMaybe;
   }
-
   EnsureSeeded();
   return PyFloat::NewInstance(g_rng.NextDouble01());
 }
@@ -140,26 +133,30 @@ MaybeHandle<PyObject> Random_Random(Handle<PyObject> host,
 MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> host,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("randint");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 2) {
-    std::fprintf(stderr,
-                 "TypeError: random.randint() takes exactly 2 arguments (%lld "
-                 "given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "random.randint() takes exactly 2 arguments (%" PRId64 " given)", argc);
+    return kNullMaybe;
   }
 
-  int64_t a = ExtractSmi(args->Get(0), "randint");
-  int64_t b = ExtractSmi(args->Get(1), "randint");
+  int64_t a = 0;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), a,
+                             ExtractSmi(args->Get(0), "randint"));
+
+  int64_t b = 0;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), b,
+                             ExtractSmi(args->Get(1), "randint"));
+
   if (a > b) {
     FailArgRangeEmpty("randint");
+    return kNullMaybe;
   }
-
   EnsureSeeded();
   const uint64_t bound = static_cast<uint64_t>(b - a) + 1;
   uint64_t offset = g_rng.NextU64Bounded(bound);
@@ -170,38 +167,39 @@ MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> host,
 MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("randrange");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1 || argc > 3) {
-    std::fprintf(
-        stderr,
-        "TypeError: random.randrange() takes from 1 to 3 positional arguments "
-        "but %lld were given\n",
-        static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "random.randrange() takes from 1 to 3 positional "
+                        "arguments but %" PRId64 " were given",
+                        argc);
+    return kNullMaybe;
   }
-
   int64_t start = 0;
   int64_t stop = 0;
   int64_t step = 1;
 
   if (argc == 1) {
-    stop = ExtractSmi(args->Get(0), "randrange");
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), stop,
+                               ExtractSmi(args->Get(0), "randrange"));
   } else {
-    start = ExtractSmi(args->Get(0), "randrange");
-    stop = ExtractSmi(args->Get(1), "randrange");
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), start,
+                               ExtractSmi(args->Get(0), "randrange"));
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), stop,
+                               ExtractSmi(args->Get(1), "randrange"));
     if (argc == 3) {
-      step = ExtractSmi(args->Get(2), "randrange");
+      ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), step,
+                                 ExtractSmi(args->Get(2), "randrange"));
     }
   }
 
   if (step == 0) {
-    std::fprintf(stderr, "ValueError: zero step for randrange()\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kValueError, "zero step for randrange()");
+    return kNullMaybe;
   }
 
   EnsureSeeded();
@@ -209,6 +207,7 @@ MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
   if (step > 0) {
     if (start >= stop) {
       FailArgRangeEmpty("randrange");
+      return kNullMaybe;
     }
     uint64_t width = static_cast<uint64_t>(stop - start);
     uint64_t step_u = static_cast<uint64_t>(step);
@@ -220,6 +219,7 @@ MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
 
   if (start <= stop) {
     FailArgRangeEmpty("randrange");
+    return kNullMaybe;
   }
 
   uint64_t step_u = static_cast<uint64_t>(-step);
@@ -233,37 +233,37 @@ MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
 MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> host,
                                          Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("getrandbits");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
-    std::fprintf(stderr,
-                 "TypeError: random.getrandbits() takes exactly 1 argument "
-                 "(%lld given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "random.getrandbits() takes exactly 1 argument "
+                        "(%" PRId64 " given)",
+                        argc);
+    return kNullMaybe;
   }
 
-  int64_t k = ExtractSmi(args->Get(0), "getrandbits");
+  int64_t k = 0;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), k,
+                             ExtractSmi(args->Get(0), "getrandbits"));
+
   if (k < 0) {
-    std::fprintf(stderr, "ValueError: number of bits must be non-negative\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "number of bits must be non-negative");
+    return kNullMaybe;
   }
   if (k == 0) {
     return handle(PySmi::FromInt(0));
   }
-
   // MVP：当前虚拟机没有 big-int，因此仅支持可表示为 Smi 的 bit 数。
   if (k > 62) {
-    std::fprintf(stderr,
-                 "OverflowError: getrandbits() k too large for SAAUSO MVP "
-                 "int\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kRuntimeError,
+                       "getrandbits() k too large for SAAUSO MVP int");
+    return kNullMaybe;
   }
-
   EnsureSeeded();
   uint64_t mask = (uint64_t{1} << static_cast<uint64_t>(k)) - 1;
   uint64_t x = g_rng.NextU64() & mask;
@@ -273,29 +273,26 @@ MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> host,
 MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("choice");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
-    std::fprintf(stderr,
-                 "TypeError: random.choice() takes exactly 1 argument (%lld "
-                 "given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "random.choice() takes exactly 1 argument (%" PRId64 " given)", argc);
+    return kNullMaybe;
   }
-
   Handle<PyObject> seq = args->Get(0);
   EnsureSeeded();
 
   if (IsPyList(seq)) {
     auto list = Handle<PyList>::cast(seq);
     if (list->length() == 0) {
-      std::fprintf(stderr,
-                   "IndexError: Cannot choose from an empty sequence\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kIndexError,
+                         "Cannot choose from an empty sequence");
+      return kNullMaybe;
     }
     uint64_t index =
         g_rng.NextU64Bounded(static_cast<uint64_t>(list->length()));
@@ -305,9 +302,9 @@ MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
   if (IsPyTuple(seq)) {
     auto tuple = Handle<PyTuple>::cast(seq);
     if (tuple->length() == 0) {
-      std::fprintf(stderr,
-                   "IndexError: Cannot choose from an empty sequence\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kIndexError,
+                         "Cannot choose from an empty sequence");
+      return kNullMaybe;
     }
     uint64_t index =
         g_rng.NextU64Bounded(static_cast<uint64_t>(tuple->length()));
@@ -317,48 +314,44 @@ MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
   if (IsPyString(seq)) {
     auto s = Handle<PyString>::cast(seq);
     if (s->length() == 0) {
-      std::fprintf(stderr,
-                   "IndexError: Cannot choose from an empty sequence\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kIndexError,
+                         "Cannot choose from an empty sequence");
+      return kNullMaybe;
     }
     uint64_t index = g_rng.NextU64Bounded(static_cast<uint64_t>(s->length()));
     return PyString::Slice(s, static_cast<int64_t>(index),
                            static_cast<int64_t>(index) + 1);
   }
 
-  auto type_name = PyObject::GetKlass(seq)->name();
-  std::fprintf(stderr, "TypeError: choice() unsupported sequence type '%.*s'\n",
-               static_cast<int>(type_name->length()), type_name->buffer());
-  std::exit(1);
-  return Handle<PyObject>::null();
+  Handle<PyString> type_name = PyObject::GetKlass(seq)->name();
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError, "choice() unsupported sequence type '%.*s'",
+      static_cast<int>(type_name->length()), type_name->buffer());
+  return kNullMaybe;
 }
 
 MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> host,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("shuffle");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
-    std::fprintf(stderr,
-                 "TypeError: random.shuffle() takes exactly 1 argument (%lld "
-                 "given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "random.shuffle() takes exactly 1 argument (%" PRId64 " given)", argc);
+    return kNullMaybe;
   }
-
   Handle<PyObject> x = args->Get(0);
   if (!IsPyList(x)) {
-    auto type_name = PyObject::GetKlass(x)->name();
-    std::fprintf(stderr,
-                 "TypeError: shuffle() argument must be list, not '%.*s'\n",
-                 static_cast<int>(type_name->length()), type_name->buffer());
-    std::exit(1);
+    Handle<PyString> type_name = PyObject::GetKlass(x)->name();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "shuffle() argument must be list, not '%s'",
+                        type_name->buffer());
+    return kNullMaybe;
   }
-
   EnsureSeeded();
 
   auto list = Handle<PyList>::cast(x);

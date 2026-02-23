@@ -4,25 +4,25 @@
 
 #include "src/modules/module-finder.h"
 
-#include <cstdio>
-#include <cstdlib>
 #include <filesystem>
 
+#include "src/execution/isolate.h"
 #include "src/modules/module-utils.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/utils/file-utils.h"
 
 namespace saauso::internal {
 
-ModuleLocation ModuleFinder::FindModuleLocation(
+Maybe<ModuleLocation> ModuleFinder::FindModuleLocation(
     Handle<PyList> search_path_list,
     Handle<PyString> relative_name) const {
   HandleScope scope;
   ModuleLocation result;
   if (search_path_list.is_null()) {
-    return result;
+    return Maybe<ModuleLocation>(result);
   }
 
   std::filesystem::path relative{relative_name->ToStdString()};
@@ -33,8 +33,9 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       continue;
     }
     if (!IsPyString(elem)) {
-      std::fprintf(stderr, "TypeError: sys.path items must be strings\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "sys.path items must be strings");
+      return kNullMaybe;
     }
     std::string base = Handle<PyString>::cast(elem)->ToStdString();
     std::filesystem::path base_path(base);
@@ -46,7 +47,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       result.kind = ModuleFileKind::kSourcePy;
       result.is_package = true;
       result.package_dir = NormalizePath((base_path / relative).string());
-      return result;
+      return Maybe<ModuleLocation>(result);
     }
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
@@ -57,7 +58,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       result.kind = ModuleFileKind::kBytecodePyc;
       result.is_package = true;
       result.package_dir = NormalizePath((base_path / relative).string());
-      return result;
+      return Maybe<ModuleLocation>(result);
     }
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
@@ -67,7 +68,7 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       result.origin = NormalizePath(module_py.string());
       result.kind = ModuleFileKind::kSourcePy;
       result.is_package = false;
-      return result;
+      return Maybe<ModuleLocation>(result);
     }
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
@@ -77,11 +78,11 @@ ModuleLocation ModuleFinder::FindModuleLocation(
       result.origin = NormalizePath(module_pyc.string());
       result.kind = ModuleFileKind::kBytecodePyc;
       result.is_package = false;
-      return result;
+      return Maybe<ModuleLocation>(result);
     }
   }
 
-  return result;
+  return Maybe<ModuleLocation>(result);
 }
 
 bool ModuleFinder::ReadModuleSource(const ModuleLocation& location,

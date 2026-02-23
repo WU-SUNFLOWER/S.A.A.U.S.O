@@ -4,10 +4,9 @@
 
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 #include <thread>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/modules/module-manager.h"
@@ -21,32 +20,35 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
 namespace {
 
 void FailNoKeywordArgs(const char* func_name) {
-  std::fprintf(stderr, "TypeError: time.%s() takes no keyword arguments\n",
-               func_name);
-  std::exit(1);
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "time.%s() takes no keyword arguments", func_name);
 }
 
-double ExtractSeconds(Handle<PyObject> value, const char* func_name) {
+// 成功时返回 true 并写入 *out；类型不符时抛 TypeError 并返回 false。
+Maybe<double> ExtractSeconds(Handle<PyObject> value, const char* func_name) {
   if (IsPyFloat(value)) {
-    return Handle<PyFloat>::cast(value)->value();
-  }
-  if (IsPySmi(value)) {
-    return static_cast<double>(PySmi::ToInt(Handle<PySmi>::cast(value)));
+    return Maybe<double>(Handle<PyFloat>::cast(value)->value());
   }
 
-  auto type_name = PyObject::GetKlass(value)->name();
-  std::fprintf(
-      stderr, "TypeError: %s() argument must be int or float, not '%.*s'\n",
-      func_name, static_cast<int>(type_name->length()), type_name->buffer());
-  std::exit(1);
-  return 0;
+  if (IsPySmi(value)) {
+    return Maybe<double>(PySmi::ToInt(Handle<PySmi>::cast(value)));
+  }
+
+  Handle<PyString> type_name = PyObject::GetKlass(value)->name();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "%s() argument must be int or float, not '%.*s'",
+                      func_name, static_cast<int>(type_name->length()),
+                      type_name->buffer());
+  return kNullMaybe;
 }
 
 double WallTimeSeconds() {
@@ -71,41 +73,36 @@ void InstallFunc(Handle<PyDict> module_dict,
 MaybeHandle<PyObject> Time_Time(Handle<PyObject> host,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("time");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    std::fprintf(stderr,
-                 "TypeError: time.time() takes 0 positional arguments but %lld "
-                 "were given\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "time.time() takes 0 positional arguments but %lld "
+                        "were given",
+                        static_cast<long long>(argc));
+    return kNullMaybe;
   }
-
   return PyFloat::NewInstance(WallTimeSeconds());
 }
 
 MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> host,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("perf_counter");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    std::fprintf(
-        stderr,
-        "TypeError: time.perf_counter() takes 0 positional arguments but %lld "
-        "were given\n",
-        static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "time.perf_counter() takes 0 positional arguments but "
+                        "%lld were given",
+                        static_cast<long long>(argc));
+    return kNullMaybe;
   }
-
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
@@ -118,24 +115,26 @@ MaybeHandle<PyObject> Time_Monotonic(Handle<PyObject> host,
 MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> host,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
-  (void)host;
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     FailNoKeywordArgs("sleep");
+    return kNullMaybe;
   }
-
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
-    std::fprintf(stderr,
-                 "TypeError: time.sleep() takes exactly 1 argument (%lld "
-                 "given)\n",
-                 static_cast<long long>(argc));
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "time.sleep() takes exactly 1 argument (%lld given)",
+                        static_cast<long long>(argc));
+    return kNullMaybe;
   }
 
-  double seconds = ExtractSeconds(args->Get(0), "sleep");
+  double seconds = 0;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), seconds,
+                             ExtractSeconds(args->Get(0), "sleep"));
+
   if (seconds < 0) {
-    std::fprintf(stderr, "ValueError: sleep length must be non-negative\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "sleep length must be non-negative");
+    return kNullMaybe;
   }
 
   std::this_thread::sleep_for(std::chrono::duration<double>(seconds));

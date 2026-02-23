@@ -4,9 +4,7 @@
 
 #include "src/modules/module-loader.h"
 
-#include <cstdio>
-#include <cstdlib>
-
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/modules/builtin-module-registry.h"
 #include "src/modules/module-finder.h"
@@ -18,11 +16,14 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-exec.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -48,8 +49,7 @@ void InitializeModuleDict(Handle<PyModule> module,
     }
   }
 
-  PyDict::Put(module_dict, PyString::NewInstance("__file__"),
-              ModuleUtils::NewPyString(loc.origin));
+  PyDict::Put(module_dict, ST(file), ModuleUtils::NewPyString(loc.origin));
 
   PyDict::Put(module_dict, ST(class),
               PyObject::GetKlass(module)->type_object());
@@ -72,56 +72,57 @@ ModuleLoader::ModuleLoader(Isolate* isolate,
       manager_(manager),
       builtin_registry_(builtin_registry) {}
 
-Handle<PyModule> ModuleLoader::LoadModulePart(Handle<PyString> fullname,
-                                              Handle<PyList> search_path_list) {
+MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
+    Handle<PyString> fullname,
+    Handle<PyList> search_path_list) {
   EscapableHandleScope scope;
 
-  Handle<PyModule> loaded_module =
-      LoadModulePartImpl(fullname, search_path_list);
+  Handle<PyObject> loaded;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, loaded, LoadModulePartOrNoneImpl(fullname, search_path_list));
 
-  if (loaded_module.is_null()) {
-    std::fprintf(stderr, "ModuleNotFoundError: No module named '%s'\n",
-                 fullname->buffer());
-    std::exit(1);
-    return Handle<PyModule>::null();
+  if (IsPyNone(loaded)) {
+    Runtime_ThrowErrorf(ExceptionType::kModuleNotFoundError,
+                        "No module named '%s'", fullname->buffer());
+    return kNullMaybe;
   }
 
-  // 将加载的模块保存到modules缓存
+  auto loaded_module = Handle<PyModule>::cast(loaded);
+
+  // 将加载的模块保存到 modules 缓存
   Handle<PyDict> modules_dict = manager_->modules();
   PyDict::Put(modules_dict, fullname, loaded_module);
 
   return scope.Escape(loaded_module);
 }
 
-Handle<PyModule> ModuleLoader::LoadModulePartImpl(
+MaybeHandle<PyObject> ModuleLoader::LoadModulePartOrNoneImpl(
     Handle<PyString> fullname,
     Handle<PyList> search_path_list) {
-  // 先尝试查找是否命中builtin模块
-  Handle<PyModule> module = LoadAsBuiltinModule(fullname);
-  if (!module.is_null()) {
-    return module;
+  // 先尝试查找是否命中 builtin 模块
+  Handle<PyObject> builtin_module = LoadAsBuiltinModuleOrNone(fullname);
+  if (!IsPyNone(builtin_module)) {
+    return builtin_module;
   }
 
-  // 不是builtin模块，走OS文件系统进行查找
-  module = LoadAsFileModule(fullname, search_path_list);
-  if (!module.is_null()) {
-    return module;
-  }
-
-  return Handle<PyModule>::null();
+  // 不是 builtin 模块，走 OS 文件系统进行查找
+  return LoadAsFileModuleOrNone(fullname, search_path_list);
 }
 
-Handle<PyModule> ModuleLoader::LoadAsBuiltinModule(Handle<PyString> fullname) {
+Handle<PyObject> ModuleLoader::LoadAsBuiltinModuleOrNone(
+    Handle<PyString> fullname) {
   BuiltinModuleInitFunc builtin_init = builtin_registry_->Find(fullname);
   if (builtin_init == nullptr) {
-    return Handle<PyModule>::null();
+    return handle(isolate_->py_none_object());
   }
 
   Handle<PyModule> module = builtin_init(isolate_, manager_);
+  assert(!module.is_null());
+
   return module;
 }
 
-Handle<PyModule> ModuleLoader::LoadAsFileModule(
+MaybeHandle<PyObject> ModuleLoader::LoadAsFileModuleOrNone(
     Handle<PyString> fullname,
     Handle<PyList> search_path_list) {
   auto dot_index = fullname->LastIndexOf(ST(dot));
@@ -132,39 +133,39 @@ Handle<PyModule> ModuleLoader::LoadAsFileModule(
     relative_name = PyString::Slice(fullname, dot_index + 1);
   }
 
-  ModuleLocation loc =
-      finder_->FindModuleLocation(search_path_list, relative_name);
-  if (loc.origin.empty()) {
-    return Handle<PyModule>::null();
+  ModuleLocation loc;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, loc,
+      finder_->FindModuleLocation(search_path_list, relative_name));
+
+  if (loc.origin.empty()) [[unlikely]] {
+    return handle(isolate_->py_none_object());
   }
 
-  return ExecuteModuleInternal(fullname, loc);
+  return ExecuteModuleOrNoneInternal(fullname, loc);
 }
 
-Handle<PyModule> ModuleLoader::ExecuteModuleInternal(
+MaybeHandle<PyObject> ModuleLoader::ExecuteModuleOrNoneInternal(
     Handle<PyString> fullname,
     const ModuleLocation& loc) {
-  Handle<PyModule> module;
   if (loc.kind == ModuleFileKind::kSourcePy) {
     Handle<PyString> source;
     if (!finder_->ReadModuleSource(loc, source)) {
-      std::fprintf(stderr, "ImportError: cannot read '%s'\n",
-                   loc.origin.c_str());
-      std::exit(1);
+      Runtime_ThrowErrorf(ExceptionType::kImportError, "cannot read '%s'",
+                          loc.origin.c_str());
+      return kNullMaybe;
     }
-    module = ExecuteModuleFromSource(fullname, loc, source);
-    return module;
+    return ExecuteModuleFromSource(fullname, loc, source);
   }
 
   if (loc.kind == ModuleFileKind::kBytecodePyc) {
-    module = ExecuteModuleFromPyc(fullname, loc);
-    return module;
+    return ExecuteModuleFromPyc(fullname, loc);
   }
 
-  return Handle<PyModule>::null();
+  return handle(isolate_->py_none_object());
 }
 
-Handle<PyModule> ModuleLoader::ExecuteModuleFromSource(
+MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
     Handle<PyString> fullname,
     const ModuleLocation& loc,
     Handle<PyString> source) {
@@ -172,24 +173,22 @@ Handle<PyModule> ModuleLoader::ExecuteModuleFromSource(
   InitializeModuleDict(module, fullname, loc);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  if (Runtime_ExecutePythonSourceCode(source, module_dict, module_dict, loc.origin)
-          .IsEmpty()) {
-    return Handle<PyModule>::null();
-  }
+  RETURN_ON_EXCEPTION(isolate_,
+                      Runtime_ExecutePythonSourceCode(source, module_dict,
+                                                      module_dict, loc.origin));
 
   return module;
 }
 
-Handle<PyModule> ModuleLoader::ExecuteModuleFromPyc(Handle<PyString> fullname,
-                                                    const ModuleLocation& loc) {
+MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromPyc(
+    Handle<PyString> fullname,
+    const ModuleLocation& loc) {
   Handle<PyModule> module = PyModule::NewInstance();
   InitializeModuleDict(module, fullname, loc);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  if (Runtime_ExecutePythonPycFile(loc.origin, module_dict, module_dict)
-          .IsEmpty()) {
-    return Handle<PyModule>::null();
-  }
+  RETURN_ON_EXCEPTION(isolate_, Runtime_ExecutePythonPycFile(
+                                    loc.origin, module_dict, module_dict));
 
   return module;
 }

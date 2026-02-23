@@ -2,42 +2,48 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-
 #include "src/modules/module-name-resolver.h"
+
+#include <cassert>
+
+#include "src/execution/exception-utils.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
-Handle<PyString> ModuleNameResolver::ResolveFullName(Handle<PyString> name,
-                                                     int64_t level,
-                                                     Handle<PyDict> globals) {
+MaybeHandle<PyString> ModuleNameResolver::ResolveFullName(
+    Handle<PyString> name,
+    int64_t level,
+    Handle<PyDict> globals) {
   EscapableHandleScope scope;
   assert(level >= 0);
 
-  // 只有在相对导入的情况下，才允许模块name为空，
-  // 例如`from .. import my_module`
+  // 只有在相对导入的情况下，才允许模块 name 为空，例如 `from .. import
+  // my_module`
   if (level == 0 && (name.is_null() || name->length() == 0)) {
-    std::fprintf(stderr, "ModuleNotFoundError: empty module name\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kModuleNotFoundError,
+                       "empty module name");
+    return kNullMaybe;
   }
 
-  Handle<PyString> fullname = ResolveRelativeImportName(name, level, globals);
+  Handle<PyString> fullname;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), fullname,
+                             ResolveRelativeImportName(name, level, globals));
+
   return scope.Escape(fullname);
 }
 
-Handle<PyString> ModuleNameResolver::ResolveRelativeImportName(
+MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     Handle<PyString> name,
     int64_t level,
     Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
-  // 如果不是相对导入，自然不用处理了，直接返回即可
+  // 如果不是相对导入，直接返回即可
   if (level <= 0) {
     if (name.is_null()) {
       return scope.Escape(PyString::NewInstance(""));
@@ -45,21 +51,23 @@ Handle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     return scope.Escape(name);
   }
 
-  Handle<PyString> base = ResolvePackageFromGlobals(globals);
+  Handle<PyString> base;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), base,
+                             ResolvePackageFromGlobals(globals));
+
   if (base->length() == 0) {
-    std::fprintf(stderr,
-                 "ImportError: attempted relative import with no known parent "
-                 "package\n");
-    std::exit(1);
+    Runtime_ThrowError(
+        ExceptionType::kImportError,
+        "attempted relative import with no known parent package");
+    return kNullMaybe;
   }
 
   for (int i = 1; i < level; ++i) {
     Handle<PyString> parent = ParentModuleNameOrEmpty(base);
     if (parent->length() == 0) {
-      std::fprintf(
-          stderr,
-          "ImportError: attempted relative import beyond top-level package\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kImportError,
+                         "attempted relative import beyond top-level package");
+      return kNullMaybe;
     }
     base = parent;
   }
@@ -73,7 +81,7 @@ Handle<PyString> ModuleNameResolver::ResolveRelativeImportName(
   return scope.Escape(fullname);
 }
 
-Handle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
+MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
@@ -84,16 +92,18 @@ Handle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   Handle<PyObject> package_obj = globals->Get(ST(package));
   if (!package_obj.is_null()) {
     if (!IsPyString(package_obj)) {
-      std::fprintf(stderr, "TypeError: __package__ must be a string\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "__package__ must be a string");
+      return kNullMaybe;
     }
     return scope.Escape(Handle<PyString>::cast(package_obj));
   }
 
   Handle<PyObject> name_obj = globals->Get(ST(name));
   if (name_obj.is_null() || !IsPyString(name_obj)) {
-    std::fprintf(stderr, "ImportError: missing __name__ in globals\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kImportError,
+                       "missing __name__ in globals");
+    return kNullMaybe;
   }
 
   Handle<PyString> name_str = Handle<PyString>::cast(name_obj);

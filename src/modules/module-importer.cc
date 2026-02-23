@@ -4,9 +4,7 @@
 
 #include "src/modules/module-importer.h"
 
-#include <cstdio>
-#include <cstdlib>
-
+#include "src/execution/exception-utils.h"
 #include "src/modules/module-loader.h"
 #include "src/modules/module-manager.h"
 #include "src/modules/module-name-resolver.h"
@@ -17,6 +15,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -50,28 +49,34 @@ ModulePartScanResult ScanNextPart(Handle<PyString> fullname,
 
 ModuleImporter::ModuleImporter(ModuleManager* manager) : manager_(manager) {}
 
-Handle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
-                                              Handle<PyTuple> fromlist,
-                                              int64_t level,
-                                              Handle<PyDict> globals) {
+MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
+                                                   Handle<PyTuple> fromlist,
+                                                   int64_t level,
+                                                   Handle<PyDict> globals) {
   EscapableHandleScope scope;
 
-  Handle<PyString> fullname =
-      ModuleNameResolver::ResolveFullName(name, level, globals);
+  Handle<PyString> fullname;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      manager_->isolate(), fullname,
+      ModuleNameResolver::ResolveFullName(name, level, globals));
+
   if (!ModuleUtils::IsValidModuleName(fullname)) {
-    std::fprintf(stderr, "ModuleNotFoundError: invalid module name '%.*s'\n",
-                 static_cast<int>(fullname->length()), fullname->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kModuleNotFoundError,
+                        "invalid module name '%s'", fullname->buffer());
+    return kNullMaybe;
   }
 
-  Handle<PyModule> last_module = ImportModuleImpl(fullname);
+  Handle<PyModule> last_module;
+  ASSIGN_RETURN_ON_EXCEPTION(manager_->isolate(), last_module,
+                             ImportModuleImpl(fullname));
+
   Handle<PyModule> result =
       ApplyImportReturnSemantics(fullname, fromlist, last_module);
-
   return scope.Escape(result);
 }
 
-Handle<PyModule> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
+MaybeHandle<PyModule> ModuleImporter::ImportModuleImpl(
+    Handle<PyString> fullname) {
   Handle<PyModule> last_module;
 
   int64_t segment_start = 0;
@@ -80,8 +85,11 @@ Handle<PyModule> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
 
     Handle<PyString> part_module_fullname =
         PyString::Slice(fullname, 0, scan.part_end);
-    Handle<PyModule> part_module = GetOrLoadModulePart(
-        part_module_fullname, segment_start == 0, last_module);
+    Handle<PyModule> part_module;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        manager_->isolate(), part_module,
+        GetOrLoadModulePart(part_module_fullname, segment_start == 0,
+                            last_module));
 
     if (segment_start != 0) {
       Handle<PyString> part_module_short_name =
@@ -95,8 +103,11 @@ Handle<PyModule> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
       break;
     }
 
-    // 如果当前段不是最后一段，则对应 module 必须为 package
-    EnsurePackageForNextSegment(part_module, part_module_fullname);
+    // 如果当前段不是最后一段，则对应 module 必须为 package！
+    // 否则抛出错误！
+    if (!EnsurePackageForNextSegment(part_module, part_module_fullname)) {
+      return kNullMaybe;
+    }
 
     segment_start = scan.dot + 1;
   }
@@ -104,7 +115,7 @@ Handle<PyModule> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
   return last_module;
 }
 
-Handle<PyModule> ModuleImporter::GetOrLoadModulePart(
+MaybeHandle<PyModule> ModuleImporter::GetOrLoadModulePart(
     Handle<PyString> part_fullname,
     bool is_top,
     Handle<PyObject> parent_module) {
@@ -114,15 +125,18 @@ Handle<PyModule> ModuleImporter::GetOrLoadModulePart(
     return Handle<PyModule>::cast(cached);
   }
 
-  // Slow Path: 走module loader加载模块
-  Handle<PyList> search_path_list = SelectSearchPathList(is_top, parent_module);
+  // Slow Path: 走 module loader 加载模块
+  Handle<PyList> search_path_list;
+  ASSIGN_RETURN_ON_EXCEPTION(manager_->isolate(), search_path_list,
+                             SelectSearchPathList(is_top, parent_module));
+
   return manager_->loader()->LoadModulePart(part_fullname, search_path_list);
 }
 
-Handle<PyList> ModuleImporter::SelectSearchPathList(
+MaybeHandle<PyList> ModuleImporter::SelectSearchPathList(
     bool is_top,
     Handle<PyObject> parent_module) {
-  // 顶层模块直接走sys.path进行查找
+  // 顶层模块直接走 sys.path 进行查找
   if (is_top) {
     assert(parent_module.is_null());
     return manager_->path();
@@ -130,8 +144,8 @@ Handle<PyList> ModuleImporter::SelectSearchPathList(
 
   Handle<PyList> path = ModuleUtils::GetPackagePathList(parent_module);
   if (path.is_null()) [[unlikely]] {
-    std::fprintf(stderr, "ImportError: parent is not a package\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kImportError, "parent is not a package");
+    return kNullMaybe;
   }
   return path;
 }
@@ -152,14 +166,15 @@ void ModuleImporter::BindChildModuleToParentNamespace(
   PyDict::Put(parent_dict, child_short_name, child_module);
 }
 
-void ModuleImporter::EnsurePackageForNextSegment(
+bool ModuleImporter::EnsurePackageForNextSegment(
     Handle<PyObject> module,
     Handle<PyString> module_fullname) {
   if (!ModuleUtils::IsPackageModule(module)) {
-    std::fprintf(stderr, "ImportError: '%s' is not a package\n",
-                 module_fullname->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(ExceptionType::kImportError, "'%s' is not a package",
+                        module_fullname->buffer());
+    return false;
   }
+  return true;
 }
 
 Handle<PyModule> ModuleImporter::ApplyImportReturnSemantics(

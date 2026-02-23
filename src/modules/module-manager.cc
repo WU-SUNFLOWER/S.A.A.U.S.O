@@ -4,8 +4,6 @@
 
 #include "src/modules/module-manager.h"
 
-#include <cstdio>
-#include <cstdlib>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -75,11 +73,10 @@ void ModuleManager::InitializeSysState() {
   path_ = *path;
 }
 
-
-Handle<PyObject> ModuleManager::ImportModule(Handle<PyString> name,
-                                             Handle<PyTuple> fromlist,
-                                             int64_t level,
-                                             Handle<PyDict> globals) {
+MaybeHandle<PyModule> ModuleManager::ImportModule(Handle<PyString> name,
+                                                  Handle<PyTuple> fromlist,
+                                                  int64_t level,
+                                                  Handle<PyDict> globals) {
   return importer_->ImportModule(name, fromlist, level, globals);
 }
 

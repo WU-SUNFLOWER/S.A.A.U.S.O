@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <string>
 
+#include "src/handles/maybe-handles.h"
 #include "src/modules/builtin-module.h"
 
 namespace saauso::internal {
@@ -32,27 +33,30 @@ class ModuleLoader final {
   ModuleLoader& operator=(const ModuleLoader&) = delete;
   ~ModuleLoader() = default;
 
-  Handle<PyModule> LoadModulePart(Handle<PyString> fullname,
-                                  Handle<PyList> search_path_list);
+  // 失败时设置 pending exception 并返回空 MaybeHandle。
+  MaybeHandle<PyModule> LoadModulePart(Handle<PyString> fullname,
+                                       Handle<PyList> search_path_list);
 
  private:
-  Handle<PyModule> LoadModulePartImpl(Handle<PyString> fullname,
-                                      Handle<PyList> search_path_list);
+  // 成功返回模块；未找到或异常时返回None
+  MaybeHandle<PyObject> LoadModulePartOrNoneImpl(
+      Handle<PyString> fullname,
+      Handle<PyList> search_path_list);
 
-  Handle<PyModule> ExecuteModuleInternal(Handle<PyString> fullname,
-                                         const ModuleLocation& loc);
+  MaybeHandle<PyObject> ExecuteModuleOrNoneInternal(Handle<PyString> fullname,
+                                                    const ModuleLocation& loc);
 
-  Handle<PyModule> LoadAsBuiltinModule(Handle<PyString> fullname);
+  Handle<PyObject> LoadAsBuiltinModuleOrNone(Handle<PyString> fullname);
 
-  Handle<PyModule> LoadAsFileModule(Handle<PyString> fullname,
-                                    Handle<PyList> search_path_list);
+  MaybeHandle<PyObject> LoadAsFileModuleOrNone(Handle<PyString> fullname,
+                                               Handle<PyList> search_path_list);
 
-  Handle<PyModule> ExecuteModuleFromSource(Handle<PyString> fullname,
-                                           const ModuleLocation& loc,
-                                           Handle<PyString> source);
+  MaybeHandle<PyModule> ExecuteModuleFromSource(Handle<PyString> fullname,
+                                                const ModuleLocation& loc,
+                                                Handle<PyString> source);
 
-  Handle<PyModule> ExecuteModuleFromPyc(Handle<PyString> fullname,
-                                        const ModuleLocation& loc);
+  MaybeHandle<PyModule> ExecuteModuleFromPyc(Handle<PyString> fullname,
+                                             const ModuleLocation& loc);
 
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};

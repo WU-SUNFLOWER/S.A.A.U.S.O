@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
 #include "src/modules/builtin-module.h"
 
@@ -53,6 +54,7 @@ class ModuleManager final {
   ModuleLoader* loader() const { return loader_.get(); }
 
   // 导入模块的统一入口（IMPORT_NAME 会调用此接口）。
+  // 失败时设置 pending exception 并返回空 MaybeHandle。
   //
   // 参数说明：
   // - name：被导入的模块名。level==0 时不允许为空；level>0 时允许为空（例如
@@ -64,10 +66,10 @@ class ModuleManager final {
   // - level：相对导入层级（0 表示绝对导入）。
   // - globals：当前模块的 globals dict，用于在相对导入时解析
   // __package__/__name__/__path__。
-  Handle<PyObject> ImportModule(Handle<PyString> name,
-                                Handle<PyTuple> fromlist,
-                                int64_t level,
-                                Handle<PyDict> globals);
+  MaybeHandle<PyModule> ImportModule(Handle<PyString> name,
+                                     Handle<PyTuple> fromlist,
+                                     int64_t level,
+                                     Handle<PyDict> globals);
 
  private:
   friend class ModuleImporter;

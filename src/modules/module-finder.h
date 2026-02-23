@@ -6,12 +6,13 @@
 #define SAAUSO_MODULES_MODULE_FINDER_H_
 
 #include <string>
-#include <string_view>
 
 #include "src/handles/handles.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
+class Isolate;
 class PyList;
 class PyString;
 
@@ -31,12 +32,15 @@ struct ModuleLocation {
 class ModuleFinder final {
  public:
   ModuleFinder() = default;
+
   ModuleFinder(const ModuleFinder&) = delete;
   ModuleFinder& operator=(const ModuleFinder&) = delete;
   ~ModuleFinder() = default;
 
-  ModuleLocation FindModuleLocation(Handle<PyList> search_path_list,
-                                    Handle<PyString> relative_name) const;
+  // 失败时（如 sys.path 项非字符串）设置 pending exception 并返回 nullopt。
+  Maybe<ModuleLocation> FindModuleLocation(
+      Handle<PyList> search_path_list,
+      Handle<PyString> relative_name) const;
 
   bool ReadModuleSource(const ModuleLocation& location,
                         Handle<PyString>& out) const;

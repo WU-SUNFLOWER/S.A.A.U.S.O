@@ -622,8 +622,12 @@ void Interpreter::EvalCurrentFrame() {
 
     auto name = Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
 
-    auto module = isolate_->module_manager()->ImportModule(
-        name, fromlist, PySmi::ToInt(level), current_frame_->globals());
+    Handle<PyObject> module;
+    ASSIGN_GOTO_ON_EXCEPTION_TARGET(
+        isolate_, module,
+        isolate_->module_manager()->ImportModule(
+            name, fromlist, PySmi::ToInt(level), current_frame_->globals()),
+        pending_exception_unwind);
     PUSH(module);
   })
 
@@ -662,8 +666,13 @@ void Interpreter::EvalCurrentFrame() {
     auto synthetic_fromlist = PyTuple::NewInstance(1);
     synthetic_fromlist->SetInternal(0, sub_module_name);
 
-    auto submodule = isolate_->module_manager()->ImportModule(
-        sub_module_fullname, synthetic_fromlist, 0, current_frame_->globals());
+    Handle<PyObject> submodule;
+    ASSIGN_GOTO_ON_EXCEPTION_TARGET(
+        isolate_, submodule,
+        isolate_->module_manager()->ImportModule(
+            sub_module_fullname, synthetic_fromlist, 0,
+            current_frame_->globals()),
+        pending_exception_unwind);
     PUSH(submodule);
   })
 

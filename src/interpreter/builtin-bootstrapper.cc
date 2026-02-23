@@ -160,6 +160,8 @@ void BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
   RegisterSimpleTypeToBuiltins(ST(runtime_err), exception_type);
   RegisterSimpleTypeToBuiltins(ST(div_zero), exception_type);
   RegisterSimpleTypeToBuiltins(ST(stop_iter), exception_type);
+  RegisterSimpleTypeToBuiltins(ST(import_err), exception_type);
+  RegisterSimpleTypeToBuiltins(ST(module_not_found_err), exception_type);
 }
 
 void BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
