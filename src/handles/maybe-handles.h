@@ -21,14 +21,14 @@ inline constexpr NullMaybeHandleType kNullMaybeHandle;
 // 用于表示“可能成功也可能失败”的 Handle 返回值。
 // 该类型本身不携带错误信息，错误信息由Isolate的异常状态容器统一持有与传播。
 template <typename T>
-class [[nodiscard]] MaybeHandle {
+class [[nodiscard]] MaybeHandle : public HandleBase {
  public:
   MaybeHandle() = default;
 
   MaybeHandle(NullMaybeType) : MaybeHandle() {}
   MaybeHandle(NullMaybeHandleType) : MaybeHandle() {}
 
-  explicit MaybeHandle(Address* location) : location_(location) {}
+  explicit MaybeHandle(Address* location) : HandleBase(location) {}
 
   // 支持将Handle向下转换为MaybeHandle
   // 例如将Handle<PyList>转换成MaybeHandle<PyObject>
@@ -55,7 +55,7 @@ class [[nodiscard]] MaybeHandle {
 
   Handle<T> ToHandleChecked() const {
     Check();
-    return Handle<T>(location_);
+    return Handle<T>(location());
   }
 
   // 常规API: 将MaybeHandle转换为普通Handle。
@@ -66,7 +66,7 @@ class [[nodiscard]] MaybeHandle {
       *out = Handle<S>::null();
       return false;
     } else {
-      *out = Handle<S>(location_);
+      *out = Handle<S>(location());
       return true;
     }
   }
@@ -77,30 +77,10 @@ class [[nodiscard]] MaybeHandle {
     return ToHandle(out);
   }
 
-  constexpr bool is_null() const { return location_ == nullptr; }
   constexpr static MaybeHandle<T> null() { return MaybeHandle<T>(); }
 
   // 便于MaybeHandle适配RETURN_ON_EXCEPTION_VALUE宏
   constexpr bool IsEmpty() const { return is_null(); }
-
-  constexpr Address* location() const { return location_; }
-
-  // 快速检测两个MaybeHandle是否指向同一个对象
-  constexpr bool is_identical_to(const MaybeHandle<T> that) const {
-    if (location_ == that.location_) {
-      return true;
-    }
-    if (location_ == nullptr || that.location_ == nullptr) {
-      return false;
-    }
-    return Tagged<T>(*this->location_) == Tagged<T>(*that.location_);
-  }
-
- private:
-  template <typename>
-  friend class MaybeHandle;
-
-  Address* location_{nullptr};
 };
 
 }  // namespace saauso::internal

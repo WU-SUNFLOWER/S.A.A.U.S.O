@@ -8,89 +8,30 @@
 #include <cassert>
 #include <type_traits>
 
-#include "src/handles/tagged.h"
+#include "src/handles/handle-base.h"
 
 namespace saauso::internal {
 
-class Isolate;
-class HandleScopeImplementer;
-
-class HandleScope {
- public:
-  struct State {
-    Address* next{nullptr};
-    Address* limit{nullptr};
-    int extension{-1};  // 进入该scope后额外申请的block数量
-  };
-
-  HandleScope();
-  HandleScope(const HandleScope&) = delete;
-  HandleScope& operator=(const HandleScope&) = delete;
-
-  ~HandleScope();
-
- protected:
-  Address* CloseAndEscape(Address ptr);
-
- private:
-  friend class HandleScopeImplementer;
-
-  template <typename>
-  friend class Handle;
-
-  static void Extend();
-
-  static Address* CreateHandle(Address ptr);
-
-  static void AssertValidLocation(Address* location);
-
-  void Close();
-
-  Isolate* isolate_{nullptr};
-  State previous_;
-  bool is_closed_{false};
-};
-
-template <typename>
-class Handle;
-
-class EscapableHandleScope final : public HandleScope {
- public:
-  EscapableHandleScope() = default;
-  EscapableHandleScope(const EscapableHandleScope&) = delete;
-  EscapableHandleScope& operator=(const EscapableHandleScope&) = delete;
-
-  template <typename T>
-  Handle<T> Escape(Handle<T> value) {
-    return value.is_null() ? Handle<T>::null()
-                           : Handle<T>(CloseAndEscape(*value.location()));
-  }
-};
-
 template <typename T>
-class Handle {
+class Handle : public HandleBase {
  public:
   Handle() = default;
-  explicit Handle(Tagged<T> tagged) {
-    if (!tagged.is_null()) {
-      location_ = HandleScope::CreateHandle(tagged.ptr());
-    }
-  }
-  explicit Handle(Address* location) : location_(location) {}
+  explicit Handle(Tagged<T> tagged) : HandleBase(tagged.ptr()) {}
+  explicit Handle(Address* location) : HandleBase(location) {}
 
   // 允许Handle的向下转换
   // 例如将Handle<PyList>转换成Handle<PyObject>
   template <typename S>
-  constexpr Handle(Handle<S> other)  // NOLINT
+  constexpr Handle(Handle<S> other)
     requires(is_subtype_v<S, T>)
       : Handle(other.location()) {}
 
   constexpr T* operator->() const {
     assert(!is_null());
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    HandleScope::AssertValidLocation(location_);
+    HandleScope::AssertValidLocation(location());
 #endif
-    return Tagged<T>(*location_).operator->();
+    return Tagged<T>(*location()).operator->();
   }
 
   constexpr Tagged<T> operator*() const {
@@ -98,9 +39,9 @@ class Handle {
       return Tagged<T>::null();
     }
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    HandleScope::AssertValidLocation(location_);
+    HandleScope::AssertValidLocation(location());
 #endif
-    return Tagged<T>(*location_);
+    return Tagged<T>(*location());
   }
 
   template <class S>
@@ -109,34 +50,13 @@ class Handle {
     if (that.is_null()) {
       return Handle<T>::null();
     }
+    // 这行代码起到断言的作用
     T::cast(*that);
-#endif  // 这行代码起到断言的作用
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
     return Handle<T>(Tagged<T>::cast(*that));
   }
 
-  constexpr bool is_null() const { return location_ == nullptr; }
   constexpr static Handle<T> null() { return Handle<T>(); }
-
-  constexpr Address* location() const { return location_; }
-
-  // 快速检测两个handle是否指向同一个对象
-  constexpr bool is_identical_to(const Handle<T> that) const {
-    if (location_ == that.location_) {
-      return true;
-    }
-    if (location_ == nullptr || that.location_ == nullptr) {
-      return false;
-    }
-    return Tagged<T>(*this->location_) == Tagged<T>(*that.location_);
-  }
-
- private:
-  // 为了便于隐式转换，
-  // 我们允许任意类型的Handle<T>可以访问其他任意类型Handle<S>的内部指针
-  template <typename>
-  friend class Handle;
-
-  Address* location_{nullptr};
 };
 
 // 工具函数，用于方便地将一个裸指针或tagged提升为一个handle
