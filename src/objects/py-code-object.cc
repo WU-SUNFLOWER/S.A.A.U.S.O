@@ -13,12 +13,12 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 
-
 namespace saauso::internal {
 
 // 参考CPython312源码 Objects/codeobject.c
 
 namespace {
+// 计算 localsplus 中各 kind 的计数
 void ComputeLocalsplusCounts(int nlocalsplus,
                              Tagged<PyObject> kinds,
                              int& nlocals,
@@ -28,10 +28,7 @@ void ComputeLocalsplusCounts(int nlocalsplus,
 
   auto kind_bytes = Tagged<PyString>::cast(kinds);
   auto kind_bytes_size = kind_bytes.is_null() ? 0 : kind_bytes->length();
-  if (kind_bytes_size != nlocalsplus) {
-    std::fprintf(stderr, "kind_bytes_size != nlocalsplus");
-    std::exit(1);
-  }
+  assert(kind_bytes_size == nlocalsplus);
 
   for (auto i = 0; i < nlocalsplus; ++i) {
     char kind = kind_bytes->Get(i);
@@ -122,6 +119,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
   ComputeLocalsplusCounts(object->nlocalsplus_, object->localspluskinds_,
                           object->nlocals_, object->ncellvars_,
                           object->nfreevars_);
+
   object->var_names_ = GetNamesFromLocalsplusNames(
       object, LocalsPlusKind::kFastLocal, object->nlocals_);
   object->cell_vars_ = GetNamesFromLocalsplusNames(

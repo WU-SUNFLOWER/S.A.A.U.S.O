@@ -39,8 +39,6 @@ class PySmi : public PyObject {
   // 将一个整型转换成Tagged<PySmi>
   static Tagged<PySmi> FromInt(int64_t value);
 
-  static Tagged<PySmi> FromPyString(Tagged<PyString> py_string);
-
   // 将裸的Tagged<PyObject>指针转成Tagged<PySmi>
   static Tagged<PySmi> cast(Tagged<PyObject> object);
 };

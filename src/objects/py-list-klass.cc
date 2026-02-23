@@ -26,6 +26,8 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/stable-merge-sort.h"
@@ -100,10 +102,11 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
     Handle<PyObject> kwargs) {
   assert(klass_self == PyListKlass::GetInstance());
 
-  // list() 不接受关键字参数。
+  // list() 不接受关键字参数，违反约束时抛出 TypeError。
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    std::fprintf(stderr, "TypeError: list() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "list() takes no keyword arguments\n");
+    return Handle<PyObject>::null();
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -112,10 +115,10 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
     return PyList::NewInstance();
   }
   if (argc > 1) {
-    std::fprintf(
-        stderr,
-        "TypeError: list expected at most 1 argument, got %" PRId64 "\n", argc);
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "list expected at most 1 argument, got %" PRId64 "\n", argc);
+    return Handle<PyObject>::null();
   }
 
   Handle<PyList> result = PyList::NewInstance();
@@ -169,9 +172,11 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
                                           Handle<PyObject> coeff) {
   if (!IsPySmi(coeff)) {
-    std::fprintf(stderr, "can't multiply sequence by non-int of type '%s'",
-                 PyObject::GetKlass(coeff)->name()->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "can't multiply sequence by non-int of type '%s'",
+        PyObject::GetKlass(coeff)->name()->buffer());
+    return Handle<PyObject>::null();
   }
 
   auto list = Handle<PyList>::cast(self);
@@ -191,9 +196,11 @@ Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
 Handle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
   if (!IsPySmi(subscr)) {
-    std::fprintf(stderr, "list indices must be integers or slices, not %s",
-                 PyObject::GetKlass(subscr)->name()->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "list indices must be integers or slices, not %s",
+        PyObject::GetKlass(subscr)->name()->buffer());
+    return Handle<PyObject>::null();
   }
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
@@ -208,8 +215,9 @@ void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
-    std::fprintf(stderr, "IndexError: list assignment index out of range");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kIndexError,
+                       "list assignment index out of range");
+    return;
   }
 
   list->Set(decoded_subscr, value);
@@ -222,8 +230,9 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
-    std::fprintf(stderr, "IndexError: list assignment index out of range");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kIndexError,
+                       "list assignment index out of range");
+    return;
   }
 
   list->RemoveByIndex(decoded_subscr);

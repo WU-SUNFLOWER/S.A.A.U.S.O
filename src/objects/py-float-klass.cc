@@ -20,6 +20,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
 
@@ -27,6 +28,7 @@ namespace saauso::internal {
 
 namespace {
 
+// 从 PyObject 提取数值用于 float 运算；类型不支持时抛出 TypeError。
 double ExtractValue(Handle<PyObject> object) {
   if (IsPyFloat(object)) {
     return Handle<PyFloat>::cast(object)->value();
@@ -36,11 +38,10 @@ double ExtractValue(Handle<PyObject> object) {
     return PySmi::ToInt(Handle<PySmi>::cast(object));
   }
 
-  std::fprintf(stderr,
-               "TypeError: unsupported operand type(s) for +: 'float' and '%s'",
-               PyObject::GetKlass(object)->name()->buffer());
-  std::exit(1);
-
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError,
+      "unsupported operand type(s) for +: 'float' and '%s'",
+      PyObject::GetKlass(object)->name()->buffer());
   return 0;
 }
 
@@ -113,8 +114,9 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
   assert(klass_self == PyFloatKlass::GetInstance());
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    std::fprintf(stderr, "TypeError: float() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "float() takes no keyword arguments\n");
+    return Handle<PyObject>::null();
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -123,11 +125,10 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
     return PyFloat::NewInstance(0.0);
   }
   if (argc != 1) {
-    std::fprintf(stderr,
-                 "TypeError: float() takes at most 1 argument (%" PRId64
-                 " given)\n",
-                 argc);
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "float() takes at most 1 argument (%" PRId64 " given)\n", argc);
+    return Handle<PyObject>::null();
   }
 
   Handle<PyObject> value = pos_args->Get(0);
@@ -147,20 +148,20 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
     std::string_view text(s->buffer(), static_cast<size_t>(s->length()));
     std::optional<double> parsed = StringToDouble(text);
     if (!parsed) {
-      std::fprintf(stderr,
-                   "ValueError: could not convert string to float: '%s'\n",
-                   s->buffer());
-      std::exit(1);
+      Runtime_ThrowErrorf(
+          ExceptionType::kValueError,
+          "could not convert string to float: '%s'\n", s->buffer());
+      return Handle<PyObject>::null();
     }
     return PyFloat::NewInstance(*parsed);
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  std::fprintf(stderr,
-               "TypeError: float() argument must be a string or a real number, "
-               "not '%s'\n",
-               type_name->buffer());
-  std::exit(1);
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError,
+      "float() argument must be a string or a real number, not '%s'\n",
+      type_name->buffer());
+  return Handle<PyObject>::null();
 }
 
 void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
@@ -201,8 +202,9 @@ Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
-    std::fprintf(stderr, "ZeroDivisionError: float division by zero");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kZeroDivisionError,
+                       "float division by zero");
+    return Handle<PyObject>::null();
   }
   return PyFloat::NewInstance(self_value / other_value);
 }
@@ -214,8 +216,9 @@ Handle<PyObject> PyFloatKlass::Virtual_FloorDiv(Handle<PyObject> self,
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
-    std::fprintf(stderr, "ZeroDivisionError: float floor division by zero");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kZeroDivisionError,
+                       "float floor division by zero");
+    return Handle<PyObject>::null();
   }
   return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
 }
@@ -227,8 +230,8 @@ Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
-    std::fprintf(stderr, "ZeroDivisionError: float modulo");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kZeroDivisionError, "float modulo");
+    return Handle<PyObject>::null();
   }
   return PyFloat::NewInstance(PythonMod(self_value, other_value));
 }

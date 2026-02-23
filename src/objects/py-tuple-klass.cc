@@ -8,7 +8,6 @@
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 
 #include "src/builtins/builtins-py-tuple-methods.h"
 #include "src/execution/isolate.h"
@@ -24,6 +23,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/utils/utils.h"
 
@@ -84,8 +84,9 @@ Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
   // tuple() 不接受关键字参数。
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    std::fprintf(stderr, "TypeError: tuple() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "tuple() takes no keyword arguments\n");
+    return Handle<PyObject>::null();
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -94,11 +95,10 @@ Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     return PyTuple::NewInstance(0);
   }
   if (argc > 1) {
-    std::fprintf(stderr,
-                 "TypeError: tuple expected at most 1 argument, got %" PRId64
-                 "\n",
-                 argc);
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
+    return Handle<PyObject>::null();
   }
 
   // tuple(tuple_obj) 直接返回自身（不可变对象的语义对齐 CPython）。
@@ -144,14 +144,16 @@ Handle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
                                               Handle<PyObject> subscr) {
   auto tuple = Handle<PyTuple>::cast(self);
   if (!IsPySmi(*subscr)) {
-    std::cerr << "TypeError: tuple indices must be integers\n";
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "tuple indices must be integers\n");
+    return Handle<PyObject>::null();
   }
 
   auto index = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(index, static_cast<int64_t>(0), tuple->length())) {
-    std::cerr << "IndexError: tuple index out of range\n";
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kIndexError,
+                       "tuple index out of range\n");
+    return Handle<PyObject>::null();
   }
   return tuple->Get(index);
 }
@@ -159,14 +161,14 @@ Handle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
 void PyTupleKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                        Handle<PyObject> subscr,
                                        Handle<PyObject> value) {
-  std::cerr << "TypeError: 'tuple' object does not support item assignment\n";
-  std::exit(1);
+  Runtime_ThrowError(ExceptionType::kTypeError,
+                     "'tuple' object does not support item assignment\n");
 }
 
 void PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
                                      Handle<PyObject> subscr) {
-  std::cerr << "TypeError: 'tuple' object doesn't support item deletion\n";
-  std::exit(1);
+  Runtime_ThrowError(ExceptionType::kTypeError,
+                     "'tuple' object doesn't support item deletion\n");
 }
 
 bool PyTupleKlass::Virtual_Contains(Handle<PyObject> self,

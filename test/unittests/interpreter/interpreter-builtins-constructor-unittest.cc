@@ -67,9 +67,15 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsFloatParseError) {
 float("bad")
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "ValueError: could not convert string to float: 'bad'");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("ValueError: could not convert string to float: 'bad'"),
+            std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
@@ -79,9 +85,15 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
 str("abc", "utf-8")
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError: decoding str is not supported");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("TypeError: decoding str is not supported"),
+            std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
@@ -109,9 +121,14 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
 int("4611686018427387904")
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "OverflowError: int too large to convert to Smi");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("int too large to convert to Smi"), std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {

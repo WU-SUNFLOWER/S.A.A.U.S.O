@@ -634,9 +634,14 @@ l = [1, "a"]
 l.sort()
 )";
 
-  EXPECT_EXIT(
-      { RunScript(kSource, kTestFileName); }, ::testing::ExitedWithCode(1),
-      "TypeError");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kTestFileName));
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("TypeError"), std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, ComputeListWithInt) {

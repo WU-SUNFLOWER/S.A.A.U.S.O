@@ -22,8 +22,73 @@
 
 namespace saauso::internal {
 
-MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
-                                     Handle<PyObject> kwargs) {
+MaybeHandle<PySmi> Runtime_PyStringToSmi(Tagged<PyString> py_string) {
+  EscapableHandleScope scope;
+
+  std::string_view s(py_string->buffer(),
+                     static_cast<size_t>(py_string->length()));
+
+  int64_t parsed = 0;
+  StringToIntError err = StringToIntWithBase(s, 10, &parsed);
+  if (err != StringToIntError::kOk) {
+    if (err == StringToIntError::kOverflow) {
+      Runtime_ThrowError(ExceptionType::kValueError,
+                         "int too large to convert to Smi");
+    } else {
+      Runtime_ThrowErrorf(ExceptionType::kValueError,
+                          "invalid literal for int() with base 10: '%s'\n",
+                          py_string->buffer());
+    }
+    return kNullMaybeHandle;
+  }
+
+  if (!InRangeWithRightClose(parsed, PySmi::kSmiMinValue,
+                             PySmi::kSmiMaxValue)) {
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "int too large to convert to Smi");
+    return kNullMaybeHandle;
+  }
+
+  return scope.Escape(handle(PySmi::FromInt(parsed)));
+}
+
+MaybeHandle<PySmi> Runtime_PyFloatToSmi(Tagged<PyFloat> py_float) {
+  EscapableHandleScope scope;
+
+  double v = py_float->value();
+  if (std::isnan(v)) {
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "cannot convert float NaN to integer");
+    return kNullMaybeHandle;
+  }
+
+  if (std::isinf(v)) {
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "cannot convert float infinity to integer");
+    return kNullMaybeHandle;
+  }
+
+  double truncated = std::trunc(v);
+  if (truncated < static_cast<double>(std::numeric_limits<int64_t>::min()) ||
+      truncated > static_cast<double>(std::numeric_limits<int64_t>::max())) {
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "int too large to convert to Smi");
+    return kNullMaybeHandle;
+  }
+
+  int64_t int_value = static_cast<int64_t>(truncated);
+  if (!InRangeWithRightClose(int_value, PySmi::kSmiMinValue,
+                             PySmi::kSmiMaxValue)) {
+    Runtime_ThrowError(ExceptionType::kValueError,
+                       "int too large to convert to Smi");
+    return kNullMaybeHandle;
+  }
+
+  return scope.Escape(handle(PySmi::FromInt(int_value)));
+}
+
+MaybeHandle<PySmi> Runtime_NewSmi(Handle<PyObject> args,
+                                  Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
@@ -94,43 +159,25 @@ MaybeHandle<PyObject> Runtime_NewSmi(Handle<PyObject> args,
   }
 
   if (IsPySmi(value)) {
-    return scope.Escape(value);
+    return scope.Escape(Handle<PySmi>::cast(value));
   }
   if (IsPyBoolean(value)) {
     bool v = Tagged<PyBoolean>::cast(*value)->value();
     return scope.Escape(handle(PySmi::FromInt(v ? 1 : 0)));
   }
   if (IsPyFloat(value)) {
-    double v = Handle<PyFloat>::cast(value)->value();
-    if (std::isnan(v)) {
-      Runtime_ThrowError(ExceptionType::kValueError,
-                         "cannot convert float NaN to integer");
-      return kNullMaybeHandle;
-    }
-    if (std::isinf(v)) {
-      Runtime_ThrowError(ExceptionType::kValueError,
-                         "cannot convert float infinity to integer");
-      return kNullMaybeHandle;
-    }
-
-    double truncated = std::trunc(v);
-    if (truncated < static_cast<double>(std::numeric_limits<int64_t>::min()) ||
-        truncated > static_cast<double>(std::numeric_limits<int64_t>::max())) {
-      Runtime_ThrowError(ExceptionType::kValueError,
-                         "int too large to convert to Smi");
-      return kNullMaybeHandle;
-    }
-    int64_t int_value = static_cast<int64_t>(truncated);
-    if (!InRangeWithRightClose(int_value, PySmi::kSmiMinValue,
-                               PySmi::kSmiMaxValue)) {
-      Runtime_ThrowError(ExceptionType::kValueError,
-                         "int too large to convert to Smi");
-      return kNullMaybeHandle;
-    }
-    return scope.Escape(handle(PySmi::FromInt(int_value)));
+    Handle<PySmi> result;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        Isolate::Current(), result,
+        Runtime_PyFloatToSmi(*Handle<PyFloat>::cast(value)));
+    return scope.Escape(result);
   }
   if (IsPyString(value)) {
-    return scope.Escape(handle(PySmi::FromPyString(PyString::cast(*value))));
+    Handle<PySmi> result;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        Isolate::Current(), result,
+        Runtime_PyStringToSmi(*Handle<PyString>::cast(value)));
+    return scope.Escape(result);
   }
 
   auto type_name = PyObject::GetKlass(value)->name();

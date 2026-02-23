@@ -25,6 +25,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-string.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
@@ -103,8 +104,9 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
   assert(klass_self == PyStringKlass::GetInstance());
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    std::fprintf(stderr, "TypeError: str() takes no keyword arguments\n");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "str() takes no keyword arguments\n");
+    return Handle<PyObject>::null();
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -126,21 +128,22 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
   if (argc == 2 || argc == 3) {
     Handle<PyObject> value = pos_args->Get(0);
     if (IsPyString(value)) {
-      std::fprintf(stderr, "TypeError: decoding str is not supported\n");
-      std::exit(1);
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "decoding str is not supported\n");
+      return Handle<PyObject>::null();
     }
     auto type_name = PyObject::GetKlass(value)->name();
-    std::fprintf(
-        stderr,
-        "TypeError: decoding to str: need a bytes-like object, %s found\n",
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "decoding to str: need a bytes-like object, %s found\n",
         type_name->buffer());
-    std::exit(1);
+    return Handle<PyObject>::null();
   }
 
-  std::fprintf(
-      stderr,
-      "TypeError: str() takes at most 3 arguments (%" PRId64 " given)\n", argc);
-  std::exit(1);
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError,
+      "str() takes at most 3 arguments (%" PRId64 " given)\n", argc);
+  return Handle<PyObject>::null();
 }
 
 Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
@@ -172,11 +175,11 @@ bool PyStringKlass::Virtual_Less(Handle<PyObject> self,
                                  Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
-    std::fprintf(stderr,
-                 "TypeError: '<' not supported between instances of 'str' and "
-                 "'%s'\n",
-                 other_name->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "'<' not supported between instances of 'str' and '%s'\n",
+        other_name->buffer());
+    return false;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
@@ -187,11 +190,11 @@ bool PyStringKlass::Virtual_Greater(Handle<PyObject> self,
                                     Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
-    std::fprintf(stderr,
-                 "TypeError: '>' not supported between instances of 'str' and "
-                 "'%s'\n",
-                 other_name->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "'>' not supported between instances of 'str' and '%s'\n",
+        other_name->buffer());
+    return false;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
@@ -202,11 +205,11 @@ bool PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
                                       Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
-    std::fprintf(stderr,
-                 "TypeError: '<=' not supported between instances of 'str' and "
-                 "'%s'\n",
-                 other_name->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "'<=' not supported between instances of 'str' and '%s'\n",
+        other_name->buffer());
+    return false;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
@@ -217,11 +220,11 @@ bool PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
-    std::fprintf(stderr,
-                 "TypeError: '>=' not supported between instances of 'str' and "
-                 "'%s'\n",
-                 other_name->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "'>=' not supported between instances of 'str' and '%s'\n",
+        other_name->buffer());
+    return false;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
@@ -246,8 +249,9 @@ Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             s->length())) [[unlikely]] {
-    std::fprintf(stderr, "IndexError: string index out of range");
-    std::exit(1);
+    Runtime_ThrowError(ExceptionType::kIndexError,
+                       "string index out of range");
+    return Handle<PyObject>::null();
   }
 
   return PyString::NewInstance(s->buffer() + decoded_subscr,
@@ -258,10 +262,11 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
                                             Handle<PyObject> other) {
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
-    std::fprintf(stderr,
-                 "TypeError: can only concatenate str (not \"%s\") to str\n",
-                 other_klass->name()->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "can only concatenate str (not \"%s\") to str\n",
+        other_klass->name()->buffer());
+    return Handle<PyObject>::null();
   }
 
   auto s1 = Handle<PyString>::cast(self);

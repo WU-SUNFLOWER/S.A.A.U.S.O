@@ -17,6 +17,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 
@@ -98,10 +99,11 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
   if (is_try) {
     return Handle<PyObject>::null();
   }
-  std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
-               PyObject::GetKlass(self)->name()->buffer(),
-               Handle<PyString>::cast(prop_name)->buffer());
-  std::exit(1);
+  Runtime_ThrowErrorf(
+      ExceptionType::kAttributeError,
+      "'%s' object has no attribute '%s'\n",
+      PyObject::GetKlass(self)->name()->buffer(),
+      Handle<PyString>::cast(prop_name)->buffer());
   return Handle<PyObject>::null();
 }
 

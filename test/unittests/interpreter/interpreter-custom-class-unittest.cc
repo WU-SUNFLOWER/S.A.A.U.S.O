@@ -11,6 +11,9 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/code/compiler.h"
+#include "src/interpreter/interpreter.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -318,19 +321,22 @@ print(a.miss)
 }
 
 TEST_F(BasicInterpreterTest, MissingAttributeRaisesAttributeError) {
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
 class A:
     pass
 
 a = A()
 print(a.miss)
 )";
-        RunScript(kSource, kInterpreterTestFileName);
-      },
-      "AttributeError");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("AttributeError"), std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
@@ -548,18 +554,21 @@ print(C.value)
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnTypeObjectMissRaisesAttributeError) {
-  ASSERT_DEATH(
-      {
-        HandleScope scope;
-        constexpr std::string_view kSource = R"(
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
 class A(object):
     pass
 
 print(A.miss)
 )";
-        RunScript(kSource, kInterpreterTestFileName);
-      },
-      "AttributeError");
+  isolate()->interpreter()->Run(
+      Compiler::CompileSource(isolate(), kSource, kInterpreterTestFileName));
+  ASSERT_TRUE(isolate()->HasPendingException());
+  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
+  std::string message(formatted->buffer(),
+                      static_cast<size_t>(formatted->length()));
+  EXPECT_NE(message.find("AttributeError"), std::string::npos);
+  isolate()->exception_state()->Clear();
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnInstanceFallsBackToClassMroProperty) {

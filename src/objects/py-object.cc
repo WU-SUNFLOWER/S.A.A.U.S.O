@@ -40,6 +40,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -282,10 +283,11 @@ Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
   if (floor_div == nullptr) [[unlikely]] {
     auto self_name = GetKlass(self)->name();
     auto other_name = GetKlass(other)->name();
-    std::fprintf(stderr,
-                 "TypeError: unsupported operand type(s) for //: '%s' and '%s'",
-                 self_name->buffer(), other_name->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "unsupported operand type(s) for //: '%s' and '%s'",
+        self_name->buffer(), other_name->buffer());
+    return Handle<PyObject>::null();
   }
 
   return scope.Escape(floor_div(self, other));

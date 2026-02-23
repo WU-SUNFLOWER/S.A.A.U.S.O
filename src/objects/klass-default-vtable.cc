@@ -14,6 +14,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/runtime/string-table.h"
@@ -22,16 +23,16 @@ namespace saauso::internal {
 
 namespace {
 
-void PrintCompareUnsupported(Handle<PyObject> self,
+// 用于在不支持的比较运算上抛出 TypeError 异常，而不是直接退出进程。
+void ThrowCompareUnsupported(Handle<PyObject> self,
                              Handle<PyObject> other,
                              const char* op) {
   auto self_name = PyObject::GetKlass(self)->name();
   auto other_name = PyObject::GetKlass(other)->name();
-  std::fprintf(
-      stderr,
-      "TypeError: '%s' not supported between instances of '%s' and '%s'\n", op,
+  Runtime_ThrowErrorf(
+      ExceptionType::kTypeError,
+      "'%s' not supported between instances of '%s' and '%s'\n", op,
       self_name->buffer(), other_name->buffer());
-  std::exit(1);
 }
 
 }  // namespace
@@ -113,9 +114,10 @@ Handle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
   Handle<PyObject> callable =
       Runtime_FindPropertyInInstanceTypeMro(self, ST(call));
   if (callable.is_null()) {
-    std::fprintf(stderr, "TypeError: '%s' object is not callable\n",
-                 PyObject::GetKlass(self)->name()->buffer());
-    std::exit(1);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError, "'%s' object is not callable\n",
+        PyObject::GetKlass(self)->name()->buffer());
+    return Handle<PyObject>::null();
   }
 
   Handle<PyObject> result;
@@ -181,13 +183,13 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
     return Handle<PyObject>::null();
   }
 
-  // 4-2. 还没找到，抛出错误并崩溃
-  // AttributeError: 'A' object has no attribute 'xxx'
-  std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
-               PyObject::GetKlass(self)->name()->buffer(),
-               Handle<PyString>::cast(prop_name)->buffer());
-  std::exit(1);
-
+  // 4-2. 还没找到，抛出 AttributeError，并通过返回 null 让上层沿
+  // MaybeHandle 语义继续传播异常。
+  Runtime_ThrowErrorf(
+      ExceptionType::kAttributeError,
+      "'%s' object has no attribute '%s'\n",
+      PyObject::GetKlass(self)->name()->buffer(),
+      Handle<PyString>::cast(prop_name)->buffer());
   return Handle<PyObject>::null();
 }
 
@@ -228,11 +230,13 @@ void Klass::Virtual_Default_SetAttr(Handle<PyObject> self,
   auto properties = PyObject::GetProperties(self);
 
   if (properties.is_null()) {
-    // 对齐cpython: 对于不存在__dict__的对象，直接抛错误
-    std::fprintf(stderr, "AttributeError: '%s' object has no attribute '%s'\n",
-                 PyObject::GetKlass(self)->name()->buffer(),
-                 Handle<PyString>::cast(property_name)->buffer());
-    std::exit(1);
+    // 对齐 CPython：对于不存在 __dict__ 的对象，抛出 AttributeError。
+    Runtime_ThrowErrorf(
+        ExceptionType::kAttributeError,
+        "'%s' object has no attribute '%s'\n",
+        PyObject::GetKlass(self)->name()->buffer(),
+        Handle<PyString>::cast(property_name)->buffer());
+    return;
   }
 
   PyDict::Put(properties, property_name, property_value);
@@ -299,7 +303,9 @@ bool Klass::Virtual_Default_Greater(Handle<PyObject> self,
   Handle<PyObject> callable =
       Runtime_FindPropertyInInstanceTypeMro(self, ST(gt));
   if (callable.is_null()) {
-    PrintCompareUnsupported(self, other, ">");
+    // 不支持该比较运算，抛出 TypeError。
+    ThrowCompareUnsupported(self, other, ">");
+    return false;
   }
 
   Handle<PyTuple> args = PyTuple::NewInstance(1);
@@ -321,7 +327,9 @@ bool Klass::Virtual_Default_Less(Handle<PyObject> self,
   Handle<PyObject> callable =
       Runtime_FindPropertyInInstanceTypeMro(self, ST(lt));
   if (callable.is_null()) {
-    PrintCompareUnsupported(self, other, "<");
+    // 不支持该比较运算，抛出 TypeError。
+    ThrowCompareUnsupported(self, other, "<");
+    return false;
   }
 
   Handle<PyTuple> args = PyTuple::NewInstance(1);

@@ -25,6 +25,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-dict.h"
 
 namespace saauso::internal {
@@ -161,10 +162,9 @@ Handle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
                                              Handle<PyObject> subscr) {
   auto result = Handle<PyDict>::cast(self)->Get(subscr);
   if (result.is_null()) {
-    std::printf("KeyError: ");
-    PyObject::Print(subscr);
-    std::printf("\n");
-    std::exit(1);
+    // TODO: Repr机制完善后，支持把key打印出来
+    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    return Handle<PyObject>::null();
   }
   return result;
 }
@@ -181,10 +181,9 @@ void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
                                        Handle<PyObject> subscr) {
   auto dict = Handle<PyDict>::cast(self);
   if (!dict->Contains(subscr)) {
-    std::printf("KeyError: ");
-    PyObject::Print(subscr);
-    std::printf("\n");
-    std::exit(1);
+    // TODO: Repr机制完善后，支持把key打印出来
+    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    return;
   }
   dict->Remove(subscr);
 }
