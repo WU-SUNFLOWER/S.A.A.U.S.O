@@ -6,6 +6,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
@@ -13,11 +14,11 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-
 
 namespace saauso::internal {
 
@@ -64,12 +65,14 @@ void PyFunctionKlass::Finalize() {
   Isolate::Current()->set_py_function_klass(Tagged<PyFunctionKlass>::null());
 }
 
-void PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
-  // <function f at 0x000001C4EF73D280>
+MaybeHandle<PyObject> PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
   auto func = Handle<PyFunction>::cast(self);
   std::printf("<function ");
-  PyObject::Print(func->func_name());
+  if (PyObject::Print(func->func_name()).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
   std::printf(" at 0x%p>", reinterpret_cast<void*>((*func).ptr()));
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
 size_t PyFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -117,27 +120,26 @@ void NativeFunctionKlass::Finalize() {
       Tagged<NativeFunctionKlass>::null());
 }
 
-void NativeFunctionKlass::Virtual_Print(Handle<PyObject> self) {
-  // <built-in function len>
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
+    Handle<PyObject> self) {
   auto func = Handle<PyFunction>::cast(self);
   std::printf("<built-in function ");
-  PyObject::Print(func->func_name());
+  if (PyObject::Print(func->func_name()).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
   std::printf(">");
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> NativeFunctionKlass::Virtual_Call(Handle<PyObject> self,
-                                                   Handle<PyObject> host,
-                                                   Handle<PyObject> args,
-                                                   Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
+    Handle<PyObject> self,
+    Handle<PyObject> host,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
   assert(IsPyNativeFunction(self));
   auto func = Handle<PyFunction>::cast(self);
-  Handle<PyObject> result;
-  if (!func->native_func_(host, Handle<PyTuple>::cast(args),
-                          Handle<PyDict>::cast(kwargs))
-           .ToHandle(&result)) {
-    return Handle<PyObject>::null();
-  }
-  return result;
+  return func->native_func_(host, Handle<PyTuple>::cast(args),
+                            Handle<PyDict>::cast(kwargs));
 }
 
 size_t NativeFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -198,8 +200,9 @@ void MethodObjectKlass::Finalize() {
       Tagged<MethodObjectKlass>::null());
 }
 
-void MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  // TODO
+MaybeHandle<PyObject> MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {
+  (void)self;
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
 size_t MethodObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

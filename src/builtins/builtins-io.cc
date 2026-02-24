@@ -43,10 +43,18 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
       return false;
     }
 
-    if (PyObject::EqualBool(key, sep_key) ||
-        PyObject::EqualBool(key, end_key) ||
-        PyObject::EqualBool(key, eol_key)) {
-      continue;
+    bool eq = false;
+    if (!PyObject::EqualBool(key, sep_key).To(&eq) || eq) {
+      if (eq) continue;
+      return false;
+    }
+    if (!PyObject::EqualBool(key, end_key).To(&eq) || eq) {
+      if (eq) continue;
+      return false;
+    }
+    if (!PyObject::EqualBool(key, eol_key).To(&eq) || eq) {
+      if (eq) continue;
+      return false;
     }
 
     auto key_str = Handle<PyString>::cast(key);
@@ -103,16 +111,22 @@ BUILTIN(Print) {
       if (sep.is_null()) {
         std::printf(" ");
       } else {
-        PyObject::Print(sep);
+        if (PyObject::Print(sep).IsEmpty()) {
+          return kNullMaybeHandle;
+        }
       }
     }
-    PyObject::Print(args->Get(i));
+    if (PyObject::Print(args->Get(i)).IsEmpty()) {
+      return kNullMaybeHandle;
+    }
   }
 
   if (end.is_null()) {
     std::printf("\n");
   } else {
-    PyObject::Print(end);
+    if (PyObject::Print(end).IsEmpty()) {
+      return kNullMaybeHandle;
+    }
   }
 
   return scope.Escape(handle(Isolate::Current()->py_none_object()));

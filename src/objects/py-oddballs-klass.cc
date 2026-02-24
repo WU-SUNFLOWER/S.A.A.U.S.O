@@ -8,6 +8,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -19,8 +20,8 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
+#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
-
 
 namespace saauso::internal {
 
@@ -71,13 +72,15 @@ void PyBooleanKlass::Finalize() {
 }
 
 // static
-void PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf(Handle<PyBoolean>::cast(self)->value() ? "True" : "False");
+  return Handle<PyObject>(
+      Tagged<PyObject>::cast(Isolate::Current()->py_none_object()));
 }
 
 // static
-bool PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
-                                   Handle<PyObject> other) {
+Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
   bool v = Handle<PyBoolean>::cast(self)->value();
 
   bool result = false;
@@ -89,18 +92,22 @@ bool PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
     result = Handle<PyBoolean>::cast(other)->value() == v;
   }
 
-  return result;
+  return Maybe<bool>(result);
 }
 
 // static
-bool PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                      Handle<PyObject> other) {
-  return !Virtual_Equal(self, other);
+Maybe<bool> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
+  Maybe<bool> equal = Virtual_Equal(self, other);
+  if (equal.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(!equal.ToChecked());
 }
 
 // static
-uint64_t PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
-  return Handle<PyBoolean>::cast(self)->value();
+Maybe<uint64_t> PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
+  return Maybe<uint64_t>(Handle<PyBoolean>::cast(self)->value());
 }
 
 ///////////////////////////////////////////////////////////////
@@ -149,26 +156,34 @@ void PyNoneKlass::Finalize() {
 }
 
 // static
-void PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
+  (void)self;
   std::printf("None");
+  return Handle<PyObject>(
+      Tagged<PyObject>::cast(Isolate::Current()->py_none_object()));
 }
 
 // static
-bool PyNoneKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
+                                       Handle<PyObject> other) {
   assert(IsPyNone(self));
-  return self.is_identical_to(other);
+  return Maybe<bool>(self.is_identical_to(other));
 }
 
 // static
-bool PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                   Handle<PyObject> other) {
-  return !Virtual_Equal(self, other);
+Maybe<bool> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
+  Maybe<bool> equal = Virtual_Equal(self, other);
+  if (equal.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(!equal.ToChecked());
 }
 
 // static
-uint64_t PyNoneKlass::Virtual_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyNoneKlass::Virtual_Hash(Handle<PyObject> self) {
   assert(IsPyNone(self));
-  return (*self).ptr();  // None使用自己的地址作为哈希值
+  return Maybe<uint64_t>((*self).ptr());  // None使用自己的地址作为哈希值
 }
 
 }  // namespace saauso::internal

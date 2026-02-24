@@ -11,6 +11,7 @@
 
 #include "src/builtins/builtins-py-list-methods.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
@@ -27,9 +28,9 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
-#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 #include "src/utils/stable-merge-sort.h"
 #include "src/utils/utils.h"
 
@@ -96,7 +97,7 @@ void PyListKlass::Finalize() {
   Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::null());
 }
 
-Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -106,7 +107,7 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "list() takes no keyword arguments\n");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -115,10 +116,10 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
     return PyList::NewInstance();
   }
   if (argc > 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "list expected at most 1 argument, got %" PRId64 "\n", argc);
-    return Handle<PyObject>::null();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "list expected at most 1 argument, got %" PRId64 "\n",
+                        argc);
+    return kNullMaybeHandle;
   }
 
   Handle<PyList> result = PyList::NewInstance();
@@ -126,34 +127,35 @@ Handle<PyObject> PyListKlass::Virtual_ConstructInstance(
   Handle<PyObject> extend_result;
   if (!Runtime_ExtendListByItratableObject(result, pos_args->Get(0))
            .ToHandle(&extend_result)) {
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   return result;
 }
 
-Handle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
 }
 
-void PyListKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
   auto list = Handle<PyList>::cast(self);
 
   std::printf("[");
 
-  if (list->length() > 0) {
-    PyObject::Print(list->Get(0));
-  }
-
-  for (auto i = 1; i < list->length(); ++i) {
-    std::printf(", ");
-    PyObject::Print(list->Get(i));
+  for (auto i = 0; i < list->length(); ++i) {
+    if (i > 0) {
+      std::printf(", ");
+    }
+    if (PyObject::Print(list->Get(i)).IsEmpty()) {
+      return kNullMaybeHandle;
+    }
   }
 
   std::printf("]");
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
-                                          Handle<PyObject> other) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
+                                               Handle<PyObject> other) {
   auto list1 = Handle<PyList>::cast(self);
   auto list2 = Handle<PyList>::cast(other);
 
@@ -169,14 +171,13 @@ Handle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
   return new_result;
 }
 
-Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
-                                          Handle<PyObject> coeff) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
+                                               Handle<PyObject> coeff) {
   if (!IsPySmi(coeff)) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "can't multiply sequence by non-int of type '%s'",
-        PyObject::GetKlass(coeff)->name()->buffer());
-    return Handle<PyObject>::null();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "can't multiply sequence by non-int of type '%s'",
+                        PyObject::GetKlass(coeff)->name()->buffer());
+    return kNullMaybeHandle;
   }
 
   auto list = Handle<PyList>::cast(self);
@@ -193,23 +194,22 @@ Handle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
   return result;
 }
 
-Handle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
-                                             Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
+                                                  Handle<PyObject> subscr) {
   if (!IsPySmi(subscr)) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "list indices must be integers or slices, not %s",
-        PyObject::GetKlass(subscr)->name()->buffer());
-    return Handle<PyObject>::null();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "list indices must be integers or slices, not %s",
+                        PyObject::GetKlass(subscr)->name()->buffer());
+    return kNullMaybeHandle;
   }
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   return Handle<PyList>::cast(self)->Get(decoded_subscr);
 }
 
-void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
-                                      Handle<PyObject> subscr,
-                                      Handle<PyObject> value) {
+MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
+                                                       Handle<PyObject> subscr,
+                                                       Handle<PyObject> value) {
   auto list = Handle<PyList>::cast(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
@@ -217,14 +217,15 @@ void PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                             list->length())) {
     Runtime_ThrowError(ExceptionType::kIndexError,
                        "list assignment index out of range");
-    return;
+    return kNullMaybeHandle;
   }
 
   list->Set(decoded_subscr, value);
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
-                                    Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
+                                                     Handle<PyObject> subscr) {
   auto list = Handle<PyList>::cast(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
@@ -232,13 +233,15 @@ void PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
                             list->length())) {
     Runtime_ThrowError(ExceptionType::kIndexError,
                        "list assignment index out of range");
-    return;
+    return kNullMaybeHandle;
   }
 
   list->RemoveByIndex(decoded_subscr);
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-bool PyListKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
+                                      Handle<PyObject> other) {
   auto list_l = Handle<PyList>::cast(self);
   auto list_r = Handle<PyList>::cast(other);
   auto min_len = std::min(list_l->length(), list_r->length());
@@ -247,49 +250,65 @@ bool PyListKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
     auto l = list_l->Get(i);
     auto r = list_r->Get(i);
 
-    if (PyObject::LessBool(l, r)) {
-      return true;
+    Maybe<bool> less_mb = PyObject::LessBool(l, r);
+    if (less_mb.IsNothing()) {
+      return kNullMaybe;
+    }
+    if (less_mb.ToChecked()) {
+      return Maybe<bool>(true);
     }
 
-    if (PyObject::GreaterBool(l, r)) {
-      return false;
+    Maybe<bool> greater_mb = PyObject::GreaterBool(l, r);
+    if (greater_mb.IsNothing()) {
+      return kNullMaybe;
+    }
+    if (greater_mb.ToChecked()) {
+      return Maybe<bool>(false);
     }
   }
 
-  return list_l->length() < list_r->length();
+  return Maybe<bool>(list_l->length() < list_r->length());
 }
 
-bool PyListKlass::Virtual_Contains(Handle<PyObject> self,
-                                   Handle<PyObject> target) {
+Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
+                                          Handle<PyObject> target) {
   auto list = Handle<PyList>::cast(self);
   for (auto i = 0; i < list->length(); ++i) {
-    if (PyObject::EqualBool(list->Get(i), target)) {
-      return true;
+    Maybe<bool> eq = PyObject::EqualBool(list->Get(i), target);
+    if (eq.IsNothing()) {
+      return kNullMaybe;
+    }
+    if (eq.ToChecked()) {
+      return Maybe<bool>(true);
     }
   }
 
-  return false;
+  return Maybe<bool>(false);
 }
 
-bool PyListKlass::Virtual_Equal(Handle<PyObject> self,
-                                Handle<PyObject> target) {
+Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
+                                       Handle<PyObject> target) {
   auto list1 = Handle<PyList>::cast(self);
   auto list2 = Handle<PyList>::cast(target);
 
   if (list1->length() != list2->length()) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   for (auto i = 0; i < list1->length(); ++i) {
-    if (!PyObject::EqualBool(list1->Get(i), list2->Get(i))) {
-      return false;
+    Maybe<bool> eq = PyObject::EqualBool(list1->Get(i), list2->Get(i));
+    if (eq.IsNothing()) {
+      return kNullMaybe;
+    }
+    if (!eq.ToChecked()) {
+      return Maybe<bool>(false);
     }
   }
 
-  return true;
+  return Maybe<bool>(true);
 }
 
-Handle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {
   return PyListIterator::NewInstance(Handle<PyList>::cast(object));
 }
 

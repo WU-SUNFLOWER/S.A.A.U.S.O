@@ -10,6 +10,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso::internal {
 
@@ -37,22 +38,30 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     return handle(isolate->py_none_object());
   }
 
-  auto iterator = PyObject::Iter(iteratable);
-  if (iterator.is_null()) {
-    if (isolate->HasPendingException()) {
+  Handle<PyObject> iterator;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, iterator, PyObject::Iter(iteratable));
+
+  while (true) {
+    Handle<PyObject> elem;
+    MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
+    if (!next_maybe.ToHandle(&elem)) {
+      // 迭代结束或出现异常：优先消费 StopIteration，其余异常向上抛出。
+      if (Runtime_ConsumePendingStopIterationIfSet(isolate)) {
+        break;
+      }
       return kNullMaybeHandle;
     }
-    return handle(isolate->py_none_object());
+    if (elem.is_null()) {
+      // 内建迭代器可能在耗尽时返回 null 且不抛异常。
+      if (!isolate->HasPendingException() ||
+          Runtime_ConsumePendingStopIterationIfSet(isolate)) {
+        break;
+      }
+      return kNullMaybeHandle;
+    }
+    PyList::Append(list, elem);
   }
 
-  auto elem = PyObject::Next(iterator);
-  while (!elem.is_null()) {
-    PyList::Append(list, elem);
-    elem = PyObject::Next(iterator);
-  }
-  if (isolate->HasPendingException()) {
-    return kNullMaybeHandle;
-  }
   return handle(isolate->py_none_object());
 }
 

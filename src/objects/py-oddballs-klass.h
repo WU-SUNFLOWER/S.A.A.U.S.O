@@ -5,7 +5,9 @@
 #ifndef SAAUSO_OBJECTS_PY_BOOLEAN_KLASS_H_
 #define SAAUSO_OBJECTS_PY_BOOLEAN_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -22,10 +24,12 @@ class PyBooleanKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
-  static uint64_t Virtual_Hash(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
+                                   Handle<PyObject> other);
+  static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other);
+  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
 };
 
 class PyNoneKlass : public Klass {
@@ -38,10 +42,12 @@ class PyNoneKlass : public Klass {
  private:
   PyNoneKlass();
 
-  static void Virtual_Print(Handle<PyObject> self);
-  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
-  static uint64_t Virtual_Hash(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
+                                    Handle<PyObject> other);
+  static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other);
+  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
 };
 
 }  // namespace saauso::internal

@@ -35,11 +35,12 @@ TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
   Handle<PyObject> a(PyFloat::NewInstance(10.0));
   Handle<PyObject> b(PyFloat::NewInstance(4.0));
 
-  auto add = PyObject::Add(a, b);
-  auto sub = PyObject::Sub(a, b);
-  auto mul = PyObject::Mul(a, b);
-  auto div = PyObject::Div(a, b);
-  auto mod = PyObject::Mod(a, b);
+  Handle<PyObject> add, sub, mul, div, mod;
+  ASSERT_TRUE(PyObject::Add(a, b).ToHandle(&add));
+  ASSERT_TRUE(PyObject::Sub(a, b).ToHandle(&sub));
+  ASSERT_TRUE(PyObject::Mul(a, b).ToHandle(&mul));
+  ASSERT_TRUE(PyObject::Div(a, b).ToHandle(&div));
+  ASSERT_TRUE(PyObject::Mod(a, b).ToHandle(&mod));
 
   ASSERT_TRUE(IsPyFloat(add));
   ASSERT_TRUE(IsPyFloat(sub));
@@ -60,13 +61,13 @@ TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
   Handle<PyObject> f(PyFloat::NewInstance(3.5));
   Handle<PyObject> i(PySmi::FromInt(2));
 
-  auto r1 = PyObject::Add(f, i);
-  auto r2 = PyObject::Sub(f, i);
-  auto r3 = PyObject::Mul(f, i);
-  auto r4 = PyObject::Div(f, i);
-
-  auto r5 = PyObject::Add(i, f);
-  auto r6 = PyObject::Mul(i, f);
+  Handle<PyObject> r1, r2, r3, r4, r5, r6;
+  ASSERT_TRUE(PyObject::Add(f, i).ToHandle(&r1));
+  ASSERT_TRUE(PyObject::Sub(f, i).ToHandle(&r2));
+  ASSERT_TRUE(PyObject::Mul(f, i).ToHandle(&r3));
+  ASSERT_TRUE(PyObject::Div(f, i).ToHandle(&r4));
+  ASSERT_TRUE(PyObject::Add(i, f).ToHandle(&r5));
+  ASSERT_TRUE(PyObject::Mul(i, f).ToHandle(&r6));
 
   ASSERT_TRUE(IsPyFloat(r1));
   ASSERT_TRUE(IsPyFloat(r2));
@@ -90,19 +91,19 @@ TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
   Handle<PyObject> f11(PyFloat::NewInstance(11.0));
   Handle<PyObject> i10(PySmi::FromInt(10));
 
-  EXPECT_EQ(PyObject::Equal(f10, i10).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::NotEqual(f11, i10).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-
-  EXPECT_EQ(PyObject::Less(f10, f11).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::LessEqual(f10, i10).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Greater(f11, f10).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::GreaterEqual(f10, i10).ptr(),
-            Isolate::Current()->py_true_object().ptr());
+  Handle<PyObject> res;
+  ASSERT_TRUE(PyObject::Equal(f10, i10).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::NotEqual(f11, i10).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::Less(f10, f11).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::LessEqual(f10, i10).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::Greater(f11, f10).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::GreaterEqual(f10, i10).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
 }
 
 }  // namespace saauso::internal

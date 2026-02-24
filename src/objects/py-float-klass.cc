@@ -9,6 +9,7 @@
 #include <cstdlib>
 
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -21,6 +22,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/utils/maybe.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
 
@@ -38,10 +40,9 @@ double ExtractValue(Handle<PyObject> object) {
     return PySmi::ToInt(Handle<PySmi>::cast(object));
   }
 
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for +: 'float' and '%s'",
-      PyObject::GetKlass(object)->name()->buffer());
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for +: 'float' and '%s'",
+                      PyObject::GetKlass(object)->name()->buffer());
   return 0;
 }
 
@@ -107,7 +108,7 @@ void PyFloatKlass::Finalize() {
 
 ////////////////////////////////////////////////////////////////////
 
-Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -116,7 +117,7 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "float() takes no keyword arguments\n");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -128,7 +129,7 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "float() takes at most 1 argument (%" PRId64 " given)\n", argc);
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyObject> value = pos_args->Get(0);
@@ -148,10 +149,10 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
     std::string_view text(s->buffer(), static_cast<size_t>(s->length()));
     std::optional<double> parsed = StringToDouble(text);
     if (!parsed) {
-      Runtime_ThrowErrorf(
-          ExceptionType::kValueError,
-          "could not convert string to float: '%s'\n", s->buffer());
-      return Handle<PyObject>::null();
+      Runtime_ThrowErrorf(ExceptionType::kValueError,
+                          "could not convert string to float: '%s'\n",
+                          s->buffer());
+      return kNullMaybeHandle;
     }
     return PyFloat::NewInstance(*parsed);
   }
@@ -161,128 +162,128 @@ Handle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
       ExceptionType::kTypeError,
       "float() argument must be a string or a real number, not '%s'\n",
       type_name->buffer());
-  return Handle<PyObject>::null();
+  return kNullMaybeHandle;
 }
 
-void PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%g", PyFloat::cast(*self)->value());
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-// static
-Handle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value + other_value);
 }
 
-// static
-Handle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value - other_value);
 }
 
-// static
-Handle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   return PyFloat::NewInstance(self_value * other_value);
 }
 
-// static
-Handle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
-  assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::cast(self)->value();
-  double other_value = ExtractValue(other);
-  if (other_value == 0) {
-    Runtime_ThrowError(ExceptionType::kZeroDivisionError,
-                       "float division by zero");
-    return Handle<PyObject>::null();
-  }
-  return PyFloat::NewInstance(self_value / other_value);
-}
-
-// static
-Handle<PyObject> PyFloatKlass::Virtual_FloorDiv(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
     Runtime_ThrowError(ExceptionType::kZeroDivisionError,
+                       "float division by zero");
+    return kNullMaybeHandle;
+  }
+  return PyFloat::NewInstance(self_value / other_value);
+}
+
+MaybeHandle<PyObject> PyFloatKlass::Virtual_FloorDiv(Handle<PyObject> self,
+                                                     Handle<PyObject> other) {
+  assert(IsPyFloat(self));
+  double self_value = Handle<PyFloat>::cast(self)->value();
+  double other_value = ExtractValue(other);
+  if (other_value == 0) {
+    Runtime_ThrowError(ExceptionType::kZeroDivisionError,
                        "float floor division by zero");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
 }
 
-// static
-Handle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
-                                           Handle<PyObject> other) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
   if (other_value == 0) {
     Runtime_ThrowError(ExceptionType::kZeroDivisionError, "float modulo");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   return PyFloat::NewInstance(PythonMod(self_value, other_value));
 }
 
-// static
-bool PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
-                                   Handle<PyObject> other) {
+Maybe<bool> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return self_value > other_value;
+  return Maybe<bool>(self_value > other_value);
 }
 
-// static
-bool PyFloatKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
+                                       Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(other);
-  return self_value < other_value;
+  return Maybe<bool>(self_value < other_value);
 }
 
-// static
-bool PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
-                                 Handle<PyObject> other) {
-  assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::cast(self)->value();
-  double other_value = ExtractValue(other);
-  return self_value == other_value;
-}
-
-// static
-bool PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                    Handle<PyObject> other) {
-  assert(IsPyFloat(self));
-  double self_value = Handle<PyFloat>::cast(self)->value();
-  double other_value = ExtractValue(other);
-  return self_value != other_value;
-}
-
-// static
-bool PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
                                         Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  return Virtual_Greater(self, other) || Virtual_Equal(self, other);
+  double self_value = Handle<PyFloat>::cast(self)->value();
+  double other_value = ExtractValue(other);
+  return Maybe<bool>(self_value == other_value);
 }
 
-// static
-bool PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                     Handle<PyObject> other) {
+Maybe<bool> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
   assert(IsPyFloat(self));
-  return Virtual_Less(self, other) || Virtual_Equal(self, other);
+  double self_value = Handle<PyFloat>::cast(self)->value();
+  double other_value = ExtractValue(other);
+  return Maybe<bool>(self_value != other_value);
+}
+
+Maybe<bool> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                               Handle<PyObject> other) {
+  assert(IsPyFloat(self));
+  Maybe<bool> gt = Virtual_Greater(self, other);
+  Maybe<bool> eq = Virtual_Equal(self, other);
+  if (gt.IsNothing() || eq.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(gt.ToChecked() || eq.ToChecked());
+}
+
+Maybe<bool> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
+  assert(IsPyFloat(self));
+  Maybe<bool> lt = Virtual_Less(self, other);
+  Maybe<bool> eq = Virtual_Equal(self, other);
+  if (lt.IsNothing() || eq.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(lt.ToChecked() || eq.ToChecked());
 }
 
 // static

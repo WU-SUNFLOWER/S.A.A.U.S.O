@@ -60,8 +60,11 @@ Handle<PyObject> PyFalseObject() {
   }
 
   // 等价性以 Python 语义的 __eq__ 路径为准，期望返回 PyTrue。
-  auto result = PyObject::Equal(x, y);
-  if (!IsPyTrue(Tagged<PyObject>(result))) {
+  Handle<PyObject> result;
+  if (!PyObject::Equal(x, y).ToHandle(&result)) {
+    return ::testing::AssertionFailure() << "PyObject::Equal failed (exception)";
+  }
+  if (!IsPyTrue(*result)) {
     return ::testing::AssertionFailure() << "PyObject::Equal returned false";
   }
   return ::testing::AssertionSuccess();

@@ -344,23 +344,30 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(BinarySubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
-    PUSH(PyObject::Subscr(object, subscr));
+    Handle<PyObject> result;
+    ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Subscr(object, subscr));
+    PUSH(result);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreSubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
     Handle<PyObject> value = POP();
-    PyObject::StoreSubscr(object, subscr, value);
+    GOTO_ON_EXCEPTION(PyObject::StoreSubscr(object, subscr, value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteSubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
-    PyObject::DeletSubscr(object, subscr);
+    GOTO_ON_EXCEPTION(PyObject::DeletSubscr(object, subscr));
   })
 
-  INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
+  INTERPRETER_HANDLER_WITH_SCOPE(GetIter, {
+    Handle<PyObject> iterable = POP();
+    Handle<PyObject> iterator;
+    ASSIGN_GOTO_ON_EXCEPTION(iterator, PyObject::Iter(iterable));
+    PUSH(iterator);
+  })
 
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
     PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class)));
@@ -401,33 +408,56 @@ void Interpreter::EvalCurrentFrame() {
     locals->Remove(key);
   })
 
+  // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续
+  // 第一个 STORE_FAST 弹出栈顶赋给第一个变量，从而 (k, v) = item 得到 k=item[0], v=item[1]。
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
     Handle<PyObject> sequence = POP();
-    Handle<PyObject> iterator = PyObject::Iter(sequence);
+    Handle<PyTuple> tuple;
+    ASSIGN_GOTO_ON_EXCEPTION(
+        tuple, Runtime_UnpackIterableObjectToTuple(sequence));
+    if (tuple->length() != op_arg) {
+      Runtime_ThrowErrorf(ExceptionType::kValueError,
+                          "unpack expected %d values, got %d", op_arg,
+                          static_cast<int>(tuple->length()));
+      goto pending_exception_unwind;
+    }
     auto old_stack_top = current_frame_->stack_top();
-    current_frame_->set_stack_top(current_frame_->stack_top() + op_arg);
-    while (op_arg-- > 0) {
-      current_frame_->stack()->Set(old_stack_top + op_arg,
-                                   PyObject::Next(iterator));
+    current_frame_->set_stack_top(old_stack_top + op_arg);
+    for (int i = 0; i < op_arg; ++i) {
+      current_frame_->stack()->Set(old_stack_top + (op_arg - 1 - i),
+                                  tuple->Get(i));
     }
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
     Handle<PyObject> iterator = TOP();
-    Handle<PyObject> next_result = PyObject::Next(iterator);
+    Handle<PyObject> next_result;
+    MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
+    if (!next_maybe.ToHandle(&next_result)) {
+      // Next 返回空 MaybeHandle：可能是 StopIteration，也可能是其他异常。
+      if (!isolate_->HasPendingException() ||
+          Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
+        POP();
+        break;
+      }
+
+      // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到
+      // Execution::Call 发起调用的根栈帧就截止了，所以这里需手工设置
+      // faulting PC 为当前 ForIter。
+      // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
+      isolate_->exception_state()->set_pending_exception_pc(
+          current_frame_->pc() - kBytecodeSizeInBytes);
+      break;
+    }
+
     // 迭代器成功返回了有效值，压栈后立即执行下一条字节码
     if (!next_result.is_null()) {
       PUSH(next_result);
       break;
     }
 
-    // 正常结束迭代有两种情况：
-    // 1. 内建迭代器（如 tuple iterator）出于性能考虑，耗尽时直接返回
-    //    null，不设置异常；
-    // 2. 用户自定义迭代器会执行raise StopIteration`抛出pending异常，
-    //    因此需要立即进行消费。
-    //
-    // 其他异常则需展开。
+    // 内建迭代器可能在耗尽时返回 null 且不抛异常。
     if (!isolate_->HasPendingException() ||
         Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
@@ -435,19 +465,15 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到 
-    // Exection::Call 发起调用的根栈帧就截止了，所以这里需手工设置
-    // faulting PC 为当前 ForIter。
-    // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
-    isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
-                                                          kBytecodeSizeInBytes);
+    isolate_->exception_state()->set_pending_exception_pc(
+        current_frame_->pc() - kBytecodeSizeInBytes);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
     Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg);
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_value = POP();
-    PyObject::SetAttr(object, attr_name, attr_value);
+    GOTO_ON_EXCEPTION(PyObject::SetAttr(object, attr_name, attr_value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
@@ -522,8 +548,17 @@ void Interpreter::EvalCurrentFrame() {
     auto update_dict = Handle<PyDict>::cast(update);
 
     auto iter = PyDictItemIterator::NewInstance(update_dict);
-    auto item = Handle<PyTuple>::cast(PyObject::Next(iter));
-    while (!item.is_null()) {
+    while (true) {
+      Handle<PyObject> item_handle;
+      if (!PyObject::Next(iter).ToHandle(&item_handle) ||
+          item_handle.is_null()) {
+        if (isolate_->HasPendingException() &&
+            !Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+          goto pending_exception_unwind;
+        }
+        break;
+      }
+      auto item = Handle<PyTuple>::cast(item_handle);
       auto key = item->Get(0);
       auto value = item->Get(1);
 
@@ -534,7 +569,6 @@ void Interpreter::EvalCurrentFrame() {
       }
 
       PyDict::Put(target_dict, key, value);
-      item = Handle<PyTuple>::cast(PyObject::Next(iter));
     }
   })
 
@@ -548,9 +582,11 @@ void Interpreter::EvalCurrentFrame() {
     // 这样就可以避免创建临时的MethodObject对象！！！
     if ((op_arg & 1) != 0) {
       Handle<PyObject> self_or_null;
-      Handle<PyObject> value =
-          PyObject::GetAttrForCall(object, attr_name, self_or_null);
-
+      Handle<PyObject> value;
+      if (!PyObject::GetAttrForCall(object, attr_name, self_or_null)
+               .ToHandle(&value)) {
+        goto pending_exception_unwind;
+      }
       if (!self_or_null.is_null()) {
         // Happy case: attr_name的确对应一个对象方法
         PUSH(value);
@@ -565,41 +601,41 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     // 一般的属性获取，走常规的GetAttr虚函数查询
-    PUSH(PyObject::GetAttr(object, attr_name, false));
+    Handle<PyObject> value;
+    ASSIGN_GOTO_ON_EXCEPTION(value, PyObject::GetAttr(object, attr_name));
+    PUSH(value);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(CompareOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
+    Handle<PyObject> result;
     int compare_op_type = op_arg >> 4;
     switch (compare_op_type) {
       case CompareOpType::kLT:
-        PUSH(PyObject::Less(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Less(l, r));
         break;
       case CompareOpType::kLE:
-        PUSH(PyObject::LessEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::LessEqual(l, r));
         break;
       case CompareOpType::kEQ:
-        PUSH(PyObject::Equal(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Equal(l, r));
         break;
       case CompareOpType::kNE:
-        PUSH(PyObject::NotEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::NotEqual(l, r));
         break;
       case CompareOpType::kGT:
-        PUSH(PyObject::Greater(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Greater(l, r));
         break;
       case CompareOpType::kGE:
-        PUSH(PyObject::GreaterEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::GreaterEqual(l, r));
         break;
       default:
         Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
                             "unknown compare op type: %d", compare_op_type);
         goto pending_exception_unwind;
     }
-    if (isolate_->HasPendingException()) {
-      POP();
-      goto pending_exception_unwind;
-    }
+    PUSH(result);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ImportName, {
@@ -636,17 +672,23 @@ void Interpreter::EvalCurrentFrame() {
     auto sub_module_name =
         Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
 
-    // Fast Path: 如果目标子模块已经被解析过了，直接返回
-    auto value = PyObject::GetAttr(parent_module, sub_module_name, true);
-    if (!value.is_null()) {
+    // Fast Path: 如果目标子模块已经被解析过了，直接返回（Try 语义用 LookupAttr）
+    Handle<PyObject> value;
+    if (PyObject::LookupAttr(parent_module, sub_module_name, value) &&
+        !value.is_null()) {
       PUSH(value);
       break;
+    }
+    if (isolate_->HasPendingException()) {
+      goto pending_exception_unwind;
     }
 
     // Slow Path: 目标子模块还没被解析过，走完整的解析流程
 
-    auto parent_module_name_obj =
-        PyObject::GetAttr(parent_module, ST(name), false);
+    Handle<PyObject> parent_module_name_obj;
+    ASSIGN_GOTO_ON_EXCEPTION(
+        parent_module_name_obj,
+        PyObject::GetAttr(parent_module, ST(name)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "module __name__ must be a string");
@@ -727,39 +769,44 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
-    bool result = PyObject::ContainsBool(r, l);
+    bool result = false;
+    if (!PyObject::ContainsBool(r, l).To(&result)) {
+      goto pending_exception_unwind;
+    }
     PUSH(Isolate::ToPyBoolean(result ^ op_arg));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinaryOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
+    Handle<PyObject> result;
     switch (op_arg) {
       case BinaryOpType::kAdd:
       case BinaryOpType::kInplaceAdd:
-        PUSH(PyObject::Add(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Add(l, r));
         break;
       case BinaryOpType::kSubtract:
       case BinaryOpType::kInplaceSubtract:
-        PUSH(PyObject::Sub(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Sub(l, r));
         break;
       case BinaryOpType::kMultiply:
       case BinaryOpType::kInplaceMultiply:
-        PUSH(PyObject::Mul(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mul(l, r));
         break;
       case BinaryOpType::kTrueDivide:
       case BinaryOpType::kInplaceTrueDivide:
-        PUSH(PyObject::Div(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Div(l, r));
         break;
       case BinaryOpType::kFloorDivide:
       case BinaryOpType::kInplaceFloorDivide:
-        PUSH(PyObject::FloorDiv(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::FloorDiv(l, r));
         break;
       case BinaryOpType::kRemainder:
       case BinaryOpType::kInplaceRemainder:
-        PUSH(PyObject::Mod(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mod(l, r));
         break;
     }
+    PUSH(result);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
@@ -1152,7 +1199,10 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
   }
 
   // 兜底：调用对象的__call__虚函数
-  Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
+  Handle<PyObject> result;
+  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
+    return;
+  }
   PUSH(result);
 }
 
@@ -1173,7 +1223,10 @@ void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
     return;
   }
 
-  Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
+  Handle<PyObject> result;
+  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
+    return;
+  }
   PUSH(result);
 }
 

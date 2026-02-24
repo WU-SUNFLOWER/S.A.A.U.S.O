@@ -5,6 +5,7 @@
 #ifndef SAAUSO_OBJECTS_PY_FUNCTION_KLASS_H_
 #define SAAUSO_OBJECTS_PY_FUNCTION_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
 
 namespace saauso::internal {
@@ -20,7 +21,7 @@ class PyFunctionKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
@@ -36,11 +37,11 @@ class NativeFunctionKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Call(Handle<PyObject> self,
-                                       Handle<PyObject> host,
-                                       Handle<PyObject> args,
-                                       Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Call(Handle<PyObject> self,
+                                              Handle<PyObject> host,
+                                              Handle<PyObject> args,
+                                              Handle<PyObject> kwargs);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -57,7 +58,7 @@ class MethodObjectKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

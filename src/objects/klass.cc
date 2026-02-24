@@ -195,12 +195,9 @@ void Klass::OrderSupers() {
   mro_ = *mro_result;
 }
 
-Handle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,
-                                          Handle<PyObject> kwargs) {
-  EscapableHandleScope scope;
-  Handle<PyObject> instance =
-      vtable_.construct_instance(Tagged<Klass>(this), args, kwargs);
-  return scope.Escape(instance);
+MaybeHandle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,
+                                                Handle<PyObject> kwargs) {
+  return vtable_.construct_instance(Tagged<Klass>(this), args, kwargs);
 }
 
 }  // namespace saauso::internal

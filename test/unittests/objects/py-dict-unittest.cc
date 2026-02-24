@@ -35,7 +35,9 @@ TEST_F(PyDictTest, BasicOperations) {
   // Get
   Handle<PyObject> res1 = dict->Get(key1);
   EXPECT_FALSE(res1.is_null());
-  EXPECT_TRUE(PyObject::Equal(res1, val1)->value());
+  Handle<PyObject> eq_res;
+  ASSERT_TRUE(PyObject::Equal(res1, val1).ToHandle(&eq_res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(eq_res)->value());
 
   // Contains
   EXPECT_TRUE(dict->Contains(key1));
@@ -47,7 +49,9 @@ TEST_F(PyDictTest, BasicOperations) {
   PyDict::Put(dict, key1, val2);
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
   res1 = dict->Get(key1);
-  EXPECT_TRUE(PyObject::EqualBool(res1, val2));
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(res1, val2).To(&eq));
+  EXPECT_TRUE(eq);
 
   // Remove
   dict->Remove(key1);
@@ -114,16 +118,20 @@ TEST_F(PyDictTest, Equality) {
   PyDict::Put(d2, k2, v2);
   PyDict::Put(d2, k1, v1);
 
-  EXPECT_TRUE(PyObject::EqualBool(d1, d2));
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
+  EXPECT_TRUE(eq);
 
   // d2 = {"b": 2, "a": 3} (Different value)
   Handle<PyObject> v3(PySmi::FromInt(3));
   PyDict::Put(d2, k1, v3);
-  EXPECT_TRUE(!PyObject::EqualBool(d1, d2));
+  ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
+  EXPECT_FALSE(eq);
 
   // d2 = {"b": 2} (Different size)
   d2->Remove(k1);
-  EXPECT_TRUE(!PyObject::EqualBool(d1, d2));
+  ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
+  EXPECT_FALSE(eq);
 }
 
 TEST_F(PyDictTest, GetKeyTuple) {
@@ -131,7 +139,9 @@ TEST_F(PyDictTest, GetKeyTuple) {
 
   auto TupleContains = [](Handle<PyTuple> tuple, Handle<PyObject> key) -> bool {
     for (auto i = 0; i < tuple->length(); ++i) {
-      if (PyObject::Equal(tuple->Get(i), key)->value()) {
+      Handle<PyObject> eq_res;
+      if (PyObject::Equal(tuple->Get(i), key).ToHandle(&eq_res) &&
+          Handle<PyBoolean>::cast(eq_res)->value()) {
         return true;
       }
     }
@@ -162,7 +172,10 @@ TEST_F(PyDictTest, GetKeyTuple) {
 
   for (auto i = 0; i < keys->length(); ++i) {
     for (auto j = i + 1; j < keys->length(); ++j) {
-      EXPECT_FALSE(PyObject::Equal(keys->Get(i), keys->Get(j))->value());
+      Handle<PyObject> eq_res;
+      ASSERT_TRUE(
+          PyObject::Equal(keys->Get(i), keys->Get(j)).ToHandle(&eq_res));
+      EXPECT_FALSE(Handle<PyBoolean>::cast(eq_res)->value());
     }
   }
 
@@ -192,15 +205,13 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
     PyDict::Put(dict, key, val);
   }
 
-  Handle<PyObject> iterator = PyObject::Iter(dict);
+  Handle<PyObject> iterator;
+  ASSERT_TRUE(PyObject::Iter(dict).ToHandle(&iterator));
   ASSERT_TRUE(IsPyDictKeyIterator(iterator));
 
   std::set<int> seen;
-  for (;;) {
-    Handle<PyObject> key = PyObject::Next(iterator);
-    if (key.is_null()) {
-      break;
-    }
+  Handle<PyObject> key;
+  while (PyObject::Next(iterator).ToHandle(&key)) {
     int v = PySmi::ToInt(Handle<PySmi>::cast(key));
     seen.insert(v);
   }

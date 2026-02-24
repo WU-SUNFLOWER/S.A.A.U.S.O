@@ -84,18 +84,19 @@ TEST_F(PyStringTest, PyObjectComparisonsWork) {
   Handle<PyObject> b(PyString::NewInstance("abd"));
   Handle<PyObject> a2(PyString::NewInstance("abc"));
 
-  EXPECT_EQ(PyObject::Less(a, b).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Greater(b, a).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Equal(a, a2).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::NotEqual(a, b).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::LessEqual(a, a2).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::GreaterEqual(a, a2).ptr(),
-            Isolate::Current()->py_true_object().ptr());
+  Handle<PyObject> res;
+  ASSERT_TRUE(PyObject::Less(a, b).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::Greater(b, a).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::Equal(a, a2).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::NotEqual(a, b).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::LessEqual(a, a2).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
+  ASSERT_TRUE(PyObject::GreaterEqual(a, a2).ToHandle(&res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
 }
 
 TEST_F(PyStringTest, SliceWorks) {
@@ -127,8 +128,8 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
 
   Handle<PyObject> left(PyString::NewInstance("Hello"));
   Handle<PyObject> right(PyString::NewInstance(" World"));
-  Handle<PyObject> result = PyObject::Add(left, right);
-
+  Handle<PyObject> result;
+  ASSERT_TRUE(PyObject::Add(left, right).ToHandle(&result));
   ASSERT_TRUE(IsPyString(result));
   EXPECT_TRUE(IsPyStringEqual(Handle<PyString>::cast(result), "Hello World"));
 }
@@ -139,7 +140,8 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   Handle<PyObject> s(PyString::NewInstance("abc"));
   Handle<PyObject> index(PySmi::FromInt(1));
 
-  Handle<PyObject> result = PyObject::Subscr(s, index);
+  Handle<PyObject> result;
+  ASSERT_TRUE(PyObject::Subscr(s, index).ToHandle(&result));
   ASSERT_TRUE(IsPyString(result));
 
   auto char_str = Handle<PyString>::cast(result);
@@ -192,12 +194,13 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
   Handle<PyObject> missing(PyString::NewInstance("planet"));
   Handle<PyObject> not_a_string(PySmi::FromInt(1));
 
-  EXPECT_EQ(PyObject::Contains(s, pat).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Contains(s, missing).ptr(),
-            Isolate::Current()->py_false_object().ptr());
-  EXPECT_EQ(PyObject::Contains(s, not_a_string).ptr(),
-            Isolate::Current()->py_false_object().ptr());
+  Handle<PyObject> contains_res;
+  ASSERT_TRUE(PyObject::Contains(s, pat).ToHandle(&contains_res));
+  EXPECT_TRUE(IsPyTrue(*contains_res));
+  ASSERT_TRUE(PyObject::Contains(s, missing).ToHandle(&contains_res));
+  EXPECT_TRUE(IsPyFalse(*contains_res));
+  ASSERT_TRUE(PyObject::Contains(s, not_a_string).ToHandle(&contains_res));
+  EXPECT_TRUE(IsPyFalse(*contains_res));
 }
 
 TEST_F(PyStringTest, FromIntAndFromDoubleWork) {
@@ -228,7 +231,8 @@ TEST_F(PyStringTest, StringUpperMethod) {
   bool flag = false;
   Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs);
   for (auto i = 0; i < attrs_tuple->length(); ++i) {
-    if (PyObject::EqualBool(attr, attrs_tuple->Get(i))) {
+    bool eq = false;
+    if (PyObject::EqualBool(attr, attrs_tuple->Get(i)).To(&eq) && eq) {
       flag = true;
       break;
     }
@@ -238,7 +242,8 @@ TEST_F(PyStringTest, StringUpperMethod) {
 
   EXPECT_TRUE(PyStringKlass::GetInstance()->klass_properties()->Contains(attr));
 
-  Handle<PyObject> upper_method = PyObject::GetAttr(s, attr, false);
+  Handle<PyObject> upper_method;
+  ASSERT_TRUE(PyObject::GetAttr(s, attr).ToHandle(&upper_method));
   EXPECT_FALSE(upper_method.is_null());
 }
 

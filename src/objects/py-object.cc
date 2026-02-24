@@ -11,7 +11,9 @@
 #include "py-object.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
+#include "src/utils/maybe.h"
 #include "src/heap/heap.h"
 #include "src/objects/cell-klass.h"
 #include "src/objects/cell.h"
@@ -210,65 +212,51 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 // 多态虚方法入口 开始
 
 // python virtual function
-void PyObject::Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObject::Print(Handle<PyObject> self) {
   HandleScope scope;
-
   assert(GetKlass(*self)->vtable().print);
-  GetKlass(*self)->vtable().print(self);
+  return GetKlass(*self)->vtable().print(self);
 }
 
 // python virtual function
-Handle<PyObject> PyObject::Add(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+MaybeHandle<PyObject> PyObject::Add(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() +
                                            PySmi::cast(*other).value()));
   }
-
-  EscapableHandleScope scope;
-
   assert(GetKlass(*self)->vtable().add);
-  return scope.Escape(GetKlass(*self)->vtable().add(self, other));
+  return GetKlass(*self)->vtable().add(self, other);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Sub(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+MaybeHandle<PyObject> PyObject::Sub(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() -
                                            PySmi::cast(*other).value()));
   }
-
-  EscapableHandleScope scope;
-
   assert(GetKlass(*self)->vtable().sub);
-  return scope.Escape(GetKlass(*self)->vtable().sub(self, other));
+  return GetKlass(*self)->vtable().sub(self, other);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Mul(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+MaybeHandle<PyObject> PyObject::Mul(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() *
                                            PySmi::cast(*other).value()));
   }
-
-  EscapableHandleScope scope;
-
   assert(GetKlass(*self)->vtable().mul);
-  return scope.Escape(GetKlass(*self)->vtable().mul(self, other));
+  return GetKlass(*self)->vtable().mul(self, other);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Div(Handle<PyObject> self, Handle<PyObject> other) {
-  EscapableHandleScope scope;
-
-  assert(GetKlass(*self)->vtable().div);
-  return scope.Escape(GetKlass(*self)->vtable().div(self, other));
-}
-
-Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Div(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  assert(GetKlass(*self)->vtable().div);
+  return GetKlass(*self)->vtable().div(self, other);
+}
+
+MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
   int64_t other_value;
   if (IsPySmi(self) && IsPySmi(other) &&
       (other_value = PySmi::cast(*other).value()) != 0) {
@@ -276,9 +264,6 @@ Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
     return Handle<PyObject>(
         PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
   }
-
-  EscapableHandleScope scope;
-
   auto floor_div = GetKlass(*self)->vtable().floor_div;
   if (floor_div == nullptr) [[unlikely]] {
     auto self_name = GetKlass(self)->name();
@@ -287,265 +272,247 @@ Handle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
         ExceptionType::kTypeError,
         "unsupported operand type(s) for //: '%s' and '%s'",
         self_name->buffer(), other_name->buffer());
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
-
-  return scope.Escape(floor_div(self, other));
+  return floor_div(self, other);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Mod(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+MaybeHandle<PyObject> PyObject::Mod(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   if (IsPySmi(self) && IsPySmi(other)) {
     auto result =
         PythonMod(PySmi::cast(*self).value(), PySmi::cast(*other).value());
     return Handle<PyObject>(PySmi::FromInt(result));
   }
-
-  EscapableHandleScope scope;
-
   assert(GetKlass(*self)->vtable().mod);
-  return scope.Escape(GetKlass(*self)->vtable().mod(self, other));
+  return GetKlass(*self)->vtable().mod(self, other);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Len(Handle<PyObject> self) {
-  EscapableHandleScope scope;
-
+MaybeHandle<PyObject> PyObject::Len(Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().len);
-  return scope.Escape(GetKlass(*self)->vtable().len(self));
+  return GetKlass(*self)->vtable().len(self);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::Greater(Handle<PyObject> self,
-                                    Handle<PyObject> other) {
-  return Isolate::ToPyBoolean(GreaterBool(self, other));
-}
-
-bool PyObject::GreaterBool(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
-  if (IsPySmi(*self) && IsPySmi(*other)) {
-    return PySmi::cast(*self).value() > PySmi::cast(*other).value();
+MaybeHandle<PyBoolean> PyObject::Greater(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
+  Maybe<bool> mb = GreaterBool(self, other);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
   }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+}
 
-  HandleScope scope;
-
+Maybe<bool> PyObject::GreaterBool(Handle<PyObject> self,
+                                  Handle<PyObject> other) {
+  if (IsPySmi(*self) && IsPySmi(*other)) {
+    return Maybe<bool>(PySmi::cast(*self).value() >
+                      PySmi::cast(*other).value());
+  }
   assert(GetKlass(*self)->vtable().greater);
   return GetKlass(*self)->vtable().greater(self, other);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::Less(Handle<PyObject> self,
-                                 Handle<PyObject> other) {
-  return Isolate::ToPyBoolean(LessBool(self, other));
+MaybeHandle<PyBoolean> PyObject::Less(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
+  Maybe<bool> mb = LessBool(self, other);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
+  }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-bool PyObject::LessBool(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+Maybe<bool> PyObject::LessBool(Handle<PyObject> self,
+                                Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return PySmi::cast(*self).value() < PySmi::cast(*other).value();
+    return Maybe<bool>(PySmi::cast(*self).value() <
+                       PySmi::cast(*other).value());
   }
-
-  HandleScope scope;
-
   assert(GetKlass(*self)->vtable().less);
   return GetKlass(*self)->vtable().less(self, other);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::Equal(Handle<PyObject> self,
-                                  Handle<PyObject> other) {
-  return Isolate::ToPyBoolean(EqualBool(self, other));
+MaybeHandle<PyBoolean> PyObject::Equal(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
+  Maybe<bool> mb = EqualBool(self, other);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
+  }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-bool PyObject::EqualBool(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：直接比较内存地址
-  // 特别注意：如果self和other都是smi，这时候handle引用的就是
-  // 裸的smi。因此调用is_identical_to也可以完成比较！！！
+Maybe<bool> PyObject::EqualBool(Handle<PyObject> self,
+                                 Handle<PyObject> other) {
   if (self.is_identical_to(other)) {
-    return true;
+    return Maybe<bool>(true);
   }
-
-  HandleScope scope;
-
   assert(GetKlass(*self)->vtable().equal);
   return GetKlass(*self)->vtable().equal(self, other);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
-                                     Handle<PyObject> other) {
-  return Isolate::ToPyBoolean(NotEqualBool(self, other));
+MaybeHandle<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
+  Maybe<bool> mb = NotEqualBool(self, other);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
+  }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-bool PyObject::NotEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+Maybe<bool> PyObject::NotEqualBool(Handle<PyObject> self,
+                                    Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return PySmi::cast(*self).value() != PySmi::cast(*other).value();
+    return Maybe<bool>(PySmi::cast(*self).value() !=
+                       PySmi::cast(*other).value());
   }
-
-  HandleScope scope;
-
   assert(GetKlass(*self)->vtable().not_equal);
   return GetKlass(*self)->vtable().not_equal(self, other);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
-  return Isolate::ToPyBoolean(GreaterEqualBool(self, other));
+MaybeHandle<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
+                                               Handle<PyObject> other) {
+  Maybe<bool> mb = GreaterEqualBool(self, other);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
+  }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-bool PyObject::GreaterEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+Maybe<bool> PyObject::GreaterEqualBool(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return PySmi::cast(*self).value() >= PySmi::cast(*other).value();
+    return Maybe<bool>(PySmi::cast(*self).value() >=
+                       PySmi::cast(*other).value());
   }
-
-  HandleScope scope;
-
   assert(GetKlass(*self)->vtable().ge);
   return GetKlass(*self)->vtable().ge(self, other);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
-                                      Handle<PyObject> other) {
-  return Isolate::ToPyBoolean(LessEqualBool(self, other));
+MaybeHandle<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
+  Maybe<bool> mb = LessEqualBool(self, other);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
+  }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-bool PyObject::LessEqualBool(Handle<PyObject> self, Handle<PyObject> other) {
-  // 内联Fast Path：两个Smi之间操作
+Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return PySmi::cast(*self).value() <= PySmi::cast(*other).value();
+    return Maybe<bool>(PySmi::cast(*self).value() <=
+                       PySmi::cast(*other).value());
   }
-
-  HandleScope scope;
-
   assert(GetKlass(*self)->vtable().le);
   return GetKlass(*self)->vtable().le(self, other);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
-                                   Handle<PyObject> attr_name,
-                                   bool is_try) {
-  EscapableHandleScope scope;
-
+bool PyObject::LookupAttr(Handle<PyObject> self,
+                          Handle<PyObject> attr_name,
+                          Handle<PyObject>& out) {
   assert(GetKlass(*self)->vtable().getattr);
-  return scope.Escape(
-      GetKlass(*self)->vtable().getattr(self, attr_name, is_try));
+  Handle<PyObject> result =
+      GetKlass(*self)->vtable().getattr(self, attr_name, true);
+  if (result.is_null() && Isolate::Current()->HasPendingException()) {
+    return false;
+  }
+  out = result;
+  return true;
 }
 
-Handle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
-                                          Handle<PyObject> attr_name,
-                                          Handle<PyObject>& self_or_null) {
-  EscapableHandleScope scope;
-
-  self_or_null = Handle<PyObject>::null();
-
-  Tagged<Klass> klass = GetKlass(*self);
-  // Fast Path:
-  // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
-  // MethodObject对象的操作。
-  if (klass->vtable().getattr == &Klass::Virtual_Default_GetAttr) {
-    return scope.Escape(
-        Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null));
+MaybeHandle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
+                                         Handle<PyObject> attr_name) {
+  assert(GetKlass(*self)->vtable().getattr);
+  Handle<PyObject> result =
+      GetKlass(*self)->vtable().getattr(self, attr_name, false);
+  if (result.is_null() && Isolate::Current()->HasPendingException()) {
+    return kNullMaybeHandle;
   }
+  return result;
+}
 
-  // Fallback
-  Handle<PyObject> value = GetAttr(self, attr_name, false);
+MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
+                                                Handle<PyObject> attr_name,
+                                                Handle<PyObject>& self_or_null) {
+  self_or_null = Handle<PyObject>::null();
+  Tagged<Klass> klass = GetKlass(*self);
+  if (klass->vtable().getattr == &Klass::Virtual_Default_GetAttr) {
+    return Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null);
+  }
+  MaybeHandle<PyObject> maybe_value = GetAttr(self, attr_name);
+  if (maybe_value.IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+  Handle<PyObject> value = maybe_value.ToHandleChecked();
   if (IsMethodObject(value)) {
     auto method = Handle<MethodObject>::cast(value);
     self_or_null = method->owner();
-    return scope.Escape(method->func());
+    return method->func();
   }
-  return scope.Escape(value);
+  return value;
 }
 
-// python virtual function
-void PyObject::SetAttr(Handle<PyObject> self,
-                       Handle<PyObject> attr_name,
-                       Handle<PyObject> attr_value) {
-  HandleScope scope;
-
+MaybeHandle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
+                                          Handle<PyObject> attr_name,
+                                          Handle<PyObject> attr_value) {
   assert(GetKlass(*self)->vtable().setattr);
-  GetKlass(*self)->vtable().setattr(self, attr_name, attr_value);
+  return GetKlass(*self)->vtable().setattr(self, attr_name, attr_value);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Subscr(Handle<PyObject> self,
-                                  Handle<PyObject> subscr_name) {
-  EscapableHandleScope scope;
-
+MaybeHandle<PyObject> PyObject::Subscr(Handle<PyObject> self,
+                                        Handle<PyObject> subscr_name) {
   assert(GetKlass(*self)->vtable().subscr);
-  return scope.Escape(GetKlass(*self)->vtable().subscr(self, subscr_name));
+  return GetKlass(*self)->vtable().subscr(self, subscr_name);
 }
 
-// python virtual function
-void PyObject::StoreSubscr(Handle<PyObject> self,
-                           Handle<PyObject> subscr_name,
-                           Handle<PyObject> subscr_value) {
-  HandleScope scope;
-
+MaybeHandle<PyObject> PyObject::StoreSubscr(Handle<PyObject> self,
+                                              Handle<PyObject> subscr_name,
+                                              Handle<PyObject> subscr_value) {
   assert(GetKlass(*self)->vtable().store_subscr);
-  GetKlass(*self)->vtable().store_subscr(self, subscr_name, subscr_value);
+  return GetKlass(*self)->vtable().store_subscr(self, subscr_name, subscr_value);
 }
 
-// python virtual function
-Tagged<PyBoolean> PyObject::Contains(Handle<PyObject> self,
-                                     Handle<PyObject> target) {
-  return Isolate::ToPyBoolean(ContainsBool(self, target));
+MaybeHandle<PyBoolean> PyObject::Contains(Handle<PyObject> self,
+                                           Handle<PyObject> target) {
+  Maybe<bool> mb = ContainsBool(self, target);
+  if (mb.IsNothing()) {
+    return MaybeHandle<PyBoolean>();
+  }
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-bool PyObject::ContainsBool(Handle<PyObject> self, Handle<PyObject> target) {
-  HandleScope scope;
-
+Maybe<bool> PyObject::ContainsBool(Handle<PyObject> self,
+                                    Handle<PyObject> target) {
   assert(GetKlass(*self)->vtable().contains);
   return GetKlass(*self)->vtable().contains(self, target);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Iter(Handle<PyObject> self) {
-  EscapableHandleScope scope;
-
+MaybeHandle<PyObject> PyObject::Iter(Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().iter);
-  return scope.Escape(GetKlass(*self)->vtable().iter(self));
+  return GetKlass(*self)->vtable().iter(self);
 }
 
-// python virtual function
-Handle<PyObject> PyObject::Next(Handle<PyObject> self) {
-  EscapableHandleScope scope;
-
+MaybeHandle<PyObject> PyObject::Next(Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().next);
-  return scope.Escape(GetKlass(*self)->vtable().next(self));
+  return GetKlass(*self)->vtable().next(self);
 }
 
-// python virtual function
-void PyObject::DeletSubscr(Handle<PyObject> self,
-                           Handle<PyObject> subscr_name) {
-  HandleScope scope;
-
+MaybeHandle<PyObject> PyObject::DeletSubscr(Handle<PyObject> self,
+                                              Handle<PyObject> subscr_name) {
   assert(GetKlass(*self)->vtable().del_subscr);
-  GetKlass(*self)->vtable().del_subscr(self, subscr_name);
+  return GetKlass(*self)->vtable().del_subscr(self, subscr_name);
 }
 
-// python virtual function
-uint64_t PyObject::Hash(Handle<PyObject> self) {
-  HandleScope scope;
-
+Maybe<uint64_t> PyObject::Hash(Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().hash);
   return GetKlass(*self)->vtable().hash(self);
 }
 
-Handle<PyObject> PyObject::Call(Handle<PyObject> self,
-                                Handle<PyObject> host,
-                                Handle<PyObject> args,
-                                Handle<PyObject> kwargs) {
-  EscapableHandleScope scope;
-
+MaybeHandle<PyObject> PyObject::Call(Handle<PyObject> self,
+                                      Handle<PyObject> host,
+                                      Handle<PyObject> args,
+                                      Handle<PyObject> kwargs) {
   auto* call_method = GetKlass(*self)->vtable().call;
-  return scope.Escape(call_method(self, host, args, kwargs));
+  return call_method(self, host, args, kwargs);
 }
 
 // python virtual function

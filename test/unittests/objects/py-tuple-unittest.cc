@@ -31,9 +31,10 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(1))), 2);
 
-  PyObject::StoreSubscr(Handle<PyObject>(list),
-                        Handle<PyObject>(PySmi::FromInt(0)),
-                        Handle<PyObject>(PySmi::FromInt(42)));
+  ASSERT_FALSE(PyObject::StoreSubscr(Handle<PyObject>(list),
+                                     Handle<PyObject>(PySmi::FromInt(0)),
+                                     Handle<PyObject>(PySmi::FromInt(42)))
+                   .IsEmpty());
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
 }
 
@@ -47,13 +48,18 @@ TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
   auto tuple = PyTuple::NewInstance(list);
   Handle<PyObject> obj(tuple);
 
-  auto len = PyObject::Len(obj);
+  Handle<PyObject> len;
+  ASSERT_TRUE(PyObject::Len(obj).ToHandle(&len));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(len)), 2);
 
-  auto v0 = PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(0)));
+  Handle<PyObject> v0;
+  ASSERT_TRUE(PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(0)))
+                  .ToHandle(&v0));
   EXPECT_TRUE(IsPyString(*v0));
 
-  auto v1 = PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(1)));
+  Handle<PyObject> v1;
+  ASSERT_TRUE(PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(1)))
+                  .ToHandle(&v1));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 7);
 }
 
@@ -67,18 +73,24 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
   auto t1 = PyTuple::NewInstance(list1);
 
   Handle<PyObject> obj(t1);
-  EXPECT_EQ(PyObject::Contains(obj, s).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2))).ptr(),
-            Isolate::Current()->py_false_object().ptr());
+  Handle<PyObject> contains_res;
+  ASSERT_TRUE(PyObject::Contains(obj, s).ToHandle(&contains_res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
+  ASSERT_TRUE(
+      PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2)))
+          .ToHandle(&contains_res));
+  EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::NewInstance(2);
   PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
   auto t2 = PyTuple::NewInstance(list2);
 
-  EXPECT_EQ(PyObject::Equal(Handle<PyObject>(t1), Handle<PyObject>(t2)).ptr(),
-            Isolate::Current()->py_true_object().ptr());
+  Handle<PyObject> equal_res;
+  ASSERT_TRUE(
+      PyObject::Equal(Handle<PyObject>(t1), Handle<PyObject>(t2))
+          .ToHandle(&equal_res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(equal_res)->value());
 }
 
 TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
@@ -89,18 +101,23 @@ TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
   auto tuple = PyTuple::NewInstance(list);
 
-  auto iterator = PyObject::Iter(Handle<PyObject>(tuple));
+  Handle<PyObject> iterator;
+  ASSERT_TRUE(PyObject::Iter(Handle<PyObject>(tuple)).ToHandle(&iterator));
   ASSERT_TRUE(IsPyTupleIterator(*iterator));
 
-  auto v0 = PyObject::Next(iterator);
+  Handle<PyObject> v0;
+  ASSERT_TRUE(PyObject::Next(iterator).ToHandle(&v0));
   ASSERT_TRUE(IsPySmi(*v0));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
 
-  auto v1 = PyObject::Next(iterator);
+  Handle<PyObject> v1;
+  ASSERT_TRUE(PyObject::Next(iterator).ToHandle(&v1));
   ASSERT_TRUE(IsPySmi(*v1));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 2);
 
-  auto end = PyObject::Next(iterator);
+  // 迭代器耗尽时 Next 返回空 MaybeHandle，ToHandle 为 false。
+  Handle<PyObject> end;
+  EXPECT_FALSE(PyObject::Next(iterator).ToHandle(&end));
   EXPECT_TRUE(end.is_null());
 }
 

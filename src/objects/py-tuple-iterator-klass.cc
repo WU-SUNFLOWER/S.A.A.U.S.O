@@ -9,6 +9,7 @@
 
 #include "src/builtins/builtins-py-tuple-iterator-methods.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
@@ -82,16 +83,21 @@ void PyTupleIteratorKlass::Finalize() {
       Tagged<PyTupleIteratorKlass>::null());
 }
 
-void PyTupleIteratorKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Print(
+    Handle<PyObject> self) {
   std::printf("<tuple_iterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
+  return Handle<PyObject>(
+      Tagged<PyObject>::cast(Isolate::Current()->py_none_object()));
 }
 
-Handle<PyObject> PyTupleIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Iter(
+    Handle<PyObject> self) {
   return self;
 }
 
-Handle<PyObject> PyTupleIteratorKlass::Virtual_Next(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Next(
+    Handle<PyObject> self) {
   return NextImpl(self);
 }
 

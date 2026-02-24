@@ -9,12 +9,14 @@
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -152,13 +154,22 @@ Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
   HandleScope scope;
   Handle<PyObject> handle_key(key);
 
-  uint64_t hash = PyObject::Hash(handle_key);
+  uint64_t hash = 0;
+  if (!PyObject::Hash(handle_key).To(&hash)) {
+    return Tagged<PyObject>::null();
+  }
   uint64_t mask = capacity() - 1;
   uint64_t index = hash & mask;
 
   auto curr_key = GET_DICT_KEY(this, index);
   while (!curr_key.is_null()) {
-    if (PyObject::Equal(handle(curr_key), handle_key)->value()) {
+    Handle<PyObject> curr_key_handle = handle(curr_key);
+    Handle<PyBoolean> equal_result;
+    if (!PyObject::Equal(curr_key_handle, handle_key).ToHandle(
+            &equal_result)) {
+      return Tagged<PyObject>::null();
+    }
+    if (equal_result->value()) {
       return GET_DICT_VAL(this, index);
     }
     index = GetProbe(index, mask);
@@ -171,13 +182,21 @@ Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
 void PyDict::Remove(Handle<PyObject> key) {
   HandleScope scope;
 
-  uint64_t hash = PyObject::Hash(key);
+  uint64_t hash = 0;
+  if (!PyObject::Hash(key).To(&hash)) {
+    return;
+  }
   uint64_t mask = capacity() - 1;
   uint64_t index = hash & mask;
 
   auto curr_key = GET_DICT_KEY(this, index);
   while (!curr_key.is_null()) {
-    if (PyObject::Equal(handle(curr_key), key)->value()) {
+    Handle<PyObject> curr_key_handle = handle(curr_key);
+    Handle<PyBoolean> equal_result;
+    if (!PyObject::Equal(curr_key_handle, key).ToHandle(&equal_result)) {
+      return;
+    }
+    if (equal_result->value()) {
       // 找到目标，进行删除
       // 1. 将当前位置置空
       SET_DICT_KEY(this, index, Tagged<PyObject>::null());
@@ -190,7 +209,10 @@ void PyDict::Remove(Handle<PyObject> key) {
 
       Handle<PyObject> next_key = handle(GET_DICT_KEY(this, next));
       while (!(*next_key).is_null()) {
-        uint64_t next_hash = PyObject::Hash(next_key);
+        uint64_t next_hash = 0;
+        if (!PyObject::Hash(next_key).To(&next_hash)) {
+          return;
+        }
         uint64_t ideal = next_hash & mask;
 
         // 计算距离
@@ -233,13 +255,20 @@ void PyDict::Put(Handle<PyDict> object,
     ExpandImpl(dict);
   }
 
-  uint64_t hash = PyObject::Hash(key);
+  uint64_t hash = 0;
+  if (!PyObject::Hash(key).To(&hash)) {
+    return;
+  }
   uint64_t mask = dict->capacity() - 1;
   uint64_t index = hash & mask;
 
   Handle<PyObject> curr_key(GET_DICT_KEY(dict, index));
   while (!curr_key.is_null()) {
-    if (PyObject::Equal(curr_key, key)->value()) {
+    Handle<PyBoolean> equal_result;
+    if (!PyObject::Equal(curr_key, key).ToHandle(&equal_result)) {
+      return;
+    }
+    if (equal_result->value()) {
       SET_DICT_VAL(dict, index, *value);
       return;
     }
@@ -294,7 +323,10 @@ void PyDict::ExpandImpl(Handle<PyDict> dict) {
     }
 
     Handle<PyObject> key(GET_DICT_KEY(dict, index));
-    uint64_t hash = PyObject::Hash(key);
+    uint64_t hash = 0;
+    if (!PyObject::Hash(key).To(&hash)) {
+      return;
+    }
     uint64_t new_index = hash & new_mask;
 
     // 在new_data中寻找一个合适的位置放置键值对

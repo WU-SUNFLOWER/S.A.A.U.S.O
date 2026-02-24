@@ -5,7 +5,9 @@
 #ifndef SAAUSO_OBJECTS_PY_DICT_VIEWS_KLASS_H_
 #define SAAUSO_OBJECTS_PY_DICT_VIEWS_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -22,10 +24,11 @@ class PyDictKeysKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+                                     Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -42,10 +45,11 @@ class PyDictValuesKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+                                     Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -62,10 +66,11 @@ class PyDictItemsKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+                                     Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -82,9 +87,9 @@ class PyDictKeyIteratorKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Next(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -101,9 +106,9 @@ class PyDictItemIteratorKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Next(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -120,9 +125,9 @@ class PyDictValueIteratorKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Next(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

@@ -9,6 +9,7 @@
 #include <cstdio>
 
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -21,6 +22,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-smi.h"
+#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -76,244 +78,208 @@ void PySmiKlass::Finalize() {
 
 ////////////////////////////////////////////////////////////////////
 
-Handle<PyObject> PySmiKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PySmiKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PySmiKlass::GetInstance());
-  Handle<PyObject> result;
-  if (!Runtime_NewSmi(args, kwargs).ToHandle(&result)) {
-    return Handle<PyObject>::null();
-  }
-  return result;
+  return Runtime_NewSmi(args, kwargs);
 }
 
-void PySmiKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%" PRId64, PySmi::cast(*self).value());
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-// static
-Handle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPyFloat(other)) {
     double value = self_value + Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for +: 'int' and '%s'",
-      PyObject::GetKlass(other)->name()->buffer());
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for +: 'int' and '%s'",
+                      PyObject::GetKlass(other)->name()->buffer());
+  return kNullMaybeHandle;
 }
 
-// static
-Handle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPyFloat(other)) {
     double value = self_value - Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for -: 'int' and '%s'",
-      PyObject::GetKlass(other)->name()->buffer());
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for -: 'int' and '%s'",
+                      PyObject::GetKlass(other)->name()->buffer());
+  return kNullMaybeHandle;
 }
 
-// static
-Handle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPyFloat(other)) {
     double value = self_value * Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for *: 'int' and '%s'",
-      PyObject::GetKlass(other)->name()->buffer());
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for *: 'int' and '%s'",
+                      PyObject::GetKlass(other)->name()->buffer());
+  return kNullMaybeHandle;
 }
 
-// static
-Handle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPySmi(other)) {
     double value =
         static_cast<double>(self_value) / PySmi::cast(*other).value();
     return PyFloat::NewInstance(value);
   }
-
   if (IsPyFloat(other)) {
     double value =
         static_cast<double>(self_value) / Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for /: 'int' and '%s'",
-      PyObject::GetKlass(other)->name()->buffer());
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for /: 'int' and '%s'",
+                      PyObject::GetKlass(other)->name()->buffer());
+  return kNullMaybeHandle;
 }
 
-// static
-Handle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
-                                              Handle<PyObject> other) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
+                                                   Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPySmi(other)) {
     int64_t other_value = PySmi::cast(*other).value();
     if (other_value == 0) {
-      Runtime_ThrowError(
-          ExceptionType::kZeroDivisionError,
-          "integer division or modulo by zero");
-      return Handle<PyObject>::null();
+      Runtime_ThrowError(ExceptionType::kZeroDivisionError,
+                         "integer division or modulo by zero");
+      return kNullMaybeHandle;
     }
     return handle(PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
   }
-
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     if (other_value == 0) {
       Runtime_ThrowError(ExceptionType::kZeroDivisionError,
                          "float floor division by zero");
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
     return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
   }
-
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for //: 'int' and '%s'",
-      PyObject::GetKlass(other)->name()->buffer());
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for //: 'int' and '%s'",
+                      PyObject::GetKlass(other)->name()->buffer());
+  return kNullMaybeHandle;
 }
 
-// static
-Handle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
+                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     double value = PythonMod(self_value, other_value);
     return PyFloat::NewInstance(value);
   }
-
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "unsupported operand type(s) for %%: 'int' and '%s'",
-      PyObject::GetKlass(other)->name()->buffer());
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "unsupported operand type(s) for %%: 'int' and '%s'",
+                      PyObject::GetKlass(other)->name()->buffer());
+  return kNullMaybeHandle;
 }
 
-// static
-uint64_t PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
-  return PySmi::cast(*self).value();
+Maybe<uint64_t> PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
+  return Maybe<uint64_t>(PySmi::cast(*self).value());
 }
 
-// static
-bool PySmiKlass::Virtual_Greater(Handle<PyObject> self,
-                                 Handle<PyObject> other) {
+Maybe<bool> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
   assert(IsPySmi(self));
-
   int64_t self_value = PySmi::cast(*self).value();
-
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return self_value > other_value;
+    return Maybe<bool>(self_value > other_value);
   }
   auto other_name = PyObject::GetKlass(other)->name();
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "'>' not supported between instances of 'int' and '%s'\n",
-      other_name->buffer());
-  return false;
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "'>' not supported between instances of 'int' and '%s'\n",
+                      other_name->buffer());
+  return kNullMaybe;
 }
 
-// static
-bool PySmiKlass::Virtual_Less(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PySmiKlass::Virtual_Less(Handle<PyObject> self,
+                                     Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   int64_t self_value = PySmi::cast(*self).value();
 
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
-    return self_value < other_value;
+    return Maybe<bool>(self_value < other_value);
   }
   auto other_name = PyObject::GetKlass(other)->name();
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "'<' not supported between instances of 'int' and '%s'\n",
-      other_name->buffer());
-  return false;
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "'<' not supported between instances of 'int' and '%s'\n",
+                      other_name->buffer());
+  return kNullMaybe;
 }
 
-// static
-bool PySmiKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
-  assert(IsPySmi(self));
-
-  int64_t self_value = PySmi::cast(*self).value();
-
-  if (IsPyBoolean(other)) {
-    return self_value == (Handle<PyBoolean>::cast(other)->value() ? 1 : 0);
-  }
-  if (IsPyFloat(other)) {
-    double other_value = Handle<PyFloat>::cast(other)->value();
-    return self_value == other_value;
-  }
-  if (IsPySmi(other)) {
-    return self_value == PySmi::cast(*other).value();
-  }
-
-  return false;
-}
-
-// static
-bool PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                  Handle<PyObject> other) {
-  assert(IsPySmi(self));
-
-  return !Virtual_Equal(self, other);
-}
-
-// static
-bool PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
                                       Handle<PyObject> other) {
   assert(IsPySmi(self));
-
-  return Virtual_Greater(self, other) || Virtual_Equal(self, other);
+  int64_t self_value = PySmi::cast(*self).value();
+  if (IsPyBoolean(other)) {
+    return Maybe<bool>(self_value ==
+                       (Handle<PyBoolean>::cast(other)->value() ? 1 : 0));
+  }
+  if (IsPyFloat(other)) {
+    double other_value = Handle<PyFloat>::cast(other)->value();
+    return Maybe<bool>(self_value == other_value);
+  }
+  if (IsPySmi(other)) {
+    return Maybe<bool>(self_value == PySmi::cast(*other).value());
+  }
+  return Maybe<bool>(false);
 }
 
-// static
-bool PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                   Handle<PyObject> other) {
+Maybe<bool> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
   assert(IsPySmi(self));
+  Maybe<bool> eq = Virtual_Equal(self, other);
+  if (eq.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(!eq.ToChecked());
+}
 
-  return Virtual_Less(self, other) || Virtual_Equal(self, other);
+Maybe<bool> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
+  assert(IsPySmi(self));
+  Maybe<bool> gt = Virtual_Greater(self, other);
+  Maybe<bool> eq = Virtual_Equal(self, other);
+  if (gt.IsNothing() || eq.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(gt.ToChecked() || eq.ToChecked());
+}
+
+Maybe<bool> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
+  assert(IsPySmi(self));
+  Maybe<bool> lt = Virtual_Less(self, other);
+  Maybe<bool> eq = Virtual_Equal(self, other);
+  if (lt.IsNothing() || eq.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(lt.ToChecked() || eq.ToChecked());
 }
 
 }  // namespace saauso::internal

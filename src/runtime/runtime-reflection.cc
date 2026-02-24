@@ -50,7 +50,11 @@ bool Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto curr_type_object = mro_of_object->Get(i);
-    if (PyObject::EqualBool(curr_type_object, type_or_tuple)) {
+    Maybe<bool> mb = PyObject::EqualBool(curr_type_object, type_or_tuple);
+    if (mb.IsNothing()) {
+      return false;
+    }
+    if (mb.ToChecked()) {
       return true;
     }
   }
@@ -114,9 +118,10 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
 MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
                                         Handle<PyObject> args,
                                         Handle<PyObject> kwargs) {
-  Handle<PyObject> result =
-      type_object->own_klass()->ConstructInstance(args, kwargs);
-  if (result.is_null() && Isolate::Current()->HasPendingException()) {
+  Handle<PyObject> result;
+  if (!type_object->own_klass()
+           ->ConstructInstance(args, kwargs)
+           .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;

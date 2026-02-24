@@ -6,6 +6,7 @@
 
 #include "src/builtins/builtins-py-type-object-methods.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -20,6 +21,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -77,11 +79,11 @@ void PyTypeObjectKlass::Finalize() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-// static
-void PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto type_object = Handle<PyTypeObject>::cast(self);
   auto type_name = type_object->own_klass()->name();
   std::printf("<class '%s'>", type_name->buffer());
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
 Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
@@ -99,57 +101,58 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
   if (is_try) {
     return Handle<PyObject>::null();
   }
-  Runtime_ThrowErrorf(
-      ExceptionType::kAttributeError,
-      "'%s' object has no attribute '%s'\n",
-      PyObject::GetKlass(self)->name()->buffer(),
-      Handle<PyString>::cast(prop_name)->buffer());
+  Runtime_ThrowErrorf(ExceptionType::kAttributeError,
+                      "'%s' object has no attribute '%s'\n",
+                      PyObject::GetKlass(self)->name()->buffer(),
+                      Handle<PyString>::cast(prop_name)->buffer());
   return Handle<PyObject>::null();
 }
 
-void PyTypeObjectKlass::Virtual_SetAttr(Handle<PyObject> self,
-                                        Handle<PyObject> prop_name,
-                                        Handle<PyObject> prop_value) {
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
+    Handle<PyObject> self,
+    Handle<PyObject> prop_name,
+    Handle<PyObject> prop_value) {
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
   PyDict::Put(own_klass->klass_properties(), prop_name, prop_value);
+  return Handle<PyObject>(Isolate::Current()->py_none_object());
 }
 
-uint64_t PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {
-  return static_cast<uint64_t>((*self).ptr());
+Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {
+  return Maybe<uint64_t>(static_cast<uint64_t>((*self).ptr()));
 }
 
-bool PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
-                                      Handle<PyObject> other) {
+Maybe<bool> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
   if (!IsPyTypeObject(other)) {
-    return false;
+    return Maybe<bool>(false);
   }
-  return self.is_identical_to(other);
+  return Maybe<bool>(self.is_identical_to(other));
 }
 
-bool PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
-  return !Virtual_Equal(self, other);
+Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
+  Maybe<bool> eq = Virtual_Equal(self, other);
+  if (eq.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(!eq.ToChecked());
 }
 
-Handle<PyObject> PyTypeObjectKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
-  Handle<PyObject> result;
-  if (!Runtime_NewType(args, kwargs).ToHandle(&result)) {
-    return Handle<PyObject>::null();
-  }
-  return result;
+  return Runtime_NewType(args, kwargs);
 }
 
-Handle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
-                                                 Handle<PyObject> host,
-                                                 Handle<PyObject> args,
-                                                 Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
+                                                      Handle<PyObject> host,
+                                                      Handle<PyObject> args,
+                                                      Handle<PyObject> kwargs) {
+  (void)host;
   auto type_object = Handle<PyTypeObject>::cast(self);
   auto own_klass = type_object->own_klass();
-  // type object本身并不知道如何创建新对象的逻辑，需要转发给对应的klass
   return own_klass->ConstructInstance(args, kwargs);
 }
 

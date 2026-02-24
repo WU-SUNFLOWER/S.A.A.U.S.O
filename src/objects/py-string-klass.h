@@ -6,7 +6,9 @@
 #define SAAUSO_OBJECTS_PY_STRING_KLASS_H_
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -24,28 +26,35 @@ class PyStringKlass : public Klass {
   void Finalize();
 
  private:
-  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
-                                                    Handle<PyObject> args,
-                                                    Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_ConstructInstance(
+      Tagged<Klass> klass_self,
+      Handle<PyObject> args,
+      Handle<PyObject> kwargs);
 
-  static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
 
-  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_Less(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_Greater(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_LessEqual(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_GreaterEqual(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
                                    Handle<PyObject> other);
-
-  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> target);
-
-  static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
-                                         Handle<PyObject> subscr);
-  static Handle<PyObject> Virtual_Add(Handle<PyObject> self,
+  static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static void Virtual_Print(Handle<PyObject> self);
-  static uint64_t Virtual_Hash(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Less(Handle<PyObject> self,
+                                  Handle<PyObject> other);
+  static Maybe<bool> Virtual_Greater(Handle<PyObject> self,
+                                    Handle<PyObject> other);
+  static Maybe<bool> Virtual_LessEqual(Handle<PyObject> self,
+                                       Handle<PyObject> other);
+  static Maybe<bool> Virtual_GreaterEqual(Handle<PyObject> self,
+                                           Handle<PyObject> other);
+
+  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+                                       Handle<PyObject> target);
+
+  static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
+                                               Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
+                                            Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
 
   // GC相关接口
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

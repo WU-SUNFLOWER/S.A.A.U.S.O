@@ -5,6 +5,7 @@
 #ifndef SAAUSO_OBJECTS_PY_CODE_OBJECT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_CODE_OBJECT_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
 
 namespace saauso::internal {
@@ -20,7 +21,7 @@ class PyCodeObjectKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
