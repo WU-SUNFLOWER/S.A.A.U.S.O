@@ -117,8 +117,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
   }
   if (argc > 1) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "list expected at most 1 argument, got %" PRId64 "\n",
-                        argc);
+                        "list expected at most 1 argument, got %" PRId64, argc);
     return kNullMaybeHandle;
   }
 
@@ -151,7 +150,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
   }
 
   std::printf("]");
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
@@ -221,7 +220,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
   }
 
   list->Set(decoded_subscr, value);
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
@@ -237,7 +236,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   }
 
   list->RemoveByIndex(decoded_subscr);
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,

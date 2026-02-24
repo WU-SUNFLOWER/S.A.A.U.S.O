@@ -9,6 +9,7 @@
 
 #include "src/builtins/builtins-py-dict-views-methods.h"
 #include "src/execution/exception-types.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
@@ -50,7 +51,7 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
   }
 
   iterator->set_iter_index(dict->capacity());
-  return scope.Escape(Handle<PyObject>::null());
+  return Handle<PyObject>::null();
 }
 
 template <typename ViewType>
@@ -112,13 +113,13 @@ MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
     if (!first) {
       std::printf(", ");
     }
+
     first = false;
-    if (PyObject::Print(key).IsEmpty()) {
-      return kNullMaybeHandle;
-    }
+
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(key));
   }
   std::printf("])");
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -198,13 +199,13 @@ MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
     if (!first) {
       std::printf(", ");
     }
+
     first = false;
-    if (PyObject::Print(value).IsEmpty()) {
-      return kNullMaybeHandle;
-    }
+
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(value));
   }
   std::printf("])");
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -226,11 +227,12 @@ Maybe<bool> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
     if (value.is_null()) {
       continue;
     }
-    Maybe<bool> mb = PyObject::EqualBool(value, subscr);
-    if (mb.IsNothing()) {
-      return kNullMaybe;
-    }
-    if (mb.ToChecked()) {
+
+    bool equal;
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), equal,
+                               PyObject::EqualBool(value, subscr));
+
+    if (equal) {
       return Maybe<bool>(true);
     }
   }
@@ -300,12 +302,10 @@ MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
       std::printf(", ");
     }
     first = false;
-    if (PyObject::Print(item).IsEmpty()) {
-      return kNullMaybeHandle;
-    }
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(item));
   }
   std::printf("])");
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -401,7 +401,7 @@ MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Print(
     Handle<PyObject> self) {
   std::printf("<dict_keyiterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Iter(
@@ -416,7 +416,7 @@ MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(
         return dict->KeyAtIndex(index);
       });
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration, "");
+    Runtime_ThrowError(ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;
@@ -477,7 +477,7 @@ MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Print(
     Handle<PyObject> self) {
   std::printf("<dict_itemiterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Iter(
@@ -492,7 +492,7 @@ MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Next(
         return dict->ItemAtIndex(index);
       });
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration, "");
+    Runtime_ThrowError(ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;
@@ -553,7 +553,7 @@ MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Print(
     Handle<PyObject> self) {
   std::printf("<dict_valueiterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Iter(
@@ -568,7 +568,7 @@ MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Next(
         return dict->ValueAtIndex(index);
       });
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration, "");
+    Runtime_ThrowError(ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;

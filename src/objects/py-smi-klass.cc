@@ -88,7 +88,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_ConstructInstance(
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%" PRId64, PySmi::cast(*self).value());
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,

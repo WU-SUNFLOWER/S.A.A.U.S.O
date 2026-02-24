@@ -72,7 +72,7 @@ MaybeHandle<PyObject> PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
     return kNullMaybeHandle;
   }
   std::printf(" at 0x%p>", reinterpret_cast<void*>((*func).ptr()));
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 size_t PyFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -128,7 +128,7 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
     return kNullMaybeHandle;
   }
   std::printf(">");
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
@@ -201,8 +201,8 @@ void MethodObjectKlass::Finalize() {
 }
 
 MaybeHandle<PyObject> MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  (void)self;
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  // TODO: 实现method object类型的print方法
+  return handle(Isolate::Current()->py_none_object());
 }
 
 size_t MethodObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

@@ -93,7 +93,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Print(Handle<PyObject> self) {
   }
 
   std::printf("<object at %p>", reinterpret_cast<void*>((*self).ptr()));
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> Klass::Virtual_Default_Len(Handle<PyObject> self) {
@@ -179,11 +179,12 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
     args->SetInternal(0, prop_name);
 
     Handle<PyObject> getattr_result;
-    if (!Execution::Call(Isolate::Current(), getattr_func, self, args,
-                         Handle<PyDict>::null())
-             .ToHandle(&getattr_result)) {
-      return Handle<PyObject>::null();
-    }
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+        Isolate::Current(), getattr_result,
+        Execution::Call(Isolate::Current(), getattr_func, self, args,
+                        Handle<PyDict>::null()),
+        Handle<PyObject>::null());
+
     return getattr_result;
   }
 

@@ -9,11 +9,11 @@
 #include <cstdlib>
 
 #include "py-object.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
-#include "src/utils/maybe.h"
 #include "src/heap/heap.h"
 #include "src/objects/cell-klass.h"
 #include "src/objects/cell.h"
@@ -43,6 +43,7 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -221,30 +222,36 @@ MaybeHandle<PyObject> PyObject::Print(Handle<PyObject> self) {
 // python virtual function
 MaybeHandle<PyObject> PyObject::Add(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() +
                                            PySmi::cast(*other).value()));
   }
+
   assert(GetKlass(*self)->vtable().add);
   return GetKlass(*self)->vtable().add(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Sub(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() -
                                            PySmi::cast(*other).value()));
   }
+
   assert(GetKlass(*self)->vtable().sub);
   return GetKlass(*self)->vtable().sub(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Mul(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() *
                                            PySmi::cast(*other).value()));
   }
+
   assert(GetKlass(*self)->vtable().mul);
   return GetKlass(*self)->vtable().mul(self, other);
 }
@@ -256,22 +263,23 @@ MaybeHandle<PyObject> PyObject::Div(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
-                                          Handle<PyObject> other) {
+                                         Handle<PyObject> other) {
   int64_t other_value;
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(self) && IsPySmi(other) &&
       (other_value = PySmi::cast(*other).value()) != 0) {
     int64_t self_value = PySmi::cast(*self).value();
     return Handle<PyObject>(
         PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
   }
-  auto floor_div = GetKlass(*self)->vtable().floor_div;
+
+  auto* floor_div = GetKlass(*self)->vtable().floor_div;
   if (floor_div == nullptr) [[unlikely]] {
     auto self_name = GetKlass(self)->name();
     auto other_name = GetKlass(other)->name();
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "unsupported operand type(s) for //: '%s' and '%s'",
-        self_name->buffer(), other_name->buffer());
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "unsupported operand type(s) for //: '%s' and '%s'",
+                        self_name->buffer(), other_name->buffer());
     return kNullMaybeHandle;
   }
   return floor_div(self, other);
@@ -279,11 +287,13 @@ MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyObject::Mod(Handle<PyObject> self,
                                     Handle<PyObject> other) {
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(self) && IsPySmi(other)) {
     auto result =
         PythonMod(PySmi::cast(*self).value(), PySmi::cast(*other).value());
     return Handle<PyObject>(PySmi::FromInt(result));
   }
+
   assert(GetKlass(*self)->vtable().mod);
   return GetKlass(*self)->vtable().mod(self, other);
 }
@@ -294,7 +304,7 @@ MaybeHandle<PyObject> PyObject::Len(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyBoolean> PyObject::Greater(Handle<PyObject> self,
-                                          Handle<PyObject> other) {
+                                         Handle<PyObject> other) {
   Maybe<bool> mb = GreaterBool(self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -304,16 +314,18 @@ MaybeHandle<PyBoolean> PyObject::Greater(Handle<PyObject> self,
 
 Maybe<bool> PyObject::GreaterBool(Handle<PyObject> self,
                                   Handle<PyObject> other) {
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() >
-                      PySmi::cast(*other).value());
+                       PySmi::cast(*other).value());
   }
+
   assert(GetKlass(*self)->vtable().greater);
   return GetKlass(*self)->vtable().greater(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::Less(Handle<PyObject> self,
-                                        Handle<PyObject> other) {
+                                      Handle<PyObject> other) {
   Maybe<bool> mb = LessBool(self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -321,18 +333,19 @@ MaybeHandle<PyBoolean> PyObject::Less(Handle<PyObject> self,
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::LessBool(Handle<PyObject> self,
-                                Handle<PyObject> other) {
+Maybe<bool> PyObject::LessBool(Handle<PyObject> self, Handle<PyObject> other) {
+  // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() <
                        PySmi::cast(*other).value());
   }
+
   assert(GetKlass(*self)->vtable().less);
   return GetKlass(*self)->vtable().less(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::Equal(Handle<PyObject> self,
-                                        Handle<PyObject> other) {
+                                       Handle<PyObject> other) {
   Maybe<bool> mb = EqualBool(self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -340,8 +353,7 @@ MaybeHandle<PyBoolean> PyObject::Equal(Handle<PyObject> self,
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::EqualBool(Handle<PyObject> self,
-                                 Handle<PyObject> other) {
+Maybe<bool> PyObject::EqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
@@ -350,7 +362,7 @@ Maybe<bool> PyObject::EqualBool(Handle<PyObject> self,
 }
 
 MaybeHandle<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+                                          Handle<PyObject> other) {
   Maybe<bool> mb = NotEqualBool(self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -359,7 +371,7 @@ MaybeHandle<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
 }
 
 Maybe<bool> PyObject::NotEqualBool(Handle<PyObject> self,
-                                    Handle<PyObject> other) {
+                                   Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() !=
                        PySmi::cast(*other).value());
@@ -369,7 +381,7 @@ Maybe<bool> PyObject::NotEqualBool(Handle<PyObject> self,
 }
 
 MaybeHandle<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
-                                               Handle<PyObject> other) {
+                                              Handle<PyObject> other) {
   Maybe<bool> mb = GreaterEqualBool(self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -378,7 +390,7 @@ MaybeHandle<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
 }
 
 Maybe<bool> PyObject::GreaterEqualBool(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+                                       Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() >=
                        PySmi::cast(*other).value());
@@ -388,7 +400,7 @@ Maybe<bool> PyObject::GreaterEqualBool(Handle<PyObject> self,
 }
 
 MaybeHandle<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
-                                             Handle<PyObject> other) {
+                                           Handle<PyObject> other) {
   Maybe<bool> mb = LessEqualBool(self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -397,7 +409,7 @@ MaybeHandle<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
 }
 
 Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
-                                     Handle<PyObject> other) {
+                                    Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() <=
                        PySmi::cast(*other).value());
@@ -420,7 +432,7 @@ bool PyObject::LookupAttr(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
-                                         Handle<PyObject> attr_name) {
+                                        Handle<PyObject> attr_name) {
   assert(GetKlass(*self)->vtable().getattr);
   Handle<PyObject> result =
       GetKlass(*self)->vtable().getattr(self, attr_name, false);
@@ -431,48 +443,58 @@ MaybeHandle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
-                                                Handle<PyObject> attr_name,
-                                                Handle<PyObject>& self_or_null) {
+                                               Handle<PyObject> attr_name,
+                                               Handle<PyObject>& self_or_null) {
   self_or_null = Handle<PyObject>::null();
   Tagged<Klass> klass = GetKlass(*self);
+
+  // Fast Path:
+  // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
+  // MethodObject对象的操作。
   if (klass->vtable().getattr == &Klass::Virtual_Default_GetAttr) {
     return Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null);
   }
-  MaybeHandle<PyObject> maybe_value = GetAttr(self, attr_name);
-  if (maybe_value.IsEmpty()) {
-    return kNullMaybeHandle;
+
+  // Fallback
+  {
+    EscapableHandleScope scope;
+    Handle<PyObject> value;
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), value,
+                               GetAttr(self, attr_name));
+
+    if (IsMethodObject(value)) {
+      auto method = Handle<MethodObject>::cast(value);
+      self_or_null = method->owner();
+      return scope.Escape(method->func());
+    }
+
+    return scope.Escape(value);
   }
-  Handle<PyObject> value = maybe_value.ToHandleChecked();
-  if (IsMethodObject(value)) {
-    auto method = Handle<MethodObject>::cast(value);
-    self_or_null = method->owner();
-    return method->func();
-  }
-  return value;
 }
 
 MaybeHandle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
-                                          Handle<PyObject> attr_name,
-                                          Handle<PyObject> attr_value) {
+                                        Handle<PyObject> attr_name,
+                                        Handle<PyObject> attr_value) {
   assert(GetKlass(*self)->vtable().setattr);
   return GetKlass(*self)->vtable().setattr(self, attr_name, attr_value);
 }
 
 MaybeHandle<PyObject> PyObject::Subscr(Handle<PyObject> self,
-                                        Handle<PyObject> subscr_name) {
+                                       Handle<PyObject> subscr_name) {
   assert(GetKlass(*self)->vtable().subscr);
   return GetKlass(*self)->vtable().subscr(self, subscr_name);
 }
 
 MaybeHandle<PyObject> PyObject::StoreSubscr(Handle<PyObject> self,
-                                              Handle<PyObject> subscr_name,
-                                              Handle<PyObject> subscr_value) {
+                                            Handle<PyObject> subscr_name,
+                                            Handle<PyObject> subscr_value) {
   assert(GetKlass(*self)->vtable().store_subscr);
-  return GetKlass(*self)->vtable().store_subscr(self, subscr_name, subscr_value);
+  return GetKlass(*self)->vtable().store_subscr(self, subscr_name,
+                                                subscr_value);
 }
 
 MaybeHandle<PyBoolean> PyObject::Contains(Handle<PyObject> self,
-                                           Handle<PyObject> target) {
+                                          Handle<PyObject> target) {
   Maybe<bool> mb = ContainsBool(self, target);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
@@ -481,7 +503,7 @@ MaybeHandle<PyBoolean> PyObject::Contains(Handle<PyObject> self,
 }
 
 Maybe<bool> PyObject::ContainsBool(Handle<PyObject> self,
-                                    Handle<PyObject> target) {
+                                   Handle<PyObject> target) {
   assert(GetKlass(*self)->vtable().contains);
   return GetKlass(*self)->vtable().contains(self, target);
 }
@@ -497,7 +519,7 @@ MaybeHandle<PyObject> PyObject::Next(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyObject::DeletSubscr(Handle<PyObject> self,
-                                              Handle<PyObject> subscr_name) {
+                                            Handle<PyObject> subscr_name) {
   assert(GetKlass(*self)->vtable().del_subscr);
   return GetKlass(*self)->vtable().del_subscr(self, subscr_name);
 }
@@ -508,9 +530,9 @@ Maybe<uint64_t> PyObject::Hash(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyObject::Call(Handle<PyObject> self,
-                                      Handle<PyObject> host,
-                                      Handle<PyObject> args,
-                                      Handle<PyObject> kwargs) {
+                                     Handle<PyObject> host,
+                                     Handle<PyObject> args,
+                                     Handle<PyObject> kwargs) {
   auto* call_method = GetKlass(*self)->vtable().call;
   return call_method(self, host, args, kwargs);
 }

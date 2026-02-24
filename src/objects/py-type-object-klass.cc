@@ -83,7 +83,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto type_object = Handle<PyTypeObject>::cast(self);
   auto type_name = type_object->own_klass()->name();
   std::printf("<class '%s'>", type_name->buffer());
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
@@ -114,7 +114,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
     Handle<PyObject> prop_value) {
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
   PyDict::Put(own_klass->klass_properties(), prop_name, prop_value);
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {

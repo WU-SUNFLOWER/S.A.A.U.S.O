@@ -167,7 +167,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%g", PyFloat::cast(*self)->value());
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,

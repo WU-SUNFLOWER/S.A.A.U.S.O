@@ -276,7 +276,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
 MaybeHandle<PyObject> PyStringKlass::Virtual_Print(Handle<PyObject> self) {
   auto s = Handle<PyString>::cast(self);
   std::printf("%s", s->buffer());
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {

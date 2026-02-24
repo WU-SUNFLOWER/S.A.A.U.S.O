@@ -14,7 +14,7 @@ class Isolate;
 class PyString;
 
 // 统一异常抛出 API
-void Runtime_ThrowError(ExceptionType type, const char* message);
+void Runtime_ThrowError(ExceptionType type, const char* message = nullptr);
 void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...);
 
 // 将当前解释器中pending的异常导出为形如`异常类型名: 异常内容`字符串。

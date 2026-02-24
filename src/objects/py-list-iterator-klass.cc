@@ -94,7 +94,7 @@ MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Print(
     Handle<PyObject> self) {
   std::printf("<list_iterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -104,7 +104,7 @@ MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Next(Handle<PyObject> self) {
   Handle<PyObject> result = NextImpl(self);
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration, "");
+    Runtime_ThrowError(ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;

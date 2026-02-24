@@ -135,7 +135,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
     std::printf(",");
   }
   std::printf(")");
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,

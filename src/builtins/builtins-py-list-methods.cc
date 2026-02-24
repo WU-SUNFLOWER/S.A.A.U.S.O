@@ -147,7 +147,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
           .IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Sort) {

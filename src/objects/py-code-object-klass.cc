@@ -63,13 +63,13 @@ MaybeHandle<PyObject> PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   if (file_name_obj.is_null() || !IsPyString(file_name_obj)) {
     std::printf("<code object greet at 0x%p, file <unknown>, line %d>",
                 reinterpret_cast<void*>((*code).ptr()), code->line_no_);
-    return Handle<PyObject>(Isolate::Current()->py_none_object());
+    return handle(Isolate::Current()->py_none_object());
   }
   auto file_name = handle(Tagged<PyString>::cast(file_name_obj));
   std::printf("<code object greet at 0x%p, file \"%s\", line %d>",
               reinterpret_cast<void*>((*code).ptr()), file_name->buffer(),
               code->line_no_);
-  return Handle<PyObject>(Isolate::Current()->py_none_object());
+  return handle(Isolate::Current()->py_none_object());
 }
 
 void PyCodeObjectKlass::Finalize() {
