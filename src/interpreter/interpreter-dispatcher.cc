@@ -464,33 +464,33 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
     Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
     Tagged<PyObject> value;
-    if (!current_frame_->locals()->GetTaggedMaybe(key).To(&value)) {
-      goto pending_exception_unwind;
-    }
+
+    // 1. 查local符号表
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             current_frame_->locals()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    if (!current_frame_->globals()->GetTaggedMaybe(key).To(&value)) {
-      goto pending_exception_unwind;
-    }
+    // 2. 查global符号表
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             current_frame_->globals()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    if (!builtins()->GetTaggedMaybe(key).To(&value)) {
-      goto pending_exception_unwind;
-    }
+    // 3. 查builtin符号表
+    ASSIGN_GOTO_ON_EXCEPTION(value, builtins()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
+    // 4. 还没找到，抛错误
     Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
                         Tagged<PyString>::cast(key)->buffer());
-    goto pending_exception_unwind;
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildTuple, {
