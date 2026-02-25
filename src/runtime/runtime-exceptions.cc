@@ -160,10 +160,10 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
   return scope.Escape(formatted);
 }
 
-bool Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
+Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   auto* state = isolate->exception_state();
   if (!state->HasPendingException()) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   HandleScope scope;
@@ -171,13 +171,19 @@ bool Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
 
   Handle<PyDict> builtins = Execution::builtins(isolate);
   Handle<PyObject> stop_iter_type = builtins->Get(ST(stop_iter));
-  if (!Runtime_IsInstanceOfTypeObject(
-          pending, Handle<PyTypeObject>::cast(stop_iter_type))) {
-    return false;
+
+  bool is_stop_iteration = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      Isolate::Current(), is_stop_iteration,
+      Runtime_IsInstanceOfTypeObject(
+          pending, Handle<PyTypeObject>::cast(stop_iter_type)));
+
+  if (!is_stop_iteration) {
+    return Maybe<bool>(false);
   }
 
   state->Clear();
-  return true;
+  return Maybe<bool>(true);
 }
 
 }  // namespace saauso::internal

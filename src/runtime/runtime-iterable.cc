@@ -49,7 +49,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
       // 迭代结束或出现异常：
       // - 如果是 StopIteration，那么直接就地消费并终止迭代。
       // - 其余异常向上抛出。
-      if (Runtime_ConsumePendingStopIterationIfSet(isolate)) {
+      if (Runtime_ConsumePendingStopIterationIfSet(isolate).ToChecked()) {
         break;
       }
       return kNullMaybeHandle;

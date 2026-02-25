@@ -8,6 +8,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
@@ -82,6 +83,40 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
   }
 
   return scope.Escape(result);
+}
+
+MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
+                                        Handle<PyDict> source_dict,
+                                        bool allow_overwriting) {
+  auto* isolate = Isolate::Current();
+  auto iter = PyDictItemIterator::NewInstance(source_dict);
+  while (true) {
+    Handle<PyObject> item_handle;
+    if (!PyObject::Next(iter).ToHandle(&item_handle)) {
+      bool is_stop_iteration = false;
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, is_stop_iteration,
+          Runtime_ConsumePendingStopIterationIfSet(isolate));
+      if (!is_stop_iteration) {
+        return kNullMaybeHandle;
+      }
+      break;
+    }
+
+    auto item = Handle<PyTuple>::cast(item_handle);
+    auto key = item->Get(0);
+    auto value = item->Get(1);
+
+    if (!allow_overwriting && dst_dict->Contains(key)) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "got multiple values for keyword argument");
+      return kNullMaybeHandle;
+    }
+
+    PyDict::Put(dst_dict, key, value);
+  }
+
+  return dst_dict;
 }
 
 }  // namespace saauso::internal

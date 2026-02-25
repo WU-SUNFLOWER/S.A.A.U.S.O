@@ -11,9 +11,14 @@
 namespace saauso::internal {
 
 class PyObject;
+class PyDict;
 
 MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                                       Handle<PyObject> kwargs);
+
+MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
+                                        Handle<PyDict> source_dict,
+                                        bool allow_overwriting);
 
 }  // namespace saauso::internal
 

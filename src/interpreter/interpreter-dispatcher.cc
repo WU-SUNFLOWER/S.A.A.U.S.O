@@ -31,6 +31,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-intrinsics.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-py-dict.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/runtime/string-table.h"
@@ -191,8 +192,9 @@ void Interpreter::EvalCurrentFrame() {
 
     bool matched = false;
     if (IsPyTypeObject(match_type)) {
-      matched = Runtime_IsInstanceOfTypeObject(
-          exception, Handle<PyTypeObject>::cast(match_type));
+      ASSIGN_GOTO_ON_EXCEPTION(
+          matched, Runtime_IsInstanceOfTypeObject(
+                       exception, Handle<PyTypeObject>::cast(match_type)));
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
 
@@ -203,36 +205,22 @@ void Interpreter::EvalCurrentFrame() {
         auto elem = tuple->Get(i);
 
         if (IsPyTypeObject(elem)) [[likely]] {
-          matched |= Runtime_IsInstanceOfTypeObject(
-              exception, Handle<PyTypeObject>::cast(elem));
+          bool current_matched;
+          ASSIGN_GOTO_ON_EXCEPTION(
+              current_matched,
+              Runtime_IsInstanceOfTypeObject(exception,
+                                             Handle<PyTypeObject>::cast(elem)));
+          matched |= current_matched;
           continue;
         }
 
-        auto type_error_type =
-            Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
-        Handle<PyObject> type_error;
-
-        ASSIGN_GOTO_ON_EXCEPTION(
-            type_error,
-            Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
-                              Handle<PyObject>::null()));
-
-        isolate_->exception_state()->Throw(*type_error);
+        Runtime_ThrowError(ExceptionType::kTypeError);
         isolate_->exception_state()->set_pending_exception_origin_pc(
             current_pc);
         goto pending_exception_unwind;
       }
     } else {
-      auto type_error_type =
-          Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
-      Handle<PyObject> type_error;
-
-      ASSIGN_GOTO_ON_EXCEPTION(
-          type_error,
-          Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
-                            Handle<PyObject>::null()));
-
-      isolate_->exception_state()->Throw(*type_error);
+      Runtime_ThrowError(ExceptionType::kTypeError);
       isolate_->exception_state()->set_pending_exception_origin_pc(current_pc);
       goto pending_exception_unwind;
     }
@@ -442,7 +430,11 @@ void Interpreter::EvalCurrentFrame() {
     assert(isolate_->HasPendingException());
 
     // 如果是 StopIteration，那么就地消费异常，然后直接跳出迭代块。
-    if (Runtime_ConsumePendingStopIterationIfSet(isolate_)) [[likely]] {
+    bool is_stop_iteration = false;
+    ASSIGN_GOTO_ON_EXCEPTION(
+        is_stop_iteration, Runtime_ConsumePendingStopIterationIfSet(isolate_));
+
+    if (is_stop_iteration) [[likely]] {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
       POP();
       break;
@@ -518,7 +510,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(DictMerge, {
     Handle<PyObject> update = POP();
     Handle<PyObject> target = TOP();
-    if (!IsPyDict(*target) || !IsPyDict(*update)) {
+    if (!IsPyDict(target) || !IsPyDict(update)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "DICT_MERGE expected dict operands");
       goto pending_exception_unwind;
@@ -526,29 +518,10 @@ void Interpreter::EvalCurrentFrame() {
 
     auto target_dict = Handle<PyDict>::cast(target);
     auto update_dict = Handle<PyDict>::cast(update);
+    bool allow_overwriting = (op_arg & 1) == 0;
 
-    auto iter = PyDictItemIterator::NewInstance(update_dict);
-    while (true) {
-      Handle<PyObject> item_handle;
-      if (!PyObject::Next(iter).ToHandle(&item_handle)) {
-        if (!Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
-          goto pending_exception_unwind;
-        }
-        break;
-      }
-
-      auto item = Handle<PyTuple>::cast(item_handle);
-      auto key = item->Get(0);
-      auto value = item->Get(1);
-
-      if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
-                           "got multiple values for keyword argument");
-        goto pending_exception_unwind;
-      }
-
-      PyDict::Put(target_dict, key, value);
-    }
+    GOTO_ON_EXCEPTION(
+        Runtime_MergeDict(target_dict, update_dict, allow_overwriting));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {

@@ -44,21 +44,24 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   return scope.Escape(type_object);
 }
 
-bool Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
-                                    Handle<PyTypeObject> type_object) {
+Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
+                                           Handle<PyTypeObject> type_object) {
+  auto* isolate = Isolate::Current();
   auto mro_of_object = PyObject::GetKlass(object)->mro();
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto curr_type_object = mro_of_object->Get(i);
-    Maybe<bool> mb = PyObject::EqualBool(curr_type_object, type_or_tuple);
-    if (mb.IsNothing()) {
-      return false;
-    }
-    if (mb.ToChecked()) {
-      return true;
+
+    bool is_equal;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, is_equal,
+        PyObject::EqualBool(curr_type_object, type_or_tuple));
+
+    if (is_equal) {
+      return Maybe<bool>(true);
     }
   }
-  return false;
+  return Maybe<bool>(false);
 }
 
 Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
@@ -119,11 +122,10 @@ MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
                                         Handle<PyObject> args,
                                         Handle<PyObject> kwargs) {
   Handle<PyObject> result;
-  if (!type_object->own_klass()
-           ->ConstructInstance(args, kwargs)
-           .ToHandle(&result)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(
+      Isolate::Current(), result,
+      type_object->own_klass()->ConstructInstance(args, kwargs));
+
   return result;
 }
 
