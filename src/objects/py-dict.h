@@ -24,20 +24,26 @@ class PyDict : public PyObject {
   Handle<PyTuple> ItemAtIndex(int64_t index) const;
 
   bool Contains(Handle<PyObject> key) const;
+  Maybe<bool> ContainsMaybe(Handle<PyObject> key) const;
 
   Handle<PyObject> Get(Handle<PyObject> key) const;
   Handle<PyObject> Get(Tagged<PyObject> key) const;
 
   Tagged<PyObject> GetTagged(Handle<PyObject> key) const;
   Tagged<PyObject> GetTagged(Tagged<PyObject> key) const;
+  Maybe<Tagged<PyObject>> GetTaggedMaybe(Tagged<PyObject> key) const;
 
   void Remove(Handle<PyObject> key);
+  Maybe<bool> RemoveMaybe(Handle<PyObject> key);
 
   int64_t occupied() const { return occupied_; }
 
   static void Put(Handle<PyDict> dict,
                   Handle<PyObject> key,
                   Handle<PyObject> value);
+  static Maybe<bool> PutMaybe(Handle<PyDict> dict,
+                              Handle<PyObject> key,
+                              Handle<PyObject> value);
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict);
 
  private:
@@ -46,6 +52,7 @@ class PyDict : public PyObject {
   static Handle<PyDict> NewInstanceWithoutAllocateData();
 
   static void ExpandImpl(Handle<PyDict> list);
+  static Maybe<bool> ExpandImplMaybe(Handle<PyDict> dict);
 
   Tagged<PyObject> GetImpl(Tagged<PyObject> key) const;
 

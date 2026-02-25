@@ -141,15 +141,18 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
     auto k1 = d1->data()->Get(i << 1);
     if (!k1.is_null()) {
       auto v1 = d1->data()->Get((i << 1) + 1);
-      auto v2_handle = d2->Get(Handle<PyObject>(k1));
-      if (v2_handle.is_null()) {
+      Tagged<PyObject> v2_tagged;
+      if (!d2->GetTaggedMaybe(k1).To(&v2_tagged)) {
+        return kNullMaybe;
+      }
+      if (v2_tagged.is_null()) {
         return Maybe<bool>(false);
       }
 
       bool eq;
       ASSIGN_RETURN_ON_EXCEPTION(
           Isolate::Current(), eq,
-          PyObject::EqualBool(Handle<PyObject>(v1), v2_handle));
+          PyObject::EqualBool(Handle<PyObject>(v1), Handle<PyObject>(v2_tagged)));
 
       if (!eq) {
         return Maybe<bool>(false);
@@ -169,19 +172,25 @@ Maybe<bool> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
                                                   Handle<PyObject> subscr) {
-  auto result = Handle<PyDict>::cast(self)->Get(subscr);
+  auto dict = Handle<PyDict>::cast(self);
+  Tagged<PyObject> result;
+  if (!dict->GetTaggedMaybe(*subscr).To(&result)) {
+    return kNullMaybeHandle;
+  }
   if (result.is_null()) {
     // TODO: Repr机制完善后，支持把key的具体内容打印出来
     Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
     return kNullMaybeHandle;
   }
-  return result;
+  return handle(result);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
-  PyDict::Put(Handle<PyDict>::cast(self), subscr, value);
+  if (PyDict::PutMaybe(Handle<PyDict>::cast(self), subscr, value).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
   return handle(Isolate::Current()->py_none_object());
 }
 
@@ -189,18 +198,23 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
     Handle<PyObject> self,
     Handle<PyObject> subscr) {
   auto dict = Handle<PyDict>::cast(self);
-  if (!dict->Contains(subscr)) {
+  bool contains = false;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), contains,
+                                   dict->ContainsMaybe(subscr),
+                                   kNullMaybeHandle);
+  if (!contains) {
     // TODO: Repr机制完善后，支持把key的具体内容打印出来
     Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
     return kNullMaybeHandle;
   }
-  dict->Remove(subscr);
+  RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), dict->RemoveMaybe(subscr),
+                            kNullMaybeHandle);
   return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
-  return Maybe<bool>(Handle<PyDict>::cast(self)->Contains(subscr));
+  return Handle<PyDict>::cast(self)->ContainsMaybe(subscr);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(

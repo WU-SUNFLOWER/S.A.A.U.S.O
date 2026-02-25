@@ -54,7 +54,9 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
           return kNullMaybeHandle;
         }
 
-        PyDict::Put(result, pair->Get(0), pair->Get(1));
+        RETURN_ON_EXCEPTION_VALUE(
+            isolate, PyDict::PutMaybe(result, pair->Get(0), pair->Get(1)),
+            kNullMaybeHandle);
       }
     }
   }
@@ -77,7 +79,8 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
           key = key_str;
         }
 
-        PyDict::Put(result, key, item->Get(1));
+        RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::PutMaybe(result, key, item->Get(1)),
+                                  kNullMaybeHandle);
       }
     }
   }
@@ -107,13 +110,18 @@ MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
     auto key = item->Get(0);
     auto value = item->Get(1);
 
-    if (!allow_overwriting && dst_dict->Contains(key)) {
+    bool exists = false;
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, exists,
+                                     dst_dict->ContainsMaybe(key),
+                                     kNullMaybeHandle);
+    if (!allow_overwriting && exists) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "got multiple values for keyword argument");
       return kNullMaybeHandle;
     }
 
-    PyDict::Put(dst_dict, key, value);
+    RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::PutMaybe(dst_dict, key, value),
+                              kNullMaybeHandle);
   }
 
   return dst_dict;

@@ -295,4 +295,79 @@ print(len(d))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, DictGetItemUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(d[A()])
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                  kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictSetDefaultUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(d.setdefault(A(), 1))
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                  kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictGetMethodUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(d.get(A()))
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                  kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictKeysContainsUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(A() in d.keys())
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                  kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictItemsContainsUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print((A(), 1) in d.items())
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                  kTestFileName);
+}
+
 }  // namespace saauso::internal

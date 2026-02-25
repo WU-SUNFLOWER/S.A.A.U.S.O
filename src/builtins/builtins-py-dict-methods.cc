@@ -31,17 +31,22 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
 
-  auto value = dict->Get(key);
-  if (!value.is_null()) {
-    return scope.Escape(value);
+  Tagged<PyObject> existing;
+  if (!dict->GetTaggedMaybe(*key).To(&existing)) {
+    return kNullMaybeHandle;
+  }
+  if (!existing.is_null()) {
+    return scope.Escape(handle(existing));
   }
 
-  value = handle(Isolate::Current()->py_none_object());
+  Handle<PyObject> value(Isolate::Current()->py_none_object());
   if (args->length() > 1) {
     value = args->Get(1);
   }
 
-  PyDict::Put(dict, key, value);
+  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
 
   return scope.Escape(value);
 }
@@ -58,10 +63,15 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
-  auto value = dict->Get(key);
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
   if (!value.is_null()) {
-    dict->Remove(key);
-    return scope.Escape(value);
+    if (dict->RemoveMaybe(key).IsNothing()) {
+      return kNullMaybeHandle;
+    }
+    return scope.Escape(handle(value));
   }
 
   if (args->length() == 2) {
@@ -94,12 +104,15 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Get) {
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
 
-  Handle<PyObject> result = dict->Get(key);
+  Tagged<PyObject> result;
+  if (!dict->GetTaggedMaybe(*key).To(&result)) {
+    return kNullMaybeHandle;
+  }
   if (result.is_null()) {
-    result = handle(Isolate::Current()->py_none_object());
+    return scope.Escape(handle(Isolate::Current()->py_none_object()));
   }
 
-  return scope.Escape(result);
+  return scope.Escape(handle(result));
 }
 
 }  // namespace saauso::internal

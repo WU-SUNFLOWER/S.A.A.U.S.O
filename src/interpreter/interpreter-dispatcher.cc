@@ -379,7 +379,8 @@ void Interpreter::EvalCurrentFrame() {
       goto pending_exception_unwind;
     }
 
-    PyDict::Put(locals, key, POP());
+    Handle<PyObject> value = POP();
+    GOTO_ON_EXCEPTION(PyDict::PutMaybe(locals, key, value));
   })
 
   // 删除一个 name（用于 except ... as e
@@ -391,7 +392,7 @@ void Interpreter::EvalCurrentFrame() {
     if (locals.is_null()) {
       break;
     }
-    locals->Remove(key);
+    GOTO_ON_EXCEPTION(locals->RemoveMaybe(key));
   })
 
   // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续
@@ -453,7 +454,8 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
     Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-    PyDict::Put(current_frame_->globals(), key, POP());
+    Handle<PyObject> value = POP();
+    GOTO_ON_EXCEPTION(PyDict::PutMaybe(current_frame_->globals(), key, value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
@@ -461,19 +463,26 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
     Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
-    Tagged<PyObject> value = current_frame_->locals()->GetTagged(key);
+    Tagged<PyObject> value;
+    if (!current_frame_->locals()->GetTaggedMaybe(key).To(&value)) {
+      goto pending_exception_unwind;
+    }
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    value = current_frame_->globals()->GetTagged(key);
+    if (!current_frame_->globals()->GetTaggedMaybe(key).To(&value)) {
+      goto pending_exception_unwind;
+    }
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    value = builtins()->GetTagged(key);
+    if (!builtins()->GetTaggedMaybe(key).To(&value)) {
+      goto pending_exception_unwind;
+    }
     if (!value.is_null()) {
       PUSH(value);
       break;
@@ -505,7 +514,7 @@ void Interpreter::EvalCurrentFrame() {
     for (auto i = 0; i < op_arg; ++i) {
       auto value = POP();
       auto key = POP();
-      PyDict::Put(result, key, value);
+      GOTO_ON_EXCEPTION(PyDict::PutMaybe(result, key, value));
     }
     PUSH(result);
   })
@@ -902,7 +911,8 @@ void Interpreter::EvalCurrentFrame() {
     auto keys = Handle<PyTuple>::cast(POP());
     auto result = PyDict::NewInstance();
     for (auto i = keys->length() - 1; 0 <= i; --i) {
-      PyDict::Put(result, keys->Get(i), POP());
+      Handle<PyObject> value = POP();
+      GOTO_ON_EXCEPTION(PyDict::PutMaybe(result, keys->Get(i), value));
     }
     PUSH(result);
   })
