@@ -5,6 +5,7 @@
 #include "src/objects/py-type-object-klass.h"
 
 #include "src/builtins/builtins-py-type-object-methods.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
@@ -131,11 +132,11 @@ Maybe<bool> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
 
 Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
-  Maybe<bool> eq = Virtual_Equal(self, other);
-  if (eq.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(!eq.ToChecked());
+  bool is_equal;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
+                             Virtual_Equal(self, other));
+
+  return Maybe<bool>(!is_equal);
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_ConstructInstance(

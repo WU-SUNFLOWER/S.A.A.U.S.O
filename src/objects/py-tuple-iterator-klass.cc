@@ -14,6 +14,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple-iterator.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
@@ -87,8 +88,7 @@ MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Print(
     Handle<PyObject> self) {
   std::printf("<tuple_iterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
-  return Handle<PyObject>(
-      Tagged<PyObject>::cast(Isolate::Current()->py_none_object()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Iter(

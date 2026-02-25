@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
@@ -253,33 +254,36 @@ Maybe<bool> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
 Maybe<bool> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
-  Maybe<bool> eq = Virtual_Equal(self, other);
-  if (eq.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(!eq.ToChecked());
+
+  bool is_equal;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
+                             Virtual_Equal(self, other));
+
+  return Maybe<bool>(!is_equal);
 }
 
 Maybe<bool> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
-  Maybe<bool> gt = Virtual_Greater(self, other);
-  Maybe<bool> eq = Virtual_Equal(self, other);
-  if (gt.IsNothing() || eq.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(gt.ToChecked() || eq.ToChecked());
+
+  auto* isolate = Isolate::Current();
+  bool gt, eq;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt, Virtual_Greater(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(self, other));
+
+  return Maybe<bool>(gt || eq);
 }
 
 Maybe<bool> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
                                           Handle<PyObject> other) {
   assert(IsPySmi(self));
-  Maybe<bool> lt = Virtual_Less(self, other);
-  Maybe<bool> eq = Virtual_Equal(self, other);
-  if (lt.IsNothing() || eq.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(lt.ToChecked() || eq.ToChecked());
+
+  auto* isolate = Isolate::Current();
+  bool lt, eq;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Virtual_Less(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(self, other));
+
+  return Maybe<bool>(lt || eq);
 }
 
 }  // namespace saauso::internal

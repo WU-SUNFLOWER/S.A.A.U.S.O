@@ -410,13 +410,14 @@ Maybe<bool> Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
 
 Maybe<bool> Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
+  auto* isolate = Isolate::Current();
+
   Handle<PyObject> callable =
       Runtime_FindPropertyInInstanceTypeMro(self, ST(ge));
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
 
-    auto* isolate = Isolate::Current();
     Handle<PyObject> result;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, result,
@@ -425,23 +426,23 @@ Maybe<bool> Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
     return Maybe<bool>(Runtime_PyObjectIsTrue(result));
   }
 
-  Maybe<bool> gt = Virtual_Default_Greater(self, other);
-  Maybe<bool> eq = Virtual_Default_Equal(self, other);
-  if (gt.IsNothing() || eq.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(gt.ToChecked() || eq.ToChecked());
+  bool gt, eq;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt, Virtual_Default_Greater(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Default_Equal(self, other));
+
+  return Maybe<bool>(gt || eq);
 }
 
 Maybe<bool> Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
                                              Handle<PyObject> other) {
+  auto* isolate = Isolate::Current();
+
   Handle<PyObject> callable =
       Runtime_FindPropertyInInstanceTypeMro(self, ST(le));
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
 
-    auto* isolate = Isolate::Current();
     Handle<PyObject> result;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, result,
@@ -450,12 +451,11 @@ Maybe<bool> Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
     return Maybe<bool>(Runtime_PyObjectIsTrue(result));
   }
 
-  Maybe<bool> lt = Virtual_Default_Less(self, other);
-  Maybe<bool> eq = Virtual_Default_Equal(self, other);
-  if (lt.IsNothing() || eq.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(lt.ToChecked() || eq.ToChecked());
+  bool lt, eq;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Virtual_Default_Less(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Default_Equal(self, other));
+
+  return Maybe<bool>(lt || eq);
 }
 
 MaybeHandle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {

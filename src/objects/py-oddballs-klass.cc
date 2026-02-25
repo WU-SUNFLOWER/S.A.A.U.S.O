@@ -6,6 +6,7 @@
 
 #include <cstdio>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -74,8 +75,7 @@ void PyBooleanKlass::Finalize() {
 // static
 MaybeHandle<PyObject> PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf(Handle<PyBoolean>::cast(self)->value() ? "True" : "False");
-  return Handle<PyObject>(
-      Tagged<PyObject>::cast(Isolate::Current()->py_none_object()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
 // static
@@ -98,11 +98,11 @@ Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
 // static
 Maybe<bool> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  Maybe<bool> equal = Virtual_Equal(self, other);
-  if (equal.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(!equal.ToChecked());
+  bool is_equal;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
+                             Virtual_Equal(self, other));
+
+  return Maybe<bool>(!is_equal);
 }
 
 // static
@@ -157,10 +157,8 @@ void PyNoneKlass::Finalize() {
 
 // static
 MaybeHandle<PyObject> PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
-  (void)self;
   std::printf("None");
-  return Handle<PyObject>(
-      Tagged<PyObject>::cast(Isolate::Current()->py_none_object()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
 // static
@@ -173,11 +171,10 @@ Maybe<bool> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
 // static
 Maybe<bool> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
                                           Handle<PyObject> other) {
-  Maybe<bool> equal = Virtual_Equal(self, other);
-  if (equal.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(!equal.ToChecked());
+  bool is_equal;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
+                             Virtual_Equal(self, other));
+  return Maybe<bool>(!is_equal);
 }
 
 // static
