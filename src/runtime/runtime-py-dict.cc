@@ -125,6 +125,71 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
   return handle(Isolate::Current()->py_none_object());
 }
 
+MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
+                                      Handle<PyObject> key,
+                                      Handle<PyObject> default_or_null) {
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
+  if (!value.is_null()) {
+    return handle(value);
+  }
+  if (!default_or_null.is_null()) {
+    return default_or_null;
+  }
+  return handle(Isolate::Current()->py_none_object());
+}
+
+MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
+                                             Handle<PyObject> key,
+                                             Handle<PyObject> default_or_null) {
+  Tagged<PyObject> existing;
+  if (!dict->GetTaggedMaybe(*key).To(&existing)) {
+    return kNullMaybeHandle;
+  }
+  if (!existing.is_null()) {
+    return handle(existing);
+  }
+
+  Handle<PyObject> value = default_or_null.is_null()
+                               ? handle(Isolate::Current()->py_none_object())
+                               : default_or_null;
+
+  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+  return value;
+}
+
+MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
+                                      Handle<PyObject> key,
+                                      Handle<PyObject> default_or_null,
+                                      bool has_default) {
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
+  if (!value.is_null()) {
+    bool removed = false;
+    if (!dict->RemoveMaybe(key).To(&removed)) {
+      return kNullMaybeHandle;
+    }
+    if (!removed) {
+      Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
+      return kNullMaybeHandle;
+    }
+    return handle(value);
+  }
+
+  if (has_default) {
+    return default_or_null;
+  }
+
+  Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
+  return kNullMaybeHandle;
+}
+
 MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting) {

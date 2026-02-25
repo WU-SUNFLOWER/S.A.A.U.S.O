@@ -16,6 +16,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-dict.h"
 
 namespace saauso::internal {
 
@@ -30,25 +31,16 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
 
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
-
-  Tagged<PyObject> existing;
-  if (!dict->GetTaggedMaybe(*key).To(&existing)) {
-    return kNullMaybeHandle;
-  }
-  if (!existing.is_null()) {
-    return scope.Escape(handle(existing));
-  }
-
-  Handle<PyObject> value(Isolate::Current()->py_none_object());
+  Handle<PyObject> default_or_null = Handle<PyObject>::null();
   if (args->length() > 1) {
-    value = args->Get(1);
+    default_or_null = args->Get(1);
   }
 
-  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+  Handle<PyObject> result;
+  if (!Runtime_DictSetDefault(dict, key, default_or_null).ToHandle(&result)) {
     return kNullMaybeHandle;
   }
-
-  return scope.Escape(value);
+  return scope.Escape(result);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
@@ -63,25 +55,16 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
-  Tagged<PyObject> value;
-  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+  bool has_default = args->length() == 2;
+  Handle<PyObject> default_or_null =
+      has_default ? args->Get(1) : Handle<PyObject>::null();
+
+  Handle<PyObject> result;
+  if (!Runtime_DictPop(dict, key, default_or_null, has_default)
+           .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
-  if (!value.is_null()) {
-    if (dict->RemoveMaybe(key).IsNothing()) {
-      return kNullMaybeHandle;
-    }
-    return scope.Escape(handle(value));
-  }
-
-  if (args->length() == 2) {
-    return scope.Escape(args->Get(1));
-  }
-
-  // 对齐 CPython：dict.pop() 在 key 不存在且无默认值时抛出 KeyError。
-  // TODO: 当 repr 机制完善后，改为携带 key 的 repr 信息。
-  Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
-  return kNullMaybeHandle;
+  return scope.Escape(result);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Keys) {
@@ -103,16 +86,16 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Get) {
   EscapableHandleScope scope;
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
+  Handle<PyObject> default_or_null = Handle<PyObject>::null();
+  if (args->length() > 1) {
+    default_or_null = args->Get(1);
+  }
 
-  Tagged<PyObject> result;
-  if (!dict->GetTaggedMaybe(*key).To(&result)) {
+  Handle<PyObject> result;
+  if (!Runtime_DictGet(dict, key, default_or_null).ToHandle(&result)) {
     return kNullMaybeHandle;
   }
-  if (result.is_null()) {
-    return scope.Escape(handle(Isolate::Current()->py_none_object()));
-  }
-
-  return scope.Escape(handle(result));
+  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal

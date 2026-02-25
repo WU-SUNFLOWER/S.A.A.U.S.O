@@ -48,6 +48,17 @@ MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
 MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
                                           Handle<PyObject> key);
 
+MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
+                                      Handle<PyObject> key,
+                                      Handle<PyObject> default_or_null);
+MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
+                                             Handle<PyObject> key,
+                                             Handle<PyObject> default_or_null);
+MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
+                                      Handle<PyObject> key,
+                                      Handle<PyObject> default_or_null,
+                                      bool has_default);
+
 MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting);

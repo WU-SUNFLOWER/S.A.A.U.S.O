@@ -307,7 +307,7 @@ print(d[A()])
 )";
 
   RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
-                                  kTestFileName);
+                                   kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, DictSetDefaultUnhashableKeyPropagates) {
@@ -322,7 +322,7 @@ print(d.setdefault(A(), 1))
 )";
 
   RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
-                                  kTestFileName);
+                                   kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, DictGetMethodUnhashableKeyPropagates) {
@@ -337,7 +337,7 @@ print(d.get(A()))
 )";
 
   RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
-                                  kTestFileName);
+                                   kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, DictKeysContainsUnhashableKeyPropagates) {
@@ -352,7 +352,7 @@ print(A() in d.keys())
 )";
 
   RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
-                                  kTestFileName);
+                                   kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, DictItemsContainsUnhashableKeyPropagates) {
@@ -367,7 +367,56 @@ print((A(), 1) in d.items())
 )";
 
   RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
-                                  kTestFileName);
+                                   kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictGetMethodDefaultUsedOnMiss) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.get("k", 1))
+print(d.get("k"))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, PyNoneObject());
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictSetDefaultDefaultUsedOnInsert) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.setdefault("k", 42))
+print(d["k"])
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictPopDefaultUsedOnMiss) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.pop("k", 7))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  ExpectPrintResult(expected_printv_result);
 }
 
 }  // namespace saauso::internal
