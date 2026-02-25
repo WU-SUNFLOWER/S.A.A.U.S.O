@@ -114,7 +114,10 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
     Handle<PyObject> prop_name,
     Handle<PyObject> prop_value) {
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
-  PyDict::Put(own_klass->klass_properties(), prop_name, prop_value);
+  if (PyDict::PutMaybe(own_klass->klass_properties(), prop_name, prop_value)
+          .IsNothing()) {
+    return kNullMaybeHandle;
+  }
   return handle(Isolate::Current()->py_none_object());
 }
 

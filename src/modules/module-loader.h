@@ -58,6 +58,10 @@ class ModuleLoader final {
   MaybeHandle<PyModule> ExecuteModuleFromPyc(Handle<PyString> fullname,
                                              const ModuleLocation& loc);
 
+  MaybeHandle<PyObject> InitializeModuleDict(Handle<PyModule> module,
+                                             Handle<PyString> fullname,
+                                             const ModuleLocation& loc);
+
   Isolate* isolate_{nullptr};
   ModuleFinder* finder_{nullptr};
   ModuleManager* manager_{nullptr};

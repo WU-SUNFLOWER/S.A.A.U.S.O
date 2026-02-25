@@ -25,36 +25,6 @@ namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
 
-// 创建一个新的异常实例。
-// - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PyObject> NewExceptionInstance(Handle<PyString> exception_type_name,
-                                           Handle<PyString> message_or_null) {
-  Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
-  Tagged<PyObject> exception_type;
-  if (!builtins->GetTaggedMaybe(*exception_type_name).To(&exception_type)) {
-    return kNullMaybeHandle;
-  }
-  assert(!exception_type.is_null());
-
-  Handle<PyObject> exception = Handle<PyObject>::null();
-  ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), exception,
-      Runtime_NewObject(Handle<PyTypeObject>::cast(handle(exception_type)),
-                        Handle<PyObject>::null(), Handle<PyObject>::null()));
-
-  if (!message_or_null.is_null()) {
-    Handle<PyDict> properties = PyObject::GetProperties(exception);
-    if (!properties.is_null()) {
-      RETURN_ON_EXCEPTION_VALUE(Isolate::Current(),
-                                PyDict::PutMaybe(properties, ST(message),
-                                                 message_or_null),
-                                kNullMaybeHandle);
-    }
-  }
-
-  return exception;
-}
-
 void ThrowNewException(Handle<PyString> exception_type_name,
                        Handle<PyString> message_or_null) {
   auto* isolate = Isolate::Current();
@@ -67,7 +37,7 @@ void ThrowNewException(Handle<PyString> exception_type_name,
   Handle<PyObject> exception;
   ASSIGN_RETURN_ON_EXCEPTION_VOID(
       isolate, exception,
-      NewExceptionInstance(exception_type_name, message_or_null));
+      Runtime_NewExceptionInstance(exception_type_name, message_or_null));
 
   state->Throw(*exception);
 }
@@ -115,6 +85,35 @@ void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
 }  // namespace
 
 //////////////////////////////////////////////////////////////////////////
+
+MaybeHandle<PyObject> Runtime_NewExceptionInstance(
+    Handle<PyString> exception_type_name,
+    Handle<PyString> message_or_null) {
+  Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
+  Tagged<PyObject> exception_type;
+  if (!builtins->GetTaggedMaybe(*exception_type_name).To(&exception_type)) {
+    return kNullMaybeHandle;
+  }
+  assert(!exception_type.is_null());
+
+  Handle<PyObject> exception = Handle<PyObject>::null();
+  ASSIGN_RETURN_ON_EXCEPTION(
+      Isolate::Current(), exception,
+      Runtime_NewObject(Handle<PyTypeObject>::cast(handle(exception_type)),
+                        Handle<PyObject>::null(), Handle<PyObject>::null()));
+
+  if (!message_or_null.is_null()) {
+    Handle<PyDict> properties = PyObject::GetProperties(exception);
+    if (!properties.is_null()) {
+      RETURN_ON_EXCEPTION_VALUE(
+          Isolate::Current(),
+          PyDict::PutMaybe(properties, ST(message), message_or_null),
+          kNullMaybeHandle);
+    }
+  }
+
+  return exception;
+}
 
 void Runtime_ThrowError(ExceptionType type, const char* message) {
   Handle<PyString> type_name = GetExceptionStringHandle(type);

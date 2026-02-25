@@ -33,7 +33,7 @@ ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
   finder_ = std::make_unique<ModuleFinder>();
   loader_ = std::make_unique<ModuleLoader>(isolate_, finder_.get(), this,
                                            builtin_registry_.get());
-  importer_ = std::make_unique<ModuleImporter>(this);
+  importer_ = std::make_unique<ModuleImporter>(this, isolate_);
   InitializeSysState();
   builtin_registry_->BootstrapAllBuiltinModules();
 }

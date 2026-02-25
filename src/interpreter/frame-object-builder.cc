@@ -226,10 +226,10 @@ void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
 
 bool AssignKwArgsFromDict(FrameBuildContext& ctx,
                           Handle<PyDict> actual_kw_args,
-                          Handle<PyDict>& kw_args) {
+                          Handle<PyDict>& out_kw_args) {
   // 如果函数支持接收 **kwargs，在这里初始化它。
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarKeywords) {
-    kw_args = PyDict::NewInstance();
+    out_kw_args = PyDict::NewInstance();
   }
 
   if (actual_kw_args.is_null()) {
@@ -262,8 +262,10 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
 
       ctx.localsplus->Set(index_in_var_args, value);
       ++ctx.localsplus_idx;
-    } else if (!kw_args.is_null()) {
-      PyDict::Put(kw_args, key, value);
+    } else if (!out_kw_args.is_null()) {
+      if (PyDict::PutMaybe(out_kw_args, key, value).IsNothing()) {
+        return false;
+      }
     } else {
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s() got an unexpected keyword argument '%s'",
@@ -278,10 +280,10 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
 bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
                                 Handle<PyTuple> actual_args,
                                 Handle<PyTuple> kwarg_keys,
-                                Handle<PyDict>& kw_args) {
+                                Handle<PyDict>& out_kw_args) {
   // 如果函数支持接收 **kwargs，在这里初始化它。
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarKeywords) {
-    kw_args = PyDict::NewInstance();
+    out_kw_args = PyDict::NewInstance();
   }
 
   if (kwarg_keys.is_null()) {
@@ -311,8 +313,10 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
       continue;
     }
 
-    if (!kw_args.is_null()) {
-      PyDict::Put(kw_args, key, value);
+    if (!out_kw_args.is_null()) {
+      if (PyDict::PutMaybe(out_kw_args, key, value).IsNothing()) {
+        return false;
+      }
       continue;
     }
 

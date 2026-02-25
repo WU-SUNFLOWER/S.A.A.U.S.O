@@ -13,6 +13,7 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
@@ -47,7 +48,8 @@ ModulePartScanResult ScanNextPart(Handle<PyString> fullname,
 
 ////////////////////////////////////////////////////////////////////////
 
-ModuleImporter::ModuleImporter(ModuleManager* manager) : manager_(manager) {}
+ModuleImporter::ModuleImporter(ModuleManager* manager, Isolate* isolate)
+    : manager_(manager), isolate_(isolate) {}
 
 MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
                                                    Handle<PyTuple> fromlist,
@@ -94,8 +96,9 @@ MaybeHandle<PyModule> ModuleImporter::ImportModuleImpl(
     if (segment_start != 0) {
       Handle<PyString> part_module_short_name =
           PyString::Slice(fullname, segment_start, scan.part_end);
-      BindChildModuleToParentNamespace(last_module, part_module_short_name,
-                                       part_module);
+      RETURN_ON_EXCEPTION(
+          isolate_, BindChildModuleToParentNamespace(
+                        last_module, part_module_short_name, part_module));
     }
 
     last_module = part_module;
@@ -142,28 +145,45 @@ MaybeHandle<PyList> ModuleImporter::SelectSearchPathList(
     return manager_->path();
   }
 
-  Handle<PyList> path = ModuleUtils::GetPackagePathList(parent_module);
+  Handle<PyList> path;
+  if (!ModuleUtils::GetPackagePathList(parent_module, path)) {
+    return kNullMaybeHandle;
+  }
+
   if (path.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kImportError, "parent is not a package");
     return kNullMaybe;
   }
+
   return path;
 }
 
-void ModuleImporter::BindChildModuleToParentNamespace(
+MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
     Handle<PyObject> parent_module,
     Handle<PyString> child_short_name,
     Handle<PyObject> child_module) {
   Handle<PyDict> parent_dict = PyObject::GetProperties(parent_module);
 
-  // 如果父模块中已经链接了子模块，则不需要重复链接。
-  // 但应确保该子模块与当前准备链接的child_module是同一个module object对象。
-  if (parent_dict->Contains(child_short_name)) {
-    assert(parent_dict->Get(child_short_name).is_identical_to(child_module));
-    return;
+  bool exists = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, exists,
+                             parent_dict->ContainsMaybe(child_short_name));
+
+  if (!exists) {
+    RETURN_ON_EXCEPTION(
+        isolate_,
+        PyDict::PutMaybe(parent_dict, child_short_name, child_module));
+  } else {
+#ifdef _DEBUG
+    // 如果父模块中已经链接了子模块，则不需要重复链接。
+    // 但应确保该子模块与当前准备链接的child_module是同一个module object对象。
+    Tagged<PyObject> existing;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, existing,
+                               parent_dict->GetTaggedMaybe(child_short_name));
+    assert(handle(existing).is_identical_to(child_module));
+#endif
   }
 
-  PyDict::Put(parent_dict, child_short_name, child_module);
+  return handle(isolate_->py_none_object());
 }
 
 bool ModuleImporter::EnsurePackageForNextSegment(

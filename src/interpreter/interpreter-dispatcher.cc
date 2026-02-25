@@ -255,14 +255,9 @@ void Interpreter::EvalCurrentFrame() {
                 raise_pc);
           }
         } else {
-          auto runtime_error_type =
-              Handle<PyTypeObject>::cast(builtins()->Get(ST(runtime_err)));
-
           ASSIGN_GOTO_ON_EXCEPTION(
-              exception,
-              Runtime_NewObject(runtime_error_type, Handle<PyObject>::null(),
-                                Handle<PyObject>::null()));
-
+              exception, Runtime_NewExceptionInstance(
+                             ST(runtime_err), Handle<PyString>::null()));
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }

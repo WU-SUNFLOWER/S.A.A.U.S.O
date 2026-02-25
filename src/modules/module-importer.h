@@ -22,7 +22,7 @@ class PyTuple;
 
 class ModuleImporter final {
  public:
-  ModuleImporter(ModuleManager* manager);
+  ModuleImporter(ModuleManager* manager, Isolate* isolate);
   ModuleImporter(const ModuleImporter&) = delete;
   ModuleImporter& operator=(const ModuleImporter&) = delete;
   ~ModuleImporter() = default;
@@ -34,9 +34,9 @@ class ModuleImporter final {
   // - level: 相对导入层级；0 表示绝对导入。
   // - globals: 当前执行上下文的 globals，用于解析相对导入基准包信息。
   MaybeHandle<PyModule> ImportModule(Handle<PyString> name,
-                                      Handle<PyTuple> fromlist,
-                                      int64_t level,
-                                      Handle<PyDict> globals);
+                                     Handle<PyTuple> fromlist,
+                                     int64_t level,
+                                     Handle<PyDict> globals);
 
  private:
   // 导入一个完整的绝对模块名（可能为 dotted-name），并返回最后一段模块对象。
@@ -57,12 +57,15 @@ class ModuleImporter final {
   MaybeHandle<PyList> SelectSearchPathList(bool is_top,
                                            Handle<PyObject> parent_module);
 
-  // 将 child_module 绑定到 parent_module 的命名空间中：parent.child_short_name
-  // = child_module。 该步骤用于对齐 dotted-name 导入语义，并提升 IMPORT_FROM 的
-  // fast path 命中率。
-  void BindChildModuleToParentNamespace(Handle<PyObject> parent_module,
-                                        Handle<PyString> child_short_name,
-                                        Handle<PyObject> child_module);
+  // 将 child_module 绑定到 parent_module 的命名空间中
+  // - 即parent.child_short_name = child_module。
+  // 该步骤用于对齐 dotted-name 导入语义，并提升IMPORT_FROM的fast path 命中率。
+  //
+  // 如果执行绑定的过程中发生异常，返回值为空，需要调用方继续向上传播异常！
+  MaybeHandle<PyObject> BindChildModuleToParentNamespace(
+      Handle<PyObject> parent_module,
+      Handle<PyString> child_short_name,
+      Handle<PyObject> child_module);
 
   // 如果当前段不是最后一段，则校验 module 必须为 package（存在 __path__
   // list）。若校验失败则设置 ImportError 并返回 false；成功返回 true。
@@ -79,6 +82,7 @@ class ModuleImporter final {
   Handle<PyDict> modules_dict();
 
   ModuleManager* manager_;
+  Isolate* isolate_;
 };
 
 }  // namespace saauso::internal

@@ -27,13 +27,14 @@ BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
   Handle<PyModule> module = PyModule::NewInstance();
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  PyDict::Put(module_dict, ST(name), PyString::NewInstance("sys"));
-  PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
-  PyDict::Put(module_dict, PyString::NewInstance("modules"),
-              manager->modules());
-  PyDict::Put(module_dict, PyString::NewInstance("path"), manager->path());
-  PyDict::Put(module_dict, PyString::NewInstance("version"),
-              PyString::NewInstance("3.12 (saauso mvp)"));
+  (void)PyDict::PutMaybe(module_dict, ST(name), PyString::NewInstance("sys"));
+  (void)PyDict::PutMaybe(module_dict, ST(package), PyString::NewInstance(""));
+  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("modules"),
+                         manager->modules());
+  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("path"),
+                         manager->path());
+  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("version"),
+                         PyString::NewInstance("3.12 (saauso mvp)"));
 
   return scope.Escape(module);
 }

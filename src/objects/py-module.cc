@@ -21,7 +21,8 @@ Handle<PyModule> PyModule::NewInstance() {
 
   // module 必须有 __dict__。我们复用 PyObject::properties_ 作为模块命名空间。
   Handle<PyDict> properties = PyDict::NewInstance();
-  PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  (void)PyDict::PutMaybe(properties, PyString::NewInstance("__dict__"),
+                         properties);
   PyObject::SetProperties(*object, *properties);
 
   SetKlass(object, PyModuleKlass::GetInstance());
@@ -36,4 +37,3 @@ Tagged<PyModule> PyModule::cast(Tagged<PyObject> object) {
 }
 
 }  // namespace saauso::internal
-

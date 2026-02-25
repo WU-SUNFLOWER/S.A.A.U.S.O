@@ -48,9 +48,12 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
 
   Handle<PyDict> properties = PyObject::GetProperties(self);
   if (!properties.is_null()) {
-    Handle<PyObject> message = properties->Get(ST(message));
-    if (!message.is_null() && IsPyString(*message)) {
-      return scope.Escape(Handle<PyString>::cast(message));
+    Tagged<PyObject> message;
+    if (!properties->GetTaggedMaybe(ST(message)).To(&message)) {
+      return kNullMaybeHandle;
+    }
+    if (!message.is_null() && IsPyString(message)) {
+      return scope.Escape(Handle<PyString>::cast(handle(message)));
     }
   }
 
