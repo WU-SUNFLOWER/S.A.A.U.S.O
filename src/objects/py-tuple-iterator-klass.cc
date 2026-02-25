@@ -19,6 +19,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
@@ -98,7 +99,12 @@ MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Iter(
 
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Next(
     Handle<PyObject> self) {
-  return NextImpl(self);
+  Handle<PyObject> result = NextImpl(self);
+  if (result.is_null()) {
+    Runtime_ThrowError(ExceptionType::kStopIteration);
+    return kNullMaybeHandle;
+  }
+  return result;
 }
 
 size_t PyTupleIteratorKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

@@ -409,12 +409,13 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续
-  // 第一个 STORE_FAST 弹出栈顶赋给第一个变量，从而 (k, v) = item 得到 k=item[0], v=item[1]。
+  // 第一个 STORE_FAST 弹出栈顶赋给第一个变量，从而 (k, v) = item 得到
+  // k=item[0], v=item[1]。
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
     Handle<PyObject> sequence = POP();
     Handle<PyTuple> tuple;
-    ASSIGN_GOTO_ON_EXCEPTION(
-        tuple, Runtime_UnpackIterableObjectToTuple(sequence));
+    ASSIGN_GOTO_ON_EXCEPTION(tuple,
+                             Runtime_UnpackIterableObjectToTuple(sequence));
     if (tuple->length() != op_arg) {
       Runtime_ThrowErrorf(ExceptionType::kValueError,
                           "unpack expected %d values, got %d", op_arg,
@@ -425,7 +426,7 @@ void Interpreter::EvalCurrentFrame() {
     current_frame_->set_stack_top(old_stack_top + op_arg);
     for (int i = 0; i < op_arg; ++i) {
       current_frame_->stack()->Set(old_stack_top + (op_arg - 1 - i),
-                                  tuple->Get(i));
+                                   tuple->Get(i));
     }
   })
 
@@ -433,40 +434,28 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> iterator = TOP();
     Handle<PyObject> next_result;
     MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
-    if (!next_maybe.ToHandle(&next_result)) {
-      // Next 返回空 MaybeHandle：可能是 StopIteration，也可能是其他异常。
-      if (!isolate_->HasPendingException() ||
-          Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
-        current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
-        POP();
-        break;
-      }
 
-      // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到
-      // Execution::Call 发起调用的根栈帧就截止了，所以这里需手工设置
-      // faulting PC 为当前 ForIter。
-      // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
-      isolate_->exception_state()->set_pending_exception_pc(
-          current_frame_->pc() - kBytecodeSizeInBytes);
-      break;
-    }
-
-    // 迭代器成功返回了有效值，压栈后立即执行下一条字节码
-    if (!next_result.is_null()) {
+    // Happy Path: 迭代得到一个有效值，遂直接压栈并退出bytecode handler
+    if (next_maybe.ToHandle(&next_result)) [[likely]] {
       PUSH(next_result);
       break;
     }
 
-    // 内建迭代器可能在耗尽时返回 null 且不抛异常。
-    if (!isolate_->HasPendingException() ||
-        Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+    assert(isolate_->HasPendingException());
+
+    // 如果是 StopIteration，那么就地消费异常，然后直接跳出迭代块。
+    if (Runtime_ConsumePendingStopIterationIfSet(isolate_)) [[likely]] {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
       POP();
       break;
     }
 
-    isolate_->exception_state()->set_pending_exception_pc(
-        current_frame_->pc() - kBytecodeSizeInBytes);
+    // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到
+    // Execution::Call 发起调用的根栈帧就截止了，所以这里需手工设置
+    // faulting PC 为当前 ForIter。
+    // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
+    isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
+                                                          kBytecodeSizeInBytes);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
@@ -672,7 +661,8 @@ void Interpreter::EvalCurrentFrame() {
     auto sub_module_name =
         Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
 
-    // Fast Path: 如果目标子模块已经被解析过了，直接返回（Try 语义用 LookupAttr）
+    // Fast Path: 如果目标子模块已经被解析过了，直接返回（Try 语义用
+    // LookupAttr）
     Handle<PyObject> value;
     if (PyObject::LookupAttr(parent_module, sub_module_name, value) &&
         !value.is_null()) {
@@ -686,9 +676,8 @@ void Interpreter::EvalCurrentFrame() {
     // Slow Path: 目标子模块还没被解析过，走完整的解析流程
 
     Handle<PyObject> parent_module_name_obj;
-    ASSIGN_GOTO_ON_EXCEPTION(
-        parent_module_name_obj,
-        PyObject::GetAttr(parent_module, ST(name)));
+    ASSIGN_GOTO_ON_EXCEPTION(parent_module_name_obj,
+                             PyObject::GetAttr(parent_module, ST(name)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "module __name__ must be a string");
@@ -709,12 +698,11 @@ void Interpreter::EvalCurrentFrame() {
     synthetic_fromlist->SetInternal(0, sub_module_name);
 
     Handle<PyObject> submodule;
-    ASSIGN_GOTO_ON_EXCEPTION_TARGET(
-        isolate_, submodule,
-        isolate_->module_manager()->ImportModule(
-            sub_module_fullname, synthetic_fromlist, 0,
-            current_frame_->globals()),
-        pending_exception_unwind);
+    ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, submodule,
+                                    isolate_->module_manager()->ImportModule(
+                                        sub_module_fullname, synthetic_fromlist,
+                                        0, current_frame_->globals()),
+                                    pending_exception_unwind);
     PUSH(submodule);
   })
 
