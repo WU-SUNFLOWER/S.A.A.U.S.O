@@ -217,6 +217,10 @@ Tagged<PyObject> PyDict::GetTagged(Tagged<PyObject> key) const {
   return GetImpl(key);
 }
 
+Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Handle<PyObject> key) const {
+  return GetTaggedMaybe(*key);
+}
+
 Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Tagged<PyObject> key) const {
   HandleScope scope;
   Handle<PyObject> handle_key(key);
