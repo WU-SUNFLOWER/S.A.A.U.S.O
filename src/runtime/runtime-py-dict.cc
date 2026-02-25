@@ -10,6 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
@@ -79,13 +80,49 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
           key = key_str;
         }
 
-        RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::PutMaybe(result, key, item->Get(1)),
+        RETURN_ON_EXCEPTION_VALUE(isolate,
+                                  PyDict::PutMaybe(result, key, item->Get(1)),
                                   kNullMaybeHandle);
       }
     }
   }
 
   return scope.Escape(result);
+}
+
+MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key) {
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
+  if (value.is_null()) {
+    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    return kNullMaybeHandle;
+  }
+  return handle(value);
+}
+
+MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key,
+                                          Handle<PyObject> value) {
+  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+  return handle(Isolate::Current()->py_none_object());
+}
+
+MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key) {
+  bool removed = false;
+  if (!dict->RemoveMaybe(key).To(&removed)) {
+    return kNullMaybeHandle;
+  }
+  if (!removed) {
+    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    return kNullMaybeHandle;
+  }
+  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
@@ -111,9 +148,8 @@ MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
     auto value = item->Get(1);
 
     bool exists = false;
-    ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, exists,
-                                     dst_dict->ContainsMaybe(key),
-                                     kNullMaybeHandle);
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+        isolate, exists, dst_dict->ContainsMaybe(key), kNullMaybeHandle);
     if (!allow_overwriting && exists) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "got multiple values for keyword argument");

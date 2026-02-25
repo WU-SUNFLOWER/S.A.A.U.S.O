@@ -46,6 +46,8 @@ class PyDict : public PyObject {
                               Handle<PyObject> value);
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict);
 
+  Handle<FixedArray> data() const;
+
  private:
   friend class PyDictKlass;
 
@@ -55,8 +57,6 @@ class PyDict : public PyObject {
   static Maybe<bool> ExpandImplMaybe(Handle<PyDict> dict);
 
   Tagged<PyObject> GetImpl(Tagged<PyObject> key) const;
-
-  Handle<FixedArray> data() const;
 
   // FixedArray* data_
   Tagged<PyObject> data_;

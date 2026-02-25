@@ -708,23 +708,24 @@ void Interpreter::EvalCurrentFrame() {
       PUSH(Tagged<PyObject>::null());
     }
 
-    Handle<PyObject> key = current_frame_->names()->Get(op_arg >> 1);
+    Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg >> 1);
+    Tagged<PyObject> value;
 
-    Handle<PyObject> value = current_frame_->globals()->Get(key);
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             current_frame_->globals()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    value = builtins()->Get(key);
+    ASSIGN_GOTO_ON_EXCEPTION(value, builtins()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
     Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
-                        Handle<PyString>::cast(key)->buffer());
-    goto pending_exception_unwind;
+                        Tagged<PyString>::cast(key)->buffer());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {

@@ -16,6 +16,14 @@ class PyDict;
 MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                                       Handle<PyObject> kwargs);
 
+MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key);
+MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key,
+                                          Handle<PyObject> value);
+MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key);
+
 MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting);
