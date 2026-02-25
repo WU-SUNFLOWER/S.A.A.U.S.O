@@ -27,6 +27,9 @@ class ExceptionTable final {
   // TODO: 让 PyCodeObject 的 exception_table_ 字段指向 PyExceptionTable 实例，
   //       而非当前的 raw bytes(PyString) 数据视图。
   // TODO: 把 LookupHandler 的线性扫描升级为可选的二分查找
+  //
+  // 在 co_exceptiontable 中，start/size/target 的单位是 code units（CPython3.11+
+  // wordcode 语义）；本接口要求传入 byte offset，并在内部完成单位换算与查表。
   static bool LookupHandler(Handle<PyCodeObject> code_object,
                             int instruction_offset_in_bytes,
                             ExceptionHandlerInfo& out);

@@ -38,6 +38,28 @@ print("after")
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, TryExceptHandlerRangeCoversMiddleOfBlock) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+try:
+  x = 1
+  x = x + 1
+  raise ValueError
+  x = 100
+except ValueError:
+  print(str(x))
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("2"));
+  AppendExpected(expected, PyString::NewInstance("after"));
+  ExpectPrintResult(expected);
+}
+
 TEST_F(BasicInterpreterTest, TryExceptReraise) {
   HandleScope scope;
 
