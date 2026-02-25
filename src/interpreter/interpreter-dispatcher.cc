@@ -452,7 +452,7 @@ void Interpreter::EvalCurrentFrame() {
 
     // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到
     // Execution::Call 发起调用的根栈帧就截止了，所以这里需手工设置
-    // faulting PC 为当前 ForIter。
+    // faulting PC 为当前 ForIter 字节码的地址。
     // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
     isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
                                                           kBytecodeSizeInBytes);
@@ -539,14 +539,13 @@ void Interpreter::EvalCurrentFrame() {
     auto iter = PyDictItemIterator::NewInstance(update_dict);
     while (true) {
       Handle<PyObject> item_handle;
-      if (!PyObject::Next(iter).ToHandle(&item_handle) ||
-          item_handle.is_null()) {
-        if (isolate_->HasPendingException() &&
-            !Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+      if (!PyObject::Next(iter).ToHandle(&item_handle)) {
+        if (!Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
           goto pending_exception_unwind;
         }
         break;
       }
+
       auto item = Handle<PyTuple>::cast(item_handle);
       auto key = item->Get(0);
       auto value = item->Get(1);
