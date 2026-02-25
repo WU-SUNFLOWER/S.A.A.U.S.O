@@ -449,13 +449,6 @@ void Interpreter::EvalCurrentFrame() {
       POP();
       break;
     }
-
-    // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到
-    // Execution::Call 发起调用的根栈帧就截止了，所以这里需手工设置
-    // faulting PC 为当前 ForIter 字节码的地址。
-    // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
-    isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
-                                                          kBytecodeSizeInBytes);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
@@ -1072,11 +1065,15 @@ pending_exception_unwind: {
   }
 
   auto* exception_state = isolate_->exception_state();
-  if (exception_state->pending_exception_pc() ==
-      ExceptionState::kInvalidProgramCounter) {
-    exception_state->set_pending_exception_pc(current_frame_->pc() -
-                                              kBytecodeSizeInBytes);
-  }
+
+  // 注意：这里必须强制更新 pending_exception_pc；
+  // 不能加 if (pending_exception_origin_pc == kInvalidProgramCounter)
+  // 前置判断！
+  // 因为 pending_exception_pc 表示的是当前异常传播到哪条字节码了，
+  // 既然异常传播到了当前字节码，就必须对其进行更新。
+  // 否则会出现无法触发当前字节码对应的 exception handler的 bug。
+  exception_state->set_pending_exception_pc(current_frame_->pc() -
+                                            kBytecodeSizeInBytes);
 
   if (exception_state->pending_exception_origin_pc() ==
       ExceptionState::kInvalidProgramCounter) {
@@ -1121,9 +1118,9 @@ pending_exception_unwind: {
 #undef DISPATCH
 
 unknown_bytecode:
-  Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
-                      "unknown bytecode %d, arguments %d", op_code, op_arg);
-  goto pending_exception_unwind;
+  // 未知字节码，不抛错误，直接让虚拟机崩溃！
+  std::fprintf(stderr, "unknown bytecode %d, arguments %d", op_code, op_arg);
+  std::exit(1);
 
 exit_interpreter:
   return;
