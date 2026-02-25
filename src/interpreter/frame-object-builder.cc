@@ -240,12 +240,11 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
   auto* isolate = Isolate::Current();
   while (true) {
     Handle<PyObject> item_handle;
-    if (!PyObject::Next(iter).ToHandle(&item_handle) || item_handle.is_null()) {
-      if (isolate->HasPendingException() &&
-          !Runtime_ConsumePendingStopIterationIfSet(isolate)) {
-        return false;
+    if (!PyObject::Next(iter).ToHandle(&item_handle)) {
+      if (Runtime_ConsumePendingStopIterationIfSet(isolate)) {
+        break;
       }
-      break;
+      return false;
     }
     auto item = Handle<PyTuple>::cast(item_handle);
     auto key = Handle<PyString>::cast(item->Get(0));

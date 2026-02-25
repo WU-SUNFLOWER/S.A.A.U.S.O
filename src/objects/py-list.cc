@@ -6,6 +6,7 @@
 
 #include <cassert>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
@@ -14,7 +15,6 @@
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
-
 
 namespace saauso::internal {
 

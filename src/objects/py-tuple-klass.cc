@@ -10,6 +10,7 @@
 #include <cstdlib>
 
 #include "src/builtins/builtins-py-tuple-methods.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
@@ -121,15 +122,14 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
   std::printf("(");
   for (auto i = 0; i < tuple->length(); ++i) {
     if (i > 0) {
       std::printf(", ");
     }
-    if (PyObject::Print(tuple->Get(i)).IsEmpty()) {
-      return kNullMaybeHandle;
-    }
+    RETURN_ON_EXCEPTION(isolate, PyObject::Print(tuple->Get(i)));
   }
   if (tuple->length() == 1) {
     std::printf(",");
@@ -160,8 +160,6 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
     Handle<PyObject> self,
     Handle<PyObject> subscr,
     Handle<PyObject> value) {
-  (void)subscr;
-  (void)value;
   Runtime_ThrowError(ExceptionType::kTypeError,
                      "'tuple' object does not support item assignment\n");
   return kNullMaybeHandle;
@@ -169,7 +167,6 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
                                                       Handle<PyObject> subscr) {
-  (void)subscr;
   Runtime_ThrowError(ExceptionType::kTypeError,
                      "'tuple' object doesn't support item deletion\n");
   return kNullMaybeHandle;
@@ -177,13 +174,13 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
 
 Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
                                            Handle<PyObject> target) {
+  auto* isolate = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
-    Maybe<bool> eq = PyObject::EqualBool(tuple->Get(i), target);
-    if (eq.IsNothing()) {
-      return kNullMaybe;
-    }
-    if (eq.ToChecked()) {
+    bool eq;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
+                               PyObject::EqualBool(tuple->Get(i), target));
+    if (eq) {
       return Maybe<bool>(true);
     }
   }
@@ -196,6 +193,8 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
     return Maybe<bool>(false);
   }
 
+  auto* isolate = Isolate::Current();
+
   auto tuple1 = Handle<PyTuple>::cast(self);
   auto tuple2 = Handle<PyTuple>::cast(other);
 
@@ -204,11 +203,10 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
   }
 
   for (auto i = 0; i < tuple1->length(); ++i) {
-    Maybe<bool> eq = PyObject::EqualBool(tuple1->Get(i), tuple2->Get(i));
-    if (eq.IsNothing()) {
-      return kNullMaybe;
-    }
-    if (!eq.ToChecked()) {
+    bool eq;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, eq, PyObject::EqualBool(tuple1->Get(i), tuple2->Get(i)));
+    if (!eq) {
       return Maybe<bool>(false);
     }
   }

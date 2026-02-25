@@ -38,6 +38,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     return handle(isolate->py_none_object());
   }
 
+  // Slow Path: 走一般的迭代器调用流程
   Handle<PyObject> iterator;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, iterator, PyObject::Iter(iteratable));
 
@@ -45,16 +46,10 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     Handle<PyObject> elem;
     MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
     if (!next_maybe.ToHandle(&elem)) {
-      // 迭代结束或出现异常：优先消费 StopIteration，其余异常向上抛出。
+      // 迭代结束或出现异常：
+      // - 如果是 StopIteration，那么直接就地消费并终止迭代。
+      // - 其余异常向上抛出。
       if (Runtime_ConsumePendingStopIterationIfSet(isolate)) {
-        break;
-      }
-      return kNullMaybeHandle;
-    }
-    if (elem.is_null()) {
-      // 内建迭代器可能在耗尽时返回 null 且不抛异常。
-      if (!isolate->HasPendingException() ||
-          Runtime_ConsumePendingStopIterationIfSet(isolate)) {
         break;
       }
       return kNullMaybeHandle;

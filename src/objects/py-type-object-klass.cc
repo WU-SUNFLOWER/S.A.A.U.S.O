@@ -151,9 +151,9 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
                                                       Handle<PyObject> host,
                                                       Handle<PyObject> args,
                                                       Handle<PyObject> kwargs) {
-  (void)host;
   auto type_object = Handle<PyTypeObject>::cast(self);
   auto own_klass = type_object->own_klass();
+  // type object本身并不知道如何创建新对象的逻辑，需要转发给对应的klass
   return own_klass->ConstructInstance(args, kwargs);
 }
 
