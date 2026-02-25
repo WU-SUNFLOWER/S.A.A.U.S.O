@@ -257,10 +257,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
         return kNullMaybeHandle;
       }
 
-      if (PyObject::EqualBool(key, sep_key) ||
-          PyObject::EqualBool(key, maxsplit_key)) {
-        continue;
+      bool eq = false;
+      if (!PyObject::EqualBool(key, sep_key).To(&eq)) {
+        return kNullMaybeHandle;
       }
+      if (eq) continue;
+      if (!PyObject::EqualBool(key, maxsplit_key).To(&eq)) {
+        return kNullMaybeHandle;
+      }
+      if (eq) continue;
 
       auto key_str = Handle<PyString>::cast(key);
       Runtime_ThrowErrorf(ExceptionType::kTypeError,

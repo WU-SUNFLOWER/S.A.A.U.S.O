@@ -5,8 +5,10 @@
 #ifndef SAAUSO_OBJECTS_PY_FLOAT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_FLOAT_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -21,25 +23,27 @@ class PyFloatKlass : public Klass {
  private:
   PyFloatKlass();
 
-  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
-                                                    Handle<PyObject> args,
-                                                    Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_ConstructInstance(
+      Tagged<Klass> klass_self,
+      Handle<PyObject> args,
+      Handle<PyObject> kwargs);
 
-  static void Virtual_Print(Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject>);
 
-  static Handle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
-  static Handle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
-  static Handle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
-  static Handle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
-  static Handle<PyObject> Virtual_FloorDiv(Handle<PyObject>, Handle<PyObject>);
-  static Handle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_FloorDiv(Handle<PyObject>,
+                                                  Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
 
-  static bool Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
-  static bool Virtual_Less(Handle<PyObject>, Handle<PyObject>);
-  static bool Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
-  static bool Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
-  static bool Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
-  static bool Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Less(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

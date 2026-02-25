@@ -59,15 +59,16 @@ TEST_F(PyListTest, SetRemoveClearWork) {
   PyList::Append(list, c);
 
   list->Set(1, a);
-  EXPECT_EQ(PyObject::Equal(list->Get(1), a).ptr(),
-            Isolate::Current()->py_true_object().ptr());
+  Handle<PyObject> eq;
+  ASSERT_TRUE(PyObject::Equal(list->Get(1), a).ToHandle(&eq));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
 
   list->RemoveByIndex(0);
   EXPECT_EQ(list->length(), 2);
-  EXPECT_EQ(PyObject::Equal(list->Get(0), a).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Equal(list->Get(1), c).ptr(),
-            Isolate::Current()->py_true_object().ptr());
+  ASSERT_TRUE(PyObject::Equal(list->Get(0), a).ToHandle(&eq));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
+  ASSERT_TRUE(PyObject::Equal(list->Get(1), c).ToHandle(&eq));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
 
   list->Clear();
   EXPECT_EQ(list->length(), 0);
@@ -115,8 +116,8 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
 
   Handle<PyObject> lhs(list);
   Handle<PyObject> rhs(list);
-  auto combined = PyObject::Add(lhs, rhs);
-
+  Handle<PyObject> combined;
+  ASSERT_TRUE(PyObject::Add(lhs, rhs).ToHandle(&combined));
   ASSERT_TRUE(IsPyList(combined));
   auto combined_list = Handle<PyList>::cast(combined);
   EXPECT_EQ(combined_list->length(), 4);
@@ -132,8 +133,8 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
 
   Handle<PyObject> lhs(list);
   Handle<PyObject> coeff(PySmi::FromInt(3));
-  auto repeated = PyObject::Mul(lhs, coeff);
-
+  Handle<PyObject> repeated;
+  ASSERT_TRUE(PyObject::Mul(lhs, coeff).ToHandle(&repeated));
   ASSERT_TRUE(IsPyList(repeated));
   auto repeated_list = Handle<PyList>::cast(repeated);
   ASSERT_EQ(repeated_list->length(), 6);
@@ -155,14 +156,18 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   Handle<PyObject> index0(PySmi::FromInt(0));
   Handle<PyObject> index1(PySmi::FromInt(1));
 
-  auto v0 = PyObject::Subscr(obj, index0);
+  Handle<PyObject> v0;
+  ASSERT_TRUE(PyObject::Subscr(obj, index0).ToHandle(&v0));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
 
-  PyObject::StoreSubscr(obj, index1, Handle<PyObject>(PySmi::FromInt(42)));
-  auto v1 = PyObject::Subscr(obj, index1);
+  ASSERT_FALSE(
+      PyObject::StoreSubscr(obj, index1, Handle<PyObject>(PySmi::FromInt(42)))
+          .IsEmpty());
+  Handle<PyObject> v1;
+  ASSERT_TRUE(PyObject::Subscr(obj, index1).ToHandle(&v1));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 42);
 
-  PyObject::DeletSubscr(obj, index0);
+  ASSERT_FALSE(PyObject::DeletSubscr(obj, index0).IsEmpty());
   EXPECT_EQ(Handle<PyList>::cast(obj)->length(), 1);
   EXPECT_EQ(
       PySmi::ToInt(Handle<PySmi>::cast(Handle<PyList>::cast(obj)->Get(0))), 42);
@@ -177,18 +182,23 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
 
   Handle<PyObject> obj(list);
-  EXPECT_EQ(PyObject::Contains(obj, s).ptr(),
-            Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2))).ptr(),
-            Isolate::Current()->py_false_object().ptr());
+  Handle<PyObject> contains_res;
+  ASSERT_TRUE(PyObject::Contains(obj, s).ToHandle(&contains_res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
+  ASSERT_TRUE(
+      PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2)))
+          .ToHandle(&contains_res));
+  EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::NewInstance(2);
   PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
 
-  EXPECT_EQ(
-      PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2)).ptr(),
-      Isolate::Current()->py_true_object().ptr());
+  Handle<PyObject> equal_res;
+  ASSERT_TRUE(
+      PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2))
+          .ToHandle(&equal_res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(equal_res)->value());
 }
 
 TEST_F(PyListTest, PyObjectLessIsLexicographic) {
@@ -202,8 +212,11 @@ TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)));
 
-  EXPECT_EQ(PyObject::Less(Handle<PyObject>(a), Handle<PyObject>(b)).ptr(),
-            Isolate::Current()->py_true_object().ptr());
+  Handle<PyObject> less_res;
+  ASSERT_TRUE(
+      PyObject::Less(Handle<PyObject>(a), Handle<PyObject>(b))
+          .ToHandle(&less_res));
+  EXPECT_TRUE(Handle<PyBoolean>::cast(less_res)->value());
 }
 
 }  // namespace saauso::internal

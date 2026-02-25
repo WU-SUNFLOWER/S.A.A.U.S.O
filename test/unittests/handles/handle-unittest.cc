@@ -37,8 +37,11 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
   Handle<PyObject> str3 = f();
   Handle<PyObject> str4 = PyString::NewInstance("I love you");
 
-  EXPECT_TRUE(PyObject::EqualBool(str1, str3));
-  EXPECT_TRUE(PyObject::EqualBool(str2, str4));
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(str1, str3).To(&eq));
+  EXPECT_TRUE(eq);
+  ASSERT_TRUE(PyObject::EqualBool(str2, str4).To(&eq));
+  EXPECT_TRUE(eq);
 }
 
 TEST_F(HandleTest, EscapableHandleScopeEscape) {
@@ -55,8 +58,11 @@ TEST_F(HandleTest, EscapableHandleScopeEscape) {
   Handle<PyObject> str3 = f();
   Handle<PyObject> str4 = PyString::NewInstance("I love you");
 
-  EXPECT_TRUE(PyObject::EqualBool(str1, str3));
-  EXPECT_TRUE(PyObject::EqualBool(str2, str4));
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(str1, str3).To(&eq));
+  EXPECT_TRUE(eq);
+  ASSERT_TRUE(PyObject::EqualBool(str2, str4).To(&eq));
+  EXPECT_TRUE(eq);
 }
 
 #if defined(_DEBUG) || defined(ASAN_BUILD)

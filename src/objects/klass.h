@@ -8,7 +8,9 @@
 #include <cstddef>
 
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/objects/objects.h"
+#include "src/utils/maybe.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
@@ -60,75 +62,63 @@ struct VirtualTable {
                                                   OopHandle,
                                                   OopHandle);
 
-  // Tagged<PyObject> add(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE add{nullptr};
-  // Tagged<PyObject> sub(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE sub{nullptr};
-  // Tagged<PyObject> mul(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE mul{nullptr};
-  // Tagged<PyObject> div(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE div{nullptr};
-  // Tagged<PyObject> floor_div(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE floor_div{nullptr};
+  // Fallible slot：返回 MaybeHandle<PyObject>，失败时设置 pending exception
+  using MaybeOopHandle = MaybeHandle<PyObject>;
+  using VirtualFuncType_Maybe_1_1 =
+      MaybeOopHandle (*)(OopHandle);
+  using VirtualFuncType_Maybe_1_2 =
+      MaybeOopHandle (*)(OopHandle, OopHandle);
+  using VirtualFuncType_Maybe_0_3 =
+      MaybeOopHandle (*)(OopHandle, OopHandle, OopHandle);
+  using VirtualFuncType_Maybe_1_4 =
+      MaybeOopHandle (*)(OopHandle, OopHandle, OopHandle, OopHandle);
+  using VirtualFuncType_Maybe_Construct =
+      MaybeOopHandle (*)(Tagged<Klass>, OopHandle, OopHandle);
+  // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
+  using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
+  // Fallible slot：返回 Maybe<uint64_t>
+  using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
 
-  uint64_t (*hash)(OopHandle){nullptr};
+  // add/sub/mul/div/floor_div/mod：可能抛 TypeError 等
+  VirtualFuncType_Maybe_1_2 add{nullptr};
+  VirtualFuncType_Maybe_1_2 sub{nullptr};
+  VirtualFuncType_Maybe_1_2 mul{nullptr};
+  VirtualFuncType_Maybe_1_2 div{nullptr};
+  VirtualFuncType_Maybe_1_2 floor_div{nullptr};
+  VirtualFuncType_Maybe_1_2 mod{nullptr};
 
-  // Handle<PyObject> getattr(Handle<PyObject> object, Handle<PyObject> key,
-  // bool is_try);
+  VirtualFuncType_MaybeHash hash{nullptr};
+
+  // getattr：is_try 时 null=缺失（不设异常）；!is_try 时由实现设异常并返回 null
   VirtualFuncType_1_2_SAFE_TRY getattr{nullptr};
-  // Tagged<PyObject> setattr(Tagged<PyObject> object, Tagged<PyObject> key,
-  // Tagged<PyObject> value);
-  VirtualFuncType_0_3_SAFE setattr{nullptr};
-  // Tagged<PyObject> subscr(Tagged<PyObject> object, Tagged<PyObject> subscr);
-  VirtualFuncType_1_2_SAFE subscr{nullptr};
-  // void store_subscr(Tagged<PyObject> object, Tagged<PyObject> subscr,
-  // Tagged<PyObject> value);
-  VirtualFuncType_0_3_SAFE store_subscr{nullptr};
+  // setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle
+  VirtualFuncType_Maybe_0_3 setattr{nullptr};
+  VirtualFuncType_Maybe_1_2 subscr{nullptr};
+  VirtualFuncType_Maybe_0_3 store_subscr{nullptr};
 
-  // bool greater(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_CBOOL greater{nullptr};
-  // bool less(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_CBOOL less{nullptr};
-  // bool equal(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_CBOOL equal{nullptr};
-  // bool not_equal(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_CBOOL not_equal{nullptr};
-  // bool ge(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_CBOOL ge{nullptr};
-  // bool le(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE_CBOOL le{nullptr};
+  // 比较/contains：返回 Maybe<bool>，失败时设置 pending exception
+  VirtualFuncType_MaybeBool_1_2 greater{nullptr};
+  VirtualFuncType_MaybeBool_1_2 less{nullptr};
+  VirtualFuncType_MaybeBool_1_2 equal{nullptr};
+  VirtualFuncType_MaybeBool_1_2 not_equal{nullptr};
+  VirtualFuncType_MaybeBool_1_2 ge{nullptr};
+  VirtualFuncType_MaybeBool_1_2 le{nullptr};
+  VirtualFuncType_MaybeBool_1_2 contains{nullptr};
 
-  // Tagged<PyObject> mod(Tagged<PyObject> a, Tagged<PyObject> b);
-  VirtualFuncType_1_2_SAFE mod{nullptr};
+  VirtualFuncType_Maybe_1_1 iter{nullptr};
+  VirtualFuncType_Maybe_1_1 next{nullptr};
+  VirtualFuncType_Maybe_1_4 call{nullptr};
+  VirtualFuncType_Maybe_1_1 len{nullptr};
 
-  // Tagged<PyObject> iter(Tagged<PyObject> object);
-  VirtualFuncType_1_1_SAFE iter{nullptr};
-  // Tagged<PyObject> next(Tagged<PyObject> object);
-  VirtualFuncType_1_1_SAFE next{nullptr};
-  // Tagged<PyObject> call(Tagged<PyObject> object, Tagged<PyList> args, PyDict*
-  // kwargs);
-  VirtualFuncType_1_4_SAFE call{nullptr};
-  // Tagged<PyObject> len(Tagged<PyObject> object);
-  VirtualFuncType_1_1_SAFE len{nullptr};
-
-  // bool contains(Tagged<PyObject> object);
-  VirtualFuncType_1_2_SAFE_CBOOL contains{nullptr};
-
-  // void print(Tagged<PyObject> object);
-  VirtualFuncType_0_1_SAFE print{nullptr};
-  // Tagged<PyObject> repr(Tagged<PyObject> object);
-  VirtualFuncType_1_1_SAFE repr{nullptr};
-  // void del_subscr(Tagged<PyObject> object, Tagged<PyObject> subscr);
-  VirtualFuncType_0_2_SAFE del_subscr{nullptr};
+  // print：成功返回 None，失败返回空 MaybeHandle
+  VirtualFuncType_Maybe_1_1 print{nullptr};
+  VirtualFuncType_Maybe_1_1 repr{nullptr};
+  VirtualFuncType_Maybe_1_2 del_subscr{nullptr};
 
   // 获取实例对象大小，调用该函数绝对不允许触发GC
-  // size_t instance_object(Tagged<PyObject>);
   size_t (*instance_size)(Oop){nullptr};
 
-  // 构造一个对象实例
-  // Handle<PyObject>construct_instance(Tagged<Klass> self,
-  // Handle<PyObject>args,Handle<PyObject>kwargs)
-  OopHandle (*construct_instance)(Tagged<Klass>, OopHandle, OopHandle){nullptr};
+  VirtualFuncType_Maybe_Construct construct_instance{nullptr};
 
   // 扫描对象内部数据，用于GC
   void (*iterate)(Oop, ObjectVisitor*){nullptr};
@@ -168,58 +158,62 @@ class Klass : public Object {
   // 执行C3算法，执行结果保存在mro_
   void OrderSupers();
 
-  // 创建一个对象实例
-  Handle<PyObject> ConstructInstance(Handle<PyObject> args,
-                                     Handle<PyObject> kwargs);
+  // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
+  MaybeHandle<PyObject> ConstructInstance(Handle<PyObject> args,
+                                           Handle<PyObject> kwargs);
 
-  // 默认虚函数
-  static void Virtual_Default_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Default_Call(Handle<PyObject> self,
-                                               Handle<PyObject> host,
-                                               Handle<PyObject> args,
-                                               Handle<PyObject> kwargs);
+  // 默认虚函数（Fallible 均返回 MaybeHandle<PyObject> 或 Maybe<bool>）
+  static MaybeHandle<PyObject> Virtual_Default_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Default_Call(Handle<PyObject> self,
+                                                     Handle<PyObject> host,
+                                                     Handle<PyObject> args,
+                                                     Handle<PyObject> kwargs);
   static Handle<PyObject> Virtual_Default_GetAttr(
       Handle<PyObject> self,
       Handle<PyObject> property_name,
       bool is_try);
-  static Handle<PyObject> Virtual_Default_GetAttrForCall(
+  static MaybeHandle<PyObject> Virtual_Default_GetAttrForCall(
       Handle<PyObject> self,
       Handle<PyObject> property_name,
       Handle<PyObject>& self_or_null);
-  static void Virtual_Default_SetAttr(Handle<PyObject> self,
-                                      Handle<PyObject> property_name,
-                                      Handle<PyObject> property_value);
-  static Handle<PyObject> Virtual_Default_Subscr(Handle<PyObject> self,
-                                                 Handle<PyObject> subscr);
-  static void Virtual_Default_StoreSubscr(Handle<PyObject> self,
-                                          Handle<PyObject> subscr,
-                                          Handle<PyObject> value);
-  static void Virtual_Default_Delete_Subscr(Handle<PyObject> self,
-                                            Handle<PyObject> subscr);
-  static Handle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Default_SetAttr(Handle<PyObject> self,
+                                                        Handle<PyObject> property_name,
+                                                        Handle<PyObject> property_value);
+  static MaybeHandle<PyObject> Virtual_Default_Subscr(Handle<PyObject> self,
+                                                       Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Default_StoreSubscr(
+      Handle<PyObject> self,
+      Handle<PyObject> subscr,
+      Handle<PyObject> value);
+  static MaybeHandle<PyObject> Virtual_Default_Delete_Subscr(
+      Handle<PyObject> self,
+      Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
+                                                    Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_Greater(Handle<PyObject> self,
                                               Handle<PyObject> other);
-  static bool Virtual_Default_Greater(Handle<PyObject> self,
-                                      Handle<PyObject> other);
-  static bool Virtual_Default_Less(Handle<PyObject> self,
-                                   Handle<PyObject> other);
-  static bool Virtual_Default_Equal(Handle<PyObject> self,
-                                    Handle<PyObject> other);
-  static bool Virtual_Default_NotEqual(Handle<PyObject> self,
-                                       Handle<PyObject> other);
-  static bool Virtual_Default_GreaterEqual(Handle<PyObject> self,
-                                           Handle<PyObject> other);
-  static bool Virtual_Default_LessEqual(Handle<PyObject> self,
-                                        Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_Less(Handle<PyObject> self,
+                                          Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_Equal(Handle<PyObject> self,
+                                            Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_NotEqual(Handle<PyObject> self,
+                                               Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_GreaterEqual(Handle<PyObject> self,
+                                                   Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_LessEqual(Handle<PyObject> self,
+                                                Handle<PyObject> other);
 
-  static Handle<PyObject> Virtual_Default_ConstructInstance(
+  static MaybeHandle<PyObject> Virtual_Default_ConstructInstance(
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
 
-  static Handle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);
+  static MaybeHandle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);
+
+  static Maybe<uint64_t> Virtual_Default_Hash(Handle<PyObject> self);
 
   static void Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*);
   static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);

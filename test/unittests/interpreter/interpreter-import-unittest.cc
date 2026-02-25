@@ -129,7 +129,9 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Handle<PyObject> bound = pkg_dict->Get(sub_short_name);
   ASSERT_FALSE(pkg_sub_module.is_null());
   ASSERT_FALSE(bound.is_null());
-  EXPECT_TRUE(PyObject::EqualBool(bound, pkg_sub_module));
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(bound, pkg_sub_module).To(&eq));
+  EXPECT_TRUE(eq);
 }
 
 TEST_F(BasicInterpreterTest, RelativeImportWorksInsidePackageModule) {

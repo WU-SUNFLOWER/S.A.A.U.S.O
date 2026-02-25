@@ -8,18 +8,24 @@
 #include <cstdio>
 
 #include "src/builtins/builtins-py-dict-views-methods.h"
+#include "src/execution/exception-types.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -45,7 +51,7 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
   }
 
   iterator->set_iter_index(dict->capacity());
-  return scope.Escape(Handle<PyObject>::null());
+  return Handle<PyObject>::null();
 }
 
 template <typename ViewType>
@@ -93,7 +99,7 @@ void PyDictKeysKlass::Finalize() {
   Isolate::Current()->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::null());
 }
 
-void PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
   auto view = Handle<PyDictKeys>::cast(self);
   auto dict = view->owner();
 
@@ -107,25 +113,28 @@ void PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
     if (!first) {
       std::printf(", ");
     }
+
     first = false;
-    PyObject::Print(key);
+
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(key));
   }
   std::printf("])");
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
   return PyDictKeyIterator::NewInstance(
       Handle<PyDictKeys>::cast(self)->owner());
 }
 
-Handle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictKeys>(self);
 }
 
-bool PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
-                                       Handle<PyObject> subscr) {
+Maybe<bool> PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
+                                              Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner();
-  return dict->Contains(subscr);
+  return Maybe<bool>(dict->Contains(subscr));
 }
 
 size_t PyDictKeysKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -176,7 +185,7 @@ void PyDictValuesKlass::Finalize() {
       Tagged<PyDictValuesKlass>::null());
 }
 
-void PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
   auto view = Handle<PyDictValues>::cast(self);
   auto dict = view->owner();
 
@@ -190,23 +199,26 @@ void PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
     if (!first) {
       std::printf(", ");
     }
+
     first = false;
-    PyObject::Print(value);
+
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(value));
   }
   std::printf("])");
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
   return PyDictValueIterator::NewInstance(
       Handle<PyDictValues>::cast(self)->owner());
 }
 
-Handle<PyObject> PyDictValuesKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictValues>(self);
 }
 
-bool PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
-                                         Handle<PyObject> subscr) {
+Maybe<bool> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
+                                                Handle<PyObject> subscr) {
   HandleScope scope;
 
   auto dict = Handle<PyDictValues>::cast(self)->owner();
@@ -215,11 +227,16 @@ bool PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
     if (value.is_null()) {
       continue;
     }
-    if (PyObject::EqualBool(value, subscr)) {
-      return true;
+
+    bool equal;
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), equal,
+                               PyObject::EqualBool(value, subscr));
+
+    if (equal) {
+      return Maybe<bool>(true);
     }
   }
-  return false;
+  return Maybe<bool>(false);
 }
 
 size_t PyDictValuesKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -270,7 +287,7 @@ void PyDictItemsKlass::Finalize() {
   Isolate::Current()->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::null());
 }
 
-void PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
   auto view = Handle<PyDictItems>::cast(self);
   auto dict = view->owner();
 
@@ -285,31 +302,32 @@ void PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
       std::printf(", ");
     }
     first = false;
-    PyObject::Print(item);
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(item));
   }
   std::printf("])");
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
   return PyDictItemIterator::NewInstance(
       Handle<PyDictItems>::cast(self)->owner());
 }
 
-Handle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictItems>(self);
 }
 
-bool PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
-                                        Handle<PyObject> subscr) {
+Maybe<bool> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
+                                               Handle<PyObject> subscr) {
   HandleScope scope;
 
   if (!IsPyTuple(subscr)) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   auto item = Handle<PyTuple>::cast(subscr);
   if (item->length() != 2) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   auto dict = Handle<PyDictItems>::cast(self)->owner();
@@ -318,10 +336,14 @@ bool PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
 
   auto found = dict->Get(key);
   if (found.is_null()) {
-    return false;
+    return Maybe<bool>(false);
   }
 
-  return PyObject::EqualBool(found, value);
+  Maybe<bool> mb = PyObject::EqualBool(found, value);
+  if (mb.IsNothing()) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(mb.ToChecked());
 }
 
 size_t PyDictItemsKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -375,20 +397,29 @@ void PyDictKeyIteratorKlass::Finalize() {
       Tagged<PyDictKeyIteratorKlass>::null());
 }
 
-void PyDictKeyIteratorKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Print(
+    Handle<PyObject> self) {
   std::printf("<dict_keyiterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyDictKeyIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Iter(
+    Handle<PyObject> self) {
   return self;
 }
 
-Handle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(Handle<PyObject> self) {
-  return NextFromIterator<PyDictKeyIterator>(
+MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(
+    Handle<PyObject> self) {
+  Handle<PyObject> result = NextFromIterator<PyDictKeyIterator>(
       self, [](Handle<PyDict> dict, int64_t index) {
         return dict->KeyAtIndex(index);
       });
+  if (result.is_null()) {
+    Runtime_ThrowError(ExceptionType::kStopIteration);
+    return kNullMaybeHandle;
+  }
+  return result;
 }
 
 size_t PyDictKeyIteratorKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -442,20 +473,29 @@ void PyDictItemIteratorKlass::Finalize() {
       Tagged<PyDictItemIteratorKlass>::null());
 }
 
-void PyDictItemIteratorKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Print(
+    Handle<PyObject> self) {
   std::printf("<dict_itemiterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyDictItemIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Iter(
+    Handle<PyObject> self) {
   return self;
 }
 
-Handle<PyObject> PyDictItemIteratorKlass::Virtual_Next(Handle<PyObject> self) {
-  return NextFromIterator<PyDictItemIterator>(
+MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Next(
+    Handle<PyObject> self) {
+  Handle<PyObject> result = NextFromIterator<PyDictItemIterator>(
       self, [](Handle<PyDict> dict, int64_t index) {
         return dict->ItemAtIndex(index);
       });
+  if (result.is_null()) {
+    Runtime_ThrowError(ExceptionType::kStopIteration);
+    return kNullMaybeHandle;
+  }
+  return result;
 }
 
 size_t PyDictItemIteratorKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -509,20 +549,29 @@ void PyDictValueIteratorKlass::Finalize() {
       Tagged<PyDictValueIteratorKlass>::null());
 }
 
-void PyDictValueIteratorKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Print(
+    Handle<PyObject> self) {
   std::printf("<dict_valueiterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyDictValueIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Iter(
+    Handle<PyObject> self) {
   return self;
 }
 
-Handle<PyObject> PyDictValueIteratorKlass::Virtual_Next(Handle<PyObject> self) {
-  return NextFromIterator<PyDictValueIterator>(
+MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Next(
+    Handle<PyObject> self) {
+  Handle<PyObject> result = NextFromIterator<PyDictValueIterator>(
       self, [](Handle<PyDict> dict, int64_t index) {
         return dict->ValueAtIndex(index);
       });
+  if (result.is_null()) {
+    Runtime_ThrowError(ExceptionType::kStopIteration);
+    return kNullMaybeHandle;
+  }
+  return result;
 }
 
 size_t PyDictValueIteratorKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

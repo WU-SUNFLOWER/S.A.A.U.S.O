@@ -31,6 +31,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-intrinsics.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-py-dict.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/runtime/string-table.h"
@@ -187,10 +188,13 @@ void Interpreter::EvalCurrentFrame() {
     //   以便于解释器进一步借助Reraise字节码继续向上传播该异常。
     Handle<PyObject> exception = TOP();
 
+    const int current_pc = current_frame_->pc() - kBytecodeSizeInBytes;
+
     bool matched = false;
     if (IsPyTypeObject(match_type)) {
-      matched = Runtime_IsInstanceOfTypeObject(
-          exception, Handle<PyTypeObject>::cast(match_type));
+      ASSIGN_GOTO_ON_EXCEPTION(
+          matched, Runtime_IsInstanceOfTypeObject(
+                       exception, Handle<PyTypeObject>::cast(match_type)));
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
 
@@ -201,40 +205,23 @@ void Interpreter::EvalCurrentFrame() {
         auto elem = tuple->Get(i);
 
         if (IsPyTypeObject(elem)) [[likely]] {
-          matched |= Runtime_IsInstanceOfTypeObject(
-              exception, Handle<PyTypeObject>::cast(elem));
+          bool current_matched;
+          ASSIGN_GOTO_ON_EXCEPTION(
+              current_matched,
+              Runtime_IsInstanceOfTypeObject(exception,
+                                             Handle<PyTypeObject>::cast(elem)));
+          matched |= current_matched;
           continue;
         }
 
-        auto type_error_type =
-            Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
-        Handle<PyObject> type_error;
-
-        ASSIGN_GOTO_ON_EXCEPTION(
-            type_error,
-            Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
-                              Handle<PyObject>::null()));
-
-        const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
-        isolate_->exception_state()->Throw(*type_error);
-        isolate_->exception_state()->set_pending_exception_pc(raise_pc);
-        isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
+        Runtime_ThrowError(ExceptionType::kTypeError);
+        isolate_->exception_state()->set_pending_exception_origin_pc(
+            current_pc);
         goto pending_exception_unwind;
       }
     } else {
-      auto type_error_type =
-          Handle<PyTypeObject>::cast(builtins()->Get(ST(type_err)));
-      Handle<PyObject> type_error;
-
-      ASSIGN_GOTO_ON_EXCEPTION(
-          type_error,
-          Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
-                            Handle<PyObject>::null()));
-
-      const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
-      isolate_->exception_state()->Throw(*type_error);
-      isolate_->exception_state()->set_pending_exception_pc(raise_pc);
-      isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
+      Runtime_ThrowError(ExceptionType::kTypeError);
+      isolate_->exception_state()->set_pending_exception_origin_pc(current_pc);
       goto pending_exception_unwind;
     }
 
@@ -257,7 +244,6 @@ void Interpreter::EvalCurrentFrame() {
 
     // raise 指令所在的地址
     const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
-    isolate_->exception_state()->set_pending_exception_pc(raise_pc);
 
     switch (op_arg) {
       case 0:
@@ -305,6 +291,7 @@ void Interpreter::EvalCurrentFrame() {
                                        Handle<PyObject>::null()));
     }
 
+    // 执行真正的抛错操作
     isolate_->exception_state()->Throw(*exception);
   })
 
@@ -321,7 +308,6 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> exception = POP();
 
     const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
-    isolate_->exception_state()->set_pending_exception_pc(raise_pc);
     isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
 
     if (op_arg != 0) {
@@ -344,23 +330,30 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(BinarySubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
-    PUSH(PyObject::Subscr(object, subscr));
+    Handle<PyObject> result;
+    ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Subscr(object, subscr));
+    PUSH(result);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreSubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
     Handle<PyObject> value = POP();
-    PyObject::StoreSubscr(object, subscr, value);
+    GOTO_ON_EXCEPTION(PyObject::StoreSubscr(object, subscr, value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteSubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
-    PyObject::DeletSubscr(object, subscr);
+    GOTO_ON_EXCEPTION(PyObject::DeletSubscr(object, subscr));
   })
 
-  INTERPRETER_HANDLER_WITH_SCOPE(GetIter, { PUSH(PyObject::Iter(POP())); })
+  INTERPRETER_HANDLER_WITH_SCOPE(GetIter, {
+    Handle<PyObject> iterable = POP();
+    Handle<PyObject> iterator;
+    ASSIGN_GOTO_ON_EXCEPTION(iterator, PyObject::Iter(iterable));
+    PUSH(iterator);
+  })
 
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
     PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class)));
@@ -401,53 +394,61 @@ void Interpreter::EvalCurrentFrame() {
     locals->Remove(key);
   })
 
+  // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续
+  // 第一个 STORE_FAST 弹出栈顶赋给第一个变量，从而 (k, v) = item 得到
+  // k=item[0], v=item[1]。
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
     Handle<PyObject> sequence = POP();
-    Handle<PyObject> iterator = PyObject::Iter(sequence);
+    
+    Handle<PyTuple> tuple;
+    ASSIGN_GOTO_ON_EXCEPTION(tuple,
+                             Runtime_UnpackIterableObjectToTuple(sequence));
+    
+    if (tuple->length() != op_arg) {
+      Runtime_ThrowErrorf(ExceptionType::kValueError,
+                          "unpack expected %d values, got %d", op_arg,
+                          static_cast<int>(tuple->length()));
+      goto pending_exception_unwind;
+    }
+
     auto old_stack_top = current_frame_->stack_top();
-    current_frame_->set_stack_top(current_frame_->stack_top() + op_arg);
-    while (op_arg-- > 0) {
-      current_frame_->stack()->Set(old_stack_top + op_arg,
-                                   PyObject::Next(iterator));
+    current_frame_->set_stack_top(old_stack_top + op_arg);
+    for (int i = 0; i < op_arg; ++i) {
+      current_frame_->stack()->Set(old_stack_top + (op_arg - 1 - i),
+                                   tuple->Get(i));
     }
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
     Handle<PyObject> iterator = TOP();
-    Handle<PyObject> next_result = PyObject::Next(iterator);
-    // 迭代器成功返回了有效值，压栈后立即执行下一条字节码
-    if (!next_result.is_null()) {
+    Handle<PyObject> next_result;
+    MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
+
+    // Happy Path: 迭代得到一个有效值，遂直接压栈并退出bytecode handler
+    if (next_maybe.ToHandle(&next_result)) [[likely]] {
       PUSH(next_result);
       break;
     }
 
-    // 正常结束迭代有两种情况：
-    // 1. 内建迭代器（如 tuple iterator）出于性能考虑，耗尽时直接返回
-    //    null，不设置异常；
-    // 2. 用户自定义迭代器会执行raise StopIteration`抛出pending异常，
-    //    因此需要立即进行消费。
-    //
-    // 其他异常则需展开。
-    if (!isolate_->HasPendingException() ||
-        Runtime_ConsumePendingStopIterationIfSet(isolate_)) {
+    assert(isolate_->HasPendingException());
+
+    // 如果是 StopIteration，那么就地消费异常，然后直接跳出迭代块。
+    bool is_stop_iteration = false;
+    ASSIGN_GOTO_ON_EXCEPTION(
+        is_stop_iteration, Runtime_ConsumePendingStopIterationIfSet(isolate_));
+
+    if (is_stop_iteration) [[likely]] {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1) + 2);
       POP();
       break;
     }
-
-    // 异常来自嵌套的 __next__ 调用。因为嵌套调用内部的异常展开到 
-    // Exection::Call 发起调用的根栈帧就截止了，所以这里需手工设置
-    // faulting PC 为当前 ForIter。
-    // 以便 exception table 在包含 for 的 try 块内正确命中 handler。
-    isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
-                                                          kBytecodeSizeInBytes);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
     Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg);
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_value = POP();
-    PyObject::SetAttr(object, attr_name, attr_value);
+    GOTO_ON_EXCEPTION(PyObject::SetAttr(object, attr_name, attr_value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
@@ -512,7 +513,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(DictMerge, {
     Handle<PyObject> update = POP();
     Handle<PyObject> target = TOP();
-    if (!IsPyDict(*target) || !IsPyDict(*update)) {
+    if (!IsPyDict(target) || !IsPyDict(update)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "DICT_MERGE expected dict operands");
       goto pending_exception_unwind;
@@ -520,22 +521,10 @@ void Interpreter::EvalCurrentFrame() {
 
     auto target_dict = Handle<PyDict>::cast(target);
     auto update_dict = Handle<PyDict>::cast(update);
+    bool allow_overwriting = (op_arg & 1) == 0;
 
-    auto iter = PyDictItemIterator::NewInstance(update_dict);
-    auto item = Handle<PyTuple>::cast(PyObject::Next(iter));
-    while (!item.is_null()) {
-      auto key = item->Get(0);
-      auto value = item->Get(1);
-
-      if ((op_arg & 1) != 0 && target_dict->Contains(key)) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
-                           "got multiple values for keyword argument");
-        goto pending_exception_unwind;
-      }
-
-      PyDict::Put(target_dict, key, value);
-      item = Handle<PyTuple>::cast(PyObject::Next(iter));
-    }
+    GOTO_ON_EXCEPTION(
+        Runtime_MergeDict(target_dict, update_dict, allow_overwriting));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {
@@ -548,9 +537,11 @@ void Interpreter::EvalCurrentFrame() {
     // 这样就可以避免创建临时的MethodObject对象！！！
     if ((op_arg & 1) != 0) {
       Handle<PyObject> self_or_null;
-      Handle<PyObject> value =
-          PyObject::GetAttrForCall(object, attr_name, self_or_null);
-
+      Handle<PyObject> value;
+      if (!PyObject::GetAttrForCall(object, attr_name, self_or_null)
+               .ToHandle(&value)) {
+        goto pending_exception_unwind;
+      }
       if (!self_or_null.is_null()) {
         // Happy case: attr_name的确对应一个对象方法
         PUSH(value);
@@ -565,41 +556,41 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     // 一般的属性获取，走常规的GetAttr虚函数查询
-    PUSH(PyObject::GetAttr(object, attr_name, false));
+    Handle<PyObject> value;
+    ASSIGN_GOTO_ON_EXCEPTION(value, PyObject::GetAttr(object, attr_name));
+    PUSH(value);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(CompareOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
+    Handle<PyObject> result;
     int compare_op_type = op_arg >> 4;
     switch (compare_op_type) {
       case CompareOpType::kLT:
-        PUSH(PyObject::Less(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Less(l, r));
         break;
       case CompareOpType::kLE:
-        PUSH(PyObject::LessEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::LessEqual(l, r));
         break;
       case CompareOpType::kEQ:
-        PUSH(PyObject::Equal(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Equal(l, r));
         break;
       case CompareOpType::kNE:
-        PUSH(PyObject::NotEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::NotEqual(l, r));
         break;
       case CompareOpType::kGT:
-        PUSH(PyObject::Greater(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Greater(l, r));
         break;
       case CompareOpType::kGE:
-        PUSH(PyObject::GreaterEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::GreaterEqual(l, r));
         break;
       default:
         Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
                             "unknown compare op type: %d", compare_op_type);
         goto pending_exception_unwind;
     }
-    if (isolate_->HasPendingException()) {
-      POP();
-      goto pending_exception_unwind;
-    }
+    PUSH(result);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ImportName, {
@@ -637,16 +628,20 @@ void Interpreter::EvalCurrentFrame() {
         Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
 
     // Fast Path: 如果目标子模块已经被解析过了，直接返回
-    auto value = PyObject::GetAttr(parent_module, sub_module_name, true);
+    Handle<PyObject> value;
+    if (!PyObject::LookupAttr(parent_module, sub_module_name, value)) {
+      goto pending_exception_unwind;
+    }
+
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
     // Slow Path: 目标子模块还没被解析过，走完整的解析流程
-
-    auto parent_module_name_obj =
-        PyObject::GetAttr(parent_module, ST(name), false);
+    Handle<PyObject> parent_module_name_obj;
+    ASSIGN_GOTO_ON_EXCEPTION(parent_module_name_obj,
+                             PyObject::GetAttr(parent_module, ST(name)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "module __name__ must be a string");
@@ -667,12 +662,11 @@ void Interpreter::EvalCurrentFrame() {
     synthetic_fromlist->SetInternal(0, sub_module_name);
 
     Handle<PyObject> submodule;
-    ASSIGN_GOTO_ON_EXCEPTION_TARGET(
-        isolate_, submodule,
-        isolate_->module_manager()->ImportModule(
-            sub_module_fullname, synthetic_fromlist, 0,
-            current_frame_->globals()),
-        pending_exception_unwind);
+    ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, submodule,
+                                    isolate_->module_manager()->ImportModule(
+                                        sub_module_fullname, synthetic_fromlist,
+                                        0, current_frame_->globals()),
+                                    pending_exception_unwind);
     PUSH(submodule);
   })
 
@@ -727,39 +721,44 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
-    bool result = PyObject::ContainsBool(r, l);
+    bool result = false;
+    if (!PyObject::ContainsBool(r, l).To(&result)) {
+      goto pending_exception_unwind;
+    }
     PUSH(Isolate::ToPyBoolean(result ^ op_arg));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinaryOp, {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
+    Handle<PyObject> result;
     switch (op_arg) {
       case BinaryOpType::kAdd:
       case BinaryOpType::kInplaceAdd:
-        PUSH(PyObject::Add(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Add(l, r));
         break;
       case BinaryOpType::kSubtract:
       case BinaryOpType::kInplaceSubtract:
-        PUSH(PyObject::Sub(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Sub(l, r));
         break;
       case BinaryOpType::kMultiply:
       case BinaryOpType::kInplaceMultiply:
-        PUSH(PyObject::Mul(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mul(l, r));
         break;
       case BinaryOpType::kTrueDivide:
       case BinaryOpType::kInplaceTrueDivide:
-        PUSH(PyObject::Div(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Div(l, r));
         break;
       case BinaryOpType::kFloorDivide:
       case BinaryOpType::kInplaceFloorDivide:
-        PUSH(PyObject::FloorDiv(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::FloorDiv(l, r));
         break;
       case BinaryOpType::kRemainder:
       case BinaryOpType::kInplaceRemainder:
-        PUSH(PyObject::Mod(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mod(l, r));
         break;
     }
+    PUSH(result);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
@@ -1027,6 +1026,8 @@ void Interpreter::EvalCurrentFrame() {
 #undef INTERPRETER_HANDLER
 
 pending_exception_unwind: {
+  assert(isolate_->HasPendingException());
+
   // 异常展开（zero-cost exception table）：
   // 1) 以 pending_exception_pc_ 作为查表位置，查询当前 frame 是否存在 handler；
   // 2) 命中：恢复 value stack 深度；若 handler 要求 push-lasti，则把 origin
@@ -1038,11 +1039,15 @@ pending_exception_unwind: {
   }
 
   auto* exception_state = isolate_->exception_state();
-  if (exception_state->pending_exception_pc() ==
-      ExceptionState::kInvalidProgramCounter) {
-    exception_state->set_pending_exception_pc(current_frame_->pc() -
-                                              kBytecodeSizeInBytes);
-  }
+
+  // 注意：这里必须强制更新 pending_exception_pc；
+  // 不能加 if (pending_exception_origin_pc == kInvalidProgramCounter)
+  // 前置判断！
+  // 因为 pending_exception_pc 表示的是当前异常传播到哪条字节码了，
+  // 既然异常传播到了当前字节码，就必须对其进行更新。
+  // 否则会出现无法触发当前字节码对应的 exception handler的 bug。
+  exception_state->set_pending_exception_pc(current_frame_->pc() -
+                                            kBytecodeSizeInBytes);
 
   if (exception_state->pending_exception_origin_pc() ==
       ExceptionState::kInvalidProgramCounter) {
@@ -1087,9 +1092,9 @@ pending_exception_unwind: {
 #undef DISPATCH
 
 unknown_bytecode:
-  Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
-                      "unknown bytecode %d, arguments %d", op_code, op_arg);
-  goto pending_exception_unwind;
+  // 未知字节码，不抛错误，直接让虚拟机崩溃！
+  std::fprintf(stderr, "unknown bytecode %d, arguments %d", op_code, op_arg);
+  std::exit(1);
 
 exit_interpreter:
   return;
@@ -1152,7 +1157,10 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
   }
 
   // 兜底：调用对象的__call__虚函数
-  Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
+  Handle<PyObject> result;
+  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
+    return;
+  }
   PUSH(result);
 }
 
@@ -1173,7 +1181,10 @@ void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
     return;
   }
 
-  Handle<PyObject> result = PyObject::Call(callable, host, pos_args, kw_args);
+  Handle<PyObject> result;
+  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
+    return;
+  }
   PUSH(result);
 }
 
@@ -1202,12 +1213,13 @@ void Interpreter::UnwindCurrentFrameForException() {
   DestroyCurrentFrame();
   ret_value_ = Tagged<PyObject>::null();
 
-  isolate_->exception_state()->set_pending_exception_pc(
-      ExceptionState::kInvalidProgramCounter);
   // 重要：将 pending_exception_pc 回溯为上一层栈帧的函数调用点地址
   if (current_frame_ != nullptr) {
     isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
                                                           kBytecodeSizeInBytes);
+  } else {
+    isolate_->exception_state()->set_pending_exception_pc(
+        ExceptionState::kInvalidProgramCounter);
   }
 }
 

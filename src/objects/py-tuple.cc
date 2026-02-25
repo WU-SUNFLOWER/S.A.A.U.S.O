@@ -89,7 +89,11 @@ int64_t PyTuple::IndexOf(Handle<PyObject> target,
                          int64_t begin,
                          int64_t end) const {
   for (auto i = begin; i < end; ++i) {
-    if (PyObject::EqualBool(target, Get(i))) {
+    Maybe<bool> mb = PyObject::EqualBool(target, Get(i));
+    if (mb.IsNothing()) {
+      return kNotFound;
+    }
+    if (mb.ToChecked()) {
       return i;
     }
   }

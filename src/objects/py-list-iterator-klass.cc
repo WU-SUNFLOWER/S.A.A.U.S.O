@@ -8,13 +8,16 @@
 #include <cstdio>
 
 #include "src/builtins/builtins-py-list-iterator-methods.h"
+#include "src/execution/exception-types.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-iterator.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
@@ -87,17 +90,24 @@ void PyListIteratorKlass::Finalize() {
       Tagged<PyListIteratorKlass>::null());
 }
 
-void PyListIteratorKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Print(
+    Handle<PyObject> self) {
   std::printf("<list_iterator object at 0x%p>",
               reinterpret_cast<void*>((*self).ptr()));
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyListIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
   return self;
 }
 
-Handle<PyObject> PyListIteratorKlass::Virtual_Next(Handle<PyObject> self) {
-  return NextImpl(self);
+MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Next(Handle<PyObject> self) {
+  Handle<PyObject> result = NextImpl(self);
+  if (result.is_null()) {
+    Runtime_ThrowError(ExceptionType::kStopIteration);
+    return kNullMaybeHandle;
+  }
+  return result;
 }
 
 size_t PyListIteratorKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

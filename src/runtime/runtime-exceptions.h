@@ -7,6 +7,7 @@
 
 #include "src/execution/exception-types.h"
 #include "src/handles/handles.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -14,7 +15,7 @@ class Isolate;
 class PyString;
 
 // 统一异常抛出 API
-void Runtime_ThrowError(ExceptionType type, const char* message);
+void Runtime_ThrowError(ExceptionType type, const char* message = nullptr);
 void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...);
 
 // 将当前解释器中pending的异常导出为形如`异常类型名: 异常内容`字符串。
@@ -28,7 +29,7 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr();
 // 若当前 pending 异常为 StopIteration，则清除该异常并返回 true（用于 for 循环
 // 正常结束迭代）；否则不修改状态并返回 false。调用方需在 next_result 为 null 时
 // 根据返回值决定是正常退出循环还是进入异常展开。
-bool Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate);
+Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate);
 
 }  // namespace saauso::internal
 

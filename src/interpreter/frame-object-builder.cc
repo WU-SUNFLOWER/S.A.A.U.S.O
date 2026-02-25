@@ -237,8 +237,16 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
   }
 
   auto iter = PyDictItemIterator::NewInstance(actual_kw_args);
-  auto item = Handle<PyTuple>::cast(PyObject::Next(iter));
-  while (!item.is_null()) {
+  auto* isolate = Isolate::Current();
+  while (true) {
+    Handle<PyObject> item_handle;
+    if (!PyObject::Next(iter).ToHandle(&item_handle)) {
+      if (Runtime_ConsumePendingStopIterationIfSet(isolate).ToChecked()) {
+        break;
+      }
+      return false;
+    }
+    auto item = Handle<PyTuple>::cast(item_handle);
     auto key = Handle<PyString>::cast(item->Get(0));
     auto value = item->Get(1);
     int64_t index_in_var_args =
@@ -262,8 +270,6 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
                           ctx.func_name->buffer(), key->buffer());
       return false;
     }
-
-    item = Handle<PyTuple>::cast(PyObject::Next(iter));
   }
 
   return true;

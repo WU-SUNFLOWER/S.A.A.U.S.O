@@ -25,15 +25,18 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 
   // 测试__dict__获取到对象properties的能力
   Handle<PyString> dict_name = PyString::NewInstance("__dict__");
-  Handle<PyObject> dict_value = PyObject::GetAttr(module_obj, dict_name, false);
+  Handle<PyObject> dict_value;
+  ASSERT_TRUE(PyObject::GetAttr(module_obj, dict_name).ToHandle(&dict_value));
   ASSERT_TRUE(IsPyDict(dict_value));
   EXPECT_TRUE(Handle<PyDict>::cast(dict_value).is_identical_to(module_dict));
 
   Handle<PyString> x_name = PyString::NewInstance("x");
   Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)));
-  PyObject::SetAttr(module_obj, x_name, x_value);
+  ASSERT_FALSE(
+      PyObject::SetAttr(module_obj, x_name, x_value).IsEmpty());
 
-  Handle<PyObject> x_got = PyObject::GetAttr(module_obj, x_name, false);
+  Handle<PyObject> x_got;
+  ASSERT_TRUE(PyObject::GetAttr(module_obj, x_name).ToHandle(&x_got));
   ASSERT_TRUE(IsPySmi(x_got));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(x_got)), 123);
 }

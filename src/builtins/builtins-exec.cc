@@ -65,10 +65,15 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
       return false;
     }
 
-    if (PyObject::EqualBool(key, globals_key) ||
-        PyObject::EqualBool(key, locals_key)) {
-      continue;
+    bool eq = false;
+    if (!PyObject::EqualBool(key, globals_key).To(&eq)) {
+      return false;
     }
+    if (eq) continue;
+    if (!PyObject::EqualBool(key, locals_key).To(&eq)) {
+      return false;
+    }
+    if (eq) continue;
 
     auto key_str = Handle<PyString>::cast(key);
     Runtime_ThrowErrorf(ExceptionType::kTypeError,

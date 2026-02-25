@@ -5,7 +5,9 @@
 #ifndef SAAUSO_OBJECTS_PY_DICT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_DICT_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -24,21 +26,24 @@ class PyDictKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static Handle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
-  static Handle<PyObject> Virtual_Subscr(Handle<PyObject> self,
-                                         Handle<PyObject> subscr);
-  static void Virtual_StoreSubscr(Handle<PyObject> self,
-                                  Handle<PyObject> subscr,
-                                  Handle<PyObject> value);
-  static void Virtual_DeleteSubscr(Handle<PyObject> self,
-                                   Handle<PyObject> subscr);
-  static bool Virtual_Contains(Handle<PyObject> self, Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
+                                   Handle<PyObject> other);
+  static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
+                                               Handle<PyObject> subscr);
+  static MaybeHandle<PyObject> Virtual_StoreSubscr(Handle<PyObject> self,
+                                                     Handle<PyObject> subscr,
+                                                     Handle<PyObject> value);
+  static MaybeHandle<PyObject> Virtual_DeleteSubscr(Handle<PyObject> self,
+                                                     Handle<PyObject> subscr);
+  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+                                      Handle<PyObject> subscr);
 
-  static Handle<PyObject> Virtual_ConstructInstance(
+  static MaybeHandle<PyObject> Virtual_ConstructInstance(
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);

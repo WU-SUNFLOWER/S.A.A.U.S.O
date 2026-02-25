@@ -28,22 +28,12 @@ using namespace saauso::internal;
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-class A(object):
-    def say(self):
-        print("I am A")
-
-class B(A):
-    def say(self):
-        print("I am B")
-
-class C(A):
-    pass
-
-b = B()
-c = C()
-
-b.say()    # "I am B"
-c.say()    # "I am A"
+def sum(*args):
+    t = 0
+    for i in args:
+        t += i
+    return t
+print(sum(1, 2, 3, 4))
 )";
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 

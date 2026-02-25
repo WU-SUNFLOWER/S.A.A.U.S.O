@@ -13,6 +13,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
@@ -56,20 +57,19 @@ void PyCodeObjectKlass::Initialize() {
   set_name(PyString::NewInstance("code"));
 }
 
-// static
-void PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   auto code = Handle<PyCodeObject>::cast(self);
   Tagged<PyObject> file_name_obj = code->file_name_;
   if (file_name_obj.is_null() || !IsPyString(file_name_obj)) {
     std::printf("<code object greet at 0x%p, file <unknown>, line %d>",
                 reinterpret_cast<void*>((*code).ptr()), code->line_no_);
-    return;
+    return handle(Isolate::Current()->py_none_object());
   }
-
   auto file_name = handle(Tagged<PyString>::cast(file_name_obj));
   std::printf("<code object greet at 0x%p, file \"%s\", line %d>",
               reinterpret_cast<void*>((*code).ptr()), file_name->buffer(),
               code->line_no_);
+  return handle(Isolate::Current()->py_none_object());
 }
 
 void PyCodeObjectKlass::Finalize() {

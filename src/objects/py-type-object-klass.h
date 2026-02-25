@@ -5,7 +5,9 @@
 #ifndef SAAUSO_OBJECTS_PY_TYPE_OBJECT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_TYPE_OBJECT_KLASS_H_
 
+#include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -22,27 +24,30 @@ class PyTypeObjectKlass : public Klass {
   void Finalize();
 
  private:
-  static void Virtual_Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
 
   static Handle<PyObject> Virtual_GetAttr(Handle<PyObject> self,
                                           Handle<PyObject> prop_name,
                                           bool is_try);
-  static void Virtual_SetAttr(Handle<PyObject> self,
-                              Handle<PyObject> prop_name,
-                              Handle<PyObject> prop_value);
+  static MaybeHandle<PyObject> Virtual_SetAttr(Handle<PyObject> self,
+                                                Handle<PyObject> prop_name,
+                                                Handle<PyObject> prop_value);
 
-  static uint64_t Virtual_Hash(Handle<PyObject> self);
-  static bool Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other);
-  static bool Virtual_NotEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
+  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
+                                   Handle<PyObject> other);
+  static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
+                                      Handle<PyObject> other);
 
-  static Handle<PyObject> Virtual_ConstructInstance(Tagged<Klass> klass_self,
-                                                    Handle<PyObject> args,
-                                                    Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_ConstructInstance(
+      Tagged<Klass> klass_self,
+      Handle<PyObject> args,
+      Handle<PyObject> kwargs);
 
-  static Handle<PyObject> Virtual_Call(Handle<PyObject> self,
-                                       Handle<PyObject> host,
-                                       Handle<PyObject> args,
-                                       Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_Call(Handle<PyObject> self,
+                                             Handle<PyObject> host,
+                                             Handle<PyObject> args,
+                                             Handle<PyObject> kwargs);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

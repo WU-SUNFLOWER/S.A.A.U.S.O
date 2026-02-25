@@ -12,6 +12,7 @@
 #include "src/builtins/builtins-py-string-methods.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -28,6 +29,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-string.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -97,7 +99,7 @@ void PyStringKlass::Finalize() {
   Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
 }
 
-Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -106,7 +108,7 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "str() takes no keyword arguments\n");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -120,7 +122,7 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     Handle<PyObject> value = pos_args->Get(0);
     Handle<PyString> result;
     if (!Runtime_NewStr(value).ToHandle(&result)) {
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
     return result;
   }
@@ -130,143 +132,140 @@ Handle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     if (IsPyString(value)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "decoding str is not supported\n");
-      return Handle<PyObject>::null();
+      return kNullMaybeHandle;
     }
     auto type_name = PyObject::GetKlass(value)->name();
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "decoding to str: need a bytes-like object, %s found\n",
-        type_name->buffer());
-    return Handle<PyObject>::null();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "decoding to str: need a bytes-like object, %s found\n",
+                        type_name->buffer());
+    return kNullMaybeHandle;
   }
 
-  Runtime_ThrowErrorf(
-      ExceptionType::kTypeError,
-      "str() takes at most 3 arguments (%" PRId64 " given)\n", argc);
-  return Handle<PyObject>::null();
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "str() takes at most 3 arguments (%" PRId64 " given)\n",
+                      argc);
+  return kNullMaybeHandle;
 }
 
-Handle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
       PySmi::FromInt(Handle<PyString>::cast(self)->length()));
 }
 
-bool PyStringKlass::Virtual_Equal(Handle<PyObject> self,
-                                  Handle<PyObject> other) {
+Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
+                                         Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    return false;
+    return Maybe<bool>(false);
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return s1->IsEqualTo(*s2);
+  return Maybe<bool>(s1->IsEqualTo(*s2));
 }
 
-bool PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                     Handle<PyObject> other) {
+Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    return true;
+    return Maybe<bool>(true);
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return !s1->IsEqualTo(*s2);
+  return Maybe<bool>(!s1->IsEqualTo(*s2));
 }
 
-bool PyStringKlass::Virtual_Less(Handle<PyObject> self,
-                                 Handle<PyObject> other) {
+Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "'<' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
-    return false;
+    return kNullMaybe;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return s1->IsLessThan(*s2);
+  return Maybe<bool>(s1->IsLessThan(*s2));
 }
 
-bool PyStringKlass::Virtual_Greater(Handle<PyObject> self,
-                                    Handle<PyObject> other) {
+Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
+                                           Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "'>' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
-    return false;
+    return kNullMaybe;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return s1->IsGreaterThan(*s2);
+  return Maybe<bool>(s1->IsGreaterThan(*s2));
 }
 
-bool PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
-                                      Handle<PyObject> other) {
+Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
+                                             Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "'<=' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
-    return false;
+    return kNullMaybe;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return s1->IsEqualTo(*s2) || s1->IsLessThan(*s2);
+  return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
 }
 
-bool PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
-                                         Handle<PyObject> other) {
+Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+                                                Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "'>=' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
-    return false;
+    return kNullMaybe;
   }
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2);
+  return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
 }
 
-bool PyStringKlass::Virtual_Contains(Handle<PyObject> self,
-                                     Handle<PyObject> target) {
+Maybe<bool> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
+                                            Handle<PyObject> target) {
   if (!IsPyString(target)) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   auto s = Handle<PyString>::cast(self);
   auto pattern = Handle<PyString>::cast(target);
-  return s->Contains(pattern);
+  return Maybe<bool>(s->Contains(pattern));
 }
 
-Handle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
-                                               Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
+                                                    Handle<PyObject> subscr) {
   auto s = Handle<PyString>::cast(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             s->length())) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kIndexError,
-                       "string index out of range");
-    return Handle<PyObject>::null();
+    Runtime_ThrowError(ExceptionType::kIndexError, "string index out of range");
+    return kNullMaybeHandle;
   }
 
   return PyString::NewInstance(s->buffer() + decoded_subscr,
                                static_cast<int64_t>(1));
 }
 
-Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
-                                            Handle<PyObject> other) {
+MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "can only concatenate str (not \"%s\") to str\n",
-        other_klass->name()->buffer());
-    return Handle<PyObject>::null();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "can only concatenate str (not \"%s\") to str\n",
+                        other_klass->name()->buffer());
+    return kNullMaybeHandle;
   }
 
   auto s1 = Handle<PyString>::cast(self);
@@ -274,13 +273,14 @@ Handle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
   return PyString::Append(s1, s2);
 }
 
-void PyStringKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyStringKlass::Virtual_Print(Handle<PyObject> self) {
   auto s = Handle<PyString>::cast(self);
   std::printf("%s", s->buffer());
+  return handle(Isolate::Current()->py_none_object());
 }
 
-uint64_t PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
-  return Handle<PyString>::cast(self)->GetHash();
+Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
+  return Maybe<uint64_t>(Handle<PyString>::cast(self)->GetHash());
 }
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

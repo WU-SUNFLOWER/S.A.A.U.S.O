@@ -9,8 +9,10 @@
 
 #include "include/saauso-internal.h"
 #include "src/builtins/builtins-py-dict-methods.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict-views.h"
@@ -27,6 +29,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-dict.h"
+#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -83,8 +86,8 @@ void PyDictKlass::Initialize() {
   set_name(PyString::NewInstance("dict"));
 }
 
-// static
-void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
   auto dict = Handle<PyDict>::cast(self);
   std::printf("{");
   bool first = true;
@@ -95,43 +98,43 @@ void PyDictKlass::Virtual_Print(Handle<PyObject> self) {
         std::printf(", ");
       }
       first = false;
-      PyObject::Print(Handle<PyObject>(key));
+
+      RETURN_ON_EXCEPTION(isolate, PyObject::Print(Handle<PyObject>(key)));
+
       std::printf(": ");
-      PyObject::Print(Handle<PyObject>(dict->data()->Get((i << 1) + 1)));
+
+      auto value = handle(dict->data()->Get((i << 1) + 1));
+      RETURN_ON_EXCEPTION(isolate, PyObject::Print(value));
     }
   }
   std::printf("}");
+  return handle(isolate->py_none_object());
 }
 
-// static
-Handle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
   return PyDictKeyIterator::NewInstance(self);
 }
 
-// static
-Handle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
   auto value = Handle<PyDict>::cast(self)->occupied();
   return Handle<PyObject>(PySmi::FromInt(value));
 }
 
-// static
-bool PyDictKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
+                                       Handle<PyObject> other) {
   assert(IsPyDict(self));
-
-  // fast path
   if (self.is_identical_to(other)) {
-    return true;
+    return Maybe<bool>(true);
   }
-
   if (!IsPyDict(other)) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   auto d1 = Handle<PyDict>::cast(self);
   auto d2 = Handle<PyDict>::cast(other);
 
   if (d1->occupied() != d2->occupied()) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   for (int64_t i = 0; i < d1->capacity(); ++i) {
@@ -140,70 +143,72 @@ bool PyDictKlass::Virtual_Equal(Handle<PyObject> self, Handle<PyObject> other) {
       auto v1 = d1->data()->Get((i << 1) + 1);
       auto v2_handle = d2->Get(Handle<PyObject>(k1));
       if (v2_handle.is_null()) {
-        return false;
+        return Maybe<bool>(false);
       }
 
-      if (!PyObject::EqualBool(Handle<PyObject>(v1), v2_handle)) {
-        return false;
+      bool eq;
+      ASSIGN_RETURN_ON_EXCEPTION(
+          Isolate::Current(), eq,
+          PyObject::EqualBool(Handle<PyObject>(v1), v2_handle));
+
+      if (!eq) {
+        return Maybe<bool>(false);
       }
     }
   }
-  return true;
+  return Maybe<bool>(true);
 }
 
-// static
-bool PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
-                                   Handle<PyObject> other) {
-  return !Virtual_Equal(self, other);
+Maybe<bool> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
+                                          Handle<PyObject> other) {
+  bool eq;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), eq,
+                             Virtual_Equal(self, other));
+  return Maybe<bool>(!eq);
 }
 
-// static
-Handle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
-                                             Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
+                                                  Handle<PyObject> subscr) {
   auto result = Handle<PyDict>::cast(self)->Get(subscr);
   if (result.is_null()) {
-    // TODO: Repr机制完善后，支持把key打印出来
+    // TODO: Repr机制完善后，支持把key的具体内容打印出来
     Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   return result;
 }
 
-// static
-void PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
-                                      Handle<PyObject> subscr,
-                                      Handle<PyObject> value) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
+                                                       Handle<PyObject> subscr,
+                                                       Handle<PyObject> value) {
   PyDict::Put(Handle<PyDict>::cast(self), subscr, value);
+  return handle(Isolate::Current()->py_none_object());
 }
 
-// static
-void PyDictKlass::Virtual_DeleteSubscr(Handle<PyObject> self,
-                                       Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
+    Handle<PyObject> self,
+    Handle<PyObject> subscr) {
   auto dict = Handle<PyDict>::cast(self);
   if (!dict->Contains(subscr)) {
-    // TODO: Repr机制完善后，支持把key打印出来
+    // TODO: Repr机制完善后，支持把key的具体内容打印出来
     Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
-    return;
+    return kNullMaybeHandle;
   }
   dict->Remove(subscr);
+  return handle(Isolate::Current()->py_none_object());
 }
 
-// static
-bool PyDictKlass::Virtual_Contains(Handle<PyObject> self,
-                                   Handle<PyObject> subscr) {
-  return Handle<PyDict>::cast(self)->Contains(subscr);
+Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
+                                          Handle<PyObject> subscr) {
+  return Maybe<bool>(Handle<PyDict>::cast(self)->Contains(subscr));
 }
 
-Handle<PyObject> PyDictKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyDictKlass::GetInstance());
-  Handle<PyObject> result;
-  if (!Runtime_NewDict(args, kwargs).ToHandle(&result)) {
-    return Handle<PyObject>::null();
-  }
-  return result;
+  return Runtime_NewDict(args, kwargs);
 }
 
 // static

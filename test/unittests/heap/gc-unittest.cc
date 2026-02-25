@@ -65,7 +65,9 @@ TEST_F(GcTest, CopyGcTestForPyString) {
   Handle<PyString> str2 = PyString::NewInstance(content);
   Address a2 = (*str1).ptr();
 
-  EXPECT_TRUE(IsPyTrue(PyObject::Equal(str1, str2)));
+  Handle<PyObject> eq_res;
+  ASSERT_TRUE(PyObject::Equal(str1, str2).ToHandle(&eq_res));
+  EXPECT_TRUE(IsPyTrue(*eq_res));
 
   EXPECT_EQ(std::strncmp(str1->buffer(), content, str1->length()), 0);
 
@@ -105,7 +107,9 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   //////////////////////////////////////////
 
   EXPECT_NE(a1, (*list1).ptr());
-  EXPECT_TRUE(PyObject::EqualBool(list1, list2));
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(list1, list2).To(&eq));
+  EXPECT_TRUE(eq);
 }
 
 TEST_F(GcTest, CopyGcTestForForwardingPointer) {
@@ -120,11 +124,15 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
 
   Isolate::Current()->heap()->CollectGarbage();
 
-  EXPECT_PY_TRUE(PyObject::Equal(list1, list2));
-  EXPECT_PY_TRUE(PyObject::Equal(list1->Get(0), list2->Get(0)));
-
-  EXPECT_PY_TRUE(PyObject::Equal(list1->Get(0), content));
-  EXPECT_PY_TRUE(PyObject::Equal(list2->Get(0), content));
+  Handle<PyObject> eq_res;
+  ASSERT_TRUE(PyObject::Equal(list1, list2).ToHandle(&eq_res));
+  EXPECT_PY_TRUE(*eq_res);
+  ASSERT_TRUE(PyObject::Equal(list1->Get(0), list2->Get(0)).ToHandle(&eq_res));
+  EXPECT_PY_TRUE(*eq_res);
+  ASSERT_TRUE(PyObject::Equal(list1->Get(0), content).ToHandle(&eq_res));
+  EXPECT_PY_TRUE(*eq_res);
+  ASSERT_TRUE(PyObject::Equal(list2->Get(0), content).ToHandle(&eq_res));
+  EXPECT_PY_TRUE(*eq_res);
 }
 
 TEST_F(GcTest, CopyGcTestForPyDict) {
@@ -157,7 +165,9 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
 
     auto actual_value = dict->Get(query_key);
     EXPECT_FALSE(actual_value.is_null());
-    EXPECT_PY_TRUE(PyObject::Equal(actual_value, expected_value));
+    Handle<PyObject> eq_res;
+    ASSERT_TRUE(PyObject::Equal(actual_value, expected_value).ToHandle(&eq_res));
+    EXPECT_PY_TRUE(*eq_res);
   }
 }
 
@@ -220,7 +230,10 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
     auto expected = PyString::NewInstance(std::to_string(i).c_str());
-    EXPECT_PY_TRUE(PyObject::Equal(payload_list->Get(i), expected));
+    Handle<PyObject> eq_res;
+    ASSERT_TRUE(
+        PyObject::Equal(payload_list->Get(i), expected).ToHandle(&eq_res));
+    EXPECT_PY_TRUE(*eq_res);
   }
 }
 

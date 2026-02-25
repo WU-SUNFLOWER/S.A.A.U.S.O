@@ -10,7 +10,9 @@
 #include <cstdlib>
 
 #include "src/builtins/builtins-py-tuple-methods.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -25,6 +27,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
@@ -76,17 +79,16 @@ void PyTupleKlass::Finalize() {
   Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
 }
 
-Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTupleKlass::GetInstance());
 
-  // tuple() 不接受关键字参数。
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "tuple() takes no keyword arguments\n");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -95,10 +97,10 @@ Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     return PyTuple::NewInstance(0);
   }
   if (argc > 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
-    return Handle<PyObject>::null();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "tuple expected at most 1 argument, got %" PRId64 "\n",
+                        argc);
+    return kNullMaybeHandle;
   }
 
   // tuple(tuple_obj) 直接返回自身（不可变对象的语义对齐 CPython）。
@@ -109,102 +111,110 @@ Handle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
   Handle<PyTuple> result;
   if (!Runtime_UnpackIterableObjectToTuple(iterable).ToHandle(&result)) {
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   return result;
 }
 
-Handle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
       PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
 }
 
-void PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
-
   std::printf("(");
-
-  if (tuple->length() > 0) {
-    PyObject::Print(tuple->Get(0));
+  for (auto i = 0; i < tuple->length(); ++i) {
+    if (i > 0) {
+      std::printf(", ");
+    }
+    RETURN_ON_EXCEPTION(isolate, PyObject::Print(tuple->Get(i)));
   }
-
-  for (auto i = 1; i < tuple->length(); ++i) {
-    std::printf(", ");
-    PyObject::Print(tuple->Get(i));
-  }
-
   if (tuple->length() == 1) {
     std::printf(",");
   }
-
   std::printf(")");
+  return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
-                                              Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
+                                                   Handle<PyObject> subscr) {
   auto tuple = Handle<PyTuple>::cast(self);
   if (!IsPySmi(*subscr)) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "tuple indices must be integers\n");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   auto index = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(index, static_cast<int64_t>(0), tuple->length())) {
     Runtime_ThrowError(ExceptionType::kIndexError,
                        "tuple index out of range\n");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
   return tuple->Get(index);
 }
 
-void PyTupleKlass::Virtual_StoreSubscr(Handle<PyObject> self,
-                                       Handle<PyObject> subscr,
-                                       Handle<PyObject> value) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
+    Handle<PyObject> self,
+    Handle<PyObject> subscr,
+    Handle<PyObject> value) {
   Runtime_ThrowError(ExceptionType::kTypeError,
                      "'tuple' object does not support item assignment\n");
+  return kNullMaybeHandle;
 }
 
-void PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
-                                     Handle<PyObject> subscr) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
+                                                      Handle<PyObject> subscr) {
   Runtime_ThrowError(ExceptionType::kTypeError,
                      "'tuple' object doesn't support item deletion\n");
+  return kNullMaybeHandle;
 }
 
-bool PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
-                                    Handle<PyObject> target) {
+Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
+                                           Handle<PyObject> target) {
+  auto* isolate = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
-    if (PyObject::EqualBool(tuple->Get(i), target)) {
-      return true;
+    bool eq;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
+                               PyObject::EqualBool(tuple->Get(i), target));
+    if (eq) {
+      return Maybe<bool>(true);
     }
   }
-  return false;
+  return Maybe<bool>(false);
 }
 
-bool PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
-                                 Handle<PyObject> other) {
+Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
+                                        Handle<PyObject> other) {
   if (!IsPyTuple(*other)) {
-    return false;
+    return Maybe<bool>(false);
   }
+
+  auto* isolate = Isolate::Current();
 
   auto tuple1 = Handle<PyTuple>::cast(self);
   auto tuple2 = Handle<PyTuple>::cast(other);
 
   if (tuple1->length() != tuple2->length()) {
-    return false;
+    return Maybe<bool>(false);
   }
 
   for (auto i = 0; i < tuple1->length(); ++i) {
-    if (!PyObject::EqualBool(tuple1->Get(i), tuple2->Get(i))) {
-      return false;
+    bool eq;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, eq, PyObject::EqualBool(tuple1->Get(i), tuple2->Get(i)));
+    if (!eq) {
+      return Maybe<bool>(false);
     }
   }
 
-  return true;
+  return Maybe<bool>(true);
 }
 
-Handle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
   return PyTupleIterator::NewInstance(Handle<PyTuple>::cast(self));
 }
 

@@ -5,6 +5,7 @@
 #include <cinttypes>
 
 #include "src/builtins/builtins-utils.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-dict.h"
@@ -27,6 +28,8 @@ BUILTIN(Len) {
 BUILTIN(IsInstance) {
   EscapableHandleScope scope;
 
+  auto* isolate = Isolate::Current();
+
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length != 2) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -41,8 +44,10 @@ BUILTIN(IsInstance) {
 
   bool matched = false;
   if (IsPyTypeObject(type_or_tuple)) {
-    matched = Runtime_IsInstanceOfTypeObject(
-        object, Handle<PyTypeObject>::cast(type_or_tuple));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, matched,
+        Runtime_IsInstanceOfTypeObject(
+            object, Handle<PyTypeObject>::cast(type_or_tuple)));
   } else if (IsPyTuple(type_or_tuple)) {
     auto tuple = Handle<PyTuple>::cast(type_or_tuple);
     for (auto i = 0; i < tuple->length(); ++i) {
@@ -53,9 +58,12 @@ BUILTIN(IsInstance) {
             "isinstance() arg 2 must be a type or tuple of types");
         return kNullMaybeHandle;
       }
-      if (Runtime_IsInstanceOfTypeObject(object,
-                                         Handle<PyTypeObject>::cast(elem))) {
-        matched = true;
+
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, matched,
+                                 Runtime_IsInstanceOfTypeObject(
+                                     object, Handle<PyTypeObject>::cast(elem)));
+
+      if (matched) {
         break;
       }
     }

@@ -26,6 +26,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-truthiness.h"
+#include "src/utils/maybe.h"
 #include "src/utils/stable-merge-sort.h"
 
 namespace saauso::internal {
@@ -261,7 +262,11 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     HandleScope scope;
     Handle<PyObject> ka = handle(c->keys->Get(a));
     Handle<PyObject> kb = handle(c->keys->Get(b));
-    return PyObject::LessBool(ka, kb);
+    Maybe<bool> mb = PyObject::LessBool(ka, kb);
+    if (mb.IsNothing()) {
+      return false;
+    }
+    return mb.ToChecked();
   };
 
   StableMergeSort::Sort(indices.data(), expected_length, less, &context);
