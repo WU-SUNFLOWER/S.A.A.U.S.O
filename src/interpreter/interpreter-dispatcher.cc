@@ -399,11 +399,11 @@ void Interpreter::EvalCurrentFrame() {
   // k=item[0], v=item[1]。
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
     Handle<PyObject> sequence = POP();
-    
+
     Handle<PyTuple> tuple;
     ASSIGN_GOTO_ON_EXCEPTION(tuple,
                              Runtime_UnpackIterableObjectToTuple(sequence));
-    
+
     if (tuple->length() != op_arg) {
       Runtime_ThrowErrorf(ExceptionType::kValueError,
                           "unpack expected %d values, got %d", op_arg,
@@ -1069,7 +1069,7 @@ pending_exception_unwind: {
     }
     // handler中的第一条PushExcInfo或Reraise字节码会消费exception对象
     PUSH(exception_state->pending_exception_tagged());
-    //  handler中的第一条PushExcInfo字节码会消费exception origin pc
+    // handler中的第一条PushExcInfo字节码会消费exception origin pc
     stack_exception_origin_pc_ = exception_state->pending_exception_origin_pc();
 
     // exception已经被提交给handler处理，撤销虚拟机中存在
