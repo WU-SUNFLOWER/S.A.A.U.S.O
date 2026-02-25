@@ -399,15 +399,18 @@ void Interpreter::EvalCurrentFrame() {
   // k=item[0], v=item[1]。
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
     Handle<PyObject> sequence = POP();
+    
     Handle<PyTuple> tuple;
     ASSIGN_GOTO_ON_EXCEPTION(tuple,
                              Runtime_UnpackIterableObjectToTuple(sequence));
+    
     if (tuple->length() != op_arg) {
       Runtime_ThrowErrorf(ExceptionType::kValueError,
                           "unpack expected %d values, got %d", op_arg,
                           static_cast<int>(tuple->length()));
       goto pending_exception_unwind;
     }
+
     auto old_stack_top = current_frame_->stack_top();
     current_frame_->set_stack_top(old_stack_top + op_arg);
     for (int i = 0; i < op_arg; ++i) {
@@ -624,20 +627,18 @@ void Interpreter::EvalCurrentFrame() {
     auto sub_module_name =
         Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
 
-    // Fast Path: 如果目标子模块已经被解析过了，直接返回（Try 语义用
-    // LookupAttr）
+    // Fast Path: 如果目标子模块已经被解析过了，直接返回
     Handle<PyObject> value;
-    if (PyObject::LookupAttr(parent_module, sub_module_name, value) &&
-        !value.is_null()) {
-      PUSH(value);
-      break;
-    }
-    if (isolate_->HasPendingException()) {
+    if (!PyObject::LookupAttr(parent_module, sub_module_name, value)) {
       goto pending_exception_unwind;
     }
 
-    // Slow Path: 目标子模块还没被解析过，走完整的解析流程
+    if (!value.is_null()) {
+      PUSH(value);
+      break;
+    }
 
+    // Slow Path: 目标子模块还没被解析过，走完整的解析流程
     Handle<PyObject> parent_module_name_obj;
     ASSIGN_GOTO_ON_EXCEPTION(parent_module_name_obj,
                              PyObject::GetAttr(parent_module, ST(name)));
@@ -1025,6 +1026,8 @@ void Interpreter::EvalCurrentFrame() {
 #undef INTERPRETER_HANDLER
 
 pending_exception_unwind: {
+  assert(isolate_->HasPendingException());
+
   // 异常展开（zero-cost exception table）：
   // 1) 以 pending_exception_pc_ 作为查表位置，查询当前 frame 是否存在 handler；
   // 2) 命中：恢复 value stack 深度；若 handler 要求 push-lasti，则把 origin
