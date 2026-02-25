@@ -187,6 +187,8 @@ void Interpreter::EvalCurrentFrame() {
     //   以便于解释器进一步借助Reraise字节码继续向上传播该异常。
     Handle<PyObject> exception = TOP();
 
+    const int current_pc = current_frame_->pc() - kBytecodeSizeInBytes;
+
     bool matched = false;
     if (IsPyTypeObject(match_type)) {
       matched = Runtime_IsInstanceOfTypeObject(
@@ -215,10 +217,9 @@ void Interpreter::EvalCurrentFrame() {
             Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
                               Handle<PyObject>::null()));
 
-        const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
         isolate_->exception_state()->Throw(*type_error);
-        isolate_->exception_state()->set_pending_exception_pc(raise_pc);
-        isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
+        isolate_->exception_state()->set_pending_exception_origin_pc(
+            current_pc);
         goto pending_exception_unwind;
       }
     } else {
@@ -231,10 +232,8 @@ void Interpreter::EvalCurrentFrame() {
           Runtime_NewObject(type_error_type, Handle<PyObject>::null(),
                             Handle<PyObject>::null()));
 
-      const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
       isolate_->exception_state()->Throw(*type_error);
-      isolate_->exception_state()->set_pending_exception_pc(raise_pc);
-      isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
+      isolate_->exception_state()->set_pending_exception_origin_pc(current_pc);
       goto pending_exception_unwind;
     }
 
@@ -257,7 +256,6 @@ void Interpreter::EvalCurrentFrame() {
 
     // raise 指令所在的地址
     const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
-    isolate_->exception_state()->set_pending_exception_pc(raise_pc);
 
     switch (op_arg) {
       case 0:
@@ -305,6 +303,7 @@ void Interpreter::EvalCurrentFrame() {
                                        Handle<PyObject>::null()));
     }
 
+    // 执行真正的抛错操作
     isolate_->exception_state()->Throw(*exception);
   })
 
@@ -321,7 +320,6 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> exception = POP();
 
     const int raise_pc = current_frame_->pc() - kBytecodeSizeInBytes;
-    isolate_->exception_state()->set_pending_exception_pc(raise_pc);
     isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
 
     if (op_arg != 0) {
@@ -1239,12 +1237,13 @@ void Interpreter::UnwindCurrentFrameForException() {
   DestroyCurrentFrame();
   ret_value_ = Tagged<PyObject>::null();
 
-  isolate_->exception_state()->set_pending_exception_pc(
-      ExceptionState::kInvalidProgramCounter);
   // 重要：将 pending_exception_pc 回溯为上一层栈帧的函数调用点地址
   if (current_frame_ != nullptr) {
     isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
                                                           kBytecodeSizeInBytes);
+  } else {
+    isolate_->exception_state()->set_pending_exception_pc(
+        ExceptionState::kInvalidProgramCounter);
   }
 }
 
