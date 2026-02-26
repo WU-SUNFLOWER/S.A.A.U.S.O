@@ -249,8 +249,10 @@ bool AssignKwArgsFromDict(FrameBuildContext& ctx,
     auto item = Handle<PyTuple>::cast(item_handle);
     auto key = Handle<PyString>::cast(item->Get(0));
     auto value = item->Get(1);
-    int64_t index_in_var_args =
-        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+    int64_t index_in_var_args;
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+        isolate, index_in_var_args,
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt), false);
 
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
@@ -290,6 +292,7 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
     return true;
   }
 
+  auto* isolate = Isolate::Current();
   int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();
   int64_t actual_kw_arg_cnt = kwarg_keys->length();
 
@@ -298,8 +301,10 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
         Handle<PyString>::cast(kwarg_keys->Get(actual_kw_arg_cnt - i - 1));
     auto value = actual_args->Get(actual_arg_cnt - i - 1);
 
-    int64_t index_in_var_args =
-        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+    int64_t index_in_var_args;
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+        isolate, index_in_var_args,
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt), false);
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
         Runtime_ThrowErrorf(ExceptionType::kTypeError,

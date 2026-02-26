@@ -78,7 +78,8 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
 
   int64_t result = PyTuple::kNotFound;
   if (begin <= end) {
-    result = tuple->IndexOf(target, begin, end);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                               tuple->IndexOf(target, begin, end));
   }
   if (result == PyTuple::kNotFound) {
     Runtime_ThrowError(ExceptionType::kValueError,

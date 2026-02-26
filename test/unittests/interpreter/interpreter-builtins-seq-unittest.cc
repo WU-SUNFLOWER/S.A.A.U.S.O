@@ -224,6 +224,21 @@ l.index(X())
   RunScriptExpectExceptionContains(kSource, "RuntimeError", kTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, TupleIndexPropagatesExceptionFromEq) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class X:
+  def __eq__(self, other):
+    raise RuntimeError("boom")
+
+t = (X(),)
+t.index(X())
+)";
+
+  RunScriptExpectExceptionContains(kSource, "RuntimeError", kTestFileName);
+}
+
 TEST_F(BasicInterpreterTest, FindAndRfindMethods) {
   HandleScope scope;
 
