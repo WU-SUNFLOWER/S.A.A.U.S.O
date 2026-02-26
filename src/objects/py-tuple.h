@@ -44,8 +44,6 @@ class PyTuple : public PyObject {
   int64_t length() const { return length_; }
 
  private:
-  friend class CPython312PycFileParser;
-  friend class PycFileParser;
   friend class PyTupleKlass;
 
   Tagged<PyObject>* data() {
