@@ -115,7 +115,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
 
   int64_t result = PyList::kNotFound;
   if (begin <= end) {
-    result = list->IndexOf(target, begin, end);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                               list->IndexOf(target, begin, end));
   }
   if (result == PyList::kNotFound) {
     // 对齐 CPython：list.index(x) 未找到时抛出 ValueError。
@@ -166,7 +167,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     return scope.Escape(handle(isolate->py_none_object()));
   }
 
-  Handle<PyObject> key_func = handle(isolate->py_none_object());
+  Handle<PyObject> key_func;
   bool reverse = false;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -192,31 +193,30 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       }
     }
 
-    Tagged<PyObject> value;
+    // 查找关键字提取函数
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found, kwargs->GetTagged(key_name, value));
-    if (found) {
-      assert(!value.is_null());
-      key_func = handle(value);
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found, kwargs->Get(key_name, key_func));
+    assert(!found || !key_func.is_null());
 
+    // 查找倒序排序控制参数
+    Handle<PyObject> reverse_flag;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               kwargs->GetTagged(reverse_name, value));
+                               kwargs->Get(reverse_name, reverse_flag));
     if (found) {
-      assert(!value.is_null());
-      reverse = Runtime_PyObjectIsTrue(handle(value));
+      assert(!reverse_flag.is_null());
+      reverse = Runtime_PyObjectIsTrue(reverse_flag);
     }
   }
 
-  if (!IsPyNone(*key_func) && !IsNormalPyFunction(key_func) &&
-      !IsPyNativeFunction(*key_func) && !IsMethodObject(*key_func)) {
+  if (!key_func.is_null() && !IsNormalPyFunction(key_func) &&
+      !IsPyNativeFunction(key_func) && !IsMethodObject(key_func)) {
     Runtime_ThrowError(ExceptionType::kTypeError, "key must be callable");
     return kNullMaybeHandle;
   }
 
   Handle<FixedArray> keys = FixedArray::NewInstance(expected_length);
 
-  if (IsPyNone(*key_func)) {
+  if (key_func.is_null()) {
     for (int64_t i = 0; i < expected_length; ++i) {
       keys->Set(i, list->Get(i));
     }

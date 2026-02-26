@@ -209,6 +209,21 @@ print(t.index(1, 1, 3))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, ListIndexPropagatesExceptionFromEq) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class X:
+  def __eq__(self, other):
+    raise RuntimeError("boom")
+
+l = [X()]
+l.index(X())
+)";
+
+  RunScriptExpectExceptionContains(kSource, "RuntimeError", kTestFileName);
+}
+
 TEST_F(BasicInterpreterTest, FindAndRfindMethods) {
   HandleScope scope;
 

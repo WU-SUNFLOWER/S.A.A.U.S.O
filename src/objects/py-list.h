@@ -39,8 +39,13 @@ class PyList : public PyObject {
   void SetAndExtendLength(int64_t index, Handle<PyObject> value);
 
   void RemoveByIndex(int64_t index);
+
   // 删除**第一个**与target匹配的元素
-  void Remove(Handle<PyObject> target);
+  // - 返回 true : 在List中查到target并成功删除。
+  // - 返回 false : 未在List中查到target。
+  // - 返回空 Maybe : 在List中查找target时出现异常。
+  Maybe<bool> Remove(Handle<PyObject> target);
+
   void Clear();
 
   int64_t capacity() const;
@@ -52,8 +57,14 @@ class PyList : public PyObject {
     return length_ == capacity();
   }
 
-  int64_t IndexOf(Handle<PyObject> target) const;
-  int64_t IndexOf(Handle<PyObject> target, int64_t begin, int64_t end) const;
+  // 查找**第一个**与target匹配元素的下标
+  // 返回kNotFound：未找到目标元素
+  // 返回非kNotFound的有效下标：找到目标元素
+  // 返回空Maybe：查找过程中发生异常，需要调用方向上传播异常
+  Maybe<int64_t> IndexOf(Handle<PyObject> target) const;
+  Maybe<int64_t> IndexOf(Handle<PyObject> target,
+                         int64_t begin,
+                         int64_t end) const;
 
   static void Append(Handle<PyList> self, Handle<PyObject> value);
   static void Insert(Handle<PyList> self,

@@ -4,6 +4,8 @@
 
 #include "src/objects/klass.h"
 
+#include "src/execution/exception-utils.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
@@ -36,6 +38,8 @@ Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
 }
 
 Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
+  auto* isolate = Isolate::Current();
+
   // 递归出口：
   // 如果所有的mro列表都被清空，这意味着完整的所求mro序列已经生成，退出递归即可
   if (mro_of_each_super->IsEmpty()) {
@@ -57,7 +61,11 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
           Handle<PyList>::cast(mro_of_each_super->Get(j));
       // 如果发现head在其他mro序列的中间（而非开头或不存在），
       // 则当前head不是所求mro序列中的下一个元素！
-      if (mro_of_another_super->IndexOf(head) > 0) {
+      int64_t head_pos;
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, head_pos,
+                                       mro_of_another_super->IndexOf(head),
+                                       Handle<PyList>::null());
+      if (head_pos > 0) {
         valid = false;
         break;
       }
@@ -74,13 +82,19 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
     Handle<PyList> next_mro_of_each_super = PyList::NewInstance();
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
       auto mro_of_a_super = Handle<PyList>::cast(mro_of_each_super->Get(j));
-      mro_of_a_super->Remove(head);
+      bool removed;
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, removed,
+                                       mro_of_a_super->Remove(head),
+                                       Handle<PyList>::null());
       if (!mro_of_a_super->IsEmpty()) {
         PyList::Append(next_mro_of_each_super, mro_of_a_super);
       }
     }
 
     Handle<PyList> result = C3Impl_Merge(next_mro_of_each_super);
+    if (result.is_null()) {
+      return Handle<PyList>::null();
+    }
     PyList::Insert(result, 0, head);
 
     return result;
@@ -186,6 +200,7 @@ void Klass::OrderSupers() {
       PyList::Append(all, C3Impl_Linear(super));
     }
     mro_result = C3Impl_Merge(all);
+    assert(!mro_result.is_null());
   }
 
   // 把自己添加到mro序列的开头
@@ -196,7 +211,7 @@ void Klass::OrderSupers() {
 }
 
 MaybeHandle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,
-                                                Handle<PyObject> kwargs) {
+                                               Handle<PyObject> kwargs) {
   return vtable_.construct_instance(Tagged<Klass>(this), args, kwargs);
 }
 

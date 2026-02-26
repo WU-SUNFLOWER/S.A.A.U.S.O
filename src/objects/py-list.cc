@@ -96,11 +96,17 @@ void PyList::RemoveByIndex(int64_t index) {
   --length_;
 }
 
-void PyList::Remove(Handle<PyObject> target) {
-  auto index = IndexOf(target);
-  if (index >= 0) {
-    RemoveByIndex(index);
+Maybe<bool> PyList::Remove(Handle<PyObject> target) {
+  int64_t index;
+  if (!IndexOf(target).To(&index)) {
+    return kNullMaybe;
   }
+
+  if (index != kNotFound) {
+    RemoveByIndex(index);
+    return Maybe<bool>(true);
+  }
+  return Maybe<bool>(false);
 }
 
 void PyList::Clear() {
@@ -111,23 +117,23 @@ int64_t PyList::capacity() const {
   return array()->capacity();
 }
 
-int64_t PyList::IndexOf(Handle<PyObject> target) const {
+Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target) const {
   return IndexOf(target, 0, length());
 }
 
-int64_t PyList::IndexOf(Handle<PyObject> target,
-                        int64_t begin,
-                        int64_t end) const {
+Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target,
+                               int64_t begin,
+                               int64_t end) const {
   for (auto i = begin; i < end; ++i) {
     Maybe<bool> mb = PyObject::EqualBool(target, Get(i));
     if (mb.IsNothing()) {
-      return kNotFound;
+      return kNullMaybe;
     }
     if (mb.ToChecked()) {
-      return i;
+      return Maybe<int64_t>(i);
     }
   }
-  return kNotFound;
+  return Maybe<int64_t>(kNotFound);
 }
 
 void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
