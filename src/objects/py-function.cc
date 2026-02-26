@@ -54,7 +54,8 @@ Handle<PyFunction> PyFunction::NewInstanceInternal() {
 
   // 初始化properties
   auto properties = PyDict::NewInstance();
-  PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  (void)PyDict::PutMaybe(properties, PyString::NewInstance("__dict__"),
+                         properties);
   PyObject::SetProperties(*object, *properties);
 
   // 初始化字段

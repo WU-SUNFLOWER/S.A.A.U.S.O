@@ -31,21 +31,28 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
                                     "bool",   "dict", "tuple", "type"};
   for (const char* name : kTypeNames) {
     Handle<PyString> key = PyString::NewInstance(name);
-    ASSERT_TRUE(builtins->Contains(key)) << name;
-    EXPECT_TRUE(IsPyTypeObject(builtins->Get(key))) << name;
+    bool exists = false;
+    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(exists) << name;
+    Tagged<PyObject> value;
+    ASSERT_TRUE(builtins->GetTaggedMaybe(key).To(&value)) << name;
+    EXPECT_TRUE(IsPyTypeObject(value)) << name;
   }
 
   const char* const kOddballs[] = {"True", "False", "None"};
   for (const char* name : kOddballs) {
     Handle<PyString> key = PyString::NewInstance(name);
-    ASSERT_TRUE(builtins->Contains(key)) << name;
+    bool exists = false;
+    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(exists) << name;
   }
-  EXPECT_EQ(builtins->GetTagged(PyString::NewInstance("True")),
-            isolate_->py_true_object());
-  EXPECT_EQ(builtins->GetTagged(PyString::NewInstance("False")),
-            isolate_->py_false_object());
-  EXPECT_EQ(builtins->GetTagged(PyString::NewInstance("None")),
-            isolate_->py_none_object());
+  Tagged<PyObject> value;
+  ASSERT_TRUE(builtins->GetTaggedMaybe(PyString::NewInstance("True")).To(&value));
+  EXPECT_EQ(value, isolate_->py_true_object());
+  ASSERT_TRUE(builtins->GetTaggedMaybe(PyString::NewInstance("False")).To(&value));
+  EXPECT_EQ(value, isolate_->py_false_object());
+  ASSERT_TRUE(builtins->GetTaggedMaybe(PyString::NewInstance("None")).To(&value));
+  EXPECT_EQ(value, isolate_->py_none_object());
 
   const char* const kBuiltinFunctions[] = {"print",      "len",  "isinstance",
                                            "build_class", "sysgc", "exec"};
@@ -54,12 +61,18 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
     if (std::string_view(name) == "build_class") {
       key = ST(func_build_class);
     }
-    ASSERT_TRUE(builtins->Contains(key)) << name;
-    EXPECT_TRUE(IsPyFunction(builtins->Get(key))) << name;
+    bool exists = false;
+    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(exists) << name;
+    ASSERT_TRUE(builtins->GetTaggedMaybe(key).To(&value)) << name;
+    EXPECT_TRUE(IsPyFunction(value)) << name;
   }
 
-  ASSERT_TRUE(builtins->Contains(ST(builtins)));
-  EXPECT_EQ(builtins->GetTagged(ST(builtins)), *builtins);
+  bool exists = false;
+  ASSERT_TRUE(builtins->ContainsMaybe(ST(builtins)).To(&exists));
+  ASSERT_TRUE(exists);
+  ASSERT_TRUE(builtins->GetTaggedMaybe(ST(builtins)).To(&value));
+  EXPECT_EQ(value, *builtins);
 }
 
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
@@ -74,8 +87,12 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   };
   for (const char* name : kExceptionTypes) {
     Handle<PyString> key = PyString::NewInstance(name);
-    ASSERT_TRUE(builtins->Contains(key)) << name;
-    EXPECT_TRUE(IsPyTypeObject(builtins->Get(key))) << name;
+    bool exists = false;
+    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(exists) << name;
+    Tagged<PyObject> value;
+    ASSERT_TRUE(builtins->GetTaggedMaybe(key).To(&value)) << name;
+    EXPECT_TRUE(IsPyTypeObject(value)) << name;
   }
 }
 

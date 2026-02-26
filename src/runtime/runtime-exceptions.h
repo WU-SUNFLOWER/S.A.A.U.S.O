@@ -7,12 +7,18 @@
 
 #include "src/execution/exception-types.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
 class Isolate;
 class PyString;
+
+// 创建一个新的异常实例。
+MaybeHandle<PyObject> Runtime_NewExceptionInstance(
+    Handle<PyString> exception_type_name,
+    Handle<PyString> message_or_null);
 
 // 统一异常抛出 API
 void Runtime_ThrowError(ExceptionType type, const char* message = nullptr);

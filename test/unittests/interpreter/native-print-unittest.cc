@@ -37,7 +37,8 @@ TEST_F(NativePrintTest, EndParameter) {
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
-  PyDict::Put(kwargs, ST(end), PyString::NewInstance("!"));
+  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(end), PyString::NewInstance("!"))
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
@@ -53,7 +54,8 @@ TEST_F(NativePrintTest, EolAliasParameter) {
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
-  PyDict::Put(kwargs, ST(eol), PyString::NewInstance("??"));
+  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(eol), PyString::NewInstance("??"))
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
@@ -70,7 +72,8 @@ TEST_F(NativePrintTest, SepParameter) {
   args->SetInternal(1, PyString::NewInstance("b"));
   args->SetInternal(2, PyString::NewInstance("c"));
   auto kwargs = PyDict::NewInstance();
-  PyDict::Put(kwargs, ST(sep), PyString::NewInstance(","));
+  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(sep), PyString::NewInstance(","))
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
@@ -84,7 +87,8 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
 
   auto args = PyTuple::NewInstance(0);
   auto kwargs = PyDict::NewInstance();
-  PyDict::Put(kwargs, ST(end), PyString::NewInstance("X"));
+  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(end), PyString::NewInstance("X"))
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);

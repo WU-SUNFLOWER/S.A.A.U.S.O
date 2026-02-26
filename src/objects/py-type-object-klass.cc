@@ -91,11 +91,16 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
                                                     Handle<PyObject> prop_name,
                                                     bool is_try) {
   assert(IsPyString(prop_name));
+
+  auto* isolate = Isolate::Current();
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
 
   // 沿着当前type object的mro序列进行查找
-  Handle<PyObject> result =
-      Runtime_FindPropertyInKlassMro(own_klass, prop_name);
+  Handle<PyObject> result;
+  if (Runtime_FindPropertyInKlassMro(isolate, own_klass, prop_name, result).IsEmpty()) {
+    return Handle<PyObject>::null();
+  }
+
   if (!result.is_null()) {
     return result;
   }
@@ -114,7 +119,10 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
     Handle<PyObject> prop_name,
     Handle<PyObject> prop_value) {
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
-  PyDict::Put(own_klass->klass_properties(), prop_name, prop_value);
+  if (PyDict::PutMaybe(own_klass->klass_properties(), prop_name, prop_value)
+          .IsNothing()) {
+    return kNullMaybeHandle;
+  }
   return handle(Isolate::Current()->py_none_object());
 }
 

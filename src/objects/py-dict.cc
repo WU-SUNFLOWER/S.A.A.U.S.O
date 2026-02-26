@@ -35,6 +35,65 @@ uint64_t GetProbe(uint64_t index, uint64_t mask) {
   return (index + 1) & mask;
 }
 
+template <typename DictT>
+Maybe<int64_t> FindSlot(DictT dict, Handle<PyObject> key, bool* found) {
+  uint64_t hash = 0;
+  if (!PyObject::Hash(key).To(&hash)) {
+    return kNullMaybe;
+  }
+
+  uint64_t mask = dict->capacity() - 1;
+  uint64_t index = hash & mask;
+
+  Tagged<PyObject> curr_key = GET_DICT_KEY(dict, index);
+  while (!curr_key.is_null()) {
+    bool is_equal = false;
+    if (!PyObject::EqualBool(handle(curr_key), key).To(&is_equal)) {
+      return kNullMaybe;
+    }
+    if (is_equal) {
+      *found = true;
+      return Maybe<int64_t>(static_cast<int64_t>(index));
+    }
+    index = GetProbe(index, mask);
+    curr_key = GET_DICT_KEY(dict, index);
+  }
+
+  *found = false;
+  return Maybe<int64_t>(static_cast<int64_t>(index));
+}
+
+template <typename DictT>
+Maybe<bool> RehashInto(DictT dict,
+                       Handle<FixedArray> new_data,
+                       uint64_t new_mask,
+                       int64_t skip_index) {
+  for (int64_t i = 0; i < dict->capacity(); ++i) {
+    if (i == skip_index) {
+      continue;
+    }
+
+    Tagged<PyObject> key = GET_DICT_KEY(dict, i);
+    if (key.is_null()) {
+      continue;
+    }
+
+    uint64_t hash = 0;
+    if (!PyObject::Hash(handle(key)).To(&hash)) {
+      return kNullMaybe;
+    }
+
+    uint64_t new_index = hash & new_mask;
+    while (!new_data->Get(new_index << 1).is_null()) {
+      new_index = GetProbe(new_index, new_mask);
+    }
+
+    new_data->Set(new_index << 1, key);
+    new_data->Set((new_index << 1) + 1, GET_DICT_VAL(dict, i));
+  }
+  return Maybe<bool>(true);
+}
+
 }  // namespace
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,158 +189,89 @@ Handle<FixedArray> PyDict::data() const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }
 
-bool PyDict::Contains(Handle<PyObject> key) const {
-  return !Get(key).is_null();
+Maybe<bool> PyDict::ContainsMaybe(Handle<PyObject> key) const {
+  Tagged<PyObject> value;
+  if (!GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(!value.is_null());
 }
 
-Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {
-  return Get(*key);
+Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Handle<PyObject> key) const {
+  return GetTaggedMaybe(*key);
 }
 
-Handle<PyObject> PyDict::Get(Tagged<PyObject> key) const {
-  return handle(GetImpl(key));
-}
-
-Tagged<PyObject> PyDict::GetTagged(Handle<PyObject> key) const {
-  return GetTagged(*key);
-}
-
-Tagged<PyObject> PyDict::GetTagged(Tagged<PyObject> key) const {
-  return GetImpl(key);
-}
-
-Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
+Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Tagged<PyObject> key) const {
   HandleScope scope;
   Handle<PyObject> handle_key(key);
 
-  uint64_t hash = 0;
-  if (!PyObject::Hash(handle_key).To(&hash)) {
-    return Tagged<PyObject>::null();
+  bool found = false;
+  int64_t index = 0;
+  if (!FindSlot(this, handle_key, &found).To(&index)) {
+    return kNullMaybe;
   }
-  uint64_t mask = capacity() - 1;
-  uint64_t index = hash & mask;
-
-  auto curr_key = GET_DICT_KEY(this, index);
-  while (!curr_key.is_null()) {
-    Handle<PyObject> curr_key_handle = handle(curr_key);
-    Handle<PyBoolean> equal_result;
-    if (!PyObject::Equal(curr_key_handle, handle_key).ToHandle(
-            &equal_result)) {
-      return Tagged<PyObject>::null();
-    }
-    if (equal_result->value()) {
-      return GET_DICT_VAL(this, index);
-    }
-    index = GetProbe(index, mask);
-    curr_key = GET_DICT_KEY(this, index);
+  if (!found) {
+    return Maybe<Tagged<PyObject>>(Tagged<PyObject>::null());
   }
-
-  return Tagged<PyObject>::null();
+  return Maybe<Tagged<PyObject>>(GET_DICT_VAL(this, index));
 }
 
-void PyDict::Remove(Handle<PyObject> key) {
+Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {
   HandleScope scope;
 
-  uint64_t hash = 0;
-  if (!PyObject::Hash(key).To(&hash)) {
-    return;
+  bool found = false;
+  int64_t index = 0;
+  if (!FindSlot(this, key, &found).To(&index)) {
+    return kNullMaybe;
   }
-  uint64_t mask = capacity() - 1;
-  uint64_t index = hash & mask;
-
-  auto curr_key = GET_DICT_KEY(this, index);
-  while (!curr_key.is_null()) {
-    Handle<PyObject> curr_key_handle = handle(curr_key);
-    Handle<PyBoolean> equal_result;
-    if (!PyObject::Equal(curr_key_handle, key).ToHandle(&equal_result)) {
-      return;
-    }
-    if (equal_result->value()) {
-      // 找到目标，进行删除
-      // 1. 将当前位置置空
-      SET_DICT_KEY(this, index, Tagged<PyObject>::null());
-      SET_DICT_VAL(this, index, Tagged<PyObject>::null());
-      --occupied_;
-
-      // 2. 整理后续元素（backward shift deletion）
-      uint64_t hole = index;
-      uint64_t next = GetProbe(hole, mask);
-
-      Handle<PyObject> next_key = handle(GET_DICT_KEY(this, next));
-      while (!(*next_key).is_null()) {
-        uint64_t next_hash = 0;
-        if (!PyObject::Hash(next_key).To(&next_hash)) {
-          return;
-        }
-        uint64_t ideal = next_hash & mask;
-
-        // 计算距离
-        uint64_t dist_next = (next - ideal) & mask;
-        uint64_t dist_hole = (hole - ideal) & mask;
-
-        // 如果hole更接近ideal，则移动next到hole
-        if (dist_hole < dist_next) {
-          SET_DICT_KEY(this, hole, *next_key);
-          SET_DICT_VAL(this, hole, GET_DICT_VAL(this, next));
-
-          SET_DICT_KEY(this, next, Tagged<PyObject>::null());
-          SET_DICT_VAL(this, next, Tagged<PyObject>::null());
-
-          hole = next;
-        }
-
-        next = GetProbe(next, mask);
-        next_key = handle(GET_DICT_KEY(this, next));
-      }
-      return;
-    }
-    index = GetProbe(index, mask);
-    curr_key = GET_DICT_KEY(this, index);
+  if (!found) {
+    return Maybe<bool>(false);
   }
+
+  Handle<FixedArray> new_data = FixedArray::NewInstance(capacity() * 2);
+  uint64_t new_mask = capacity() - 1;
+
+  if (RehashInto(this, new_data, new_mask, index).IsNothing()) {
+    return kNullMaybe;
+  }
+
+  data_ = *new_data;
+  --occupied_;
+  return Maybe<bool>(true);
 }
 
 // static
-void PyDict::Put(Handle<PyDict> object,
-                 Handle<PyObject> key,
-                 Handle<PyObject> value) {
+Maybe<bool> PyDict::PutMaybe(Handle<PyDict> object,
+                             Handle<PyObject> key,
+                             Handle<PyObject> value) {
   HandleScope scope;
 
   assert(!key.is_null());
   assert(!value.is_null());
 
   auto dict = Handle<PyDict>::cast(object);
-  // 超出装填因子系数，自动进行扩容
   if (dict->occupied_ + 1 > dict->capacity() * kMaxLoadFactor) {
-    ExpandImpl(dict);
-  }
-
-  uint64_t hash = 0;
-  if (!PyObject::Hash(key).To(&hash)) {
-    return;
-  }
-  uint64_t mask = dict->capacity() - 1;
-  uint64_t index = hash & mask;
-
-  Handle<PyObject> curr_key(GET_DICT_KEY(dict, index));
-  while (!curr_key.is_null()) {
-    Handle<PyBoolean> equal_result;
-    if (!PyObject::Equal(curr_key, key).ToHandle(&equal_result)) {
-      return;
+    bool expanded = false;
+    if (!ExpandImplMaybe(dict).To(&expanded)) {
+      return kNullMaybe;
     }
-    if (equal_result->value()) {
-      SET_DICT_VAL(dict, index, *value);
-      return;
-    }
-    index = GetProbe(index, mask);
-    curr_key = handle(GET_DICT_KEY(dict, index));
   }
 
-  // 插入新元素
+  bool found = false;
+  int64_t index = 0;
+  if (!FindSlot(dict, key, &found).To(&index)) {
+    return kNullMaybe;
+  }
+
+  if (found) {
+    SET_DICT_VAL(dict, index, *value);
+    return Maybe<bool>(false);
+  }
+
   SET_DICT_KEY(dict, index, *key);
   SET_DICT_VAL(dict, index, *value);
-
-  // 更新计数器
   ++dict->occupied_;
+  return Maybe<bool>(true);
 }
 
 // static
@@ -310,35 +300,24 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
 
 // static
 void PyDict::ExpandImpl(Handle<PyDict> dict) {
+  bool expanded = false;
+  ExpandImplMaybe(dict).To(&expanded);
+}
+
+// static
+Maybe<bool> PyDict::ExpandImplMaybe(Handle<PyDict> dict) {
   HandleScope scope;
 
   int64_t new_capacity = dict->capacity() << 1;
   Handle<FixedArray> new_data = FixedArray::NewInstance(new_capacity * 2);
   uint64_t new_mask = new_capacity - 1;
 
-  // rehash所有旧数据
-  for (auto index = 0; index < dict->capacity(); ++index) {
-    if (GET_DICT_KEY(dict, index).is_null()) {
-      continue;
-    }
-
-    Handle<PyObject> key(GET_DICT_KEY(dict, index));
-    uint64_t hash = 0;
-    if (!PyObject::Hash(key).To(&hash)) {
-      return;
-    }
-    uint64_t new_index = hash & new_mask;
-
-    // 在new_data中寻找一个合适的位置放置键值对
-    while (!new_data->Get(new_index << 1).is_null()) {
-      new_index = GetProbe(new_index, new_mask);
-    }
-
-    new_data->Set(new_index << 1, *key);
-    new_data->Set((new_index << 1) + 1, GET_DICT_VAL(dict, index));
+  if (RehashInto(dict, new_data, new_mask, -1).IsNothing()) {
+    return kNullMaybe;
   }
 
   dict->data_ = *new_data;
+  return Maybe<bool>(true);
 }
 
 }  // namespace saauso::internal

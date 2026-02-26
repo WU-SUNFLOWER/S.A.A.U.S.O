@@ -190,7 +190,7 @@ void Klass::OrderSupers() {
 
   // 把自己添加到mro序列的开头
   PyList::Insert(mro_result, 0, type_object());
-  PyDict::Put(klass_properties(), ST(mro), mro_result);
+  (void)PyDict::PutMaybe(klass_properties(), ST(mro), mro_result);
 
   mro_ = *mro_result;
 }

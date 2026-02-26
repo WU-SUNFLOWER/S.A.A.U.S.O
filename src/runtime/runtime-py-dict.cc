@@ -10,6 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
@@ -54,7 +55,9 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
           return kNullMaybeHandle;
         }
 
-        PyDict::Put(result, pair->Get(0), pair->Get(1));
+        RETURN_ON_EXCEPTION_VALUE(
+            isolate, PyDict::PutMaybe(result, pair->Get(0), pair->Get(1)),
+            kNullMaybeHandle);
       }
     }
   }
@@ -77,12 +80,114 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
           key = key_str;
         }
 
-        PyDict::Put(result, key, item->Get(1));
+        RETURN_ON_EXCEPTION_VALUE(isolate,
+                                  PyDict::PutMaybe(result, key, item->Get(1)),
+                                  kNullMaybeHandle);
       }
     }
   }
 
   return scope.Escape(result);
+}
+
+MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key) {
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
+  if (value.is_null()) {
+    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    return kNullMaybeHandle;
+  }
+  return handle(value);
+}
+
+MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key,
+                                          Handle<PyObject> value) {
+  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+  return handle(Isolate::Current()->py_none_object());
+}
+
+MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
+                                          Handle<PyObject> key) {
+  bool removed = false;
+  if (!dict->RemoveMaybe(key).To(&removed)) {
+    return kNullMaybeHandle;
+  }
+  if (!removed) {
+    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    return kNullMaybeHandle;
+  }
+  return handle(Isolate::Current()->py_none_object());
+}
+
+MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
+                                      Handle<PyObject> key,
+                                      Handle<PyObject> default_or_null) {
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
+  if (!value.is_null()) {
+    return handle(value);
+  }
+  if (!default_or_null.is_null()) {
+    return default_or_null;
+  }
+  return handle(Isolate::Current()->py_none_object());
+}
+
+MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
+                                             Handle<PyObject> key,
+                                             Handle<PyObject> default_or_null) {
+  Tagged<PyObject> existing;
+  if (!dict->GetTaggedMaybe(*key).To(&existing)) {
+    return kNullMaybeHandle;
+  }
+  if (!existing.is_null()) {
+    return handle(existing);
+  }
+
+  Handle<PyObject> value = default_or_null.is_null()
+                               ? handle(Isolate::Current()->py_none_object())
+                               : default_or_null;
+
+  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+  return value;
+}
+
+MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
+                                      Handle<PyObject> key,
+                                      Handle<PyObject> default_or_null,
+                                      bool has_default) {
+  Tagged<PyObject> value;
+  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+    return kNullMaybeHandle;
+  }
+  if (!value.is_null()) {
+    bool removed = false;
+    if (!dict->RemoveMaybe(key).To(&removed)) {
+      return kNullMaybeHandle;
+    }
+    if (!removed) {
+      Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
+      return kNullMaybeHandle;
+    }
+    return handle(value);
+  }
+
+  if (has_default) {
+    return default_or_null;
+  }
+
+  Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
+  return kNullMaybeHandle;
 }
 
 MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
@@ -107,13 +212,17 @@ MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
     auto key = item->Get(0);
     auto value = item->Get(1);
 
-    if (!allow_overwriting && dst_dict->Contains(key)) {
+    bool exists = false;
+    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+        isolate, exists, dst_dict->ContainsMaybe(key), kNullMaybeHandle);
+    if (!allow_overwriting && exists) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "got multiple values for keyword argument");
       return kNullMaybeHandle;
     }
 
-    PyDict::Put(dst_dict, key, value);
+    RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::PutMaybe(dst_dict, key, value),
+                              kNullMaybeHandle);
   }
 
   return dst_dict;

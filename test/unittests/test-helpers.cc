@@ -69,8 +69,10 @@ void BasicInterpreterTest::SetUpTestSuite() {
   HandleScope scope;
   Handle<PyString> func_name = PyString::NewInstance("print");
   // 将 builtins.print 替换为 Builtin_PrintV，用于捕获解释器侧的打印参数。
-  PyDict::Put(isolate_->interpreter()->builtins(), func_name,
-              PyFunction::NewInstance(&Builtin_PrintV, func_name));
+  ASSERT_FALSE(
+      PyDict::PutMaybe(isolate_->interpreter()->builtins(), func_name,
+                       PyFunction::NewInstance(&Builtin_PrintV, func_name))
+          .IsNothing());
 }
 
 void BasicInterpreterTest::TearDownTestSuite() {

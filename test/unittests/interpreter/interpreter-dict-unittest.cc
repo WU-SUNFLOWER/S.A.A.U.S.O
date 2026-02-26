@@ -119,8 +119,9 @@ print(d)
   AppendExpected(expected_printv_result, PyString::NewInstance("x"));
 
   auto expected_dict = PyDict::NewInstance();
-  PyDict::Put(expected_dict, handle(PySmi::FromInt(2)),
-              PyString::NewInstance("y"));
+  ASSERT_FALSE(PyDict::PutMaybe(expected_dict, handle(PySmi::FromInt(2)),
+                                PyString::NewInstance("y"))
+                   .IsNothing());
   AppendExpected(expected_printv_result, expected_dict);
 
   AppendExpected(expected_printv_result, PyString::NewInstance("z"));
@@ -292,6 +293,130 @@ print(len(d))
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictGetItemUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(d[A()])
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                   kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictSetDefaultUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(d.setdefault(A(), 1))
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                   kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictGetMethodUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(d.get(A()))
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                   kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictKeysContainsUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print(A() in d.keys())
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                   kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictItemsContainsUnhashableKeyPropagates) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+  pass
+
+d = {}
+print((A(), 1) in d.items())
+)";
+
+  RunScriptExpectExceptionContains(kSource, "TypeError: unhashable type: 'A'",
+                                   kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DictGetMethodDefaultUsedOnMiss) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.get("k", 1))
+print(d.get("k"))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, PyNoneObject());
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictSetDefaultDefaultUsedOnInsert) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.setdefault("k", 42))
+print(d["k"])
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictPopDefaultUsedOnMiss) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+d = {}
+print(d.pop("k", 7))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
   ExpectPrintResult(expected_printv_result);
 }
 

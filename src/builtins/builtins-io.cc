@@ -64,7 +64,11 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
     return false;
   }
 
-  sep = kwargs->Get(sep_key);
+  Tagged<PyObject> sep_tagged;
+  if (!kwargs->GetTaggedMaybe(sep_key).To(&sep_tagged)) {
+    return false;
+  }
+  sep = handle(sep_tagged);
   if (!sep.is_null() && !IsPyString(*sep)) {
     auto type_name = PyObject::GetKlass(sep)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError, "sep must be str, not %s",
@@ -72,8 +76,17 @@ bool NormalizePrintArgs(Handle<PyDict> kwargs,
     return false;
   }
 
-  end = kwargs->Get(end_key);
-  eol = kwargs->Get(eol_key);
+  Tagged<PyObject> end_tagged;
+  if (!kwargs->GetTaggedMaybe(end_key).To(&end_tagged)) {
+    return false;
+  }
+  end = handle(end_tagged);
+
+  Tagged<PyObject> eol_tagged;
+  if (!kwargs->GetTaggedMaybe(eol_key).To(&eol_tagged)) {
+    return false;
+  }
+  eol = handle(eol_tagged);
   if (!end.is_null() && !eol.is_null()) {
     Runtime_ThrowError(
         ExceptionType::kTypeError,

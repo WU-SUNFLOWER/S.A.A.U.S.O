@@ -39,20 +39,33 @@ bool ModuleUtils::IsPackageModule(Handle<PyObject> module) {
   if (dict.is_null()) {
     return false;
   }
-  Handle<PyObject> path = dict->Get(ST(path));
+  Tagged<PyObject> path;
+  if (!dict->GetTaggedMaybe(ST(path)).To(&path)) {
+    return false;
+  }
   return !path.is_null() && IsPyList(path);
 }
 
-Handle<PyList> ModuleUtils::GetPackagePathList(Handle<PyObject> module) {
+bool ModuleUtils::GetPackagePathList(Handle<PyObject> module,
+                                     Handle<PyList>& out) {
+  out = Handle<PyList>::null();
+
   Handle<PyDict> dict = PyObject::GetProperties(module);
   if (dict.is_null()) {
-    return Handle<PyList>::null();
+    return true;
   }
-  Handle<PyObject> path_obj = dict->Get(ST(path));
+
+  Tagged<PyObject> path_obj;
+  if (!dict->GetTaggedMaybe(ST(path)).To(&path_obj)) {
+    return false;
+  }
+
   if (path_obj.is_null() || !IsPyList(path_obj)) {
-    return Handle<PyList>::null();
+    return true;
   }
-  return Handle<PyList>::cast(path_obj);
+
+  out = Handle<PyList>::cast(handle(path_obj));
+  return true;
 }
 
 }  // namespace saauso::internal

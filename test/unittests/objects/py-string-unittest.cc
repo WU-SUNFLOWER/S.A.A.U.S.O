@@ -240,7 +240,11 @@ TEST_F(PyStringTest, StringUpperMethod) {
 
   EXPECT_TRUE(flag);
 
-  EXPECT_TRUE(PyStringKlass::GetInstance()->klass_properties()->Contains(attr));
+  bool contains = false;
+  ASSERT_TRUE(
+      PyStringKlass::GetInstance()->klass_properties()->ContainsMaybe(attr).To(
+          &contains));
+  EXPECT_TRUE(contains);
 
   Handle<PyObject> upper_method;
   ASSERT_TRUE(PyObject::GetAttr(s, attr).ToHandle(&upper_method));

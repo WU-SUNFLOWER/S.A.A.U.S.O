@@ -27,42 +27,6 @@
 
 namespace saauso::internal {
 
-namespace {
-
-void InitializeModuleDict(Handle<PyModule> module,
-                          Handle<PyString> fullname,
-                          const ModuleLocation& loc) {
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  PyDict::Put(module_dict, ST(name), fullname);
-
-  if (loc.is_package) {
-    PyDict::Put(module_dict, ST(package), fullname);
-  } else {
-    int64_t dot_index = fullname->LastIndexOf(ST(dot));
-    if (dot_index == PyString::kNotFound) {
-      PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
-    } else {
-      int64_t package_end = static_cast<int64_t>(dot_index) - 1;
-      Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);
-      PyDict::Put(module_dict, ST(package), package_name);
-    }
-  }
-
-  PyDict::Put(module_dict, ST(file), ModuleUtils::NewPyString(loc.origin));
-
-  PyDict::Put(module_dict, ST(class),
-              PyObject::GetKlass(module)->type_object());
-
-  if (loc.is_package) {
-    Handle<PyList> pkg_path = PyList::NewInstance();
-    PyList::Append(pkg_path, ModuleUtils::NewPyString(loc.package_dir));
-    PyDict::Put(module_dict, ST(path), pkg_path);
-  }
-}
-
-}  // namespace
-
 ModuleLoader::ModuleLoader(Isolate* isolate,
                            ModuleFinder* finder,
                            ModuleManager* manager,
@@ -91,7 +55,8 @@ MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
 
   // 将加载的模块保存到 modules 缓存
   Handle<PyDict> modules_dict = manager_->modules();
-  PyDict::Put(modules_dict, fullname, loaded_module);
+  RETURN_ON_EXCEPTION(isolate_,
+                      PyDict::PutMaybe(modules_dict, fullname, loaded_module));
 
   return scope.Escape(loaded_module);
 }
@@ -170,7 +135,8 @@ MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
     const ModuleLocation& loc,
     Handle<PyString> source) {
   Handle<PyModule> module = PyModule::NewInstance();
-  InitializeModuleDict(module, fullname, loc);
+
+  RETURN_ON_EXCEPTION(isolate_, InitializeModuleDict(module, fullname, loc));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate_,
@@ -184,13 +150,59 @@ MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromPyc(
     Handle<PyString> fullname,
     const ModuleLocation& loc) {
   Handle<PyModule> module = PyModule::NewInstance();
-  InitializeModuleDict(module, fullname, loc);
+
+  RETURN_ON_EXCEPTION(isolate_, InitializeModuleDict(module, fullname, loc));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate_, Runtime_ExecutePythonPycFile(
                                     loc.origin, module_dict, module_dict));
 
   return module;
+}
+
+MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
+    Handle<PyModule> module,
+    Handle<PyString> fullname,
+    const ModuleLocation& loc) {
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+
+  RETURN_ON_EXCEPTION(isolate_,
+                      PyDict::PutMaybe(module_dict, ST(name), fullname));
+
+  if (loc.is_package) {
+    RETURN_ON_EXCEPTION(isolate_,
+                        PyDict::PutMaybe(module_dict, ST(package), fullname));
+  } else {
+    int64_t dot_index = fullname->LastIndexOf(ST(dot));
+    if (dot_index == PyString::kNotFound) {
+      RETURN_ON_EXCEPTION(isolate_,
+                          PyDict::PutMaybe(module_dict, ST(package),
+                                           PyString::NewInstance("")));
+    } else {
+      int64_t package_end = static_cast<int64_t>(dot_index) - 1;
+      Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);
+
+      RETURN_ON_EXCEPTION(
+          isolate_, PyDict::PutMaybe(module_dict, ST(package), package_name));
+    }
+  }
+
+  RETURN_ON_EXCEPTION(isolate_,
+                      PyDict::PutMaybe(module_dict, ST(file),
+                                       ModuleUtils::NewPyString(loc.origin)));
+
+  RETURN_ON_EXCEPTION(
+      isolate_, PyDict::PutMaybe(module_dict, ST(class),
+                                 PyObject::GetKlass(module)->type_object()));
+
+  if (loc.is_package) {
+    Handle<PyList> pkg_path = PyList::NewInstance();
+    PyList::Append(pkg_path, ModuleUtils::NewPyString(loc.package_dir));
+    RETURN_ON_EXCEPTION(isolate_,
+                        PyDict::PutMaybe(module_dict, ST(path), pkg_path));
+  }
+
+  return handle(isolate_->py_none_object());
 }
 
 }  // namespace saauso::internal

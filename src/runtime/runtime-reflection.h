@@ -31,18 +31,24 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object);
 
-// 沿着 instance 的 type mro 查找属性。
-// - 命中返回属性值；未命中返回 null。
-// - 该函数不会抛出 Python 异常；返回 null 仅表示缺失（not found）。
-Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
+// 沿着 klass 的 mro 查找属性。
+// - 命中通过out_prop_val输出属性值，并且返回true
+// - 未命中通过out_prop_val输出null，并且返回false
+// - 查询过程中出现异常，out_prop_val输出null，并且返回empty
+Maybe<bool> Runtime_FindPropertyInInstanceTypeMro(
+    Isolate* isolate,
     Handle<PyObject> instance,
-    Handle<PyObject> prop_name);
+    Handle<PyObject> prop_name,
+    Handle<PyObject>& out_prop_val);
 
 // 沿着 klass 的 mro 查找属性。
-// - 命中返回属性值；未命中返回 null。
-// - 该函数不会抛出 Python 异常；返回 null 仅表示缺失（not found）。
-Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
-                                                Handle<PyObject> prop_name);
+// - 命中通过out_prop_val输出属性值，并且返回true
+// - 未命中通过out_prop_val输出null，并且返回false
+// - 查询过程中出现异常，out_prop_val输出null，并且返回empty
+Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
+                                           Tagged<Klass> klass,
+                                           Handle<PyObject> prop_name,
+                                           Handle<PyObject>& out_prop_val);
 
 // 沿着对象的 type mro 查找某个 magic method 并立即调用。
 // - func_name 必须为非空的 str。

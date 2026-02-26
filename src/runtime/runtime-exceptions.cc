@@ -25,30 +25,6 @@ namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
 
-// 创建一个新的异常实例。
-// - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PyObject> NewExceptionInstance(Handle<PyString> exception_type_name,
-                                           Handle<PyString> message_or_null) {
-  Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
-  Handle<PyObject> exception_type = builtins->Get(exception_type_name);
-  assert(!exception_type.is_null());
-
-  Handle<PyObject> exception = Handle<PyObject>::null();
-  ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), exception,
-      Runtime_NewObject(Handle<PyTypeObject>::cast(exception_type),
-                        Handle<PyObject>::null(), Handle<PyObject>::null()));
-
-  if (!message_or_null.is_null()) {
-    Handle<PyDict> properties = PyObject::GetProperties(exception);
-    if (!properties.is_null()) {
-      PyDict::Put(properties, ST(message), message_or_null);
-    }
-  }
-
-  return exception;
-}
-
 void ThrowNewException(Handle<PyString> exception_type_name,
                        Handle<PyString> message_or_null) {
   auto* isolate = Isolate::Current();
@@ -61,7 +37,7 @@ void ThrowNewException(Handle<PyString> exception_type_name,
   Handle<PyObject> exception;
   ASSIGN_RETURN_ON_EXCEPTION_VOID(
       isolate, exception,
-      NewExceptionInstance(exception_type_name, message_or_null));
+      Runtime_NewExceptionInstance(exception_type_name, message_or_null));
 
   state->Throw(*exception);
 }
@@ -110,6 +86,35 @@ void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
 
 //////////////////////////////////////////////////////////////////////////
 
+MaybeHandle<PyObject> Runtime_NewExceptionInstance(
+    Handle<PyString> exception_type_name,
+    Handle<PyString> message_or_null) {
+  Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
+  Tagged<PyObject> exception_type;
+  if (!builtins->GetTaggedMaybe(*exception_type_name).To(&exception_type)) {
+    return kNullMaybeHandle;
+  }
+  assert(!exception_type.is_null());
+
+  Handle<PyObject> exception = Handle<PyObject>::null();
+  ASSIGN_RETURN_ON_EXCEPTION(
+      Isolate::Current(), exception,
+      Runtime_NewObject(Handle<PyTypeObject>::cast(handle(exception_type)),
+                        Handle<PyObject>::null(), Handle<PyObject>::null()));
+
+  if (!message_or_null.is_null()) {
+    Handle<PyDict> properties = PyObject::GetProperties(exception);
+    if (!properties.is_null()) {
+      RETURN_ON_EXCEPTION_VALUE(
+          Isolate::Current(),
+          PyDict::PutMaybe(properties, ST(message), message_or_null),
+          kNullMaybeHandle);
+    }
+  }
+
+  return exception;
+}
+
 void Runtime_ThrowError(ExceptionType type, const char* message) {
   Handle<PyString> type_name = GetExceptionStringHandle(type);
   Handle<PyString> wrapped_message = message != nullptr
@@ -143,9 +148,12 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
   Handle<PyString> message = Handle<PyString>::null();
   Handle<PyDict> properties = PyObject::GetProperties(exception);
   if (!properties.is_null()) {
-    Handle<PyObject> msg_obj = properties->Get(ST(message));
-    if (!msg_obj.is_null() && IsPyString(*msg_obj)) {
-      message = Handle<PyString>::cast(msg_obj);
+    Tagged<PyObject> msg_obj;
+    if (!properties->GetTaggedMaybe(*ST(message)).To(&msg_obj)) {
+      return Handle<PyString>::null();
+    }
+    if (!msg_obj.is_null() && IsPyString(msg_obj)) {
+      message = Handle<PyString>::cast(handle(msg_obj));
     }
   }
 
@@ -170,13 +178,16 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   Handle<PyObject> pending = state->pending_exception();
 
   Handle<PyDict> builtins = Execution::builtins(isolate);
-  Handle<PyObject> stop_iter_type = builtins->Get(ST(stop_iter));
+  Tagged<PyObject> stop_iter_type;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), stop_iter_type,
+                                   builtins->GetTaggedMaybe(*ST(stop_iter)),
+                                   kNullMaybe);
 
   bool is_stop_iteration = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       Isolate::Current(), is_stop_iteration,
       Runtime_IsInstanceOfTypeObject(
-          pending, Handle<PyTypeObject>::cast(stop_iter_type)));
+          pending, Handle<PyTypeObject>::cast(handle(stop_iter_type))));
 
   if (!is_stop_iteration) {
     return Maybe<bool>(false);

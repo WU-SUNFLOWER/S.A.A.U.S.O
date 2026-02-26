@@ -89,25 +89,36 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     return scope.Escape(PyString::NewInstance(""));
   }
 
-  Handle<PyObject> package_obj = globals->Get(ST(package));
+  Tagged<PyObject> package_obj;
+  if (!globals->GetTaggedMaybe(ST(package)).To(&package_obj)) {
+    return kNullMaybe;
+  }
   if (!package_obj.is_null()) {
     if (!IsPyString(package_obj)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "__package__ must be a string");
       return kNullMaybe;
     }
-    return scope.Escape(Handle<PyString>::cast(package_obj));
+    return scope.Escape(Handle<PyString>::cast(handle(package_obj)));
   }
 
-  Handle<PyObject> name_obj = globals->Get(ST(name));
+  Tagged<PyObject> name_obj;
+  if (!globals->GetTaggedMaybe(ST(name)).To(&name_obj)) {
+    return kNullMaybe;
+  }
   if (name_obj.is_null() || !IsPyString(name_obj)) {
     Runtime_ThrowError(ExceptionType::kImportError,
                        "missing __name__ in globals");
     return kNullMaybe;
   }
 
-  Handle<PyString> name_str = Handle<PyString>::cast(name_obj);
-  bool is_package = !globals->Get(ST(path)).is_null();
+  Handle<PyString> name_str = Handle<PyString>::cast(handle(name_obj));
+
+  Tagged<PyObject> path_obj;
+  if (!globals->GetTaggedMaybe(ST(path)).To(&path_obj)) {
+    return kNullMaybe;
+  }
+  bool is_package = !path_obj.is_null();
   if (is_package) {
     return scope.Escape(name_str);
   }

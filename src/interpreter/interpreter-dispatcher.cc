@@ -255,14 +255,9 @@ void Interpreter::EvalCurrentFrame() {
                 raise_pc);
           }
         } else {
-          auto runtime_error_type =
-              Handle<PyTypeObject>::cast(builtins()->Get(ST(runtime_err)));
-
           ASSIGN_GOTO_ON_EXCEPTION(
-              exception,
-              Runtime_NewObject(runtime_error_type, Handle<PyObject>::null(),
-                                Handle<PyObject>::null()));
-
+              exception, Runtime_NewExceptionInstance(
+                             ST(runtime_err), Handle<PyString>::null()));
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }
@@ -356,7 +351,10 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
-    PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class)));
+    Tagged<PyObject> value;
+    ASSIGN_GOTO_ON_EXCEPTION(
+        value, builtins_tagged()->GetTaggedMaybe(ST_TAGGED(func_build_class)));
+    PUSH(handle(value));
   })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
@@ -379,7 +377,8 @@ void Interpreter::EvalCurrentFrame() {
       goto pending_exception_unwind;
     }
 
-    PyDict::Put(locals, key, POP());
+    Handle<PyObject> value = POP();
+    GOTO_ON_EXCEPTION(PyDict::PutMaybe(locals, key, value));
   })
 
   // 删除一个 name（用于 except ... as e
@@ -391,7 +390,7 @@ void Interpreter::EvalCurrentFrame() {
     if (locals.is_null()) {
       break;
     }
-    locals->Remove(key);
+    GOTO_ON_EXCEPTION(locals->RemoveMaybe(key));
   })
 
   // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续
@@ -399,11 +398,11 @@ void Interpreter::EvalCurrentFrame() {
   // k=item[0], v=item[1]。
   INTERPRETER_HANDLER_WITH_SCOPE(UnpackSequence, {
     Handle<PyObject> sequence = POP();
-    
+
     Handle<PyTuple> tuple;
     ASSIGN_GOTO_ON_EXCEPTION(tuple,
                              Runtime_UnpackIterableObjectToTuple(sequence));
-    
+
     if (tuple->length() != op_arg) {
       Runtime_ThrowErrorf(ExceptionType::kValueError,
                           "unpack expected %d values, got %d", op_arg,
@@ -453,7 +452,8 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
     Handle<PyObject> key = current_frame_->names()->Get(op_arg);
-    PyDict::Put(current_frame_->globals(), key, POP());
+    Handle<PyObject> value = POP();
+    GOTO_ON_EXCEPTION(PyDict::PutMaybe(current_frame_->globals(), key, value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
@@ -461,27 +461,34 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
     Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
-    Tagged<PyObject> value = current_frame_->locals()->GetTagged(key);
+    Tagged<PyObject> value;
+
+    // 1. 查local符号表
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             current_frame_->locals()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    value = current_frame_->globals()->GetTagged(key);
+    // 2. 查global符号表
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             current_frame_->globals()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    value = builtins()->GetTagged(key);
+    // 3. 查builtin符号表
+    ASSIGN_GOTO_ON_EXCEPTION(value, builtins()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
+    // 4. 还没找到，抛错误
     Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
                         Tagged<PyString>::cast(key)->buffer());
-    goto pending_exception_unwind;
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildTuple, {
@@ -505,7 +512,7 @@ void Interpreter::EvalCurrentFrame() {
     for (auto i = 0; i < op_arg; ++i) {
       auto value = POP();
       auto key = POP();
-      PyDict::Put(result, key, value);
+      GOTO_ON_EXCEPTION(PyDict::PutMaybe(result, key, value));
     }
     PUSH(result);
   })
@@ -699,23 +706,24 @@ void Interpreter::EvalCurrentFrame() {
       PUSH(Tagged<PyObject>::null());
     }
 
-    Handle<PyObject> key = current_frame_->names()->Get(op_arg >> 1);
+    Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg >> 1);
+    Tagged<PyObject> value;
 
-    Handle<PyObject> value = current_frame_->globals()->Get(key);
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             current_frame_->globals()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
-    value = builtins()->Get(key);
+    ASSIGN_GOTO_ON_EXCEPTION(value, builtins()->GetTaggedMaybe(key));
     if (!value.is_null()) {
       PUSH(value);
       break;
     }
 
     Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
-                        Handle<PyString>::cast(key)->buffer());
-    goto pending_exception_unwind;
+                        Tagged<PyString>::cast(key)->buffer());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {
@@ -902,7 +910,8 @@ void Interpreter::EvalCurrentFrame() {
     auto keys = Handle<PyTuple>::cast(POP());
     auto result = PyDict::NewInstance();
     for (auto i = keys->length() - 1; 0 <= i; --i) {
-      PyDict::Put(result, keys->Get(i), POP());
+      Handle<PyObject> value = POP();
+      GOTO_ON_EXCEPTION(PyDict::PutMaybe(result, keys->Get(i), value));
     }
     PUSH(result);
   })
@@ -1069,7 +1078,7 @@ pending_exception_unwind: {
     }
     // handler中的第一条PushExcInfo或Reraise字节码会消费exception对象
     PUSH(exception_state->pending_exception_tagged());
-    //  handler中的第一条PushExcInfo字节码会消费exception origin pc
+    // handler中的第一条PushExcInfo字节码会消费exception origin pc
     stack_exception_origin_pc_ = exception_state->pending_exception_origin_pc();
 
     // exception已经被提交给handler处理，撤销虚拟机中存在
