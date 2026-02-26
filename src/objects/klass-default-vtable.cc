@@ -70,8 +70,12 @@ Maybe<uint64_t> Klass::Virtual_Default_Hash(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> Klass::Virtual_Default_Print(Handle<PyObject> self) {
-  Handle<PyObject> method =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(str));
+  auto* isolate = Isolate::Current();
+
+  Handle<PyObject> method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(str), method));
+
   if (method.is_null()) {
     if (!PyObject::LookupAttr(self, ST(repr), method)) {
       return kNullMaybeHandle;
@@ -79,7 +83,6 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Print(Handle<PyObject> self) {
   }
 
   if (!method.is_null()) {
-    auto* isolate = Isolate::Current();
     Handle<PyObject> s;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, s,
@@ -120,8 +123,12 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
                                                   Handle<PyObject> host,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs) {
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(call));
+  auto* isolate = Isolate::Current();
+
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(call), callable));
+
   if (callable.is_null()) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "'%s' object is not callable\n",
@@ -130,8 +137,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
   }
 
   Handle<PyObject> result;
-  if (!Execution::Call(Isolate::Current(), callable, host,
-                       Handle<PyTuple>::cast(args),
+  if (!Execution::Call(isolate, callable, host, Handle<PyTuple>::cast(args),
                        Handle<PyDict>::cast(kwargs))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -144,13 +150,19 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
                                                 bool is_try) {
   assert(IsPyString(prop_name));
 
+  auto* isolate = Isolate::Current();
+
   // 1. 如果对象存在实例字典（__dict__），
   //    尝试直接在实例字典中查找prop_name
   Handle<PyObject> result;
   if (IsHeapObject(self)) {
     Handle<PyDict> properties = PyObject::GetProperties(self);
     if (!properties.is_null()) {
-      result = properties->Get(prop_name);
+      Tagged<PyObject> tagged;
+      if (!properties->GetTaggedMaybe(prop_name).To(&tagged)) {
+        return Handle<PyObject>::null();
+      }
+      result = handle(tagged);
       if (!result.is_null()) {
         return result;
       }
@@ -158,7 +170,11 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   }
 
   // 2. 沿着 MRO 序列在类字典中查找prop_name
-  result = Runtime_FindPropertyInInstanceTypeMro(self, prop_name);
+  if (Runtime_FindPropertyInInstanceTypeMro(isolate, self, prop_name, result)
+          .IsEmpty()) {
+    return Handle<PyObject>::null();
+  }
+
   if (!result.is_null()) {
     // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
     //   （这样调用时 self 才会自动传入）。
@@ -172,16 +188,21 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
 
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
-  Handle<PyObject> getattr_func =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(getattr));
+  Handle<PyObject> getattr_func;
+  if (Runtime_FindPropertyInInstanceTypeMro(isolate, self, ST(getattr),
+                                            getattr_func)
+          .IsEmpty()) {
+    return Handle<PyObject>::null();
+  }
+
   if (!getattr_func.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, prop_name);
 
     Handle<PyObject> getattr_result;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-        Isolate::Current(), getattr_result,
-        Execution::Call(Isolate::Current(), getattr_func, self, args,
+        isolate, getattr_result,
+        Execution::Call(isolate, getattr_func, self, args,
                         Handle<PyDict>::null()),
         Handle<PyObject>::null());
 
@@ -208,20 +229,27 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
     Handle<PyObject>& self_or_null) {
   assert(IsPyString(prop_name));
 
+  auto* isolate = Isolate::Current();
+
   self_or_null = Handle<PyObject>::null();
 
   Handle<PyObject> result;
   if (IsHeapObject(self)) {
     Handle<PyDict> properties = PyObject::GetProperties(self);
     if (!properties.is_null()) {
-      result = properties->Get(prop_name);
+      Tagged<PyObject> tagged;
+      if (!properties->GetTaggedMaybe(prop_name).To(&tagged)) {
+        return kNullMaybeHandle;
+      }
+      result = handle(tagged);
       if (!result.is_null()) {
         return result;
       }
     }
   }
 
-  result = Runtime_FindPropertyInInstanceTypeMro(self, prop_name);
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, prop_name, result));
   if (!result.is_null()) {
     if (IsPyFunction(result) || IsPyNativeFunction(result)) {
       self_or_null = self;
@@ -231,7 +259,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
   }
 
   Handle<PyObject> attr = Virtual_Default_GetAttr(self, prop_name, false);
-  if (attr.is_null() && Isolate::Current()->HasPendingException()) {
+  if (attr.is_null() && isolate->HasPendingException()) {
     return kNullMaybeHandle;
   }
   return attr;
@@ -322,8 +350,12 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
 
 Maybe<bool> Klass::Virtual_Default_Greater(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(gt));
+  auto* isolate = Isolate::Current();
+
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(gt), callable));
+
   if (callable.is_null()) {
     ThrowCompareUnsupported(self, other, ">");
     return kNullMaybe;
@@ -332,7 +364,6 @@ Maybe<bool> Klass::Virtual_Default_Greater(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
-  auto* isolate = Isolate::Current();
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
@@ -343,8 +374,12 @@ Maybe<bool> Klass::Virtual_Default_Greater(Handle<PyObject> self,
 
 Maybe<bool> Klass::Virtual_Default_Less(Handle<PyObject> self,
                                         Handle<PyObject> other) {
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(lt));
+  auto* isolate = Isolate::Current();
+
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(lt), callable));
+
   if (callable.is_null()) {
     ThrowCompareUnsupported(self, other, "<");
     return kNullMaybe;
@@ -353,7 +388,6 @@ Maybe<bool> Klass::Virtual_Default_Less(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
-  auto* isolate = Isolate::Current();
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
@@ -364,12 +398,16 @@ Maybe<bool> Klass::Virtual_Default_Less(Handle<PyObject> self,
 
 Maybe<bool> Klass::Virtual_Default_Equal(Handle<PyObject> self,
                                          Handle<PyObject> other) {
+  auto* isolate = Isolate::Current();
+
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
 
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(eq));
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(eq), callable));
+
   if (callable.is_null()) {
     return Maybe<bool>(false);
   }
@@ -377,7 +415,6 @@ Maybe<bool> Klass::Virtual_Default_Equal(Handle<PyObject> self,
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
-  auto* isolate = Isolate::Current();
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
@@ -388,13 +425,16 @@ Maybe<bool> Klass::Virtual_Default_Equal(Handle<PyObject> self,
 
 Maybe<bool> Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(ne));
+  auto* isolate = Isolate::Current();
+
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(ne), callable));
+
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
 
-    auto* isolate = Isolate::Current();
     Handle<PyObject> result;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, result,
@@ -414,8 +454,10 @@ Maybe<bool> Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   auto* isolate = Isolate::Current();
 
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(ge));
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(ge), callable));
+
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
@@ -439,8 +481,10 @@ Maybe<bool> Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
                                              Handle<PyObject> other) {
   auto* isolate = Isolate::Current();
 
-  Handle<PyObject> callable =
-      Runtime_FindPropertyInInstanceTypeMro(self, ST(le));
+  Handle<PyObject> callable;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(le), callable));
+
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, other);
@@ -484,18 +528,23 @@ MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
+  auto* isolate = Isolate::Current();
+
   auto instance = PyObject::AllocateRawPythonObject();
   auto type_object = klass_self->type_object();
 
+  // 建立object实例与type object和klass之间的绑定关系
   PyObject::SetKlass(instance, type_object->own_klass());
-  if (PyDict::PutMaybe(PyObject::GetProperties(instance), ST(class), type_object)
-          .IsNothing()) {
-    return kNullMaybeHandle;
-  }
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::PutMaybe(PyObject::GetProperties(instance), ST(class),
+                                type_object));
 
-  auto init_method = Runtime_FindPropertyInInstanceTypeMro(instance, ST(init));
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, instance, ST(init), init_method));
+
   if (!init_method.is_null()) {
-    if (Execution::Call(Isolate::Current(), init_method, instance,
+    if (Execution::Call(isolate, init_method, instance,
                         Handle<PyTuple>::cast(args),
                         Handle<PyDict>::cast(kwargs))
             .IsEmpty()) {

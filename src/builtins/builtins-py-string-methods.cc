@@ -274,19 +274,25 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       return kNullMaybeHandle;
     }
 
-    Handle<PyObject> sep_from_kwargs = kwargs->Get(sep_key);
-    if (!sep_from_kwargs.is_null()) {
+    Tagged<PyObject> sep_from_kwargs;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, sep_from_kwargs,
+                               kwargs->GetTaggedMaybe(sep_key));
+    Handle<PyObject> sep_from_kwargs_handle = handle(sep_from_kwargs);
+    if (!sep_from_kwargs_handle.is_null()) {
       if (sep_from_positional) {
         Runtime_ThrowError(
             ExceptionType::kTypeError,
             "str.split() got multiple values for argument 'sep'");
         return kNullMaybeHandle;
       }
-      sep_obj = sep_from_kwargs;
+      sep_obj = sep_from_kwargs_handle;
     }
 
-    Handle<PyObject> maxsplit_from_kwargs = kwargs->Get(maxsplit_key);
-    if (!maxsplit_from_kwargs.is_null()) {
+    Tagged<PyObject> maxsplit_from_kwargs;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit_from_kwargs,
+                               kwargs->GetTaggedMaybe(maxsplit_key));
+    Handle<PyObject> maxsplit_from_kwargs_handle = handle(maxsplit_from_kwargs);
+    if (!maxsplit_from_kwargs_handle.is_null()) {
       if (maxsplit_from_positional) {
         Runtime_ThrowError(
             ExceptionType::kTypeError,
@@ -295,7 +301,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit,
-                                 Runtime_DecodeIntLike(*maxsplit_from_kwargs));
+                                 Runtime_DecodeIntLike(*maxsplit_from_kwargs_handle));
     }
   }
 

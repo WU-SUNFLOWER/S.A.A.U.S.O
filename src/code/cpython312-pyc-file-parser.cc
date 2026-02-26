@@ -433,7 +433,10 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
           break;
         }
         auto value = ParseObject(string_table, cache);
-        PyDict::Put(dict, key, value);
+        if (PyDict::PutMaybe(dict, key, value).IsNothing()) {
+          std::fprintf(stderr, "marshal parser: failed to insert dict entry\n");
+          std::exit(1);
+        }
       }
       object = dict;
       break;

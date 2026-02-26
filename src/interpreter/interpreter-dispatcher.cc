@@ -351,7 +351,10 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
-    PUSH(builtins_tagged()->Get(ST_TAGGED(func_build_class)));
+    Tagged<PyObject> value;
+    ASSIGN_GOTO_ON_EXCEPTION(
+        value, builtins_tagged()->GetTaggedMaybe(ST_TAGGED(func_build_class)));
+    PUSH(handle(value));
   })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {

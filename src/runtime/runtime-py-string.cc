@@ -224,6 +224,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 
 MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
   EscapableHandleScope scope;
+  auto* isolate = Isolate::Current();
 
   if (value.is_null()) {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -248,11 +249,11 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
     return scope.Escape(PyString::NewInstance("None"));
   }
 
-  Handle<PyObject> method =
-      Runtime_FindPropertyInInstanceTypeMro(value, ST(str));
+  Handle<PyObject> method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, value, ST(str), method));
 
   if (!method.is_null()) {
-    auto* isolate = Isolate::Current();
     Handle<PyObject> result;
 
     ASSIGN_RETURN_ON_EXCEPTION(

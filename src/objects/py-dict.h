@@ -23,34 +23,14 @@ class PyDict : public PyObject {
   Handle<PyObject> ValueAtIndex(int64_t index) const;
   Handle<PyTuple> ItemAtIndex(int64_t index) const;
 
-  // 旧 dict API（已废弃）：
-  // - Get/GetTagged/Put/Contains/Remove 无法表达三态（命中/未命中/异常），
-  //   在 key 可能触发 __hash__/__eq__ 的路径上容易导致异常覆盖/吞掉。
-  // - 新代码默认不得使用；仅在 key 可证明为 interned PyString 且不需要
-  //   异常传播通道的内部路径中允许保留。
-  //
-  // 请优先使用 fallible
-  // API：GetTaggedMaybe/PutMaybe/RemoveMaybe/ContainsMaybe。
-  bool Contains(Handle<PyObject> key) const;
   Maybe<bool> ContainsMaybe(Handle<PyObject> key) const;
-
-  Handle<PyObject> Get(Handle<PyObject> key) const;
-  Handle<PyObject> Get(Tagged<PyObject> key) const;
-
-  Tagged<PyObject> GetTagged(Handle<PyObject> key) const;
-  Tagged<PyObject> GetTagged(Tagged<PyObject> key) const;
 
   Maybe<Tagged<PyObject>> GetTaggedMaybe(Handle<PyObject> key) const;
   Maybe<Tagged<PyObject>> GetTaggedMaybe(Tagged<PyObject> key) const;
-
-  void Remove(Handle<PyObject> key);
   Maybe<bool> RemoveMaybe(Handle<PyObject> key);
 
   int64_t occupied() const { return occupied_; }
 
-  static void Put(Handle<PyDict> dict,
-                  Handle<PyObject> key,
-                  Handle<PyObject> value);
   static Maybe<bool> PutMaybe(Handle<PyDict> dict,
                               Handle<PyObject> key,
                               Handle<PyObject> value);
@@ -65,8 +45,6 @@ class PyDict : public PyObject {
 
   static void ExpandImpl(Handle<PyDict> list);
   static Maybe<bool> ExpandImplMaybe(Handle<PyDict> dict);
-
-  Tagged<PyObject> GetImpl(Tagged<PyObject> key) const;
 
   // FixedArray* data_
   Tagged<PyObject> data_;

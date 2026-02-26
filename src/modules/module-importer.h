@@ -75,9 +75,10 @@ class ModuleImporter final {
   // 应用 IMPORT_NAME 的返回值语义：
   // - fromlist 为空且 fullname 含 dot 时，返回顶层包；
   // - 否则返回最后导入的模块对象。
-  Handle<PyModule> ApplyImportReturnSemantics(Handle<PyString> fullname,
-                                              Handle<PyTuple> fromlist,
-                                              Handle<PyModule> last_module);
+  MaybeHandle<PyModule> ApplyImportReturnSemantics(
+      Handle<PyString> fullname,
+      Handle<PyTuple> fromlist,
+      Handle<PyModule> last_module);
 
   Handle<PyDict> modules_dict();
 

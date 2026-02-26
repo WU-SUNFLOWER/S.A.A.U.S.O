@@ -29,35 +29,45 @@ TEST_F(PyDictTest, BasicOperations) {
   Handle<PyObject> val1(PySmi::FromInt(100));
 
   // Put
-  PyDict::Put(dict, key1, val1);
+  ASSERT_FALSE(PyDict::PutMaybe(dict, key1, val1).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);
 
   // Get
-  Handle<PyObject> res1 = dict->Get(key1);
+  Tagged<PyObject> res1_tagged;
+  ASSERT_TRUE(dict->GetTaggedMaybe(key1).To(&res1_tagged));
+  Handle<PyObject> res1 = handle(res1_tagged);
   EXPECT_FALSE(res1.is_null());
   Handle<PyObject> eq_res;
   ASSERT_TRUE(PyObject::Equal(res1, val1).ToHandle(&eq_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq_res)->value());
 
   // Contains
-  EXPECT_TRUE(dict->Contains(key1));
+  bool contains = false;
+  ASSERT_TRUE(dict->ContainsMaybe(key1).To(&contains));
+  EXPECT_TRUE(contains);
   Handle<PyObject> key2 = PyString::NewInstance("key2");
-  EXPECT_TRUE(!dict->Contains(key2));
+  ASSERT_TRUE(dict->ContainsMaybe(key2).To(&contains));
+  EXPECT_TRUE(!contains);
 
   // Update
   Handle<PyObject> val2(PySmi::FromInt(200));
-  PyDict::Put(dict, key1, val2);
+  ASSERT_FALSE(PyDict::PutMaybe(dict, key1, val2).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
-  res1 = dict->Get(key1);
+  ASSERT_TRUE(dict->GetTaggedMaybe(key1).To(&res1_tagged));
+  res1 = handle(res1_tagged);
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(res1, val2).To(&eq));
   EXPECT_TRUE(eq);
 
   // Remove
-  dict->Remove(key1);
+  bool removed = false;
+  ASSERT_TRUE(dict->RemoveMaybe(key1).To(&removed));
+  ASSERT_TRUE(removed);
   EXPECT_EQ(dict->occupied(), 0);
-  EXPECT_TRUE(!dict->Contains(key1));
-  EXPECT_TRUE(dict->Get(key1).is_null());
+  ASSERT_TRUE(dict->ContainsMaybe(key1).To(&contains));
+  EXPECT_TRUE(!contains);
+  ASSERT_TRUE(dict->GetTaggedMaybe(key1).To(&res1_tagged));
+  EXPECT_TRUE(res1_tagged.is_null());
 }
 
 TEST_F(PyDictTest, CollisionAndShift) {
@@ -71,7 +81,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    PyDict::Put(dict, key, val);
+    ASSERT_FALSE(PyDict::PutMaybe(dict, key, val).IsNothing());
   }
 
   EXPECT_EQ(dict->occupied(), count);
@@ -79,7 +89,8 @@ TEST_F(PyDictTest, CollisionAndShift) {
   // Remove every second item
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
-    dict->Remove(key);
+    bool removed = false;
+    ASSERT_TRUE(dict->RemoveMaybe(key).To(&removed));
   }
 
   EXPECT_EQ(dict->occupied(), count / 2);
@@ -87,15 +98,21 @@ TEST_F(PyDictTest, CollisionAndShift) {
   // Verify remaining items
   for (int i = 1; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
-    EXPECT_TRUE(dict->Contains(key));
-    Handle<PyObject> val = dict->Get(key);
+    bool exists = false;
+    ASSERT_TRUE(dict->ContainsMaybe(key).To(&exists));
+    EXPECT_TRUE(exists);
+    Tagged<PyObject> val_tagged;
+    ASSERT_TRUE(dict->GetTaggedMaybe(key).To(&val_tagged));
+    Handle<PyObject> val = handle(val_tagged);
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
   }
 
   // Verify removed items are gone
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
-    EXPECT_TRUE(!dict->Contains(key));
+    bool exists = false;
+    ASSERT_TRUE(dict->ContainsMaybe(key).To(&exists));
+    EXPECT_TRUE(!exists);
   }
 }
 
@@ -111,12 +128,12 @@ TEST_F(PyDictTest, Equality) {
   Handle<PyObject> v2(PySmi::FromInt(2));
 
   // d1 = {"a": 1, "b": 2}
-  PyDict::Put(d1, k1, v1);
-  PyDict::Put(d1, k2, v2);
+  ASSERT_FALSE(PyDict::PutMaybe(d1, k1, v1).IsNothing());
+  ASSERT_FALSE(PyDict::PutMaybe(d1, k2, v2).IsNothing());
 
   // d2 = {"b": 2, "a": 1} (Different insertion order, should be equal)
-  PyDict::Put(d2, k2, v2);
-  PyDict::Put(d2, k1, v1);
+  ASSERT_FALSE(PyDict::PutMaybe(d2, k2, v2).IsNothing());
+  ASSERT_FALSE(PyDict::PutMaybe(d2, k1, v1).IsNothing());
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
@@ -124,12 +141,13 @@ TEST_F(PyDictTest, Equality) {
 
   // d2 = {"b": 2, "a": 3} (Different value)
   Handle<PyObject> v3(PySmi::FromInt(3));
-  PyDict::Put(d2, k1, v3);
+  ASSERT_FALSE(PyDict::PutMaybe(d2, k1, v3).IsNothing());
   ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 
   // d2 = {"b": 2} (Different size)
-  d2->Remove(k1);
+  bool removed = false;
+  ASSERT_TRUE(d2->RemoveMaybe(k1).To(&removed));
   ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 }
@@ -154,7 +172,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    PyDict::Put(dict, key, val);
+    ASSERT_FALSE(PyDict::PutMaybe(dict, key, val).IsNothing());
   }
 
   Handle<PyTuple> keys = PyDict::GetKeyTuple(dict);
@@ -181,7 +199,8 @@ TEST_F(PyDictTest, GetKeyTuple) {
 
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
-    dict->Remove(key);
+    bool removed = false;
+    ASSERT_TRUE(dict->RemoveMaybe(key).To(&removed));
   }
 
   Handle<PyTuple> keys_after_remove = PyDict::GetKeyTuple(dict);
@@ -202,7 +221,7 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    PyDict::Put(dict, key, val);
+    ASSERT_FALSE(PyDict::PutMaybe(dict, key, val).IsNothing());
   }
 
   Handle<PyObject> iterator;

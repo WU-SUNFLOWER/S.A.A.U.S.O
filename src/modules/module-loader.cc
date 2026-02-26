@@ -55,9 +55,8 @@ MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
 
   // 将加载的模块保存到 modules 缓存
   Handle<PyDict> modules_dict = manager_->modules();
-  if (PyDict::PutMaybe(modules_dict, fullname, loaded_module).IsNothing()) {
-    return kNullMaybe;
-  }
+  RETURN_ON_EXCEPTION(isolate_,
+                      PyDict::PutMaybe(modules_dict, fullname, loaded_module));
 
   return scope.Escape(loaded_module);
 }

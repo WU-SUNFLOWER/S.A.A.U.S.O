@@ -189,32 +189,12 @@ Handle<FixedArray> PyDict::data() const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }
 
-bool PyDict::Contains(Handle<PyObject> key) const {
-  return !Get(key).is_null();
-}
-
 Maybe<bool> PyDict::ContainsMaybe(Handle<PyObject> key) const {
   Tagged<PyObject> value;
   if (!GetTaggedMaybe(*key).To(&value)) {
     return kNullMaybe;
   }
   return Maybe<bool>(!value.is_null());
-}
-
-Handle<PyObject> PyDict::Get(Handle<PyObject> key) const {
-  return Get(*key);
-}
-
-Handle<PyObject> PyDict::Get(Tagged<PyObject> key) const {
-  return handle(GetImpl(key));
-}
-
-Tagged<PyObject> PyDict::GetTagged(Handle<PyObject> key) const {
-  return GetTagged(*key);
-}
-
-Tagged<PyObject> PyDict::GetTagged(Tagged<PyObject> key) const {
-  return GetImpl(key);
 }
 
 Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Handle<PyObject> key) const {
@@ -234,18 +214,6 @@ Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Tagged<PyObject> key) const {
     return Maybe<Tagged<PyObject>>(Tagged<PyObject>::null());
   }
   return Maybe<Tagged<PyObject>>(GET_DICT_VAL(this, index));
-}
-
-Tagged<PyObject> PyDict::GetImpl(Tagged<PyObject> key) const {
-  Tagged<PyObject> value;
-  if (!GetTaggedMaybe(key).To(&value)) {
-    return Tagged<PyObject>::null();
-  }
-  return value;
-}
-
-void PyDict::Remove(Handle<PyObject> key) {
-  (void)RemoveMaybe(key);
 }
 
 Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {
@@ -270,13 +238,6 @@ Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {
   data_ = *new_data;
   --occupied_;
   return Maybe<bool>(true);
-}
-
-// static
-void PyDict::Put(Handle<PyDict> object,
-                 Handle<PyObject> key,
-                 Handle<PyObject> value) {
-  (void)PutMaybe(object, key, value);
 }
 
 // static

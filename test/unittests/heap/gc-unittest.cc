@@ -148,7 +148,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
         std::string("k").append(std::to_string(i)).c_str());
     Handle<PyObject> value = PyString::NewInstance(
         std::string("v").append(std::to_string(i)).c_str());
-    PyDict::Put(dict, key, value);
+    ASSERT_FALSE(PyDict::PutMaybe(dict, key, value).IsNothing());
   }
 
   Isolate::Current()->heap()->CollectGarbage();
@@ -163,8 +163,10 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     Handle<PyObject> expected_value = PyString::NewInstance(
         std::string("v").append(std::to_string(i)).c_str());
 
-    auto actual_value = dict->Get(query_key);
-    EXPECT_FALSE(actual_value.is_null());
+    Tagged<PyObject> actual_value_tagged;
+    ASSERT_TRUE(dict->GetTaggedMaybe(query_key).To(&actual_value_tagged));
+    auto actual_value = handle(actual_value_tagged);
+    ASSERT_FALSE(actual_value.is_null());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(PyObject::Equal(actual_value, expected_value).ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
@@ -210,7 +212,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
     HandleScope inner_scope;
     PyList::Append(list, PyString::NewInstance(std::to_string(i).c_str()));
   }
-  PyDict::Put(dict, key, Handle<PyObject>(list));
+  ASSERT_FALSE(PyDict::PutMaybe(dict, key, Handle<PyObject>(list)).IsNothing());
 
   Address dict_addr_before = (*dict).ptr();
   Address list_addr_before = (*list).ptr();
@@ -222,7 +224,9 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   EXPECT_NE(dict_addr_before, (*dict).ptr());
   EXPECT_NE(list_addr_before, (*list).ptr());
 
-  auto payload = dict->Get(key);
+  Tagged<PyObject> payload_tagged;
+  ASSERT_TRUE(dict->GetTaggedMaybe(key).To(&payload_tagged));
+  auto payload = handle(payload_tagged);
   ASSERT_FALSE(payload.is_null());
   auto payload_list = Handle<PyList>::cast(payload);
   EXPECT_EQ(payload_list->length(), kCount);

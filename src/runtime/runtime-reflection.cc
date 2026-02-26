@@ -64,16 +64,23 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
   return Maybe<bool>(false);
 }
 
-Handle<PyObject> Runtime_FindPropertyInInstanceTypeMro(
+Maybe<bool> Runtime_FindPropertyInInstanceTypeMro(
+    Isolate* isolate,
     Handle<PyObject> instance,
-    Handle<PyObject> prop_name) {
-  return Runtime_FindPropertyInKlassMro(PyObject::GetKlass(instance),
-                                        prop_name);
+    Handle<PyObject> prop_name,
+    Handle<PyObject>& out_prop_val) {
+  return Runtime_FindPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
+                                        prop_name, out_prop_val);
 }
 
-Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
-                                                Handle<PyObject> prop_name) {
+Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
+                                           Tagged<Klass> klass,
+                                           Handle<PyObject> prop_name,
+                                           Handle<PyObject>& out_prop_val) {
   EscapableHandleScope scope;
+
+  // 预设默认输出
+  out_prop_val = Handle<PyObject>::null();
 
   // 沿着mro序列进行查找
   Handle<PyList> mro_of_object = klass->mro();
@@ -82,13 +89,18 @@ Handle<PyObject> Runtime_FindPropertyInKlassMro(Tagged<Klass> klass,
         handle(Tagged<PyTypeObject>::cast(*mro_of_object->Get(i)));
     auto own_klass = type_object->own_klass();
     auto klass_properties = own_klass->klass_properties();
-    auto result = klass_properties->Get(prop_name);
+
+    Tagged<PyObject> result;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                               klass_properties->GetTaggedMaybe(prop_name));
+
     if (!result.is_null()) {
-      return scope.Escape(result);
+      out_prop_val = scope.Escape(handle(result));
+      return Maybe<bool>(true);
     }
   }
 
-  return Handle<PyObject>::null();
+  return Maybe<bool>(false);
 }
 
 MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
@@ -97,12 +109,13 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     Handle<PyDict> kwargs,
     Handle<PyObject> func_name) {
   EscapableHandleScope scope;
+  auto* isolate = Isolate::Current();
 
-  Handle<PyObject> method =
-      Runtime_FindPropertyInInstanceTypeMro(object, func_name);
+  Handle<PyObject> method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, object, func_name, method));
 
   if (!method.is_null()) {
-    auto* isolate = Isolate::Current();
     Handle<PyObject> result;
 
     ASSIGN_RETURN_ON_EXCEPTION(

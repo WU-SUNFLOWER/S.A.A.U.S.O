@@ -192,14 +192,16 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       }
     }
 
-    Handle<PyObject> value = kwargs->Get(key_name);
+    Tagged<PyObject> value;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, value, kwargs->GetTaggedMaybe(key_name));
     if (!value.is_null()) {
-      key_func = value;
+      key_func = handle(value);
     }
 
-    value = kwargs->Get(reverse_name);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, value,
+                               kwargs->GetTaggedMaybe(reverse_name));
     if (!value.is_null()) {
-      reverse = Runtime_PyObjectIsTrue(value);
+      reverse = Runtime_PyObjectIsTrue(handle(value));
     }
   }
 

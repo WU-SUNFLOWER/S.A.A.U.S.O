@@ -91,11 +91,16 @@ Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
                                                     Handle<PyObject> prop_name,
                                                     bool is_try) {
   assert(IsPyString(prop_name));
+
+  auto* isolate = Isolate::Current();
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
 
   // 沿着当前type object的mro序列进行查找
-  Handle<PyObject> result =
-      Runtime_FindPropertyInKlassMro(own_klass, prop_name);
+  Handle<PyObject> result;
+  if (Runtime_FindPropertyInKlassMro(isolate, own_klass, prop_name, result).IsEmpty()) {
+    return Handle<PyObject>::null();
+  }
+
   if (!result.is_null()) {
     return result;
   }

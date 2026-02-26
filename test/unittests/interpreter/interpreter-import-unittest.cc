@@ -111,22 +111,31 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   ASSERT_FALSE(imported_module.IsEmpty());
 
   Handle<PyDict> modules = isolate()->module_manager()->modules();
-  Handle<PyObject> pkg_module = modules->Get(PyString::NewInstance("pkg"));
+  Tagged<PyObject> pkg_module_tagged;
+  ASSERT_TRUE(
+      modules->GetTaggedMaybe(PyString::NewInstance("pkg")).To(&pkg_module_tagged));
+  Handle<PyObject> pkg_module = handle(pkg_module_tagged);
   ASSERT_FALSE(pkg_module.is_null());
 
   Handle<PyDict> pkg_dict = PyObject::GetProperties(pkg_module);
   ASSERT_FALSE(pkg_dict.is_null());
 
   Handle<PyString> sub_short_name = PyString::NewInstance("sub");
-  pkg_dict->Remove(sub_short_name);
-  EXPECT_TRUE(pkg_dict->Get(sub_short_name).is_null());
+  bool removed = false;
+  ASSERT_TRUE(pkg_dict->RemoveMaybe(sub_short_name).To(&removed));
+  Tagged<PyObject> bound_tagged;
+  ASSERT_TRUE(pkg_dict->GetTaggedMaybe(sub_short_name).To(&bound_tagged));
+  EXPECT_TRUE(bound_tagged.is_null());
 
   imported_module = isolate()->module_manager()->ImportModule(
       name, non_empty_fromlist, 0, Handle<PyDict>::null());
   ASSERT_FALSE(imported_module.IsEmpty());
 
-  Handle<PyObject> pkg_sub_module = modules->Get(name);
-  Handle<PyObject> bound = pkg_dict->Get(sub_short_name);
+  Tagged<PyObject> pkg_sub_module_tagged;
+  ASSERT_TRUE(modules->GetTaggedMaybe(name).To(&pkg_sub_module_tagged));
+  Handle<PyObject> pkg_sub_module = handle(pkg_sub_module_tagged);
+  ASSERT_TRUE(pkg_dict->GetTaggedMaybe(sub_short_name).To(&bound_tagged));
+  Handle<PyObject> bound = handle(bound_tagged);
   ASSERT_FALSE(pkg_sub_module.is_null());
   ASSERT_FALSE(bound.is_null());
   bool eq = false;

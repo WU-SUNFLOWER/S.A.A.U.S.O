@@ -59,7 +59,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
 
   Handle<PyString> fullname;
   ASSIGN_RETURN_ON_EXCEPTION(
-      manager_->isolate(), fullname,
+      isolate_, fullname,
       ModuleNameResolver::ResolveFullName(name, level, globals));
 
   if (!ModuleUtils::IsValidModuleName(fullname)) {
@@ -69,11 +69,13 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
   }
 
   Handle<PyModule> last_module;
-  ASSIGN_RETURN_ON_EXCEPTION(manager_->isolate(), last_module,
-                             ImportModuleImpl(fullname));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, last_module, ImportModuleImpl(fullname));
 
-  Handle<PyModule> result =
-      ApplyImportReturnSemantics(fullname, fromlist, last_module);
+  Handle<PyModule> result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, result,
+      ApplyImportReturnSemantics(fullname, fromlist, last_module));
+
   return scope.Escape(result);
 }
 
@@ -123,9 +125,11 @@ MaybeHandle<PyModule> ModuleImporter::GetOrLoadModulePart(
     bool is_top,
     Handle<PyObject> parent_module) {
   // Fast Path: 模块已经被缓存
-  Handle<PyObject> cached = modules_dict()->Get(part_fullname);
+  Tagged<PyObject> cached;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, cached,
+                             modules_dict()->GetTaggedMaybe(part_fullname));
   if (!cached.is_null()) {
-    return Handle<PyModule>::cast(cached);
+    return Handle<PyModule>::cast(handle(cached));
   }
 
   // Slow Path: 走 module loader 加载模块
@@ -197,7 +201,7 @@ bool ModuleImporter::EnsurePackageForNextSegment(
   return true;
 }
 
-Handle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
+MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
     Handle<PyString> fullname,
     Handle<PyTuple> fromlist,
     Handle<PyModule> last_module) {
@@ -206,7 +210,12 @@ Handle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
   if (!has_fromlist && dot != PyString::kNotFound) {
     int64_t top_end = dot - 1;
     Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
-    return Handle<PyModule>::cast(modules_dict()->Get(top_name));
+
+    Tagged<PyObject> top_module;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, top_module,
+                               modules_dict()->GetTaggedMaybe(top_name));
+
+    return Handle<PyModule>::cast(handle(top_module));
   }
   return last_module;
 }

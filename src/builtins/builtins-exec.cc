@@ -82,24 +82,30 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
     return false;
   }
 
-  Handle<PyObject> globals_from_kwargs = kwargs->Get(globals_key);
+  Tagged<PyObject> globals_from_kwargs;
+  if (!kwargs->GetTaggedMaybe(globals_key).To(&globals_from_kwargs)) {
+    return false;
+  }
   if (!globals_from_kwargs.is_null()) {
     if (globals_from_positional) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'globals'");
       return false;
     }
-    globals = globals_from_kwargs;
+    globals = handle(globals_from_kwargs);
   }
 
-  Handle<PyObject> locals_from_kwargs = kwargs->Get(locals_key);
+  Tagged<PyObject> locals_from_kwargs;
+  if (!kwargs->GetTaggedMaybe(locals_key).To(&locals_from_kwargs)) {
+    return false;
+  }
   if (!locals_from_kwargs.is_null()) {
     if (locals_from_positional) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'locals'");
       return false;
     }
-    locals = locals_from_kwargs;
+    locals = handle(locals_from_kwargs);
   }
 
   return true;
