@@ -5,6 +5,7 @@
 #include <cinttypes>
 
 #include "src/builtins/builtins-utils.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
@@ -35,24 +36,15 @@ MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
   return kNullMaybeHandle;
 }
 
-bool NormalizeExecArgs(Handle<PyDict> kwargs,
-                       Handle<PyObject>& globals,
-                       Handle<PyObject>& locals,
-                       bool globals_from_positional,
-                       bool locals_from_positional) {
-  if (kwargs.is_null()) {
-    return true;
-  }
-
-  // 这里的作用是：
-  // 1) 验证 kwargs 中仅包含 globals/locals 两个关键字；
-  // 2) 将关键字参数合并进对应的引用参数中，并处理“与位置参数重复赋值”的错误。
-  // 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
-  // 通过引用返回给调用方，导致悬垂句柄。
-  HandleScope scope;
-
-  Handle<PyObject> globals_key = PyString::NewInstance("globals");
-  Handle<PyObject> locals_key = PyString::NewInstance("locals");
+// 校验 kwargs 中只允许出现 globals/locals 两个关键字。
+// 成功时返回 Python None；失败时抛异常并返回空 MaybeHandle。
+// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
+// 通过引用返回给调用方，导致悬垂句柄。
+MaybeHandle<PyObject> ValidateExecKeywordArguments(
+    Isolate* isolate,
+    Handle<PyDict> kwargs,
+    Handle<PyObject> globals_key,
+    Handle<PyObject> locals_key) {
   for (auto i = 0; i < kwargs->capacity(); ++i) {
     auto item = kwargs->ItemAtIndex(i);
     if (item.is_null()) {
@@ -62,58 +54,108 @@ bool NormalizeExecArgs(Handle<PyDict> kwargs,
     auto key = item->Get(0);
     if (!IsPyString(key)) {
       Runtime_ThrowError(ExceptionType::kTypeError, "keywords must be strings");
-      return false;
+      return kNullMaybeHandle;
     }
 
     bool eq = false;
-    if (!PyObject::EqualBool(key, globals_key).To(&eq)) {
-      return false;
+    RETURN_ON_EXCEPTION(isolate, PyObject::EqualBool(key, globals_key));
+    if (eq) {
+      continue;
     }
-    if (eq) continue;
-    if (!PyObject::EqualBool(key, locals_key).To(&eq)) {
-      return false;
+
+    RETURN_ON_EXCEPTION(isolate, PyObject::EqualBool(key, locals_key));
+    if (eq) {
+      continue;
     }
-    if (eq) continue;
 
     auto key_str = Handle<PyString>::cast(key);
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "exec() got an unexpected keyword argument '%s'",
                         key_str->buffer());
-    return false;
+    return kNullMaybeHandle;
   }
 
+  return handle(isolate->py_none_object());
+}
+
+// 将 kwargs 中的 globals/locals 合并到对应的引用参数中。
+// 成功时返回 Python None；失败时抛异常并返回空 MaybeHandle。
+// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
+// 通过引用返回给调用方，导致悬垂句柄。
+MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
+    Isolate* isolate,
+    Handle<PyDict> kwargs,
+    Handle<PyObject> globals_key,
+    Handle<PyObject> locals_key,
+    Handle<PyObject>& globals,
+    Handle<PyObject>& locals,
+    bool globals_from_positional,
+    bool locals_from_positional) {
   Tagged<PyObject> globals_from_kwargs;
-  if (!kwargs->GetTaggedMaybe(globals_key).To(&globals_from_kwargs)) {
-    return false;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, globals_from_kwargs,
+                                   kwargs->GetTaggedMaybe(globals_key),
+                                   kNullMaybeHandle);
   if (!globals_from_kwargs.is_null()) {
     if (globals_from_positional) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'globals'");
-      return false;
+      return kNullMaybeHandle;
     }
     globals = handle(globals_from_kwargs);
   }
 
   Tagged<PyObject> locals_from_kwargs;
-  if (!kwargs->GetTaggedMaybe(locals_key).To(&locals_from_kwargs)) {
-    return false;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, locals_from_kwargs,
+                                   kwargs->GetTaggedMaybe(locals_key),
+                                   kNullMaybeHandle);
   if (!locals_from_kwargs.is_null()) {
     if (locals_from_positional) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'locals'");
-      return false;
+      return kNullMaybeHandle;
     }
     locals = handle(locals_from_kwargs);
   }
 
-  return true;
+  return handle(isolate->py_none_object());
 }
+
+// 这里的作用是：
+// 1) 验证 kwargs 中仅包含 globals/locals 两个关键字；
+// 2) 将关键字参数合并进对应的引用参数中，并处理“与位置参数重复赋值”的错误。
+// 成功时返回 Python None；失败时抛异常并返回空 MaybeHandle。
+// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
+// 通过引用返回给调用方，导致悬垂句柄。
+MaybeHandle<PyObject> NormalizeExecArgs(Isolate* isolate,
+                                        Handle<PyDict> kwargs,
+                                        Handle<PyObject>& globals,
+                                        Handle<PyObject>& locals,
+                                        bool globals_from_positional,
+                                        bool locals_from_positional) {
+  if (kwargs.is_null()) {
+    return handle(isolate->py_none_object());
+  }
+
+  Handle<PyObject> globals_key = PyString::NewInstance("globals");
+  Handle<PyObject> locals_key = PyString::NewInstance("locals");
+  RETURN_ON_EXCEPTION_VALUE(
+      isolate,
+      ValidateExecKeywordArguments(isolate, kwargs, globals_key, locals_key),
+      kNullMaybeHandle);
+  RETURN_ON_EXCEPTION_VALUE(
+      isolate,
+      ApplyExecKeywordArgumentOverrides(
+          isolate, kwargs, globals_key, locals_key, globals, locals,
+          globals_from_positional, locals_from_positional),
+      kNullMaybeHandle);
+  return handle(isolate->py_none_object());
+}
+
 }  // namespace
 
 BUILTIN(Exec) {
   EscapableHandleScope scope;
+  Isolate* isolate = Isolate::Current();
 
   // 位置参数：exec(obj) / exec(obj, globals) / exec(obj, globals, locals)。
   const int64_t argc = args.is_null() ? 0 : args->length();
@@ -148,12 +190,11 @@ BUILTIN(Exec) {
     locals_from_positional = true;
   }
 
-  if (!NormalizeExecArgs(kwargs, globals_obj, locals_obj,
-                         globals_from_positional, locals_from_positional)) {
-    return kNullMaybeHandle;
-  }
-
-  Isolate* isolate = Isolate::Current();
+  RETURN_ON_EXCEPTION_VALUE(
+      isolate,
+      NormalizeExecArgs(isolate, kwargs, globals_obj, locals_obj,
+                        globals_from_positional, locals_from_positional),
+      kNullMaybeHandle);
   const bool globals_explicit =
       !globals_obj.is_null() && !IsPyNone(*globals_obj);
 
