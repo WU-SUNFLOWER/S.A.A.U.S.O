@@ -222,7 +222,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
 
     bool exists = false;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-        isolate, exists, dst_dict->ContainsMaybe(key), kNullMaybeHandle);
+        isolate, exists, dst_dict->ContainsKey(key), kNullMaybeHandle);
     if (!allow_overwriting && exists) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "got multiple values for keyword argument");

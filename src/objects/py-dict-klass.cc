@@ -192,7 +192,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
 
 Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
-  return Handle<PyDict>::cast(self)->ContainsMaybe(subscr);
+  return Handle<PyDict>::cast(self)->ContainsKey(subscr);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(

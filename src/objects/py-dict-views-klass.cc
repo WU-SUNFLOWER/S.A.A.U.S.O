@@ -134,7 +134,7 @@ MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
 Maybe<bool> PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
                                               Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner();
-  return dict->ContainsMaybe(subscr);
+  return dict->ContainsKey(subscr);
 }
 
 size_t PyDictKeysKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

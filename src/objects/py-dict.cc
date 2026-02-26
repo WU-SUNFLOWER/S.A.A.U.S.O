@@ -192,7 +192,7 @@ Handle<FixedArray> PyDict::data() const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }
 
-Maybe<bool> PyDict::ContainsMaybe(Handle<PyObject> key) const {
+Maybe<bool> PyDict::ContainsKey(Handle<PyObject> key) const {
   Tagged<PyObject> value;
   bool found = false;
   if (!GetTagged(*key, value).To(&found)) {

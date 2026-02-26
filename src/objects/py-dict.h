@@ -23,7 +23,7 @@ class PyDict : public PyObject {
   Handle<PyObject> ValueAtIndex(int64_t index) const;
   Handle<PyTuple> ItemAtIndex(int64_t index) const;
 
-  Maybe<bool> ContainsMaybe(Handle<PyObject> key) const;
+  Maybe<bool> ContainsKey(Handle<PyObject> key) const;
 
   // 根据 key 查 value 系列 API
   // - 返回 true : 成功查询到 value，通过 out 输出。

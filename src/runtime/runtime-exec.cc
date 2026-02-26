@@ -29,7 +29,7 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
     Handle<PyDict> globals) {
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             globals->ContainsMaybe(ST(builtins)));
+                             globals->ContainsKey(ST(builtins)));
 
   if (!found) {
     RETURN_ON_EXCEPTION_VALUE(

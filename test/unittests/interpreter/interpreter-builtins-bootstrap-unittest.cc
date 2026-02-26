@@ -27,13 +27,14 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
 
   Handle<PyDict> builtins = isolate_->interpreter()->builtins();
 
-  // 这里的 << 是 Google Test 的流式断言语法，用于在断言失败时输出额外信息（这里是当前遍历到的 name）。
-  const char* const kTypeNames[] = {"object", "int",  "str",  "float", "list",
+  // 这里的 << 是 Google Test
+  // 的流式断言语法，用于在断言失败时输出额外信息（这里是当前遍历到的 name）。
+  const char* const kTypeNames[] = {"object", "int",  "str",   "float", "list",
                                     "bool",   "dict", "tuple", "type"};
   for (const char* name : kTypeNames) {
     Handle<PyString> key = PyString::NewInstance(name);
     bool exists = false;
-    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(builtins->ContainsKey(key).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
     Tagged<PyObject> value;
     bool found = false;
@@ -46,22 +47,25 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   for (const char* name : kOddballs) {
     Handle<PyString> key = PyString::NewInstance(name);
     bool exists = false;
-    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(builtins->ContainsKey(key).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
   }
   Tagged<PyObject> value;
   bool found = false;
-  ASSERT_TRUE(builtins->GetTagged(PyString::NewInstance("True"), value).To(&found));
+  ASSERT_TRUE(
+      builtins->GetTagged(PyString::NewInstance("True"), value).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_true_object());
-  ASSERT_TRUE(builtins->GetTagged(PyString::NewInstance("False"), value).To(&found));
+  ASSERT_TRUE(
+      builtins->GetTagged(PyString::NewInstance("False"), value).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_false_object());
-  ASSERT_TRUE(builtins->GetTagged(PyString::NewInstance("None"), value).To(&found));
+  ASSERT_TRUE(
+      builtins->GetTagged(PyString::NewInstance("None"), value).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_none_object());
 
-  const char* const kBuiltinFunctions[] = {"print",      "len",  "isinstance",
+  const char* const kBuiltinFunctions[] = {"print",       "len",   "isinstance",
                                            "build_class", "sysgc", "exec"};
   for (const char* name : kBuiltinFunctions) {
     Handle<PyString> key = PyString::NewInstance(name);
@@ -69,7 +73,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
       key = ST(func_build_class);
     }
     bool exists = false;
-    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(builtins->ContainsKey(key).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
     ASSERT_TRUE(builtins->GetTagged(key, value).To(&found)) << name;
     ASSERT_TRUE(found) << name;
@@ -77,7 +81,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   }
 
   bool exists = false;
-  ASSERT_TRUE(builtins->ContainsMaybe(ST(builtins)).To(&exists));
+  ASSERT_TRUE(builtins->ContainsKey(ST(builtins)).To(&exists));
   ASSERT_TRUE(exists);
   ASSERT_TRUE(builtins->GetTagged(ST(builtins), value).To(&found));
   ASSERT_TRUE(found);
@@ -90,14 +94,13 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   Handle<PyDict> builtins = isolate_->interpreter()->builtins();
 
   const char* const kExceptionTypes[] = {
-      "BaseException",  "Exception",      "TypeError",    "ValueError",
-      "NameError",      "AttributeError", "IndexError",   "KeyError",
-      "RuntimeError",
+      "BaseException",  "Exception",  "TypeError", "ValueError",   "NameError",
+      "AttributeError", "IndexError", "KeyError",  "RuntimeError",
   };
   for (const char* name : kExceptionTypes) {
     Handle<PyString> key = PyString::NewInstance(name);
     bool exists = false;
-    ASSERT_TRUE(builtins->ContainsMaybe(key).To(&exists)) << name;
+    ASSERT_TRUE(builtins->ContainsKey(key).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
     Tagged<PyObject> value;
     bool found = false;

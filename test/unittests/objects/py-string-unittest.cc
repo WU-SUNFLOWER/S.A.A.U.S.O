@@ -18,7 +18,6 @@
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-
 namespace saauso::internal {
 
 class PyStringTest : public VmTestBase {};
@@ -242,7 +241,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
 
   bool contains = false;
   ASSERT_TRUE(
-      PyStringKlass::GetInstance()->klass_properties()->ContainsMaybe(attr).To(
+      PyStringKlass::GetInstance()->klass_properties()->ContainsKey(attr).To(
           &contains));
   EXPECT_TRUE(contains);
 

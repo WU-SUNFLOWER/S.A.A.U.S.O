@@ -172,7 +172,7 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 
   bool exists = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, exists,
-                             parent_dict->ContainsMaybe(child_short_name));
+                             parent_dict->ContainsKey(child_short_name));
 
   if (!exists) {
     RETURN_ON_EXCEPTION(

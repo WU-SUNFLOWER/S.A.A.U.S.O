@@ -81,10 +81,10 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Contains
   bool contains = false;
-  ASSERT_TRUE(dict->ContainsMaybe(key1).To(&contains));
+  ASSERT_TRUE(dict->ContainsKey(key1).To(&contains));
   EXPECT_TRUE(contains);
   Handle<PyObject> key2 = PyString::NewInstance("key2");
-  ASSERT_TRUE(dict->ContainsMaybe(key2).To(&contains));
+  ASSERT_TRUE(dict->ContainsKey(key2).To(&contains));
   EXPECT_TRUE(!contains);
 
   // Update
@@ -103,7 +103,7 @@ TEST_F(PyDictTest, BasicOperations) {
   ASSERT_TRUE(dict->Remove(key1).To(&removed));
   ASSERT_TRUE(removed);
   EXPECT_EQ(dict->occupied(), 0);
-  ASSERT_TRUE(dict->ContainsMaybe(key1).To(&contains));
+  ASSERT_TRUE(dict->ContainsKey(key1).To(&contains));
   EXPECT_TRUE(!contains);
   ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
   EXPECT_FALSE(found);
@@ -139,7 +139,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 1; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool exists = false;
-    ASSERT_TRUE(dict->ContainsMaybe(key).To(&exists));
+    ASSERT_TRUE(dict->ContainsKey(key).To(&exists));
     EXPECT_TRUE(exists);
     Tagged<PyObject> val_tagged;
     bool found = false;
@@ -153,7 +153,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool exists = false;
-    ASSERT_TRUE(dict->ContainsMaybe(key).To(&exists));
+    ASSERT_TRUE(dict->ContainsKey(key).To(&exists));
     EXPECT_TRUE(!exists);
   }
 }
