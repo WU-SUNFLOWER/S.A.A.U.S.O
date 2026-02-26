@@ -64,16 +64,18 @@ struct VirtualTable {
 
   // Fallible slot：返回 MaybeHandle<PyObject>，失败时设置 pending exception
   using MaybeOopHandle = MaybeHandle<PyObject>;
-  using VirtualFuncType_Maybe_1_1 =
-      MaybeOopHandle (*)(OopHandle);
-  using VirtualFuncType_Maybe_1_2 =
-      MaybeOopHandle (*)(OopHandle, OopHandle);
-  using VirtualFuncType_Maybe_0_3 =
-      MaybeOopHandle (*)(OopHandle, OopHandle, OopHandle);
-  using VirtualFuncType_Maybe_1_4 =
-      MaybeOopHandle (*)(OopHandle, OopHandle, OopHandle, OopHandle);
-  using VirtualFuncType_Maybe_Construct =
-      MaybeOopHandle (*)(Tagged<Klass>, OopHandle, OopHandle);
+  using VirtualFuncType_Maybe_1_1 = MaybeOopHandle (*)(OopHandle);
+  using VirtualFuncType_Maybe_1_2 = MaybeOopHandle (*)(OopHandle, OopHandle);
+  using VirtualFuncType_Maybe_0_3 = MaybeOopHandle (*)(OopHandle,
+                                                       OopHandle,
+                                                       OopHandle);
+  using VirtualFuncType_Maybe_1_4 = MaybeOopHandle (*)(OopHandle,
+                                                       OopHandle,
+                                                       OopHandle,
+                                                       OopHandle);
+  using VirtualFuncType_Maybe_Construct = MaybeOopHandle (*)(Tagged<Klass>,
+                                                             OopHandle,
+                                                             OopHandle);
   // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
   using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
   // Fallible slot：返回 Maybe<uint64_t>
@@ -160,29 +162,30 @@ class Klass : public Object {
 
   // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
   MaybeHandle<PyObject> ConstructInstance(Handle<PyObject> args,
-                                           Handle<PyObject> kwargs);
+                                          Handle<PyObject> kwargs);
 
   // 默认虚函数（Fallible 均返回 MaybeHandle<PyObject> 或 Maybe<bool>）
   static MaybeHandle<PyObject> Virtual_Default_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Call(Handle<PyObject> self,
-                                                     Handle<PyObject> host,
-                                                     Handle<PyObject> args,
-                                                     Handle<PyObject> kwargs);
-  static Handle<PyObject> Virtual_Default_GetAttr(
-      Handle<PyObject> self,
-      Handle<PyObject> property_name,
-      bool is_try);
+                                                    Handle<PyObject> host,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
+  static Maybe<bool> Virtual_Default_GetAttr(Handle<PyObject> self,
+                                             Handle<PyObject> prop_name,
+                                             bool is_try,
+                                             Handle<PyObject>& out_prop_val);
   static MaybeHandle<PyObject> Virtual_Default_GetAttrForCall(
       Handle<PyObject> self,
       Handle<PyObject> property_name,
       Handle<PyObject>& self_or_null);
-  static MaybeHandle<PyObject> Virtual_Default_SetAttr(Handle<PyObject> self,
-                                                        Handle<PyObject> property_name,
-                                                        Handle<PyObject> property_value);
+  static MaybeHandle<PyObject> Virtual_Default_SetAttr(
+      Handle<PyObject> self,
+      Handle<PyObject> property_name,
+      Handle<PyObject> property_value);
   static MaybeHandle<PyObject> Virtual_Default_Subscr(Handle<PyObject> self,
-                                                       Handle<PyObject> subscr);
+                                                      Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_Default_StoreSubscr(
       Handle<PyObject> self,
       Handle<PyObject> subscr,
@@ -191,19 +194,19 @@ class Klass : public Object {
       Handle<PyObject> self,
       Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
-                                                    Handle<PyObject> other);
+                                                   Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_Greater(Handle<PyObject> self,
-                                              Handle<PyObject> other);
+                                             Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_Less(Handle<PyObject> self,
                                           Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_Equal(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+                                           Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_NotEqual(Handle<PyObject> self,
-                                               Handle<PyObject> other);
+                                              Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_GreaterEqual(Handle<PyObject> self,
-                                                   Handle<PyObject> other);
+                                                  Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_LessEqual(Handle<PyObject> self,
-                                                Handle<PyObject> other);
+                                               Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Virtual_Default_ConstructInstance(
       Tagged<Klass> klass_self,
