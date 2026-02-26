@@ -20,6 +20,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
@@ -224,88 +225,101 @@ void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
   }
 }
 
-bool AssignKwArgsFromDict(FrameBuildContext& ctx,
-                          Handle<PyDict> actual_kw_args,
-                          Handle<PyDict>& out_kw_args) {
+MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
+                                           FrameBuildContext& ctx,
+                                           Handle<PyDict> actual_kw_args,
+                                           Handle<PyDict>& out_kw_args) {
+  Handle<PyObject> iter;
+
   // 如果函数支持接收 **kwargs，在这里初始化它。
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarKeywords) {
     out_kw_args = PyDict::NewInstance();
   }
 
   if (actual_kw_args.is_null()) {
-    return true;
+    goto ret;
   }
 
-  auto iter = PyDictItemIterator::NewInstance(actual_kw_args);
-  auto* isolate = Isolate::Current();
+  iter = PyDictItemIterator::NewInstance(actual_kw_args);
   while (true) {
     Handle<PyObject> item_handle;
     if (!PyObject::Next(iter).ToHandle(&item_handle)) {
       if (Runtime_ConsumePendingStopIterationIfSet(isolate).ToChecked()) {
         break;
       }
-      return false;
+      return kNullMaybeHandle;
     }
+
     auto item = Handle<PyTuple>::cast(item_handle);
     auto key = Handle<PyString>::cast(item->Get(0));
     auto value = item->Get(1);
-    int64_t index_in_var_args =
-        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+    int64_t index_in_var_args;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, index_in_var_args,
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt));
 
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
         Runtime_ThrowErrorf(ExceptionType::kTypeError,
                             "%s() got multiple values for argument '%s'",
                             ctx.func_name->buffer(), key->buffer());
-        return false;
+        return kNullMaybeHandle;
       }
 
       ctx.localsplus->Set(index_in_var_args, value);
       ++ctx.localsplus_idx;
     } else if (!out_kw_args.is_null()) {
       if (PyDict::PutMaybe(out_kw_args, key, value).IsNothing()) {
-        return false;
+        return kNullMaybeHandle;
       }
     } else {
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s() got an unexpected keyword argument '%s'",
                           ctx.func_name->buffer(), key->buffer());
-      return false;
+      return kNullMaybeHandle;
     }
   }
 
-  return true;
+ret:
+  return handle(isolate->py_none_object());
 }
 
-bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
-                                Handle<PyTuple> actual_args,
-                                Handle<PyTuple> kwarg_keys,
-                                Handle<PyDict>& out_kw_args) {
+MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
+                                                 FrameBuildContext& ctx,
+                                                 Handle<PyTuple> actual_args,
+                                                 Handle<PyTuple> kwarg_keys,
+                                                 Handle<PyDict>& out_kw_args) {
+  int64_t actual_arg_cnt;
+  int64_t actual_kw_arg_cnt;
+
   // 如果函数支持接收 **kwargs，在这里初始化它。
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarKeywords) {
     out_kw_args = PyDict::NewInstance();
   }
 
+  // 如果函数调用时压根没传入键值对参数，那么什么也不用做
   if (kwarg_keys.is_null()) {
-    return true;
+    goto ret;
   }
 
-  int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();
-  int64_t actual_kw_arg_cnt = kwarg_keys->length();
+  actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();
+  actual_kw_arg_cnt = kwarg_keys->length();
 
   for (int64_t i = 0; i < actual_kw_arg_cnt; ++i) {
     auto key =
         Handle<PyString>::cast(kwarg_keys->Get(actual_kw_arg_cnt - i - 1));
     auto value = actual_args->Get(actual_arg_cnt - i - 1);
 
-    int64_t index_in_var_args =
-        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt);
+    int64_t index_in_var_args;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, index_in_var_args,
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt));
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
         Runtime_ThrowErrorf(ExceptionType::kTypeError,
                             "%s() got multiple values for argument '%s'",
                             ctx.func_name->buffer(), key->buffer());
-        return false;
+        return kNullMaybeHandle;
       }
 
       ctx.localsplus->Set(index_in_var_args, value);
@@ -315,7 +329,7 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
 
     if (!out_kw_args.is_null()) {
       if (PyDict::PutMaybe(out_kw_args, key, value).IsNothing()) {
-        return false;
+        return kNullMaybeHandle;
       }
       continue;
     }
@@ -323,10 +337,11 @@ bool AssignKwArgsFromActualArgs(FrameBuildContext& ctx,
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s() got an unexpected keyword argument '%s'",
                         ctx.func_name->buffer(), key->buffer());
-    return false;
+    return kNullMaybeHandle;
   }
 
-  return true;
+ret:
+  return handle(isolate->py_none_object());
 }
 
 }  // namespace
@@ -350,6 +365,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
+  auto* isolate = Isolate::Current();
+
   // 创建一般的 python 栈帧（慢速路径）。
   FrameBuildContext ctx = PrepareForFunction(func, host, bound_locals);
 
@@ -360,9 +377,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   }
 
   Handle<PyDict> kw_args;
-  if (!AssignKwArgsFromDict(ctx, actual_kw_args, kw_args)) {
-    return kNullMaybe;
-  }
+  RETURN_ON_EXCEPTION(
+      isolate, AssignKwArgsFromDict(isolate, ctx, actual_kw_args, kw_args));
 
   FillDefaultArgs(ctx, func->default_args());
   if (!CheckMissingArgs(ctx)) {
@@ -402,6 +418,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
 
+  auto* isolate = Isolate::Current();
+
   // 创建一般的 python 栈帧（快速路径）。
   FrameBuildContext ctx = PrepareForFunction(func, host, bound_locals);
 
@@ -415,9 +433,9 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
                                 actual_arg_cnt - actual_kw_arg_cnt);
 
   Handle<PyDict> kw_args;
-  if (!AssignKwArgsFromActualArgs(ctx, actual_args, kwarg_keys, kw_args)) {
-    return kNullMaybe;
-  }
+  RETURN_ON_EXCEPTION(
+      isolate, AssignKwArgsFromActualArgs(isolate, ctx, actual_args, kwarg_keys,
+                                          kw_args));
 
   FillDefaultArgs(ctx, func->default_args());
   if (!CheckMissingArgs(ctx)) {

@@ -81,23 +81,23 @@ void PyTuple::ShrinkInternal(int64_t new_length) {
   length_ = new_length;
 }
 
-int64_t PyTuple::IndexOf(Handle<PyObject> target) const {
+Maybe<int64_t> PyTuple::IndexOf(Handle<PyObject> target) const {
   return IndexOf(target, 0, length());
 }
 
-int64_t PyTuple::IndexOf(Handle<PyObject> target,
-                         int64_t begin,
-                         int64_t end) const {
+Maybe<int64_t> PyTuple::IndexOf(Handle<PyObject> target,
+                                int64_t begin,
+                                int64_t end) const {
   for (auto i = begin; i < end; ++i) {
     Maybe<bool> mb = PyObject::EqualBool(target, Get(i));
     if (mb.IsNothing()) {
-      return kNotFound;
+      return kNullMaybe;
     }
     if (mb.ToChecked()) {
-      return i;
+      return Maybe<int64_t>(i);
     }
   }
-  return kNotFound;
+  return Maybe<int64_t>(kNotFound);
 }
 
 }  // namespace saauso::internal
