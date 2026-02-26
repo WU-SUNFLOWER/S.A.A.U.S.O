@@ -87,31 +87,35 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   return handle(Isolate::Current()->py_none_object());
 }
 
-Handle<PyObject> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
-                                                    Handle<PyObject> prop_name,
-                                                    bool is_try) {
+Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
+                                               Handle<PyObject> prop_name,
+                                               bool is_try,
+                                               Handle<PyObject>& out_prop_val) {
   assert(IsPyString(prop_name));
 
   auto* isolate = Isolate::Current();
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
 
+  out_prop_val = Handle<PyObject>::null();
+
   // 沿着当前type object的mro序列进行查找
   Handle<PyObject> result;
-  if (Runtime_FindPropertyInKlassMro(isolate, own_klass, prop_name, result).IsEmpty()) {
-    return Handle<PyObject>::null();
-  }
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInKlassMro(
+                                   isolate, own_klass, prop_name, result));
 
   if (!result.is_null()) {
-    return result;
+    out_prop_val = result;
+    return Maybe<bool>(true);
   }
   if (is_try) {
-    return Handle<PyObject>::null();
+    return Maybe<bool>(false);
   }
+
   Runtime_ThrowErrorf(ExceptionType::kAttributeError,
                       "'%s' object has no attribute '%s'\n",
                       PyObject::GetKlass(self)->name()->buffer(),
                       Handle<PyString>::cast(prop_name)->buffer());
-  return Handle<PyObject>::null();
+  return kNullMaybe;
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(

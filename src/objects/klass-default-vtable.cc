@@ -77,9 +77,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Print(Handle<PyObject> self) {
                                    isolate, self, ST(str), method));
 
   if (method.is_null()) {
-    if (!PyObject::LookupAttr(self, ST(repr), method)) {
-      return kNullMaybeHandle;
-    }
+    RETURN_ON_EXCEPTION(isolate, PyObject::LookupAttr(self, ST(repr), method));
   }
 
   if (!method.is_null()) {
@@ -268,6 +266,8 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
   Handle<PyObject> attr;
   RETURN_ON_EXCEPTION(isolate,
                       Virtual_Default_GetAttr(self, prop_name, false, attr));
+
+  assert(!attr.is_null());
   return attr;
 }
 

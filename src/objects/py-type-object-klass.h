@@ -26,12 +26,13 @@ class PyTypeObjectKlass : public Klass {
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
 
-  static Handle<PyObject> Virtual_GetAttr(Handle<PyObject> self,
-                                          Handle<PyObject> prop_name,
-                                          bool is_try);
+  static Maybe<bool> Virtual_GetAttr(Handle<PyObject> self,
+                                     Handle<PyObject> prop_name,
+                                     bool is_try,
+                                     Handle<PyObject>& out_prop_val);
   static MaybeHandle<PyObject> Virtual_SetAttr(Handle<PyObject> self,
-                                                Handle<PyObject> prop_name,
-                                                Handle<PyObject> prop_value);
+                                               Handle<PyObject> prop_name,
+                                               Handle<PyObject> prop_value);
 
   static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,

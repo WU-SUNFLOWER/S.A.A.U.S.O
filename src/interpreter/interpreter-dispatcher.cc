@@ -636,9 +636,8 @@ void Interpreter::EvalCurrentFrame() {
 
     // Fast Path: 如果目标子模块已经被解析过了，直接返回
     Handle<PyObject> value;
-    if (!PyObject::LookupAttr(parent_module, sub_module_name, value)) {
-      goto pending_exception_unwind;
-    }
+    GOTO_ON_EXCEPTION(
+        PyObject::LookupAttr(parent_module, sub_module_name, value));
 
     if (!value.is_null()) {
       PUSH(value);

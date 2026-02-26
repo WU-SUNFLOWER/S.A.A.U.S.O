@@ -418,27 +418,34 @@ Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
   return GetKlass(*self)->vtable().le(self, other);
 }
 
-bool PyObject::LookupAttr(Handle<PyObject> self,
-                          Handle<PyObject> attr_name,
-                          Handle<PyObject>& out) {
-  assert(GetKlass(*self)->vtable().getattr);
-  Handle<PyObject> result =
-      GetKlass(*self)->vtable().getattr(self, attr_name, true);
-  if (result.is_null() && Isolate::Current()->HasPendingException()) {
-    return false;
-  }
-  out = result;
-  return true;
+Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
+                                 Handle<PyObject> attr_name,
+                                 Handle<PyObject>& out) {
+  auto* isolate = Isolate::Current();
+  auto* getattr = GetKlass(*self)->vtable().getattr;
+  assert(getattr != nullptr);
+
+  out = Handle<PyObject>::null();
+
+  bool found;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             getattr(self, attr_name, true, out));
+
+  assert(!found && out.is_null() || found && !out.is_null());
+  return Maybe<bool>(found);
 }
 
 MaybeHandle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
                                         Handle<PyObject> attr_name) {
-  assert(GetKlass(*self)->vtable().getattr);
-  Handle<PyObject> result =
-      GetKlass(*self)->vtable().getattr(self, attr_name, false);
-  if (result.is_null() && Isolate::Current()->HasPendingException()) {
-    return kNullMaybeHandle;
-  }
+  auto* getattr = GetKlass(*self)->vtable().getattr;
+  assert(getattr != nullptr);
+
+  Handle<PyObject> result;
+  RETURN_ON_EXCEPTION(Isolate::Current(),
+                      getattr(self, attr_name, false, result));
+
+  // 非try模式下调用getattr，如果没查到结果会直接抛异常，不可能返回一个空结果
+  assert(!result.is_null());
   return result;
 }
 

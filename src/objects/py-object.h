@@ -127,39 +127,41 @@ class PyObject : public Object {
   static MaybeHandle<PyBoolean> Greater(Handle<PyObject> self,
                                         Handle<PyObject> other);
   static MaybeHandle<PyBoolean> Less(Handle<PyObject> self,
-                                      Handle<PyObject> other);
+                                     Handle<PyObject> other);
   static MaybeHandle<PyBoolean> Equal(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static MaybeHandle<PyBoolean> NotEqual(Handle<PyObject> self,
-                                           Handle<PyObject> other);
+                                         Handle<PyObject> other);
   static MaybeHandle<PyBoolean> GreaterEqual(Handle<PyObject> self,
-                                              Handle<PyObject> other);
+                                             Handle<PyObject> other);
   static MaybeHandle<PyBoolean> LessEqual(Handle<PyObject> self,
-                                           Handle<PyObject> other);
+                                          Handle<PyObject> other);
 
   // Bool 版比较：返回 Maybe<bool>，避免 false 与异常二义性。
-  static Maybe<bool> GreaterBool(Handle<PyObject> self,
-                                 Handle<PyObject> other);
+  static Maybe<bool> GreaterBool(Handle<PyObject> self, Handle<PyObject> other);
   static Maybe<bool> LessBool(Handle<PyObject> self, Handle<PyObject> other);
   static Maybe<bool> EqualBool(Handle<PyObject> self, Handle<PyObject> other);
   static Maybe<bool> NotEqualBool(Handle<PyObject> self,
-                                   Handle<PyObject> other);
+                                  Handle<PyObject> other);
   static Maybe<bool> GreaterEqualBool(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static Maybe<bool> LessEqualBool(Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  // Try/Lookup：返回 true 表示无异常，out 为查询结果（可能为 null 表示缺失）；
-  // 返回 false 表示查询过程中发生异常。
-  static bool LookupAttr(Handle<PyObject> self,
-                         Handle<PyObject> attr_name,
-                         Handle<PyObject>& out);
-  // Fallible：属性不存在或查询异常时返回空 MaybeHandle 并已设置 pending exception。
+  // Lookup：
+  // - 返回 true 表示查询成功，out 为查询结果（非null）；
+  // - 返回 false 表示查询失败，out 为 null
+  // - 返回空 Maybe 表示查询过程中出现异常，需要调用方继续向上传播；out 为 null
+  static Maybe<bool> LookupAttr(Handle<PyObject> self,
+                                Handle<PyObject> attr_name,
+                                Handle<PyObject>& out);
+  // Fallible：属性不存在或查询异常时返回空 MaybeHandle 并已设置 pending
+  // exception。
   static MaybeHandle<PyObject> GetAttr(Handle<PyObject> self,
                                        Handle<PyObject> attr_name);
   static MaybeHandle<PyObject> GetAttrForCall(Handle<PyObject> self,
-                                               Handle<PyObject> attr_name,
-                                               Handle<PyObject>& self_or_null);
+                                              Handle<PyObject> attr_name,
+                                              Handle<PyObject>& self_or_null);
   // 成功返回 None，失败返回空 MaybeHandle。
   static MaybeHandle<PyObject> SetAttr(Handle<PyObject> self,
                                        Handle<PyObject> attr_name,
@@ -168,18 +170,18 @@ class PyObject : public Object {
                                       Handle<PyObject> subscr_name);
 
   static MaybeHandle<PyObject> StoreSubscr(Handle<PyObject> self,
-                                            Handle<PyObject> subscr_name,
-                                            Handle<PyObject> subscr_value);
+                                           Handle<PyObject> subscr_name,
+                                           Handle<PyObject> subscr_value);
   static MaybeHandle<PyBoolean> Contains(Handle<PyObject> self,
-                                          Handle<PyObject> target);
+                                         Handle<PyObject> target);
   static Maybe<bool> ContainsBool(Handle<PyObject> self,
-                                   Handle<PyObject> target);
+                                  Handle<PyObject> target);
   static MaybeHandle<PyObject> Iter(Handle<PyObject> self);
   // 返回空 MaybeHandle 表示迭代结束或异常；调用方需用
   // Runtime_ConsumePendingStopIterationIfSet 区分。
   static MaybeHandle<PyObject> Next(Handle<PyObject> self);
   static MaybeHandle<PyObject> DeletSubscr(Handle<PyObject> self,
-                                            Handle<PyObject> subscr_name);
+                                           Handle<PyObject> subscr_name);
 
   static Maybe<uint64_t> Hash(Handle<PyObject> self);
 
