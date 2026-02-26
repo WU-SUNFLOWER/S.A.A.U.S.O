@@ -77,9 +77,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Print(Handle<PyObject> self) {
                                    isolate, self, ST(str), method));
 
   if (method.is_null()) {
-    if (!PyObject::LookupAttr(self, ST(repr), method)) {
-      return kNullMaybeHandle;
-    }
+    RETURN_ON_EXCEPTION(isolate, PyObject::LookupAttr(self, ST(repr), method));
   }
 
   if (!method.is_null()) {
@@ -145,36 +143,38 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
   return result;
 }
 
-Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
-                                                Handle<PyObject> prop_name,
-                                                bool is_try) {
+Maybe<bool> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
+                                           Handle<PyObject> prop_name,
+                                           bool is_try,
+                                           Handle<PyObject>& out_prop_val) {
   assert(IsPyString(prop_name));
 
   auto* isolate = Isolate::Current();
+  Handle<PyObject> result;
+  Handle<PyObject> getattr_func;
+
+  // 0. 在正式逻辑前，我们先给out_prop_val设置一个没找到时的默认值
+  out_prop_val = Handle<PyObject>::null();
 
   // 1. 如果对象存在实例字典（__dict__），
   //    尝试直接在实例字典中查找prop_name
-  Handle<PyObject> result;
   if (IsHeapObject(self)) {
     Handle<PyDict> properties = PyObject::GetProperties(self);
     if (!properties.is_null()) {
       Tagged<PyObject> tagged;
-      if (!properties->GetTaggedMaybe(prop_name).To(&tagged)) {
-        return Handle<PyObject>::null();
-      }
-      result = handle(tagged);
-      if (!result.is_null()) {
-        return result;
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, tagged,
+                                 properties->GetTaggedMaybe(prop_name));
+
+      if (!tagged.is_null()) {
+        result = handle(tagged);
+        goto found;
       }
     }
   }
 
   // 2. 沿着 MRO 序列在类字典中查找prop_name
-  if (Runtime_FindPropertyInInstanceTypeMro(isolate, self, prop_name, result)
-          .IsEmpty()) {
-    return Handle<PyObject>::null();
-  }
-
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, prop_name, result));
   if (!result.is_null()) {
     // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
     //   （这样调用时 self 才会自动传入）。
@@ -183,44 +183,49 @@ Handle<PyObject> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
       result = MethodObject::NewInstance(
           handle(Tagged<PyFunction>::cast(*result)), self);
     }
-    return result;
+    goto found;
   }
 
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
-  Handle<PyObject> getattr_func;
-  if (Runtime_FindPropertyInInstanceTypeMro(isolate, self, ST(getattr),
-                                            getattr_func)
-          .IsEmpty()) {
-    return Handle<PyObject>::null();
-  }
-
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, self, ST(getattr), getattr_func));
   if (!getattr_func.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
     args->SetInternal(0, prop_name);
 
-    Handle<PyObject> getattr_result;
-    ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-        isolate, getattr_result,
-        Execution::Call(isolate, getattr_func, self, args,
-                        Handle<PyDict>::null()),
-        Handle<PyObject>::null());
-
-    return getattr_result;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                               Execution::Call(isolate, getattr_func, self,
+                                               args, Handle<PyDict>::null()));
+    goto found;
   }
 
-  // 4-1 如果是虚拟机内部查询请求，直接返回null
-  if (is_try) {
-    return Handle<PyObject>::null();
-  }
-
+  // 4-1. 如果是虚拟机内部查询请求，直接返回null。否则抛出错误。
   // 4-2. 还没找到，抛出 AttributeError，并通过返回 null 让上层沿
-  // MaybeHandle 语义继续传播异常。
+  //      MaybeHandle 语义继续传播异常。
+  if (is_try) {
+    goto not_found;
+  } else {
+    goto not_found_and_throw_error;
+  }
+
+found:
+  assert(out_prop_val.is_null());
+  assert(!result.is_null());
+  out_prop_val = result;
+  return Maybe<bool>(true);
+
+not_found:
+  assert(out_prop_val.is_null());
+  assert(result.is_null());
+  return Maybe<bool>(false);
+
+not_found_and_throw_error:
   Runtime_ThrowErrorf(ExceptionType::kAttributeError,
                       "'%s' object has no attribute '%s'\n",
                       PyObject::GetKlass(self)->name()->buffer(),
                       Handle<PyString>::cast(prop_name)->buffer());
-  return Handle<PyObject>::null();
+  return kNullMaybe;
 }
 
 MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
@@ -258,10 +263,11 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
     return result;
   }
 
-  Handle<PyObject> attr = Virtual_Default_GetAttr(self, prop_name, false);
-  if (attr.is_null() && isolate->HasPendingException()) {
-    return kNullMaybeHandle;
-  }
+  Handle<PyObject> attr;
+  RETURN_ON_EXCEPTION(isolate,
+                      Virtual_Default_GetAttr(self, prop_name, false, attr));
+
+  assert(!attr.is_null());
   return attr;
 }
 
