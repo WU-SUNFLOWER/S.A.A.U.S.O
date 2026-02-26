@@ -275,10 +275,12 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     }
 
     Tagged<PyObject> sep_from_kwargs;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, sep_from_kwargs,
-                               kwargs->GetTaggedMaybe(sep_key));
+    bool found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               kwargs->GetTagged(sep_key, sep_from_kwargs));
     Handle<PyObject> sep_from_kwargs_handle = handle(sep_from_kwargs);
-    if (!sep_from_kwargs_handle.is_null()) {
+    if (found) {
+      assert(!sep_from_kwargs_handle.is_null());
       if (sep_from_positional) {
         Runtime_ThrowError(
             ExceptionType::kTypeError,
@@ -289,10 +291,12 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     }
 
     Tagged<PyObject> maxsplit_from_kwargs;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit_from_kwargs,
-                               kwargs->GetTaggedMaybe(maxsplit_key));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               kwargs->GetTagged(maxsplit_key,
+                                                 maxsplit_from_kwargs));
     Handle<PyObject> maxsplit_from_kwargs_handle = handle(maxsplit_from_kwargs);
-    if (!maxsplit_from_kwargs_handle.is_null()) {
+    if (found) {
+      assert(!maxsplit_from_kwargs_handle.is_null());
       if (maxsplit_from_positional) {
         Runtime_ThrowError(
             ExceptionType::kTypeError,

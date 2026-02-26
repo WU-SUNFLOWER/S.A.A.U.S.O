@@ -123,6 +123,9 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
 Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> other) {
   assert(IsPyDict(self));
+
+  auto* isolate = Isolate::Current();
+
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
@@ -142,16 +145,15 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
     if (!k1.is_null()) {
       auto v1 = d1->data()->Get((i << 1) + 1);
       Tagged<PyObject> v2_tagged;
-      if (!d2->GetTaggedMaybe(k1).To(&v2_tagged)) {
-        return kNullMaybe;
-      }
-      if (v2_tagged.is_null()) {
+      bool found = false;
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, found, d2->GetTagged(k1, v2_tagged));
+      if (!found) {
         return Maybe<bool>(false);
       }
 
       bool eq;
       ASSIGN_RETURN_ON_EXCEPTION(
-          Isolate::Current(), eq,
+          isolate, eq,
           PyObject::EqualBool(Handle<PyObject>(v1),
                               Handle<PyObject>(v2_tagged)));
 

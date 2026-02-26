@@ -27,11 +27,11 @@ namespace {
 MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
     Isolate* isolate,
     Handle<PyDict> globals) {
-  Tagged<PyObject> builtins_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, builtins_obj,
-                             globals->GetTaggedMaybe(ST(builtins)));
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             globals->ContainsMaybe(ST(builtins)));
 
-  if (builtins_obj.is_null()) {
+  if (!found) {
     RETURN_ON_EXCEPTION_VALUE(
         isolate,
         PyDict::PutMaybe(globals, ST(builtins), Execution::builtins(isolate)),

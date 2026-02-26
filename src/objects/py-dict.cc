@@ -194,10 +194,11 @@ Handle<FixedArray> PyDict::data() const {
 
 Maybe<bool> PyDict::ContainsMaybe(Handle<PyObject> key) const {
   Tagged<PyObject> value;
-  if (!GetTaggedMaybe(*key).To(&value)) {
+  bool found = false;
+  if (!GetTagged(*key, value).To(&found)) {
     return kNullMaybe;
   }
-  return Maybe<bool>(!value.is_null());
+  return Maybe<bool>(found);
 }
 
 Maybe<bool> PyDict::Get(Handle<PyObject> key, Handle<PyObject>& out) const {
@@ -248,24 +249,6 @@ Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
   out = GET_DICT_VAL(this, index);
   assert(!out.is_null());
   return Maybe<bool>(true);
-}
-
-Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Handle<PyObject> key) const {
-  return GetTaggedMaybe(*key);
-}
-
-Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Tagged<PyObject> key) const {
-  HandleScope scope;
-
-  Handle<PyObject> out;
-  bool found = false;
-  if (!Get(key, out).To(&found)) {
-    return kNullMaybe;
-  }
-  if (!found) {
-    return Maybe<Tagged<PyObject>>(Tagged<PyObject>::null());
-  }
-  return Maybe<Tagged<PyObject>>(*out);
 }
 
 Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {

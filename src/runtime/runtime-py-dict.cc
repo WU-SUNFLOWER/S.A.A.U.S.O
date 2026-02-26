@@ -92,15 +92,17 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
 
 MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
                                           Handle<PyObject> key) {
-  Tagged<PyObject> value;
-  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+  Handle<PyObject> value;
+  bool found = false;
+  if (!dict->Get(key, value).To(&found)) {
     return kNullMaybeHandle;
   }
-  if (value.is_null()) {
+  if (!found) {
     Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
     return kNullMaybeHandle;
   }
-  return handle(value);
+  assert(!value.is_null());
+  return value;
 }
 
 MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
@@ -128,12 +130,14 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
 MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
                                       Handle<PyObject> key,
                                       Handle<PyObject> default_or_null) {
-  Tagged<PyObject> value;
-  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+  Handle<PyObject> value;
+  bool found = false;
+  if (!dict->Get(key, value).To(&found)) {
     return kNullMaybeHandle;
   }
-  if (!value.is_null()) {
-    return handle(value);
+  if (found) {
+    assert(!value.is_null());
+    return value;
   }
   if (!default_or_null.is_null()) {
     return default_or_null;
@@ -144,12 +148,14 @@ MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
 MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
                                              Handle<PyObject> key,
                                              Handle<PyObject> default_or_null) {
-  Tagged<PyObject> existing;
-  if (!dict->GetTaggedMaybe(*key).To(&existing)) {
+  Handle<PyObject> existing;
+  bool found = false;
+  if (!dict->Get(key, existing).To(&found)) {
     return kNullMaybeHandle;
   }
-  if (!existing.is_null()) {
-    return handle(existing);
+  if (found) {
+    assert(!existing.is_null());
+    return existing;
   }
 
   Handle<PyObject> value = default_or_null.is_null()
@@ -166,11 +172,13 @@ MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
                                       Handle<PyObject> key,
                                       Handle<PyObject> default_or_null,
                                       bool has_default) {
-  Tagged<PyObject> value;
-  if (!dict->GetTaggedMaybe(*key).To(&value)) {
+  Handle<PyObject> value;
+  bool found = false;
+  if (!dict->Get(key, value).To(&found)) {
     return kNullMaybeHandle;
   }
-  if (!value.is_null()) {
+  if (found) {
+    assert(!value.is_null());
     bool removed = false;
     if (!dict->RemoveMaybe(key).To(&removed)) {
       return kNullMaybeHandle;
@@ -179,7 +187,7 @@ MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
       Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
       return kNullMaybeHandle;
     }
-    return handle(value);
+    return value;
   }
 
   if (has_default) {

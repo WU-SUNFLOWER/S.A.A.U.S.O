@@ -164,7 +164,9 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
         std::string("v").append(std::to_string(i)).c_str());
 
     Tagged<PyObject> actual_value_tagged;
-    ASSERT_TRUE(dict->GetTaggedMaybe(query_key).To(&actual_value_tagged));
+    bool found = false;
+    ASSERT_TRUE(dict->GetTagged(query_key, actual_value_tagged).To(&found));
+    ASSERT_TRUE(found);
     auto actual_value = handle(actual_value_tagged);
     ASSERT_FALSE(actual_value.is_null());
     Handle<PyObject> eq_res;
@@ -225,7 +227,9 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   EXPECT_NE(list_addr_before, (*list).ptr());
 
   Tagged<PyObject> payload_tagged;
-  ASSERT_TRUE(dict->GetTaggedMaybe(key).To(&payload_tagged));
+  bool found = false;
+  ASSERT_TRUE(dict->GetTagged(key, payload_tagged).To(&found));
+  ASSERT_TRUE(found);
   auto payload = handle(payload_tagged);
   ASSERT_FALSE(payload.is_null());
   auto payload_list = Handle<PyList>::cast(payload);

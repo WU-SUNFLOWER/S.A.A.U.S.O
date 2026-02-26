@@ -19,6 +19,43 @@ namespace saauso::internal {
 
 class PyDictTest : public VmTestBase {};
 
+TEST_F(PyDictTest, GetApiTriState) {
+  HandleScope scope;
+  auto* isolate = Isolate::Current();
+
+  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyObject> key = PyString::NewInstance("k");
+  Handle<PyObject> value(PySmi::FromInt(1));
+  ASSERT_FALSE(PyDict::PutMaybe(dict, key, value).IsNothing());
+
+  Handle<PyObject> miss_key = PyString::NewInstance("missing");
+  Tagged<PyObject> out_tagged;
+  bool found = true;
+  ASSERT_TRUE(dict->GetTagged(miss_key, out_tagged).To(&found));
+  EXPECT_FALSE(found);
+  EXPECT_TRUE(out_tagged.is_null());
+  EXPECT_FALSE(isolate->HasPendingException());
+
+  ASSERT_TRUE(dict->GetTagged(key, out_tagged).To(&found));
+  EXPECT_TRUE(found);
+  EXPECT_FALSE(out_tagged.is_null());
+  bool eq = false;
+  ASSERT_TRUE(PyObject::EqualBool(handle(out_tagged), value).To(&eq));
+  EXPECT_TRUE(eq);
+
+  Handle<PyObject> out_handle;
+  ASSERT_TRUE(dict->Get(key, out_handle).To(&found));
+  EXPECT_TRUE(found);
+  EXPECT_FALSE(out_handle.is_null());
+
+  Handle<PyObject> bad_key = PyDict::NewInstance();
+  out_tagged = Tagged<PyObject>::null();
+  EXPECT_TRUE(dict->GetTagged(bad_key, out_tagged).IsNothing());
+  EXPECT_TRUE(isolate->HasPendingException());
+  EXPECT_TRUE(out_tagged.is_null());
+  isolate->exception_state()->Clear();
+}
+
 TEST_F(PyDictTest, BasicOperations) {
   HandleScope scope;
 
@@ -34,7 +71,9 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Get
   Tagged<PyObject> res1_tagged;
-  ASSERT_TRUE(dict->GetTaggedMaybe(key1).To(&res1_tagged));
+  bool found = false;
+  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
+  ASSERT_TRUE(found);
   Handle<PyObject> res1 = handle(res1_tagged);
   EXPECT_FALSE(res1.is_null());
   Handle<PyObject> eq_res;
@@ -53,7 +92,8 @@ TEST_F(PyDictTest, BasicOperations) {
   Handle<PyObject> val2(PySmi::FromInt(200));
   ASSERT_FALSE(PyDict::PutMaybe(dict, key1, val2).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
-  ASSERT_TRUE(dict->GetTaggedMaybe(key1).To(&res1_tagged));
+  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
+  ASSERT_TRUE(found);
   res1 = handle(res1_tagged);
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(res1, val2).To(&eq));
@@ -66,7 +106,8 @@ TEST_F(PyDictTest, BasicOperations) {
   EXPECT_EQ(dict->occupied(), 0);
   ASSERT_TRUE(dict->ContainsMaybe(key1).To(&contains));
   EXPECT_TRUE(!contains);
-  ASSERT_TRUE(dict->GetTaggedMaybe(key1).To(&res1_tagged));
+  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
+  EXPECT_FALSE(found);
   EXPECT_TRUE(res1_tagged.is_null());
 }
 
@@ -102,7 +143,9 @@ TEST_F(PyDictTest, CollisionAndShift) {
     ASSERT_TRUE(dict->ContainsMaybe(key).To(&exists));
     EXPECT_TRUE(exists);
     Tagged<PyObject> val_tagged;
-    ASSERT_TRUE(dict->GetTaggedMaybe(key).To(&val_tagged));
+    bool found = false;
+    ASSERT_TRUE(dict->GetTagged(key, val_tagged).To(&found));
+    ASSERT_TRUE(found);
     Handle<PyObject> val = handle(val_tagged);
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
   }

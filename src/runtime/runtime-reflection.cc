@@ -85,17 +85,17 @@ Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
   // 沿着mro序列进行查找
   Handle<PyList> mro_of_object = klass->mro();
   for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto type_object =
-        handle(Tagged<PyTypeObject>::cast(*mro_of_object->Get(i)));
+    auto type_object = Handle<PyTypeObject>::cast(mro_of_object->Get(i));
     auto own_klass = type_object->own_klass();
     auto klass_properties = own_klass->klass_properties();
 
-    Tagged<PyObject> result;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                               klass_properties->GetTaggedMaybe(prop_name));
-
-    if (!result.is_null()) {
-      out_prop_val = scope.Escape(handle(result));
+    Handle<PyObject> result;
+    bool found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               klass_properties->Get(prop_name, result));
+    if (found) {
+      assert(!result.is_null());
+      out_prop_val = scope.Escape(result);
       return Maybe<bool>(true);
     }
   }

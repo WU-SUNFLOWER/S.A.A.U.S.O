@@ -40,10 +40,11 @@ bool ModuleUtils::IsPackageModule(Handle<PyObject> module) {
     return false;
   }
   Tagged<PyObject> path;
-  if (!dict->GetTaggedMaybe(ST(path)).To(&path)) {
+  bool found = false;
+  if (!dict->GetTagged(ST(path), path).To(&found)) {
     return false;
   }
-  return !path.is_null() && IsPyList(path);
+  return found && IsPyList(path);
 }
 
 bool ModuleUtils::GetPackagePathList(Handle<PyObject> module,
@@ -56,11 +57,12 @@ bool ModuleUtils::GetPackagePathList(Handle<PyObject> module,
   }
 
   Tagged<PyObject> path_obj;
-  if (!dict->GetTaggedMaybe(ST(path)).To(&path_obj)) {
+  bool found = false;
+  if (!dict->GetTagged(ST(path), path_obj).To(&found)) {
     return false;
   }
 
-  if (path_obj.is_null() || !IsPyList(path_obj)) {
+  if (!found || !IsPyList(path_obj)) {
     return true;
   }
 

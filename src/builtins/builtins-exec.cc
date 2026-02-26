@@ -92,10 +92,12 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
     bool globals_from_positional,
     bool locals_from_positional) {
   Tagged<PyObject> globals_from_kwargs;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, globals_from_kwargs,
-                                   kwargs->GetTaggedMaybe(globals_key),
-                                   kNullMaybeHandle);
-  if (!globals_from_kwargs.is_null()) {
+
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, found, kwargs->GetTagged(globals_key, globals_from_kwargs));
+
+  if (found) {
     if (globals_from_positional) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'globals'");
@@ -104,17 +106,17 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
     globals = handle(globals_from_kwargs);
   }
 
-  Tagged<PyObject> locals_from_kwargs;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, locals_from_kwargs,
-                                   kwargs->GetTaggedMaybe(locals_key),
-                                   kNullMaybeHandle);
-  if (!locals_from_kwargs.is_null()) {
+  Handle<PyObject> locals_from_kwargs;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             kwargs->Get(locals_key, locals_from_kwargs));
+
+  if (found) {
     if (locals_from_positional) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'locals'");
       return kNullMaybeHandle;
     }
-    locals = handle(locals_from_kwargs);
+    locals = locals_from_kwargs;
   }
 
   return handle(isolate->py_none_object());

@@ -125,11 +125,13 @@ MaybeHandle<PyModule> ModuleImporter::GetOrLoadModulePart(
     bool is_top,
     Handle<PyObject> parent_module) {
   // Fast Path: 模块已经被缓存
-  Tagged<PyObject> cached;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, cached,
-                             modules_dict()->GetTaggedMaybe(part_fullname));
-  if (!cached.is_null()) {
-    return Handle<PyModule>::cast(handle(cached));
+  Handle<PyObject> cached;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
+                             modules_dict()->Get(part_fullname, cached));
+  if (found) {
+    assert(!cached.is_null());
+    return Handle<PyModule>::cast(cached);
   }
 
   // Slow Path: 走 module loader 加载模块
@@ -180,10 +182,13 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 #ifdef _DEBUG
     // 如果父模块中已经链接了子模块，则不需要重复链接。
     // 但应确保该子模块与当前准备链接的child_module是同一个module object对象。
-    Tagged<PyObject> existing;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate_, existing,
-                               parent_dict->GetTaggedMaybe(child_short_name));
-    assert(handle(existing).is_identical_to(child_module));
+    Handle<PyObject> existing;
+    bool found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
+                               parent_dict->Get(child_short_name, existing));
+    assert(found);
+    assert(!existing.is_null());
+    assert(existing.is_identical_to(child_module));
 #endif
   }
 
@@ -211,11 +216,14 @@ MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
     int64_t top_end = dot - 1;
     Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
 
-    Tagged<PyObject> top_module;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate_, top_module,
-                               modules_dict()->GetTaggedMaybe(top_name));
+    Handle<PyObject> top_module;
+    bool found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
+                               modules_dict()->Get(top_name, top_module));
+    assert(found);
+    assert(!top_module.is_null());
 
-    return Handle<PyModule>::cast(handle(top_module));
+    return Handle<PyModule>::cast(top_module);
   }
   return last_module;
 }

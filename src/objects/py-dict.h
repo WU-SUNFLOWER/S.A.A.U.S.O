@@ -28,14 +28,12 @@ class PyDict : public PyObject {
   // 根据 key 查 value 系列 API
   // - 返回 true : 成功查询到 value，通过 out 输出。
   // - 返回 false : 未查询到 value，out 输出 null。
-  // - 返回空 Maybe : 查询过程中抛出异常，需要通知调用者向上传播异常。
+  // - 返回空 Maybe : 查询过程中抛出异常，需要通知调用者向上传播异常，out 输出
+  //   null。
   Maybe<bool> Get(Handle<PyObject> key, Handle<PyObject>& out) const;
   Maybe<bool> Get(Tagged<PyObject> key, Handle<PyObject>& out) const;
   Maybe<bool> GetTagged(Handle<PyObject> key, Tagged<PyObject>& out) const;
   Maybe<bool> GetTagged(Tagged<PyObject> key, Tagged<PyObject>& out) const;
-
-  Maybe<Tagged<PyObject>> GetTaggedMaybe(Handle<PyObject> key) const;
-  Maybe<Tagged<PyObject>> GetTaggedMaybe(Tagged<PyObject> key) const;
 
   Maybe<bool> RemoveMaybe(Handle<PyObject> key);
 
