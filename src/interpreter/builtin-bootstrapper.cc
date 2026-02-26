@@ -151,10 +151,18 @@ void BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
 
   auto builtins_handle = builtins_.Get();
   Tagged<PyObject> exception_type_tagged;
-  if (!builtins_handle->GetTaggedMaybe(ST(exception))
-           .To(&exception_type_tagged)) {
+
+  bool found = false;
+  if (!builtins_handle->GetTagged(ST(exception), exception_type_tagged)
+           .To(&found)) {
+    assert(0 && "unreachable");
     return;
   }
+  if (!found) {
+    assert(0 && "unreachable");
+    return;
+  }
+
   Handle<PyObject> exception_type = handle(exception_type_tagged);
   RegisterSimpleTypeToBuiltins(ST(type_err), exception_type);
   RegisterSimpleTypeToBuiltins(ST(value_err), exception_type);

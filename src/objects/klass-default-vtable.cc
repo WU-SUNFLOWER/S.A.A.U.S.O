@@ -161,14 +161,14 @@ Maybe<bool> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   if (IsHeapObject(self)) {
     Handle<PyDict> properties = PyObject::GetProperties(self);
     if (!properties.is_null()) {
-      Tagged<PyObject> tagged;
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, tagged,
-                                 properties->GetTaggedMaybe(prop_name));
-
-      if (!tagged.is_null()) {
-        result = handle(tagged);
+      bool found = false;
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                                 properties->Get(prop_name, result));
+      if (found) {
+        assert(!result.is_null());
         goto found;
       }
+      assert(result.is_null());
     }
   }
 
@@ -242,14 +242,15 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
   if (IsHeapObject(self)) {
     Handle<PyDict> properties = PyObject::GetProperties(self);
     if (!properties.is_null()) {
-      Tagged<PyObject> tagged;
-      if (!properties->GetTaggedMaybe(prop_name).To(&tagged)) {
+      bool found = false;
+      if (!properties->Get(prop_name, result).To(&found)) {
         return kNullMaybeHandle;
       }
-      result = handle(tagged);
-      if (!result.is_null()) {
+      if (found) {
+        assert(!result.is_null());
         return result;
       }
+      assert(result.is_null());
     }
   }
 

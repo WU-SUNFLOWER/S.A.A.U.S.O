@@ -81,20 +81,18 @@ MaybeHandle<PyObject> ExtractPrintKeywordValues(Isolate* isolate,
                                                 Handle<PyObject>& sep,
                                                 Handle<PyObject>& end,
                                                 Handle<PyObject>& eol) {
-  Tagged<PyObject> sep_tagged;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, sep_tagged, kwargs->GetTaggedMaybe(sep_key), kNullMaybeHandle);
-  sep = handle(sep_tagged);
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found, kwargs->Get(sep_key, sep),
+                                   kNullMaybeHandle);
+  assert(!found || !sep.is_null());
 
-  Tagged<PyObject> end_tagged;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, end_tagged, kwargs->GetTaggedMaybe(end_key), kNullMaybeHandle);
-  end = handle(end_tagged);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found, kwargs->Get(end_key, end),
+                                   kNullMaybeHandle);
+  assert(!found || !end.is_null());
 
-  Tagged<PyObject> eol_tagged;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, eol_tagged, kwargs->GetTaggedMaybe(eol_key), kNullMaybeHandle);
-  eol = handle(eol_tagged);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found, kwargs->Get(eol_key, eol),
+                                   kNullMaybeHandle);
+  assert(!found || !eol.is_null());
 
   return handle(isolate->py_none_object());
 }

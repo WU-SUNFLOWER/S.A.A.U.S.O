@@ -320,6 +320,7 @@ MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
 Maybe<bool> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
   HandleScope scope;
+  auto* isolate = Isolate::Current();
 
   if (!IsPyTuple(subscr)) {
     return Maybe<bool>(false);
@@ -334,19 +335,18 @@ Maybe<bool> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
   auto key = item->Get(0);
   auto value = item->Get(1);
 
-  Tagged<PyObject> found;
-  if (!dict->GetTaggedMaybe(*key).To(&found)) {
-    return kNullMaybe;
-  }
-  if (found.is_null()) {
+  Handle<PyObject> found_value;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found, dict->Get(key, found_value));
+
+  if (!found) {
     return Maybe<bool>(false);
   }
 
-  Maybe<bool> mb = PyObject::EqualBool(handle(found), value);
-  if (mb.IsNothing()) {
-    return kNullMaybe;
-  }
-  return Maybe<bool>(mb.ToChecked());
+  bool is_equal = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                             PyObject::EqualBool(found_value, value));
+  return Maybe<bool>(is_equal);
 }
 
 size_t PyDictItemsKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

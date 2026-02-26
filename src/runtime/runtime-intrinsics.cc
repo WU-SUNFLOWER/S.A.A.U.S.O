@@ -34,13 +34,15 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
     return Maybe<bool>(false);
   }
 
-  Tagged<PyObject> value;
-  if (!module_dict->GetTaggedMaybe(name).To(&value)) {
+  Handle<PyObject> value;
+  bool found = false;
+  if (!module_dict->Get(name, value).To(&found)) {
     return kNullMaybe;
   }
-  if (!value.is_null()) {
+  if (found) {
+    assert(!value.is_null());
     RETURN_ON_EXCEPTION(Isolate::Current(),
-                        PyDict::PutMaybe(locals, name, handle(value)));
+                        PyDict::PutMaybe(locals, name, value));
     return Maybe<bool>(true);
   }
 
@@ -106,17 +108,19 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Handle<PyObject> module,
     return kNullMaybeHandle;
   }
 
-  Tagged<PyObject> all;
-  if (!module_dict->GetTaggedMaybe(ST(all)).To(&all)) {
-    return kNullMaybeHandle;
+  Handle<PyObject> all;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found, module_dict->Get(ST(all), all));
+
+  if (!found) {
+    all = Handle<PyObject>::null();
   }
 
   // 1. 如果存在__all__，那么据此定向导入子模块
   // 2. 没有显式的__all__，那么无脑遍历dict并批量导入
   if (!all.is_null()) {
     RETURN_ON_EXCEPTION(
-        isolate,
-        ImportModulesByAllImpl(isolate, handle(all), module_dict, locals));
+        isolate, ImportModulesByAllImpl(isolate, all, module_dict, locals));
   } else {
     Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict);
     for (int64_t i = 0; i < keys->length(); ++i) {

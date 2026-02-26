@@ -90,16 +90,18 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyString> exception_type_name,
     Handle<PyString> message_or_null) {
   Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
-  Tagged<PyObject> exception_type;
-  if (!builtins->GetTaggedMaybe(*exception_type_name).To(&exception_type)) {
+  Handle<PyObject> exception_type;
+  bool found = false;
+  if (!builtins->Get(exception_type_name, exception_type).To(&found)) {
     return kNullMaybeHandle;
   }
+  assert(found);
   assert(!exception_type.is_null());
 
   Handle<PyObject> exception = Handle<PyObject>::null();
   ASSIGN_RETURN_ON_EXCEPTION(
       Isolate::Current(), exception,
-      Runtime_NewObject(Handle<PyTypeObject>::cast(handle(exception_type)),
+      Runtime_NewObject(Handle<PyTypeObject>::cast(exception_type),
                         Handle<PyObject>::null(), Handle<PyObject>::null()));
 
   if (!message_or_null.is_null()) {
@@ -148,12 +150,13 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
   Handle<PyString> message = Handle<PyString>::null();
   Handle<PyDict> properties = PyObject::GetProperties(exception);
   if (!properties.is_null()) {
-    Tagged<PyObject> msg_obj;
-    if (!properties->GetTaggedMaybe(*ST(message)).To(&msg_obj)) {
+    Handle<PyObject> msg_obj;
+    bool found = false;
+    if (!properties->Get(ST(message), msg_obj).To(&found)) {
       return Handle<PyString>::null();
     }
-    if (!msg_obj.is_null() && IsPyString(msg_obj)) {
-      message = Handle<PyString>::cast(handle(msg_obj));
+    if (found && IsPyString(msg_obj)) {
+      message = Handle<PyString>::cast(msg_obj);
     }
   }
 
@@ -178,16 +181,19 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   Handle<PyObject> pending = state->pending_exception();
 
   Handle<PyDict> builtins = Execution::builtins(isolate);
-  Tagged<PyObject> stop_iter_type;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), stop_iter_type,
-                                   builtins->GetTaggedMaybe(*ST(stop_iter)),
+  Handle<PyObject> stop_iter_type;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), found,
+                                   builtins->Get(ST(stop_iter), stop_iter_type),
                                    kNullMaybe);
+  assert(found);
+  assert(!stop_iter_type.is_null());
 
   bool is_stop_iteration = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       Isolate::Current(), is_stop_iteration,
       Runtime_IsInstanceOfTypeObject(
-          pending, Handle<PyTypeObject>::cast(handle(stop_iter_type))));
+          pending, Handle<PyTypeObject>::cast(stop_iter_type)));
 
   if (!is_stop_iteration) {
     return Maybe<bool>(false);

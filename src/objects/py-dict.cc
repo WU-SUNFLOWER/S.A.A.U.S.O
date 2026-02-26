@@ -36,9 +36,12 @@ uint64_t GetProbe(uint64_t index, uint64_t mask) {
 }
 
 template <typename DictT>
-Maybe<int64_t> FindSlot(DictT dict, Handle<PyObject> key, bool* found) {
+Maybe<int64_t> FindSlot(DictT dict, Tagged<PyObject> key, bool* found) {
+  HandleScope scope;
+  Handle<PyObject> key_handle(key);
+
   uint64_t hash = 0;
-  if (!PyObject::Hash(key).To(&hash)) {
+  if (!PyObject::Hash(key_handle).To(&hash)) {
     return kNullMaybe;
   }
 
@@ -48,7 +51,7 @@ Maybe<int64_t> FindSlot(DictT dict, Handle<PyObject> key, bool* found) {
   Tagged<PyObject> curr_key = GET_DICT_KEY(dict, index);
   while (!curr_key.is_null()) {
     bool is_equal = false;
-    if (!PyObject::EqualBool(handle(curr_key), key).To(&is_equal)) {
+    if (!PyObject::EqualBool(handle(curr_key), key_handle).To(&is_equal)) {
       return kNullMaybe;
     }
     if (is_equal) {
@@ -191,29 +194,61 @@ Handle<FixedArray> PyDict::data() const {
 
 Maybe<bool> PyDict::ContainsMaybe(Handle<PyObject> key) const {
   Tagged<PyObject> value;
-  if (!GetTaggedMaybe(*key).To(&value)) {
+  bool found = false;
+  if (!GetTagged(*key, value).To(&found)) {
     return kNullMaybe;
   }
-  return Maybe<bool>(!value.is_null());
+  return Maybe<bool>(found);
 }
 
-Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Handle<PyObject> key) const {
-  return GetTaggedMaybe(*key);
+Maybe<bool> PyDict::Get(Handle<PyObject> key, Handle<PyObject>& out) const {
+  return Get(*key, out);
 }
 
-Maybe<Tagged<PyObject>> PyDict::GetTaggedMaybe(Tagged<PyObject> key) const {
-  HandleScope scope;
-  Handle<PyObject> handle_key(key);
+Maybe<bool> PyDict::Get(Tagged<PyObject> key, Handle<PyObject>& out) const {
+  assert(!key.is_null());
+
+  out = Handle<PyObject>::null();
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(this, handle_key, &found).To(&index)) {
+  if (!FindSlot(this, key, &found).To(&index)) {
     return kNullMaybe;
   }
+
   if (!found) {
-    return Maybe<Tagged<PyObject>>(Tagged<PyObject>::null());
+    return Maybe<bool>(false);
   }
-  return Maybe<Tagged<PyObject>>(GET_DICT_VAL(this, index));
+
+  out = handle(GET_DICT_VAL(this, index));
+  assert(!out.is_null());
+  return Maybe<bool>(true);
+}
+
+Maybe<bool> PyDict::GetTagged(Handle<PyObject> key,
+                              Tagged<PyObject>& out) const {
+  return GetTagged(*key, out);
+}
+
+Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
+                              Tagged<PyObject>& out) const {
+  assert(!key.is_null());
+
+  out = Tagged<PyObject>::null();
+
+  bool found = false;
+  int64_t index = 0;
+  if (!FindSlot(this, key, &found).To(&index)) {
+    return kNullMaybe;
+  }
+
+  if (!found) {
+    return Maybe<bool>(false);
+  }
+
+  out = GET_DICT_VAL(this, index);
+  assert(!out.is_null());
+  return Maybe<bool>(true);
 }
 
 Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {
@@ -221,7 +256,7 @@ Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(this, key, &found).To(&index)) {
+  if (!FindSlot(this, *key, &found).To(&index)) {
     return kNullMaybe;
   }
   if (!found) {
@@ -259,7 +294,7 @@ Maybe<bool> PyDict::PutMaybe(Handle<PyDict> object,
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(dict, key, &found).To(&index)) {
+  if (!FindSlot(dict, *key, &found).To(&index)) {
     return kNullMaybe;
   }
 

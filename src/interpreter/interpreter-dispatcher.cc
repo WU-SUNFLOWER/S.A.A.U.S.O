@@ -352,8 +352,11 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
     Tagged<PyObject> value;
-    ASSIGN_GOTO_ON_EXCEPTION(
-        value, builtins_tagged()->GetTaggedMaybe(ST_TAGGED(func_build_class)));
+    bool found = false;
+    ASSIGN_GOTO_ON_EXCEPTION(found, builtins_tagged()->GetTagged(
+                                        ST_TAGGED(func_build_class), value));
+    assert(found);
+    assert(!value.is_null());
     PUSH(handle(value));
   })
 
@@ -462,26 +465,27 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
     Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
     Tagged<PyObject> value;
+    bool found = false;
 
     // 1. 查local符号表
-    ASSIGN_GOTO_ON_EXCEPTION(value,
-                             current_frame_->locals()->GetTaggedMaybe(key));
-    if (!value.is_null()) {
+    ASSIGN_GOTO_ON_EXCEPTION(found,
+                             current_frame_->locals()->GetTagged(key, value));
+    if (found) {
       PUSH(value);
       break;
     }
 
     // 2. 查global符号表
-    ASSIGN_GOTO_ON_EXCEPTION(value,
-                             current_frame_->globals()->GetTaggedMaybe(key));
-    if (!value.is_null()) {
+    ASSIGN_GOTO_ON_EXCEPTION(found,
+                             current_frame_->globals()->GetTagged(key, value));
+    if (found) {
       PUSH(value);
       break;
     }
 
     // 3. 查builtin符号表
-    ASSIGN_GOTO_ON_EXCEPTION(value, builtins()->GetTaggedMaybe(key));
-    if (!value.is_null()) {
+    ASSIGN_GOTO_ON_EXCEPTION(found, builtins()->GetTagged(key, value));
+    if (found) {
       PUSH(value);
       break;
     }
@@ -707,16 +711,17 @@ void Interpreter::EvalCurrentFrame() {
 
     Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg >> 1);
     Tagged<PyObject> value;
+    bool found = false;
 
-    ASSIGN_GOTO_ON_EXCEPTION(value,
-                             current_frame_->globals()->GetTaggedMaybe(key));
-    if (!value.is_null()) {
+    ASSIGN_GOTO_ON_EXCEPTION(found,
+                             current_frame_->globals()->GetTagged(key, value));
+    if (found) {
       PUSH(value);
       break;
     }
 
-    ASSIGN_GOTO_ON_EXCEPTION(value, builtins()->GetTaggedMaybe(key));
-    if (!value.is_null()) {
+    ASSIGN_GOTO_ON_EXCEPTION(found, builtins()->GetTagged(key, value));
+    if (found) {
       PUSH(value);
       break;
     }

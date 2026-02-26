@@ -193,14 +193,17 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     }
 
     Tagged<PyObject> value;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, value, kwargs->GetTaggedMaybe(key_name));
-    if (!value.is_null()) {
+    bool found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found, kwargs->GetTagged(key_name, value));
+    if (found) {
+      assert(!value.is_null());
       key_func = handle(value);
     }
 
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, value,
-                               kwargs->GetTaggedMaybe(reverse_name));
-    if (!value.is_null()) {
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               kwargs->GetTagged(reverse_name, value));
+    if (found) {
+      assert(!value.is_null());
       reverse = Runtime_PyObjectIsTrue(handle(value));
     }
   }
