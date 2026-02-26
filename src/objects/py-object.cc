@@ -456,20 +456,16 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   }
 
   // Fallback
-  {
-    EscapableHandleScope scope;
-    Handle<PyObject> value;
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), value,
-                               GetAttr(self, attr_name));
+  Handle<PyObject> value;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), value,
+                             GetAttr(self, attr_name));
 
-    if (IsMethodObject(value)) {
-      auto method = Handle<MethodObject>::cast(value);
-      self_or_null = method->owner();
-      return scope.Escape(method->func());
-    }
-
-    return scope.Escape(value);
+  if (IsMethodObject(value)) {
+    auto method = Handle<MethodObject>::cast(value);
+    self_or_null = method->owner();
+    return method->func();
   }
+  return value;
 }
 
 MaybeHandle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
