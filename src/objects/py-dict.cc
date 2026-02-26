@@ -251,7 +251,7 @@ Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
   return Maybe<bool>(true);
 }
 
-Maybe<bool> PyDict::RemoveMaybe(Handle<PyObject> key) {
+Maybe<bool> PyDict::Remove(Handle<PyObject> key) {
   HandleScope scope;
 
   bool found = false;

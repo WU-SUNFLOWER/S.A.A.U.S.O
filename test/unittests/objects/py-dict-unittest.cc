@@ -14,7 +14,6 @@
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-
 namespace saauso::internal {
 
 class PyDictTest : public VmTestBase {};
@@ -101,7 +100,7 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Remove
   bool removed = false;
-  ASSERT_TRUE(dict->RemoveMaybe(key1).To(&removed));
+  ASSERT_TRUE(dict->Remove(key1).To(&removed));
   ASSERT_TRUE(removed);
   EXPECT_EQ(dict->occupied(), 0);
   ASSERT_TRUE(dict->ContainsMaybe(key1).To(&contains));
@@ -131,7 +130,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool removed = false;
-    ASSERT_TRUE(dict->RemoveMaybe(key).To(&removed));
+    ASSERT_TRUE(dict->Remove(key).To(&removed));
   }
 
   EXPECT_EQ(dict->occupied(), count / 2);
@@ -190,7 +189,7 @@ TEST_F(PyDictTest, Equality) {
 
   // d2 = {"b": 2} (Different size)
   bool removed = false;
-  ASSERT_TRUE(d2->RemoveMaybe(k1).To(&removed));
+  ASSERT_TRUE(d2->Remove(k1).To(&removed));
   ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 }
@@ -243,7 +242,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool removed = false;
-    ASSERT_TRUE(dict->RemoveMaybe(key).To(&removed));
+    ASSERT_TRUE(dict->Remove(key).To(&removed));
   }
 
   Handle<PyTuple> keys_after_remove = PyDict::GetKeyTuple(dict);

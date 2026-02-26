@@ -117,7 +117,7 @@ MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
 MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
                                           Handle<PyObject> key) {
   bool removed = false;
-  if (!dict->RemoveMaybe(key).To(&removed)) {
+  if (!dict->Remove(key).To(&removed)) {
     return kNullMaybeHandle;
   }
   if (!removed) {
@@ -180,7 +180,7 @@ MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
   if (found) {
     assert(!value.is_null());
     bool removed = false;
-    if (!dict->RemoveMaybe(key).To(&removed)) {
+    if (!dict->Remove(key).To(&removed)) {
       return kNullMaybeHandle;
     }
     if (!removed) {

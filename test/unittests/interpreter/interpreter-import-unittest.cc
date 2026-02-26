@@ -113,8 +113,9 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Handle<PyDict> modules = isolate()->module_manager()->modules();
   Tagged<PyObject> pkg_module_tagged;
   bool found = false;
-  ASSERT_TRUE(modules->GetTagged(PyString::NewInstance("pkg"), pkg_module_tagged)
-                  .To(&found));
+  ASSERT_TRUE(
+      modules->GetTagged(PyString::NewInstance("pkg"), pkg_module_tagged)
+          .To(&found));
   ASSERT_TRUE(found);
   Handle<PyObject> pkg_module = handle(pkg_module_tagged);
   ASSERT_FALSE(pkg_module.is_null());
@@ -124,7 +125,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
 
   Handle<PyString> sub_short_name = PyString::NewInstance("sub");
   bool removed = false;
-  ASSERT_TRUE(pkg_dict->RemoveMaybe(sub_short_name).To(&removed));
+  ASSERT_TRUE(pkg_dict->Remove(sub_short_name).To(&removed));
   Tagged<PyObject> bound_tagged;
   ASSERT_TRUE(pkg_dict->GetTagged(sub_short_name, bound_tagged).To(&found));
   EXPECT_FALSE(found);

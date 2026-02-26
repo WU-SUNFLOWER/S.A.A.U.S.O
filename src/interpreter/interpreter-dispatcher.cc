@@ -393,7 +393,7 @@ void Interpreter::EvalCurrentFrame() {
     if (locals.is_null()) {
       break;
     }
-    GOTO_ON_EXCEPTION(locals->RemoveMaybe(key));
+    GOTO_ON_EXCEPTION(locals->Remove(key));
   })
 
   // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续

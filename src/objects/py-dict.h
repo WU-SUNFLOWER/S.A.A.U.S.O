@@ -35,7 +35,7 @@ class PyDict : public PyObject {
   Maybe<bool> GetTagged(Handle<PyObject> key, Tagged<PyObject>& out) const;
   Maybe<bool> GetTagged(Tagged<PyObject> key, Tagged<PyObject>& out) const;
 
-  Maybe<bool> RemoveMaybe(Handle<PyObject> key);
+  Maybe<bool> Remove(Handle<PyObject> key);
 
   int64_t occupied() const { return occupied_; }
 

@@ -31,7 +31,7 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
 //   允许直接使用 PyDict 原语（例如 LOAD_NAME/LOAD_GLOBAL 的
 //   locals->globals->builtins 链式查找：miss 继续，最终 NameError）。
 // - 这类场景必须使用 PyDict 的 fallible
-// API（Get/GetTagged/PutMaybe/RemoveMaybe/
+// API（Get/GetTagged/PutMaybe/Remove/
 //   ContainsMaybe），并在失败（Maybe 为空）时立即向上传播 pending exception；
 //   禁止把“异常”误判为“未命中”。
 MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
