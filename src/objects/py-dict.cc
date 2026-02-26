@@ -276,9 +276,9 @@ Maybe<bool> PyDict::Remove(Handle<PyObject> key) {
 }
 
 // static
-Maybe<bool> PyDict::PutMaybe(Handle<PyDict> object,
-                             Handle<PyObject> key,
-                             Handle<PyObject> value) {
+Maybe<bool> PyDict::Put(Handle<PyDict> object,
+                        Handle<PyObject> key,
+                        Handle<PyObject> value) {
   HandleScope scope;
 
   assert(!key.is_null());

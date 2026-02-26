@@ -381,7 +381,7 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     Handle<PyObject> value = POP();
-    GOTO_ON_EXCEPTION(PyDict::PutMaybe(locals, key, value));
+    GOTO_ON_EXCEPTION(PyDict::Put(locals, key, value));
   })
 
   // 删除一个 name（用于 except ... as e
@@ -456,7 +456,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
     Handle<PyObject> key = current_frame_->names()->Get(op_arg);
     Handle<PyObject> value = POP();
-    GOTO_ON_EXCEPTION(PyDict::PutMaybe(current_frame_->globals(), key, value));
+    GOTO_ON_EXCEPTION(PyDict::Put(current_frame_->globals(), key, value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
@@ -516,7 +516,7 @@ void Interpreter::EvalCurrentFrame() {
     for (auto i = 0; i < op_arg; ++i) {
       auto value = POP();
       auto key = POP();
-      GOTO_ON_EXCEPTION(PyDict::PutMaybe(result, key, value));
+      GOTO_ON_EXCEPTION(PyDict::Put(result, key, value));
     }
     PUSH(result);
   })
@@ -915,7 +915,7 @@ void Interpreter::EvalCurrentFrame() {
     auto result = PyDict::NewInstance();
     for (auto i = keys->length() - 1; 0 <= i; --i) {
       Handle<PyObject> value = POP();
-      GOTO_ON_EXCEPTION(PyDict::PutMaybe(result, keys->Get(i), value));
+      GOTO_ON_EXCEPTION(PyDict::Put(result, keys->Get(i), value));
     }
     PUSH(result);
   })

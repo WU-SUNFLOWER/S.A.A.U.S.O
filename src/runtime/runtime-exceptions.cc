@@ -109,7 +109,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     if (!properties.is_null()) {
       RETURN_ON_EXCEPTION_VALUE(
           Isolate::Current(),
-          PyDict::PutMaybe(properties, ST(message), message_or_null),
+          PyDict::Put(properties, ST(message), message_or_null),
           kNullMaybeHandle);
     }
   }

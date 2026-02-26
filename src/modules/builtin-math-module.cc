@@ -78,8 +78,8 @@ void InstallFunc(Handle<PyDict> module_dict,
                  const char* name,
                  NativeFuncPointer func) {
   Handle<PyString> py_name = PyString::NewInstance(name);
-  (void)PyDict::PutMaybe(module_dict, py_name,
-                         PyFunction::NewInstance(func, py_name));
+  (void)PyDict::Put(module_dict, py_name,
+                    PyFunction::NewInstance(func, py_name));
 }
 
 MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> host,
@@ -413,21 +413,21 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   Handle<PyModule> module = PyModule::NewInstance();
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  (void)PyDict::PutMaybe(module_dict, ST(name), PyString::NewInstance("math"));
-  (void)PyDict::PutMaybe(module_dict, ST(package), PyString::NewInstance(""));
+  (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("math"));
+  (void)PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
 
-  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("pi"),
-                         PyFloat::NewInstance(std::acos(-1.0)));
-  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("e"),
-                         PyFloat::NewInstance(std::exp(1.0)));
-  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("tau"),
-                         PyFloat::NewInstance(2.0 * std::acos(-1.0)));
-  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("inf"),
-                         PyFloat::NewInstance(
-                             std::numeric_limits<double>::infinity()));
-  (void)PyDict::PutMaybe(module_dict, PyString::NewInstance("nan"),
-                         PyFloat::NewInstance(
-                             std::numeric_limits<double>::quiet_NaN()));
+  (void)PyDict::Put(module_dict, PyString::NewInstance("pi"),
+                    PyFloat::NewInstance(std::acos(-1.0)));
+  (void)PyDict::Put(module_dict, PyString::NewInstance("e"),
+                    PyFloat::NewInstance(std::exp(1.0)));
+  (void)PyDict::Put(module_dict, PyString::NewInstance("tau"),
+                    PyFloat::NewInstance(2.0 * std::acos(-1.0)));
+  (void)PyDict::Put(
+      module_dict, PyString::NewInstance("inf"),
+      PyFloat::NewInstance(std::numeric_limits<double>::infinity()));
+  (void)PyDict::Put(
+      module_dict, PyString::NewInstance("nan"),
+      PyFloat::NewInstance(std::numeric_limits<double>::quiet_NaN()));
 
   InstallFunc(module_dict, "sqrt", &Math_Sqrt);
   InstallFunc(module_dict, "floor", &Math_Floor);

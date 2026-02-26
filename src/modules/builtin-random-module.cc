@@ -75,8 +75,8 @@ void InstallFunc(Handle<PyDict> module_dict,
                  const char* name,
                  NativeFuncPointer func) {
   Handle<PyString> py_name = PyString::NewInstance(name);
-  (void)PyDict::PutMaybe(module_dict, py_name,
-                         PyFunction::NewInstance(func, py_name));
+  (void)PyDict::Put(module_dict, py_name,
+                    PyFunction::NewInstance(func, py_name));
 }
 
 MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
@@ -377,10 +377,8 @@ BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
   Handle<PyModule> module = PyModule::NewInstance();
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  (void)PyDict::PutMaybe(module_dict, ST(name),
-                         PyString::NewInstance("random"));
-  (void)PyDict::PutMaybe(module_dict, ST(package),
-                         PyString::NewInstance(""));
+  (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("random"));
+  (void)PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
 
   g_rng.Seed(NowSeed());
   g_seeded = true;

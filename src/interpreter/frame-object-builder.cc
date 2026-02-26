@@ -269,7 +269,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
       ctx.localsplus->Set(index_in_var_args, value);
       ++ctx.localsplus_idx;
     } else if (!out_kw_args.is_null()) {
-      if (PyDict::PutMaybe(out_kw_args, key, value).IsNothing()) {
+      if (PyDict::Put(out_kw_args, key, value).IsNothing()) {
         return kNullMaybeHandle;
       }
     } else {
@@ -328,7 +328,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
     }
 
     if (!out_kw_args.is_null()) {
-      if (PyDict::PutMaybe(out_kw_args, key, value).IsNothing()) {
+      if (PyDict::Put(out_kw_args, key, value).IsNothing()) {
         return kNullMaybeHandle;
       }
       continue;

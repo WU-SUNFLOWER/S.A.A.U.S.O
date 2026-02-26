@@ -119,8 +119,8 @@ print(d)
   AppendExpected(expected_printv_result, PyString::NewInstance("x"));
 
   auto expected_dict = PyDict::NewInstance();
-  ASSERT_FALSE(PyDict::PutMaybe(expected_dict, handle(PySmi::FromInt(2)),
-                                PyString::NewInstance("y"))
+  ASSERT_FALSE(PyDict::Put(expected_dict, handle(PySmi::FromInt(2)),
+                           PyString::NewInstance("y"))
                    .IsNothing());
   AppendExpected(expected_printv_result, expected_dict);
 

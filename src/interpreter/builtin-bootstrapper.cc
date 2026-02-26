@@ -95,8 +95,8 @@ void BuiltinBootstrapper::InstallBuiltinTypes() {
 
   auto builtins_handle = builtins_.Get();
   for (const auto& entry : entries) {
-    (void)PyDict::PutMaybe(builtins_handle, PyString::NewInstance(entry.name),
-                           entry.type_object);
+    (void)PyDict::Put(builtins_handle, PyString::NewInstance(entry.name),
+                      entry.type_object);
   }
 }
 
@@ -110,8 +110,8 @@ void BuiltinBootstrapper::InstallOddballs() {
 
   auto builtins_handle = builtins_.Get();
   for (const auto& entry : entries) {
-    (void)PyDict::PutMaybe(builtins_handle, PyString::NewInstance(entry.name),
-                           handle(entry.value));
+    (void)PyDict::Put(builtins_handle, PyString::NewInstance(entry.name),
+                      handle(entry.value));
   }
 }
 
@@ -132,8 +132,8 @@ void BuiltinBootstrapper::InstallBuiltinFunctions() {
 
   auto builtins_handle = builtins_.Get();
   for (const auto& entry : entries) {
-    (void)PyDict::PutMaybe(builtins_handle, entry.name,
-                           PyFunction::NewInstance(entry.func, entry.name));
+    (void)PyDict::Put(builtins_handle, entry.name,
+                      PyFunction::NewInstance(entry.func, entry.name));
   }
 
 #undef BUILTIN_FUNC_LIST
@@ -142,7 +142,7 @@ void BuiltinBootstrapper::InstallBuiltinFunctions() {
 
 void BuiltinBootstrapper::InstallBuiltinsSelfReference() {
   auto builtins_handle = builtins_.Get();
-  (void)PyDict::PutMaybe(builtins_handle, ST(builtins), builtins_handle);
+  (void)PyDict::Put(builtins_handle, ST(builtins), builtins_handle);
 }
 
 void BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
@@ -195,8 +195,8 @@ void BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   Handle<PyTypeObject> exception =
       Runtime_CreatePythonClass(ST(exception), PyDict::NewInstance(), supers);
 
-  (void)PyDict::PutMaybe(builtins_.Get(), ST(base_exception), base_exception);
-  (void)PyDict::PutMaybe(builtins_.Get(), ST(exception), exception);
+  (void)PyDict::Put(builtins_.Get(), ST(base_exception), base_exception);
+  (void)PyDict::Put(builtins_.Get(), ST(exception), exception);
 }
 
 void BuiltinBootstrapper::RegisterSimpleTypeToBuiltins(
@@ -206,7 +206,7 @@ void BuiltinBootstrapper::RegisterSimpleTypeToBuiltins(
   supers->SetAndExtendLength(0, type_base);
   auto type_object =
       Runtime_CreatePythonClass(type_name, PyDict::NewInstance(), supers);
-  (void)PyDict::PutMaybe(builtins_.Get(), type_name, type_object);
+  (void)PyDict::Put(builtins_.Get(), type_name, type_object);
 }
 
 }  // namespace saauso::internal

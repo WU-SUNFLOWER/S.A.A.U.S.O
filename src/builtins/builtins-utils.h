@@ -33,7 +33,7 @@ class PyDict;
 #define INSTALL_BUILTIN_METHOD(func_name, method_name)                      \
   do {                                                                      \
     auto prop_name = PyString::NewInstance(method_name);                    \
-    (void)PyDict::PutMaybe(                                                 \
+    (void)PyDict::Put(                                                      \
         target, prop_name,                                                  \
         PyFunction::NewInstance(&BUILTIN_FUNC_NAME(func_name), prop_name)); \
   } while (0);

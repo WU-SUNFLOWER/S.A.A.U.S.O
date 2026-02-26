@@ -39,9 +39,9 @@ class PyDict : public PyObject {
 
   int64_t occupied() const { return occupied_; }
 
-  static Maybe<bool> PutMaybe(Handle<PyDict> dict,
-                              Handle<PyObject> key,
-                              Handle<PyObject> value);
+  static Maybe<bool> Put(Handle<PyDict> dict,
+                         Handle<PyObject> key,
+                         Handle<PyObject> value);
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict);
 
   Handle<FixedArray> data() const;

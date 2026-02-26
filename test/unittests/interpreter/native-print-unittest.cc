@@ -24,7 +24,8 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
   auto kwargs = PyDict::NewInstance();
 
   testing::internal::CaptureStdout();
-  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result =
+      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b\n");
@@ -37,11 +38,12 @@ TEST_F(NativePrintTest, EndParameter) {
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
-  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(end), PyString::NewInstance("!"))
-                   .IsNothing());
+  ASSERT_FALSE(
+      PyDict::Put(kwargs, ST(end), PyString::NewInstance("!")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result =
+      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b!");
@@ -54,11 +56,12 @@ TEST_F(NativePrintTest, EolAliasParameter) {
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
-  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(eol), PyString::NewInstance("??"))
-                   .IsNothing());
+  ASSERT_FALSE(
+      PyDict::Put(kwargs, ST(eol), PyString::NewInstance("??")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result =
+      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b??");
@@ -72,11 +75,12 @@ TEST_F(NativePrintTest, SepParameter) {
   args->SetInternal(1, PyString::NewInstance("b"));
   args->SetInternal(2, PyString::NewInstance("c"));
   auto kwargs = PyDict::NewInstance();
-  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(sep), PyString::NewInstance(","))
-                   .IsNothing());
+  ASSERT_FALSE(
+      PyDict::Put(kwargs, ST(sep), PyString::NewInstance(",")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result =
+      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a,b,c\n");
@@ -87,11 +91,12 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
 
   auto args = PyTuple::NewInstance(0);
   auto kwargs = PyDict::NewInstance();
-  ASSERT_FALSE(PyDict::PutMaybe(kwargs, ST(end), PyString::NewInstance("X"))
-                   .IsNothing());
+  ASSERT_FALSE(
+      PyDict::Put(kwargs, ST(end), PyString::NewInstance("X")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result = BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result =
+      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "X");

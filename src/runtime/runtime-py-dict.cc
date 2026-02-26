@@ -56,7 +56,7 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
         }
 
         RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::PutMaybe(result, pair->Get(0), pair->Get(1)),
+            isolate, PyDict::Put(result, pair->Get(0), pair->Get(1)),
             kNullMaybeHandle);
       }
     }
@@ -80,9 +80,8 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
           key = key_str;
         }
 
-        RETURN_ON_EXCEPTION_VALUE(isolate,
-                                  PyDict::PutMaybe(result, key, item->Get(1)),
-                                  kNullMaybeHandle);
+        RETURN_ON_EXCEPTION_VALUE(
+            isolate, PyDict::Put(result, key, item->Get(1)), kNullMaybeHandle);
       }
     }
   }
@@ -108,7 +107,7 @@ MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
 MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
                                           Handle<PyObject> key,
                                           Handle<PyObject> value) {
-  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+  if (PyDict::Put(dict, key, value).IsEmpty()) {
     return kNullMaybeHandle;
   }
   return handle(Isolate::Current()->py_none_object());
@@ -162,7 +161,7 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
                                ? handle(Isolate::Current()->py_none_object())
                                : default_or_null;
 
-  if (PyDict::PutMaybe(dict, key, value).IsEmpty()) {
+  if (PyDict::Put(dict, key, value).IsEmpty()) {
     return kNullMaybeHandle;
   }
   return value;
@@ -229,7 +228,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
       return kNullMaybeHandle;
     }
 
-    RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::PutMaybe(dst_dict, key, value),
+    RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::Put(dst_dict, key, value),
                               kNullMaybeHandle);
   }
 

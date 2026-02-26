@@ -176,8 +176,7 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 
   if (!exists) {
     RETURN_ON_EXCEPTION(
-        isolate_,
-        PyDict::PutMaybe(parent_dict, child_short_name, child_module));
+        isolate_, PyDict::Put(parent_dict, child_short_name, child_module));
   } else {
 #ifdef _DEBUG
     // 如果父模块中已经链接了子模块，则不需要重复链接。

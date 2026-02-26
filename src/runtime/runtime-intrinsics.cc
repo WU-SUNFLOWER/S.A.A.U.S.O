@@ -41,8 +41,7 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
   }
   if (found) {
     assert(!value.is_null());
-    RETURN_ON_EXCEPTION(Isolate::Current(),
-                        PyDict::PutMaybe(locals, name, value));
+    RETURN_ON_EXCEPTION(Isolate::Current(), PyDict::Put(locals, name, value));
     return Maybe<bool>(true);
   }
 

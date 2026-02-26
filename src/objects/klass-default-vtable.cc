@@ -287,7 +287,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_SetAttr(
     return kNullMaybeHandle;
   }
 
-  if (PyDict::PutMaybe(properties, property_name, property_value).IsNothing()) {
+  if (PyDict::Put(properties, property_name, property_value).IsNothing()) {
     return kNullMaybeHandle;
   }
   return handle(isolate->py_none_object());
@@ -542,9 +542,8 @@ MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
 
   // 建立object实例与type object和klass之间的绑定关系
   PyObject::SetKlass(instance, type_object->own_klass());
-  RETURN_ON_EXCEPTION(
-      isolate, PyDict::PutMaybe(PyObject::GetProperties(instance), ST(class),
-                                type_object));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(PyObject::GetProperties(instance),
+                                           ST(class), type_object));
 
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(

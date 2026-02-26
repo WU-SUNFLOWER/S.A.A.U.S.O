@@ -25,7 +25,7 @@ TEST_F(PyDictTest, GetApiTriState) {
   Handle<PyDict> dict = PyDict::NewInstance();
   Handle<PyObject> key = PyString::NewInstance("k");
   Handle<PyObject> value(PySmi::FromInt(1));
-  ASSERT_FALSE(PyDict::PutMaybe(dict, key, value).IsNothing());
+  ASSERT_FALSE(PyDict::Put(dict, key, value).IsNothing());
 
   Handle<PyObject> miss_key = PyString::NewInstance("missing");
   Tagged<PyObject> out_tagged;
@@ -65,7 +65,7 @@ TEST_F(PyDictTest, BasicOperations) {
   Handle<PyObject> val1(PySmi::FromInt(100));
 
   // Put
-  ASSERT_FALSE(PyDict::PutMaybe(dict, key1, val1).IsNothing());
+  ASSERT_FALSE(PyDict::Put(dict, key1, val1).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);
 
   // Get
@@ -89,7 +89,7 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Update
   Handle<PyObject> val2(PySmi::FromInt(200));
-  ASSERT_FALSE(PyDict::PutMaybe(dict, key1, val2).IsNothing());
+  ASSERT_FALSE(PyDict::Put(dict, key1, val2).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
   ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
   ASSERT_TRUE(found);
@@ -121,7 +121,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    ASSERT_FALSE(PyDict::PutMaybe(dict, key, val).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, val).IsNothing());
   }
 
   EXPECT_EQ(dict->occupied(), count);
@@ -170,12 +170,12 @@ TEST_F(PyDictTest, Equality) {
   Handle<PyObject> v2(PySmi::FromInt(2));
 
   // d1 = {"a": 1, "b": 2}
-  ASSERT_FALSE(PyDict::PutMaybe(d1, k1, v1).IsNothing());
-  ASSERT_FALSE(PyDict::PutMaybe(d1, k2, v2).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d1, k1, v1).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d1, k2, v2).IsNothing());
 
   // d2 = {"b": 2, "a": 1} (Different insertion order, should be equal)
-  ASSERT_FALSE(PyDict::PutMaybe(d2, k2, v2).IsNothing());
-  ASSERT_FALSE(PyDict::PutMaybe(d2, k1, v1).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d2, k2, v2).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d2, k1, v1).IsNothing());
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
@@ -183,7 +183,7 @@ TEST_F(PyDictTest, Equality) {
 
   // d2 = {"b": 2, "a": 3} (Different value)
   Handle<PyObject> v3(PySmi::FromInt(3));
-  ASSERT_FALSE(PyDict::PutMaybe(d2, k1, v3).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d2, k1, v3).IsNothing());
   ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 
@@ -214,7 +214,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    ASSERT_FALSE(PyDict::PutMaybe(dict, key, val).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, val).IsNothing());
   }
 
   Handle<PyTuple> keys = PyDict::GetKeyTuple(dict);
@@ -263,7 +263,7 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    ASSERT_FALSE(PyDict::PutMaybe(dict, key, val).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, val).IsNothing());
   }
 
   Handle<PyObject> iterator;

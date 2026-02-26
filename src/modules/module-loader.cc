@@ -56,7 +56,7 @@ MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
   // 将加载的模块保存到 modules 缓存
   Handle<PyDict> modules_dict = manager_->modules();
   RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::PutMaybe(modules_dict, fullname, loaded_module));
+                      PyDict::Put(modules_dict, fullname, loaded_module));
 
   return scope.Escape(loaded_module);
 }
@@ -166,40 +166,37 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
     const ModuleLocation& loc) {
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::PutMaybe(module_dict, ST(name), fullname));
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(name), fullname));
 
   if (loc.is_package) {
     RETURN_ON_EXCEPTION(isolate_,
-                        PyDict::PutMaybe(module_dict, ST(package), fullname));
+                        PyDict::Put(module_dict, ST(package), fullname));
   } else {
     int64_t dot_index = fullname->LastIndexOf(ST(dot));
     if (dot_index == PyString::kNotFound) {
-      RETURN_ON_EXCEPTION(isolate_,
-                          PyDict::PutMaybe(module_dict, ST(package),
-                                           PyString::NewInstance("")));
+      RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(package),
+                                                PyString::NewInstance("")));
     } else {
       int64_t package_end = static_cast<int64_t>(dot_index) - 1;
       Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);
 
-      RETURN_ON_EXCEPTION(
-          isolate_, PyDict::PutMaybe(module_dict, ST(package), package_name));
+      RETURN_ON_EXCEPTION(isolate_,
+                          PyDict::Put(module_dict, ST(package), package_name));
     }
   }
 
-  RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::PutMaybe(module_dict, ST(file),
-                                       ModuleUtils::NewPyString(loc.origin)));
-
   RETURN_ON_EXCEPTION(
-      isolate_, PyDict::PutMaybe(module_dict, ST(class),
-                                 PyObject::GetKlass(module)->type_object()));
+      isolate_,
+      PyDict::Put(module_dict, ST(file), ModuleUtils::NewPyString(loc.origin)));
+
+  RETURN_ON_EXCEPTION(isolate_,
+                      PyDict::Put(module_dict, ST(class),
+                                  PyObject::GetKlass(module)->type_object()));
 
   if (loc.is_package) {
     Handle<PyList> pkg_path = PyList::NewInstance();
     PyList::Append(pkg_path, ModuleUtils::NewPyString(loc.package_dir));
-    RETURN_ON_EXCEPTION(isolate_,
-                        PyDict::PutMaybe(module_dict, ST(path), pkg_path));
+    RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(path), pkg_path));
   }
 
   return handle(isolate_->py_none_object());

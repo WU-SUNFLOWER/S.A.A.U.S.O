@@ -88,7 +88,7 @@ Handle<PyDict> Interpreter::CurrentFrameLocals() const {
 
 void Interpreter::Run(Handle<PyFunction> boilerplate) {
   Handle<PyDict> globals = PyDict::NewInstance();
-  (void)PyDict::PutMaybe(globals, ST(name), ST(main));
+  (void)PyDict::Put(globals, ST(name), ST(main));
 
   boilerplate->set_func_globals(globals);
 
@@ -204,9 +204,8 @@ void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
     auto actual_args_size = actual_args->length();
 
     for (auto i = 0; i < kwarg_keys->length(); ++i) {
-      (void)PyDict::PutMaybe(
-          kw_args, kwarg_keys->Get(kwarg_keys->length() - i - 1),
-          actual_args->Get(actual_args_size - i - 1));
+      (void)PyDict::Put(kw_args, kwarg_keys->Get(kwarg_keys->length() - i - 1),
+                        actual_args->Get(actual_args_size - i - 1));
     }
 
     // 从actual_args尾部截去提取出来的参数，剩余部分作为pos_args

@@ -34,7 +34,7 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
   if (!found) {
     RETURN_ON_EXCEPTION_VALUE(
         isolate,
-        PyDict::PutMaybe(globals, ST(builtins), Execution::builtins(isolate)),
+        PyDict::Put(globals, ST(builtins), Execution::builtins(isolate)),
         kNullMaybeHandle);
   }
 
