@@ -38,7 +38,7 @@ Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
 }
 
 Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   // 递归出口：
   // 如果所有的mro列表都被清空，这意味着完整的所求mro序列已经生成，退出递归即可
@@ -121,6 +121,8 @@ Tagged<Klass> Klass::CreateRawPythonKlass() {
   klass->set_type_object(Handle<PyTypeObject>::null());
   klass->set_supers(Handle<PyList>::null());
   klass->set_mro(Handle<PyList>::null());
+  klass->set_native_layout_base(Tagged<Klass>::null());
+  klass->set_native_layout_kind(NativeLayoutKind::kPyObject);
 
   return klass;
 }
@@ -208,6 +210,11 @@ void Klass::OrderSupers() {
   (void)PyDict::Put(klass_properties(), ST(mro), mro_result);
 
   mro_ = *mro_result;
+}
+
+void Klass::CopyVTableFrom(Tagged<Klass> base) {
+  assert(!base.is_null());
+  vtable_ = base->vtable_;
 }
 
 MaybeHandle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,

@@ -35,6 +35,36 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   klass->set_name(class_name);
   klass->set_supers(supers);
 
+  int native_base_count = 0;
+  Tagged<Klass> native_layout_base = Tagged<Klass>::null();
+  NativeLayoutKind native_layout_kind = NativeLayoutKind::kPyObject;
+  if (!supers.is_null()) {
+    for (int64_t i = 0; i < supers->length(); ++i) {
+      auto base_type_object = Handle<PyTypeObject>::cast(supers->Get(i));
+      Tagged<Klass> base_klass = base_type_object->own_klass();
+      if (base_klass->native_layout_kind() == NativeLayoutKind::kPyObject) {
+        continue;
+      }
+      ++native_base_count;
+      if (native_base_count > 1) {
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "multiple native base classes are not supported");
+        return Handle<PyTypeObject>::null();
+      }
+      native_layout_kind = base_klass->native_layout_kind();
+      native_layout_base = base_klass->native_layout_base().is_null()
+                               ? base_klass
+                               : base_klass->native_layout_base();
+    }
+  }
+  klass->set_native_layout_kind(native_layout_kind);
+  klass->set_native_layout_base(native_layout_base.is_null()
+                                    ? PyObjectKlass::GetInstance()
+                                    : native_layout_base);
+  if (native_layout_kind != NativeLayoutKind::kPyObject) {
+    klass->CopyVTableFrom(klass->native_layout_base());
+  }
+
   // 建立双向绑定
   type_object->BindWithKlass(klass);
 
@@ -46,7 +76,7 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
 
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto mro_of_object = PyObject::GetKlass(object)->mro();
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
@@ -169,28 +199,28 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
   Handle<PyObject> bases_obj = pos_args->Get(1);
   Handle<PyObject> dict_obj = pos_args->Get(2);
 
-  if (!IsPyString(name_obj)) {
+  if (!PyString::IsStringLike(name_obj)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "type() argument 1 must be str, not '%s'",
                         PyObject::GetKlass(name_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
-  if (!IsPyTuple(bases_obj)) {
+  if (!PyTuple::IsTupleLike(bases_obj)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "type() argument 2 must be tuple, not '%s'",
                         PyObject::GetKlass(bases_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
-  if (!IsPyDict(dict_obj)) {
+  if (!PyDict::IsDictLike(dict_obj)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "type() argument 3 must be dict, not '%s'",
                         PyObject::GetKlass(dict_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
 
-  Handle<PyString> name = Handle<PyString>::cast(name_obj);
-  Handle<PyTuple> bases_tuple = Handle<PyTuple>::cast(bases_obj);
-  Handle<PyDict> class_dict = PyDict::Clone(Handle<PyDict>::cast(dict_obj));
+  Handle<PyString> name = PyString::CastStringLike(name_obj);
+  Handle<PyTuple> bases_tuple = PyTuple::CastTupleLike(bases_obj);
+  Handle<PyDict> class_dict = PyDict::Clone(PyDict::CastDictLike(dict_obj));
 
   Handle<PyList> supers;
   if (bases_tuple->length() == 0) {

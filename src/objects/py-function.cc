@@ -51,12 +51,6 @@ Handle<PyFunction> PyFunction::NewInstanceInternal() {
   Handle<PyFunction> object(Isolate::Current()->heap()->Allocate<PyFunction>(
       Heap::AllocationSpace::kNewSpace));
 
-  // 初始化properties
-  auto properties = PyDict::NewInstance();
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
-  PyObject::SetProperties(*object, *properties);
-
-  // 初始化字段
   object->func_code_ = Tagged<PyObject>::null();
   object->func_name_ = Tagged<PyObject>::null();
   object->func_globals_ = Tagged<PyObject>::null();
@@ -64,6 +58,14 @@ Handle<PyFunction> PyFunction::NewInstanceInternal() {
   object->closures_ = Tagged<PyObject>::null();
   object->flags_ = 0;
   object->native_func_ = nullptr;
+
+  SetKlass(object, PyFunctionKlass::GetInstance());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
+
+  // 初始化properties
+  auto properties = PyDict::NewInstance();
+  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  PyObject::SetProperties(*object, *properties);
 
   return object;
 }
@@ -123,9 +125,12 @@ Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
   Handle<MethodObject> object(
       Isolate::Current()->heap()->Allocate<MethodObject>(
           Heap::AllocationSpace::kNewSpace));
+  object->owner_ = Tagged<PyObject>::null();
+  object->func_ = Tagged<PyObject>::null();
+  PyObject::SetKlass(object, MethodObjectKlass::GetInstance());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
   object->owner_ = *owner;
   object->func_ = *func;
-  PyObject::SetKlass(object, MethodObjectKlass::GetInstance());
   return object;
 }
 

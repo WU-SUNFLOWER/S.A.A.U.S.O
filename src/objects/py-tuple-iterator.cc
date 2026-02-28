@@ -39,7 +39,7 @@ Tagged<PyTupleIterator> PyTupleIterator::cast(Tagged<PyObject> object) {
 
 Handle<PyTuple> PyTupleIterator::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyTuple>::cast(owner_));
+  return PyTuple::CastTupleLike(handle(owner_));
 }
 
 }  // namespace saauso::internal

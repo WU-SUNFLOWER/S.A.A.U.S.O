@@ -23,13 +23,13 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
                            Handle<PyDict> locals,
                            Handle<PyObject> name_obj,
                            bool ignore_private_member) {
-  if (!IsPyString(name_obj)) [[unlikely]] {
+  if (!PyString::IsStringLike(name_obj)) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "import * name must be a string");
     return kNullMaybe;
   }
 
-  auto name = Handle<PyString>::cast(name_obj);
+  auto name = PyString::CastStringLike(name_obj);
   if (ignore_private_member && name->length() > 0 && name->Get(0) == '_') {
     return Maybe<bool>(false);
   }
@@ -52,14 +52,14 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
                                    Handle<PyObject> all,
                                    Handle<PyDict> module_dict,
                                    Handle<PyDict> locals) {
-  if (IsPyTuple(all)) {
-    auto names = Handle<PyTuple>::cast(all);
+  if (PyTuple::IsTupleLike(all)) {
+    auto names = PyTuple::CastTupleLike(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
     }
-  } else if (IsPyList(all)) {
-    auto names = Handle<PyList>::cast(all);
+  } else if (PyList::IsListLike(all)) {
+    auto names = PyList::CastListLike(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
@@ -78,13 +78,13 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
 MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   EscapableHandleScope scope;
 
-  if (!IsPyList(object)) {
+  if (!PyList::IsListLike(object)) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "INTRINSIC_LIST_TO_TUPLE expected a list");
     return kNullMaybeHandle;
   }
 
-  auto list = Handle<PyList>::cast(object);
+  auto list = PyList::CastListLike(object);
   auto tuple = PyTuple::NewInstance(list->length());
   for (auto i = 0; i < list->length(); ++i) {
     tuple->SetInternal(i, list->Get(i));

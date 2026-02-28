@@ -25,13 +25,13 @@ Handle<PyTypeObject> PyTypeObject::NewInstance() {
   // 绑定klass
   PyObject::SetKlass(object, PyTypeObjectKlass::GetInstance());
 
+  object->own_klass_ = Tagged<Klass>::null();
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
+
   // 初始化properties
   auto properties = PyDict::NewInstance();
   (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
   PyObject::SetProperties(*object, *properties);
-
-  // 初始化对象字段
-  object->own_klass_ = Tagged<Klass>::null();
 
   return scope.Escape(object);
 }

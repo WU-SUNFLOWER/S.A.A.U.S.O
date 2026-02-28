@@ -4,12 +4,14 @@
 
 #include "src/objects/py-dict-klass.h"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 
 #include "include/saauso-internal.h"
 #include "src/builtins/builtins-py-dict-methods.h"
 #include "src/execution/exception-utils.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -29,6 +31,8 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-dict.h"
+#include "src/runtime/runtime-reflection.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
 
 namespace saauso::internal {
@@ -50,6 +54,9 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
 void PyDictKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+
+  set_native_layout_kind(NativeLayoutKind::kDict);
+  set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -87,8 +94,8 @@ void PyDictKlass::Initialize() {
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
-  auto dict = Handle<PyDict>::cast(self);
+  auto* isolate [[maybe_unused]] = Isolate::Current();
+  auto dict = PyDict::CastDictLike(self);
   std::printf("{");
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
@@ -116,25 +123,23 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
-  auto value = Handle<PyDict>::cast(self)->occupied();
+  auto value = PyDict::CastDictLike(self)->occupied();
   return Handle<PyObject>(PySmi::FromInt(value));
 }
 
 Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> other) {
-  assert(IsPyDict(self));
-
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
-  if (!IsPyDict(other)) {
+  if (!PyDict::IsDictLike(other)) {
     return Maybe<bool>(false);
   }
 
-  auto d1 = Handle<PyDict>::cast(self);
-  auto d2 = Handle<PyDict>::cast(other);
+  auto d1 = PyDict::CastDictLike(self);
+  auto d2 = PyDict::CastDictLike(other);
 
   if (d1->occupied() != d2->occupied()) {
     return Maybe<bool>(false);
@@ -175,41 +180,88 @@ Maybe<bool> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
                                                   Handle<PyObject> subscr) {
-  return Runtime_DictGetItem(Handle<PyDict>::cast(self), subscr);
+  return Runtime_DictGetItem(PyDict::CastDictLike(self), subscr);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
-  return Runtime_DictSetItem(Handle<PyDict>::cast(self), subscr, value);
+  return Runtime_DictSetItem(PyDict::CastDictLike(self), subscr, value);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
     Handle<PyObject> self,
     Handle<PyObject> subscr) {
-  return Runtime_DictDelItem(Handle<PyDict>::cast(self), subscr);
+  return Runtime_DictDelItem(PyDict::CastDictLike(self), subscr);
 }
 
 Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
-  return Handle<PyDict>::cast(self)->ContainsKey(subscr);
+  return PyDict::CastDictLike(self)->ContainsKey(subscr);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyDictKlass::GetInstance());
-  return Runtime_NewDict(args, kwargs);
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
+  auto* isolate = Isolate::Current();
+  bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
+
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+  if (is_exact_dict) {
+    if (argc > 1) {
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "dict expected at most 1 argument, got %" PRId64,
+                          argc);
+      return kNullMaybeHandle;
+    }
+  }
+
+  Handle<PyDict> result = PyDict::AllocateDictLike(
+      klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
+
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, result, ST(init), init_method));
+
+  if (init_method.is_null()) {
+    if (!is_exact_dict) {
+      if (argc > 1) {
+        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                            "dict expected at most 1 argument, got %" PRId64,
+                            argc);
+        return kNullMaybeHandle;
+      }
+    }
+
+    bool ok = false;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, ok, Runtime_InitDictFromArgsKwargs(result, args, kwargs));
+    if (!ok) {
+      return kNullMaybeHandle;
+    }
+    return result;
+  }
+
+  if (Execution::Call(isolate, init_method, result, pos_args,
+                      Handle<PyDict>::cast(kwargs))
+          .IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+
+  return result;
 }
 
 // static
 size_t PyDictKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyDict);
+  return ObjectSizeAlign(sizeof(PyDict));
 }
 
 // static
 void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
+  assert(PyDict::IsDictLike(self));
   auto dict = Tagged<PyDict>::cast(self);
   v->VisitPointer(&dict->data_);
 }

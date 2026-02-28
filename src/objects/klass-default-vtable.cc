@@ -566,7 +566,7 @@ void Klass::Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*) {
 }
 
 size_t Klass::Virtual_Default_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyObject);
+  return ObjectSizeAlign(sizeof(PyObject));
 }
 
 }  // namespace saauso::internal

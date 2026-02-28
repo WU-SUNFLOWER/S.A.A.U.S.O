@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "src/builtins/builtins-py-list-methods.h"
+#include "src/execution/exception-utils.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
@@ -29,6 +31,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
 #include "src/utils/stable-merge-sort.h"
@@ -55,6 +58,10 @@ Tagged<PyListKlass> PyListKlass::GetInstance() {
 void PyListKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+
+  // 设置内建布局字段
+  set_native_layout_kind(NativeLayoutKind::kList);
+  set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.construct_instance = &Virtual_ConstructInstance;
@@ -101,42 +108,78 @@ MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyListKlass::GetInstance());
-
-  // list() 不接受关键字参数，违反约束时抛出 TypeError。
-  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "list() takes no keyword arguments\n");
-    return kNullMaybeHandle;
-  }
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
+  auto* isolate = Isolate::Current();
+  bool is_exact_list = klass_self == PyListKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
-  if (argc == 0) {
-    return PyList::NewInstance();
-  }
-  if (argc > 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "list expected at most 1 argument, got %" PRId64, argc);
-    return kNullMaybeHandle;
+  if (is_exact_list) {
+    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "list() takes no keyword arguments\n");
+      return kNullMaybeHandle;
+    }
+    if (argc > 1) {
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "list expected at most 1 argument, got %" PRId64,
+                          argc);
+      return kNullMaybeHandle;
+    }
   }
 
-  Handle<PyList> result = PyList::NewInstance();
-  // list(iterable)：从可迭代对象中逐个追加元素；对 list/tuple 走 fast path。
-  Handle<PyObject> extend_result;
-  if (!Runtime_ExtendListByItratableObject(result, pos_args->Get(0))
-           .ToHandle(&extend_result)) {
-    return kNullMaybeHandle;
+  Handle<PyList> result = PyList::AllocateListLike(
+      klass_self, PyList::kMinimumCapacity, !is_exact_list);
+  if (!is_exact_list) {
+    auto properties = PyObject::GetProperties(result);
+    RETURN_ON_EXCEPTION(
+        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+  }
+
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, result, ST(init), init_method));
+
+  if (init_method.is_null()) {
+    if (!is_exact_list) {
+      if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "list() takes no keyword arguments\n");
+        return kNullMaybeHandle;
+      }
+      if (argc > 1) {
+        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                            "list expected at most 1 argument, got %" PRId64,
+                            argc);
+        return kNullMaybeHandle;
+      }
+    }
+    if (argc == 1) {
+      Handle<PyObject> extend_result;
+      if (!Runtime_ExtendListByItratableObject(result, pos_args->Get(0))
+               .ToHandle(&extend_result)) {
+        return kNullMaybeHandle;
+      }
+    }
+    return result;
+  }
+
+  if (!init_method.is_null()) {
+    if (Execution::Call(isolate, init_method, result, pos_args,
+                        Handle<PyDict>::cast(kwargs))
+            .IsEmpty()) {
+      return kNullMaybeHandle;
+    }
   }
   return result;
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
-  return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
+  return Handle<PyObject>(PySmi::FromInt(PyList::CastListLike(self)->length()));
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
 
   std::printf("[");
 
@@ -155,8 +198,14 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
                                                Handle<PyObject> other) {
-  auto list1 = Handle<PyList>::cast(self);
-  auto list2 = Handle<PyList>::cast(other);
+  auto list1 = PyList::CastListLike(self);
+  if (!PyList::IsListLike(other)) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "can only concatenate list (not \"%s\") to list",
+                        PyObject::GetKlass(other)->name()->buffer());
+    return kNullMaybeHandle;
+  }
+  auto list2 = PyList::CastListLike(other);
 
   auto new_result = PyList::NewInstance(list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
@@ -179,7 +228,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
   auto decoded_coeff = std::max(static_cast<int64_t>(0),
                                 PySmi::ToInt(Handle<PySmi>::cast(coeff)));
 
@@ -203,13 +252,13 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
   }
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
-  return Handle<PyList>::cast(self)->Get(decoded_subscr);
+  return PyList::CastListLike(self)->Get(decoded_subscr);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
@@ -225,7 +274,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
                                                      Handle<PyObject> subscr) {
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
@@ -241,8 +290,15 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
 
 Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
                                       Handle<PyObject> other) {
-  auto list_l = Handle<PyList>::cast(self);
-  auto list_r = Handle<PyList>::cast(other);
+  auto list_l = PyList::CastListLike(self);
+  if (!PyList::IsListLike(other)) {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "'<' not supported between instances of 'list' and '%s'",
+        PyObject::GetKlass(other)->name()->buffer());
+    return kNullMaybe;
+  }
+  auto list_r = PyList::CastListLike(other);
   auto min_len = std::min(list_l->length(), list_r->length());
 
   for (auto i = 0; i < min_len; ++i) {
@@ -271,7 +327,7 @@ Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
 
 Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
                                           Handle<PyObject> target) {
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
   for (auto i = 0; i < list->length(); ++i) {
     Maybe<bool> eq = PyObject::EqualBool(list->Get(i), target);
     if (eq.IsNothing()) {
@@ -287,8 +343,11 @@ Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
 
 Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> target) {
-  auto list1 = Handle<PyList>::cast(self);
-  auto list2 = Handle<PyList>::cast(target);
+  auto list1 = PyList::CastListLike(self);
+  if (!PyList::IsListLike(target)) {
+    return Maybe<bool>(false);
+  }
+  auto list2 = PyList::CastListLike(target);
 
   if (list1->length() != list2->length()) {
     return Maybe<bool>(false);
@@ -308,7 +367,7 @@ Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {
-  return PyListIterator::NewInstance(Handle<PyList>::cast(object));
+  return PyListIterator::NewInstance(PyList::CastListLike(object));
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -316,7 +375,7 @@ size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 }
 
 void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(IsPyList(self));
+  assert(PyList::IsListLike(self));
   v->VisitPointer(&Tagged<PyList>::cast(self)->array_);
 }
 

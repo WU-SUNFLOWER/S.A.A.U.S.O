@@ -63,6 +63,71 @@ print(lst)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, SubclassList) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(list):
+    pass
+
+i = 0
+last = None
+while i < 2000:
+    c = C()
+    c.append(i)
+    c.x = i
+    last = c
+    i = i + 1
+
+print(len(last))
+print(last[0])
+print(last.x)
+print(1 if last else 0)
+last.pop()
+print(1 if last else 0)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1999)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1999)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassListCustomInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(list):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def foo(self):
+        return self
+
+c = C(1, 2, 3)
+print(c.foo().x)
+print(c.foo().y)
+print(c.foo().z)
+print(len(c.foo()))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 // 构建长的list字面量会用到Python3的新字节码LIST_EXTEND，
 // 因此这里设置一个独立的单测！
 TEST_F(BasicInterpreterTest, BuildLongList) {
@@ -640,6 +705,207 @@ print(len(d))
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassTuple) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(tuple):
+  pass
+
+c = C()
+c.x = 7
+print(len(c))
+print(c.x)
+
+c2 = C((1, 2, 3))
+print(len(c2))
+print(c2[1])
+print(1 if (2 in c2) else 0)
+print(c2.index(2))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassTupleSurvivesSysgc) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(tuple):
+  pass
+
+class D:
+  pass
+
+def make():
+  d1 = D()
+  d1.v = 111
+  d2 = D()
+  d2.v = 222
+  c = C((d1,))
+  c.x = d2
+  return c
+
+c = make()
+
+tmp = []
+i = 0
+while i < 5000:
+  tmp.append([i, i + 1, i + 2])
+  i = i + 1
+
+sysgc()
+print(c[0].v)
+print(c.x.v)
+
+sysgc()
+print(c[0].v)
+print(c.x.v)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(111)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(222)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(111)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(222)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassTupleCustomInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(tuple):
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+
+  def foo(self):
+    return self
+
+c = C(1, 2)
+print(c.foo().x)
+print(c.foo().y)
+print(len(c.foo()))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassStr) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class S(str):
+  pass
+
+s = S()
+s.x = 7
+print(len(s))
+print(s.x)
+
+s2 = S("hi")
+print(len(s2))
+print(s2)
+print(s2.upper())
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, PyString::NewInstance("hi"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("HI"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassStrSurvivesSysgc) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class S(str):
+  pass
+
+class D:
+  pass
+
+def make():
+  d = D()
+  d.v = 123
+  s = S("hello")
+  s.x = d
+  return s
+
+s = make()
+
+tmp = []
+i = 0
+while i < 5000:
+  tmp.append([i, i + 1, i + 2])
+  i = i + 1
+
+sysgc()
+print(s.x.v)
+print(s)
+
+sysgc()
+print(s.x.v)
+print(s)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
+  AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
+  AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassStrCustomInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class S(str):
+  def __init__(self, x):
+    self.x = x
+
+  def foo(self):
+    return self
+
+s = S(7)
+print(s.foo().x)
+print(len(s.foo()))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
   ExpectPrintResult(expected_printv_result);
 }
 

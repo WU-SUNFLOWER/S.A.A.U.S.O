@@ -12,6 +12,7 @@
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -21,28 +22,32 @@ namespace saauso::internal {
 // static
 Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
   EscapableHandleScope scope;
+  return scope.Escape(
+      AllocateListLike(PyListKlass::GetInstance(), init_capacity, false));
+}
 
-  // 分配对象本体
+// static
+Handle<PyList> PyList::AllocateListLike(Tagged<Klass> klass_self,
+                                        int64_t init_capacity,
+                                        bool allocate_properties_dict) {
+  EscapableHandleScope scope;
+
   Handle<PyList> object(Isolate::Current()->heap()->Allocate<PyList>(
       Heap::AllocationSpace::kNewSpace));
 
-  // 分配fixed array
+  object->length_ = 0;
+  object->array_ = Tagged<FixedArray>::null();
+  PyObject::SetKlass(object, klass_self);
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
+
   Handle<FixedArray> array =
       FixedArray::NewInstance(std::max(kMinimumCapacity, init_capacity));
-
-  // 设置字段值
-  object->length_ = 0;
   object->array_ = *array;
 
-  // 绑定klass
-  PyObject::SetKlass(object, PyListKlass::GetInstance());
-
-  // list类型没有__dict__，不需要初始化properties
-  // >>> [].__dict__
-  // Traceback (most recent call last):
-  //   File "<stdin>", line 1, in <module>
-  // AttributeError: 'list' object has no attribute '__dict__'
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
+  if (allocate_properties_dict) {
+    Handle<PyDict> properties = PyDict::NewInstance();
+    PyObject::SetProperties(*object, *properties);
+  }
 
   return scope.Escape(object);
 }
@@ -51,6 +56,30 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
 Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
   assert(IsPyList(object));
   return Tagged<PyList>::cast(object);
+}
+
+// static
+bool PyList::IsListLike(Tagged<PyObject> object) {
+  return IsHeapObject(object) &&
+         PyObject::GetKlass(object)->native_layout_kind() ==
+             NativeLayoutKind::kList;
+}
+
+// static
+bool PyList::IsListLike(Handle<PyObject> object) {
+  return IsListLike(*object);
+}
+
+// static
+Tagged<PyList> PyList::CastListLike(Tagged<PyObject> object) {
+  assert(IsListLike(object));
+  return Tagged<PyList>::cast(object);
+}
+
+// static
+Handle<PyList> PyList::CastListLike(Handle<PyObject> object) {
+  assert(IsListLike(object));
+  return Handle<PyList>(Tagged<PyList>::cast(*object));
 }
 
 /////////////////////////////////////////////////////////////

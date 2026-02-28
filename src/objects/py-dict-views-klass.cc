@@ -320,7 +320,7 @@ MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
 Maybe<bool> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
   HandleScope scope;
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (!IsPyTuple(subscr)) {
     return Maybe<bool>(false);

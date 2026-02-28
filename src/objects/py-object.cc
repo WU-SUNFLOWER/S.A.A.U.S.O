@@ -31,6 +31,7 @@
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-module-klass.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
@@ -108,6 +109,8 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 Handle<PyObject> PyObject::AllocateRawPythonObject() {
   Handle<PyObject> object(Isolate::Current()->heap()->Allocate<PyObject>(
       Heap::AllocationSpace::kNewSpace));
+  SetKlass(object, PyObjectKlass::GetInstance());
+  SetProperties(*object, Tagged<PyDict>::null());
   Handle<PyDict> properties = PyDict::NewInstance();
   SetProperties(*object, *properties);
   return object;
@@ -421,7 +424,7 @@ Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
 Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
                                  Handle<PyObject> attr_name,
                                  Handle<PyObject>& out) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto* getattr = GetKlass(*self)->vtable().getattr;
   assert(getattr != nullptr);
 

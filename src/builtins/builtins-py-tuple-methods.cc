@@ -28,7 +28,7 @@ void PyTupleBuiltinMethods::Install(Handle<PyDict> target) {
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   EscapableHandleScope scope;
-  auto tuple = Handle<PyTuple>::cast(self);
+  auto tuple = PyTuple::CastTupleLike(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -55,7 +55,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t begin = 0;
   int64_t end = length;
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,

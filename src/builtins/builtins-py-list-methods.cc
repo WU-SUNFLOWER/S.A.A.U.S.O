@@ -39,14 +39,14 @@ void PyListBuiltinMethods::Install(Handle<PyDict> target) {
 
 BUILTIN_METHOD(PyListBuiltinMethods, Append) {
   EscapableHandleScope scope;
-  auto object = Handle<PyList>::cast(self);
+  auto object = PyList::CastListLike(self);
   PyList::Append(object, args->Get(0));
   return scope.Escape(handle(Isolate::Current()->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
   EscapableHandleScope scope;
-  auto object = Handle<PyList>::cast(self);
+  auto object = PyList::CastListLike(self);
   if (object->IsEmpty()) {
     Runtime_ThrowError(ExceptionType::kIndexError, "pop from empty list");
     return kNullMaybeHandle;
@@ -56,7 +56,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
 
 BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   EscapableHandleScope scope;
-  auto object = Handle<PyList>::cast(self);
+  auto object = PyList::CastListLike(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1));
   return scope.Escape(handle(Isolate::Current()->py_none_object()));
@@ -64,7 +64,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
 
 BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   EscapableHandleScope scope;
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -92,7 +92,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   int64_t begin = 0;
   int64_t end = length;
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
@@ -130,7 +130,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
 
 BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
   EscapableHandleScope scope;
-  auto list = Handle<PyList>::cast(self);
+  auto list = PyList::CastListLike(self);
 
   auto length = list->length();
   for (auto i = 0; i < (length >> 1); ++i) {
@@ -143,7 +143,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
-  if (Runtime_ExtendListByItratableObject(Handle<PyList>::cast(self),
+  if (Runtime_ExtendListByItratableObject(PyList::CastListLike(self),
                                           args->Get(0))
           .IsEmpty()) {
     return kNullMaybeHandle;
@@ -160,8 +160,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     return kNullMaybeHandle;
   }
 
-  auto* isolate = Isolate::Current();
-  auto list = Handle<PyList>::cast(self);
+  auto* isolate [[maybe_unused]] = Isolate::Current();
+  auto list = PyList::CastListLike(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {
     return scope.Escape(handle(isolate->py_none_object()));
