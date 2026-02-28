@@ -11,6 +11,7 @@
 
 #include "src/builtins/builtins-py-tuple-methods.h"
 #include "src/execution/exception-utils.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/heap/heap.h"
@@ -27,6 +28,8 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-reflection.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
@@ -45,6 +48,9 @@ Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
 
 void PyTupleKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+
+  set_native_layout_kind(NativeLayoutKind::kTuple);
+  set_native_layout_base(Tagged<Klass>(this));
 
   vtable_.construct_instance = &Virtual_ConstructInstance;
   vtable_.len = &Virtual_Len;
@@ -83,47 +89,99 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyTupleKlass::GetInstance());
-
-  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "tuple() takes no keyword arguments\n");
-    return kNullMaybeHandle;
-  }
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kTuple);
+  auto* isolate = Isolate::Current();
+  bool is_exact_tuple = klass_self == PyTupleKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
-  if (argc == 0) {
-    return PyTuple::NewInstance(0);
-  }
-  if (argc > 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "tuple expected at most 1 argument, got %" PRId64 "\n",
-                        argc);
-    return kNullMaybeHandle;
+
+  if (is_exact_tuple) {
+    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "tuple() takes no keyword arguments\n");
+      return kNullMaybeHandle;
+    }
+    if (argc > 1) {
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
+          "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
+      return kNullMaybeHandle;
+    }
   }
 
-  // tuple(tuple_obj) 直接返回自身（不可变对象的语义对齐 CPython）。
-  Handle<PyObject> iterable = pos_args->Get(0);
-  if (IsPyTuple(iterable)) {
-    return iterable;
+  if (is_exact_tuple && argc == 1) {
+    Handle<PyObject> iterable = pos_args->Get(0);
+    if (IsPyTuple(iterable)) {
+      return iterable;
+    }
   }
 
-  Handle<PyTuple> result;
-  if (!Runtime_UnpackIterableObjectToTuple(iterable).ToHandle(&result)) {
+  auto probe = PyTuple::AllocateTupleLike(klass_self, 0, !is_exact_tuple);
+  if (!is_exact_tuple) {
+    auto properties = PyObject::GetProperties(probe);
+    RETURN_ON_EXCEPTION(isolate,
+                        PyDict::Put(properties, ST(class),
+                                    klass_self->type_object()));
+  }
+
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, probe, ST(init), init_method));
+
+  if (init_method.is_null()) {
+    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "tuple() takes no keyword arguments\n");
+      return kNullMaybeHandle;
+    }
+    if (argc > 1) {
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
+          "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
+      return kNullMaybeHandle;
+    }
+
+    if (argc == 0) {
+      return probe;
+    }
+
+    Handle<PyObject> iterable = pos_args->Get(0);
+    Handle<PyTuple> unpacked;
+    if (!Runtime_UnpackIterableObjectToTuple(iterable).ToHandle(&unpacked)) {
+      return kNullMaybeHandle;
+    }
+
+    auto length = unpacked->length();
+    auto result =
+        PyTuple::AllocateTupleLike(klass_self, length, !is_exact_tuple);
+    if (!is_exact_tuple) {
+      auto properties = PyObject::GetProperties(result);
+      RETURN_ON_EXCEPTION(
+          isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+    }
+    for (auto i = 0; i < length; ++i) {
+      result->SetInternal(i, unpacked->GetTagged(i));
+    }
+    return result;
+  }
+
+  if (Execution::Call(isolate, init_method, probe, pos_args,
+                      Handle<PyDict>::cast(kwargs))
+          .IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return result;
+  return probe;
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
-      PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
+      PySmi::FromInt(PyTuple::CastTupleLike(self)->length()));
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto tuple = Handle<PyTuple>::cast(self);
+  auto tuple = PyTuple::CastTupleLike(self);
   std::printf("(");
   for (auto i = 0; i < tuple->length(); ++i) {
     if (i > 0) {
@@ -140,7 +198,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
                                                    Handle<PyObject> subscr) {
-  auto tuple = Handle<PyTuple>::cast(self);
+  auto tuple = PyTuple::CastTupleLike(self);
   if (!IsPySmi(*subscr)) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "tuple indices must be integers\n");
@@ -175,7 +233,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
 Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
                                            Handle<PyObject> target) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto tuple = Handle<PyTuple>::cast(self);
+  auto tuple = PyTuple::CastTupleLike(self);
   for (auto i = 0; i < tuple->length(); ++i) {
     bool eq;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
@@ -189,14 +247,14 @@ Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
 
 Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
                                         Handle<PyObject> other) {
-  if (!IsPyTuple(*other)) {
+  if (!PyTuple::IsTupleLike(other)) {
     return Maybe<bool>(false);
   }
 
   auto* isolate [[maybe_unused]] = Isolate::Current();
 
-  auto tuple1 = Handle<PyTuple>::cast(self);
-  auto tuple2 = Handle<PyTuple>::cast(other);
+  auto tuple1 = PyTuple::CastTupleLike(self);
+  auto tuple2 = PyTuple::CastTupleLike(other);
 
   if (tuple1->length() != tuple2->length()) {
     return Maybe<bool>(false);
@@ -215,17 +273,17 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyTupleIterator::NewInstance(Handle<PyTuple>::cast(self));
+  return PyTupleIterator::NewInstance(PyTuple::CastTupleLike(self));
 }
 
 size_t PyTupleKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  assert(IsPyTuple(self));
-  return PyTuple::ComputeObjectSize(Tagged<PyTuple>::cast(self)->length());
+  assert(PyTuple::IsTupleLike(self));
+  return PyTuple::ComputeObjectSize(PyTuple::CastTupleLike(self)->length());
 }
 
 void PyTupleKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(IsPyTuple(self));
-  auto tuple = Tagged<PyTuple>::cast(self);
+  assert(PyTuple::IsTupleLike(self));
+  auto tuple = PyTuple::CastTupleLike(self);
   v->VisitPointers(tuple->data(), tuple->data() + tuple->length());
 }
 

@@ -16,7 +16,9 @@
 
 namespace saauso::internal {
 
-Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
+Handle<PyTuple> PyTuple::AllocateTupleLike(Tagged<Klass> klass_self,
+                                           int64_t length,
+                                           bool allocate_properties_dict) {
   assert(0 <= length);
 
   EscapableHandleScope scope;
@@ -26,15 +28,24 @@ Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
       object_size, Heap::AllocationSpace::kNewSpace));
 
   object->length_ = length;
+  PyObject::SetKlass(object, klass_self);
   PyObject::SetProperties(object, Tagged<PyDict>::null());
 
   for (auto i = 0; i < length; ++i) {
     object->SetInternal(i, Tagged<PyObject>::null());
   }
 
-  PyObject::SetKlass(object, PyTupleKlass::GetInstance());
+  if (allocate_properties_dict) {
+    Handle<PyDict> properties = PyDict::NewInstance();
+    PyObject::SetProperties(object, *properties);
+    return scope.Escape(handle(object));
+  }
 
   return scope.Escape(handle(object));
+}
+
+Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
+  return AllocateTupleLike(PyTupleKlass::GetInstance(), length, false);
 }
 
 Handle<PyTuple> PyTuple::NewInstance(Handle<PyList> elements) {
@@ -51,6 +62,26 @@ Handle<PyTuple> PyTuple::NewInstance(Handle<PyList> elements) {
 Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {
   assert(IsPyTuple(object));
   return Tagged<PyTuple>(object.ptr());
+}
+
+bool PyTuple::IsTupleLike(Tagged<PyObject> object) {
+  return IsHeapObject(object) &&
+         PyObject::GetKlass(object)->native_layout_kind() ==
+             NativeLayoutKind::kTuple;
+}
+
+bool PyTuple::IsTupleLike(Handle<PyObject> object) {
+  return IsTupleLike(*object);
+}
+
+Tagged<PyTuple> PyTuple::CastTupleLike(Tagged<PyObject> object) {
+  assert(IsTupleLike(object));
+  return Tagged<PyTuple>::cast(object);
+}
+
+Handle<PyTuple> PyTuple::CastTupleLike(Handle<PyObject> object) {
+  assert(IsTupleLike(object));
+  return Handle<PyTuple>(Tagged<PyTuple>::cast(*object));
 }
 
 size_t PyTuple::ComputeObjectSize(int64_t length) {
