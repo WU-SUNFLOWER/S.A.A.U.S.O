@@ -55,6 +55,37 @@ class [[nodiscard]] Maybe {
   T value_{};
 };
 
+// Maybe<void>特化版本
+template <>
+class Maybe<void> {
+ public:
+  constexpr Maybe() = default;
+  constexpr Maybe(NullMaybeType) {}
+
+  bool IsNothing() const { return !is_valid_; }
+  bool IsEmpty() const { return IsNothing(); }
+  bool IsJust() const { return is_valid_; }
+
+  bool operator==(const Maybe& other) const {
+    return IsJust() == other.IsJust();
+  }
+
+  bool operator!=(const Maybe& other) const { return !operator==(other); }
+
+ private:
+  struct JustTag {};
+
+  explicit Maybe(JustTag) : is_valid_(true) {}
+
+  bool is_valid_ = false;
+
+  friend Maybe<void> JustVoid();
+};
+
+inline Maybe<void> JustVoid() {
+  return Maybe<void>(Maybe<void>::JustTag());
+}
+
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_UTILS_MAYBE_H_
