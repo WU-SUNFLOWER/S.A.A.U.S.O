@@ -63,6 +63,71 @@ print(lst)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, SubclassList) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(list):
+    pass
+
+i = 0
+last = None
+while i < 2000:
+    c = C()
+    c.append(i)
+    c.x = i
+    last = c
+    i = i + 1
+
+print(len(last))
+print(last[0])
+print(last.x)
+print(1 if last else 0)
+last.pop()
+print(1 if last else 0)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1999)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1999)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassListCustomInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(list):
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def foo(self):
+        return self
+
+c = C(1, 2, 3)
+print(c.foo().x)
+print(c.foo().y)
+print(c.foo().z)
+print(len(c.foo()))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 // 构建长的list字面量会用到Python3的新字节码LIST_EXTEND，
 // 因此这里设置一个独立的单测！
 TEST_F(BasicInterpreterTest, BuildLongList) {

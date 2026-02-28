@@ -6,6 +6,7 @@
 
 #include "src/handles/handles.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-smi.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -41,5 +42,51 @@ print(time.time() > 0)
   ExpectPrintResult(expected);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, ListSubclassSurvivesSysgc) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+class C(list):
+    pass
+
+class D:
+    pass
+
+def make():
+    c = C()
+    d1 = D()
+    d1.v = 111
+    d2 = D()
+    d2.v = 222
+    c.append(d1)
+    c.x = d2
+    return c
+
+c = make()
+
+tmp = []
+i = 0
+while i < 5000:
+    tmp.append([i, i + 1, i + 2])
+    i = i + 1
+
+sysgc()
+print(c[0].v)
+print(c.x.v)
+
+sysgc()
+print(c[0].v)
+print(c.x.v)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, handle(PySmi::FromInt(111)));
+  AppendExpected(expected, handle(PySmi::FromInt(222)));
+  AppendExpected(expected, handle(PySmi::FromInt(111)));
+  AppendExpected(expected, handle(PySmi::FromInt(222)));
+  ExpectPrintResult(expected);
+}
+
+}  // namespace saauso::internal

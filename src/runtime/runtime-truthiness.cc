@@ -38,7 +38,7 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
   if (IsPyString(object)) {
     return Tagged<PyString>::cast(object)->length() != 0;
   }
-  if (IsPyList(object)) {
+  if (PyList::IsListLike(object)) {
     return Tagged<PyList>::cast(object)->length() != 0;
   }
   if (IsPyTuple(object)) {

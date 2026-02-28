@@ -53,6 +53,30 @@ Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
   return Tagged<PyList>::cast(object);
 }
 
+// static
+bool PyList::IsListLike(Tagged<PyObject> object) {
+  return IsHeapObject(object) &&
+         PyObject::GetKlass(object)->native_layout_kind() ==
+             NativeLayoutKind::kList;
+}
+
+// static
+bool PyList::IsListLike(Handle<PyObject> object) {
+  return IsListLike(*object);
+}
+
+// static
+Tagged<PyList> PyList::CastListLike(Tagged<PyObject> object) {
+  assert(IsListLike(object));
+  return Tagged<PyList>::cast(object);
+}
+
+// static
+Handle<PyList> PyList::CastListLike(Handle<PyObject> object) {
+  assert(IsListLike(object));
+  return Handle<PyList>(Tagged<PyList>::cast(*object));
+}
+
 /////////////////////////////////////////////////////////////
 
 Handle<PyObject> PyList::Pop() {
