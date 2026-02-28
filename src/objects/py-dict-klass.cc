@@ -256,7 +256,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
 
 // static
 size_t PyDictKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyDict);
+  return ObjectSizeAlign(sizeof(PyDict));
 }
 
 // static
