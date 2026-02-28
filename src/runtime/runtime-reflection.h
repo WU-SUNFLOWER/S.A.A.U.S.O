@@ -21,9 +21,10 @@ class Klass;
 // 创建一个新的 Python 类（返回其 type object）。
 // - class_name/class_properties/supers 均必须为非空。
 // - 该函数会创建新的 Klass 并注册进当前 Isolate。
-Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
-                                               Handle<PyDict> class_properties,
-                                               Handle<PyList> supers);
+MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
+    Handle<PyString> class_name,
+    Handle<PyDict> class_properties,
+    Handle<PyList> supers);
 
 // 判断 object 是否是某个 type 的实例。
 // - 该函数仅依赖对象的 klass mro，不做 Python 层参数校验。

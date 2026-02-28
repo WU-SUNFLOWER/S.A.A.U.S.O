@@ -80,6 +80,8 @@ BUILTIN(IsInstance) {
 BUILTIN(BuildTypeObject) {
   EscapableHandleScope scope;
 
+  auto* isolate = Isolate::Current();
+
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length < 2) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -116,8 +118,10 @@ BUILTIN(BuildTypeObject) {
     return kNullMaybeHandle;
   }
 
-  Handle<PyTypeObject> type_object =
-      Runtime_CreatePythonClass(class_name, class_properties, class_supers);
+  Handle<PyTypeObject> type_object;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, type_object,
+      Runtime_CreatePythonClass(class_name, class_properties, class_supers));
   return scope.Escape(type_object);
 }
 

@@ -184,16 +184,27 @@ void BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, object_type);
   Handle<PyDict> base_exception_dict = PyDict::NewInstance();
-  Handle<PyTypeObject> base_exception = Runtime_CreatePythonClass(
-      ST(base_exception), base_exception_dict, supers);
+
+  Handle<PyTypeObject> base_exception;
+  if (!Runtime_CreatePythonClass(ST(base_exception), base_exception_dict,
+                                 supers)
+           .To(&base_exception)) {
+    assert(0 && "unreachable");
+    return;
+  }
 
   // 注入 BaseException 内建方法
   BaseExceptionMethods::Install(base_exception_dict);
 
   supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);
-  Handle<PyTypeObject> exception =
-      Runtime_CreatePythonClass(ST(exception), PyDict::NewInstance(), supers);
+
+  Handle<PyTypeObject> exception;
+  if (!Runtime_CreatePythonClass(ST(exception), PyDict::NewInstance(), supers)
+           .To(&exception)) {
+    assert(0 && "unreachable");
+    return;
+  }
 
   (void)PyDict::Put(builtins_.Get(), ST(base_exception), base_exception);
   (void)PyDict::Put(builtins_.Get(), ST(exception), exception);
@@ -204,8 +215,14 @@ void BuiltinBootstrapper::RegisterSimpleTypeToBuiltins(
     Handle<PyObject> type_base) {
   auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, type_base);
-  auto type_object =
-      Runtime_CreatePythonClass(type_name, PyDict::NewInstance(), supers);
+
+  Handle<PyObject> type_object;
+  if (!Runtime_CreatePythonClass(type_name, PyDict::NewInstance(), supers)
+           .To(&type_object)) {
+    assert(0 && "unreachable");
+    return;
+  }
+
   (void)PyDict::Put(builtins_.Get(), type_name, type_object);
 }
 

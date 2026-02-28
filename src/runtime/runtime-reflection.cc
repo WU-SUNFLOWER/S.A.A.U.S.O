@@ -19,9 +19,10 @@
 
 namespace saauso::internal {
 
-Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
-                                               Handle<PyDict> class_properties,
-                                               Handle<PyList> supers) {
+MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
+    Handle<PyString> class_name,
+    Handle<PyDict> class_properties,
+    Handle<PyList> supers) {
   EscapableHandleScope scope;
 
   Handle<PyTypeObject> type_object = PyTypeObject::NewInstance();
@@ -49,7 +50,7 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
       if (native_base_count > 1) {
         Runtime_ThrowError(ExceptionType::kTypeError,
                            "multiple native base classes are not supported");
-        return Handle<PyTypeObject>::null();
+        return kNullMaybeHandle;
       }
       native_layout_kind = base_klass->native_layout_kind();
       native_layout_base = base_klass->native_layout_base().is_null()
@@ -176,6 +177,8 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
                                       Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
 
+  auto* isolate = Isolate::Current();
+
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (!(argc == 1 || argc == 3)) {
@@ -239,7 +242,10 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
     }
   }
 
-  return scope.Escape(Runtime_CreatePythonClass(name, class_dict, supers));
+  Handle<PyObject> result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result, Runtime_CreatePythonClass(name, class_dict, supers));
+  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal
