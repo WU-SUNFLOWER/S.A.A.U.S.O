@@ -59,6 +59,7 @@ void PyListKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 设置内建布局字段
   set_native_layout_kind(NativeLayoutKind::kList);
   set_native_layout_base(Tagged<Klass>(this));
 
@@ -127,17 +128,10 @@ MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
     }
   }
 
-  Handle<PyList> result(
-      isolate->heap()->Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
-  Handle<FixedArray> array = FixedArray::NewInstance(PyList::kMinimumCapacity);
-  result->length_ = 0;
-  result->array_ = *array;
-  PyObject::SetKlass(result, klass_self);
-  if (is_exact_list) {
-    PyObject::SetProperties(*result, Tagged<PyDict>::null());
-  } else {
-    Handle<PyDict> properties = PyDict::NewInstance();
-    PyObject::SetProperties(*result, *properties);
+  Handle<PyList> result = PyList::AllocateListLike(
+      klass_self, PyList::kMinimumCapacity, !is_exact_list);
+  if (!is_exact_list) {
+    auto properties = PyObject::GetProperties(result);
     RETURN_ON_EXCEPTION(
         isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
   }
