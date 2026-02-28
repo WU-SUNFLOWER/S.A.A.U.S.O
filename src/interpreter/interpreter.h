@@ -60,15 +60,15 @@ class Interpreter {
   void Iterate(ObjectVisitor* v);
 
  private:
-  void InvokeCallable(Handle<PyObject> callable,
-                      Handle<PyObject> host,
-                      Handle<PyTuple> actual_args,
-                      Handle<PyTuple> kwarg_keys);
+  Maybe<void> InvokeCallable(Handle<PyObject> callable,
+                             Handle<PyObject> host,
+                             Handle<PyTuple> actual_args,
+                             Handle<PyTuple> kwarg_keys);
 
-  void InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
-                                        Handle<PyObject> host,
-                                        Handle<PyTuple> pos_args,
-                                        Handle<PyDict> kw_args);
+  Maybe<void> InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
+                                               Handle<PyObject> host,
+                                               Handle<PyTuple> pos_args,
+                                               Handle<PyDict> kw_args);
 
   template <typename... ExtendArgs>
   MaybeHandle<PyObject> CallPythonImpl(Handle<PyObject> callable,

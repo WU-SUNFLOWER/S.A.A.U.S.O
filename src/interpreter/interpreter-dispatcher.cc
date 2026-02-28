@@ -983,7 +983,8 @@ void Interpreter::EvalCurrentFrame() {
       }
     }
 
-    InvokeCallableWithNormalizedArgs(callable, host, pos_args, kw_args);
+    GOTO_ON_EXCEPTION(
+        InvokeCallableWithNormalizedArgs(callable, host, pos_args, kw_args));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {
@@ -1001,7 +1002,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> host;
     PopCallTarget(callable, host);
 
-    InvokeCallable(callable, host, args, ReleaseKwArgKeys());
+    GOTO_ON_EXCEPTION(InvokeCallable(callable, host, args, ReleaseKwArgKeys()));
   })
 
   INTERPRETER_HANDLER_DISPATCH(
@@ -1132,22 +1133,22 @@ void Interpreter::PopCallTarget(Handle<PyObject>& callable,
   }
 }
 
-void Interpreter::InvokeCallable(Handle<PyObject> callable,
-                                 Handle<PyObject> host,
-                                 Handle<PyTuple> actual_args,
-                                 Handle<PyTuple> kwarg_keys) {
+Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
+                                        Handle<PyObject> host,
+                                        Handle<PyTuple> actual_args,
+                                        Handle<PyTuple> kwarg_keys) {
   NormalizeCallable(callable, host);
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
-    ASSIGN_RETURN_ON_EXCEPTION_VOID(
+    ASSIGN_RETURN_ON_EXCEPTION(
         isolate_, frame,
         FrameObjectBuilder::BuildFastPath(Handle<PyFunction>::cast(callable),
                                           host, actual_args, kwarg_keys));
 
     EnterFrame(frame);
-    return;
+    return JustVoid();
   }
 
   // Slow Path：先对用户传入的实参进行归一化，再尝试调用callable的call虚方法
@@ -1161,44 +1162,46 @@ void Interpreter::InvokeCallable(Handle<PyObject> callable,
     auto* native_func_ptr = func_object->native_func();
 
     Handle<PyObject> result;
-    if (!native_func_ptr(host, pos_args, kw_args).ToHandle(&result)) {
-      return;
-    }
-
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
+                               native_func_ptr(host, pos_args, kw_args));
     PUSH(result);
-    return;
+
+    return JustVoid();
   }
 
   // 兜底：调用对象的__call__虚函数
   Handle<PyObject> result;
-  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
-    return;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
+                             PyObject::Call(callable, host, pos_args, kw_args));
   PUSH(result);
+
+  return JustVoid();
 }
 
-void Interpreter::InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
-                                                   Handle<PyObject> host,
-                                                   Handle<PyTuple> pos_args,
-                                                   Handle<PyDict> kw_args) {
+Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
+    Handle<PyObject> callable,
+    Handle<PyObject> host,
+    Handle<PyTuple> pos_args,
+    Handle<PyDict> kw_args) {
   NormalizeCallable(callable, host);
 
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
-    ASSIGN_RETURN_ON_EXCEPTION_VOID(
+    ASSIGN_RETURN_ON_EXCEPTION(
         isolate_, frame,
         FrameObjectBuilder::BuildSlowPath(Handle<PyFunction>::cast(callable),
                                           host, pos_args, kw_args));
 
     EnterFrame(frame);
-    return;
+    return JustVoid();
   }
 
   Handle<PyObject> result;
-  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
-    return;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
+                             PyObject::Call(callable, host, pos_args, kw_args));
   PUSH(result);
+
+  return JustVoid();
 }
 
 void Interpreter::EnterFrame(FrameObject* frame) {
