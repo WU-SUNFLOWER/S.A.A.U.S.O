@@ -10,7 +10,6 @@
 #include "src/builtins/builtins-definitions.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
