@@ -199,28 +199,28 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
   Handle<PyObject> bases_obj = pos_args->Get(1);
   Handle<PyObject> dict_obj = pos_args->Get(2);
 
-  if (!IsPyString(name_obj)) {
+  if (!PyString::IsStringLike(name_obj)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "type() argument 1 must be str, not '%s'",
                         PyObject::GetKlass(name_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
-  if (!IsPyTuple(bases_obj)) {
+  if (!PyTuple::IsTupleLike(bases_obj)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "type() argument 2 must be tuple, not '%s'",
                         PyObject::GetKlass(bases_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
-  if (!IsPyDict(dict_obj)) {
+  if (!PyDict::IsDictLike(dict_obj)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "type() argument 3 must be dict, not '%s'",
                         PyObject::GetKlass(dict_obj)->name()->buffer());
     return kNullMaybeHandle;
   }
 
-  Handle<PyString> name = Handle<PyString>::cast(name_obj);
-  Handle<PyTuple> bases_tuple = Handle<PyTuple>::cast(bases_obj);
-  Handle<PyDict> class_dict = PyDict::Clone(Handle<PyDict>::cast(dict_obj));
+  Handle<PyString> name = PyString::CastStringLike(name_obj);
+  Handle<PyTuple> bases_tuple = PyTuple::CastTupleLike(bases_obj);
+  Handle<PyDict> class_dict = PyDict::Clone(PyDict::CastDictLike(dict_obj));
 
   Handle<PyList> supers;
   if (bases_tuple->length() == 0) {
