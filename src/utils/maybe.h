@@ -57,7 +57,7 @@ class [[nodiscard]] Maybe {
 
 // Maybe<void>特化版本
 template <>
-class Maybe<void> {
+class [[nodiscard]] Maybe<void> {
  public:
   constexpr Maybe() = default;
   constexpr Maybe(NullMaybeType) {}
