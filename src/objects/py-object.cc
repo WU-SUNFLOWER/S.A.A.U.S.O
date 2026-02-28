@@ -31,6 +31,7 @@
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-module-klass.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi-klass.h"
@@ -108,6 +109,8 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 Handle<PyObject> PyObject::AllocateRawPythonObject() {
   Handle<PyObject> object(Isolate::Current()->heap()->Allocate<PyObject>(
       Heap::AllocationSpace::kNewSpace));
+  SetKlass(object, PyObjectKlass::GetInstance());
+  SetProperties(*object, Tagged<PyDict>::null());
   Handle<PyDict> properties = PyDict::NewInstance();
   SetProperties(*object, *properties);
   return object;

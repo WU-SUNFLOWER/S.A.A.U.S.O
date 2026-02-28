@@ -19,12 +19,13 @@ Handle<PyModule> PyModule::NewInstance() {
   Handle<PyModule> object(Isolate::Current()->heap()->Allocate<PyModule>(
       Heap::AllocationSpace::kNewSpace));
 
+  SetKlass(object, PyModuleKlass::GetInstance());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
+
   // module 必须有 __dict__。我们复用 PyObject::properties_ 作为模块命名空间。
   Handle<PyDict> properties = PyDict::NewInstance();
   (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
   PyObject::SetProperties(*object, *properties);
-
-  SetKlass(object, PyModuleKlass::GetInstance());
 
   return scope.Escape(object);
 }
