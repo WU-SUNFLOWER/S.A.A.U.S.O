@@ -421,7 +421,7 @@ Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
 Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
                                  Handle<PyObject> attr_name,
                                  Handle<PyObject>& out) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto* getattr = GetKlass(*self)->vtable().getattr;
   assert(getattr != nullptr);
 

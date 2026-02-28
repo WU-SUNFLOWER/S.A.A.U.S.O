@@ -122,7 +122,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
   std::printf("(");
   for (auto i = 0; i < tuple->length(); ++i) {
@@ -174,7 +174,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
 
 Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
                                            Handle<PyObject> target) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
     bool eq;
@@ -193,7 +193,7 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
     return Maybe<bool>(false);
   }
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   auto tuple1 = Handle<PyTuple>::cast(self);
   auto tuple2 = Handle<PyTuple>::cast(other);

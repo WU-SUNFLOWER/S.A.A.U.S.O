@@ -22,7 +22,7 @@ namespace saauso::internal {
 MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                                       Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();

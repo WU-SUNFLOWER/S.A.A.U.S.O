@@ -55,7 +55,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t begin = 0;
   int64_t end = length;
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,

@@ -87,7 +87,7 @@ void PyDictKlass::Initialize() {
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto dict = Handle<PyDict>::cast(self);
   std::printf("{");
   bool first = true;
@@ -124,7 +124,7 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> other) {
   assert(IsPyDict(self));
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);

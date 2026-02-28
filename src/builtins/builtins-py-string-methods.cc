@@ -228,7 +228,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   Handle<PyObject> sep_obj = Handle<PyObject>::null();
   int64_t maxsplit = -1;
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 1) {
     sep_obj = args->Get(0);
@@ -261,11 +261,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       if (!PyObject::EqualBool(key, sep_key).To(&eq)) {
         return kNullMaybeHandle;
       }
-      if (eq) continue;
+      if (eq) {
+        continue;
+      }
       if (!PyObject::EqualBool(key, maxsplit_key).To(&eq)) {
         return kNullMaybeHandle;
       }
-      if (eq) continue;
+      if (eq) {
+        continue;
+      }
 
       auto key_str = Handle<PyString>::cast(key);
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -291,9 +295,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     }
 
     Tagged<PyObject> maxsplit_from_kwargs;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               kwargs->GetTagged(maxsplit_key,
-                                                 maxsplit_from_kwargs));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found, kwargs->GetTagged(maxsplit_key, maxsplit_from_kwargs));
     Handle<PyObject> maxsplit_from_kwargs_handle = handle(maxsplit_from_kwargs);
     if (found) {
       assert(!maxsplit_from_kwargs_handle.is_null());
@@ -304,8 +307,9 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
         return kNullMaybeHandle;
       }
 
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit,
-                                 Runtime_DecodeIntLike(*maxsplit_from_kwargs_handle));
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, maxsplit,
+          Runtime_DecodeIntLike(*maxsplit_from_kwargs_handle));
     }
   }
 
