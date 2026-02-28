@@ -125,9 +125,12 @@ Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
   Handle<MethodObject> object(
       Isolate::Current()->heap()->Allocate<MethodObject>(
           Heap::AllocationSpace::kNewSpace));
+  object->owner_ = Tagged<PyObject>::null();
+  object->func_ = Tagged<PyObject>::null();
+  PyObject::SetKlass(object, MethodObjectKlass::GetInstance());
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
   object->owner_ = *owner;
   object->func_ = *func;
-  PyObject::SetKlass(object, MethodObjectKlass::GetInstance());
   return object;
 }
 
