@@ -19,9 +19,9 @@
 
 namespace saauso::internal {
 
-MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
-                                      Handle<PyObject> kwargs) {
-  EscapableHandleScope scope;
+Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
+                                           Handle<PyObject> args,
+                                           Handle<PyObject> kwargs) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
@@ -29,15 +29,22 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
   if (argc > 1) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "dict expected at most 1 argument, got %" PRId64, argc);
-    return kNullMaybeHandle;
+    return kNullMaybe;
   }
-
-  Handle<PyDict> result = PyDict::NewInstance();
 
   if (argc == 1) {
     Handle<PyObject> input = pos_args->Get(0);
-    if (IsPyDict(input)) {
-      result = PyDict::Clone(Handle<PyDict>::cast(input));
+    if (PyDict::IsDictLike(input)) {
+      auto src = PyDict::CastDictLike(input);
+      for (int64_t i = 0; i < src->capacity(); ++i) {
+        Handle<PyTuple> item = src->ItemAtIndex(i);
+        if (item.is_null()) {
+          continue;
+        }
+        RETURN_ON_EXCEPTION_VALUE(
+            isolate, PyDict::Put(result, item->Get(0), item->Get(1)),
+            kNullMaybe);
+      }
     } else {
       Handle<PyTuple> elements;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, elements,
@@ -52,12 +59,12 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                               "cannot convert dictionary update sequence "
                               "element #%" PRId64 " to a sequence",
                               i);
-          return kNullMaybeHandle;
+          return kNullMaybe;
         }
 
         RETURN_ON_EXCEPTION_VALUE(
             isolate, PyDict::Put(result, pair->Get(0), pair->Get(1)),
-            kNullMaybeHandle);
+            kNullMaybe);
       }
     }
   }
@@ -75,17 +82,31 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
         if (!IsPyString(key)) {
           Handle<PyString> key_str;
           if (!Runtime_NewStr(key).ToHandle(&key_str)) {
-            return kNullMaybeHandle;
+            return kNullMaybe;
           }
           key = key_str;
         }
 
         RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, key, item->Get(1)), kNullMaybeHandle);
+            isolate, PyDict::Put(result, key, item->Get(1)), kNullMaybe);
       }
     }
   }
 
+  return Maybe<bool>(true);
+}
+
+MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
+                                      Handle<PyObject> kwargs) {
+  EscapableHandleScope scope;
+  auto* isolate [[maybe_unused]] = Isolate::Current();
+  Handle<PyDict> result = PyDict::NewInstance();
+  bool ok = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, ok, Runtime_InitDictFromArgsKwargs(result, args, kwargs));
+  if (!ok) {
+    return kNullMaybeHandle;
+  }
   return scope.Escape(result);
 }
 

@@ -35,7 +35,7 @@ Tagged<PyDictKeys> PyDictKeys::cast(Tagged<PyObject> object) {
 
 Handle<PyDict> PyDictKeys::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyDict>::cast(owner_));
+  return PyDict::CastDictLike(handle(owner_));
 }
 
 Handle<PyDictValues> PyDictValues::NewInstance(Handle<PyObject> owner) {
@@ -58,7 +58,7 @@ Tagged<PyDictValues> PyDictValues::cast(Tagged<PyObject> object) {
 
 Handle<PyDict> PyDictValues::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyDict>::cast(owner_));
+  return PyDict::CastDictLike(handle(owner_));
 }
 
 Handle<PyDictItems> PyDictItems::NewInstance(Handle<PyObject> owner) {
@@ -81,7 +81,7 @@ Tagged<PyDictItems> PyDictItems::cast(Tagged<PyObject> object) {
 
 Handle<PyDict> PyDictItems::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyDict>::cast(owner_));
+  return PyDict::CastDictLike(handle(owner_));
 }
 
 Handle<PyDictKeyIterator> PyDictKeyIterator::NewInstance(
@@ -108,7 +108,7 @@ Tagged<PyDictKeyIterator> PyDictKeyIterator::cast(Tagged<PyObject> object) {
 
 Handle<PyDict> PyDictKeyIterator::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyDict>::cast(owner_));
+  return PyDict::CastDictLike(handle(owner_));
 }
 
 Handle<PyDictValueIterator> PyDictValueIterator::NewInstance(
@@ -135,7 +135,7 @@ Tagged<PyDictValueIterator> PyDictValueIterator::cast(Tagged<PyObject> object) {
 
 Handle<PyDict> PyDictValueIterator::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyDict>::cast(owner_));
+  return PyDict::CastDictLike(handle(owner_));
 }
 
 Handle<PyDictItemIterator> PyDictItemIterator::NewInstance(
@@ -162,7 +162,7 @@ Tagged<PyDictItemIterator> PyDictItemIterator::cast(Tagged<PyObject> object) {
 
 Handle<PyDict> PyDictItemIterator::owner() const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyDict>::cast(owner_));
+  return PyDict::CastDictLike(handle(owner_));
 }
 
 }  // namespace saauso::internal

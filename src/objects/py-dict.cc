@@ -103,6 +103,15 @@ Maybe<bool> RehashInto(DictT dict,
 
 // static
 Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
+  EscapableHandleScope scope;
+  return scope.Escape(
+      AllocateDictLike(PyDictKlass::GetInstance(), init_capacity, false));
+}
+
+// static
+Handle<PyDict> PyDict::AllocateDictLike(Tagged<Klass> klass_self,
+                                        int64_t init_capacity,
+                                        bool allocate_properties_dict) {
   // 因为探测公式取`index = (capacity_ - 1) & mask`，
   // 为了在按位与之后充分利用哈希表中的各个槽位，
   // 我们要求init_capacity必须取2的幂次方
@@ -110,13 +119,21 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
 
   EscapableHandleScope scope;
 
-  // 创建对象
-  Handle<PyDict> object = NewInstanceWithoutAllocateData();
+  Handle<PyDict> object(Isolate::Current()->heap()->Allocate<PyDict>(
+      Heap::AllocationSpace::kNewSpace));
 
-  // 创建数据区
-  // 因为dict中同时要储存key和value，所以init_capacity要乘2
+  object->occupied_ = 0;
+  SetKlass(object, klass_self);
+  object->data_ = Tagged<FixedArray>::null();
+  PyObject::SetProperties(*object, Tagged<PyDict>::null());
+
   Handle<FixedArray> data = FixedArray::NewInstance(init_capacity * 2);
   object->data_ = *data;
+
+  if (allocate_properties_dict) {
+    Handle<PyDict> properties = PyDict::NewInstance();
+    PyObject::SetProperties(*object, *properties);
+  }
 
   return scope.Escape(object);
 }
@@ -159,6 +176,30 @@ Handle<PyDict> PyDict::NewInstanceWithoutAllocateData() {
 Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
   assert(IsPyDict(object));
   return Tagged<PyDict>::cast(object);
+}
+
+// static
+bool PyDict::IsDictLike(Tagged<PyObject> object) {
+  return IsHeapObject(object) &&
+         PyObject::GetKlass(object)->native_layout_kind() ==
+             NativeLayoutKind::kDict;
+}
+
+// static
+bool PyDict::IsDictLike(Handle<PyObject> object) {
+  return IsDictLike(*object);
+}
+
+// static
+Tagged<PyDict> PyDict::CastDictLike(Tagged<PyObject> object) {
+  assert(IsDictLike(object));
+  return Tagged<PyDict>::cast(object);
+}
+
+// static
+Handle<PyDict> PyDict::CastDictLike(Handle<PyObject> object) {
+  assert(IsDictLike(object));
+  return Handle<PyDict>(Tagged<PyDict>::cast(*object));
 }
 
 //////////////////////////////////////////////////////////////////////////

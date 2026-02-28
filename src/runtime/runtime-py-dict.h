@@ -16,6 +16,10 @@ class PyDict;
 MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                                       Handle<PyObject> kwargs);
 
+Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
+                                          Handle<PyObject> args,
+                                          Handle<PyObject> kwargs);
+
 // dict 相关 API 约定（请务必阅读）
 //
 // 1) runtime 语义入口（推荐）
