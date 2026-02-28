@@ -420,4 +420,107 @@ print(d.pop("k", 7))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, SubclassDict) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(dict):
+  pass
+
+c = C()
+c["a"] = 1
+c["b"] = 2
+c.x = 3
+print(len(c))
+print(c["a"])
+print(c["b"])
+print(c.x)
+print(1 if ("a" in c) else 0)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassDictSurvivesSysgc) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(dict):
+  pass
+
+class D:
+  pass
+
+def make():
+  c = C()
+  d1 = D()
+  d1.v = 111
+  d2 = D()
+  d2.v = 222
+  c["k"] = d1
+  c.x = d2
+  return c
+
+c = make()
+
+tmp = []
+i = 0
+while i < 5000:
+  tmp.append([i, i + 1, i + 2])
+  i = i + 1
+
+sysgc()
+print(c["k"].v)
+print(c.x.v)
+
+sysgc()
+print(c["k"].v)
+print(c.x.v)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(111)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(222)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(111)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(222)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassDictCustomInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C(dict):
+  def __init__(self, x, y):
+    self.x = x
+    self.y = y
+
+  def foo(self):
+    return self
+
+c = C(1, 2)
+print(c.foo().x)
+print(c.foo().y)
+print(len(c.foo()))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal
