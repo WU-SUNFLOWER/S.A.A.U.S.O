@@ -174,7 +174,7 @@ Handle<PyDict> PyDict::NewInstanceWithoutAllocateData() {
 
 // static
 Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
-  assert(IsPyDict(object));
+  assert(IsDictLike(object));
   return Tagged<PyDict>::cast(object);
 }
 
