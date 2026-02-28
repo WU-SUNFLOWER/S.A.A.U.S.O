@@ -4,6 +4,7 @@
 
 #include "src/objects/py-function-klass.h"
 
+#include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -76,7 +77,7 @@ MaybeHandle<PyObject> PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 size_t PyFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyFunction);
+  return ObjectSizeAlign(sizeof(PyFunction));
 }
 
 void PyFunctionKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
@@ -143,7 +144,7 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
 }
 
 size_t NativeFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyFunction);
+  return ObjectSizeAlign(sizeof(PyFunction));
 }
 
 void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
@@ -206,13 +207,12 @@ MaybeHandle<PyObject> MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 size_t MethodObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(MethodObject);
+  return ObjectSizeAlign(sizeof(MethodObject));
 }
 
 void MethodObjectKlass::Virtual_Iterate(Tagged<PyObject> self,
                                         ObjectVisitor* v) {
   auto object = Tagged<MethodObject>::cast(self);
-  // TODO: 完善iterate
   v->VisitPointer(&object->func_);
   v->VisitPointer(&object->owner_);
 }

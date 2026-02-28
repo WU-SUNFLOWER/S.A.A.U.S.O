@@ -4,13 +4,13 @@
 
 #include "src/objects/py-object-klass.h"
 
+#include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
-
 
 namespace saauso::internal {
 
@@ -57,7 +57,7 @@ void PyObjectKlass::Finalize() {
 }
 
 size_t PyObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyObject);
+  return ObjectSizeAlign(sizeof(PyObject));
 }
 
 void PyObjectKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {}

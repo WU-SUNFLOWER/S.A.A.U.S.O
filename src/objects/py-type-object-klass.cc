@@ -4,6 +4,7 @@
 
 #include "src/objects/py-type-object-klass.h"
 
+#include "include/saauso-internal.h"
 #include "src/builtins/builtins-py-type-object-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
@@ -171,7 +172,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
 
 // static
 size_t PyTypeObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return sizeof(PyTypeObject);
+  return ObjectSizeAlign(sizeof(PyTypeObject));
 }
 
 // static

@@ -4,6 +4,7 @@
 
 #include "src/objects/py-module-klass.h"
 
+#include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -50,10 +51,9 @@ void PyModuleKlass::Finalize() {
 }
 
 size_t PyModuleKlass::Virtual_InstanceSize(Tagged<PyObject>) {
-  return sizeof(PyModule);
+  return ObjectSizeAlign(sizeof(PyModule));
 }
 
 void PyModuleKlass::Virtual_Iterate(Tagged<PyObject>, ObjectVisitor*) {}
 
 }  // namespace saauso::internal
-
