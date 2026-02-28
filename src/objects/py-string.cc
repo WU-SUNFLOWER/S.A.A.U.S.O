@@ -14,6 +14,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
@@ -26,15 +27,19 @@ namespace {
 constexpr uint64_t kInvalidHashCache = 0;
 constexpr uint64_t kFallbackHashCache = kInvalidHashCache + 1;
 constexpr int kNumberToStringBufferSize = 32;
+
+// 在计算对象大小时，字符串buffer末尾的'\0'哨兵也要算进去
+constexpr int kSentinelValueSizeInBytes = 1;
 }  // namespace
 
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
-  // 计算出PyString结构体+字符串数据区+对齐所需要的总长度
-  // 这里的+1是用来放置字符串末尾的哨兵的
-  size_t object_size = ComputeObjectSize(str_length + 1);
+Handle<PyString> PyString::AllocateStringLike(Tagged<Klass> klass_self,
+                                              int64_t str_length,
+                                              bool in_meta_space,
+                                              bool allocate_properties_dict) {
+  size_t object_size = ComputeObjectSize(str_length);
 
   Tagged<PyString> object(Isolate::Current()->heap()->AllocateRaw(
       object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
@@ -47,18 +52,24 @@ Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   // 设置哨兵位
   object->writable_buffer()[str_length] = '\0';
 
-  // str类型没有__dict__，不需要初始化properties
-  // >>> s = "ABC"
-  // >>> s.__dict__
-  // Traceback (most recent call last):
-  //   File "<stdin>", line 1, in <module>
-  // AttributeError: 'str' object has no attribute '__dict__'
+  PyObject::SetKlass(object, klass_self);
   PyObject::SetProperties(object, Tagged<PyDict>::null());
 
-  // 绑定klass
-  PyObject::SetKlass(object, PyStringKlass::GetInstance());
+  if (allocate_properties_dict) {
+    EscapableHandleScope scope;
+    Handle<PyString> str_handle(object);
+    Handle<PyDict> properties = PyDict::NewInstance();
+    PyObject::SetProperties(*str_handle, *properties);
+    return scope.Escape(str_handle);
+  }
 
   return Handle<PyString>(object);
+}
+
+// static
+Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
+  return AllocateStringLike(PyStringKlass::GetInstance(), str_length,
+                            in_meta_space, false);
 }
 
 // static
@@ -122,9 +133,30 @@ Tagged<PyString> PyString::cast(Tagged<PyObject> object) {
   return Tagged<PyString>::cast(object);
 }
 
+bool PyString::IsStringLike(Tagged<PyObject> object) {
+  return IsHeapObject(object) &&
+         PyObject::GetKlass(object)->native_layout_kind() ==
+             NativeLayoutKind::kString;
+}
+
+bool PyString::IsStringLike(Handle<PyObject> object) {
+  return IsStringLike(*object);
+}
+
+Tagged<PyString> PyString::CastStringLike(Tagged<PyObject> object) {
+  assert(IsStringLike(object));
+  return Tagged<PyString>::cast(object);
+}
+
+Handle<PyString> PyString::CastStringLike(Handle<PyObject> object) {
+  assert(IsStringLike(object));
+  return Handle<PyString>(Tagged<PyString>::cast(*object));
+}
+
 // static
 size_t PyString::ComputeObjectSize(int64_t str_length) {
-  return ObjectSizeAlign(sizeof(PyString) + str_length);
+  return ObjectSizeAlign(sizeof(PyString) + str_length +
+                         kSentinelValueSizeInBytes);
 }
 
 ////////////////////////////////////////////////////////////

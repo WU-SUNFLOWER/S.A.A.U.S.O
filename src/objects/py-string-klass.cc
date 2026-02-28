@@ -8,8 +8,11 @@
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "src/builtins/builtins-py-string-methods.h"
+#include "src/execution/exception-utils.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -28,6 +31,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-string.h"
+#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
 #include "src/utils/utils.h"
@@ -55,6 +59,9 @@ Tagged<PyStringKlass> PyStringKlass::GetInstance() {
 void PyStringKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+
+  set_native_layout_kind(NativeLayoutKind::kString);
+  set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.construct_instance = &Virtual_ConstructInstance;
@@ -103,78 +110,128 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyStringKlass::GetInstance());
-
-  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "str() takes no keyword arguments\n");
-    return kNullMaybeHandle;
-  }
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kString);
+  auto* isolate = Isolate::Current();
+  bool is_exact_str = klass_self == PyStringKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
-  if (argc == 0) {
-    return PyString::NewInstance("");
-  }
-
-  if (argc == 1) {
-    Handle<PyObject> value = pos_args->Get(0);
-    Handle<PyString> result;
-    if (!Runtime_NewStr(value).ToHandle(&result)) {
+  if (is_exact_str) {
+    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "str() takes no keyword arguments\n");
       return kNullMaybeHandle;
     }
-    return result;
   }
 
-  if (argc == 2 || argc == 3) {
+  if (is_exact_str && argc == 1) {
     Handle<PyObject> value = pos_args->Get(0);
     if (IsPyString(value)) {
+      return value;
+    }
+  }
+
+  auto probe = PyString::AllocateStringLike(klass_self, 0, false, !is_exact_str);
+  if (!is_exact_str) {
+    auto properties = PyObject::GetProperties(probe);
+    RETURN_ON_EXCEPTION(isolate,
+                        PyDict::Put(properties, ST(class),
+                                    klass_self->type_object()));
+  }
+
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, probe, ST(init), init_method));
+
+  if (init_method.is_null()) {
+    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
       Runtime_ThrowError(ExceptionType::kTypeError,
-                         "decoding str is not supported\n");
+                         "str() takes no keyword arguments\n");
       return kNullMaybeHandle;
     }
-    auto type_name = PyObject::GetKlass(value)->name();
+
+    if (argc == 0) {
+      return probe;
+    }
+
+    if (argc == 1) {
+      Handle<PyObject> value = pos_args->Get(0);
+      Handle<PyString> converted;
+      if (!Runtime_NewStr(value).ToHandle(&converted)) {
+        return kNullMaybeHandle;
+      }
+      if (is_exact_str) {
+        return converted;
+      }
+      auto result = PyString::AllocateStringLike(klass_self, converted->length(),
+                                                 false, true);
+      auto properties = PyObject::GetProperties(result);
+      RETURN_ON_EXCEPTION(isolate,
+                          PyDict::Put(properties, ST(class),
+                                      klass_self->type_object()));
+      std::memcpy(result->writable_buffer(), converted->buffer(),
+                  static_cast<size_t>(converted->length()));
+      return result;
+    }
+
+    if (argc == 2 || argc == 3) {
+      Handle<PyObject> value = pos_args->Get(0);
+      if (PyString::IsStringLike(value)) {
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "decoding str is not supported\n");
+        return kNullMaybeHandle;
+      }
+      auto type_name = PyObject::GetKlass(value)->name();
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
+          "decoding to str: need a bytes-like object, %s found\n",
+          type_name->buffer());
+      return kNullMaybeHandle;
+    }
+
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "decoding to str: need a bytes-like object, %s found\n",
-                        type_name->buffer());
+                        "str() takes at most 3 arguments (%" PRId64 " given)\n",
+                        argc);
     return kNullMaybeHandle;
   }
 
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "str() takes at most 3 arguments (%" PRId64 " given)\n",
-                      argc);
-  return kNullMaybeHandle;
+  if (Execution::Call(isolate, init_method, probe, pos_args,
+                      Handle<PyDict>::cast(kwargs))
+          .IsEmpty()) {
+    return kNullMaybeHandle;
+  }
+  return probe;
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
-      PySmi::FromInt(Handle<PyString>::cast(self)->length()));
+      PySmi::FromInt(PyString::CastStringLike(self)->length()));
 }
 
 Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  if (!IsPyString(other)) {
+  if (!PyString::IsStringLike(other)) {
     return Maybe<bool>(false);
   }
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return Maybe<bool>(s1->IsEqualTo(*s2));
 }
 
 Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  if (!IsPyString(other)) {
+  if (!PyString::IsStringLike(other)) {
     return Maybe<bool>(true);
   }
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return Maybe<bool>(!s1->IsEqualTo(*s2));
 }
 
 Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
                                         Handle<PyObject> other) {
-  if (!IsPyString(other)) {
+  if (!PyString::IsStringLike(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -182,14 +239,14 @@ Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return Maybe<bool>(s1->IsLessThan(*s2));
 }
 
 Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  if (!IsPyString(other)) {
+  if (!PyString::IsStringLike(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -197,14 +254,14 @@ Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return Maybe<bool>(s1->IsGreaterThan(*s2));
 }
 
 Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  if (!IsPyString(other)) {
+  if (!PyString::IsStringLike(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -212,14 +269,14 @@ Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
 }
 
 Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
-  if (!IsPyString(other)) {
+  if (!PyString::IsStringLike(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -227,25 +284,25 @@ Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
 }
 
 Maybe<bool> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
                                             Handle<PyObject> target) {
-  if (!IsPyString(target)) {
+  if (!PyString::IsStringLike(target)) {
     return Maybe<bool>(false);
   }
 
-  auto s = Handle<PyString>::cast(self);
-  auto pattern = Handle<PyString>::cast(target);
+  auto s = PyString::CastStringLike(self);
+  auto pattern = PyString::CastStringLike(target);
   return Maybe<bool>(s->Contains(pattern));
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
                                                     Handle<PyObject> subscr) {
-  auto s = Handle<PyString>::cast(self);
+  auto s = PyString::CastStringLike(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
@@ -260,7 +317,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
                                                  Handle<PyObject> other) {
-  if (!IsPyString(other)) [[unlikely]] {
+  if (!PyString::IsStringLike(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "can only concatenate str (not \"%s\") to str\n",
@@ -268,24 +325,24 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
-  auto s1 = Handle<PyString>::cast(self);
-  auto s2 = Handle<PyString>::cast(other);
+  auto s1 = PyString::CastStringLike(self);
+  auto s2 = PyString::CastStringLike(other);
   return PyString::Append(s1, s2);
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Print(Handle<PyObject> self) {
-  auto s = Handle<PyString>::cast(self);
+  auto s = PyString::CastStringLike(self);
   std::printf("%s", s->buffer());
   return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
-  return Maybe<uint64_t>(Handle<PyString>::cast(self)->GetHash());
+  return Maybe<uint64_t>(PyString::CastStringLike(self)->GetHash());
 }
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  assert(IsPyString(self));
-  return PyString::ComputeObjectSize(Tagged<PyString>::cast(self)->length());
+  assert(PyString::IsStringLike(self));
+  return PyString::ComputeObjectSize(PyString::CastStringLike(self)->length());
 }
 
 void PyStringKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
