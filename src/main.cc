@@ -37,6 +37,23 @@ print(sum(1, 2, 3, 4))
 )";
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
+bool CheckAndPrintException(Isolate* isolate) {
+  if (!isolate->HasPendingException()) {
+    return false;
+  }
+
+  Handle<PyString> formatted;
+  if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
+    std::fprintf(stderr, "Runtime_FormatPendingExceptionForStderr Failed!");
+    std::exit(1);
+  }
+
+  std::fprintf(stderr, "%s\n", formatted->buffer());
+  isolate->exception_state()->Clear();
+
+  return true;
+}
+
 int main(int argc, char** argv) {
   int exit_code = 0;
 
@@ -62,10 +79,8 @@ int main(int argc, char** argv) {
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
     isolate->interpreter()->Run(boilerplate);
-    if (isolate->HasPendingException()) {
-      Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-      std::fprintf(stderr, "%s\n", formatted->buffer());
-      isolate->exception_state()->Clear();
+
+    if (CheckAndPrintException(isolate)) {
       exit_code = 1;
     }
   }

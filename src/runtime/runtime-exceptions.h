@@ -30,7 +30,7 @@ void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...);
 // 该方法主要用于：
 // - 打印未被捕获的一场到控制台
 // - 验证单元测试的抛出异常内容是否正确
-Handle<PyString> Runtime_FormatPendingExceptionForStderr();
+MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr();
 
 // 若当前 pending 异常为 StopIteration，则清除该异常并返回 true（用于 for 循环
 // 正常结束迭代）；否则不修改状态并返回 false。调用方需在 next_result 为 null 时

@@ -91,9 +91,11 @@ void BasicInterpreterTest::RunScript(std::string_view source,
       Compiler::CompileSource(isolate_, source, file_name));
   if (isolate_->HasPendingException()) {
     HandleScope scope;
-    Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-    ADD_FAILURE() << "Uncaught exception escaped interpreter: "
-                  << formatted->ToStdString();
+    Handle<PyString> formatted;
+    if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
+      ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr Failed!"
+                    << formatted->ToStdString();
+    }
     isolate_->exception_state()->Clear();
   }
 }
@@ -106,9 +108,9 @@ std::string BasicInterpreterTest::ExpectedAndTakePendingExceptionMessage() {
     return std::string();
   }
 
-  Handle<PyString> formatted = Runtime_FormatPendingExceptionForStderr();
-  if (formatted.is_null()) {
-    ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr returned null";
+  Handle<PyString> formatted;
+  if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
+    ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr Failed!";
     isolate_->exception_state()->Clear();
     return std::string();
   }

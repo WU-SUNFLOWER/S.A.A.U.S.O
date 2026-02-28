@@ -136,10 +136,11 @@ void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
   va_end(ap);
 }
 
-Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
+MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr() {
   EscapableHandleScope scope;
 
-  auto* state = Isolate::Current()->exception_state();
+  auto* isolate = Isolate::Current();
+  auto* state = isolate->exception_state();
   if (!state->HasPendingException()) {
     return scope.Escape(PyString::NewInstance(""));
   }
@@ -152,9 +153,9 @@ Handle<PyString> Runtime_FormatPendingExceptionForStderr() {
   if (!properties.is_null()) {
     Handle<PyObject> msg_obj;
     bool found = false;
-    if (!properties->Get(ST(message), msg_obj).To(&found)) {
-      return Handle<PyString>::null();
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               properties->Get(ST(message), msg_obj));
+
     if (found && IsPyString(msg_obj)) {
       message = Handle<PyString>::cast(msg_obj);
     }
