@@ -60,7 +60,7 @@ Handle<PyTuple> PyTuple::NewInstance(Handle<PyList> elements) {
 }
 
 Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {
-  assert(IsPyTuple(object));
+  assert(IsTupleLike(object));
   return Tagged<PyTuple>(object.ptr());
 }
 
