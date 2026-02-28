@@ -128,6 +128,14 @@ struct VirtualTable {
 };
 /////////////////虚函数表 定义结束///////////////////////////
 
+enum class NativeLayoutKind : uint8_t {
+  kPyObject = 0,
+  kList = 1,
+  kDict = 2,
+  kTuple = 3,
+  kString = 4,
+};
+
 class Klass : public Object {
  public:
   static Tagged<Klass> CreateRawPythonKlass();
@@ -150,6 +158,18 @@ class Klass : public Object {
 
   Handle<PyList> mro();
   void set_mro(Handle<PyList> mro);
+
+  NativeLayoutKind native_layout_kind() const { return native_layout_kind_; }
+  void set_native_layout_kind(NativeLayoutKind kind) {
+    native_layout_kind_ = kind;
+  }
+
+  Tagged<Klass> native_layout_base() const { return native_layout_base_; }
+  void set_native_layout_base(Tagged<Klass> base) {
+    native_layout_base_ = base;
+  }
+
+  void CopyVTableFrom(Tagged<Klass> base);
 
   const VirtualTable& vtable() const { return vtable_; }
 
@@ -241,6 +261,9 @@ class Klass : public Object {
   Tagged<PyObject> supers_{kNullAddress};
   // C3算法的运行结果
   Tagged<PyObject> mro_{kNullAddress};
+
+  Tagged<Klass> native_layout_base_{kNullAddress};
+  NativeLayoutKind native_layout_kind_{NativeLayoutKind::kPyObject};
 };
 
 }  // namespace saauso::internal

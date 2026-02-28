@@ -28,7 +28,7 @@ BUILTIN(Len) {
 BUILTIN(IsInstance) {
   EscapableHandleScope scope;
 
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length != 2) [[unlikely]] {

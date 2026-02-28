@@ -27,7 +27,8 @@ void ComputeLocalsplusCounts(int nlocalsplus,
   nlocals = ncellvars = nfreevars = 0;
 
   auto kind_bytes = Tagged<PyString>::cast(kinds);
-  auto kind_bytes_size = kind_bytes.is_null() ? 0 : kind_bytes->length();
+  [[maybe_unused]] auto kind_bytes_size =
+      kind_bytes.is_null() ? 0 : kind_bytes->length();
   assert(kind_bytes_size == nlocalsplus);
 
   for (auto i = 0; i < nlocalsplus; ++i) {

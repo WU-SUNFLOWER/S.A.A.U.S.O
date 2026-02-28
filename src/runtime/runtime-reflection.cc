@@ -35,6 +35,36 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
   klass->set_name(class_name);
   klass->set_supers(supers);
 
+  int native_base_count = 0;
+  Tagged<Klass> native_layout_base = Tagged<Klass>::null();
+  NativeLayoutKind native_layout_kind = NativeLayoutKind::kPyObject;
+  if (!supers.is_null()) {
+    for (int64_t i = 0; i < supers->length(); ++i) {
+      auto base_type_object = Handle<PyTypeObject>::cast(supers->Get(i));
+      Tagged<Klass> base_klass = base_type_object->own_klass();
+      if (base_klass->native_layout_kind() == NativeLayoutKind::kPyObject) {
+        continue;
+      }
+      ++native_base_count;
+      if (native_base_count > 1) {
+        Runtime_ThrowError(ExceptionType::kTypeError,
+                           "multiple native base classes are not supported");
+        return Handle<PyTypeObject>::null();
+      }
+      native_layout_kind = base_klass->native_layout_kind();
+      native_layout_base = base_klass->native_layout_base().is_null()
+                               ? base_klass
+                               : base_klass->native_layout_base();
+    }
+  }
+  klass->set_native_layout_kind(native_layout_kind);
+  klass->set_native_layout_base(native_layout_base.is_null()
+                                    ? PyObjectKlass::GetInstance()
+                                    : native_layout_base);
+  if (native_layout_kind != NativeLayoutKind::kPyObject) {
+    klass->CopyVTableFrom(klass->native_layout_base());
+  }
+
   // 建立双向绑定
   type_object->BindWithKlass(klass);
 
@@ -46,7 +76,7 @@ Handle<PyTypeObject> Runtime_CreatePythonClass(Handle<PyString> class_name,
 
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object) {
-  auto* isolate = Isolate::Current();
+  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto mro_of_object = PyObject::GetKlass(object)->mro();
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
