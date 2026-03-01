@@ -6,7 +6,7 @@
 
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
@@ -16,24 +16,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyTypeObject> PyTypeObject::NewInstance() {
-  EscapableHandleScope scope;
-
-  Handle<PyTypeObject> object(
-      Isolate::Current()->heap()->Allocate<PyTypeObject>(
-          Heap::AllocationSpace::kNewSpace));
-
-  // 绑定klass
-  PyObject::SetKlass(object, PyTypeObjectKlass::GetInstance());
-
-  object->own_klass_ = Tagged<Klass>::null();
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  // 初始化properties
-  auto properties = PyDict::NewInstance();
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
-  PyObject::SetProperties(*object, *properties);
-
-  return scope.Escape(object);
+  return Isolate::Current()->factory()->NewPyTypeObject();
 }
 
 // static
