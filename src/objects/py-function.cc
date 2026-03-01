@@ -6,7 +6,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function-klass.h"
@@ -48,26 +48,7 @@ Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
 }
 
 Handle<PyFunction> PyFunction::NewInstanceInternal() {
-  Handle<PyFunction> object(Isolate::Current()->heap()->Allocate<PyFunction>(
-      Heap::AllocationSpace::kNewSpace));
-
-  object->func_code_ = Tagged<PyObject>::null();
-  object->func_name_ = Tagged<PyObject>::null();
-  object->func_globals_ = Tagged<PyObject>::null();
-  object->default_args_ = Tagged<PyObject>::null();
-  object->closures_ = Tagged<PyObject>::null();
-  object->flags_ = 0;
-  object->native_func_ = nullptr;
-
-  SetKlass(object, PyFunctionKlass::GetInstance());
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  // 初始化properties
-  auto properties = PyDict::NewInstance();
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
-  PyObject::SetProperties(*object, *properties);
-
-  return object;
+  return Isolate::Current()->factory()->NewPyFunction();
 }
 
 // static
@@ -122,16 +103,7 @@ Tagged<PyTuple> PyFunction::closures_tagged() const {
 // static
 Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
                                                Handle<PyObject> owner) {
-  Handle<MethodObject> object(
-      Isolate::Current()->heap()->Allocate<MethodObject>(
-          Heap::AllocationSpace::kNewSpace));
-  object->owner_ = Tagged<PyObject>::null();
-  object->func_ = Tagged<PyObject>::null();
-  PyObject::SetKlass(object, MethodObjectKlass::GetInstance());
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-  object->owner_ = *owner;
-  object->func_ = *func;
-  return object;
+  return Isolate::Current()->factory()->NewMethodObject(func, owner);
 }
 
 Tagged<MethodObject> MethodObject::cast(Tagged<PyObject> object) {
