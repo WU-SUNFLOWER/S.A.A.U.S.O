@@ -13,16 +13,10 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 
-
 namespace saauso::internal {
 
 ///////////////////////////////////////////////////////////////////////////
 // Python布尔值
-
-// static
-Tagged<PyBoolean> PyBoolean::NewInstance(bool value) {
-  return Isolate::Current()->factory()->NewPyBoolean(value);
-}
 
 // static
 Tagged<PyBoolean> PyBoolean::cast(Tagged<PyObject> object) {
@@ -36,11 +30,6 @@ Tagged<PyBoolean> PyBoolean::Reverse() {
 
 ///////////////////////////////////////////////////////////////////////////
 // Python空值
-
-// static
-Tagged<PyNone> PyNone::NewInstance() {
-  return Isolate::Current()->factory()->NewPyNone();
-}
 
 // static
 Tagged<PyNone> PyNone::cast(Tagged<PyObject> object) {

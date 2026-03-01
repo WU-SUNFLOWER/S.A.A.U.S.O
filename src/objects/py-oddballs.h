@@ -12,7 +12,6 @@ namespace saauso::internal {
 
 class PyBoolean : public PyObject {
  public:
-  static Tagged<PyBoolean> NewInstance(bool value);
   static Tagged<PyBoolean> cast(Tagged<PyObject> object);
 
   bool value() const { return value_; }
@@ -26,7 +25,6 @@ class PyBoolean : public PyObject {
 
 class PyNone : public PyObject {
  public:
-  static Tagged<PyNone> NewInstance();
   static Tagged<PyNone> cast(Tagged<PyObject> object);
 };
 

@@ -13,7 +13,6 @@ class PyDict;
 
 class PyDictKeys : public PyObject {
  public:
-  static Handle<PyDictKeys> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictKeys> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -27,7 +26,6 @@ class PyDictKeys : public PyObject {
 
 class PyDictValues : public PyObject {
  public:
-  static Handle<PyDictValues> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictValues> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -41,7 +39,6 @@ class PyDictValues : public PyObject {
 
 class PyDictItems : public PyObject {
  public:
-  static Handle<PyDictItems> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictItems> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -55,7 +52,6 @@ class PyDictItems : public PyObject {
 
 class PyDictKeyIterator : public PyObject {
  public:
-  static Handle<PyDictKeyIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictKeyIterator> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -72,7 +68,6 @@ class PyDictKeyIterator : public PyObject {
 
 class PyDictValueIterator : public PyObject {
  public:
-  static Handle<PyDictValueIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictValueIterator> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -89,7 +84,6 @@ class PyDictValueIterator : public PyObject {
 
 class PyDictItemIterator : public PyObject {
  public:
-  static Handle<PyDictItemIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictItemIterator> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;

@@ -238,9 +238,9 @@ void Isolate::InitMetaArea() {
 
   // 3. 创建全局单例对象（None, True, False）
   // 这些对象必须在其他逻辑使用它们之前创建好
-  py_none_object_ = PyNone::NewInstance();
-  py_true_object_ = PyBoolean::NewInstance(true);
-  py_false_object_ = PyBoolean::NewInstance(false);
+  py_none_object_ = factory()->NewPyNone();
+  py_true_object_ = factory()->NewPyBoolean(true);
+  py_false_object_ = factory()->NewPyBoolean(false);
 
   // 4. 正式初始化所有 Klass（调用 Initialize）
 #define INIT_PY_KLASS(_, Klass, __) Klass::GetInstance()->Initialize();

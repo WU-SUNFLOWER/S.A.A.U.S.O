@@ -8,6 +8,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-oddballs.h"
@@ -218,11 +219,13 @@ MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
+MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
+                                        Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting) {
-  auto* isolate = Isolate::Current();
-  auto iter = PyDictItemIterator::NewInstance(source_dict);
+  EscapableHandleScope scope;
+
+  auto iter = isolate->factory()->NewPyDictItemIterator(source_dict);
   while (true) {
     Handle<PyObject> item_handle;
     if (!PyObject::Next(iter).ToHandle(&item_handle)) {
@@ -253,7 +256,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
                               kNullMaybeHandle);
   }
 
-  return dst_dict;
+  return scope.Escape(dst_dict);
 }
 
 }  // namespace saauso::internal
