@@ -19,6 +19,7 @@ using ThreadId = std::thread::id;
 
 class Heap;
 class Klass;
+class Factory;
 class HandleScopeImplementer;
 class Interpreter;
 class ModuleManager;
@@ -99,6 +100,7 @@ class Isolate {
 
   // 获取虚拟机的核心组件
   Heap* heap() const { return heap_; }
+  Factory* factory() const { return factory_; }
   HandleScopeImplementer* handle_scope_implementer() const {
     return handle_scope_implementer_;
   }
@@ -138,6 +140,7 @@ class Isolate {
   static thread_local Isolate* current_;
 
   Heap* heap_{nullptr};
+  Factory* factory_{nullptr};
   HandleScopeImplementer* handle_scope_implementer_{nullptr};
   Vector<Tagged<Klass>> klass_list_;
   Interpreter* interpreter_{nullptr};

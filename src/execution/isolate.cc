@@ -10,6 +10,7 @@
 
 #include "include/saauso.h"
 #include "src/handles/handle-scope-implementer.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
@@ -201,6 +202,8 @@ void Isolate::Init() {
   heap_ = new Heap(this);
   heap_->Setup();
 
+  factory_ = new Factory(this);
+
   // 初始化句柄作用域实现
   handle_scope_implementer_ = new HandleScopeImplementer(this);
 
@@ -272,6 +275,9 @@ void Isolate::TearDown() {
   // 销毁句柄作用域实现
   delete handle_scope_implementer_;
   handle_scope_implementer_ = nullptr;
+
+  delete factory_;
+  factory_ = nullptr;
 
   klass_list_.Resize(0);
 
