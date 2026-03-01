@@ -5,7 +5,7 @@
 #include "src/objects/py-module.h"
 
 #include "src/execution/isolate.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-module-klass.h"
 #include "src/objects/py-string.h"
@@ -14,20 +14,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyModule> PyModule::NewInstance() {
-  EscapableHandleScope scope;
-
-  Handle<PyModule> object(Isolate::Current()->heap()->Allocate<PyModule>(
-      Heap::AllocationSpace::kNewSpace));
-
-  SetKlass(object, PyModuleKlass::GetInstance());
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  // module 必须有 __dict__。我们复用 PyObject::properties_ 作为模块命名空间。
-  Handle<PyDict> properties = PyDict::NewInstance();
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
-  PyObject::SetProperties(*object, *properties);
-
-  return scope.Escape(object);
+  return Isolate::Current()->factory()->NewPyModule();
 }
 
 // static
