@@ -55,8 +55,7 @@ class PyDict : public PyObject {
 
  private:
   friend class PyDictKlass;
-
-  static Handle<PyDict> NewInstanceWithoutAllocateData();
+  friend class Factory;
 
   static void ExpandImpl(Handle<PyDict> list);
   static Maybe<bool> ExpandImplMaybe(Handle<PyDict> dict);
