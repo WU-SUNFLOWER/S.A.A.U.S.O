@@ -13,7 +13,6 @@ class PyTuple;
 
 class PyTupleIterator : public PyObject {
  public:
-  static Handle<PyTupleIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyTupleIterator> cast(Tagged<PyObject> object);
 
   Handle<PyTuple> owner() const;

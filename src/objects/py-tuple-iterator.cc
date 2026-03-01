@@ -16,10 +16,6 @@
 
 namespace saauso::internal {
 
-Handle<PyTupleIterator> PyTupleIterator::NewInstance(Handle<PyObject> owner) {
-  return Isolate::Current()->factory()->NewPyTupleIterator(owner);
-}
-
 Tagged<PyTupleIterator> PyTupleIterator::cast(Tagged<PyObject> object) {
   assert(IsPyTupleIterator(object));
   return Tagged<PyTupleIterator>::cast(object);
