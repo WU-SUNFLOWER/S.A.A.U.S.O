@@ -20,6 +20,7 @@ class PyBoolean : public PyObject {
   Tagged<PyBoolean> Reverse();
 
  private:
+  friend class Factory;
   bool value_;
 };
 
