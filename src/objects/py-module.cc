@@ -13,11 +13,6 @@
 namespace saauso::internal {
 
 // static
-Handle<PyModule> PyModule::NewInstance() {
-  return Isolate::Current()->factory()->NewPyModule();
-}
-
-// static
 Tagged<PyModule> PyModule::cast(Tagged<PyObject> object) {
   assert(IsPyModule(object));
   return Tagged<PyModule>::cast(object);

@@ -5,6 +5,7 @@
 #include "src/heap/factory.h"
 
 #include "include/saauso-internal.h"
+#include "src/execution/exception-utils.h"
 #include "src/handles/handle-scopes.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/fixed-array.h"
@@ -154,18 +155,23 @@ Handle<MethodObject> Factory::NewMethodObject(Handle<PyObject> func,
   return object;
 }
 
-Handle<PyModule> Factory::NewPyModule() {
+MaybeHandle<PyModule> Factory::NewPyModule() {
   EscapableHandleScope scope;
 
   auto klass = PyModuleKlass::GetInstance();
   Handle<PyModule> object(Allocate<PyModule>(Heap::AllocationSpace::kNewSpace));
+
   {
     DisallowHeapAllocation disallow(isolate_);
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
+
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  RETURN_ON_EXCEPTION(
+      isolate_,
+      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);

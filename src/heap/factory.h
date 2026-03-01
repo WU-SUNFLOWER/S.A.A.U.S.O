@@ -10,6 +10,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
 
@@ -56,7 +57,7 @@ class Factory {
   Handle<MethodObject> NewMethodObject(Handle<PyObject> func,
                                        Handle<PyObject> owner);
 
-  Handle<PyModule> NewPyModule();
+  MaybeHandle<PyModule> NewPyModule();
   Handle<PyTypeObject> NewPyTypeObject();
 
   Handle<PyObject> AllocateRawPythonObject();

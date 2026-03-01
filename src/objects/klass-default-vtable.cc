@@ -6,7 +6,7 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
-#include "src/heap/factory.cc"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
