@@ -30,6 +30,7 @@ class PyObject;
 class PyString;
 class PyTypeObject;
 
+// 基于句柄的堆内存分配接口，全部收拢到 Factory 单例
 class Factory {
  public:
   explicit Factory(Isolate* isolate) : isolate_(isolate) {}
