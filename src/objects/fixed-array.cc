@@ -9,7 +9,7 @@
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/handles/tagged.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/py-object.h"
 #include "src/utils/utils.h"
@@ -19,23 +19,7 @@ namespace saauso::internal {
 
 // static
 Handle<FixedArray> FixedArray::NewInstance(int64_t capacity) {
-  size_t object_size = ComputeObjectSize(capacity);
-  Tagged<FixedArray> object(Isolate::Current()->heap()->AllocateRaw(
-      object_size, Heap::AllocationSpace::kNewSpace));
-
-  // 设置字段
-  object->capacity_ = capacity;
-  PyObject::SetProperties(object, Tagged<PyDict>::null());
-
-  // 清空数据区
-  for (auto i = 0; i < capacity; ++i) {
-    object->Set(i, Tagged<PyObject>(kNullAddress));
-  }
-
-  // 绑定klass
-  PyObject::SetKlass(object, FixedArrayKlass::GetInstance());
-
-  return Handle<FixedArray>(object);
+  return Isolate::Current()->factory()->NewFixedArray(capacity);
 }
 
 // static

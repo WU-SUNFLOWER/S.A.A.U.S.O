@@ -30,6 +30,7 @@ class FixedArray : public PyObject {
 
  private:
   friend class FixedArrayKlass;
+  friend class Factory;
 
   // 获取数据首地址
   Tagged<PyObject>* data() {
