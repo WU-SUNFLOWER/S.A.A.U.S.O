@@ -50,13 +50,6 @@ class Factory {
   Factory(const Factory&) = delete;
   Factory& operator=(const Factory&) = delete;
 
-  Address AllocateRaw(size_t size_in_bytes, Heap::AllocationSpace space);
-
-  template <typename T>
-  Tagged<T> Allocate(Heap::AllocationSpace space) {
-    return isolate_->heap()->Allocate<T>(space);
-  }
-
   Handle<PyDict> NewPyDict(int64_t init_capacity);
   Handle<PyDict> AllocateDictLike(Tagged<Klass> klass_self,
                                   int64_t init_capacity,
@@ -104,6 +97,13 @@ class Factory {
 
  private:
   Isolate* isolate_{nullptr};
+
+  Address AllocateRaw(size_t size_in_bytes, Heap::AllocationSpace space);
+
+  template <typename T>
+  Tagged<T> Allocate(Heap::AllocationSpace space) {
+    return isolate_->heap()->Allocate<T>(space);
+  }
 };
 
 }  // namespace saauso::internal
