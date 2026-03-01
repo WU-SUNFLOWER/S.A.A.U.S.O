@@ -22,6 +22,7 @@ class PyListIterator : public PyObject {
 
  private:
   friend class PyListIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_cnt_;

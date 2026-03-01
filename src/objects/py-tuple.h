@@ -52,6 +52,7 @@ class PyTuple : public PyObject {
 
  private:
   friend class PyTupleKlass;
+  friend class Factory;
 
   Tagged<PyObject>* data() {
     return reinterpret_cast<Tagged<PyObject>*>(this + 1);

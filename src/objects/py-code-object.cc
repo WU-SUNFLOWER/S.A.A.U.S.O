@@ -8,7 +8,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
@@ -96,26 +96,7 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
     Handle<PyString> exception_table) {
   EscapableHandleScope scope;
 
-  Handle<PyCodeObject> object(
-      Isolate::Current()->heap()->Allocate<PyCodeObject>(
-          Heap::AllocationSpace::kNewSpace));
-  PyObject::SetKlass(object, PyCodeObjectKlass::GetInstance());
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  object->bytecodes_ = Tagged<PyObject>::null();
-  object->consts_ = Tagged<PyObject>::null();
-  object->localsplusnames_ = Tagged<PyObject>::null();
-  object->localspluskinds_ = Tagged<PyObject>::null();
-  object->names_ = Tagged<PyObject>::null();
-  object->var_names_ = Tagged<PyObject>::null();
-  object->free_vars_ = Tagged<PyObject>::null();
-  object->cell_vars_ = Tagged<PyObject>::null();
-  object->file_name_ = Tagged<PyObject>::null();
-  object->co_name_ = Tagged<PyObject>::null();
-  object->qual_name_ = Tagged<PyObject>::null();
-  object->line_table_ = Tagged<PyObject>::null();
-  object->exception_table_ = Tagged<PyObject>::null();
-  object->no_table_ = Tagged<PyObject>::null();
+  Handle<PyCodeObject> object = Isolate::Current()->factory()->NewPyCodeObject();
 
   object->arg_count_ = arg_count;
   object->posonly_arg_count_ = posonly_arg_count;

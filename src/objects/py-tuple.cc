@@ -7,7 +7,7 @@
 #include <algorithm>
 
 #include "src/execution/isolate.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
@@ -19,29 +19,8 @@ namespace saauso::internal {
 Handle<PyTuple> PyTuple::AllocateTupleLike(Tagged<Klass> klass_self,
                                            int64_t length,
                                            bool allocate_properties_dict) {
-  assert(0 <= length);
-
-  EscapableHandleScope scope;
-
-  size_t object_size = ComputeObjectSize(length);
-  Tagged<PyTuple> object(Isolate::Current()->heap()->AllocateRaw(
-      object_size, Heap::AllocationSpace::kNewSpace));
-
-  object->length_ = length;
-  PyObject::SetKlass(object, klass_self);
-  PyObject::SetProperties(object, Tagged<PyDict>::null());
-
-  for (auto i = 0; i < length; ++i) {
-    object->SetInternal(i, Tagged<PyObject>::null());
-  }
-
-  if (allocate_properties_dict) {
-    Handle<PyDict> properties = PyDict::NewInstance();
-    PyObject::SetProperties(object, *properties);
-    return scope.Escape(handle(object));
-  }
-
-  return scope.Escape(handle(object));
+  return Isolate::Current()->factory()->AllocateTupleLike(
+      klass_self, length, allocate_properties_dict);
 }
 
 Handle<PyTuple> PyTuple::NewInstance(int64_t length) {

@@ -85,6 +85,7 @@ class PyList : public PyObject {
 
  private:
   friend class PyListKlass;
+  friend class Factory;
 
   static void ExpandImpl(Handle<PyList> list);
 

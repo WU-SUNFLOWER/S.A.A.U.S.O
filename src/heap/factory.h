@@ -19,15 +19,27 @@ namespace saauso::internal {
 class Klass;
 
 class FixedArray;
+class Cell;
 class MethodObject;
 class PyBoolean;
+class PyCodeObject;
 class PyDict;
+class PyDictItemIterator;
+class PyDictItems;
+class PyDictKeyIterator;
+class PyDictKeys;
+class PyDictValueIterator;
+class PyDictValues;
 class PyFloat;
 class PyFunction;
+class PyList;
+class PyListIterator;
 class PyModule;
 class PyNone;
 class PyObject;
 class PyString;
+class PyTuple;
+class PyTupleIterator;
 class PyTypeObject;
 
 // 基于句柄的堆内存分配接口，全部收拢到 Factory 单例
@@ -52,7 +64,21 @@ class Factory {
   Handle<PyDict> NewPyDictWithoutAllocateData();
 
   Handle<FixedArray> NewFixedArray(int64_t capacity);
+  Handle<Cell> NewCell();
+  Tagged<Klass> CreateRawPythonKlass();
+
   Handle<PyFloat> NewPyFloat(double value);
+  Handle<PyList> AllocateListLike(Tagged<Klass> klass_self,
+                                  int64_t init_capacity,
+                                  bool allocate_properties_dict);
+  Handle<PyTuple> AllocateTupleLike(Tagged<Klass> klass_self,
+                                    int64_t length,
+                                    bool allocate_properties_dict);
+  Handle<PyString> AllocateStringLike(Tagged<Klass> klass_self,
+                                      int64_t str_length,
+                                      bool in_meta_space,
+                                      bool allocate_properties_dict);
+  Handle<PyCodeObject> NewPyCodeObject();
 
   Handle<PyFunction> NewPyFunction();
   Handle<MethodObject> NewMethodObject(Handle<PyObject> func,
@@ -62,6 +88,16 @@ class Factory {
   Handle<PyTypeObject> NewPyTypeObject();
 
   Handle<PyObject> AllocateRawPythonObject();
+
+  Handle<PyListIterator> NewPyListIterator(Handle<PyObject> owner);
+  Handle<PyTupleIterator> NewPyTupleIterator(Handle<PyObject> owner);
+
+  Handle<PyDictKeys> NewPyDictKeys(Handle<PyObject> owner);
+  Handle<PyDictValues> NewPyDictValues(Handle<PyObject> owner);
+  Handle<PyDictItems> NewPyDictItems(Handle<PyObject> owner);
+  Handle<PyDictKeyIterator> NewPyDictKeyIterator(Handle<PyObject> owner);
+  Handle<PyDictValueIterator> NewPyDictValueIterator(Handle<PyObject> owner);
+  Handle<PyDictItemIterator> NewPyDictItemIterator(Handle<PyObject> owner);
 
   Tagged<PyBoolean> NewPyBoolean(bool value);
   Tagged<PyNone> NewPyNone();

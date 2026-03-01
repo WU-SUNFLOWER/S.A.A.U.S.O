@@ -13,7 +13,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-smi.h"
@@ -39,31 +39,8 @@ Handle<PyString> PyString::AllocateStringLike(Tagged<Klass> klass_self,
                                               int64_t str_length,
                                               bool in_meta_space,
                                               bool allocate_properties_dict) {
-  size_t object_size = ComputeObjectSize(str_length);
-
-  Tagged<PyString> object(Isolate::Current()->heap()->AllocateRaw(
-      object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
-                                 : Heap::AllocationSpace::kNewSpace));
-
-  // 初始化字段
-  object->length_ = str_length;
-  object->hash_ = kInvalidHashCache;
-
-  // 设置哨兵位
-  object->writable_buffer()[str_length] = '\0';
-
-  PyObject::SetKlass(object, klass_self);
-  PyObject::SetProperties(object, Tagged<PyDict>::null());
-
-  if (allocate_properties_dict) {
-    EscapableHandleScope scope;
-    Handle<PyString> str_handle(object);
-    Handle<PyDict> properties = PyDict::NewInstance();
-    PyObject::SetProperties(*str_handle, *properties);
-    return scope.Escape(str_handle);
-  }
-
-  return Handle<PyString>(object);
+  return Isolate::Current()->factory()->AllocateStringLike(
+      klass_self, str_length, in_meta_space, allocate_properties_dict);
 }
 
 // static

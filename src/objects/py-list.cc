@@ -10,7 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-klass.h"
@@ -30,26 +30,8 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
 Handle<PyList> PyList::AllocateListLike(Tagged<Klass> klass_self,
                                         int64_t init_capacity,
                                         bool allocate_properties_dict) {
-  EscapableHandleScope scope;
-
-  Handle<PyList> object(Isolate::Current()->heap()->Allocate<PyList>(
-      Heap::AllocationSpace::kNewSpace));
-
-  object->length_ = 0;
-  object->array_ = Tagged<FixedArray>::null();
-  PyObject::SetKlass(object, klass_self);
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  Handle<FixedArray> array =
-      FixedArray::NewInstance(std::max(kMinimumCapacity, init_capacity));
-  object->array_ = *array;
-
-  if (allocate_properties_dict) {
-    Handle<PyDict> properties = PyDict::NewInstance();
-    PyObject::SetProperties(*object, *properties);
-  }
-
-  return scope.Escape(object);
+  return Isolate::Current()->factory()->AllocateListLike(
+      klass_self, init_capacity, allocate_properties_dict);
 }
 
 // static

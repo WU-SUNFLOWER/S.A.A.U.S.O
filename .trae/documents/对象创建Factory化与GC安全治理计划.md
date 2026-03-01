@@ -70,6 +70,26 @@
 
 ## 后续阶段（阶段 3+ 概览，仅用于讨论）
 
-- 批量迁移：按风险/收益优先级将更多 `src/objects/**` 的创建路径迁入 Factory，并逐步将 `Heap` API 从 objects 层收敛移除。
-- 门禁：引入代码检查规则（例如禁止 `src/objects/**` 直接调用 `heap()->Allocate*`，允许 Factory 例外），防止治理回退。
+### 阶段 3：批量迁移 + 门禁（治理加速期）
 
+交付物：
+
+- 批量迁移：将 `src/objects/**` 中剩余的“直接触达 `heap()->Allocate/AllocateRaw`”的对象创建路径迁入 `Factory`（或至少将分配动作迁入 `Factory`），并在 `Factory` 中延续阶段 2 的统一模板（先安全初始化，再分配关联对象/容器）。
+- 门禁：新增可执行的边界检查，确保后续改动不会把 `heap()->Allocate*` 再次引回 `src/objects/**`（允许 `*-klass.*` 作为例外）。
+
+验收：
+
+- `src/objects/**`（排除 `*-klass.*`）不再出现 `->heap()->Allocate*` 或 `->heap()->AllocateRaw` 调用点。
+- `//test/unittests:ut` 全量通过，且包含门禁用例。
+
+已完成的阶段 3 迁移清单（第一批）：
+
+- 容器与字符串：`PyList::AllocateListLike`、`PyTuple::AllocateTupleLike`、`PyString::AllocateStringLike`
+- 复杂对象：`PyCodeObject::NewInstance` 的分配/安全初始化
+- 轻量对象：`Cell::NewInstance`
+- 迭代器/视图：`PyListIterator/PyTupleIterator`、`PyDictKeys/Values/Items` 与 `PyDict*Iterator`
+- 元对象：`Klass::CreateRawPythonKlass` 的分配/默认字段初始化
+
+门禁实现：
+
+- 新增单元测试扫描 `src/objects/**` 源码文本，若发现非 `*-klass.*` 文件中出现 `->heap()->Allocate*` / `->heap()->AllocateRaw` 则测试失败。

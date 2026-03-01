@@ -20,6 +20,7 @@ class PyDictKeys : public PyObject {
 
  private:
   friend class PyDictKeysKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
 };
@@ -33,6 +34,7 @@ class PyDictValues : public PyObject {
 
  private:
   friend class PyDictValuesKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
 };
@@ -46,6 +48,7 @@ class PyDictItems : public PyObject {
 
  private:
   friend class PyDictItemsKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
 };
@@ -61,6 +64,7 @@ class PyDictKeyIterator : public PyObject {
 
  private:
   friend class PyDictKeyIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_index_;
@@ -77,6 +81,7 @@ class PyDictValueIterator : public PyObject {
 
  private:
   friend class PyDictValueIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_index_;
@@ -93,6 +98,7 @@ class PyDictItemIterator : public PyObject {
 
  private:
   friend class PyDictItemIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_index_;

@@ -22,6 +22,7 @@ class PyTupleIterator : public PyObject {
 
  private:
   friend class PyTupleIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_cnt_;

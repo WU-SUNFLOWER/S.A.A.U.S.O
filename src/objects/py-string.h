@@ -100,6 +100,7 @@ class PyString : public PyObject {
 
  private:
   friend class PyStringKlass;
+  friend class Factory;
 
   int64_t length_{0};
   uint64_t hash_{0};
