@@ -106,11 +106,6 @@ void PyObject::SetProperties(Tagged<PyObject> object,
   WRITE_BARRIER(object, &object->properties_, properties);
 }
 
-// static
-Handle<PyObject> PyObject::AllocateRawPythonObject() {
-  return Isolate::Current()->factory()->AllocateRawPythonObject();
-}
-
 ///////////////////////////////////////////////////////////////////
 // 类型判断工具函数 开始
 

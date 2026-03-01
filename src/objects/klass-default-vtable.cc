@@ -6,6 +6,7 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.cc"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -537,7 +538,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
     Handle<PyObject> kwargs) {
   auto* isolate = Isolate::Current();
 
-  auto instance = PyObject::AllocateRawPythonObject();
+  auto instance = isolate->factory()->AllocateRawPythonObject();
   auto type_object = klass_self->type_object();
 
   // 建立object实例与type object和klass之间的绑定关系
