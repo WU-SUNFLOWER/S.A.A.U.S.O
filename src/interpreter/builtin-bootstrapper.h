@@ -6,7 +6,7 @@
 #define SAAUSO_INTERPRETER_BUILTIN_BOOTSTRAPPER_H_
 
 #include "src/handles/global-handles.h"
-#include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -23,29 +23,29 @@ class BuiltinBootstrapper {
   explicit BuiltinBootstrapper(Isolate* isolate);
 
   // 创建并返回已完成初始化的 builtins 字典。
-  Handle<PyDict> CreateBuiltins();
+  MaybeHandle<PyDict> CreateBuiltins();
 
  private:
   // 注册基础类型的 type object。它们需要在解释器开始执行用户代码前就可用。
-  void InstallBuiltinTypes();
+  Maybe<void> InstallBuiltinTypes();
 
   // 注册解释器侧可见的单例对象。
-  void InstallOddballs();
+  Maybe<void> InstallOddballs();
 
   // 注册解释器侧的 native builtins（统一以 PyFunction 包装）。
-  void InstallBuiltinFunctions();
+  Maybe<void> InstallBuiltinFunctions();
 
   // builtins["builtins"] = builtins，
   // 用于对齐 CPython 的 builtins 自引用行为。
-  void InstallBuiltinsSelfReference();
+  Maybe<void> InstallBuiltinsSelfReference();
 
   // 注册内建异常类型（MVP：仅覆盖常用的一小批）。
-  void InstallBuiltinExceptionTypes();
+  Maybe<void> InstallBuiltinExceptionTypes();
 
   // 注册BaseException和Exception
-  void InstallBuiltinBasicExceptionTypes();
+  Maybe<void> InstallBuiltinBasicExceptionTypes();
 
-  void RegisterSimpleTypeToBuiltins(Handle<PyString> type_name,
+  Maybe<void> RegisterSimpleTypeToBuiltins(Handle<PyString> type_name,
                                     Handle<PyObject> type_base);
 
   Global<PyDict> builtins_;
