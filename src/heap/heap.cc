@@ -173,6 +173,9 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 }
 
 void Heap::IterateRoots(ObjectVisitor* v) {
+  // 遍历 Isolate 内部直接持有的数据
+  isolate_->Iterate(v);
+
   // 遍历所有klass，处理klass内部持有引用的对象
   for (size_t i = 0; i < isolate_->klass_list().length(); ++i) {
     isolate_->klass_list().Get(i)->Iterate(v);
@@ -188,13 +191,13 @@ void Heap::IterateRoots(ObjectVisitor* v) {
     isolate_->interpreter()->Iterate(v);
   }
 
-  // 遍历 Isolate 级别的异常状态（pending exception）。
-  isolate_->exception_state()->Iterate(v);
-
   // 遍历模块系统中持有的引用（sys.modules/sys.path）
   if (isolate_->module_manager() != nullptr) {
     isolate_->module_manager()->Iterate(v);
   }
+
+  // 遍历 Isolate 级别的异常状态（pending exception）。
+  isolate_->exception_state()->Iterate(v);
 
   // 现阶段string table中所有的字符串都保存在meta space，暂时不需要开放GC!
   // if (isolate_->string_table() != nullptr) {

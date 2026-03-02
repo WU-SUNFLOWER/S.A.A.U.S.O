@@ -12,6 +12,7 @@
 #include "src/handles/handle-scope-implementer.h"
 #include "src/heap/factory.h"
 #include "src/heap/heap.h"
+#include "src/interpreter/builtin-bootstrapper.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/cell-klass.h"
@@ -20,6 +21,7 @@
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict-views-klass.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-list-iterator-klass.h"
@@ -34,6 +36,7 @@
 #include "src/objects/py-tuple-iterator-klass.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-type-object-klass.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -53,11 +56,12 @@ Isolate::Scope::~Scope() {
   }
 }
 
-Isolate* Isolate::Create() {
+Isolate* Isolate::New() {
   if (!saauso::Saauso::IsInitialized()) {
     // 错误：S.A.A.U.S.O 虚拟机全局环境未初始化。
     // 在创建 Isolate 之前，必须先调用 saauso::Saauso::Initialize()。
-    assert(0);
+    assert(0 && "vm isn't initialized");
+    return nullptr;
   }
   auto* isolate = new Isolate();
   isolate->Init();
@@ -220,6 +224,16 @@ void Isolate::Init() {
 
   // 初始化模块管理器（sys.modules/sys.path 等）。
   module_manager_ = new ModuleManager(this);
+
+  // 初始化内建对象字典
+  Handle<PyDict> builtins;
+  if (!BuiltinBootstrapper(this).CreateBuiltins().ToHandle(&builtins)) {
+    return;
+  }
+  builtins_ = *builtins;
+
+  // 标记为已经初始化完毕
+  initialized_ = true;
 }
 
 void Isolate::InitMetaArea() {
@@ -250,6 +264,15 @@ void Isolate::InitMetaArea() {
 
 bool Isolate::HasPendingException() const {
   return exception_state_.HasPendingException();
+}
+
+Tagged<PyDict> Isolate::builtins() const {
+  return Tagged<PyDict>::cast(builtins_);
+}
+
+void Isolate::Iterate(ObjectVisitor* v) {
+  // 遍历内建对象字典
+  v->VisitPointer(&builtins_);
 }
 
 void Isolate::TearDown() {
@@ -285,6 +308,7 @@ void Isolate::TearDown() {
   py_none_object_ = Tagged<PyNone>::null();
   py_true_object_ = Tagged<PyBoolean>::null();
   py_false_object_ = Tagged<PyBoolean>::null();
+  builtins_ = Tagged<PyObject>::null();
 
   // 销毁堆
   heap_->TearDown();

@@ -37,7 +37,8 @@ void ThrowNewException(Handle<PyString> exception_type_name,
   Handle<PyObject> exception;
   ASSIGN_RETURN_ON_EXCEPTION_VOID(
       isolate, exception,
-      Runtime_NewExceptionInstance(exception_type_name, message_or_null));
+      Runtime_NewExceptionInstance(isolate, exception_type_name,
+                                   message_or_null));
 
   state->Throw(*exception);
 }
@@ -87,20 +88,21 @@ void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
 //////////////////////////////////////////////////////////////////////////
 
 MaybeHandle<PyObject> Runtime_NewExceptionInstance(
+    Isolate* isolate,
     Handle<PyString> exception_type_name,
     Handle<PyString> message_or_null) {
-  Handle<PyDict> builtins = Execution::builtins(Isolate::Current());
+  EscapableHandleScope scope;
+
+  Handle<PyDict> builtins = handle(isolate->builtins());
+
   Handle<PyObject> exception_type;
-  bool found = false;
-  if (!builtins->Get(exception_type_name, exception_type).To(&found)) {
-    return kNullMaybeHandle;
-  }
-  assert(found);
+  RETURN_ON_EXCEPTION(isolate,
+                      builtins->Get(exception_type_name, exception_type));
   assert(!exception_type.is_null());
 
   Handle<PyObject> exception = Handle<PyObject>::null();
   ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), exception,
+      isolate, exception,
       Runtime_NewObject(Handle<PyTypeObject>::cast(exception_type),
                         Handle<PyObject>::null(), Handle<PyObject>::null()));
 
@@ -108,13 +110,12 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyDict> properties = PyObject::GetProperties(exception);
     if (!properties.is_null()) {
       RETURN_ON_EXCEPTION_VALUE(
-          Isolate::Current(),
-          PyDict::Put(properties, ST(message), message_or_null),
+          isolate, PyDict::Put(properties, ST(message), message_or_null),
           kNullMaybeHandle);
     }
   }
 
-  return exception;
+  return scope.Escape(exception);
 }
 
 void Runtime_ThrowError(ExceptionType type, const char* message) {
@@ -181,7 +182,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   HandleScope scope;
   Handle<PyObject> pending = state->pending_exception();
 
-  Handle<PyDict> builtins = Execution::builtins(isolate);
+  Handle<PyDict> builtins = handle(isolate->builtins());
   Handle<PyObject> stop_iter_type;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), found,

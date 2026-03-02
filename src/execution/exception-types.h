@@ -7,10 +7,26 @@
 
 namespace saauso::internal {
 
-// 定义所有支持的异常类型枚举。
-#define EXCEPTION_TYPE_LIST(V)                                         \
-  V(kBaseException, base_exception, "BaseException")                   \
-  V(kException, exception, "Exception")                                \
+// 原版CPython中的异常类型继承体系：
+//
+// BaseException
+//  ├── SystemExit
+//  ├── KeyboardInterrupt
+//  ├── GeneratorExit
+//  └── Exception
+//       ├── ArithmeticError
+//       │    └── ZeroDivisionError
+//       ├── LookupError
+//       │    ├── IndexError
+//       │    └── KeyError
+//       ├── NameError
+//       ├── TypeError
+//       ├── RuntimeError
+//       ├── OSError
+//       └── ...  # 其他所有常规异常
+
+// 继承自Exception的常规异常列表
+#define NORMAL_EXCEPTION_TYPE(V)                                       \
   V(kTypeError, type_err, "TypeError")                                 \
   V(kRuntimeError, runtime_err, "RuntimeError")                        \
   V(kValueError, value_err, "ValueError")                              \
@@ -22,6 +38,12 @@ namespace saauso::internal {
   V(kImportError, import_err, "ImportError")                           \
   V(kModuleNotFoundError, module_not_found_err, "ModuleNotFoundError") \
   V(kStopIteration, stop_iter, "StopIteration")
+
+// 定义所有支持的异常类型列表
+#define EXCEPTION_TYPE_LIST(V)                       \
+  V(kBaseException, base_exception, "BaseException") \
+  V(kException, exception, "Exception")              \
+  NORMAL_EXCEPTION_TYPE(V)
 
 enum class ExceptionType {
 #define DEFINE_EXCEPTION_TYPE(type, ignore1, ignore2) type,

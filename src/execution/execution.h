@@ -34,8 +34,6 @@ class Execution final : public AllStatic {
                                     Handle<PyDict> kw_args,
                                     Handle<PyDict> bound_locals);
 
-  static Handle<PyDict> builtins(Isolate* isolate);
-
   static Handle<PyDict> CurrentFrameGlobals(Isolate* isolate);
   static Handle<PyDict> CurrentFrameLocals(Isolate* isolate);
 };

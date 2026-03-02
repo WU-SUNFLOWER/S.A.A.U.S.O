@@ -255,9 +255,9 @@ void Interpreter::EvalCurrentFrame() {
                 raise_pc);
           }
         } else {
-          ASSIGN_GOTO_ON_EXCEPTION(
-              exception, Runtime_NewExceptionInstance(
-                             ST(runtime_err), Handle<PyString>::null()));
+          ASSIGN_GOTO_ON_EXCEPTION(exception, Runtime_NewExceptionInstance(
+                                                  isolate_, ST(runtime_err),
+                                                  Handle<PyString>::null()));
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }
@@ -353,7 +353,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
     Tagged<PyObject> value;
     bool found = false;
-    ASSIGN_GOTO_ON_EXCEPTION(found, builtins_tagged()->GetTagged(
+    ASSIGN_GOTO_ON_EXCEPTION(found, isolate_->builtins()->GetTagged(
                                         ST_TAGGED(func_build_class), value));
     assert(found);
     assert(!value.is_null());
@@ -484,7 +484,8 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     // 3. 查builtin符号表
-    ASSIGN_GOTO_ON_EXCEPTION(found, builtins()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(found,
+                             isolate_->builtins()->GetTagged(key, value));
     if (found) {
       PUSH(value);
       break;
@@ -720,7 +721,8 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    ASSIGN_GOTO_ON_EXCEPTION(found, builtins()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(found,
+                             isolate_->builtins()->GetTagged(key, value));
     if (found) {
       PUSH(value);
       break;

@@ -54,6 +54,21 @@ bool CheckAndPrintException(Isolate* isolate) {
   return true;
 }
 
+Handle<PyFunction> LoadFunctionBoilerplate(Isolate* isolate) {
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
+  return Compiler::CompileSource(isolate, kSourceCode, kFileName);
+#else
+  if (argc != 2) {
+    std::fprintf(stderr, "Usage: vm <module.pyc>\n");
+    std::fprintf(stderr,
+                 "Note: build with saauso_enable_cpython_compiler=true to "
+                 "run source-code demo.\n");
+    std::exit(1);
+  }
+  return Compiler::CompilePyc(isolate, argv[1]);
+#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
+}
+
 int main(int argc, char** argv) {
   int exit_code = 0;
 
@@ -64,21 +79,10 @@ int main(int argc, char** argv) {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope;
 
-#if SAAUSO_ENABLE_CPYTHON_COMPILER
-    Handle<PyFunction> boilerplate =
-        Compiler::CompileSource(isolate, kSourceCode, kFileName);
-#else
-    if (argc != 2) {
-      std::fprintf(stderr, "Usage: vm <module.pyc>\n");
-      std::fprintf(stderr,
-                   "Note: build with saauso_enable_cpython_compiler=true to "
-                   "run source-code demo.\n");
-      std::exit(1);
+    if (isolate->initialized()) {
+      Handle<PyFunction> boilerplate = LoadFunctionBoilerplate(isolate);
+      isolate->interpreter()->Run(boilerplate);
     }
-    Handle<PyFunction> boilerplate = Compiler::CompilePyc(isolate, argv[1]);
-#endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
-
-    isolate->interpreter()->Run(boilerplate);
 
     if (CheckAndPrintException(isolate)) {
       exit_code = 1;

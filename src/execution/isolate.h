@@ -24,6 +24,9 @@ class HandleScopeImplementer;
 class Interpreter;
 class ModuleManager;
 class StringTable;
+class ObjectVisitor;
+class PyDict;
+class PyObject;
 
 #define DECLARE_ISOLATE_KLASS_TYPES(Type, Klass, _) \
   class Type;                                       \
@@ -82,10 +85,9 @@ class Isolate {
   Isolate& operator=(const Isolate&) = delete;
 
   // 创建一个新的 Isolate 实例。
-  static Isolate* Create();
+  static Isolate* New();
   // 销毁一个 Isolate 实例。
   static void Dispose(Isolate* isolate);
-  static Isolate* New() { return Create(); }
   static void Delete(Isolate* isolate) { Dispose(isolate); }
 
   // 获取当前线程绑定的 Isolate 实例。
@@ -111,6 +113,8 @@ class Isolate {
   ExceptionState* exception_state() { return &exception_state_; }
   const ExceptionState* exception_state() const { return &exception_state_; }
 
+  Tagged<PyDict> builtins() const;
+
   // 获取全局单例对象（None, True, False）
   Tagged<PyNone> py_none_object() const { return py_none_object_; }
   Tagged<PyBoolean> py_true_object() const { return py_true_object_; }
@@ -126,6 +130,11 @@ class Isolate {
 #undef DECLARE_ISOLATE_KLASS_ACCESSORS
 
   bool HasPendingException() const;
+
+  // GC 接口
+  void Iterate(ObjectVisitor* v);
+
+  bool initialized() const { return initialized_; }
 
  private:
   Isolate() = default;
@@ -148,6 +157,8 @@ class Isolate {
   StringTable* string_table_{nullptr};
   ExceptionState exception_state_;
 
+  Tagged<PyObject> builtins_{kNullAddress};
+
   Tagged<PyNone> py_none_object_;
   Tagged<PyBoolean> py_true_object_;
   Tagged<PyBoolean> py_false_object_;
@@ -163,6 +174,8 @@ class Isolate {
   void* mutex_{nullptr};
   ThreadId locker_thread_;
   int locker_count_{0};
+
+  bool initialized_{false};
 };
 
 }  // namespace saauso::internal
