@@ -13,46 +13,45 @@ class PyDict;
 
 class PyDictKeys : public PyObject {
  public:
-  static Handle<PyDictKeys> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictKeys> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
 
  private:
   friend class PyDictKeysKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
 };
 
 class PyDictValues : public PyObject {
  public:
-  static Handle<PyDictValues> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictValues> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
 
  private:
   friend class PyDictValuesKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
 };
 
 class PyDictItems : public PyObject {
  public:
-  static Handle<PyDictItems> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictItems> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
 
  private:
   friend class PyDictItemsKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
 };
 
 class PyDictKeyIterator : public PyObject {
  public:
-  static Handle<PyDictKeyIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictKeyIterator> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -61,6 +60,7 @@ class PyDictKeyIterator : public PyObject {
 
  private:
   friend class PyDictKeyIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_index_;
@@ -68,7 +68,6 @@ class PyDictKeyIterator : public PyObject {
 
 class PyDictValueIterator : public PyObject {
  public:
-  static Handle<PyDictValueIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictValueIterator> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -77,6 +76,7 @@ class PyDictValueIterator : public PyObject {
 
  private:
   friend class PyDictValueIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_index_;
@@ -84,7 +84,6 @@ class PyDictValueIterator : public PyObject {
 
 class PyDictItemIterator : public PyObject {
  public:
-  static Handle<PyDictItemIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyDictItemIterator> cast(Tagged<PyObject> object);
 
   Handle<PyDict> owner() const;
@@ -93,6 +92,7 @@ class PyDictItemIterator : public PyObject {
 
  private:
   friend class PyDictItemIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_index_;

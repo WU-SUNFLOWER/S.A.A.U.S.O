@@ -6,6 +6,7 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -537,25 +538,19 @@ MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
     Handle<PyObject> kwargs) {
   auto* isolate = Isolate::Current();
 
-  auto instance = PyObject::AllocateRawPythonObject();
-  auto type_object = klass_self->type_object();
-
-  // 建立object实例与type object和klass之间的绑定关系
-  PyObject::SetKlass(instance, type_object->own_klass());
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(PyObject::GetProperties(instance),
-                                           ST(class), type_object));
+  Handle<PyObject> instance;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, instance,
+      isolate->factory()->NewPythonObject(klass_self->type_object()));
 
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, instance, ST(init), init_method));
 
   if (!init_method.is_null()) {
-    if (Execution::Call(isolate, init_method, instance,
-                        Handle<PyTuple>::cast(args),
-                        Handle<PyDict>::cast(kwargs))
-            .IsEmpty()) {
-      return kNullMaybeHandle;
-    }
+    RETURN_ON_EXCEPTION(isolate, Execution::Call(isolate, init_method, instance,
+                                                 Handle<PyTuple>::cast(args),
+                                                 Handle<PyDict>::cast(kwargs)));
   }
 
   return instance;

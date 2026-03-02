@@ -9,7 +9,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list.h"
@@ -17,19 +17,7 @@
 namespace saauso::internal {
 
 Handle<PyListIterator> PyListIterator::NewInstance(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyListIterator> iterator(
-      Isolate::Current()->heap()->Allocate<PyListIterator>(
-          Heap::AllocationSpace::kNewSpace));
-
-  iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-  iterator->iter_cnt_ = 0;
-
-  PyObject::SetKlass(iterator, PyListIteratorKlass::GetInstance());
-  PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
-
-  return scope.Escape(iterator);
+  return Isolate::Current()->factory()->NewPyListIterator(owner);
 }
 
 Tagged<PyListIterator> PyListIterator::cast(Tagged<PyObject> object) {

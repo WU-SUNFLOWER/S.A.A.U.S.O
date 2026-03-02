@@ -6,7 +6,7 @@
 
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/cell-klass.h"
 #include "src/objects/py-dict.h"
 
@@ -14,16 +14,7 @@ namespace saauso::internal {
 
 // static
 Handle<Cell> Cell::NewInstance() {
-  Handle<Cell> object(Isolate::Current()->heap()->Allocate<Cell>(
-      Heap::AllocationSpace::kNewSpace));
-
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-  object->value_ = Tagged<PyObject>(kNullAddress);
-
-  // 绑定klass
-  PyObject::SetKlass(object, CellKlass::GetInstance());
-
-  return object;
+  return Isolate::Current()->factory()->NewCell();
 }
 
 // static

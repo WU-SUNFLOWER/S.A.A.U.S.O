@@ -13,6 +13,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/interpreter/frame-object.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-code-object.h"
@@ -240,7 +241,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
     goto ret;
   }
 
-  iter = PyDictItemIterator::NewInstance(actual_kw_args);
+  iter = isolate->factory()->NewPyDictItemIterator(actual_kw_args);
   while (true) {
     Handle<PyObject> item_handle;
     if (!PyObject::Next(iter).ToHandle(&item_handle)) {

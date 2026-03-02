@@ -13,7 +13,6 @@ class PyTuple;
 
 class PyTupleIterator : public PyObject {
  public:
-  static Handle<PyTupleIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyTupleIterator> cast(Tagged<PyObject> object);
 
   Handle<PyTuple> owner() const;
@@ -22,6 +21,7 @@ class PyTupleIterator : public PyObject {
 
  private:
   friend class PyTupleIteratorKlass;
+  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_cnt_;

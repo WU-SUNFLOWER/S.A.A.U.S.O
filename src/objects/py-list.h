@@ -20,9 +20,7 @@ class PyList : public PyObject {
   static constexpr int kNotFound = -1;
 
   static Handle<PyList> NewInstance(int64_t init_capacity = kMinimumCapacity);
-  static Handle<PyList> AllocateListLike(Tagged<Klass> klass_self,
-                                         int64_t init_capacity,
-                                         bool allocate_properties_dict);
+  
   static Tagged<PyList> cast(Tagged<PyObject> object);
   static bool IsListLike(Tagged<PyObject> object);
   static bool IsListLike(Handle<PyObject> object);
@@ -85,6 +83,7 @@ class PyList : public PyObject {
 
  private:
   friend class PyListKlass;
+  friend class Factory;
 
   static void ExpandImpl(Handle<PyList> list);
 

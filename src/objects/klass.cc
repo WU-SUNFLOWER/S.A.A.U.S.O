@@ -8,7 +8,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -105,27 +105,6 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
 }
 
 }  // namespace
-
-///////////////////////////////////////////////////////////////////////
-
-// static
-Tagged<Klass> Klass::CreateRawPythonKlass() {
-  auto* isolate = Isolate::Current();
-  auto klass =
-      isolate->heap()->Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
-  // 填充虚函数表
-  klass->InitializeVTable();
-  // 填充字段默认值
-  klass->set_klass_properties(Handle<PyDict>::null());
-  klass->set_name(Handle<PyString>::null());
-  klass->set_type_object(Handle<PyTypeObject>::null());
-  klass->set_supers(Handle<PyList>::null());
-  klass->set_mro(Handle<PyList>::null());
-  klass->set_native_layout_base(Tagged<Klass>::null());
-  klass->set_native_layout_kind(NativeLayoutKind::kPyObject);
-
-  return klass;
-}
 
 ///////////////////////////////////////////////////////////////////////
 

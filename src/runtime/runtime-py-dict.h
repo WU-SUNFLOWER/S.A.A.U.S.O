@@ -17,8 +17,8 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                                       Handle<PyObject> kwargs);
 
 Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
-                                          Handle<PyObject> args,
-                                          Handle<PyObject> kwargs);
+                                           Handle<PyObject> args,
+                                           Handle<PyObject> kwargs);
 
 // dict 相关 API 约定（请务必阅读）
 //
@@ -57,7 +57,8 @@ MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
                                       Handle<PyObject> default_or_null,
                                       bool has_default);
 
-MaybeHandle<PyObject> Runtime_MergeDict(Handle<PyDict> dst_dict,
+MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
+                                        Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting);
 

@@ -14,6 +14,7 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -117,12 +118,12 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     }
   }
 
-  auto probe = PyTuple::AllocateTupleLike(klass_self, 0, !is_exact_tuple);
+  auto probe =
+      isolate->factory()->NewPyTupleLike(klass_self, 0, !is_exact_tuple);
   if (!is_exact_tuple) {
     auto properties = PyObject::GetProperties(probe);
-    RETURN_ON_EXCEPTION(isolate,
-                        PyDict::Put(properties, ST(class),
-                                    klass_self->type_object()));
+    RETURN_ON_EXCEPTION(
+        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
   }
 
   Handle<PyObject> init_method;
@@ -154,11 +155,11 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
     auto length = unpacked->length();
     auto result =
-        PyTuple::AllocateTupleLike(klass_self, length, !is_exact_tuple);
+        isolate->factory()->NewPyTupleLike(klass_self, length, !is_exact_tuple);
     if (!is_exact_tuple) {
       auto properties = PyObject::GetProperties(result);
-      RETURN_ON_EXCEPTION(
-          isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+      RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
+                                               klass_self->type_object()));
     }
     for (auto i = 0; i < length; ++i) {
       result->SetInternal(i, unpacked->GetTagged(i));
@@ -273,7 +274,8 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyTupleIterator::NewInstance(PyTuple::CastTupleLike(self));
+  return Isolate::Current()->factory()->NewPyTupleIterator(
+      PyTuple::CastTupleLike(self));
 }
 
 size_t PyTupleKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

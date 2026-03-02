@@ -107,6 +107,7 @@ class PyCodeObject : public PyObject {
  private:
   friend class PyCodeObjectKlass;
   friend class FrameObject;
+  friend class Factory;
 
   int arg_count_;          // 参数个数
   int posonly_arg_count_;  // 位置参数个数

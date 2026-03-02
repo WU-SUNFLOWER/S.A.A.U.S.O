@@ -47,6 +47,10 @@ class Heap {
   OldSpace& old_space() { return old_space_; }
   MetaSpace& meta_space() { return meta_space_; }
 
+  void IncrementAllocationDisallowedDepth();
+  void DecrementAllocationDisallowedDepth();
+  bool IsAllocationAllowed() const { return allocation_disallowed_depth_ == 0; }
+
   // 写屏障入口
   // object: 发生写入的对象（宿主）
   // slot: 写入发生的内存地址（成员变量地址）
@@ -81,6 +85,24 @@ class Heap {
   VirtualMemory* initial_chunk_;
 
   Isolate* isolate_{nullptr};
+  int allocation_disallowed_depth_{0};
+};
+
+class DisallowHeapAllocation {
+ public:
+  explicit DisallowHeapAllocation(Heap* heap) : heap_(heap) {
+    heap_->IncrementAllocationDisallowedDepth();
+  }
+
+  explicit DisallowHeapAllocation(Isolate* isolate);
+
+  DisallowHeapAllocation(const DisallowHeapAllocation&) = delete;
+  DisallowHeapAllocation& operator=(const DisallowHeapAllocation&) = delete;
+
+  ~DisallowHeapAllocation() { heap_->DecrementAllocationDisallowedDepth(); }
+
+ private:
+  Heap* heap_{nullptr};
 };
 
 // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！

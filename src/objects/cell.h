@@ -28,6 +28,7 @@ class Cell : public PyObject {
 
  private:
   friend class CellKlass;
+  friend class Factory;
 
   Tagged<PyObject> value_;
 };

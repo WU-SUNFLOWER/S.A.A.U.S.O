@@ -22,6 +22,7 @@ class PyTypeObject : public PyObject {
 
  private:
   friend class PyTypeObjectKlass;
+  friend class Factory;
 
   Tagged<Klass> own_klass_;
 };

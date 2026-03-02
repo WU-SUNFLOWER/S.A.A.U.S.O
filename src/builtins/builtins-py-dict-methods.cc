@@ -8,6 +8,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -69,17 +70,17 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Keys) {
   EscapableHandleScope scope;
-  return scope.Escape(PyDictKeys::NewInstance(self));
+  return scope.Escape(Isolate::Current()->factory()->NewPyDictKeys(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Values) {
   EscapableHandleScope scope;
-  return scope.Escape(PyDictValues::NewInstance(self));
+  return scope.Escape(Isolate::Current()->factory()->NewPyDictValues(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Items) {
   EscapableHandleScope scope;
-  return scope.Escape(PyDictItems::NewInstance(self));
+  return scope.Escape(Isolate::Current()->factory()->NewPyDictItems(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Get) {

@@ -10,6 +10,7 @@
 
 #include "include/saauso.h"
 #include "src/handles/handle-scope-implementer.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
@@ -201,6 +202,8 @@ void Isolate::Init() {
   heap_ = new Heap(this);
   heap_->Setup();
 
+  factory_ = new Factory(this);
+
   // 初始化句柄作用域实现
   handle_scope_implementer_ = new HandleScopeImplementer(this);
 
@@ -235,9 +238,9 @@ void Isolate::InitMetaArea() {
 
   // 3. 创建全局单例对象（None, True, False）
   // 这些对象必须在其他逻辑使用它们之前创建好
-  py_none_object_ = PyNone::NewInstance();
-  py_true_object_ = PyBoolean::NewInstance(true);
-  py_false_object_ = PyBoolean::NewInstance(false);
+  py_none_object_ = factory()->NewPyNone();
+  py_true_object_ = factory()->NewPyBoolean(true);
+  py_false_object_ = factory()->NewPyBoolean(false);
 
   // 4. 正式初始化所有 Klass（调用 Initialize）
 #define INIT_PY_KLASS(_, Klass, __) Klass::GetInstance()->Initialize();
@@ -272,6 +275,9 @@ void Isolate::TearDown() {
   // 销毁句柄作用域实现
   delete handle_scope_implementer_;
   handle_scope_implementer_ = nullptr;
+
+  delete factory_;
+  factory_ = nullptr;
 
   klass_list_.Resize(0);
 

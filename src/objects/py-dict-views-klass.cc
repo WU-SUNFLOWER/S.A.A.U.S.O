@@ -12,6 +12,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
@@ -123,7 +124,7 @@ MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyDictKeyIterator::NewInstance(
+  return Isolate::Current()->factory()->NewPyDictKeyIterator(
       Handle<PyDictKeys>::cast(self)->owner());
 }
 
@@ -209,7 +210,7 @@ MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyDictValueIterator::NewInstance(
+  return Isolate::Current()->factory()->NewPyDictValueIterator(
       Handle<PyDictValues>::cast(self)->owner());
 }
 
@@ -309,7 +310,7 @@ MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyDictItemIterator::NewInstance(
+  return Isolate::Current()->factory()->NewPyDictItemIterator(
       Handle<PyDictItems>::cast(self)->owner());
 }
 

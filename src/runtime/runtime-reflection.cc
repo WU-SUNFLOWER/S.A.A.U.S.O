@@ -7,6 +7,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -25,10 +26,12 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
     Handle<PyList> supers) {
   EscapableHandleScope scope;
 
+  auto* isolate = Isolate::Current();
+
   Handle<PyTypeObject> type_object = PyTypeObject::NewInstance();
 
   // 创建新的klass并注册进isolate
-  Tagged<Klass> klass = Klass::CreateRawPythonKlass();
+  Tagged<Klass> klass = isolate->factory()->NewPythonKlass();
   Isolate::Current()->klass_list().PushBack(klass);
 
   // 设置klass字段
@@ -223,7 +226,8 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
 
   Handle<PyString> name = PyString::CastStringLike(name_obj);
   Handle<PyTuple> bases_tuple = PyTuple::CastTupleLike(bases_obj);
-  Handle<PyDict> class_dict = PyDict::Clone(PyDict::CastDictLike(dict_obj));
+  Handle<PyDict> class_dict =
+      isolate->factory()->CopyPyDict(PyDict::CastDictLike(dict_obj));
 
   Handle<PyList> supers;
   if (bases_tuple->length() == 0) {

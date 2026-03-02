@@ -6,6 +6,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/modules/builtin-module-registry.h"
 #include "src/modules/module-finder.h"
 #include "src/modules/module-manager.h"
@@ -134,7 +135,9 @@ MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
     Handle<PyString> fullname,
     const ModuleLocation& loc,
     Handle<PyString> source) {
-  Handle<PyModule> module = PyModule::NewInstance();
+  Handle<PyModule> module;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, module,
+                             isolate_->factory()->NewPyModule());
 
   RETURN_ON_EXCEPTION(isolate_, InitializeModuleDict(module, fullname, loc));
 
@@ -149,7 +152,9 @@ MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
 MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromPyc(
     Handle<PyString> fullname,
     const ModuleLocation& loc) {
-  Handle<PyModule> module = PyModule::NewInstance();
+  Handle<PyModule> module;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, module,
+                             isolate_->factory()->NewPyModule());
 
   RETURN_ON_EXCEPTION(isolate_, InitializeModuleDict(module, fullname, loc));
 

@@ -14,6 +14,7 @@
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/cell-klass.h"
 #include "src/objects/cell.h"
@@ -103,17 +104,6 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 
   object->properties_ = properties;
   WRITE_BARRIER(object, &object->properties_, properties);
-}
-
-// static
-Handle<PyObject> PyObject::AllocateRawPythonObject() {
-  Handle<PyObject> object(Isolate::Current()->heap()->Allocate<PyObject>(
-      Heap::AllocationSpace::kNewSpace));
-  SetKlass(object, PyObjectKlass::GetInstance());
-  SetProperties(*object, Tagged<PyDict>::null());
-  Handle<PyDict> properties = PyDict::NewInstance();
-  SetProperties(*object, *properties);
-  return object;
 }
 
 ///////////////////////////////////////////////////////////////////

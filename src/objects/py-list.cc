@@ -10,7 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-klass.h"
@@ -21,35 +21,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
-  EscapableHandleScope scope;
-  return scope.Escape(
-      AllocateListLike(PyListKlass::GetInstance(), init_capacity, false));
-}
-
-// static
-Handle<PyList> PyList::AllocateListLike(Tagged<Klass> klass_self,
-                                        int64_t init_capacity,
-                                        bool allocate_properties_dict) {
-  EscapableHandleScope scope;
-
-  Handle<PyList> object(Isolate::Current()->heap()->Allocate<PyList>(
-      Heap::AllocationSpace::kNewSpace));
-
-  object->length_ = 0;
-  object->array_ = Tagged<FixedArray>::null();
-  PyObject::SetKlass(object, klass_self);
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  Handle<FixedArray> array =
-      FixedArray::NewInstance(std::max(kMinimumCapacity, init_capacity));
-  object->array_ = *array;
-
-  if (allocate_properties_dict) {
-    Handle<PyDict> properties = PyDict::NewInstance();
-    PyObject::SetProperties(*object, *properties);
-  }
-
-  return scope.Escape(object);
+  return Isolate::Current()->factory()->NewPyList(init_capacity);
 }
 
 // static
@@ -198,11 +170,13 @@ void PyList::Insert(Handle<PyList> self,
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
-  int64_t new_capacity = std::max(kMinimumCapacity, list->capacity() << 1);
+  int64_t old_capacity = list->capacity();
+  int64_t new_capacity = std::max(kMinimumCapacity, old_capacity << 1);
 
   Handle<FixedArray> old_array(list->array());
   Handle<FixedArray> new_array =
-      FixedArray::NewInstance(new_capacity, old_array);
+      Isolate::Current()->factory()->CopyFixedArrayAndGrow(
+          old_array, new_capacity - old_capacity);
 
   list->array_ = *new_array;
 }

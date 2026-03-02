@@ -22,10 +22,6 @@ class PyTuple : public PyObject {
   static constexpr int kNotFound = -1;
 
   static Handle<PyTuple> NewInstance(int64_t length);
-  static Handle<PyTuple> NewInstance(Handle<PyList> elements);
-  static Handle<PyTuple> AllocateTupleLike(Tagged<Klass> klass_self,
-                                          int64_t length,
-                                          bool allocate_properties_dict);
 
   static Tagged<PyTuple> cast(Tagged<PyObject> object);
   static bool IsTupleLike(Tagged<PyObject> object);
@@ -52,6 +48,7 @@ class PyTuple : public PyObject {
 
  private:
   friend class PyTupleKlass;
+  friend class Factory;
 
   Tagged<PyObject>* data() {
     return reinterpret_cast<Tagged<PyObject>*>(this + 1);

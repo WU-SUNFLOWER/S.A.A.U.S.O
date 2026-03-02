@@ -15,6 +15,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict-views.h"
@@ -119,7 +120,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
-  return PyDictKeyIterator::NewInstance(self);
+  return Isolate::Current()->factory()->NewPyDictKeyIterator(self);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
@@ -219,7 +220,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     }
   }
 
-  Handle<PyDict> result = PyDict::AllocateDictLike(
+  Handle<PyDict> result = isolate->factory()->NewDictLike(
       klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
 
   Handle<PyObject> init_method;

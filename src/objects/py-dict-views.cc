@@ -9,24 +9,11 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict-views-klass.h"
 #include "src/objects/py-dict.h"
 
 namespace saauso::internal {
-
-Handle<PyDictKeys> PyDictKeys::NewInstance(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyDictKeys> view(Isolate::Current()->heap()->Allocate<PyDictKeys>(
-      Heap::AllocationSpace::kNewSpace));
-  view->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-
-  PyObject::SetKlass(view, PyDictKeysKlass::GetInstance());
-  PyObject::SetProperties(*view, Tagged<PyDict>::null());
-
-  return scope.Escape(view);
-}
 
 Tagged<PyDictKeys> PyDictKeys::cast(Tagged<PyObject> object) {
   assert(IsPyDictKeys(object));
@@ -36,19 +23,6 @@ Tagged<PyDictKeys> PyDictKeys::cast(Tagged<PyObject> object) {
 Handle<PyDict> PyDictKeys::owner() const {
   assert(!owner_.is_null());
   return PyDict::CastDictLike(handle(owner_));
-}
-
-Handle<PyDictValues> PyDictValues::NewInstance(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyDictValues> view(Isolate::Current()->heap()->Allocate<PyDictValues>(
-      Heap::AllocationSpace::kNewSpace));
-  view->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-
-  PyObject::SetKlass(view, PyDictValuesKlass::GetInstance());
-  PyObject::SetProperties(*view, Tagged<PyDict>::null());
-
-  return scope.Escape(view);
 }
 
 Tagged<PyDictValues> PyDictValues::cast(Tagged<PyObject> object) {
@@ -61,19 +35,6 @@ Handle<PyDict> PyDictValues::owner() const {
   return PyDict::CastDictLike(handle(owner_));
 }
 
-Handle<PyDictItems> PyDictItems::NewInstance(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyDictItems> view(Isolate::Current()->heap()->Allocate<PyDictItems>(
-      Heap::AllocationSpace::kNewSpace));
-  view->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-
-  PyObject::SetKlass(view, PyDictItemsKlass::GetInstance());
-  PyObject::SetProperties(*view, Tagged<PyDict>::null());
-
-  return scope.Escape(view);
-}
-
 Tagged<PyDictItems> PyDictItems::cast(Tagged<PyObject> object) {
   assert(IsPyDictItems(object));
   return Tagged<PyDictItems>::cast(object);
@@ -82,23 +43,6 @@ Tagged<PyDictItems> PyDictItems::cast(Tagged<PyObject> object) {
 Handle<PyDict> PyDictItems::owner() const {
   assert(!owner_.is_null());
   return PyDict::CastDictLike(handle(owner_));
-}
-
-Handle<PyDictKeyIterator> PyDictKeyIterator::NewInstance(
-    Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyDictKeyIterator> iterator(
-      Isolate::Current()->heap()->Allocate<PyDictKeyIterator>(
-          Heap::AllocationSpace::kNewSpace));
-
-  iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-  iterator->iter_index_ = 0;
-
-  PyObject::SetKlass(iterator, PyDictKeyIteratorKlass::GetInstance());
-  PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
-
-  return scope.Escape(iterator);
 }
 
 Tagged<PyDictKeyIterator> PyDictKeyIterator::cast(Tagged<PyObject> object) {
@@ -111,23 +55,6 @@ Handle<PyDict> PyDictKeyIterator::owner() const {
   return PyDict::CastDictLike(handle(owner_));
 }
 
-Handle<PyDictValueIterator> PyDictValueIterator::NewInstance(
-    Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyDictValueIterator> iterator(
-      Isolate::Current()->heap()->Allocate<PyDictValueIterator>(
-          Heap::AllocationSpace::kNewSpace));
-
-  iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-  iterator->iter_index_ = 0;
-
-  PyObject::SetKlass(iterator, PyDictValueIteratorKlass::GetInstance());
-  PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
-
-  return scope.Escape(iterator);
-}
-
 Tagged<PyDictValueIterator> PyDictValueIterator::cast(Tagged<PyObject> object) {
   assert(IsPyDictValueIterator(object));
   return Tagged<PyDictValueIterator>::cast(object);
@@ -136,23 +63,6 @@ Tagged<PyDictValueIterator> PyDictValueIterator::cast(Tagged<PyObject> object) {
 Handle<PyDict> PyDictValueIterator::owner() const {
   assert(!owner_.is_null());
   return PyDict::CastDictLike(handle(owner_));
-}
-
-Handle<PyDictItemIterator> PyDictItemIterator::NewInstance(
-    Handle<PyObject> owner) {
-  EscapableHandleScope scope;
-
-  Handle<PyDictItemIterator> iterator(
-      Isolate::Current()->heap()->Allocate<PyDictItemIterator>(
-          Heap::AllocationSpace::kNewSpace));
-
-  iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-  iterator->iter_index_ = 0;
-
-  PyObject::SetKlass(iterator, PyDictItemIteratorKlass::GetInstance());
-  PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
-
-  return scope.Escape(iterator);
 }
 
 Tagged<PyDictItemIterator> PyDictItemIterator::cast(Tagged<PyObject> object) {

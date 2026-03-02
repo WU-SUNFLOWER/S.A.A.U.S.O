@@ -10,7 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
-#include "src/heap/heap.h"
+#include "src/heap/factory.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-object.h"
@@ -103,73 +103,7 @@ Maybe<bool> RehashInto(DictT dict,
 
 // static
 Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
-  EscapableHandleScope scope;
-  return scope.Escape(
-      AllocateDictLike(PyDictKlass::GetInstance(), init_capacity, false));
-}
-
-// static
-Handle<PyDict> PyDict::AllocateDictLike(Tagged<Klass> klass_self,
-                                        int64_t init_capacity,
-                                        bool allocate_properties_dict) {
-  // 因为探测公式取`index = (capacity_ - 1) & mask`，
-  // 为了在按位与之后充分利用哈希表中的各个槽位，
-  // 我们要求init_capacity必须取2的幂次方
-  assert((init_capacity & (init_capacity - 1)) == 0);
-
-  EscapableHandleScope scope;
-
-  Handle<PyDict> object(Isolate::Current()->heap()->Allocate<PyDict>(
-      Heap::AllocationSpace::kNewSpace));
-
-  object->occupied_ = 0;
-  SetKlass(object, klass_self);
-  object->data_ = Tagged<FixedArray>::null();
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  Handle<FixedArray> data = FixedArray::NewInstance(init_capacity * 2);
-  object->data_ = *data;
-
-  if (allocate_properties_dict) {
-    Handle<PyDict> properties = PyDict::NewInstance();
-    PyObject::SetProperties(*object, *properties);
-  }
-
-  return scope.Escape(object);
-}
-
-// static
-Handle<PyDict> PyDict::Clone(Handle<PyDict> other) {
-  EscapableHandleScope scope;
-
-  Handle<PyDict> result = NewInstanceWithoutAllocateData();
-  Handle<FixedArray> data = FixedArray::Clone(other->data());
-  result->occupied_ = other->occupied();
-  result->data_ = *data;
-
-  return scope.Escape(result);
-}
-
-// static
-Handle<PyDict> PyDict::NewInstanceWithoutAllocateData() {
-  // 创建对象
-  Handle<PyDict> object(Isolate::Current()->heap()->Allocate<PyDict>(
-      Heap::AllocationSpace::kNewSpace));
-
-  // 设置字段
-  object->occupied_ = 0;
-
-  // 绑定klass
-  SetKlass(object, PyDictKlass::GetInstance());
-
-  // float类型没有__dict__，不需要初始化properties
-  // >>> dict().__dict__
-  // Traceback (most recent call last):
-  //   File "<stdin>", line 1, in <module>
-  // AttributeError: 'dict' object has no attribute '__dict__'
-  PyObject::SetProperties(*object, Tagged<PyDict>::null());
-
-  return object;
+  return Isolate::Current()->factory()->NewPyDict(init_capacity);
 }
 
 // static

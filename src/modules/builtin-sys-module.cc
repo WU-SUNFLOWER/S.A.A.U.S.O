@@ -2,7 +2,9 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/exception-utils.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/modules/builtin-module.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/py-dict.h"
@@ -24,7 +26,11 @@ BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
   (void)isolate;
   EscapableHandleScope scope;
 
-  Handle<PyModule> module = PyModule::NewInstance();
+  Handle<PyModule> module;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, module,
+                                   isolate->factory()->NewPyModule(),
+                                   Handle<PyModule>::null());
+
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
   (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("sys"));

@@ -534,8 +534,8 @@ void Interpreter::EvalCurrentFrame() {
     auto update_dict = Handle<PyDict>::cast(update);
     bool allow_overwriting = (op_arg & 1) == 0;
 
-    GOTO_ON_EXCEPTION(
-        Runtime_MergeDict(target_dict, update_dict, allow_overwriting));
+    GOTO_ON_EXCEPTION(Runtime_MergeDict(isolate_, target_dict, update_dict,
+                                        allow_overwriting));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {

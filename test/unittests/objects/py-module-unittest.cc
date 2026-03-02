@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
@@ -17,7 +19,11 @@ class PyModuleTest : public VmTestBase {};
 TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   HandleScope scope;
 
-  Handle<PyModule> module = PyModule::NewInstance();
+  Handle<PyModule> module;
+  if (!isolate_->factory()->NewPyModule().To(&module)) {
+    FAIL() << "fail to create python module object";
+  }
+
   Handle<PyObject> module_obj(module);
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
@@ -32,8 +38,7 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 
   Handle<PyString> x_name = PyString::NewInstance("x");
   Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)));
-  ASSERT_FALSE(
-      PyObject::SetAttr(module_obj, x_name, x_value).IsEmpty());
+  ASSERT_FALSE(PyObject::SetAttr(module_obj, x_name, x_value).IsEmpty());
 
   Handle<PyObject> x_got;
   ASSERT_TRUE(PyObject::GetAttr(module_obj, x_name).ToHandle(&x_got));
@@ -42,4 +47,3 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 }
 
 }  // namespace saauso::internal
-

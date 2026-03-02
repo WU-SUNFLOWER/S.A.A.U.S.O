@@ -12,7 +12,6 @@ namespace saauso::internal {
 
 class PyBoolean : public PyObject {
  public:
-  static Tagged<PyBoolean> NewInstance(bool value);
   static Tagged<PyBoolean> cast(Tagged<PyObject> object);
 
   bool value() const { return value_; }
@@ -20,12 +19,12 @@ class PyBoolean : public PyObject {
   Tagged<PyBoolean> Reverse();
 
  private:
+  friend class Factory;
   bool value_;
 };
 
 class PyNone : public PyObject {
  public:
-  static Tagged<PyNone> NewInstance();
   static Tagged<PyNone> cast(Tagged<PyObject> object);
 };
 

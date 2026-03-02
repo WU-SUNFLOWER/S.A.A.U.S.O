@@ -22,6 +22,18 @@
 
 namespace saauso::internal {
 
+DisallowHeapAllocation::DisallowHeapAllocation(Isolate* isolate)
+    : DisallowHeapAllocation(isolate->heap()) {}
+
+void Heap::IncrementAllocationDisallowedDepth() {
+  ++allocation_disallowed_depth_;
+}
+
+void Heap::DecrementAllocationDisallowedDepth() {
+  assert(allocation_disallowed_depth_ > 0);
+  --allocation_disallowed_depth_;
+}
+
 void Heap::Setup(size_t young_generation_size,
                  size_t old_generation_size,
                  size_t meta_space_size) {
@@ -68,6 +80,7 @@ Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
 Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
   assert(gc_state_ == GcState::kNotInGc &&
          "can't allocate in heap while gc running!!!");
+  assert(IsAllocationAllowed());
 
   Address result = kNullAddress;
   switch (space) {
