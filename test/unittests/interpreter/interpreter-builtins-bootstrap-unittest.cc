@@ -4,9 +4,9 @@
 
 #include <string_view>
 
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
@@ -25,7 +25,7 @@ class BuiltinsBootstrapTest : public VmTestBase {
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   HandleScope scope;
 
-  Handle<PyDict> builtins = isolate_->interpreter()->builtins();
+  Handle<PyDict> builtins = handle(isolate_->builtins());
 
   // 这里的 << 是 Google Test
   // 的流式断言语法，用于在断言失败时输出额外信息（这里是当前遍历到的 name）。
@@ -91,7 +91,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   HandleScope scope;
 
-  Handle<PyDict> builtins = isolate_->interpreter()->builtins();
+  Handle<PyDict> builtins = handle(isolate_->builtins());
 
   const char* const kExceptionTypes[] = {
       "BaseException",  "Exception",  "TypeError", "ValueError",   "NameError",

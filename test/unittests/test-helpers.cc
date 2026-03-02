@@ -28,7 +28,11 @@ void VmTestBase::SetUpTestSuite() {
   // 运行时初始化必须早于 Isolate 创建；Enter 后 Current Isolate 才可用。
   saauso::Saauso::Initialize();
   isolate_ = Isolate::New();
+  ASSERT_NE(isolate_, nullptr);
+  ASSERT_TRUE(isolate_->initialized());
   isolate_->Enter();
+  ASSERT_NE(isolate_->interpreter(), nullptr);
+  ASSERT_FALSE(isolate_->HasPendingException());
 }
 
 void VmTestBase::TearDownTestSuite() {
@@ -49,6 +53,10 @@ void IsolateOnlyTestBase::SetUpTestSuite() {
   // 该基类不 Enter Isolate，适用于仅验证隔离/并发等不依赖 Current 的场景。
   saauso::Saauso::Initialize();
   isolate_ = Isolate::New();
+  ASSERT_NE(isolate_, nullptr);
+  ASSERT_TRUE(isolate_->initialized());
+  ASSERT_NE(isolate_->interpreter(), nullptr);
+  ASSERT_FALSE(isolate_->HasPendingException());
 }
 
 void IsolateOnlyTestBase::TearDownTestSuite() {
@@ -68,8 +76,10 @@ void BasicInterpreterTest::SetUpTestSuite() {
 
   HandleScope scope;
   Handle<PyString> func_name = PyString::NewInstance("print");
+  Handle<PyDict> builtins = handle(isolate_->builtins());
+
   // 将 builtins.print 替换为 Builtin_PrintV，用于捕获解释器侧的打印参数。
-  ASSERT_FALSE(PyDict::Put(isolate_->interpreter()->builtins(), func_name,
+  ASSERT_FALSE(PyDict::Put(builtins, func_name,
                            PyFunction::NewInstance(&Builtin_PrintV, func_name))
                    .IsNothing());
 }

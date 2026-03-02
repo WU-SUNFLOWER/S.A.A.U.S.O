@@ -17,6 +17,7 @@ class PyString;
 
 // 创建一个新的异常实例。
 MaybeHandle<PyObject> Runtime_NewExceptionInstance(
+    Isolate* isolate,
     Handle<PyString> exception_type_name,
     Handle<PyString> message_or_null);
 
