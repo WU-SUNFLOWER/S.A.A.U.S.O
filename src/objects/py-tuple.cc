@@ -16,26 +16,8 @@
 
 namespace saauso::internal {
 
-Handle<PyTuple> PyTuple::AllocateTupleLike(Tagged<Klass> klass_self,
-                                           int64_t length,
-                                           bool allocate_properties_dict) {
-  return Isolate::Current()->factory()->AllocateTupleLike(
-      klass_self, length, allocate_properties_dict);
-}
-
 Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
-  return AllocateTupleLike(PyTupleKlass::GetInstance(), length, false);
-}
-
-Handle<PyTuple> PyTuple::NewInstance(Handle<PyList> elements) {
-  EscapableHandleScope scope;
-
-  auto length = elements->length();
-  auto tuple = NewInstance(length);
-  for (auto i = 0; i < length; ++i) {
-    tuple->SetInternal(i, *elements->Get(i));
-  }
-  return scope.Escape(tuple);
+  return Isolate::Current()->factory()->NewPyTuple(length);
 }
 
 Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {

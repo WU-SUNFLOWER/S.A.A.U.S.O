@@ -64,9 +64,12 @@ class Factory {
   Handle<PyList> AllocateListLike(Tagged<Klass> klass_self,
                                   int64_t init_capacity,
                                   bool allocate_properties_dict);
-  Handle<PyTuple> AllocateTupleLike(Tagged<Klass> klass_self,
-                                    int64_t length,
-                                    bool allocate_properties_dict);
+
+  Handle<PyTuple> NewPyTupleLike(Tagged<Klass> klass_self,
+                                 int64_t length,
+                                 bool allocate_properties_dict);
+  Handle<PyTuple> NewPyTuple(int64_t length);
+  Handle<PyTuple> NewPyTupleWithElements(Handle<PyList> elements);
 
   Handle<PyString> NewRawStringLike(Tagged<Klass> klass_self,
                                     int64_t str_length,

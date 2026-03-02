@@ -185,9 +185,9 @@ Handle<PyList> Factory::AllocateListLike(Tagged<Klass> klass_self,
   return scope.Escape(object);
 }
 
-Handle<PyTuple> Factory::AllocateTupleLike(Tagged<Klass> klass_self,
-                                           int64_t length,
-                                           bool allocate_properties_dict) {
+Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
+                                        int64_t length,
+                                        bool allocate_properties_dict) {
   assert(0 <= length);
 
   EscapableHandleScope scope;
@@ -211,6 +211,20 @@ Handle<PyTuple> Factory::AllocateTupleLike(Tagged<Klass> klass_self,
   }
 
   return scope.Escape(handle(object));
+}
+
+Handle<PyTuple> Factory::NewPyTuple(int64_t length) {
+  return NewPyTupleLike(PyTupleKlass::GetInstance(), length, false);
+}
+
+Handle<PyTuple> Factory::NewPyTupleWithElements(Handle<PyList> elements) {
+  EscapableHandleScope scope;
+  auto length = elements->length();
+  auto tuple = NewPyTuple(length);
+  for (auto i = 0; i < length; ++i) {
+    tuple->SetInternal(i, *elements->Get(i));
+  }
+  return scope.Escape(tuple);
 }
 
 Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,

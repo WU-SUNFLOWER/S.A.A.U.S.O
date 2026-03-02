@@ -118,7 +118,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     }
   }
 
-  auto probe = PyTuple::AllocateTupleLike(klass_self, 0, !is_exact_tuple);
+  auto probe =
+      isolate->factory()->NewPyTupleLike(klass_self, 0, !is_exact_tuple);
   if (!is_exact_tuple) {
     auto properties = PyObject::GetProperties(probe);
     RETURN_ON_EXCEPTION(
@@ -154,7 +155,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
     auto length = unpacked->length();
     auto result =
-        PyTuple::AllocateTupleLike(klass_self, length, !is_exact_tuple);
+        isolate->factory()->NewPyTupleLike(klass_self, length, !is_exact_tuple);
     if (!is_exact_tuple) {
       auto properties = PyObject::GetProperties(result);
       RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
