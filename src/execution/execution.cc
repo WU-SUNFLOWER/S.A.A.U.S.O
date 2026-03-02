@@ -32,10 +32,6 @@ MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                             bound_locals);
 }
 
-Handle<PyDict> Execution::builtins(Isolate* isolate) {
-  return isolate->interpreter()->builtins();
-}
-
 Handle<PyDict> Execution::CurrentFrameGlobals(Isolate* isolate) {
   return isolate->interpreter()->CurrentFrameGlobals();
 }

@@ -9,7 +9,6 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/interpreter/builtin-bootstrapper.h"
 #include "src/interpreter/frame-object-builder.h"
 #include "src/interpreter/frame-object.h"
 #include "src/objects/fixed-array.h"
@@ -39,18 +38,7 @@
 
 namespace saauso::internal {
 
-Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {
-  HandleScope scope;
-  builtins_ = *BuiltinBootstrapper(isolate_).CreateBuiltins();
-}
-
-Handle<PyDict> Interpreter::builtins() const {
-  return handle(builtins_tagged());
-}
-
-Tagged<PyDict> Interpreter::builtins_tagged() const {
-  return Tagged<PyDict>::cast(builtins_);
-}
+Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {}
 
 Handle<PyTuple> Interpreter::kwarg_keys() const {
   return handle(Tagged<PyTuple>::cast(kwarg_keys_));
@@ -232,7 +220,6 @@ Handle<PyTuple> Interpreter::ReleaseKwArgKeys() {
 
 // public
 void Interpreter::Iterate(ObjectVisitor* v) {
-  v->VisitPointer(&builtins_);
   v->VisitPointer(&ret_value_);
   v->VisitPointer(&kwarg_keys_);
   v->VisitPointer(&caught_exception_);

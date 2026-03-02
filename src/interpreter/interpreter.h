@@ -43,8 +43,6 @@ class Interpreter {
   Handle<PyDict> CurrentFrameGlobals() const;
   Handle<PyDict> CurrentFrameLocals() const;
 
-  Tagged<PyDict> builtins_tagged() const;
-  Handle<PyDict> builtins() const;
   Handle<PyTuple> kwarg_keys() const;
 
   // 返回当前处于“已捕获态”的异常对象（用于 except 语义与 sys.exc_info 族
@@ -95,9 +93,6 @@ class Interpreter {
   Handle<PyTuple> ReleaseKwArgKeys();
 
   Isolate* isolate_;
-
-  // PyDict* builtins_;
-  Tagged<PyObject> builtins_{kNullAddress};
 
   // 栈帧上下文切换前，临时储存函数返回值结果
   Tagged<PyObject> ret_value_{kNullAddress};
