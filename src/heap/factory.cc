@@ -42,6 +42,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -361,7 +362,8 @@ Handle<PyTypeObject> Factory::NewPyTypeObject() {
   return scope.Escape(object);
 }
 
-Handle<PyObject> Factory::AllocateRawPythonObject() {
+MaybeHandle<PyObject> Factory::NewPythonObject(
+    Handle<PyTypeObject> type_object) {
   EscapableHandleScope scope;
 
   auto klass = PyObjectKlass::GetInstance();
@@ -371,8 +373,15 @@ Handle<PyObject> Factory::AllocateRawPythonObject() {
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
+
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
   PyObject::SetProperties(*object, *properties);
+
+  // 建立object实例与type object和klass之间的绑定关系
+  PyObject::SetKlass(object, type_object->own_klass());
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(PyObject::GetProperties(object),
+                                            ST(class), type_object));
+
   return scope.Escape(object);
 }
 

@@ -80,7 +80,9 @@ class Factory {
   MaybeHandle<PyModule> NewPyModule();
   Handle<PyTypeObject> NewPyTypeObject();
 
-  Handle<PyObject> AllocateRawPythonObject();
+  // 根据已知类型，创建一个Python对象实例
+  // 注意：该函数仅保证输出Python对象的类型是确定的，不负责调用__init__方法等后续操作！
+  MaybeHandle<PyObject> NewPythonObject(Handle<PyTypeObject> type_object);
 
   Handle<PyListIterator> NewPyListIterator(Handle<PyObject> owner);
   Handle<PyTupleIterator> NewPyTupleIterator(Handle<PyObject> owner);
