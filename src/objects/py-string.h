@@ -21,10 +21,6 @@ class PyString : public PyObject {
  public:
   static constexpr int kNotFound = StringSearch::kNotFound;
 
-  static Handle<PyString> AllocateStringLike(Tagged<Klass> klass_self,
-                                             int64_t str_length,
-                                             bool in_meta_space,
-                                             bool allocate_properties_dict);
   static Handle<PyString> NewInstance(int64_t str_length,
                                       bool in_meta_space = false);
   static Handle<PyString> NewInstance(const char* source,

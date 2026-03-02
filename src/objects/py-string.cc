@@ -35,39 +35,29 @@ constexpr int kSentinelValueSizeInBytes = 1;
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::AllocateStringLike(Tagged<Klass> klass_self,
-                                              int64_t str_length,
-                                              bool in_meta_space,
-                                              bool allocate_properties_dict) {
-  return Isolate::Current()->factory()->AllocateStringLike(
-      klass_self, str_length, in_meta_space, allocate_properties_dict);
-}
-
-// static
 Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
-  return AllocateStringLike(PyStringKlass::GetInstance(), str_length,
-                            in_meta_space, false);
+  return Isolate::Current()->factory()->NewRawStringLike(
+      PyStringKlass::GetInstance(), str_length, in_meta_space, false);
 }
 
 // static
 Handle<PyString> PyString::NewInstance(const char* source,
                                        int64_t str_length,
                                        bool in_meta_space) {
-  Handle<PyString> object = NewInstance(str_length, in_meta_space);
-
-  std::memcpy(object->writable_buffer(), source, str_length);
-
-  return object;
+  return Isolate::Current()->factory()->NewString(source, str_length,
+                                                  in_meta_space);
 }
 
 // static
 Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
-  return NewInstance(source, std::strlen(source), in_meta_space);
+  return Isolate::Current()->factory()->NewString(source, std::strlen(source),
+                                                  in_meta_space);
 }
 
 // static
 Handle<PyString> PyString::Clone(Handle<PyString> other, bool in_meta_space) {
-  return NewInstance(other->buffer(), other->length(), in_meta_space);
+  return Isolate::Current()->factory()->NewString(
+      other->buffer(), other->length(), in_meta_space);
 }
 
 ////////////////////////////////////////////////////////////
@@ -230,16 +220,7 @@ Handle<PyString> PyString::Slice(Handle<PyString> self,
 
 Handle<PyString> PyString::Append(Handle<PyString> self,
                                   Handle<PyString> other) {
-  EscapableHandleScope scope;
-
-  int new_length = self->length_ + other->length();
-  Handle<PyString> new_object(PyString::NewInstance(new_length));
-
-  std::memcpy(new_object->writable_buffer(), self->buffer(), self->length_);
-  std::memcpy(new_object->writable_buffer() + self->length_, other->buffer(),
-              other->length());
-
-  return scope.Escape(new_object);
+  return Isolate::Current()->factory()->NewConsString(self, other);
 }
 
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {

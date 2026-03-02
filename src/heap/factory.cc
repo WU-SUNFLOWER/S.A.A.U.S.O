@@ -213,10 +213,10 @@ Handle<PyTuple> Factory::AllocateTupleLike(Tagged<Klass> klass_self,
   return scope.Escape(handle(object));
 }
 
-Handle<PyString> Factory::AllocateStringLike(Tagged<Klass> klass_self,
-                                             int64_t str_length,
-                                             bool in_meta_space,
-                                             bool allocate_properties_dict) {
+Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
+                                           int64_t str_length,
+                                           bool in_meta_space,
+                                           bool allocate_properties_dict) {
   size_t object_size = PyString::ComputeObjectSize(str_length);
   Tagged<PyString> object(AllocateRaw(
       object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
@@ -238,7 +238,35 @@ Handle<PyString> Factory::AllocateStringLike(Tagged<Klass> klass_self,
     return scope.Escape(str_handle);
   }
 
-  return Handle<PyString>(object);
+  return handle(object);
+}
+
+Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
+  return NewRawStringLike(PyStringKlass::GetInstance(), str_length,
+                          in_meta_space, false);
+}
+
+Handle<PyString> Factory::NewString(const char* source,
+                                    int64_t str_length,
+                                    bool in_meta_space) {
+  Handle<PyString> object = NewRawString(str_length, in_meta_space);
+  std::memcpy(object->writable_buffer(), source, str_length);
+  return object;
+}
+
+Handle<PyString> Factory::NewConsString(Handle<PyString> left,
+                                        Handle<PyString> right) {
+  EscapableHandleScope scope;
+
+  auto new_length = left->length() + right->length();
+  Handle<PyString> new_object =
+      NewRawStringLike(PyStringKlass::GetInstance(), new_length, false, false);
+
+  std::memcpy(new_object->writable_buffer(), left->buffer(), left->length());
+  std::memcpy(new_object->writable_buffer() + left->length(), right->buffer(),
+              right->length());
+
+  return scope.Escape(new_object);
 }
 
 Handle<PyCodeObject> Factory::NewPyCodeObject() {

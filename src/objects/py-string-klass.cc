@@ -17,6 +17,7 @@
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -132,12 +133,12 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     }
   }
 
-  auto probe = PyString::AllocateStringLike(klass_self, 0, false, !is_exact_str);
+  auto probe =
+      isolate->factory()->NewRawStringLike(klass_self, 0, false, !is_exact_str);
   if (!is_exact_str) {
     auto properties = PyObject::GetProperties(probe);
-    RETURN_ON_EXCEPTION(isolate,
-                        PyDict::Put(properties, ST(class),
-                                    klass_self->type_object()));
+    RETURN_ON_EXCEPTION(
+        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
   }
 
   Handle<PyObject> init_method;
@@ -164,12 +165,11 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
       if (is_exact_str) {
         return converted;
       }
-      auto result = PyString::AllocateStringLike(klass_self, converted->length(),
-                                                 false, true);
+      auto result = isolate->factory()->NewRawStringLike(
+          klass_self, converted->length(), false, true);
       auto properties = PyObject::GetProperties(result);
-      RETURN_ON_EXCEPTION(isolate,
-                          PyDict::Put(properties, ST(class),
-                                      klass_self->type_object()));
+      RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
+                                               klass_self->type_object()));
       std::memcpy(result->writable_buffer(), converted->buffer(),
                   static_cast<size_t>(converted->length()));
       return result;

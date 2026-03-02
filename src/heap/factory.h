@@ -67,10 +67,17 @@ class Factory {
   Handle<PyTuple> AllocateTupleLike(Tagged<Klass> klass_self,
                                     int64_t length,
                                     bool allocate_properties_dict);
-  Handle<PyString> AllocateStringLike(Tagged<Klass> klass_self,
-                                      int64_t str_length,
-                                      bool in_meta_space,
-                                      bool allocate_properties_dict);
+
+  Handle<PyString> NewRawStringLike(Tagged<Klass> klass_self,
+                                    int64_t str_length,
+                                    bool in_meta_space,
+                                    bool allocate_properties_dict);
+  Handle<PyString> NewRawString(int64_t str_length, bool in_meta_space);
+  Handle<PyString> NewString(const char* source,
+                             int64_t str_length,
+                             bool in_meta_space);
+  Handle<PyString> NewConsString(Handle<PyString> left, Handle<PyString> right);
+
   Handle<PyCodeObject> NewPyCodeObject();
 
   Handle<PyFunction> NewPyFunction();
