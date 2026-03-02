@@ -40,7 +40,7 @@
 
 * 固定大小容器（list/dict）：
 
-  * `AllocateListLike(Tagged<Klass> klass, int64_t init_capacity, PropertiesPolicy policy) -> Handle<PyList>`
+  * `NewPyListLike(Tagged<Klass> klass, int64_t init_capacity, PropertiesPolicy policy) -> Handle<PyList>`
 
   * `AllocateDictLike(Tagged<Klass> klass, PropertiesPolicy policy) -> Handle<PyDict>`
 
@@ -133,15 +133,15 @@
 
 * 在 `PyList` 提供：
 
-  * `AllocateListLike(Tagged<Klass> klass_self, int64_t init_capacity, PropertiesPolicy policy)`
+  * `NewPyListLike(Tagged<Klass> klass_self, int64_t init_capacity, PropertiesPolicy policy)`
 
-  * 让 `PyList::NewInstance` 变成对 `AllocateListLike(PyListKlass::GetInstance(), ...)` 的包装。
+  * 让 `PyList::NewInstance` 变成对 `NewPyListLike(PyListKlass::GetInstance(), ...)` 的包装。
 
 * 在 `PyListKlass::Virtual_ConstructInstance`：
 
   * 只做：exact list 签名检查、默认初始化（extend iterable）、自定义 `__init__` 查找与调用的语义编排。
 
-  * 分配统一调用 `PyList::AllocateListLike(klass_self, ...)`。
+  * 分配统一调用 `PyList::NewPyListLike(klass_self, ...)`。
 
   * 保持现有行为：exact list 无 `properties_`；subclass 有 `properties_`。
 

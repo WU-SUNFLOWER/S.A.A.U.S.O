@@ -58,7 +58,7 @@
 
 * 固定大小容器（list/dict）：
 
-  * `AllocateListLike(Tagged<Klass> klass, int64_t init_capacity, PropertiesPolicy policy)`
+  * `NewPyListLike(Tagged<Klass> klass, int64_t init_capacity, PropertiesPolicy policy)`
 
   * `AllocateDictLike(Tagged<Klass> klass, PropertiesPolicy policy)`
 

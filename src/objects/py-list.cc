@@ -21,17 +21,7 @@ namespace saauso::internal {
 
 // static
 Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
-  EscapableHandleScope scope;
-  return scope.Escape(
-      AllocateListLike(PyListKlass::GetInstance(), init_capacity, false));
-}
-
-// static
-Handle<PyList> PyList::AllocateListLike(Tagged<Klass> klass_self,
-                                        int64_t init_capacity,
-                                        bool allocate_properties_dict) {
-  return Isolate::Current()->factory()->AllocateListLike(
-      klass_self, init_capacity, allocate_properties_dict);
+  return Isolate::Current()->factory()->NewPyList(init_capacity);
 }
 
 // static

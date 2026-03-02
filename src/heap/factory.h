@@ -61,9 +61,11 @@ class Factory {
   Tagged<Klass> CreateRawPythonKlass();
 
   Handle<PyFloat> NewPyFloat(double value);
-  Handle<PyList> AllocateListLike(Tagged<Klass> klass_self,
-                                  int64_t init_capacity,
-                                  bool allocate_properties_dict);
+
+  Handle<PyList> NewPyListLike(Tagged<Klass> klass_self,
+                               int64_t init_capacity,
+                               bool allocate_properties_dict);
+  Handle<PyList> NewPyList(int64_t init_capacity);
 
   Handle<PyTuple> NewPyTupleLike(Tagged<Klass> klass_self,
                                  int64_t length,

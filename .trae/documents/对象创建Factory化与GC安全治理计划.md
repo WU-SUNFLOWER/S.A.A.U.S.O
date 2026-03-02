@@ -84,7 +84,7 @@
 
 已完成的阶段 3 迁移清单（第一批）：
 
-- 容器与字符串：`PyList::AllocateListLike`、`PyTuple::AllocateTupleLike`、`PyString::AllocateStringLike`
+- 容器与字符串：`PyList::NewPyListLike`、`PyTuple::AllocateTupleLike`、`PyString::AllocateStringLike`
 - 复杂对象：`PyCodeObject::NewInstance` 的分配/安全初始化
 - 轻量对象：`Cell::NewInstance`
 - 迭代器/视图：`PyListIterator/PyTupleIterator`、`PyDictKeys/Values/Items` 与 `PyDict*Iterator`

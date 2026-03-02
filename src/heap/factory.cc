@@ -159,9 +159,9 @@ Handle<PyFloat> Factory::NewPyFloat(double value) {
   return scope.Escape(object);
 }
 
-Handle<PyList> Factory::AllocateListLike(Tagged<Klass> klass_self,
-                                         int64_t init_capacity,
-                                         bool allocate_properties_dict) {
+Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
+                                      int64_t init_capacity,
+                                      bool allocate_properties_dict) {
   EscapableHandleScope scope;
 
   Handle<PyList> object(Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
@@ -183,6 +183,12 @@ Handle<PyList> Factory::AllocateListLike(Tagged<Klass> klass_self,
   }
 
   return scope.Escape(object);
+}
+
+Handle<PyList> Factory::NewPyList(int64_t init_capacity) {
+  EscapableHandleScope scope;
+  return scope.Escape(
+      NewPyListLike(PyListKlass::GetInstance(), init_capacity, false));
 }
 
 Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,

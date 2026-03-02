@@ -15,6 +15,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
 #include "src/handles/tagged.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/py-dict.h"
@@ -128,7 +129,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
     }
   }
 
-  Handle<PyList> result = PyList::AllocateListLike(
+  Handle<PyList> result = isolate->factory()->NewPyListLike(
       klass_self, PyList::kMinimumCapacity, !is_exact_list);
   if (!is_exact_list) {
     auto properties = PyObject::GetProperties(result);
