@@ -107,14 +107,6 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
 }
 
 // static
-Handle<PyDict> PyDict::AllocateDictLike(Tagged<Klass> klass_self,
-                                        int64_t init_capacity,
-                                        bool allocate_properties_dict) {
-  return Isolate::Current()->factory()->AllocateDictLike(
-      klass_self, init_capacity, allocate_properties_dict);
-}
-
-// static
 Handle<PyDict> PyDict::Clone(Handle<PyDict> other) {
   EscapableHandleScope scope;
 

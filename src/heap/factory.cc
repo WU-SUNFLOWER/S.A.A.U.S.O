@@ -54,12 +54,12 @@ Address Factory::AllocateRaw(size_t size_in_bytes,
 Handle<PyDict> Factory::NewPyDict(int64_t init_capacity) {
   EscapableHandleScope scope;
   return scope.Escape(
-      AllocateDictLike(PyDictKlass::GetInstance(), init_capacity, false));
+      NewDictLike(PyDictKlass::GetInstance(), init_capacity, false));
 }
 
-Handle<PyDict> Factory::AllocateDictLike(Tagged<Klass> klass_self,
-                                         int64_t init_capacity,
-                                         bool allocate_properties_dict) {
+Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
+                                    int64_t init_capacity,
+                                    bool allocate_properties_dict) {
   assert((init_capacity & (init_capacity - 1)) == 0);
 
   EscapableHandleScope scope;

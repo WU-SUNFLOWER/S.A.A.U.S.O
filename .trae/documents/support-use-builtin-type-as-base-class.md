@@ -60,7 +60,7 @@
 
   * `NewPyListLike(Tagged<Klass> klass, int64_t init_capacity, PropertiesPolicy policy)`
 
-  * `AllocateDictLike(Tagged<Klass> klass, PropertiesPolicy policy)`
+  * `NewDictLike(Tagged<Klass> klass, PropertiesPolicy policy)`
 
 * 变长/inline payload（tuple/str）：
 

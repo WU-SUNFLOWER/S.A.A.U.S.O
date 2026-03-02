@@ -14,9 +14,6 @@ class PyDict : public PyObject {
   static constexpr int64_t kMinimumCapacity = 8;
 
   static Handle<PyDict> NewInstance(int64_t init_capacity = kMinimumCapacity);
-  static Handle<PyDict> AllocateDictLike(Tagged<Klass> klass_self,
-                                         int64_t init_capacity,
-                                         bool allocate_properties_dict);
   static Handle<PyDict> Clone(Handle<PyDict> other);
 
   static Tagged<PyDict> cast(Tagged<PyObject> object);

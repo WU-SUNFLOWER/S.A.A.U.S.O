@@ -220,7 +220,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     }
   }
 
-  Handle<PyDict> result = PyDict::AllocateDictLike(
+  Handle<PyDict> result = isolate->factory()->NewDictLike(
       klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
 
   Handle<PyObject> init_method;

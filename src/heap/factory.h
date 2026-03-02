@@ -51,9 +51,9 @@ class Factory {
   Factory& operator=(const Factory&) = delete;
 
   Handle<PyDict> NewPyDict(int64_t init_capacity);
-  Handle<PyDict> AllocateDictLike(Tagged<Klass> klass_self,
-                                  int64_t init_capacity,
-                                  bool allocate_properties_dict);
+  Handle<PyDict> NewDictLike(Tagged<Klass> klass_self,
+                             int64_t init_capacity,
+                             bool allocate_properties_dict);
   Handle<PyDict> NewPyDictWithoutAllocateData();
 
   Handle<FixedArray> NewFixedArray(int64_t capacity);

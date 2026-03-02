@@ -42,7 +42,7 @@
 
   * `NewPyListLike(Tagged<Klass> klass, int64_t init_capacity, PropertiesPolicy policy) -> Handle<PyList>`
 
-  * `AllocateDictLike(Tagged<Klass> klass, PropertiesPolicy policy) -> Handle<PyDict>`
+  * `NewDictLike(Tagged<Klass> klass, PropertiesPolicy policy) -> Handle<PyDict>`
 
 * 变长/inline payload（tuple/str）只在设计中固化接口形态：
 
@@ -165,9 +165,9 @@
 
   * 新增 `IsDictLike/CastDictLike`（基于 `native_layout_kind == kDict`）。
 
-  * 新增 `AllocateDictLike(Tagged<Klass> klass_self, PropertiesPolicy policy)`。
+  * 新增 `NewDictLike(Tagged<Klass> klass_self, PropertiesPolicy policy)`。
 
-  * 让 `PyDict::NewInstance` 走 `AllocateDictLike(PyDictKlass::GetInstance(), ...)`。
+  * 让 `PyDict::NewInstance` 走 `NewDictLike(PyDictKlass::GetInstance(), ...)`。
 
 * `PyDictKlass`：
 
@@ -181,7 +181,7 @@
 
     * subclass：若存在自定义 `__init__` 则调用；否则回落 base 默认语义；
 
-    * 分配统一走 `AllocateDictLike(klass_self, policy)`。
+    * 分配统一走 `NewDictLike(klass_self, policy)`。
 
 * builtins：
 
