@@ -242,16 +242,18 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
 }
 
 Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
-  return NewRawStringLike(PyStringKlass::GetInstance(), str_length,
-                          in_meta_space, false);
+  EscapableHandleScope scope;
+  return scope.Escape(NewRawStringLike(PyStringKlass::GetInstance(), str_length,
+                                       in_meta_space, false));
 }
 
 Handle<PyString> Factory::NewString(const char* source,
                                     int64_t str_length,
                                     bool in_meta_space) {
+  EscapableHandleScope scope;
   Handle<PyString> object = NewRawString(str_length, in_meta_space);
   std::memcpy(object->writable_buffer(), source, str_length);
-  return object;
+  return scope.Escape(object);
 }
 
 Handle<PyString> Factory::NewConsString(Handle<PyString> left,
