@@ -170,11 +170,13 @@ void PyList::Insert(Handle<PyList> self,
 }
 
 void PyList::ExpandImpl(Handle<PyList> list) {
-  int64_t new_capacity = std::max(kMinimumCapacity, list->capacity() << 1);
+  int64_t old_capacity = list->capacity();
+  int64_t new_capacity = std::max(kMinimumCapacity, old_capacity << 1);
 
   Handle<FixedArray> old_array(list->array());
   Handle<FixedArray> new_array =
-      FixedArray::NewInstance(new_capacity, old_array);
+      Isolate::Current()->factory()->CopyFixedArrayAndGrow(
+          old_array, new_capacity - old_capacity);
 
   list->array_ = *new_array;
 }

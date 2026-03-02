@@ -13,9 +13,6 @@ class FixedArray : public PyObject {
  public:
   // 创建固定长度的数组对象
   static Handle<FixedArray> NewInstance(int64_t capacity);
-  static Handle<FixedArray> NewInstance(int64_t capacity,
-                                        Handle<FixedArray> copied_source);
-  static Handle<FixedArray> Clone(Handle<FixedArray> other);
 
   static Tagged<FixedArray> cast(Tagged<PyObject> object);
 

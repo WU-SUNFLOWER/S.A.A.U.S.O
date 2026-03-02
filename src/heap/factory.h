@@ -50,15 +50,25 @@ class Factory {
   Factory(const Factory&) = delete;
   Factory& operator=(const Factory&) = delete;
 
+  Tagged<Klass> NewPythonKlass();
+
   Handle<PyDict> NewPyDict(int64_t init_capacity);
   Handle<PyDict> NewDictLike(Tagged<Klass> klass_self,
                              int64_t init_capacity,
                              bool allocate_properties_dict);
   Handle<PyDict> NewPyDictWithoutAllocateData();
+  Handle<PyDict> CopyPyDict(Handle<PyDict> dict);
 
+  // 创建一个定长FixedArray。
+  // 注意：新创建的FixedArray中各元素均使用空Tagged进行填充（为了方便使用和GC安全）！
   Handle<FixedArray> NewFixedArray(int64_t capacity);
+  // 创建一个新的、更长的FixedArray，并将源FixedArray当中的元素拷贝过去
+  // 注意：新创建的FixedArray当中相较于原先FixedArray扩展的部分，会使用空Tagged进行填充！
+  Handle<FixedArray> CopyFixedArrayAndGrow(Handle<FixedArray> array,
+                                           int64_t grow_by);
+  Handle<FixedArray> CopyFixedArray(Handle<FixedArray> array);
+
   Handle<Cell> NewCell();
-  Tagged<Klass> CreateRawPythonKlass();
 
   Handle<PyFloat> NewPyFloat(double value);
 

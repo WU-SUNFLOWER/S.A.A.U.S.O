@@ -14,7 +14,6 @@ class PyDict : public PyObject {
   static constexpr int64_t kMinimumCapacity = 8;
 
   static Handle<PyDict> NewInstance(int64_t init_capacity = kMinimumCapacity);
-  static Handle<PyDict> Clone(Handle<PyDict> other);
 
   static Tagged<PyDict> cast(Tagged<PyObject> object);
   static bool IsDictLike(Tagged<PyObject> object);

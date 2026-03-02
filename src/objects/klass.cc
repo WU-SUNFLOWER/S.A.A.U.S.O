@@ -108,13 +108,6 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
 
 ///////////////////////////////////////////////////////////////////////
 
-// static
-Tagged<Klass> Klass::CreateRawPythonKlass() {
-  return Isolate::Current()->factory()->CreateRawPythonKlass();
-}
-
-///////////////////////////////////////////////////////////////////////
-
 Handle<PyString> Klass::name() {
   return Handle<PyString>(Tagged<PyString>::cast(name_));
 }

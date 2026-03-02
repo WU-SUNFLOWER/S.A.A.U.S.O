@@ -107,19 +107,6 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
 }
 
 // static
-Handle<PyDict> PyDict::Clone(Handle<PyDict> other) {
-  EscapableHandleScope scope;
-
-  Handle<PyDict> result =
-      Isolate::Current()->factory()->NewPyDictWithoutAllocateData();
-  Handle<FixedArray> data = FixedArray::Clone(other->data());
-  result->occupied_ = other->occupied();
-  result->data_ = *data;
-
-  return scope.Escape(result);
-}
-
-// static
 Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
   assert(IsDictLike(object));
   return Tagged<PyDict>::cast(object);

@@ -14,30 +14,11 @@
 #include "src/objects/py-object.h"
 #include "src/utils/utils.h"
 
-
 namespace saauso::internal {
 
 // static
 Handle<FixedArray> FixedArray::NewInstance(int64_t capacity) {
   return Isolate::Current()->factory()->NewFixedArray(capacity);
-}
-
-// static
-Handle<FixedArray> FixedArray::NewInstance(int64_t capacity,
-                                           Handle<FixedArray> copied_source) {
-  // 新创建的fixed array的容量不能比拷贝对象还小
-  assert(copied_source->capacity() <= capacity);
-
-  Handle<FixedArray> result = NewInstance(capacity);
-  std::memcpy(result->data(), copied_source->data(),
-              copied_source->capacity() * sizeof(Tagged<PyObject>));
-
-  return result;
-}
-
-// static
-Handle<FixedArray> FixedArray::Clone(Handle<FixedArray> other) {
-  return NewInstance(other->capacity(), other);
 }
 
 // static

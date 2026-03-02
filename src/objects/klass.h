@@ -139,8 +139,6 @@ enum class NativeLayoutKind : uint8_t {
 
 class Klass : public Object {
  public:
-  static Tagged<Klass> CreateRawPythonKlass();
-
   Klass() = delete;
 
   void InitializeVTable();
@@ -262,7 +260,7 @@ class Klass : public Object {
   Tagged<PyObject> supers_{kNullAddress};
   // C3算法的运行结果
   Tagged<PyObject> mro_{kNullAddress};
-  
+
   // 内建内存布局信息
   Tagged<Klass> native_layout_base_{kNullAddress};
   NativeLayoutKind native_layout_kind_{NativeLayoutKind::kPyObject};

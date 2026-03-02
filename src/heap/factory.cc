@@ -46,9 +46,20 @@
 
 namespace saauso::internal {
 
-Address Factory::AllocateRaw(size_t size_in_bytes,
-                             Heap::AllocationSpace space) {
-  return isolate_->heap()->AllocateRaw(size_in_bytes, space);
+Tagged<Klass> Factory::NewPythonKlass() {
+  auto klass = Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
+  {
+    DisallowHeapAllocation disallow(isolate_);
+    klass->InitializeVTable();
+    klass->set_klass_properties(Handle<PyDict>::null());
+    klass->set_name(Handle<PyString>::null());
+    klass->set_type_object(Handle<PyTypeObject>::null());
+    klass->set_supers(Handle<PyList>::null());
+    klass->set_mro(Handle<PyList>::null());
+    klass->set_native_layout_base(Tagged<Klass>::null());
+    klass->set_native_layout_kind(NativeLayoutKind::kPyObject);
+  }
+  return klass;
 }
 
 Handle<PyDict> Factory::NewPyDict(int64_t init_capacity) {
@@ -95,6 +106,17 @@ Handle<PyDict> Factory::NewPyDictWithoutAllocateData() {
   return object;
 }
 
+Handle<PyDict> Factory::CopyPyDict(Handle<PyDict> dict) {
+  EscapableHandleScope scope;
+
+  Handle<PyDict> result = NewPyDictWithoutAllocateData();
+  Handle<FixedArray> data = CopyFixedArray(dict->data());
+  result->occupied_ = dict->occupied();
+  result->data_ = *data;
+
+  return scope.Escape(result);
+}
+
 Handle<FixedArray> Factory::NewFixedArray(int64_t capacity) {
   assert(0 <= capacity);
 
@@ -118,6 +140,29 @@ Handle<FixedArray> Factory::NewFixedArray(int64_t capacity) {
   return scope.Escape(Handle<FixedArray>(object));
 }
 
+Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,
+                                                  int64_t grow_by) {
+  // 新创建的fixed array的容量不能比拷贝对象还小
+  assert(0 <= grow_by);
+
+  int64_t old_capacity = array->capacity();
+  int64_t new_capacity = old_capacity + grow_by;
+  Handle<FixedArray> result = NewFixedArray(new_capacity);
+
+  {
+    DisallowHeapAllocation disallow(isolate_);
+    // 拷贝旧数据
+    std::memcpy(result->data(), array->data(),
+                old_capacity * sizeof(Tagged<PyObject>));
+  }
+
+  return result;
+}
+
+Handle<FixedArray> Factory::CopyFixedArray(Handle<FixedArray> array) {
+  return CopyFixedArrayAndGrow(array, 0);
+}
+
 Handle<Cell> Factory::NewCell() {
   Handle<Cell> object(Allocate<Cell>(Heap::AllocationSpace::kNewSpace));
   {
@@ -127,22 +172,6 @@ Handle<Cell> Factory::NewCell() {
     PyObject::SetKlass(object, CellKlass::GetInstance());
   }
   return object;
-}
-
-Tagged<Klass> Factory::CreateRawPythonKlass() {
-  auto klass = Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
-  {
-    DisallowHeapAllocation disallow(isolate_);
-    klass->InitializeVTable();
-    klass->set_klass_properties(Handle<PyDict>::null());
-    klass->set_name(Handle<PyString>::null());
-    klass->set_type_object(Handle<PyTypeObject>::null());
-    klass->set_supers(Handle<PyList>::null());
-    klass->set_mro(Handle<PyList>::null());
-    klass->set_native_layout_base(Tagged<Klass>::null());
-    klass->set_native_layout_kind(NativeLayoutKind::kPyObject);
-  }
-  return klass;
 }
 
 Handle<PyFloat> Factory::NewPyFloat(double value) {
@@ -584,6 +613,13 @@ Tagged<PyNone> Factory::NewPyNone() {
     PyObject::SetProperties(object, Tagged<PyDict>::null());
   }
   return object;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+Address Factory::AllocateRaw(size_t size_in_bytes,
+                             Heap::AllocationSpace space) {
+  return isolate_->heap()->AllocateRaw(size_in_bytes, space);
 }
 
 }  // namespace saauso::internal
