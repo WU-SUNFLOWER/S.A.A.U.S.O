@@ -5,6 +5,7 @@
 #include "src/objects/py-module-klass.h"
 
 #include "include/saauso-internal.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -36,7 +37,8 @@ void PyModuleKlass::PreInitialize() {
 }
 
 Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   set_klass_properties(PyDict::NewInstance());
 

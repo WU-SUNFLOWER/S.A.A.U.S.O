@@ -9,6 +9,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -58,7 +59,7 @@ void PyTypeObjectKlass::PreInitialize() {
 
 Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();

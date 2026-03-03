@@ -68,7 +68,7 @@ void PyListIteratorKlass::PreInitialize() {
 
 Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 设置类属性
   auto klass_properties = PyDict::NewInstance();

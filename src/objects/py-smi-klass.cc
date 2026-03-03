@@ -63,7 +63,8 @@ void PySmiKlass::PreInitialize() {
 }
 
 Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   set_klass_properties(PyDict::NewInstance());
 

@@ -68,7 +68,8 @@ void PyTupleIteratorKlass::PreInitialize() {
 }
 
 Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   auto klass_properties = PyDict::NewInstance();
   RETURN_ON_EXCEPTION(isolate, PyTupleIteratorBuiltinMethods::Install(

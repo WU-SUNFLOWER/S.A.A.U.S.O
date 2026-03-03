@@ -4,7 +4,7 @@
 
 #include "src/objects/py-function-klass.h"
 
-#include "include/saauso-internal.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -49,7 +49,7 @@ void PyFunctionKlass::PreInitialize() {
 
 Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
@@ -187,7 +187,7 @@ void MethodObjectKlass::PreInitialize() {
 
 Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
   set_klass_properties(PyDict::NewInstance());

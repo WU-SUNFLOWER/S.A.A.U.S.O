@@ -75,6 +75,9 @@ void PyDictKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
+
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
 
@@ -83,9 +86,6 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
                       PyDictBuiltinMethods::Install(isolate, klass_properties));
 
   set_klass_properties(klass_properties);
-
-  // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());

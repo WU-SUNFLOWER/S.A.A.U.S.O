@@ -67,8 +67,10 @@ void PyTupleKlass::PreInitialize() {
 }
 
 Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
 
   // 安装内建方法
