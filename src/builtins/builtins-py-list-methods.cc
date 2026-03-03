@@ -31,8 +31,10 @@
 
 namespace saauso::internal {
 
-void PyListBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyListBuiltinMethods::Install(Isolate* isolate,
+                                          Handle<PyDict> target) {
   PY_LIST_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

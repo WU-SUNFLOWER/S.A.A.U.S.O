@@ -42,7 +42,7 @@ void PyCodeObjectKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyCodeObjectKlass::Initialize() {
+Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -55,6 +55,8 @@ void PyCodeObjectKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("code"));
+
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {

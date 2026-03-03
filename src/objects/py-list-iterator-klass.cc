@@ -66,14 +66,16 @@ void PyListIteratorKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyListIteratorKlass::Initialize() {
+Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置类属性
   auto klass_properties = PyDict::NewInstance();
 
-  PyListIteratorBuiltinMethods::Install(klass_properties);
+  // 注入内建方法
+  RETURN_ON_EXCEPTION(isolate, PyListIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
 
   set_klass_properties(klass_properties);
 
@@ -83,6 +85,8 @@ void PyListIteratorKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("list_iterator"));
+
+  return JustVoid();
 }
 
 void PyListIteratorKlass::Finalize() {

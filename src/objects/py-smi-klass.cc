@@ -62,7 +62,7 @@ void PySmiKlass::PreInitialize() {
   vtable_.print = &Virtual_Print;
 }
 
-void PySmiKlass::Initialize() {
+Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   set_klass_properties(PyDict::NewInstance());
@@ -71,6 +71,8 @@ void PySmiKlass::Initialize() {
   OrderSupers();
 
   set_name(PyString::NewInstance("int"));
+
+  return JustVoid();
 }
 
 void PySmiKlass::Finalize() {

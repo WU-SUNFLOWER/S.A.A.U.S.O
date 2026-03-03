@@ -20,8 +20,10 @@
 
 namespace saauso::internal {
 
-void PyTupleBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
+                                           Handle<PyDict> target) {
   PY_TUPLE_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

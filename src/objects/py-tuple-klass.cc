@@ -66,13 +66,14 @@ void PyTupleKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyTupleKlass::Initialize() {
+Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
 
   // 安装内建方法
-  PyTupleBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(
+      isolate, PyTupleBuiltinMethods::Install(isolate, klass_properties));
 
   set_klass_properties(klass_properties);
 
@@ -80,6 +81,8 @@ void PyTupleKlass::Initialize() {
   OrderSupers();
 
   set_name(PyString::NewInstance("tuple"));
+
+  return JustVoid();
 }
 
 void PyTupleKlass::Finalize() {

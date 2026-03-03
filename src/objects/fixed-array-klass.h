@@ -15,7 +15,7 @@ class FixedArrayKlass : public Klass {
  public:
   static Tagged<FixedArrayKlass> GetInstance();
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:

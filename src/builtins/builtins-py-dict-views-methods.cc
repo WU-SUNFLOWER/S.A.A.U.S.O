@@ -11,16 +11,22 @@
 
 namespace saauso::internal {
 
-void PyDictKeyIteratorBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyDictKeyIteratorBuiltinMethods::Install(Isolate* isolate,
+                                                     Handle<PyDict> target) {
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
-void PyDictItemIteratorBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyDictItemIteratorBuiltinMethods::Install(Isolate* isolate,
+                                                      Handle<PyDict> target) {
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
-void PyDictValueIteratorBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyDictValueIteratorBuiltinMethods::Install(Isolate* isolate,
+                                                       Handle<PyDict> target) {
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

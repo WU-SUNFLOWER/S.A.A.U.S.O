@@ -16,7 +16,7 @@ namespace saauso::internal {
 
 class BaseExceptionMethods : public AllStatic {
  public:
-  static void Install(Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
 
  private:
   BASE_EXCEPTION_BUILTINS(DECL_BUILTIN_METHOD)

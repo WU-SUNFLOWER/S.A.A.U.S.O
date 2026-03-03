@@ -35,7 +35,7 @@ void PyModuleKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyModuleKlass::Initialize() {
+Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   set_klass_properties(PyDict::NewInstance());
@@ -44,6 +44,8 @@ void PyModuleKlass::Initialize() {
   OrderSupers();
 
   set_name(PyString::NewInstance("module"));
+
+  return JustVoid();
 }
 
 void PyModuleKlass::Finalize() {

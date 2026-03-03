@@ -47,7 +47,7 @@ void PyFunctionKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyFunctionKlass::Initialize() {
+Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -60,6 +60,8 @@ void PyFunctionKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("function"));
+
+  return JustVoid();
 }
 
 void PyFunctionKlass::Finalize() {
@@ -114,7 +116,9 @@ void NativeFunctionKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void NativeFunctionKlass::Initialize() {}
+Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
+  return JustVoid();
+}
 
 void NativeFunctionKlass::Finalize() {
   Isolate::Current()->set_native_function_klass(
@@ -181,7 +185,7 @@ void MethodObjectKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void MethodObjectKlass::Initialize() {
+Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -194,6 +198,8 @@ void MethodObjectKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("method"));
+
+  return JustVoid();
 }
 
 void MethodObjectKlass::Finalize() {

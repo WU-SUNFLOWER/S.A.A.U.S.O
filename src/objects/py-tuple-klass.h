@@ -17,7 +17,7 @@ class PyTupleKlass : public Klass {
  public:
   static Tagged<PyTupleKlass> GetInstance();
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -31,16 +31,16 @@ class PyTupleKlass : public Klass {
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
-                                                Handle<PyObject> subscr);
+                                              Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_StoreSubscr(Handle<PyObject> self,
-                                                     Handle<PyObject> subscr,
-                                                     Handle<PyObject> value);
+                                                   Handle<PyObject> subscr,
+                                                   Handle<PyObject> value);
   static MaybeHandle<PyObject> Virtual_DelSubscr(Handle<PyObject> self,
-                                                  Handle<PyObject> subscr);
+                                                 Handle<PyObject> subscr);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
                                       Handle<PyObject> target);
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
-                                    Handle<PyObject> other);
+                                   Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
 

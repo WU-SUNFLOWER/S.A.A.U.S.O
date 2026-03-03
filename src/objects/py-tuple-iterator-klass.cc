@@ -67,17 +67,20 @@ void PyTupleIteratorKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyTupleIteratorKlass::Initialize() {
+Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyTupleIteratorBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(isolate, PyTupleIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
   OrderSupers();
 
   set_name(PyString::NewInstance("tuple_iterator"));
+
+  return JustVoid();
 }
 
 void PyTupleIteratorKlass::Finalize() {
