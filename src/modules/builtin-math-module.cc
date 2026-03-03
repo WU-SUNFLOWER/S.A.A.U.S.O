@@ -75,12 +75,15 @@ MaybeHandle<PyObject> ReturnPyIntFromDouble(double v, const char* func_name) {
   return handle(PySmi::FromInt(static_cast<int64_t>(v)));
 }
 
-void InstallFunc(Handle<PyDict> module_dict,
-                 const char* name,
-                 NativeFuncPointer func) {
+Maybe<void> InstallFunc(Isolate* isolate,
+                        Handle<PyDict> module_dict,
+                        const char* name,
+                        NativeFuncPointer func) {
   Handle<PyString> py_name = PyString::NewInstance(name);
-  (void)PyDict::Put(module_dict, py_name,
-                    PyFunction::NewInstance(func, py_name));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, py_name,
+                                  PyFunction::NewInstance(func, py_name)));
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> host,
@@ -413,43 +416,63 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, module,
-                                   isolate->factory()->NewPyModule(),
-                                   Handle<PyModule>::null());
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
+                             isolate->factory()->NewPyModule());
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("math"));
-  (void)PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
+                                           PyString::NewInstance("math")));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
+                                           PyString::NewInstance("")));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, PyString::NewInstance("pi"),
+                                  PyFloat::NewInstance(std::acos(-1.0))));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, PyString::NewInstance("e"),
+                                  PyFloat::NewInstance(std::exp(1.0))));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, PyString::NewInstance("tau"),
+                                  PyFloat::NewInstance(2.0 * std::acos(-1.0))));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(module_dict, PyString::NewInstance("inf"),
+                           PyFloat::NewInstance(
+                               std::numeric_limits<double>::infinity())));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(module_dict, PyString::NewInstance("nan"),
+                           PyFloat::NewInstance(
+                               std::numeric_limits<double>::quiet_NaN())));
 
-  (void)PyDict::Put(module_dict, PyString::NewInstance("pi"),
-                    PyFloat::NewInstance(std::acos(-1.0)));
-  (void)PyDict::Put(module_dict, PyString::NewInstance("e"),
-                    PyFloat::NewInstance(std::exp(1.0)));
-  (void)PyDict::Put(module_dict, PyString::NewInstance("tau"),
-                    PyFloat::NewInstance(2.0 * std::acos(-1.0)));
-  (void)PyDict::Put(
-      module_dict, PyString::NewInstance("inf"),
-      PyFloat::NewInstance(std::numeric_limits<double>::infinity()));
-  (void)PyDict::Put(
-      module_dict, PyString::NewInstance("nan"),
-      PyFloat::NewInstance(std::numeric_limits<double>::quiet_NaN()));
-
-  InstallFunc(module_dict, "sqrt", &Math_Sqrt);
-  InstallFunc(module_dict, "floor", &Math_Floor);
-  InstallFunc(module_dict, "ceil", &Math_Ceil);
-  InstallFunc(module_dict, "fabs", &Math_Fabs);
-  InstallFunc(module_dict, "sin", &Math_Sin);
-  InstallFunc(module_dict, "cos", &Math_Cos);
-  InstallFunc(module_dict, "tan", &Math_Tan);
-  InstallFunc(module_dict, "exp", &Math_Exp);
-  InstallFunc(module_dict, "log", &Math_Log);
-  InstallFunc(module_dict, "log2", &Math_Log2);
-  InstallFunc(module_dict, "log10", &Math_Log10);
-  InstallFunc(module_dict, "pow", &Math_Pow);
-  InstallFunc(module_dict, "isfinite", &Math_IsFinite);
-  InstallFunc(module_dict, "isnan", &Math_IsNaN);
-  InstallFunc(module_dict, "isinf", &Math_IsInf);
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "sqrt", &Math_Sqrt));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "floor", &Math_Floor));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "ceil", &Math_Ceil));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "fabs", &Math_Fabs));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "sin", &Math_Sin));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "cos", &Math_Cos));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "tan", &Math_Tan));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "exp", &Math_Exp));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "log", &Math_Log));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "log2", &Math_Log2));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "log10", &Math_Log10));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "pow", &Math_Pow));
+  RETURN_ON_EXCEPTION(
+      isolate, InstallFunc(isolate, module_dict, "isfinite", &Math_IsFinite));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "isnan", &Math_IsNaN));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "isinf", &Math_IsInf));
 
   return scope.Escape(module);
 }
