@@ -82,27 +82,26 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
 
 // PyString 重载仅用于做薄封装，最终走 string_view 版本统一实现。
 MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
+    Isolate* isolate,
     Handle<PyString> source,
     Handle<PyDict> locals,
     Handle<PyDict> globals,
     std::string_view filename) {
-  if (source.is_null()) {
-    return kNullMaybeHandle;
-  }
+  assert(!source.is_null());
   return Runtime_ExecutePythonSourceCode(
+      isolate,
       std::string_view(source->buffer(), static_cast<size_t>(source->length())),
       locals, globals, filename);
 }
 
 // 编译并执行一段 Python 源码，并显式指定其运行环境（locals/globals）。
 MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
+    Isolate* isolate,
     std::string_view source,
     Handle<PyDict> locals,
     Handle<PyDict> globals,
     std::string_view filename) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -121,15 +120,18 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
   RETURN_ON_EXCEPTION(isolate,
                       InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
 
-  // 将源码编译为模块级 boilerplate function，然后在指定字典环境中执行它。
-  Handle<PyFunction> func = Compiler::CompileSource(isolate, source, filename);
-  func->set_func_globals(globals);
+  // 将源码编译为模块级 boilerplate function，然后。
+  Handle<PyFunction> boilerplate;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, boilerplate, Compiler::CompileSource(isolate, source, filename));
+
+  boilerplate->set_func_globals(globals);
 
   Handle<PyObject> result;
-
+  // 在指定字典环境中执行boilerplate
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, func, Handle<PyObject>::null(),
+      Execution::Call(isolate, boilerplate, Handle<PyObject>::null(),
                       Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
 
   return scope.Escape(result);
@@ -153,14 +155,18 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
                       InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
 
   std::string filename_str(filename);
-  Handle<PyFunction> func = Compiler::CompilePyc(isolate, filename_str.c_str());
-  func->set_func_globals(globals);
+  Handle<PyFunction> boilerplate;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, boilerplate,
+      Compiler::CompilePyc(isolate, filename_str.c_str()));
+
+  boilerplate->set_func_globals(globals);
 
   Handle<PyObject> result;
 
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, func, Handle<PyObject>::null(),
+      Execution::Call(isolate, boilerplate, Handle<PyObject>::null(),
                       Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
 
   return scope.Escape(result);

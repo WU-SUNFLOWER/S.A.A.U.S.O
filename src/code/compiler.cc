@@ -17,38 +17,39 @@
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso::internal {
 namespace {}  // namespace
 
-Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
-                                           Handle<PyString> source,
-                                           std::string_view filename) {
-  if (source.is_null()) {
-    return Handle<PyFunction>::null();
+MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
+                                                Handle<PyString> source,
+                                                std::string_view filename) {
+  if (source.is_null()) [[unlikely]] {
+    return kNullMaybeHandle;
   }
   return CompileSource(isolate, source->buffer(),
                        static_cast<size_t>(source->length()), filename);
 }
 
-Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
-                                           std::string_view source,
-                                           std::string_view filename) {
+MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
+                                                std::string_view source,
+                                                std::string_view filename) {
   return CompileSource(isolate, source.data(), source.size(), filename);
 }
 
-Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
-                                           const char* source,
-                                           size_t source_size,
-                                           std::string_view filename) {
+MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
+                                                const char* source,
+                                                size_t source_size,
+                                                std::string_view filename) {
   EscapableHandleScope scope;
 
 #if !SAAUSO_ENABLE_CPYTHON_COMPILER
-  std::fprintf(stderr,
-               "RuntimeError: CompileSource() requires embedded CPython "
-               "compiler; build with saauso_enable_cpython_compiler=true\n");
-  std::exit(1);
-  return Handle<PyFunction>::null();
+  Runtime_ThrowError(
+      ExceptionType::kRuntimeError,
+      "RuntimeError: CompileSource() requires embedded CPython "
+      "compiler; build with saauso_enable_cpython_compiler=true\n");
+  return kNullMaybeHandle;
 #else
   std::vector<uint8_t> pyc = EmbeddedPython312Compiler::CompileToPycBytes(
       std::string_view(source, source_size), filename);
@@ -63,8 +64,8 @@ Handle<PyFunction> Compiler::CompileSource(Isolate* isolate,
 #endif  // !SAAUSO_ENABLE_CPYTHON_COMPILER
 }
 
-Handle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
-                                        std::vector<uint8_t> bytes) {
+MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
+                                             std::vector<uint8_t> bytes) {
   EscapableHandleScope scope;
   CPython312PycFileParser parser(
       std::span<const uint8_t>(bytes.data(), bytes.size()), isolate);
@@ -75,8 +76,8 @@ Handle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
   return scope.Escape(func);
 }
 
-Handle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
-                                        const char* filename) {
+MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
+                                             const char* filename) {
   EscapableHandleScope scope;
   CPython312PycFileParser parser(filename, isolate);
 

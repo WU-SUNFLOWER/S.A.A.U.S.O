@@ -24,9 +24,11 @@ TEST_F(CompilerTest, CompileSourceKeepsFileName) {
   constexpr std::string_view kFileName = "saauso_compiler_test.py";
   constexpr std::string_view kSource = "x = 1\n";
 
-  Handle<PyFunction> boilerplate =
-      Compiler::CompileSource(isolate_, kSource, kFileName);
-  ASSERT_FALSE(boilerplate.is_null());
+  Handle<PyFunction> boilerplate;
+  if (!Compiler::CompileSource(isolate_, kSource, kFileName).To(&boilerplate)) {
+    FAIL() << "fail to compile source code";
+    return;
+  }
 
   EXPECT_TRUE(
       IsPyStringEqual(boilerplate->func_code()->file_name(), kFileName));
@@ -42,8 +44,12 @@ TEST_F(CompilerTest, CompilePycBytesParsesSuccessfully) {
       EmbeddedPython312Compiler::CompileToPycBytes(kSource, kFileName);
   ASSERT_FALSE(pyc.empty());
 
-  Handle<PyFunction> boilerplate =
-      Compiler::CompilePyc(isolate_, std::move(pyc));
+  Handle<PyFunction> boilerplate;
+  if (!Compiler::CompilePyc(isolate_, std::move(pyc)).To(&boilerplate)) {
+    FAIL() << "fail to compile source code";
+    return;
+  }
+
   ASSERT_FALSE(boilerplate.is_null());
 
   EXPECT_TRUE(
