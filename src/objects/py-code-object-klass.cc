@@ -7,7 +7,9 @@
 #include <cstdint>
 #include <cstdio>
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
@@ -44,7 +46,10 @@ void PyCodeObjectKlass::PreInitialize() {
 
 Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  Handle<PyTypeObject> type_object;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
+                             isolate->factory()->NewPyTypeObject());
+  type_object->BindWithKlass(Tagged<Klass>(this));
 
   // 初始化类字典
   set_klass_properties(PyDict::NewInstance());

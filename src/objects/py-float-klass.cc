@@ -90,7 +90,7 @@ void PyFloatKlass::PreInitialize() {
 
 Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
   set_klass_properties(PyDict::NewInstance());

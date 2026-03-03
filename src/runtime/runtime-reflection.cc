@@ -28,7 +28,9 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
   auto* isolate = Isolate::Current();
 
-  Handle<PyTypeObject> type_object = PyTypeObject::NewInstance();
+  Handle<PyTypeObject> type_object;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
+                             isolate->factory()->NewPyTypeObject());
 
   // 创建新的klass并注册进isolate
   Tagged<Klass> klass = isolate->factory()->NewPythonKlass();

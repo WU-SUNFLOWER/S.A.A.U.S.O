@@ -54,7 +54,7 @@ void PyBooleanKlass::PreInitialize() {
 
 Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化klass_properties
   set_klass_properties(PyDict::NewInstance());
@@ -140,7 +140,7 @@ void PyNoneKlass::PreInitialize() {
 
 Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
   set_klass_properties(PyDict::NewInstance());

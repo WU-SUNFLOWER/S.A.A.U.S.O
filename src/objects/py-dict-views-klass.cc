@@ -86,7 +86,8 @@ void PyDictKeysKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   set_klass_properties(PyDict::NewInstance());
 
@@ -173,7 +174,8 @@ void PyDictValuesKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   set_klass_properties(PyDict::NewInstance());
 
@@ -278,7 +280,8 @@ void PyDictItemsKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   set_klass_properties(PyDict::NewInstance());
 
@@ -390,7 +393,8 @@ void PyDictKeyIteratorKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   auto klass_properties = PyDict::NewInstance();
   RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
@@ -470,7 +474,8 @@ void PyDictItemIteratorKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   auto klass_properties = PyDict::NewInstance();
   RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
@@ -550,7 +555,8 @@ void PyDictValueIteratorKlass::PreInitialize() {
 }
 
 Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   auto klass_properties = PyDict::NewInstance();
   RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(

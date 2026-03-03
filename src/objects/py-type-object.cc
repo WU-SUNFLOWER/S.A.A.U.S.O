@@ -15,11 +15,6 @@
 namespace saauso::internal {
 
 // static
-Handle<PyTypeObject> PyTypeObject::NewInstance() {
-  return Isolate::Current()->factory()->NewPyTypeObject();
-}
-
-// static
 Tagged<PyTypeObject> PyTypeObject::cast(Tagged<PyObject> object) {
   assert(IsPyTypeObject(object));
   return Tagged<PyTypeObject>::cast(object);

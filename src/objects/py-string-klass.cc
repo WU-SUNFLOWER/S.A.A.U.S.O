@@ -83,6 +83,9 @@ void PyStringKlass::PreInitialize() {
 }
 
 Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
+  // 建立与type object的双向绑定
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
+
   // 初始化类属性表
   auto klass_properties = PyDict::NewInstance();
 
@@ -92,9 +95,6 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
 
   // 初始化类字典
   set_klass_properties(klass_properties);
-
-  // 建立与type object的双向绑定
-  PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
