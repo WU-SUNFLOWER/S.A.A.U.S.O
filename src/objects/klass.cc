@@ -165,7 +165,7 @@ void Klass::AddSuper(Tagged<Klass> super) {
   PyList::Append(supers(), super->type_object());
 }
 
-void Klass::OrderSupers() {
+Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   // 不允许重复执行C3算法
   assert(mro_.is_null());
 
@@ -186,6 +186,7 @@ void Klass::OrderSupers() {
 
   // 把自己添加到mro序列的开头
   PyList::Insert(mro_result, 0, type_object());
+  RETURN_ON_EXCEPTION();
   (void)PyDict::Put(klass_properties(), ST(mro), mro_result);
 
   mro_ = *mro_result;

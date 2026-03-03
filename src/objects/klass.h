@@ -178,7 +178,7 @@ class Klass : public Object {
   // 添加父类
   void AddSuper(Tagged<Klass> super);
   // 执行C3算法，执行结果保存在mro_
-  void OrderSupers();
+  Maybe<void> OrderSupers(Isolate* isolate);
 
   // 创建一个Klass类型在Python世界对应的PyTypeObject，并将双方进行绑定
   MaybeHandle<PyTypeObject> CreateAndBindToPyTypeObject(Isolate* isolate);
