@@ -5,7 +5,7 @@
 #ifndef SAAUSO_MODULES_BUILTIN_MODULE_H_
 #define SAAUSO_MODULES_BUILTIN_MODULE_H_
 
-#include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -13,11 +13,11 @@ class Isolate;
 class ModuleManager;
 class PyModule;
 
-using BuiltinModuleInitFunc = Handle<PyModule> (*)(Isolate* isolate,
-                                                   ModuleManager* manager);
+using BuiltinModuleInitFunc = MaybeHandle<PyModule> (*)(Isolate* isolate,
+                                                        ModuleManager* manager);
 
 #define BUILTIN_MODULE_INIT_FUNC(module_name, func_name) \
-  Handle<PyModule> func_name(Isolate* isolate, ModuleManager* manager)
+  MaybeHandle<PyModule> func_name(Isolate* isolate, ModuleManager* manager)
 
 #define DECL_BUILTIN_MODULE_INIT_FUNC(module_name, func_name) \
   BUILTIN_MODULE_INIT_FUNC(module_name, func_name);
