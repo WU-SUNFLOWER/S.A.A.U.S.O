@@ -21,12 +21,11 @@
 namespace saauso::internal {
 
 MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
+    Isolate* isolate,
     Handle<PyString> class_name,
     Handle<PyDict> class_properties,
     Handle<PyList> supers) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
@@ -250,7 +249,8 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
 
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, result, Runtime_CreatePythonClass(name, class_dict, supers));
+      isolate, result,
+      Runtime_CreatePythonClass(isolate, name, class_dict, supers));
   return scope.Escape(result);
 }
 

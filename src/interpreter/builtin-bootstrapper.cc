@@ -201,8 +201,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   Handle<PyTypeObject> base_exception;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, base_exception,
-      Runtime_CreatePythonClass(ST(base_exception), base_exception_dict,
-                                supers));
+      Runtime_CreatePythonClass(isolate_, ST(base_exception),
+                                base_exception_dict, supers));
 
   // 注入 BaseException 内建方法
   RETURN_ON_EXCEPTION(
@@ -214,7 +214,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   Handle<PyTypeObject> exception;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, exception,
-      Runtime_CreatePythonClass(ST(exception), PyDict::NewInstance(), supers));
+      Runtime_CreatePythonClass(isolate_, ST(exception), PyDict::NewInstance(),
+                                supers));
 
   RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_.Get(), ST(base_exception),
                                             base_exception));
@@ -233,7 +234,8 @@ Maybe<void> BuiltinBootstrapper::RegisterSimpleTypeToBuiltins(
   Handle<PyObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, type_object,
-      Runtime_CreatePythonClass(type_name, PyDict::NewInstance(), supers));
+      Runtime_CreatePythonClass(isolate_, type_name, PyDict::NewInstance(),
+                                supers));
 
   RETURN_ON_EXCEPTION(isolate_,
                       PyDict::Put(builtins_.Get(), type_name, type_object));

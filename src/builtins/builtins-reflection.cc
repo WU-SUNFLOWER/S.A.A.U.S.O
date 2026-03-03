@@ -121,7 +121,8 @@ BUILTIN(BuildTypeObject) {
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, type_object,
-      Runtime_CreatePythonClass(class_name, class_properties, class_supers));
+      Runtime_CreatePythonClass(isolate, class_name, class_properties,
+                                class_supers));
   return scope.Escape(type_object);
 }
 

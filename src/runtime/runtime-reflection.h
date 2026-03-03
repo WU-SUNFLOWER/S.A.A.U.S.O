@@ -22,6 +22,7 @@ class Klass;
 // - class_name/class_properties/supers 均必须为非空。
 // - 该函数会创建新的 Klass 并注册进当前 Isolate。
 MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
+    Isolate* isolate,
     Handle<PyString> class_name,
     Handle<PyDict> class_properties,
     Handle<PyList> supers);
