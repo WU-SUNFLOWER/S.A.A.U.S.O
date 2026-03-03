@@ -18,9 +18,9 @@ class PyBooleanKlass : public Klass {
   static Tagged<PyBooleanKlass> GetInstance();
 
   PyBooleanKlass() = delete;
-  
+
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -36,7 +36,7 @@ class PyNoneKlass : public Klass {
  public:
   static Tagged<PyNoneKlass> GetInstance();
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -44,7 +44,7 @@ class PyNoneKlass : public Klass {
 
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
-                                    Handle<PyObject> other);
+                                   Handle<PyObject> other);
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);

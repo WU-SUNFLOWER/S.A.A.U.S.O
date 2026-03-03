@@ -74,12 +74,13 @@ void PyDictKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictKlass::Initialize() {
+Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
 
   // 安装内建方法
-  PyDictBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDictBuiltinMethods::Install(isolate, klass_properties));
 
   set_klass_properties(klass_properties);
 
@@ -92,6 +93,8 @@ void PyDictKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("dict"));
+
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {

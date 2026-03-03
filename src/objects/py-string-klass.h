@@ -22,7 +22,7 @@ class PyStringKlass : public Klass {
   PyStringKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -40,19 +40,19 @@ class PyStringKlass : public Klass {
   static Maybe<bool> Virtual_Less(Handle<PyObject> self,
                                   Handle<PyObject> other);
   static Maybe<bool> Virtual_Greater(Handle<PyObject> self,
-                                    Handle<PyObject> other);
+                                     Handle<PyObject> other);
   static Maybe<bool> Virtual_LessEqual(Handle<PyObject> self,
                                        Handle<PyObject> other);
   static Maybe<bool> Virtual_GreaterEqual(Handle<PyObject> self,
-                                           Handle<PyObject> other);
+                                          Handle<PyObject> other);
 
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
-                                       Handle<PyObject> target);
+                                      Handle<PyObject> target);
 
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
-                                               Handle<PyObject> subscr);
+                                              Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+                                           Handle<PyObject> other);
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
 

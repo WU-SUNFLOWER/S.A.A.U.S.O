@@ -88,7 +88,7 @@ void PyFloatKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyFloatKlass::Initialize() {
+Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -101,6 +101,8 @@ void PyFloatKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("float"));
+
+  return JustVoid();
 }
 
 void PyFloatKlass::Finalize() {

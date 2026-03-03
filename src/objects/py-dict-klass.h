@@ -22,7 +22,7 @@ class PyDictKlass : public Klass {
   PyDictKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:

@@ -52,7 +52,7 @@ void PyBooleanKlass::PreInitialize() {
   vtable_.hash = &Virtual_Hash;
 }
 
-void PyBooleanKlass::Initialize() {
+Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -65,6 +65,8 @@ void PyBooleanKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("bool"));
+
+  return JustVoid();
 }
 
 // static
@@ -136,7 +138,7 @@ void PyNoneKlass::PreInitialize() {
   vtable_.hash = &Virtual_Hash;
 }
 
-void PyNoneKlass::Initialize() {
+Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -149,6 +151,8 @@ void PyNoneKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("NoneType"));
+
+  return JustVoid();
 }
 
 void PyNoneKlass::Finalize() {

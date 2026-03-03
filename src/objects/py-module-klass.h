@@ -16,7 +16,7 @@ class PyModuleKlass : public Klass {
   static Tagged<PyModuleKlass> GetInstance();
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -27,4 +27,3 @@ class PyModuleKlass : public Klass {
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_OBJECTS_PY_MODULE_KLASS_H_
-

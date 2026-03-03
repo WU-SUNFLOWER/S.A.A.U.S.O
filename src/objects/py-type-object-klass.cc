@@ -56,13 +56,15 @@ void PyTypeObjectKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyTypeObjectKlass::Initialize() {
+Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-  PyTypeObjectBuiltinMethods::Install(klass_properties);
+
+  RETURN_ON_EXCEPTION(
+      isolate, PyTypeObjectBuiltinMethods::Install(isolate, klass_properties));
 
   set_klass_properties(klass_properties);
 
@@ -72,6 +74,8 @@ void PyTypeObjectKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("type"));
+
+  return JustVoid();
 }
 
 void PyTypeObjectKlass::Finalize() {

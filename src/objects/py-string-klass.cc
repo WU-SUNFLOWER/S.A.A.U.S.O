@@ -82,12 +82,13 @@ void PyStringKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyStringKlass::Initialize() {
+Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
   // 初始化类属性表
   auto klass_properties = PyDict::NewInstance();
 
   // 安装内建方法
-  PyStringBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(
+      isolate, PyStringBuiltinMethods::Install(isolate, klass_properties));
 
   // 初始化类字典
   set_klass_properties(klass_properties);
@@ -101,6 +102,8 @@ void PyStringKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("str"));
+
+  return JustVoid();
 }
 
 void PyStringKlass::Finalize() {

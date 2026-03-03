@@ -85,7 +85,7 @@ void PyDictKeysKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictKeysKlass::Initialize() {
+Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   set_klass_properties(PyDict::NewInstance());
@@ -94,6 +94,8 @@ void PyDictKeysKlass::Initialize() {
   OrderSupers();
 
   set_name(PyString::NewInstance("dict_keys"));
+
+  return JustVoid();
 }
 
 void PyDictKeysKlass::Finalize() {
@@ -170,7 +172,7 @@ void PyDictValuesKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictValuesKlass::Initialize() {
+Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   set_klass_properties(PyDict::NewInstance());
@@ -179,6 +181,8 @@ void PyDictValuesKlass::Initialize() {
   OrderSupers();
 
   set_name(PyString::NewInstance("dict_values"));
+
+  return JustVoid();
 }
 
 void PyDictValuesKlass::Finalize() {
@@ -273,7 +277,7 @@ void PyDictItemsKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictItemsKlass::Initialize() {
+Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   set_klass_properties(PyDict::NewInstance());
@@ -282,6 +286,8 @@ void PyDictItemsKlass::Initialize() {
   OrderSupers();
 
   set_name(PyString::NewInstance("dict_items"));
+
+  return JustVoid();
 }
 
 void PyDictItemsKlass::Finalize() {
@@ -383,17 +389,21 @@ void PyDictKeyIteratorKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictKeyIteratorKlass::Initialize() {
+Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDictKeyIteratorBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
+
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
   OrderSupers();
 
   set_name(PyString::NewInstance("dict_keyiterator"));
+
+  return JustVoid();
 }
 
 void PyDictKeyIteratorKlass::Finalize() {
@@ -459,17 +469,21 @@ void PyDictItemIteratorKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictItemIteratorKlass::Initialize() {
+Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDictItemIteratorBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
+
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
   OrderSupers();
 
   set_name(PyString::NewInstance("dict_itemiterator"));
+
+  return JustVoid();
 }
 
 void PyDictItemIteratorKlass::Finalize() {
@@ -535,17 +549,21 @@ void PyDictValueIteratorKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyDictValueIteratorKlass::Initialize() {
+Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
   auto klass_properties = PyDict::NewInstance();
-  PyDictValueIteratorBuiltinMethods::Install(klass_properties);
+  RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
+
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
   OrderSupers();
 
   set_name(PyString::NewInstance("dict_valueiterator"));
+
+  return JustVoid();
 }
 
 void PyDictValueIteratorKlass::Finalize() {

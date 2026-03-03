@@ -17,7 +17,7 @@ class PyTupleIteratorKlass : public Klass {
   PyTupleIteratorKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:

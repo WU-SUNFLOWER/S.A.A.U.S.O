@@ -10,7 +10,6 @@
 #include "src/objects/py-object.h"
 #include "src/objects/visitors.h"
 
-
 namespace saauso::internal {
 
 // static
@@ -34,7 +33,9 @@ void FixedArrayKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void FixedArrayKlass::Initialize() {}
+Maybe<void> FixedArrayKlass::Initialize(Isolate* isolate) {
+  return JustVoid();
+}
 
 // static
 void FixedArrayKlass::Finalize() {

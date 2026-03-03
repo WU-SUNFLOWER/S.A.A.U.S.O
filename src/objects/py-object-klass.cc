@@ -36,7 +36,7 @@ void PyObjectKlass::PreInitialize() {
   vtable_.iterate = &Virtual_Iterate;
 }
 
-void PyObjectKlass::Initialize() {
+Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   PyTypeObject::NewInstance()->BindWithKlass(Tagged<Klass>(this));
 
@@ -49,6 +49,8 @@ void PyObjectKlass::Initialize() {
 
   // 设置类名
   set_name(PyString::NewInstance("object"));
+
+  return JustVoid();
 }
 
 // static

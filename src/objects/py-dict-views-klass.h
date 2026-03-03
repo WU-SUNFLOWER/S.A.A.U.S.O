@@ -20,7 +20,7 @@ class PyDictKeysKlass : public Klass {
   PyDictKeysKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -41,7 +41,7 @@ class PyDictValuesKlass : public Klass {
   PyDictValuesKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -62,7 +62,7 @@ class PyDictItemsKlass : public Klass {
   PyDictItemsKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -83,7 +83,7 @@ class PyDictKeyIteratorKlass : public Klass {
   PyDictKeyIteratorKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -102,7 +102,7 @@ class PyDictItemIteratorKlass : public Klass {
   PyDictItemIteratorKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
@@ -121,7 +121,7 @@ class PyDictValueIteratorKlass : public Klass {
   PyDictValueIteratorKlass() = delete;
 
   void PreInitialize();
-  void Initialize();
+  Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
  private:
