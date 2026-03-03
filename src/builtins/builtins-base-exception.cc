@@ -15,8 +15,10 @@
 
 namespace saauso::internal {
 
-void BaseExceptionMethods::Install(Handle<PyDict> target) {
+Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
+                                          Handle<PyDict> target) {
   BASE_EXCEPTION_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

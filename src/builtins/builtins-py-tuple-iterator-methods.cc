@@ -11,8 +11,10 @@
 
 namespace saauso::internal {
 
-void PyTupleIteratorBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyTupleIteratorBuiltinMethods::Install(Isolate* isolate,
+                                                   Handle<PyDict> target) {
   PY_TUPLE_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

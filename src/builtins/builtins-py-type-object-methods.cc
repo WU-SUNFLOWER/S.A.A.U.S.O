@@ -12,8 +12,10 @@
 
 namespace saauso::internal {
 
-void PyTypeObjectBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyTypeObjectBuiltinMethods::Install(Isolate* isolate,
+                                                Handle<PyDict> target) {
   PY_TYPE_OBJECT_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

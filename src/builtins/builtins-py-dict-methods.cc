@@ -21,8 +21,10 @@
 
 namespace saauso::internal {
 
-void PyDictBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
+                                          Handle<PyDict> target) {
   PY_DICT_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

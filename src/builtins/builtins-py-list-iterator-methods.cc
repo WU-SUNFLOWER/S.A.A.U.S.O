@@ -11,8 +11,10 @@
 
 namespace saauso::internal {
 
-void PyListIteratorBuiltinMethods::Install(Handle<PyDict> target) {
+Maybe<void> PyListIteratorBuiltinMethods::Install(Isolate* isolate,
+                                                  Handle<PyDict> target) {
   PY_LIST_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
+  return JustVoid();
 }
 
 ////////////////////////////////////////////////////////////////////////

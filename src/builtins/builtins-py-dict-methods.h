@@ -20,7 +20,7 @@ namespace saauso::internal {
 
 class PyDictBuiltinMethods : public AllStatic {
  public:
-  static void Install(Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
 
  private:
   PY_DICT_BUILTINS(DECL_BUILTIN_METHOD)
