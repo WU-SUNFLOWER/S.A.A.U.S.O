@@ -205,7 +205,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
                                 supers));
 
   // 注入 BaseException 内建方法
-  BaseExceptionMethods::Install(base_exception_dict);
+  RETURN_ON_EXCEPTION(
+      isolate_, BaseExceptionMethods::Install(isolate_, base_exception_dict));
 
   supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);

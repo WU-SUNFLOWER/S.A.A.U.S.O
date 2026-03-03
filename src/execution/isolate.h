@@ -11,6 +11,7 @@
 #include "src/execution/isolate-klass-list.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
+#include "src/utils/maybe.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
@@ -141,7 +142,7 @@ class Isolate {
 
   void Init();
   void TearDown();
-  void InitMetaArea();
+  Maybe<void> InitMetaArea();
 
   static ThreadId GetCurrentThreadId();
   void CheckThreadAccess() const;

@@ -217,7 +217,9 @@ void Isolate::Init() {
   HandleScope scope;
 
   // 初始化元数据区域（Klasses, Singletons 等）
-  InitMetaArea();
+  if (InitMetaArea().IsNothing()) {
+    return;
+  }
 
   // 初始化解释器
   interpreter_ = new Interpreter(this);
@@ -236,7 +238,7 @@ void Isolate::Init() {
   initialized_ = true;
 }
 
-void Isolate::InitMetaArea() {
+Maybe<void> Isolate::InitMetaArea() {
   // 1. 预初始化所有 Klass（设置 vtable，调用 PreInitialize）
 #define PREINIT_PY_KLASS(_, Klass, __) \
   do {                                 \
@@ -257,10 +259,16 @@ void Isolate::InitMetaArea() {
   py_false_object_ = factory()->NewPyBoolean(false);
 
   // 4. 正式初始化所有 Klass（调用 Initialize）
-#define INIT_PY_KLASS(_, Klass, __) Klass::GetInstance()->Initialize();
+#define INIT_PY_KLASS(ignore1, klass, ignore2)              \
+  if (klass::GetInstance()->Initialize(this).IsNothing()) { \
+    return kNullMaybe;                                      \
+  }
+
   ISOLATE_KLASS_LIST(INIT_PY_KLASS)
 #undef INIT_PY_KLASS
-}
+
+  return JustVoid();
+}  // namespace saauso::internal
 
 bool Isolate::HasPendingException() const {
   return exception_state_.HasPendingException();
