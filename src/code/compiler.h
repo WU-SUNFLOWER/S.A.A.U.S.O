@@ -10,6 +10,7 @@
 
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
+#include "src/handles/maybe-handles.h"
 
 namespace saauso::internal {
 
@@ -22,25 +23,26 @@ class Compiler : AllStatic {
   static constexpr std::string_view kDefaultFileName = "<saauso>";
 
   // 传入Python源代码，需要走CPython的编译器前端进行翻译
-  static Handle<PyFunction> CompileSource(
+  static MaybeHandle<PyFunction> CompileSource(
       Isolate* isolate,
       Handle<PyString> source,
       std::string_view filename = kDefaultFileName);
-  static Handle<PyFunction> CompileSource(
+  static MaybeHandle<PyFunction> CompileSource(
       Isolate* isolate,
       const char* source,
       size_t source_size,
       std::string_view filename = kDefaultFileName);
 
-  static Handle<PyFunction> CompileSource(
+  static MaybeHandle<PyFunction> CompileSource(
       Isolate* isolate,
       std::string_view source,
       std::string_view filename = kDefaultFileName);
 
   // 传入pyc文件路径或二进制流，直接进行PyCodeObject解析
-  static Handle<PyFunction> CompilePyc(Isolate* isolate,
-                                       std::vector<uint8_t> bytes);
-  static Handle<PyFunction> CompilePyc(Isolate* isolate, const char* filename);
+  static MaybeHandle<PyFunction> CompilePyc(Isolate* isolate,
+                                            std::vector<uint8_t> bytes);
+  static MaybeHandle<PyFunction> CompilePyc(Isolate* isolate,
+                                            const char* filename);
 };
 
 }  // namespace saauso::internal
