@@ -74,7 +74,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   type_object->BindWithKlass(klass);
 
   // 为klass计算mro
-  RETURN_ON_EXCEPTION(isolate, klass->OrderSupers());
+  RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
 
   return scope.Escape(type_object);
 }
