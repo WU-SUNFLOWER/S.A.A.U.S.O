@@ -422,20 +422,24 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
   return scope.Escape(object);
 }
 
-Handle<PyTypeObject> Factory::NewPyTypeObject() {
+MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   EscapableHandleScope scope;
 
   auto klass = PyTypeObjectKlass::GetInstance();
   Handle<PyTypeObject> object(
       Allocate<PyTypeObject>(Heap::AllocationSpace::kNewSpace));
+
   {
     DisallowHeapAllocation disallow(isolate_);
     PyObject::SetKlass(object, klass);
     object->own_klass_ = Tagged<Klass>::null();
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
+
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  RETURN_ON_EXCEPTION(
+      isolate_,
+      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);
