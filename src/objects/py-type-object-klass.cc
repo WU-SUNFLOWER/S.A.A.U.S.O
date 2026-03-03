@@ -71,7 +71,7 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 设置类名
   set_name(PyString::NewInstance("type"));
