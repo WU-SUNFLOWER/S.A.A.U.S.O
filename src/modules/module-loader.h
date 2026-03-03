@@ -46,7 +46,7 @@ class ModuleLoader final {
   MaybeHandle<PyObject> ExecuteModuleOrNoneInternal(Handle<PyString> fullname,
                                                     const ModuleLocation& loc);
 
-  Handle<PyObject> LoadAsBuiltinModuleOrNone(Handle<PyString> fullname);
+  MaybeHandle<PyObject> LoadAsBuiltinModuleOrNone(Handle<PyString> fullname);
 
   MaybeHandle<PyObject> LoadAsFileModuleOrNone(Handle<PyString> fullname,
                                                Handle<PyList> search_path_list);

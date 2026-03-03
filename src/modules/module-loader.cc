@@ -66,7 +66,9 @@ MaybeHandle<PyObject> ModuleLoader::LoadModulePartOrNoneImpl(
     Handle<PyString> fullname,
     Handle<PyList> search_path_list) {
   // 先尝试查找是否命中 builtin 模块
-  Handle<PyObject> builtin_module = LoadAsBuiltinModuleOrNone(fullname);
+  Handle<PyObject> builtin_module;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, builtin_module,
+                             LoadAsBuiltinModuleOrNone(fullname));
   if (!IsPyNone(builtin_module)) {
     return builtin_module;
   }
@@ -75,15 +77,16 @@ MaybeHandle<PyObject> ModuleLoader::LoadModulePartOrNoneImpl(
   return LoadAsFileModuleOrNone(fullname, search_path_list);
 }
 
-Handle<PyObject> ModuleLoader::LoadAsBuiltinModuleOrNone(
+MaybeHandle<PyObject> ModuleLoader::LoadAsBuiltinModuleOrNone(
     Handle<PyString> fullname) {
   BuiltinModuleInitFunc builtin_init = builtin_registry_->Find(fullname);
   if (builtin_init == nullptr) {
     return handle(isolate_->py_none_object());
   }
 
-  Handle<PyModule> module = builtin_init(isolate_, manager_);
-  assert(!module.is_null());
+  Handle<PyModule> module;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, module,
+                             builtin_init(isolate_, manager_));
 
   return module;
 }
