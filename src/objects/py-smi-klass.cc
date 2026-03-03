@@ -69,7 +69,7 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("int"));
 

@@ -92,7 +92,7 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("dict_keys"));
 
@@ -180,7 +180,7 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("dict_values"));
 
@@ -286,7 +286,7 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("dict_items"));
 
@@ -403,7 +403,7 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("dict_keyiterator"));
 
@@ -484,7 +484,7 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("dict_itemiterator"));
 
@@ -565,7 +565,7 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("dict_valueiterator"));
 

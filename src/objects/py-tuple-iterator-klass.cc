@@ -77,7 +77,7 @@ Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   AddSuper(PyObjectKlass::GetInstance());
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("tuple_iterator"));
 

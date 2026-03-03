@@ -45,7 +45,7 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
 
   // Python中object类型之上没有父类。
   // 直接调用OrderSupers会得到一个仅含有自己的mro序列。
-  OrderSupers();
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 设置类名
   set_name(PyString::NewInstance("object"));
