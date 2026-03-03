@@ -180,6 +180,9 @@ class Klass : public Object {
   // 执行C3算法，执行结果保存在mro_
   void OrderSupers();
 
+  // 创建一个Klass类型在Python世界对应的PyTypeObject，并将双方进行绑定
+  MaybeHandle<PyTypeObject> CreateAndBindToPyTypeObject(Isolate* isolate);
+
   // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
   MaybeHandle<PyObject> ConstructInstance(Handle<PyObject> args,
                                           Handle<PyObject> kwargs);

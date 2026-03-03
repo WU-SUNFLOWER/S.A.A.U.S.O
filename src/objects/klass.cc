@@ -196,6 +196,15 @@ void Klass::CopyVTableFrom(Tagged<Klass> base) {
   vtable_ = base->vtable_;
 }
 
+MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
+  Handle<PyTypeObject> type_object;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
+                             isolate->factory()->NewPyTypeObject());
+  type_object->BindWithKlass(Tagged<Klass>(this));
+
+  return type_object;
+}
+
 MaybeHandle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,
                                                Handle<PyObject> kwargs) {
   return vtable_.construct_instance(Tagged<Klass>(this), args, kwargs);
