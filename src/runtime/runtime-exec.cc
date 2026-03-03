@@ -82,27 +82,26 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
 
 // PyString 重载仅用于做薄封装，最终走 string_view 版本统一实现。
 MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
+    Isolate* isolate,
     Handle<PyString> source,
     Handle<PyDict> locals,
     Handle<PyDict> globals,
     std::string_view filename) {
-  if (source.is_null()) {
-    return kNullMaybeHandle;
-  }
+  assert(!source.is_null());
   return Runtime_ExecutePythonSourceCode(
+      isolate,
       std::string_view(source->buffer(), static_cast<size_t>(source->length())),
       locals, globals, filename);
 }
 
 // 编译并执行一段 Python 源码，并显式指定其运行环境（locals/globals）。
 MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
+    Isolate* isolate,
     std::string_view source,
     Handle<PyDict> locals,
     Handle<PyDict> globals,
     std::string_view filename) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
