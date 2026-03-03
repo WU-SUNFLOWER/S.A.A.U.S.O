@@ -72,12 +72,15 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
   return kNullMaybe;
 }
 
-void InstallFunc(Handle<PyDict> module_dict,
-                 const char* name,
-                 NativeFuncPointer func) {
+Maybe<void> InstallFunc(Isolate* isolate,
+                        Handle<PyDict> module_dict,
+                        const char* name,
+                        NativeFuncPointer func) {
   Handle<PyString> py_name = PyString::NewInstance(name);
-  (void)PyDict::Put(module_dict, py_name,
-                    PyFunction::NewInstance(func, py_name));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, py_name,
+                                  PyFunction::NewInstance(func, py_name)));
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
@@ -377,25 +380,32 @@ BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, module,
-                                   isolate->factory()->NewPyModule(),
-                                   Handle<PyModule>::null());
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
+                             isolate->factory()->NewPyModule());
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("random"));
-  (void)PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
+                                           PyString::NewInstance("random")));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
+                                           PyString::NewInstance("")));
 
   g_rng.Seed(NowSeed());
   g_seeded = true;
 
-  InstallFunc(module_dict, "seed", &Random_Seed);
-  InstallFunc(module_dict, "random", &Random_Random);
-  InstallFunc(module_dict, "randint", &Random_RandInt);
-  InstallFunc(module_dict, "randrange", &Random_RandRange);
-  InstallFunc(module_dict, "getrandbits", &Random_GetRandBits);
-  InstallFunc(module_dict, "choice", &Random_Choice);
-  InstallFunc(module_dict, "shuffle", &Random_Shuffle);
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "seed", &Random_Seed));
+  RETURN_ON_EXCEPTION(
+      isolate, InstallFunc(isolate, module_dict, "random", &Random_Random));
+  RETURN_ON_EXCEPTION(
+      isolate, InstallFunc(isolate, module_dict, "randint", &Random_RandInt));
+  RETURN_ON_EXCEPTION(isolate, InstallFunc(isolate, module_dict, "randrange",
+                                           &Random_RandRange));
+  RETURN_ON_EXCEPTION(isolate, InstallFunc(isolate, module_dict, "getrandbits",
+                                           &Random_GetRandBits));
+  RETURN_ON_EXCEPTION(
+      isolate, InstallFunc(isolate, module_dict, "choice", &Random_Choice));
+  RETURN_ON_EXCEPTION(
+      isolate, InstallFunc(isolate, module_dict, "shuffle", &Random_Shuffle));
 
   return scope.Escape(module);
 }

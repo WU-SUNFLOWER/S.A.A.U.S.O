@@ -64,12 +64,15 @@ double MonotonicSeconds() {
   return std::chrono::duration_cast<std::chrono::duration<double>>(now).count();
 }
 
-void InstallFunc(Handle<PyDict> module_dict,
-                 const char* name,
-                 NativeFuncPointer func) {
+Maybe<void> InstallFunc(Isolate* isolate,
+                        Handle<PyDict> module_dict,
+                        const char* name,
+                        NativeFuncPointer func) {
   Handle<PyString> py_name = PyString::NewInstance(name);
-  (void)PyDict::Put(module_dict, py_name,
-                    PyFunction::NewInstance(func, py_name));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, py_name,
+                                  PyFunction::NewInstance(func, py_name)));
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> Time_Time(Handle<PyObject> host,
@@ -150,19 +153,23 @@ BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, module,
-                                   isolate->factory()->NewPyModule(),
-                                   Handle<PyModule>::null());
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
+                             isolate->factory()->NewPyModule());
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
+                                           PyString::NewInstance("time")));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
+                                           PyString::NewInstance("")));
 
-  (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("time"));
-  (void)PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
-
-  InstallFunc(module_dict, "time", &Time_Time);
-  InstallFunc(module_dict, "perf_counter", &Time_PerfCounter);
-  InstallFunc(module_dict, "monotonic", &Time_Monotonic);
-  InstallFunc(module_dict, "sleep", &Time_Sleep);
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "time", &Time_Time));
+  RETURN_ON_EXCEPTION(isolate, InstallFunc(isolate, module_dict, "perf_counter",
+                                           &Time_PerfCounter));
+  RETURN_ON_EXCEPTION(
+      isolate, InstallFunc(isolate, module_dict, "monotonic", &Time_Monotonic));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallFunc(isolate, module_dict, "sleep", &Time_Sleep));
 
   return scope.Escape(module);
 }

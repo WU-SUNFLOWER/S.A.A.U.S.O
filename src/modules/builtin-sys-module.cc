@@ -23,24 +23,31 @@ namespace saauso::internal {
 // - sys.modules / sys.path 由 ModuleManager 持有并维护，sys 模块仅把它们暴露给
 // Python 层。
 BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
-  (void)isolate;
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, module,
-                                   isolate->factory()->NewPyModule(),
-                                   Handle<PyModule>::null());
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
+                             isolate->factory()->NewPyModule());
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  (void)PyDict::Put(module_dict, ST(name), PyString::NewInstance("sys"));
-  (void)PyDict::Put(module_dict, ST(package), PyString::NewInstance(""));
-  (void)PyDict::Put(module_dict, PyString::NewInstance("modules"),
-                    manager->modules());
-  (void)PyDict::Put(module_dict, PyString::NewInstance("path"),
-                    manager->path());
-  (void)PyDict::Put(module_dict, PyString::NewInstance("version"),
-                    PyString::NewInstance("3.12 (saauso mvp)"));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
+                                           PyString::NewInstance("sys")));
+
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
+                                           PyString::NewInstance("")));
+
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, PyString::NewInstance("modules"),
+                                  manager->modules()));
+
+  RETURN_ON_EXCEPTION(
+      isolate,
+      PyDict::Put(module_dict, PyString::NewInstance("path"), manager->path()));
+
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, PyString::NewInstance("version"),
+                                  PyString::NewInstance("3.12 (saauso mvp)")));
 
   return scope.Escape(module);
 }
