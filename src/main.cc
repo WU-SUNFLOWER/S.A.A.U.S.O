@@ -54,7 +54,7 @@ bool CheckAndPrintException(Isolate* isolate) {
   return true;
 }
 
-Handle<PyFunction> LoadFunctionBoilerplate(Isolate* isolate) {
+MaybeHandle<PyFunction> LoadFunctionBoilerplate(Isolate* isolate) {
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
   return Compiler::CompileSource(isolate, kSourceCode, kFileName);
 #else
@@ -80,8 +80,10 @@ int main(int argc, char** argv) {
     HandleScope scope;
 
     if (isolate->initialized()) {
-      Handle<PyFunction> boilerplate = LoadFunctionBoilerplate(isolate);
-      isolate->interpreter()->Run(boilerplate);
+      Handle<PyFunction> boilerplate;
+      if (!LoadFunctionBoilerplate(isolate).To(&boilerplate)) {
+        isolate->interpreter()->Run(boilerplate);
+      }
     }
 
     if (CheckAndPrintException(isolate)) {

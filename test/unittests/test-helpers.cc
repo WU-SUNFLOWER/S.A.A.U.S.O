@@ -97,8 +97,14 @@ void BasicInterpreterTest::SetUp() {
 
 void BasicInterpreterTest::RunScript(std::string_view source,
                                      std::string_view file_name) {
-  isolate_->interpreter()->Run(
-      Compiler::CompileSource(isolate_, source, file_name));
+  Handle<PyFunction> boilerplate;
+  if (!Compiler::CompileSource(isolate_, source, file_name).To(&boilerplate)) {
+    FAIL() << "fail to compile source code";
+    return;
+  }
+
+  isolate_->interpreter()->Run(boilerplate);
+
   if (isolate_->HasPendingException()) {
     HandleScope scope;
     Handle<PyString> formatted;
@@ -136,8 +142,13 @@ void BasicInterpreterTest::RunScriptExpectExceptionContains(
     std::string_view file_name) {
   HandleScope scope;
 
-  isolate_->interpreter()->Run(
-      Compiler::CompileSource(isolate_, source, file_name));
+  Handle<PyFunction> boilerplate;
+  if (!Compiler::CompileSource(isolate_, source, file_name).To(&boilerplate)) {
+    FAIL() << "fail to compile source code";
+    return;
+  }
+
+  isolate_->interpreter()->Run(boilerplate);
   ASSERT_TRUE(isolate_->HasPendingException());
 
   std::string msg = ExpectedAndTakePendingExceptionMessage();

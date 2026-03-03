@@ -34,8 +34,10 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
   constexpr std::string_view kFileName = "saauso_unittest_input.py";
   constexpr std::string_view kSource = "x = 1\n";
 
-  auto boilerplate = Compiler::CompileSource(isolate_, kSource, kFileName);
-  ASSERT_FALSE(boilerplate.is_null());
+  Handle<PyFunction> boilerplate;
+  if (!Compiler::CompileSource(isolate_, kSource, kFileName).To(&boilerplate)) {
+    FAIL() << "fail to compile source code";
+  }
 
   auto file_name = boilerplate->func_code()->file_name();
   EXPECT_TRUE(IsPyStringEqual(file_name, kFileName));

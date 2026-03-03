@@ -121,15 +121,18 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
   RETURN_ON_EXCEPTION(isolate,
                       InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
 
-  // 将源码编译为模块级 boilerplate function，然后在指定字典环境中执行它。
-  Handle<PyFunction> func = Compiler::CompileSource(isolate, source, filename);
-  func->set_func_globals(globals);
+  // 将源码编译为模块级 boilerplate function，然后。
+  Handle<PyFunction> boilerplate;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, boilerplate, Compiler::CompileSource(isolate, source, filename));
+
+  boilerplate->set_func_globals(globals);
 
   Handle<PyObject> result;
-
+  // 在指定字典环境中执行boilerplate
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, func, Handle<PyObject>::null(),
+      Execution::Call(isolate, boilerplate, Handle<PyObject>::null(),
                       Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
 
   return scope.Escape(result);
@@ -153,14 +156,18 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
                       InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
 
   std::string filename_str(filename);
-  Handle<PyFunction> func = Compiler::CompilePyc(isolate, filename_str.c_str());
-  func->set_func_globals(globals);
+  Handle<PyFunction> boilerplate;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, boilerplate,
+      Compiler::CompilePyc(isolate, filename_str.c_str()));
+
+  boilerplate->set_func_globals(globals);
 
   Handle<PyObject> result;
 
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, func, Handle<PyObject>::null(),
+      Execution::Call(isolate, boilerplate, Handle<PyObject>::null(),
                       Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
 
   return scope.Escape(result);
