@@ -124,18 +124,6 @@ bool PyDict::IsDictLike(Handle<PyObject> object) {
   return IsDictLike(*object);
 }
 
-// static
-Tagged<PyDict> PyDict::CastDictLike(Tagged<PyObject> object) {
-  assert(IsDictLike(object));
-  return Tagged<PyDict>::cast(object);
-}
-
-// static
-Handle<PyDict> PyDict::CastDictLike(Handle<PyObject> object) {
-  assert(IsDictLike(object));
-  return Handle<PyDict>(Tagged<PyDict>::cast(*object));
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 int64_t PyDict::capacity() const {

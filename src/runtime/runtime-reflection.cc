@@ -228,7 +228,7 @@ MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
   Handle<PyString> name = PyString::CastStringLike(name_obj);
   Handle<PyTuple> bases_tuple = PyTuple::CastTupleLike(bases_obj);
   Handle<PyDict> class_dict =
-      isolate->factory()->CopyPyDict(PyDict::CastDictLike(dict_obj));
+      isolate->factory()->CopyPyDict(Handle<PyDict>::cast(dict_obj));
 
   Handle<PyList> supers;
   if (bases_tuple->length() == 0) {
