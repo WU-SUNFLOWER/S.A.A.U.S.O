@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/builtins/builtins-base-exception.h"
+#include "src/builtins/builtins-base-exception-methods.h"
 
 #include "src/execution/exception-utils.h"
 #include "src/objects/klass.h"
@@ -17,7 +17,13 @@ namespace saauso::internal {
 
 Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
                                           Handle<PyDict> target) {
+  // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
+#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+
   BASE_EXCEPTION_BUILTINS(INSTALL_BUILTIN_METHOD);
+#undef INSTALL_BUILTIN_METHOD
+
   return JustVoid();
 }
 
@@ -33,19 +39,19 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__str__() takes no keyword arguments");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__str__() takes no arguments");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   if (self.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__str__() expects a non-null receiver");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyDict> properties = PyObject::GetProperties(self);
@@ -82,19 +88,19 @@ BUILTIN_METHOD(BaseExceptionMethods, Repr) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__repr__() takes no keyword arguments");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__repr__() takes no arguments");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   if (self.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__repr__() expects a non-null receiver");
-    return Handle<PyObject>::null();
+    return kNullMaybeHandle;
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(self)->name();

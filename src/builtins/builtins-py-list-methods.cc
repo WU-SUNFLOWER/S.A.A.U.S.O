@@ -33,7 +33,14 @@ namespace saauso::internal {
 
 Maybe<void> PyListBuiltinMethods::Install(Isolate* isolate,
                                           Handle<PyDict> target) {
+  // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
+#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+
   PY_LIST_BUILTINS(INSTALL_BUILTIN_METHOD);
+
+#undef INSTALL_BUILTIN_METHOD
+
   return JustVoid();
 }
 
