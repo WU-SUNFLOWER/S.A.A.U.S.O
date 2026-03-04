@@ -29,7 +29,7 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
     return kNullMaybe;
   }
 
-  auto name = PyString::CastStringLike(name_obj);
+  auto name = Handle<PyString>::cast(name_obj);
   if (ignore_private_member && name->length() > 0 && name->Get(0) == '_') {
     return Maybe<bool>(false);
   }

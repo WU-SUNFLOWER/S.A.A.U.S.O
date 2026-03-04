@@ -96,7 +96,7 @@ Handle<PyString> PyString::FromDouble(double n) {
 
 // static
 Tagged<PyString> PyString::cast(Tagged<PyObject> object) {
-  assert(IsPyString(object));
+  assert(IsStringLike(object));
   return Tagged<PyString>::cast(object);
 }
 
@@ -108,16 +108,6 @@ bool PyString::IsStringLike(Tagged<PyObject> object) {
 
 bool PyString::IsStringLike(Handle<PyObject> object) {
   return IsStringLike(*object);
-}
-
-Tagged<PyString> PyString::CastStringLike(Tagged<PyObject> object) {
-  assert(IsStringLike(object));
-  return Tagged<PyString>::cast(object);
-}
-
-Handle<PyString> PyString::CastStringLike(Handle<PyObject> object) {
-  assert(IsStringLike(object));
-  return Handle<PyString>(Tagged<PyString>::cast(*object));
 }
 
 // static

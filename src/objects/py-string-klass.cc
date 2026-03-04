@@ -209,7 +209,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
-      PySmi::FromInt(PyString::CastStringLike(self)->length()));
+      PySmi::FromInt(Handle<PyString>::cast(self)->length()));
 }
 
 Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
@@ -217,8 +217,8 @@ Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
   if (!PyString::IsStringLike(other)) {
     return Maybe<bool>(false);
   }
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return Maybe<bool>(s1->IsEqualTo(*s2));
 }
 
@@ -227,8 +227,8 @@ Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
   if (!PyString::IsStringLike(other)) {
     return Maybe<bool>(true);
   }
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return Maybe<bool>(!s1->IsEqualTo(*s2));
 }
 
@@ -242,8 +242,8 @@ Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return Maybe<bool>(s1->IsLessThan(*s2));
 }
 
@@ -257,8 +257,8 @@ Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return Maybe<bool>(s1->IsGreaterThan(*s2));
 }
 
@@ -272,8 +272,8 @@ Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
 }
 
@@ -287,8 +287,8 @@ Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
         other_name->buffer());
     return kNullMaybe;
   }
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
 }
 
@@ -298,14 +298,14 @@ Maybe<bool> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
     return Maybe<bool>(false);
   }
 
-  auto s = PyString::CastStringLike(self);
-  auto pattern = PyString::CastStringLike(target);
+  auto s = Handle<PyString>::cast(self);
+  auto pattern = Handle<PyString>::cast(target);
   return Maybe<bool>(s->Contains(pattern));
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
                                                     Handle<PyObject> subscr) {
-  auto s = PyString::CastStringLike(self);
+  auto s = Handle<PyString>::cast(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
@@ -328,24 +328,24 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
-  auto s1 = PyString::CastStringLike(self);
-  auto s2 = PyString::CastStringLike(other);
+  auto s1 = Handle<PyString>::cast(self);
+  auto s2 = Handle<PyString>::cast(other);
   return PyString::Append(s1, s2);
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Print(Handle<PyObject> self) {
-  auto s = PyString::CastStringLike(self);
+  auto s = Handle<PyString>::cast(self);
   std::printf("%s", s->buffer());
   return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
-  return Maybe<uint64_t>(PyString::CastStringLike(self)->GetHash());
+  return Maybe<uint64_t>(Handle<PyString>::cast(self)->GetHash());
 }
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
   assert(PyString::IsStringLike(self));
-  return PyString::ComputeObjectSize(PyString::CastStringLike(self)->length());
+  return PyString::ComputeObjectSize(Tagged<PyString>::cast(self)->length());
 }
 
 void PyStringKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {

@@ -36,7 +36,7 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
     return Tagged<PyFloat>::cast(object)->value() != 0.0;
   }
   if (PyString::IsStringLike(object)) {
-    return PyString::CastStringLike(object)->length() != 0;
+    return Tagged<PyString>::cast(object)->length() != 0;
   }
   if (PyList::IsListLike(object)) {
     return Tagged<PyList>::cast(object)->length() != 0;
