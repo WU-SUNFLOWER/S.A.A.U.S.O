@@ -26,7 +26,7 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
 
 // static
 Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
-  assert(IsPyList(object));
+  assert(IsListLike(object));
   return Tagged<PyList>::cast(object);
 }
 
@@ -40,18 +40,6 @@ bool PyList::IsListLike(Tagged<PyObject> object) {
 // static
 bool PyList::IsListLike(Handle<PyObject> object) {
   return IsListLike(*object);
-}
-
-// static
-Tagged<PyList> PyList::CastListLike(Tagged<PyObject> object) {
-  assert(IsListLike(object));
-  return Tagged<PyList>::cast(object);
-}
-
-// static
-Handle<PyList> PyList::CastListLike(Handle<PyObject> object) {
-  assert(IsListLike(object));
-  return Handle<PyList>(Tagged<PyList>::cast(*object));
 }
 
 /////////////////////////////////////////////////////////////

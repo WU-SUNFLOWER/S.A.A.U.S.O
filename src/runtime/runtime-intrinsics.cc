@@ -59,7 +59,7 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
     }
   } else if (PyList::IsListLike(all)) {
-    auto names = PyList::CastListLike(all);
+    auto names = Handle<PyList>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
@@ -84,7 +84,7 @@ MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
     return kNullMaybeHandle;
   }
 
-  auto list = PyList::CastListLike(object);
+  auto list = Handle<PyList>::cast(object);
   auto tuple = PyTuple::NewInstance(list->length());
   for (auto i = 0; i < list->length(); ++i) {
     tuple->SetInternal(i, list->Get(i));
