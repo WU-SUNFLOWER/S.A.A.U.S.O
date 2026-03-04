@@ -2,25 +2,35 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/builtins/builtins-utils.h"
 #include "src/execution/isolate.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
-
 
 namespace saauso::internal {
 
 class AttributeTest : public VmTestBase {};
 
+BUILTIN(DoNoThing) {
+  return Handle<PyObject>::null();
+}
+
 TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
   HandleScope scope;
 
   auto func_name = PyString::NewInstance("foo");
-  auto func = PyFunction::NewInstance(nullptr, func_name);
+  FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
+
+  Handle<PyFunction> func;
+  ASSERT_TRUE(
+      isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   auto key = PyString::NewInstance("x");
   auto value = handle(PySmi::FromInt(42));
@@ -38,10 +48,10 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
   EXPECT_EQ(list->length(), 0);
 
   Handle<PyObject> append;
-  ASSERT_TRUE(PyObject::GetAttr(
-                   Handle<PyObject>(list),
-                   Handle<PyObject>(PyString::NewInstance("append")))
-                   .ToHandle(&append));
+  ASSERT_TRUE(
+      PyObject::GetAttr(Handle<PyObject>(list),
+                        Handle<PyObject>(PyString::NewInstance("append")))
+          .ToHandle(&append));
 
   ASSERT_FALSE(append.is_null());
   EXPECT_TRUE(IsMethodObject(append));
