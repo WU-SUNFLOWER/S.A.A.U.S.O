@@ -73,6 +73,18 @@ DEFINE_PY_CHECKER(GcAbleObject)
 #undef DEFINE_PY_CHECKER
 ///////////////////////对象类型检测结束///////////////////////
 
+// 容器/字符串的 Like 与 Exact 语义约定：
+// - IsPyString/IsPyList/IsPyDict/IsPyTuple：Like（按 native layout 判定）
+// - IsPyStringExact/IsPyListExact/IsPyDictExact/IsPyTupleExact：Exact（按 klass 全等判定）
+bool IsPyStringExact(Tagged<PyObject> object);
+bool IsPyStringExact(Handle<PyObject> object);
+bool IsPyListExact(Tagged<PyObject> object);
+bool IsPyListExact(Handle<PyObject> object);
+bool IsPyDictExact(Tagged<PyObject> object);
+bool IsPyDictExact(Handle<PyObject> object);
+bool IsPyTupleExact(Tagged<PyObject> object);
+bool IsPyTupleExact(Handle<PyObject> object);
+
 // **特别提醒**
 // PyObject指针内部存储的可能是真正的对象指针，也有可能是一个Smi。
 // 如果里面实际存的是一个Smi，会导致C++编译器的UB行为，从而引发

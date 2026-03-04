@@ -29,6 +29,7 @@
 #include "src/objects/py-float.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-list.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-module-klass.h"
@@ -121,19 +122,25 @@ void PyObject::SetProperties(Tagged<PyObject> object,
   }                                            \
   IMPL_PY_CHECKER_WITH_HANDLE_ARG(name)
 
-// 实现IsPyFloat、IsPyString、IsPyList等一系列函数
+// 生成严格 klass 身份（exact）判定函数。
+#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)      \
+  bool Is##name##Exact(Tagged<PyObject> object) { \
+    return PyObject::GetKlass(object).ptr() ==    \
+           name##Klass::GetInstance().ptr();      \
+  }                                               \
+  bool Is##name##Exact(Handle<PyObject> object) { \
+    return Is##name##Exact(*object);              \
+  }
+
+// 实现 IsPyFloat 等 exact 语义不变的检查函数。
 IMPL_PY_CHECKER_BY_KLASS(PyTypeObject)
-IMPL_PY_CHECKER_BY_KLASS(PyString)
 IMPL_PY_CHECKER_BY_KLASS(PyFloat)
 IMPL_PY_CHECKER_BY_KLASS(PyBoolean)
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
 IMPL_PY_CHECKER_BY_KLASS(PyCodeObject)
 IMPL_PY_CHECKER_BY_KLASS(PyModule)
-IMPL_PY_CHECKER_BY_KLASS(PyList)
 IMPL_PY_CHECKER_BY_KLASS(PyListIterator)
-IMPL_PY_CHECKER_BY_KLASS(PyTuple)
 IMPL_PY_CHECKER_BY_KLASS(PyTupleIterator)
-IMPL_PY_CHECKER_BY_KLASS(PyDict)
 IMPL_PY_CHECKER_BY_KLASS(PyDictKeys)
 IMPL_PY_CHECKER_BY_KLASS(PyDictValues)
 IMPL_PY_CHECKER_BY_KLASS(PyDictItems)
@@ -143,7 +150,25 @@ IMPL_PY_CHECKER_BY_KLASS(PyDictValueIterator)
 IMPL_PY_CHECKER_BY_KLASS(FixedArray)
 IMPL_PY_CHECKER_BY_KLASS(MethodObject)
 IMPL_PY_CHECKER_BY_KLASS(Cell)
+
+// 容器/字符串默认采用 like 语义（按 native layout 判定）。
+bool IsPyString(Tagged<PyObject> object) { return PyString::IsStringLike(object); }
+bool IsPyString(Handle<PyObject> object) { return IsPyString(*object); }
+bool IsPyList(Tagged<PyObject> object) { return PyList::IsListLike(object); }
+bool IsPyList(Handle<PyObject> object) { return IsPyList(*object); }
+bool IsPyTuple(Tagged<PyObject> object) { return PyTuple::IsTupleLike(object); }
+bool IsPyTuple(Handle<PyObject> object) { return IsPyTuple(*object); }
+bool IsPyDict(Tagged<PyObject> object) { return PyDict::IsDictLike(object); }
+bool IsPyDict(Handle<PyObject> object) { return IsPyDict(*object); }
+
+// 显式暴露 exact 语义，供边界场景调用。
+IMPL_PY_EXACT_CHECKER_BY_KLASS(PyString)
+IMPL_PY_EXACT_CHECKER_BY_KLASS(PyList)
+IMPL_PY_EXACT_CHECKER_BY_KLASS(PyTuple)
+IMPL_PY_EXACT_CHECKER_BY_KLASS(PyDict)
+
 #undef IMPL_PY_CHECKER_BY_KLASS
+#undef IMPL_PY_EXACT_CHECKER_BY_KLASS
 
 bool IsPyFunction(Tagged<PyObject> object) {
   return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance() ||
