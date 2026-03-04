@@ -22,7 +22,13 @@ namespace saauso::internal {
 
 Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
                                            Handle<PyDict> target) {
+  // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
+#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+
   PY_TUPLE_BUILTINS(INSTALL_BUILTIN_METHOD);
+#undef INSTALL_BUILTIN_METHOD
+
   return JustVoid();
 }
 
