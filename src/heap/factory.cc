@@ -417,7 +417,7 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
   assert(func_template.function() != nullptr);
   object->native_func_ = func_template.function();
 
-  assert(func_template.name().is_null());
+  assert(!func_template.name().is_null());
   object->func_name_ = *func_template.name();
 
   // 绑定klass
