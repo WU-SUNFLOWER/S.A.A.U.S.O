@@ -42,7 +42,7 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
     return Tagged<PyList>::cast(object)->length() != 0;
   }
   if (PyTuple::IsTupleLike(object)) {
-    return PyTuple::CastTupleLike(object)->length() != 0;
+    return Tagged<PyTuple>::cast(object)->length() != 0;
   }
   if (IsPyDict(object)) {
     return Tagged<PyDict>::cast(object)->occupied() != 0;

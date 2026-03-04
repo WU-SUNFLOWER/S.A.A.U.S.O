@@ -26,8 +26,6 @@ class PyTuple : public PyObject {
   static Tagged<PyTuple> cast(Tagged<PyObject> object);
   static bool IsTupleLike(Tagged<PyObject> object);
   static bool IsTupleLike(Handle<PyObject> object);
-  static Tagged<PyTuple> CastTupleLike(Tagged<PyObject> object);
-  static Handle<PyTuple> CastTupleLike(Handle<PyObject> object);
 
   static size_t ComputeObjectSize(int64_t length);
 

@@ -35,16 +35,6 @@ bool PyTuple::IsTupleLike(Handle<PyObject> object) {
   return IsTupleLike(*object);
 }
 
-Tagged<PyTuple> PyTuple::CastTupleLike(Tagged<PyObject> object) {
-  assert(IsTupleLike(object));
-  return Tagged<PyTuple>::cast(object);
-}
-
-Handle<PyTuple> PyTuple::CastTupleLike(Handle<PyObject> object) {
-  assert(IsTupleLike(object));
-  return Handle<PyTuple>(Tagged<PyTuple>::cast(*object));
-}
-
 size_t PyTuple::ComputeObjectSize(int64_t length) {
   return ObjectSizeAlign(sizeof(PyTuple) + length * sizeof(Tagged<PyObject>));
 }

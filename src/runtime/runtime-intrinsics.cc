@@ -53,7 +53,7 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
                                    Handle<PyDict> module_dict,
                                    Handle<PyDict> locals) {
   if (PyTuple::IsTupleLike(all)) {
-    auto names = PyTuple::CastTupleLike(all);
+    auto names = Handle<PyTuple>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
