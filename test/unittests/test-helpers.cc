@@ -9,6 +9,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -17,6 +18,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-utils.h"
 
@@ -78,10 +80,13 @@ void BasicInterpreterTest::SetUpTestSuite() {
   Handle<PyString> func_name = PyString::NewInstance("print");
   Handle<PyDict> builtins = handle(isolate_->builtins());
 
+  FunctionTemplateInfo func_template(&Builtin_PrintV, func_name);
+  Handle<PyFunction> func;
+  ASSERT_TRUE(
+      isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
+
   // 将 builtins.print 替换为 Builtin_PrintV，用于捕获解释器侧的打印参数。
-  ASSERT_FALSE(PyDict::Put(builtins, func_name,
-                           PyFunction::NewInstance(&Builtin_PrintV, func_name))
-                   .IsNothing());
+  ASSERT_FALSE(PyDict::Put(builtins, func_name, func).IsNothing());
 }
 
 void BasicInterpreterTest::TearDownTestSuite() {

@@ -8,6 +8,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -68,7 +69,9 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
 
   // 将 code object 包装为一个可调用的 PyFunction，随后以“绑定 locals 作为
   // frame.locals” 的方式驱动解释器执行。
-  Handle<PyFunction> func = PyFunction::NewInstance(code);
+  Handle<PyFunction> func;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
   func->set_func_globals(globals);
 
   Handle<PyObject> result;

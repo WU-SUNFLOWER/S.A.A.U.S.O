@@ -23,6 +23,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -80,9 +81,17 @@ Maybe<void> InstallFunc(Isolate* isolate,
                         const char* name,
                         NativeFuncPointer func) {
   Handle<PyString> py_name = PyString::NewInstance(name);
+
+  FunctionTemplateInfo function_template(func, py_name);
+
+  Handle<PyFunction> function_object;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, function_object,
+      isolate->factory()->NewPyFunctionWithTemplate(function_template));
+
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, py_name,
-                                  PyFunction::NewInstance(func, py_name)));
+                      PyDict::Put(module_dict, py_name, function_object));
+
   return JustVoid();
 }
 

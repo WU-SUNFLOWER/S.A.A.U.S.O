@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/cell.h"
 #include "src/objects/py-dict.h"
@@ -10,6 +11,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/templates.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -56,8 +58,15 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   Handle<PyTuple> closures = PyTuple::NewInstance(1);
   closures->SetInternal(0, cell);
 
-  Handle<PyFunction> func =
-      PyFunction::NewInstance(&DummyNative, PyString::NewInstance("dummy"));
+  Handle<PyString> func_name = PyString::NewInstance("dummy");
+  FunctionTemplateInfo func_template(&DummyNative, func_name);
+
+  Handle<PyFunction> func;
+  if (!isolate_->factory()
+           ->NewPyFunctionWithTemplate(func_template)
+           .To(&func)) {
+    FAIL() << "fail to create function object";
+  }
   func->set_closures(closures);
 
   Isolate::Current()->heap()->CollectGarbage();

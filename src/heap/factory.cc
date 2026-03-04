@@ -42,6 +42,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/templates.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -359,12 +360,13 @@ Handle<PyCodeObject> Factory::NewPyCodeObject() {
   return scope.Escape(object);
 }
 
-Handle<PyFunction> Factory::NewPyFunction() {
+MaybeHandle<PyFunction> Factory::NewPyFunction() {
   EscapableHandleScope scope;
 
   auto klass = PyFunctionKlass::GetInstance();
   Handle<PyFunction> object(
       Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
+
   {
     DisallowHeapAllocation disallow(isolate_);
     object->func_code_ = Tagged<PyObject>::null();
@@ -377,9 +379,49 @@ Handle<PyFunction> Factory::NewPyFunction() {
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
+
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  (void)PyDict::Put(properties, PyString::NewInstance("__dict__"), properties);
+  RETURN_ON_EXCEPTION(
+      isolate_,
+      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+
   PyObject::SetProperties(*object, *properties);
+
+  return scope.Escape(object);
+}
+
+MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
+    Handle<PyCodeObject> code_object) {
+  EscapableHandleScope scope;
+
+  Handle<PyFunction> object;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
+
+  object->func_code_ = *code_object;
+  object->func_name_ = *code_object->co_name();
+  object->flags_ = code_object->flags();
+
+  // 绑定klass
+  PyObject::SetKlass(object, PyFunctionKlass::GetInstance());
+
+  return scope.Escape(object);
+}
+
+MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
+    const FunctionTemplateInfo& func_template) {
+  EscapableHandleScope scope;
+
+  Handle<PyFunction> object;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
+
+  assert(func_template.function() != nullptr);
+  object->native_func_ = func_template.function();
+
+  assert(!func_template.name().is_null());
+  object->func_name_ = *func_template.name();
+
+  // 绑定klass
+  PyObject::SetKlass(object, NativeFunctionKlass::GetInstance());
 
   return scope.Escape(object);
 }

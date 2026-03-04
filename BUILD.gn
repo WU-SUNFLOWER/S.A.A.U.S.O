@@ -76,6 +76,7 @@ source_set("saauso_core") {
     "//src/objects/klass.h",
     "//src/objects/mark-word.cc",
     "//src/objects/mark-word.h",
+    "//src/objects/native-function-helpers.h",
     "//src/objects/objects.h",
     "//src/objects/py-code-object-klass.cc",
     "//src/objects/py-code-object-klass.h",

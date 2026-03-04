@@ -8,16 +8,20 @@
 #include "src/execution/exception-utils.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
+#include "src/objects/py-string.h"
+#include "src/objects/templates.h"
 
 namespace saauso::internal {
 
 // 特别提醒：
 // 如果需要Python内建函数对应的C++函数签名声明，
-// 请使用src/objects/py-function.h当中的NativeFuncPointer！！！
+// 请使用src/objects/native-function-helpers.h当中的NativeFuncPointer！！！
 
 class PyObject;
 class PyTuple;
-class PyDict;
 
 #define BUILTIN_FUNC_NAME(name) Builtin_##name
 
@@ -34,8 +38,12 @@ class PyDict;
 #define INSTALL_BUILTIN_METHOD(func_name, method_name)                         \
   do {                                                                         \
     auto prop_name = PyString::NewInstance(method_name);                       \
-    auto func_object =                                                         \
-        PyFunction::NewInstance(&BUILTIN_FUNC_NAME(func_name), prop_name);     \
+    auto func_template =                                                       \
+        FunctionTemplateInfo(&BUILTIN_FUNC_NAME(func_name), prop_name);        \
+    Handle<PyFunction> func_object;                                            \
+    ASSIGN_RETURN_ON_EXCEPTION(                                                \
+        isolate, func_object,                                                  \
+        isolate->factory()->NewPyFunctionWithTemplate(func_template));         \
     RETURN_ON_EXCEPTION(isolate, PyDict::Put(target, prop_name, func_object)); \
   } while (0);
 
