@@ -6,11 +6,12 @@
 
 #include <string>
 
-#include "src/builtins/builtins-base-exception.h"
+#include "src/builtins/builtins-base-exception-methods.h"
 #include "src/builtins/builtins-definitions.h"
 #include "src/execution/exception-types.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
@@ -27,6 +28,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"

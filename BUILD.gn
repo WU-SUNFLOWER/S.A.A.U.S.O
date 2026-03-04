@@ -213,8 +213,8 @@ source_set("saauso_core") {
     "//src/modules/module-utils.h",
 
     # builtins (内建函数)
-    "//src/builtins/builtins-base-exception.cc",
-    "//src/builtins/builtins-base-exception.h",
+    "//src/builtins/builtins-base-exception-methods.cc",
+    "//src/builtins/builtins-base-exception-methods.h",
     "//src/builtins/builtins-debug.cc",
     "//src/builtins/builtins-definitions.h",
     "//src/builtins/builtins-exec.cc",
@@ -236,6 +236,7 @@ source_set("saauso_core") {
     "//src/builtins/builtins-py-type-object-methods.cc",
     "//src/builtins/builtins-py-type-object-methods.h",
     "//src/builtins/builtins-reflection.cc",
+    "//src/builtins/builtins-utils.cc",
     "//src/builtins/builtins-utils.h",
 
     # third_party (第三方库)
