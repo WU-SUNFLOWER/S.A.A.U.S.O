@@ -5,9 +5,6 @@
 #ifndef SAAUSO_HEAP_FACTORY_H_
 #define SAAUSO_HEAP_FACTORY_H_
 
-#include <cstddef>
-#include <cstdint>
-
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -41,6 +38,8 @@ class PyString;
 class PyTuple;
 class PyTupleIterator;
 class PyTypeObject;
+
+class FunctionTemplateInfo;
 
 // 基于句柄的堆内存分配接口，全部收拢到 Factory 单例
 class Factory {
@@ -95,7 +94,12 @@ class Factory {
 
   Handle<PyCodeObject> NewPyCodeObject();
 
-  Handle<PyFunction> NewPyFunction();
+  MaybeHandle<PyFunction> NewPyFunction();
+  MaybeHandle<PyFunction> NewPyFunctionWithCodeObject(
+      Handle<PyCodeObject> code_object);
+  MaybeHandle<PyFunction> NewPyFunctionWithTemplate(
+      const FunctionTemplateInfo& func_template);
+
   Handle<MethodObject> NewMethodObject(Handle<PyObject> func,
                                        Handle<PyObject> owner);
 

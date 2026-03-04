@@ -18,40 +18,6 @@
 namespace saauso::internal {
 
 // static
-Handle<PyFunction> PyFunction::NewInstance(Handle<PyCodeObject> code_object) {
-  EscapableHandleScope scope;
-  Handle<PyFunction> object = NewInstanceInternal();
-
-  object->func_code_ = *code_object;
-  object->func_name_ = *code_object->co_name();
-  object->flags_ = code_object->flags();
-
-  // 绑定klass
-  SetKlass(object, PyFunctionKlass::GetInstance());
-
-  return scope.Escape(object);
-}
-
-// static
-Handle<PyFunction> PyFunction::NewInstance(NativeFuncPointer native_func,
-                                           Handle<PyString> func_name) {
-  EscapableHandleScope scope;
-  Handle<PyFunction> object = NewInstanceInternal();
-
-  object->native_func_ = native_func;
-  object->func_name_ = *func_name;
-
-  // 绑定klass
-  SetKlass(object, NativeFunctionKlass::GetInstance());
-
-  return scope.Escape(object);
-}
-
-Handle<PyFunction> PyFunction::NewInstanceInternal() {
-  return Isolate::Current()->factory()->NewPyFunction();
-}
-
-// static
 Tagged<PyFunction> PyFunction::cast(Tagged<PyObject> object) {
   assert(IsPyFunction(object));
   return Tagged<PyFunction>::cast(object);
@@ -65,6 +31,10 @@ Handle<PyCodeObject> PyFunction::func_code() const {
 
 Handle<PyString> PyFunction::func_name() const {
   return handle(Tagged<PyString>::cast(func_name_));
+}
+
+void PyFunction::set_func_name(Handle<PyString> name) {
+  func_name_ = *name;
 }
 
 Handle<PyDict> PyFunction::func_globals() const {

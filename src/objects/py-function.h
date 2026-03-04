@@ -6,28 +6,22 @@
 #define SAAUSO_OBJECTS_PY_FUNCTION_H_
 
 #include "src/handles/maybe-handles.h"
+#include "src/objects/native-function-helpers.h"
 #include "src/objects/py-object.h"
 
 namespace saauso::internal {
 
 using PyFuncFlags = uint32_t;
 
-using NativeFuncPointer = MaybeHandle<PyObject> (*)(Handle<PyObject> host,
-                                                    Handle<PyTuple> args,
-                                                    Handle<PyDict> kwargs);
-
 class PyFunction : public PyObject {
  public:
-  // 创建python层面的函数对象
-  static Handle<PyFunction> NewInstance(Handle<PyCodeObject> code_object);
-  // 创建调用c++ native代码的函数对象
-  static Handle<PyFunction> NewInstance(NativeFuncPointer native_func,
-                                        Handle<PyString> func_name);
   static Tagged<PyFunction> cast(Tagged<PyObject> object);
 
   Handle<PyCodeObject> func_code() const;
 
   Handle<PyString> func_name() const;
+  void set_func_name(Handle<PyString> name);
+
   PyFuncFlags flags() const { return flags_; }
 
   Handle<PyDict> func_globals() const;
