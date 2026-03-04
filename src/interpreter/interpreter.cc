@@ -74,14 +74,14 @@ Handle<PyDict> Interpreter::CurrentFrameLocals() const {
   return current_frame_->locals();
 }
 
-void Interpreter::Run(Handle<PyFunction> boilerplate) {
+Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
   Handle<PyDict> globals = PyDict::NewInstance();
-  (void)PyDict::Put(globals, ST(name), ST(main));
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(globals, ST(name), ST(main)));
 
   boilerplate->set_func_globals(globals);
 
   FrameObject* frame;
-  ASSIGN_RETURN_ON_EXCEPTION_VOID(
+  ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, frame,
       FrameObjectBuilder::BuildFastPath(boilerplate, Handle<PyObject>::null(),
                                         Handle<PyTuple>::null(),
@@ -90,6 +90,14 @@ void Interpreter::Run(Handle<PyFunction> boilerplate) {
   EnterFrame(frame);
   EvalCurrentFrame();
   DestroyCurrentFrame();
+
+  // 如果执行Python代码的过程中出现了未被处理的异常，
+  // 则显式向上传播。
+  if (isolate_->HasPendingException()) {
+    return kNullMaybe;
+  }
+
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,

@@ -108,7 +108,9 @@ void BasicInterpreterTest::RunScript(std::string_view source,
     return;
   }
 
-  isolate_->interpreter()->Run(boilerplate);
+  if (isolate_->interpreter()->Run(boilerplate).IsNothing()) {
+    ASSERT_TRUE(isolate_->HasPendingException());
+  }
 
   if (isolate_->HasPendingException()) {
     HandleScope scope;
@@ -153,7 +155,10 @@ void BasicInterpreterTest::RunScriptExpectExceptionContains(
     return;
   }
 
-  isolate_->interpreter()->Run(boilerplate);
+  auto run_result = isolate_->interpreter()->Run(boilerplate);
+  if (isolate_->HasPendingException()) {
+    EXPECT_TRUE(run_result.IsNothing());
+  }
   ASSERT_TRUE(isolate_->HasPendingException());
 
   std::string msg = ExpectedAndTakePendingExceptionMessage();

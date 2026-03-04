@@ -4,7 +4,11 @@
 
 #include <string_view>
 
+#include "src/code/compiler.h"
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/interpreter/interpreter.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
@@ -53,5 +57,40 @@ print("after")
   ExpectPrintResult(expected_printv_result);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, RunReturnsJustOnSuccess) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+print("ok")
+)";
+
+  Handle<PyFunction> boilerplate;
+  ASSERT_TRUE(Compiler::CompileSource(isolate(), kSource, kTestFileName)
+                  .To(&boilerplate));
+
+  auto run_result = isolate()->interpreter()->Run(boilerplate);
+  ASSERT_FALSE(run_result.IsNothing());
+  ASSERT_FALSE(isolate()->HasPendingException());
+}
+
+TEST_F(BasicInterpreterTest, RunReturnsNothingOnUnhandledException) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+raise RuntimeError("boom")
+)";
+
+  Handle<PyFunction> boilerplate;
+  ASSERT_TRUE(Compiler::CompileSource(isolate(), kSource, kTestFileName)
+                  .To(&boilerplate));
+
+  auto run_result = isolate()->interpreter()->Run(boilerplate);
+  ASSERT_TRUE(run_result.IsNothing());
+  ASSERT_TRUE(isolate()->HasPendingException());
+
+  std::string msg = ExpectedAndTakePendingExceptionMessage();
+  ASSERT_FALSE(msg.empty());
+  EXPECT_NE(msg.find("RuntimeError"), std::string::npos);
+}
+
+}  // namespace saauso::internal

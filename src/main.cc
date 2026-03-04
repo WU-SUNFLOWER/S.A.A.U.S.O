@@ -81,8 +81,12 @@ int main(int argc, char** argv) {
 
     if (isolate->initialized()) {
       Handle<PyFunction> boilerplate;
-      if (!LoadFunctionBoilerplate(isolate).To(&boilerplate)) {
-        isolate->interpreter()->Run(boilerplate);
+      if (LoadFunctionBoilerplate(isolate).To(&boilerplate)) {
+        if (isolate->interpreter()->Run(boilerplate).IsNothing()) {
+          exit_code = 1;
+        }
+      } else {
+        exit_code = 1;
       }
     }
 
