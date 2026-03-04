@@ -131,7 +131,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
 
   if (is_exact_str && argc == 1) {
     Handle<PyObject> value = pos_args->Get(0);
-    if (IsPyString(value)) {
+    if (IsPyStringExact(value)) {
       return value;
     }
   }

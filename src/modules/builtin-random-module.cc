@@ -357,7 +357,7 @@ MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> host,
     return kNullMaybe;
   }
   Handle<PyObject> x = args->Get(0);
-  if (!IsPyList(x)) {
+  if (!IsPyListExact(x)) {
     Handle<PyString> type_name = PyObject::GetKlass(x)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "shuffle() argument must be list, not '%s'",

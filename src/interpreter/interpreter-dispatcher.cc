@@ -526,7 +526,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(DictMerge, {
     Handle<PyObject> update = POP();
     Handle<PyObject> target = TOP();
-    if (!IsPyDict(target) || !IsPyDict(update)) {
+    if (!IsPyDictExact(target) || !IsPyDictExact(update)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "DICT_MERGE expected dict operands");
       goto pending_exception_unwind;
@@ -966,7 +966,7 @@ void Interpreter::EvalCurrentFrame() {
     // `op_arg & 1`表示栈顶存在关键字参数字典
     if ((op_arg & 1) != 0) {
       Handle<PyObject> kw = POP();
-      if (!IsPyDict(kw)) [[unlikely]] {
+      if (!IsPyDictExact(kw)) [[unlikely]] {
         Runtime_ThrowError(ExceptionType::kTypeError,
                            "CALL_FUNCTION_EX expected a dict for **kwargs");
         goto pending_exception_unwind;

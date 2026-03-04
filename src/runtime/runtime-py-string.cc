@@ -265,7 +265,7 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
         Execution::Call(isolate, method, value, Handle<PyTuple>::null(),
                         Handle<PyDict>::null()));
 
-    if (!IsPyString(result)) {
+    if (!IsPyStringExact(result)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "__str__ returned non-string");
       return kNullMaybeHandle;

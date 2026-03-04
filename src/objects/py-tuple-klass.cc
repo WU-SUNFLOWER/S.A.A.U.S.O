@@ -118,7 +118,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
   if (is_exact_tuple && argc == 1) {
     Handle<PyObject> iterable = pos_args->Get(0);
-    if (IsPyTuple(iterable)) {
+    if (IsPyTupleExact(iterable)) {
       return iterable;
     }
   }
