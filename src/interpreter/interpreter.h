@@ -76,10 +76,10 @@ class Interpreter {
                                        ExtendArgs... extend_args);
 
   void NormalizeCallable(Handle<PyObject>& callable, Handle<PyObject>& host);
-  void NormalizeArguments(Handle<PyTuple> actual_args,
-                          Handle<PyTuple> kwarg_keys,
-                          Handle<PyTuple>& pos_args,
-                          Handle<PyDict>& kw_args);
+  Maybe<void> NormalizeArguments(Handle<PyTuple> actual_args,
+                                 Handle<PyTuple> kwarg_keys,
+                                 Handle<PyTuple>& pos_args,
+                                 Handle<PyDict>& kw_args);
 
   void EnterFrame(FrameObject* frame);
   void EvalCurrentFrame();

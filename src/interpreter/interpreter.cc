@@ -188,10 +188,10 @@ void Interpreter::NormalizeCallable(Handle<PyObject>& callable,
 }
 
 // private
-void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
-                                     Handle<PyTuple> kwarg_keys,
-                                     Handle<PyTuple>& pos_args,
-                                     Handle<PyDict>& kw_args) {
+Maybe<void> Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
+                                            Handle<PyTuple> kwarg_keys,
+                                            Handle<PyTuple>& pos_args,
+                                            Handle<PyDict>& kw_args) {
   // 如果有有效的键值对参数，从全体args当中单独提取出来
   if (!kwarg_keys.is_null()) {
     kw_args = PyDict::NewInstance();
@@ -200,8 +200,12 @@ void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
     auto actual_args_size = actual_args->length();
 
     for (auto i = 0; i < kwarg_keys->length(); ++i) {
-      (void)PyDict::Put(kw_args, kwarg_keys->Get(kwarg_keys->length() - i - 1),
-                        actual_args->Get(actual_args_size - i - 1));
+      Handle<PyObject> kwarg_key =
+          kwarg_keys->Get(kwarg_keys->length() - i - 1);
+      Handle<PyObject> actual_arg = actual_args->Get(actual_args_size - i - 1);
+
+      RETURN_ON_EXCEPTION(isolate_,
+                          PyDict::Put(kw_args, kwarg_key, actual_arg));
     }
 
     // 从actual_args尾部截去提取出来的参数，剩余部分作为pos_args
@@ -210,6 +214,8 @@ void Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
   } else {
     pos_args = actual_args;
   }
+
+  return JustVoid();
 }
 
 // private

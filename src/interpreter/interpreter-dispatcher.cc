@@ -1160,7 +1160,8 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
   // Slow Path：先对用户传入的实参进行归一化，再尝试调用callable的call虚方法
   Handle<PyTuple> pos_args;
   Handle<PyDict> kw_args;
-  NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args);
+  RETURN_ON_EXCEPTION(
+      isolate_, NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args));
 
   // 如果是NativeFunction，直接执行调用，不走开销昂贵的虚函数
   if (IsNativePyFunction(callable)) {
