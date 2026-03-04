@@ -14,6 +14,8 @@
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
 #include "src/code/cpython312-pyc-file-parser.h"
+#include "src/execution/exception-utils.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-string.h"
@@ -56,9 +58,11 @@ MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
 
   CPython312PycFileParser parser(
       std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
-
   Handle<PyCodeObject> code = parser.Parse();
-  Handle<PyFunction> func = PyFunction::NewInstance(code);
+
+  Handle<PyFunction> func;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
 
   return scope.Escape(func);
 #endif  // !SAAUSO_ENABLE_CPYTHON_COMPILER
@@ -67,11 +71,14 @@ MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
 MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
                                              std::vector<uint8_t> bytes) {
   EscapableHandleScope scope;
+
   CPython312PycFileParser parser(
       std::span<const uint8_t>(bytes.data(), bytes.size()), isolate);
-
   Handle<PyCodeObject> code = parser.Parse();
-  Handle<PyFunction> func = PyFunction::NewInstance(code);
+
+  Handle<PyFunction> func;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
 
   return scope.Escape(func);
 }
@@ -79,10 +86,13 @@ MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
 MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
                                              const char* filename) {
   EscapableHandleScope scope;
-  CPython312PycFileParser parser(filename, isolate);
 
+  CPython312PycFileParser parser(filename, isolate);
   Handle<PyCodeObject> code = parser.Parse();
-  Handle<PyFunction> func = PyFunction::NewInstance(code);
+
+  Handle<PyFunction> func;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
 
   return scope.Escape(func);
 }
