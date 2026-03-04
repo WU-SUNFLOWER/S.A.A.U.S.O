@@ -180,7 +180,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
 
     if (argc == 2 || argc == 3) {
       Handle<PyObject> value = pos_args->Get(0);
-      if (PyString::IsStringLike(value)) {
+      if (IsPyString(value)) {
         Runtime_ThrowError(ExceptionType::kTypeError,
                            "decoding str is not supported\n");
         return kNullMaybeHandle;
@@ -214,7 +214,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
 
 Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) {
+  if (!IsPyString(other)) {
     return Maybe<bool>(false);
   }
   auto s1 = Handle<PyString>::cast(self);
@@ -224,7 +224,7 @@ Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
 
 Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) {
+  if (!IsPyString(other)) {
     return Maybe<bool>(true);
   }
   auto s1 = Handle<PyString>::cast(self);
@@ -234,7 +234,7 @@ Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
                                         Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) {
+  if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -249,7 +249,7 @@ Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
 
 Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) {
+  if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -264,7 +264,7 @@ Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
 
 Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) {
+  if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -279,7 +279,7 @@ Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
 
 Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
                                                 Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) {
+  if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -294,7 +294,7 @@ Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
 
 Maybe<bool> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
                                             Handle<PyObject> target) {
-  if (!PyString::IsStringLike(target)) {
+  if (!IsPyString(target)) {
     return Maybe<bool>(false);
   }
 
@@ -320,7 +320,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
                                                  Handle<PyObject> other) {
-  if (!PyString::IsStringLike(other)) [[unlikely]] {
+  if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "can only concatenate str (not \"%s\") to str\n",
@@ -344,7 +344,7 @@ Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
 }
 
 size_t PyStringKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  assert(PyString::IsStringLike(self));
+  assert(IsPyString(self));
   return PyString::ComputeObjectSize(Tagged<PyString>::cast(self)->length());
 }
 

@@ -35,7 +35,7 @@ Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
 
   if (argc == 1) {
     Handle<PyObject> input = pos_args->Get(0);
-    if (PyDict::IsDictLike(input)) {
+    if (IsPyDict(input)) {
       auto src = Handle<PyDict>::cast(input);
       for (int64_t i = 0; i < src->capacity(); ++i) {
         Handle<PyTuple> item = src->ItemAtIndex(i);

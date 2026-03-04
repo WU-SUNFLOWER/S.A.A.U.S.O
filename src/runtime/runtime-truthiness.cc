@@ -35,13 +35,13 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
   if (IsPyFloat(object)) {
     return Tagged<PyFloat>::cast(object)->value() != 0.0;
   }
-  if (PyString::IsStringLike(object)) {
+  if (IsPyString(object)) {
     return Tagged<PyString>::cast(object)->length() != 0;
   }
-  if (PyList::IsListLike(object)) {
+  if (IsPyList(object)) {
     return Tagged<PyList>::cast(object)->length() != 0;
   }
-  if (PyTuple::IsTupleLike(object)) {
+  if (IsPyTuple(object)) {
     return Tagged<PyTuple>::cast(object)->length() != 0;
   }
   if (IsPyDict(object)) {

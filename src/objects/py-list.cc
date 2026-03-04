@@ -26,20 +26,8 @@ Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
 
 // static
 Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
-  assert(IsListLike(object));
+  assert(IsPyList(object));
   return Tagged<PyList>::cast(object);
-}
-
-// static
-bool PyList::IsListLike(Tagged<PyObject> object) {
-  return IsHeapObject(object) &&
-         PyObject::GetKlass(object)->native_layout_kind() ==
-             NativeLayoutKind::kList;
-}
-
-// static
-bool PyList::IsListLike(Handle<PyObject> object) {
-  return IsListLike(*object);
 }
 
 /////////////////////////////////////////////////////////////

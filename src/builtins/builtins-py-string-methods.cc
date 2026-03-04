@@ -97,7 +97,7 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
                              int64_t& begin,
                              int64_t& end) {
   auto target = args->Get(0);
-  if (!PyString::IsStringLike(target)) {
+  if (!IsPyString(target)) {
     auto type_name = PyObject::GetKlass(target)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %s",
                         type_name->buffer());
@@ -259,7 +259,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       auto key = item->Get(0);
-      if (!PyString::IsStringLike(key)) {
+      if (!IsPyString(key)) {
         Runtime_ThrowError(ExceptionType::kTypeError,
                            "keywords must be strings");
         return kNullMaybeHandle;
@@ -323,7 +323,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
   Handle<PyObject> sep_or_null = Handle<PyObject>::null();
   if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
-    if (!PyString::IsStringLike(*sep_obj)) {
+    if (!IsPyString(*sep_obj)) {
       auto type_name = PyObject::GetKlass(sep_obj)->name();
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "must be str or None, not %s", type_name->buffer());

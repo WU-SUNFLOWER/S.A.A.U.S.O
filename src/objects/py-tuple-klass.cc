@@ -253,7 +253,7 @@ Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
 
 Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
                                         Handle<PyObject> other) {
-  if (!PyTuple::IsTupleLike(other)) {
+  if (!IsPyTuple(other)) {
     return Maybe<bool>(false);
   }
 
@@ -284,12 +284,12 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
 }
 
 size_t PyTupleKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  assert(PyTuple::IsTupleLike(self));
+  assert(IsPyTuple(self));
   return PyTuple::ComputeObjectSize(Tagged<PyTuple>::cast(self)->length());
 }
 
 void PyTupleKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyTuple::IsTupleLike(self));
+  assert(IsPyTuple(self));
   auto tuple = Tagged<PyTuple>::cast(self);
   v->VisitPointers(tuple->data(), tuple->data() + tuple->length());
 }

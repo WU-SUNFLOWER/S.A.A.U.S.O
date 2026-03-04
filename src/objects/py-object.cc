@@ -29,7 +29,6 @@
 #include "src/objects/py-float.h"
 #include "src/objects/py-function-klass.h"
 #include "src/objects/py-function.h"
-#include "src/objects/py-list.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-module-klass.h"
@@ -110,6 +109,16 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 ///////////////////////////////////////////////////////////////////
 // 类型判断工具函数 开始
 
+namespace {
+
+bool IsNativeLayoutKind(Tagged<PyObject> object,
+                        NativeLayoutKind expected_kind) {
+  return IsHeapObject(object) &&
+         PyObject::GetKlass(object)->native_layout_kind() == expected_kind;
+}
+
+}  // namespace
+
 #define IMPL_PY_CHECKER_WITH_HANDLE_ARG(name) \
   bool Is##name(Handle<PyObject> object) {    \
     return Is##name(*object);                 \
@@ -152,14 +161,30 @@ IMPL_PY_CHECKER_BY_KLASS(MethodObject)
 IMPL_PY_CHECKER_BY_KLASS(Cell)
 
 // 容器/字符串默认采用 like 语义（按 native layout 判定）。
-bool IsPyString(Tagged<PyObject> object) { return PyString::IsStringLike(object); }
-bool IsPyString(Handle<PyObject> object) { return IsPyString(*object); }
-bool IsPyList(Tagged<PyObject> object) { return PyList::IsListLike(object); }
-bool IsPyList(Handle<PyObject> object) { return IsPyList(*object); }
-bool IsPyTuple(Tagged<PyObject> object) { return PyTuple::IsTupleLike(object); }
-bool IsPyTuple(Handle<PyObject> object) { return IsPyTuple(*object); }
-bool IsPyDict(Tagged<PyObject> object) { return PyDict::IsDictLike(object); }
-bool IsPyDict(Handle<PyObject> object) { return IsPyDict(*object); }
+bool IsPyString(Tagged<PyObject> object) {
+  return IsNativeLayoutKind(object, NativeLayoutKind::kString);
+}
+bool IsPyString(Handle<PyObject> object) {
+  return IsPyString(*object);
+}
+bool IsPyList(Tagged<PyObject> object) {
+  return IsNativeLayoutKind(object, NativeLayoutKind::kList);
+}
+bool IsPyList(Handle<PyObject> object) {
+  return IsPyList(*object);
+}
+bool IsPyTuple(Tagged<PyObject> object) {
+  return IsNativeLayoutKind(object, NativeLayoutKind::kTuple);
+}
+bool IsPyTuple(Handle<PyObject> object) {
+  return IsPyTuple(*object);
+}
+bool IsPyDict(Tagged<PyObject> object) {
+  return IsNativeLayoutKind(object, NativeLayoutKind::kDict);
+}
+bool IsPyDict(Handle<PyObject> object) {
+  return IsPyDict(*object);
+}
 
 // 显式暴露 exact 语义，供边界场景调用。
 IMPL_PY_EXACT_CHECKER_BY_KLASS(PyString)

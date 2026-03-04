@@ -22,8 +22,6 @@ class PyList : public PyObject {
   static Handle<PyList> NewInstance(int64_t init_capacity = kMinimumCapacity);
 
   static Tagged<PyList> cast(Tagged<PyObject> object);
-  static bool IsListLike(Tagged<PyObject> object);
-  static bool IsListLike(Handle<PyObject> object);
 
   // 以下方法均不会触发GC
   // 但为了避免调用方拿到Tagged<PyObject>裸指针后意外触发GC，导致裸指针变成悬空指针，

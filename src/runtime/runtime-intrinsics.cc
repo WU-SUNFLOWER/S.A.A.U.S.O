@@ -23,7 +23,7 @@ Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
                            Handle<PyDict> locals,
                            Handle<PyObject> name_obj,
                            bool ignore_private_member) {
-  if (!PyString::IsStringLike(name_obj)) [[unlikely]] {
+  if (!IsPyString(name_obj)) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "import * name must be a string");
     return kNullMaybe;
@@ -52,13 +52,13 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
                                    Handle<PyObject> all,
                                    Handle<PyDict> module_dict,
                                    Handle<PyDict> locals) {
-  if (PyTuple::IsTupleLike(all)) {
+  if (IsPyTuple(all)) {
     auto names = Handle<PyTuple>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(
           isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
     }
-  } else if (PyList::IsListLike(all)) {
+  } else if (IsPyList(all)) {
     auto names = Handle<PyList>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(
@@ -78,7 +78,7 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
 MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   EscapableHandleScope scope;
 
-  if (!PyList::IsListLike(object)) {
+  if (!IsPyList(object)) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "INTRINSIC_LIST_TO_TUPLE expected a list");
     return kNullMaybeHandle;

@@ -176,7 +176,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 
   for (int64_t i = 0; i < num_parts; ++i) {
     Handle<PyObject> item = parts->Get(i);
-    if (!PyString::IsStringLike(*item)) {
+    if (!IsPyString(*item)) {
       auto type_name = PyObject::GetKlass(item)->name();
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "sequence item %" PRId64
@@ -232,7 +232,7 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
     return kNullMaybeHandle;
   }
 
-  if (PyString::IsStringLike(value)) {
+  if (IsPyString(value)) {
     Handle<PyString> s = Handle<PyString>::cast(value);
     if (IsPyString(value)) {
       return scope.Escape(s);

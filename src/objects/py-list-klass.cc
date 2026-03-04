@@ -203,7 +203,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
                                                Handle<PyObject> other) {
   auto list1 = Handle<PyList>::cast(self);
-  if (!PyList::IsListLike(other)) {
+  if (!IsPyList(other)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "can only concatenate list (not \"%s\") to list",
                         PyObject::GetKlass(other)->name()->buffer());
@@ -295,7 +295,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
 Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
                                       Handle<PyObject> other) {
   auto list_l = Handle<PyList>::cast(self);
-  if (!PyList::IsListLike(other)) {
+  if (!IsPyList(other)) {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "'<' not supported between instances of 'list' and '%s'",
@@ -348,7 +348,7 @@ Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
 Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> target) {
   auto list1 = Handle<PyList>::cast(self);
-  if (!PyList::IsListLike(target)) {
+  if (!IsPyList(target)) {
     return Maybe<bool>(false);
   }
   auto list2 = Handle<PyList>::cast(target);
@@ -379,7 +379,7 @@ size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 }
 
 void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyList::IsListLike(self));
+  assert(IsPyList(self));
   v->VisitPointer(&Tagged<PyList>::cast(self)->array_);
 }
 

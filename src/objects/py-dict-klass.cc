@@ -138,7 +138,7 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
-  if (!PyDict::IsDictLike(other)) {
+  if (!IsPyDict(other)) {
     return Maybe<bool>(false);
   }
 
@@ -265,7 +265,7 @@ size_t PyDictKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 
 // static
 void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyDict::IsDictLike(self));
+  assert(IsPyDict(self));
   auto dict = Tagged<PyDict>::cast(self);
   v->VisitPointer(&dict->data_);
 }

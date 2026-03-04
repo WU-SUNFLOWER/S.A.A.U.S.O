@@ -96,18 +96,8 @@ Handle<PyString> PyString::FromDouble(double n) {
 
 // static
 Tagged<PyString> PyString::cast(Tagged<PyObject> object) {
-  assert(IsStringLike(object));
+  assert(IsPyString(object));
   return Tagged<PyString>::cast(object);
-}
-
-bool PyString::IsStringLike(Tagged<PyObject> object) {
-  return IsHeapObject(object) &&
-         PyObject::GetKlass(object)->native_layout_kind() ==
-             NativeLayoutKind::kString;
-}
-
-bool PyString::IsStringLike(Handle<PyObject> object) {
-  return IsStringLike(*object);
 }
 
 // static
