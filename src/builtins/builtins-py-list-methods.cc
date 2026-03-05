@@ -218,7 +218,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   }
 
   if (!key_func.is_null() && !IsNormalPyFunction(key_func) &&
-      !IsPyNativeFunction(key_func) && !IsMethodObject(key_func)) {
+      !IsNativePyFunction(key_func) && !IsMethodObject(key_func)) {
     Runtime_ThrowError(ExceptionType::kTypeError, "key must be callable");
     return kNullMaybeHandle;
   }

@@ -258,7 +258,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, self, prop_name, result));
   if (!result.is_null()) {
-    if (IsPyFunction(result) || IsPyNativeFunction(result)) {
+    if (IsPyFunction(result) || IsNativePyFunction(result)) {
       self_or_null = self;
       return result;
     }

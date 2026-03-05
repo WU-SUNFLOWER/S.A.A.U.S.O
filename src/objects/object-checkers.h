@@ -6,42 +6,15 @@
 #define SAAUSO_OBJECTS_OBJECT_CHECKERS_H_
 
 #include "src/handles/handles.h"
+#include "src/objects/object-type-list.h"
 
 namespace saauso::internal {
 
-#define PY_TYPE_IN_HEAP_LIST(V) \
-  V(PyTypeObject)               \
-  V(PyString)                   \
-  V(PyFunction)                 \
-  V(PyFloat)                    \
-  V(PyBoolean)                  \
-  V(PyNone)                     \
-  V(PyCodeObject)               \
-  V(PyModule)                   \
-  V(PyList)                     \
-  V(PyListIterator)             \
-  V(PyTuple)                    \
-  V(PyTupleIterator)            \
-  V(PyDict)                     \
-  V(PyDictKeys)                 \
-  V(PyDictValues)               \
-  V(PyDictItems)                \
-  V(PyDictKeyIterator)          \
-  V(PyDictItemIterator)         \
-  V(PyDictValueIterator)        \
-  V(FixedArray)                 \
-  V(MethodObject)               \
-  V(Cell)
-
-#define PY_TYPE_LIST(V) \
-  V(PySmi)              \
-  PY_TYPE_IN_HEAP_LIST(V)
+class PyObject;
 
 #define DECLARE_PY_TYPE(name) class name;
 PY_TYPE_LIST(DECLARE_PY_TYPE)
 #undef DECLARE_PY_TYPE
-
-class PyObject;
 
 #define DECLARE_PY_CHECKER(name)          \
   bool Is##name(Tagged<PyObject> object); \
@@ -52,23 +25,19 @@ DECLARE_PY_CHECKER(NormalPyFunction)
 DECLARE_PY_CHECKER(NativePyFunction)
 DECLARE_PY_CHECKER(PyTrue)
 DECLARE_PY_CHECKER(PyFalse)
-DECLARE_PY_CHECKER(PyNativeFunction)
 DECLARE_PY_CHECKER(HeapObject)
 DECLARE_PY_CHECKER(GcAbleObject)
-
 #undef DECLARE_PY_CHECKER
 
-// 容器/字符串的 Like 与 Exact 语义约定：
-// - IsPyString/IsPyList/IsPyDict/IsPyTuple：Like（按 native layout 判定）
-// - IsPyStringExact/IsPyListExact/IsPyDictExact/IsPyTupleExact：Exact（按 klass 全等判定）
-bool IsPyStringExact(Tagged<PyObject> object);
-bool IsPyStringExact(Handle<PyObject> object);
-bool IsPyListExact(Tagged<PyObject> object);
-bool IsPyListExact(Handle<PyObject> object);
-bool IsPyDictExact(Tagged<PyObject> object);
-bool IsPyDictExact(Handle<PyObject> object);
-bool IsPyTupleExact(Tagged<PyObject> object);
-bool IsPyTupleExact(Handle<PyObject> object);
+// 支持被用户Python代码显式继承的内建类型 Like 与 Exact 语义约定：
+// - IsXxx：Like（按 native layout 判定）
+// - IsXxxExact：Exact（按 klass 全等判定）
+#define DECLARE_PY_EXACT_CHECKER(name)           \
+  bool Is##name##Exact(Tagged<PyObject> object); \
+  bool Is##name##Exact(Handle<PyObject> object);
+
+PY_INHERITABLE_TYPE_IN_HEAP_LIST(DECLARE_PY_EXACT_CHECKER)
+#undef DECLARE_PY_EXACT_CHECKER
 
 }  // namespace saauso::internal
 

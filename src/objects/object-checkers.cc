@@ -37,25 +37,12 @@ bool IsNativeLayoutKind(Tagged<PyObject> object,
 
 }  // namespace
 
-#define IMPL_PY_CHECKER_WITH_HANDLE_ARG(name) \
-  bool Is##name(Handle<PyObject> object) {    \
-    return Is##name(*object);                 \
-  }
+/////////////////////////////////////////////////////////////////////////
+// 普通的对象类型 checker，直接基于 Klass 指针进行判断
 
-#define IMPL_PY_CHECKER_BY_KLASS(name)         \
-  bool Is##name(Tagged<PyObject> object) {     \
-    return PyObject::GetKlass(object).ptr() == \
-           name##Klass::GetInstance().ptr();   \
-  }                                            \
-  IMPL_PY_CHECKER_WITH_HANDLE_ARG(name)
-
-#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)      \
-  bool Is##name##Exact(Tagged<PyObject> object) { \
-    return PyObject::GetKlass(object).ptr() ==    \
-           name##Klass::GetInstance().ptr();      \
-  }                                               \
-  bool Is##name##Exact(Handle<PyObject> object) { \
-    return Is##name##Exact(*object);              \
+#define IMPL_PY_CHECKER_BY_KLASS(name)                               \
+  bool Is##name(Tagged<PyObject> object) {                           \
+    return PyObject::GetKlass(object) == name##Klass::GetInstance(); \
   }
 
 IMPL_PY_CHECKER_BY_KLASS(PyTypeObject)
@@ -75,39 +62,30 @@ IMPL_PY_CHECKER_BY_KLASS(PyDictValueIterator)
 IMPL_PY_CHECKER_BY_KLASS(FixedArray)
 IMPL_PY_CHECKER_BY_KLASS(MethodObject)
 IMPL_PY_CHECKER_BY_KLASS(Cell)
+#undef IMPL_PY_CHECKER_BY_KLASS
+
+/////////////////////////////////////////////////////////////////////////
+// 支持被用户Python代码继承的类型，`IsXxxx` API 的语义为 like 而非 exact。
+// 这些 API 通过检查 Klass 中的 NativeLayoutKind 字段进行判断。
 
 bool IsPyString(Tagged<PyObject> object) {
   return IsNativeLayoutKind(object, NativeLayoutKind::kString);
 }
-bool IsPyString(Handle<PyObject> object) {
-  return IsPyString(*object);
-}
+
 bool IsPyList(Tagged<PyObject> object) {
   return IsNativeLayoutKind(object, NativeLayoutKind::kList);
 }
-bool IsPyList(Handle<PyObject> object) {
-  return IsPyList(*object);
-}
+
 bool IsPyTuple(Tagged<PyObject> object) {
   return IsNativeLayoutKind(object, NativeLayoutKind::kTuple);
 }
-bool IsPyTuple(Handle<PyObject> object) {
-  return IsPyTuple(*object);
-}
+
 bool IsPyDict(Tagged<PyObject> object) {
   return IsNativeLayoutKind(object, NativeLayoutKind::kDict);
 }
-bool IsPyDict(Handle<PyObject> object) {
-  return IsPyDict(*object);
-}
 
-IMPL_PY_EXACT_CHECKER_BY_KLASS(PyString)
-IMPL_PY_EXACT_CHECKER_BY_KLASS(PyList)
-IMPL_PY_EXACT_CHECKER_BY_KLASS(PyTuple)
-IMPL_PY_EXACT_CHECKER_BY_KLASS(PyDict)
-
-#undef IMPL_PY_CHECKER_BY_KLASS
-#undef IMPL_PY_EXACT_CHECKER_BY_KLASS
+/////////////////////////////////////////////////////////////////////////
+// 其他特化 checker API
 
 bool IsPyFunction(Tagged<PyObject> object) {
   return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance() ||
@@ -127,22 +105,15 @@ bool IsPySmi(Tagged<PyObject> object) {
 }
 
 bool IsPyTrue(Tagged<PyObject> object) {
-  return object.ptr() ==
-         Tagged<PyObject>(Isolate::Current()->py_true_object()).ptr();
+  return object == Tagged<PyObject>(Isolate::Current()->py_true_object());
 }
 
 bool IsPyFalse(Tagged<PyObject> object) {
-  return object.ptr() ==
-         Tagged<PyObject>(Isolate::Current()->py_false_object()).ptr();
+  return object == Tagged<PyObject>(Isolate::Current()->py_false_object());
 }
 
 bool IsHeapObject(Tagged<PyObject> object) {
   return !object.is_null() && !IsPySmi(object);
-}
-
-bool IsPyNativeFunction(Tagged<PyObject> object) {
-  return PyObject::GetKlass(object).ptr() ==
-         NativeFunctionKlass::GetInstance().ptr();
 }
 
 bool IsGcAbleObject(Tagged<PyObject> object) {
@@ -155,15 +126,36 @@ bool IsGcAbleObject(Tagged<PyObject> object) {
   return !IsPyBoolean(object) && !IsPyNone(object);
 }
 
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFunction)
+/////////////////////////////////////////////////////////////////////////
+// 支持接收 Handle 的 checker API
+
+#define IMPL_PY_CHECKER_WITH_HANDLE_ARG(name) \
+  bool Is##name(Handle<PyObject> object) {    \
+    return Is##name(*object);                 \
+  }
+
+PY_TYPE_LIST(IMPL_PY_CHECKER_WITH_HANDLE_ARG)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(NormalPyFunction)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(NativePyFunction)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(PySmi)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTrue)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFalse)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(HeapObject)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyNativeFunction)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 #undef IMPL_PY_CHECKER_WITH_HANDLE_ARG
+
+/////////////////////////////////////////////////////////////////////////
+// 针对支持被用户Python代码继承的类型，提供显式的 exact 语义 API。
+// 基于 Klass 头指针进行精确判断。
+
+#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)                         \
+  bool Is##name##Exact(Tagged<PyObject> object) {                    \
+    return PyObject::GetKlass(object) == name##Klass::GetInstance(); \
+  }                                                                  \
+  bool Is##name##Exact(Handle<PyObject> object) {                    \
+    return Is##name##Exact(*object);                                 \
+  }
+
+PY_INHERITABLE_TYPE_IN_HEAP_LIST(IMPL_PY_EXACT_CHECKER_BY_KLASS)
+#undef IMPL_PY_EXACT_CHECKER_BY_KLASS
 
 }  // namespace saauso::internal
