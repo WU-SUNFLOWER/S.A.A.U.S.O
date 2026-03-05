@@ -25,7 +25,7 @@ namespace {
 // 将 obj 解析为 dict。失败时抛出 TypeError 并返回 null。
 MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
                                                const char* role_name) {
-  if (IsPyDict(*obj)) {
+  if (IsPyDictExact(*obj)) {
     return MaybeHandle<PyDict>(Handle<PyDict>::cast(obj));
   }
 

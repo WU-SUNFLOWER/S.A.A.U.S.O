@@ -179,11 +179,11 @@ MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
-  return Handle<PyObject>(PySmi::FromInt(PyList::CastListLike(self)->length()));
+  return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
-  auto list = PyList::CastListLike(self);
+  auto list = Handle<PyList>::cast(self);
 
   std::printf("[");
 
@@ -202,14 +202,14 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
                                                Handle<PyObject> other) {
-  auto list1 = PyList::CastListLike(self);
-  if (!PyList::IsListLike(other)) {
+  auto list1 = Handle<PyList>::cast(self);
+  if (!IsPyList(other)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "can only concatenate list (not \"%s\") to list",
                         PyObject::GetKlass(other)->name()->buffer());
     return kNullMaybeHandle;
   }
-  auto list2 = PyList::CastListLike(other);
+  auto list2 = Handle<PyList>::cast(other);
 
   auto new_result = PyList::NewInstance(list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
@@ -232,7 +232,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
-  auto list = PyList::CastListLike(self);
+  auto list = Handle<PyList>::cast(self);
   auto decoded_coeff = std::max(static_cast<int64_t>(0),
                                 PySmi::ToInt(Handle<PySmi>::cast(coeff)));
 
@@ -256,13 +256,13 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
   }
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
-  return PyList::CastListLike(self)->Get(decoded_subscr);
+  return Handle<PyList>::cast(self)->Get(decoded_subscr);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
-  auto list = PyList::CastListLike(self);
+  auto list = Handle<PyList>::cast(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
@@ -278,7 +278,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
                                                      Handle<PyObject> subscr) {
-  auto list = PyList::CastListLike(self);
+  auto list = Handle<PyList>::cast(self);
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
@@ -294,15 +294,15 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
 
 Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
                                       Handle<PyObject> other) {
-  auto list_l = PyList::CastListLike(self);
-  if (!PyList::IsListLike(other)) {
+  auto list_l = Handle<PyList>::cast(self);
+  if (!IsPyList(other)) {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "'<' not supported between instances of 'list' and '%s'",
         PyObject::GetKlass(other)->name()->buffer());
     return kNullMaybe;
   }
-  auto list_r = PyList::CastListLike(other);
+  auto list_r = Handle<PyList>::cast(other);
   auto min_len = std::min(list_l->length(), list_r->length());
 
   for (auto i = 0; i < min_len; ++i) {
@@ -331,7 +331,7 @@ Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
 
 Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
                                           Handle<PyObject> target) {
-  auto list = PyList::CastListLike(self);
+  auto list = Handle<PyList>::cast(self);
   for (auto i = 0; i < list->length(); ++i) {
     Maybe<bool> eq = PyObject::EqualBool(list->Get(i), target);
     if (eq.IsNothing()) {
@@ -347,11 +347,11 @@ Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
 
 Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> target) {
-  auto list1 = PyList::CastListLike(self);
-  if (!PyList::IsListLike(target)) {
+  auto list1 = Handle<PyList>::cast(self);
+  if (!IsPyList(target)) {
     return Maybe<bool>(false);
   }
-  auto list2 = PyList::CastListLike(target);
+  auto list2 = Handle<PyList>::cast(target);
 
   if (list1->length() != list2->length()) {
     return Maybe<bool>(false);
@@ -371,7 +371,7 @@ Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {
-  return PyListIterator::NewInstance(PyList::CastListLike(object));
+  return PyListIterator::NewInstance(Handle<PyList>::cast(object));
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -379,7 +379,7 @@ size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 }
 
 void PyListKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyList::IsListLike(self));
+  assert(IsPyList(self));
   v->VisitPointer(&Tagged<PyList>::cast(self)->array_);
 }
 

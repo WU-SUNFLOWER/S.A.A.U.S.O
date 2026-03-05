@@ -99,7 +99,7 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto dict = PyDict::CastDictLike(self);
+  auto dict = Handle<PyDict>::cast(self);
   std::printf("{");
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
@@ -127,7 +127,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
-  auto value = PyDict::CastDictLike(self)->occupied();
+  auto value = Handle<PyDict>::cast(self)->occupied();
   return Handle<PyObject>(PySmi::FromInt(value));
 }
 
@@ -138,12 +138,12 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
-  if (!PyDict::IsDictLike(other)) {
+  if (!IsPyDict(other)) {
     return Maybe<bool>(false);
   }
 
-  auto d1 = PyDict::CastDictLike(self);
-  auto d2 = PyDict::CastDictLike(other);
+  auto d1 = Handle<PyDict>::cast(self);
+  auto d2 = Handle<PyDict>::cast(other);
 
   if (d1->occupied() != d2->occupied()) {
     return Maybe<bool>(false);
@@ -184,24 +184,24 @@ Maybe<bool> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
                                                   Handle<PyObject> subscr) {
-  return Runtime_DictGetItem(PyDict::CastDictLike(self), subscr);
+  return Runtime_DictGetItem(Handle<PyDict>::cast(self), subscr);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
-  return Runtime_DictSetItem(PyDict::CastDictLike(self), subscr, value);
+  return Runtime_DictSetItem(Handle<PyDict>::cast(self), subscr, value);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
     Handle<PyObject> self,
     Handle<PyObject> subscr) {
-  return Runtime_DictDelItem(PyDict::CastDictLike(self), subscr);
+  return Runtime_DictDelItem(Handle<PyDict>::cast(self), subscr);
 }
 
 Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
-  return PyDict::CastDictLike(self)->ContainsKey(subscr);
+  return Handle<PyDict>::cast(self)->ContainsKey(subscr);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
@@ -265,7 +265,7 @@ size_t PyDictKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
 
 // static
 void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyDict::IsDictLike(self));
+  assert(IsPyDict(self));
   auto dict = Tagged<PyDict>::cast(self);
   v->VisitPointer(&dict->data_);
 }

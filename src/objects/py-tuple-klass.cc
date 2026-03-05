@@ -118,7 +118,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
   if (is_exact_tuple && argc == 1) {
     Handle<PyObject> iterable = pos_args->Get(0);
-    if (IsPyTuple(iterable)) {
+    if (IsPyTupleExact(iterable)) {
       return iterable;
     }
   }
@@ -182,12 +182,12 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
-      PySmi::FromInt(PyTuple::CastTupleLike(self)->length()));
+      PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto tuple = PyTuple::CastTupleLike(self);
+  auto tuple = Handle<PyTuple>::cast(self);
   std::printf("(");
   for (auto i = 0; i < tuple->length(); ++i) {
     if (i > 0) {
@@ -204,7 +204,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
                                                    Handle<PyObject> subscr) {
-  auto tuple = PyTuple::CastTupleLike(self);
+  auto tuple = Handle<PyTuple>::cast(self);
   if (!IsPySmi(*subscr)) {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "tuple indices must be integers\n");
@@ -239,7 +239,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
 Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
                                            Handle<PyObject> target) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto tuple = PyTuple::CastTupleLike(self);
+  auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
     bool eq;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
@@ -253,14 +253,14 @@ Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
 
 Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
                                         Handle<PyObject> other) {
-  if (!PyTuple::IsTupleLike(other)) {
+  if (!IsPyTuple(other)) {
     return Maybe<bool>(false);
   }
 
   auto* isolate [[maybe_unused]] = Isolate::Current();
 
-  auto tuple1 = PyTuple::CastTupleLike(self);
-  auto tuple2 = PyTuple::CastTupleLike(other);
+  auto tuple1 = Handle<PyTuple>::cast(self);
+  auto tuple2 = Handle<PyTuple>::cast(other);
 
   if (tuple1->length() != tuple2->length()) {
     return Maybe<bool>(false);
@@ -280,17 +280,17 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
   return Isolate::Current()->factory()->NewPyTupleIterator(
-      PyTuple::CastTupleLike(self));
+      Handle<PyTuple>::cast(self));
 }
 
 size_t PyTupleKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  assert(PyTuple::IsTupleLike(self));
-  return PyTuple::ComputeObjectSize(PyTuple::CastTupleLike(self)->length());
+  assert(IsPyTuple(self));
+  return PyTuple::ComputeObjectSize(Tagged<PyTuple>::cast(self)->length());
 }
 
 void PyTupleKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyTuple::IsTupleLike(self));
-  auto tuple = PyTuple::CastTupleLike(self);
+  assert(IsPyTuple(self));
+  auto tuple = Tagged<PyTuple>::cast(self);
   v->VisitPointers(tuple->data(), tuple->data() + tuple->length());
 }
 

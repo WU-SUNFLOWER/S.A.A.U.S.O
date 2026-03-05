@@ -36,7 +36,7 @@ Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   EscapableHandleScope scope;
-  auto tuple = PyTuple::CastTupleLike(self);
+  auto tuple = Handle<PyTuple>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,

@@ -10,6 +10,7 @@
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/objects/mark-word.h"
+#include "src/objects/object-checkers.h"
 #include "src/objects/objects.h"
 #include "src/utils/maybe.h"
 
@@ -18,60 +19,6 @@ namespace saauso::internal {
 class Klass;
 class ObjectVisitor;
 class PyObject;
-
-#define PY_TYPE_IN_HEAP_LIST(V) \
-  V(PyTypeObject)               \
-  V(PyString)                   \
-  V(PyFunction)                 \
-  V(PyFloat)                    \
-  V(PyBoolean)                  \
-  V(PyNone)                     \
-  V(PyCodeObject)               \
-  V(PyModule)                   \
-  V(PyList)                     \
-  V(PyListIterator)             \
-  V(PyTuple)                    \
-  V(PyTupleIterator)            \
-  V(PyDict)                     \
-  V(PyDictKeys)                 \
-  V(PyDictValues)               \
-  V(PyDictItems)                \
-  V(PyDictKeyIterator)          \
-  V(PyDictItemIterator)         \
-  V(PyDictValueIterator)        \
-  V(FixedArray)                 \
-  V(MethodObject)               \
-  V(Cell)
-
-#define PY_TYPE_LIST(V) \
-  V(PySmi)              \
-  PY_TYPE_IN_HEAP_LIST(V)
-
-#define DEFINE_PY_TYPE(name) class name;
-PY_TYPE_LIST(DEFINE_PY_TYPE)
-#undef DEFINE_PY_TYPE
-
-///////////////////////对象类型检测开始///////////////////////
-#define DEFINE_PY_CHECKER(name)           \
-  bool Is##name(Tagged<PyObject> object); \
-  bool Is##name(Handle<PyObject> object);
-
-PY_TYPE_LIST(DEFINE_PY_CHECKER)
-DEFINE_PY_CHECKER(NormalPyFunction)
-DEFINE_PY_CHECKER(NativePyFunction)
-DEFINE_PY_CHECKER(PyTrue)
-DEFINE_PY_CHECKER(PyFalse)
-DEFINE_PY_CHECKER(PyNativeFunction)
-
-// 是否在堆区有实体
-DEFINE_PY_CHECKER(HeapObject)
-
-// 是否是可以被GC回收或移动的对象
-// 排除Smi、布尔值（分配在永久区）、None（分配在永久区）
-DEFINE_PY_CHECKER(GcAbleObject)
-
-#undef DEFINE_PY_CHECKER
-///////////////////////对象类型检测结束///////////////////////
 
 // **特别提醒**
 // PyObject指针内部存储的可能是真正的对象指针，也有可能是一个Smi。

@@ -21,28 +21,8 @@ Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
 }
 
 Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {
-  assert(IsTupleLike(object));
+  assert(IsPyTuple(object));
   return Tagged<PyTuple>(object.ptr());
-}
-
-bool PyTuple::IsTupleLike(Tagged<PyObject> object) {
-  return IsHeapObject(object) &&
-         PyObject::GetKlass(object)->native_layout_kind() ==
-             NativeLayoutKind::kTuple;
-}
-
-bool PyTuple::IsTupleLike(Handle<PyObject> object) {
-  return IsTupleLike(*object);
-}
-
-Tagged<PyTuple> PyTuple::CastTupleLike(Tagged<PyObject> object) {
-  assert(IsTupleLike(object));
-  return Tagged<PyTuple>::cast(object);
-}
-
-Handle<PyTuple> PyTuple::CastTupleLike(Handle<PyObject> object) {
-  assert(IsTupleLike(object));
-  return Handle<PyTuple>(Tagged<PyTuple>::cast(*object));
 }
 
 size_t PyTuple::ComputeObjectSize(int64_t length) {

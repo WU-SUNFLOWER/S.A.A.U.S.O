@@ -15,7 +15,6 @@
 #include "src/objects/mark-word.h"
 #include "src/objects/py-object.h"
 
-
 namespace saauso::internal {
 
 namespace {

@@ -141,7 +141,7 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
     Handle<PyObject> host,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(IsPyNativeFunction(self));
+  assert(IsNativePyFunction(self));
   auto func = Handle<PyFunction>::cast(self);
   return func->native_func_(host, Handle<PyTuple>::cast(args),
                             Handle<PyDict>::cast(kwargs));

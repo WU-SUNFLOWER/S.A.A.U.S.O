@@ -108,32 +108,8 @@ Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
 
 // static
 Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
-  assert(IsDictLike(object));
+  assert(IsPyDict(object));
   return Tagged<PyDict>::cast(object);
-}
-
-// static
-bool PyDict::IsDictLike(Tagged<PyObject> object) {
-  return IsHeapObject(object) &&
-         PyObject::GetKlass(object)->native_layout_kind() ==
-             NativeLayoutKind::kDict;
-}
-
-// static
-bool PyDict::IsDictLike(Handle<PyObject> object) {
-  return IsDictLike(*object);
-}
-
-// static
-Tagged<PyDict> PyDict::CastDictLike(Tagged<PyObject> object) {
-  assert(IsDictLike(object));
-  return Tagged<PyDict>::cast(object);
-}
-
-// static
-Handle<PyDict> PyDict::CastDictLike(Handle<PyObject> object) {
-  assert(IsDictLike(object));
-  return Handle<PyDict>(Tagged<PyDict>::cast(*object));
 }
 
 //////////////////////////////////////////////////////////////////////////

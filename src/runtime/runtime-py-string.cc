@@ -127,7 +127,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
     return scope.Escape(result);
   }
 
-  Handle<PyString> sep = PyString::CastStringLike(sep_or_null);
+  Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
     Runtime_ThrowError(ExceptionType::kValueError, "empty separator");
     return kNullMaybeHandle;
@@ -176,7 +176,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 
   for (int64_t i = 0; i < num_parts; ++i) {
     Handle<PyObject> item = parts->Get(i);
-    if (!PyString::IsStringLike(*item)) {
+    if (!IsPyString(*item)) {
       auto type_name = PyObject::GetKlass(item)->name();
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "sequence item %" PRId64
@@ -185,7 +185,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
       return kNullMaybeHandle;
     }
 
-    int64_t item_length = PyString::CastStringLike(item)->length();
+    int64_t item_length = Handle<PyString>::cast(item)->length();
     if (item_length > std::numeric_limits<int64_t>::max() - total_length) {
       Runtime_ThrowError(ExceptionType::kValueError,
                          "join() result is too long");
@@ -208,7 +208,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
 
   int64_t dst_offset = 0;
   for (int64_t i = 0; i < num_parts; ++i) {
-    Handle<PyString> part = PyString::CastStringLike(parts->Get(i));
+    Handle<PyString> part = Handle<PyString>::cast(parts->Get(i));
     if (part->length() > 0) {
       std::memcpy(dst + dst_offset, part->buffer(), part->length());
       dst_offset += part->length();
@@ -232,8 +232,8 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
     return kNullMaybeHandle;
   }
 
-  if (PyString::IsStringLike(value)) {
-    Handle<PyString> s = PyString::CastStringLike(value);
+  if (IsPyString(value)) {
+    Handle<PyString> s = Handle<PyString>::cast(value);
     if (IsPyString(value)) {
       return scope.Escape(s);
     }
@@ -265,7 +265,7 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
         Execution::Call(isolate, method, value, Handle<PyTuple>::null(),
                         Handle<PyDict>::null()));
 
-    if (!IsPyString(result)) {
+    if (!IsPyStringExact(result)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "__str__ returned non-string");
       return kNullMaybeHandle;

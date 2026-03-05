@@ -38,10 +38,6 @@ class PyString : public PyObject {
   static Handle<PyString> FromDouble(double n);
 
   static Tagged<PyString> cast(Tagged<PyObject> object);
-  static bool IsStringLike(Tagged<PyObject> object);
-  static bool IsStringLike(Handle<PyObject> object);
-  static Tagged<PyString> CastStringLike(Tagged<PyObject> object);
-  static Handle<PyString> CastStringLike(Handle<PyObject> object);
 
   static size_t ComputeObjectSize(int64_t str_length);
 

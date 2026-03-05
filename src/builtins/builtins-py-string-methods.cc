@@ -43,7 +43,7 @@ Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
 BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
   EscapableHandleScope scope;
 
-  auto str_object = PyString::CastStringLike(self);
+  auto str_object = Handle<PyString>::cast(self);
   auto result =
       PyString::NewInstance(str_object->buffer(), str_object->length());
 
@@ -97,13 +97,13 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
                              int64_t& begin,
                              int64_t& end) {
   auto target = args->Get(0);
-  if (!PyString::IsStringLike(target)) {
+  if (!IsPyString(target)) {
     auto type_name = PyObject::GetKlass(target)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %s",
                         type_name->buffer());
     return false;
   }
-  target_str = PyString::CastStringLike(target);
+  target_str = Handle<PyString>::cast(target);
 
   begin = 0;
   end = str_length;
@@ -136,7 +136,7 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
   EscapableHandleScope scope;
-  auto str_object = PyString::CastStringLike(self);
+  auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
   if (!ValidateStringSearchArgs(kwargs, args, "str.index()", argc)) {
@@ -165,7 +165,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
   EscapableHandleScope scope;
-  auto str_object = PyString::CastStringLike(self);
+  auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
   if (!ValidateStringSearchArgs(kwargs, args, "str.find()", argc)) {
@@ -193,7 +193,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
   EscapableHandleScope scope;
-  auto str_object = PyString::CastStringLike(self);
+  auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
   if (!ValidateStringSearchArgs(kwargs, args, "str.rfind()", argc)) {
@@ -221,7 +221,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   EscapableHandleScope scope;
-  auto str_object = PyString::CastStringLike(self);
+  auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc > 2) {
@@ -259,7 +259,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       auto key = item->Get(0);
-      if (!PyString::IsStringLike(key)) {
+      if (!IsPyString(key)) {
         Runtime_ThrowError(ExceptionType::kTypeError,
                            "keywords must be strings");
         return kNullMaybeHandle;
@@ -279,7 +279,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
         continue;
       }
 
-      auto key_str = PyString::CastStringLike(key);
+      auto key_str = Handle<PyString>::cast(key);
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "str.split() got an unexpected keyword argument '%s'",
                           key_str->buffer());
@@ -323,7 +323,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
   Handle<PyObject> sep_or_null = Handle<PyObject>::null();
   if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
-    if (!PyString::IsStringLike(*sep_obj)) {
+    if (!IsPyString(*sep_obj)) {
       auto type_name = PyObject::GetKlass(sep_obj)->name();
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "must be str or None, not %s", type_name->buffer());
@@ -342,7 +342,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
   EscapableHandleScope scope;
-  auto str_object = PyString::CastStringLike(self);
+  auto str_object = Handle<PyString>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,

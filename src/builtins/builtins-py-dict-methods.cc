@@ -38,7 +38,7 @@ Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
 BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
   EscapableHandleScope scope;
 
-  auto dict = PyDict::CastDictLike(self);
+  auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
   Handle<PyObject> default_or_null = Handle<PyObject>::null();
   if (args->length() > 1) {
@@ -62,7 +62,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
     return kNullMaybeHandle;
   }
 
-  auto dict = PyDict::CastDictLike(self);
+  auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
   bool has_default = args->length() == 2;
   Handle<PyObject> default_or_null =
@@ -93,7 +93,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Items) {
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Get) {
   EscapableHandleScope scope;
-  auto dict = PyDict::CastDictLike(self);
+  auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0);
   Handle<PyObject> default_or_null = Handle<PyObject>::null();
   if (args->length() > 1) {

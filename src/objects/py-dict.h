@@ -16,10 +16,6 @@ class PyDict : public PyObject {
   static Handle<PyDict> NewInstance(int64_t init_capacity = kMinimumCapacity);
 
   static Tagged<PyDict> cast(Tagged<PyObject> object);
-  static bool IsDictLike(Tagged<PyObject> object);
-  static bool IsDictLike(Handle<PyObject> object);
-  static Tagged<PyDict> CastDictLike(Tagged<PyObject> object);
-  static Handle<PyDict> CastDictLike(Handle<PyObject> object);
 
   int64_t capacity() const;
   Handle<PyObject> KeyAtIndex(int64_t index) const;

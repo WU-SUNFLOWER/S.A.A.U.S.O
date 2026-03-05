@@ -100,26 +100,6 @@ Tagged<PyString> PyString::cast(Tagged<PyObject> object) {
   return Tagged<PyString>::cast(object);
 }
 
-bool PyString::IsStringLike(Tagged<PyObject> object) {
-  return IsHeapObject(object) &&
-         PyObject::GetKlass(object)->native_layout_kind() ==
-             NativeLayoutKind::kString;
-}
-
-bool PyString::IsStringLike(Handle<PyObject> object) {
-  return IsStringLike(*object);
-}
-
-Tagged<PyString> PyString::CastStringLike(Tagged<PyObject> object) {
-  assert(IsStringLike(object));
-  return Tagged<PyString>::cast(object);
-}
-
-Handle<PyString> PyString::CastStringLike(Handle<PyObject> object) {
-  assert(IsStringLike(object));
-  return Handle<PyString>(Tagged<PyString>::cast(*object));
-}
-
 // static
 size_t PyString::ComputeObjectSize(int64_t str_length) {
   return ObjectSizeAlign(sizeof(PyString) + str_length +
