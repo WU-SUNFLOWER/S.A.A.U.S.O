@@ -106,7 +106,8 @@ void PyTupleKlass::Finalize() {
 // >>> t = T()
 // Traceback (most recent call last):
 //   File "<stdin>", line 1, in <module>
-// TypeError: T.__init__() missing 3 required positional arguments: 'x', 'y', and 'z'
+// TypeError: T.__init__() missing 3 required positional arguments: 'x', 'y',
+// and 'z'
 // >>> t = T(1, 2, 3)
 // Traceback (most recent call last):
 //   File "<stdin>", line 1, in <module>
@@ -121,7 +122,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kTuple);
-  
+
   auto* isolate = Isolate::Current();
   bool is_exact_tuple = klass_self == PyTupleKlass::GetInstance();
 
@@ -144,6 +145,13 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
   Handle<PyTuple> result;
   if (argc == 1) {
     Handle<PyObject> iterable = pos_args->Get(0);
+    // 对齐 CPython 3.12：
+    // 如果要创建一个tuple-exact实例，同时传入的参数恰好是一个tuple-exact对象，
+    // 那么不分配内存，直接返回即可。
+    if (is_exact_tuple && IsPyTupleExact(iterable)) {
+      return iterable;
+    }
+
     Handle<PyTuple> unpacked;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, unpacked,
                                Runtime_UnpackIterableObjectToTuple(iterable));

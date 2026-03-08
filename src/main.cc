@@ -31,10 +31,14 @@ constexpr std::string_view kSourceCode = R"(
 class T(tuple):
   pass
 
-t = T([1, 2, 3])
+t1 = (1, 2)
+t2 = T(t1)
+t3 = tuple(t1)
 
-for x in t:
-  print(x)
+print(t1 == t2 == t3) # True
+print(t1 is t2) # False
+print(t2 is t3) # False
+print(t1 is t3) # True
 )";
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 

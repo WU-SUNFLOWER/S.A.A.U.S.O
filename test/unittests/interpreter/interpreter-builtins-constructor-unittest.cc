@@ -144,6 +144,34 @@ print(tuple([1, 2]))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTupleAndTupleLike) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class T(tuple):
+  pass
+
+t1 = (1, 2)
+t2 = T(t1)
+t3 = tuple(t1)
+
+print(t1 == t2 == t3) # True
+print(t1 is t2) # False
+print(t2 is t3) # False
+print(t1 is t3) # True
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject());
+
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsType) {
   HandleScope scope;
 
