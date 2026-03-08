@@ -213,17 +213,6 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
   auto* isolate = Isolate::Current();
   bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
 
-  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
-  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
-  if (is_exact_dict) {
-    if (argc > 1) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "dict expected at most 1 argument, got %" PRId64,
-                          argc);
-      return kNullMaybeHandle;
-    }
-  }
-
   Handle<PyDict> result = isolate->factory()->NewDictLike(
       klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
   return result;
@@ -236,38 +225,16 @@ Maybe<void> PyDictKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
   auto* isolate = Isolate::Current();
   bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
-  auto result = Handle<PyDict>::cast(instance);
-  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
-  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
-  Handle<PyObject> init_method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, result, ST(init), init_method));
 
-  if (init_method.is_null()) {
-    if (!is_exact_dict) {
-      if (argc > 1) {
-        Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                            "dict expected at most 1 argument, got %" PRId64,
-                            argc);
-        return kNullMaybe;
-      }
-    }
-
-    bool ok = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, ok, Runtime_InitDictFromArgsKwargs(result, args, kwargs));
-    if (!ok) {
-      return kNullMaybe;
-    }
+  if (is_exact_dict) {
+    RETURN_ON_EXCEPTION(
+        isolate, Runtime_InitDictFromArgsKwargs(Handle<PyDict>::cast(instance),
+                                                args, kwargs));
     return JustVoid();
   }
 
-  if (Execution::Call(isolate, init_method, result, pos_args,
-                      Handle<PyDict>::cast(kwargs))
-          .IsEmpty()) {
-    return kNullMaybe;
-  }
-  return JustVoid();
+  return Klass::Virtual_Default_InitInstance(klass_self, instance, args,
+                                             kwargs);
 }
 
 // static

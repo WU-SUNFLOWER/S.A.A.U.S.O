@@ -16,7 +16,9 @@ class PyDict;
 MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
                                       Handle<PyObject> kwargs);
 
-Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
+// - 成功：返回有效 Maybe，同时 result 被正确初始化
+// - 失败：返回空
+Maybe<void> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
                                            Handle<PyObject> args,
                                            Handle<PyObject> kwargs);
 

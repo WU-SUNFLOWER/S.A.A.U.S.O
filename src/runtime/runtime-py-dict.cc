@@ -20,7 +20,7 @@
 
 namespace saauso::internal {
 
-Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
+Maybe<void> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
                                            Handle<PyObject> args,
                                            Handle<PyObject> kwargs) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
@@ -94,7 +94,7 @@ Maybe<bool> Runtime_InitDictFromArgsKwargs(Handle<PyDict> result,
     }
   }
 
-  return Maybe<bool>(true);
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
@@ -102,12 +102,9 @@ MaybeHandle<PyObject> Runtime_NewDict(Handle<PyObject> args,
   EscapableHandleScope scope;
   auto* isolate [[maybe_unused]] = Isolate::Current();
   Handle<PyDict> result = PyDict::NewInstance();
-  bool ok = false;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, ok, Runtime_InitDictFromArgsKwargs(result, args, kwargs));
-  if (!ok) {
-    return kNullMaybeHandle;
-  }
+  RETURN_ON_EXCEPTION(isolate,
+                      Runtime_InitDictFromArgsKwargs(result, args, kwargs));
+
   return scope.Escape(result);
 }
 
