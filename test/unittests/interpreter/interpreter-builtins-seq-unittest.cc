@@ -785,22 +785,70 @@ print(c.x.v)
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, SubclassTupleCustomInit) {
+TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithEmptyArgs) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
-class C(tuple):
-  def __init__(self, x, y):
+class T(tuple):
+  def __init__(self, x, y, z):
     self.x = x
     self.y = y
+    self.z = z
 
-  def foo(self):
-    return self
+t = T()
+)";
 
-c = C(1, 2)
-print(c.foo().x)
-print(c.foo().y)
-print(len(c.foo()))
+  RunScriptExpectExceptionContains(
+      kSource, "__init__() missing 3 required positional argument",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class T(tuple):
+  def __init__(self, x, y, z):
+    self.x = x
+    self.y = y
+    self.z = z
+
+t = T(1, 2, 3)
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "tuple expected at most 1 argument, got 3", kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithIterableArg) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class T(tuple):
+  def __init__(self, x, y, z):
+    self.x = x
+    self.y = y
+    self.z = z
+
+t = T([1, 2, 3])
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "__init__() missing 2 required positional argument",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, SubclassTupleWithoutCustomInitButWithIterableArg) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class T(tuple):
+  pass
+
+t = T([1, 2, 3])
+
+for x in t:
+  print(x)
 )";
 
   RunScript(kSource, kTestFileName);
@@ -808,8 +856,7 @@ print(len(c.foo()))
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
-  ExpectPrintResult(expected_printv_result);
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
 }
 
 TEST_F(BasicInterpreterTest, SubclassStr) {
