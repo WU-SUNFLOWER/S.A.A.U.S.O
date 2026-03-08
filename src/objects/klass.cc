@@ -208,9 +208,15 @@ MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
   return type_object;
 }
 
-MaybeHandle<PyObject> Klass::ConstructInstance(Handle<PyObject> args,
-                                               Handle<PyObject> kwargs) {
-  return vtable_.construct_instance(Tagged<Klass>(this), args, kwargs);
+MaybeHandle<PyObject> Klass::NewInstance(Handle<PyObject> args,
+                                         Handle<PyObject> kwargs) {
+  return vtable_.new_instance(Tagged<Klass>(this), args, kwargs);
+}
+
+Maybe<void> Klass::InitInstance(Handle<PyObject> instance,
+                                Handle<PyObject> args,
+                                Handle<PyObject> kwargs) {
+  return vtable_.init_instance(Tagged<Klass>(this), instance, args, kwargs);
 }
 
 }  // namespace saauso::internal

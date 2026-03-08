@@ -53,7 +53,8 @@ void PyTupleKlass::PreInitialize() {
   set_native_layout_kind(NativeLayoutKind::kTuple);
   set_native_layout_base(Tagged<Klass>(this));
 
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.len = &Virtual_Len;
   vtable_.print = &Virtual_Print;
   vtable_.subscr = &Virtual_Subscr;
@@ -91,7 +92,7 @@ void PyTupleKlass::Finalize() {
   Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -134,7 +135,6 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, probe, ST(init), init_method));
-
   if (init_method.is_null()) {
     if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
       Runtime_ThrowError(ExceptionType::kTypeError,
@@ -147,7 +147,6 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
           "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
       return kNullMaybeHandle;
     }
-
     if (argc == 0) {
       return probe;
     }
@@ -157,7 +156,6 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     if (!Runtime_UnpackIterableObjectToTuple(iterable).ToHandle(&unpacked)) {
       return kNullMaybeHandle;
     }
-
     auto length = unpacked->length();
     auto result =
         isolate->factory()->NewPyTupleLike(klass_self, length, !is_exact_tuple);
@@ -171,13 +169,30 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
     }
     return result;
   }
+  return probe;
+}
+
+Maybe<void> PyTupleKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+                                               Handle<PyObject> instance,
+                                               Handle<PyObject> args,
+                                               Handle<PyObject> kwargs) {
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kTuple);
+  auto* isolate = Isolate::Current();
+  auto probe = Handle<PyTuple>::cast(instance);
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, probe, ST(init), init_method));
+  if (init_method.is_null()) {
+    return JustVoid();
+  }
 
   if (Execution::Call(isolate, init_method, probe, pos_args,
                       Handle<PyDict>::cast(kwargs))
           .IsEmpty()) {
-    return kNullMaybeHandle;
+    return kNullMaybe;
   }
-  return probe;
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {

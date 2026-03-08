@@ -40,10 +40,14 @@ class PyTypeObjectKlass : public Klass {
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Virtual_ConstructInstance(
+  static MaybeHandle<PyObject> Virtual_NewInstance(
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
+  static Maybe<void> Virtual_InitInstance(Tagged<Klass> klass_self,
+                                          Handle<PyObject> instance,
+                                          Handle<PyObject> args,
+                                          Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Call(Handle<PyObject> self,
                                             Handle<PyObject> host,

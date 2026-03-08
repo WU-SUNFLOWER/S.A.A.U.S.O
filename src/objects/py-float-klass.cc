@@ -70,7 +70,8 @@ void PyFloatKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
@@ -111,7 +112,7 @@ void PyFloatKlass::Finalize() {
 
 ////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -166,6 +167,13 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_ConstructInstance(
       "float() argument must be a string or a real number, not '%s'\n",
       type_name->buffer());
   return kNullMaybeHandle;
+}
+
+Maybe<void> PyFloatKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+                                               Handle<PyObject> instance,
+                                               Handle<PyObject> args,
+                                               Handle<PyObject> kwargs) {
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Print(Handle<PyObject> self) {

@@ -169,10 +169,15 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
 MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
                                         Handle<PyObject> args,
                                         Handle<PyObject> kwargs) {
+  auto* isolate [[maybe_unused]] = Isolate::Current();
+  auto own_klass = type_object->own_klass();
+
   Handle<PyObject> result;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), result,
-      type_object->own_klass()->ConstructInstance(args, kwargs));
+  // 创建实例对象
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                             own_klass->NewInstance(args, kwargs));
+  // 初始化实例对象
+  RETURN_ON_EXCEPTION(isolate, own_klass->InitInstance(result, args, kwargs));
 
   return result;
 }

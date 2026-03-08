@@ -27,10 +27,14 @@ class PyListKlass : public Klass {
   void Finalize();
 
  private:
-  static MaybeHandle<PyObject> Virtual_ConstructInstance(
+  static MaybeHandle<PyObject> Virtual_NewInstance(
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
+  static Maybe<void> Virtual_InitInstance(Tagged<Klass> klass_self,
+                                          Handle<PyObject> instance,
+                                          Handle<PyObject> args,
+                                          Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);

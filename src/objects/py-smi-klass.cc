@@ -45,7 +45,8 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 void PySmiKlass::PreInitialize() {
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
@@ -82,12 +83,19 @@ void PySmiKlass::Finalize() {
 
 ////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PySmiKlass::GetInstance());
   return Runtime_NewSmi(args, kwargs);
+}
+
+Maybe<void> PySmiKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+                                             Handle<PyObject> instance,
+                                             Handle<PyObject> args,
+                                             Handle<PyObject> kwargs) {
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Print(Handle<PyObject> self) {

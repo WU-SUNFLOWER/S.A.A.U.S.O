@@ -71,9 +71,13 @@ struct VirtualTable {
                                                        OopHandle,
                                                        OopHandle,
                                                        OopHandle);
-  using VirtualFuncType_Maybe_Construct = MaybeOopHandle (*)(Tagged<Klass>,
-                                                             OopHandle,
-                                                             OopHandle);
+  using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Tagged<Klass>,
+                                                       OopHandle,
+                                                       OopHandle);
+  using VirtualFuncType_MaybeVoid_Init = Maybe<void> (*)(Tagged<Klass>,
+                                                         OopHandle,
+                                                         OopHandle,
+                                                         OopHandle);
   // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
   using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
   // getattr：true=命中（out 写入值），false=未命中（out 为 null），Nothing=异常
@@ -122,7 +126,8 @@ struct VirtualTable {
   // 获取实例对象大小，调用该函数绝对不允许触发GC
   size_t (*instance_size)(Oop){nullptr};
 
-  VirtualFuncType_Maybe_Construct construct_instance{nullptr};
+  VirtualFuncType_Maybe_New new_instance{nullptr};
+  VirtualFuncType_MaybeVoid_Init init_instance{nullptr};
 
   // 扫描对象内部数据，用于GC
   void (*iterate)(Oop, ObjectVisitor*){nullptr};
@@ -184,8 +189,14 @@ class Klass : public Object {
   MaybeHandle<PyTypeObject> CreateAndBindToPyTypeObject(Isolate* isolate);
 
   // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
-  MaybeHandle<PyObject> ConstructInstance(Handle<PyObject> args,
-                                          Handle<PyObject> kwargs);
+  // 对齐原版 CPython 中 __new__ 操作的语义。
+  MaybeHandle<PyObject> NewInstance(Handle<PyObject> args,
+                                    Handle<PyObject> kwargs);
+  // 对创建好的对象实例进行初始化（一般可以理解为填充数据）。
+  // 对齐原版 CPython 中 __init__ 操作的语义。
+  Maybe<void> InitInstance(Handle<PyObject> instance,
+                           Handle<PyObject> args,
+                           Handle<PyObject> kwargs);
 
   // 默认虚函数（Fallible 均返回 MaybeHandle<PyObject> 或 Maybe<bool>）
   static MaybeHandle<PyObject> Virtual_Default_Print(Handle<PyObject> self);
@@ -231,10 +242,14 @@ class Klass : public Object {
   static Maybe<bool> Virtual_Default_LessEqual(Handle<PyObject> self,
                                                Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Virtual_Default_ConstructInstance(
+  static MaybeHandle<PyObject> Virtual_Default_NewInstance(
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
+  static Maybe<void> Virtual_Default_InitInstance(Tagged<Klass> klass_self,
+                                                  Handle<PyObject> instance,
+                                                  Handle<PyObject> args,
+                                                  Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);

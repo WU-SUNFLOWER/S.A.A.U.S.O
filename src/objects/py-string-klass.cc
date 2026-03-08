@@ -65,7 +65,8 @@ void PyStringKlass::PreInitialize() {
   set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.len = &Virtual_Len;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
@@ -110,7 +111,7 @@ void PyStringKlass::Finalize() {
   Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -199,12 +200,29 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
     return kNullMaybeHandle;
   }
 
+  return probe;
+}
+
+Maybe<void> PyStringKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+                                                Handle<PyObject> instance,
+                                                Handle<PyObject> args,
+                                                Handle<PyObject> kwargs) {
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kString);
+  auto* isolate = Isolate::Current();
+  auto probe = Handle<PyString>::cast(instance);
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  Handle<PyObject> init_method;
+  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+                                   isolate, probe, ST(init), init_method));
+  if (init_method.is_null()) {
+    return JustVoid();
+  }
   if (Execution::Call(isolate, init_method, probe, pos_args,
                       Handle<PyDict>::cast(kwargs))
           .IsEmpty()) {
-    return kNullMaybeHandle;
+    return kNullMaybe;
   }
-  return probe;
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {

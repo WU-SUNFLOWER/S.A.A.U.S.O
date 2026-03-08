@@ -58,7 +58,8 @@ void Klass::InitializeVTable() {
   vtable_.del_subscr = &Klass::Virtual_Default_Delete_Subscr;
   vtable_.iter = &Klass::Virtual_Default_Iter;
   vtable_.next = &Klass::Virtual_Default_Next;
-  vtable_.construct_instance = &Klass::Virtual_Default_ConstructInstance;
+  vtable_.new_instance = &Klass::Virtual_Default_NewInstance;
+  vtable_.init_instance = &Klass::Virtual_Default_InitInstance;
   vtable_.hash = &Klass::Virtual_Default_Hash;
   vtable_.iterate = &Klass::Virtual_Default_Iterate;
   vtable_.instance_size = &Klass::Virtual_Default_InstanceSize;
@@ -532,7 +533,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Iter(Handle<PyObject> self) {
   return result;
 }
 
-MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
+MaybeHandle<PyObject> Klass::Virtual_Default_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -542,7 +543,14 @@ MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, instance,
       isolate->factory()->NewPythonObject(klass_self->type_object()));
+  return instance;
+}
 
+Maybe<void> Klass::Virtual_Default_InitInstance(Tagged<Klass> klass_self,
+                                                Handle<PyObject> instance,
+                                                Handle<PyObject> args,
+                                                Handle<PyObject> kwargs) {
+  auto* isolate = Isolate::Current();
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, instance, ST(init), init_method));
@@ -553,7 +561,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_ConstructInstance(
                                                  Handle<PyDict>::cast(kwargs)));
   }
 
-  return instance;
+  return JustVoid();
 }
 
 void Klass::Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*) {

@@ -51,7 +51,8 @@ void PyTypeObjectKlass::PreInitialize() {
   vtable_.hash = &Virtual_Hash;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.call = &Virtual_Call;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
@@ -157,12 +158,19 @@ Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
   return Maybe<bool>(!is_equal);
 }
 
-MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
   return Runtime_NewType(args, kwargs);
+}
+
+Maybe<void> PyTypeObjectKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+                                                    Handle<PyObject> instance,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs) {
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,

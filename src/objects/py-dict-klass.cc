@@ -69,7 +69,8 @@ void PyDictKlass::PreInitialize() {
   vtable_.del_subscr = &Virtual_DeleteSubscr;
   vtable_.contains = &Virtual_Contains;
   vtable_.iter = &Virtual_Iter;
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
 }
@@ -204,7 +205,7 @@ Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
   return Handle<PyDict>::cast(self)->ContainsKey(subscr);
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -225,7 +226,19 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
 
   Handle<PyDict> result = isolate->factory()->NewDictLike(
       klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
+  return result;
+}
 
+Maybe<void> PyDictKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+                                              Handle<PyObject> instance,
+                                              Handle<PyObject> args,
+                                              Handle<PyObject> kwargs) {
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
+  auto* isolate = Isolate::Current();
+  bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
+  auto result = Handle<PyDict>::cast(instance);
+  Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
+  int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, result, ST(init), init_method));
@@ -236,7 +249,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
         Runtime_ThrowErrorf(ExceptionType::kTypeError,
                             "dict expected at most 1 argument, got %" PRId64,
                             argc);
-        return kNullMaybeHandle;
+        return kNullMaybe;
       }
     }
 
@@ -244,18 +257,17 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_ConstructInstance(
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, ok, Runtime_InitDictFromArgsKwargs(result, args, kwargs));
     if (!ok) {
-      return kNullMaybeHandle;
+      return kNullMaybe;
     }
-    return result;
+    return JustVoid();
   }
 
   if (Execution::Call(isolate, init_method, result, pos_args,
                       Handle<PyDict>::cast(kwargs))
           .IsEmpty()) {
-    return kNullMaybeHandle;
+    return kNullMaybe;
   }
-
-  return result;
+  return JustVoid();
 }
 
 // static
