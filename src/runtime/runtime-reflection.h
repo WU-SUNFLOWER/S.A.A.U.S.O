@@ -62,10 +62,12 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     Handle<PyDict> kwargs,
     Handle<PyObject> func_name);
 
-MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
+MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
+                                      Handle<PyObject> args,
                                       Handle<PyObject> kwargs);
 
-MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
+MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
+                                        Handle<PyTypeObject> type_object,
                                         Handle<PyObject> args,
                                         Handle<PyObject> kwargs);
 

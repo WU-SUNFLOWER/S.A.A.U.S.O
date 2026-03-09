@@ -166,22 +166,37 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
+MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
+                                        Handle<PyTypeObject> type_object,
                                         Handle<PyObject> args,
                                         Handle<PyObject> kwargs) {
+  auto own_klass = type_object->own_klass();
+
   Handle<PyObject> result;
+  // 创建实例对象
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                             own_klass->NewInstance(isolate, args, kwargs));
+  // 初始化实例对象
+  Handle<PyObject> init_result;
   ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), result,
-      type_object->own_klass()->ConstructInstance(args, kwargs));
+      isolate, init_result,
+      own_klass->InitInstance(isolate, result, args, kwargs));
+
+  if (!IsPyNone(init_result)) [[unlikely]] {
+    auto type_name = PyObject::GetKlass(init_result)->name();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "__init__() should return None, not '%s'\n",
+                        type_name->buffer());
+    return kNullMaybeHandle;
+  }
 
   return result;
 }
 
-MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
+MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
+                                      Handle<PyObject> args,
                                       Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();

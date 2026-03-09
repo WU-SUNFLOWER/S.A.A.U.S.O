@@ -580,4 +580,59 @@ print(b.x)
   ExpectPrintResult(expected_printv_result);
 }
 
+// TODO: 支持虚函数重写（override）之后，开放本测试用例
+// TEST_F(BasicInterpreterTest, ListSubclassInitCanInvokeBaseListInit) {
+//   HandleScope scope;
+
+//   constexpr std::string_view kSource = R"(
+// class L(list):
+//     def __init__(self, iterable, x):
+//         list.__init__(self, iterable)
+//         self.x = x
+
+// l = L([1, 2, 3], 100)
+// print(l[0] + l[1] + l[2] + l.x)
+// )";
+
+//   RunScript(kSource, kInterpreterTestFileName);
+
+//   auto expected_printv_result = PyList::NewInstance();
+//   AppendExpected(expected_printv_result, handle(PySmi::FromInt(106)));
+//   ExpectPrintResult(expected_printv_result);
+// }
+
+// TODO: 支持虚函数重写（override）之后，开放本测试用例
+// TEST_F(BasicInterpreterTest, InitSlotBridgeStaysCallableAfterAttributeLoad) {
+//   HandleScope scope;
+
+//   constexpr std::string_view kSource = R"(
+// f = list.__init__
+// a = list()
+// f(a, [1, 2, 3])
+// print(a[0] + a[1] + a[2])
+// )";
+
+//   RunScript(kSource, kInterpreterTestFileName);
+
+//   auto expected_printv_result = PyList::NewInstance();
+//   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+//   ExpectPrintResult(expected_printv_result);
+// }
+
+TEST_F(BasicInterpreterTest, InitMustReturnNone) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self):
+        return 1
+
+A()
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "__init__() should return None, not 'int'",
+                                   kInterpreterTestFileName);
+}
+
 }  // namespace saauso::internal

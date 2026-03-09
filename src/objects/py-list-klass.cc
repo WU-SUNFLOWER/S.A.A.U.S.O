@@ -65,7 +65,8 @@ void PyListKlass::PreInitialize() {
   set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.init_instance = &Virtual_InitInstance;
   vtable_.len = &Virtual_Len;
   vtable_.print = &Virtual_Print;
   vtable_.add = &Virtual_Add;
@@ -108,16 +109,39 @@ void PyListKlass::Finalize() {
   Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::null());
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
-  auto* isolate = Isolate::Current();
+
+  bool is_exact_list = klass_self == PyListKlass::GetInstance();
+
+  Handle<PyList> result = isolate->factory()->NewPyListLike(
+      klass_self, PyList::kMinimumCapacity, !is_exact_list);
+  if (!is_exact_list) {
+    auto properties = PyObject::GetProperties(result);
+    RETURN_ON_EXCEPTION(
+        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+  }
+
+  return result;
+}
+
+MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
+    Isolate* isolate,
+    Tagged<Klass> klass_self,
+    Handle<PyObject> instance,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
+
   bool is_exact_list = klass_self == PyListKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
+
   if (is_exact_list) {
     if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
       Runtime_ThrowError(ExceptionType::kTypeError,
@@ -130,52 +154,16 @@ MaybeHandle<PyObject> PyListKlass::Virtual_ConstructInstance(
                           argc);
       return kNullMaybeHandle;
     }
-  }
-
-  Handle<PyList> result = isolate->factory()->NewPyListLike(
-      klass_self, PyList::kMinimumCapacity, !is_exact_list);
-  if (!is_exact_list) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(
-        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
-  }
-
-  Handle<PyObject> init_method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, result, ST(init), init_method));
-
-  if (init_method.is_null()) {
-    if (!is_exact_list) {
-      if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
-                           "list() takes no keyword arguments\n");
-        return kNullMaybeHandle;
-      }
-      if (argc > 1) {
-        Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                            "list expected at most 1 argument, got %" PRId64,
-                            argc);
-        return kNullMaybeHandle;
-      }
-    }
     if (argc == 1) {
-      Handle<PyObject> extend_result;
-      if (!Runtime_ExtendListByItratableObject(result, pos_args->Get(0))
-               .ToHandle(&extend_result)) {
-        return kNullMaybeHandle;
-      }
+      RETURN_ON_EXCEPTION(
+          isolate, Runtime_ExtendListByItratableObject(
+                       Handle<PyList>::cast(instance), pos_args->Get(0)));
     }
-    return result;
+    return handle(isolate->py_none_object());
   }
 
-  if (!init_method.is_null()) {
-    if (Execution::Call(isolate, init_method, result, pos_args,
-                        Handle<PyDict>::cast(kwargs))
-            .IsEmpty()) {
-      return kNullMaybeHandle;
-    }
-  }
-  return result;
+  return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,
+                                             args, kwargs);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

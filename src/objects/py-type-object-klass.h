@@ -50,7 +50,8 @@ class PyTypeObjectKlass : public Klass {
                                                     Handle<PyObject> args,
                                                     Handle<PyObject> kwargs);
 
-  static MaybeHandle<PyObject> Virtual_Call(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Call(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> host,
                                             Handle<PyObject> args,
                                             Handle<PyObject> kwargs);

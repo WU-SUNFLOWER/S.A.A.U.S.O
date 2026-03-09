@@ -429,12 +429,13 @@ Maybe<uint64_t> PyObject::Hash(Handle<PyObject> self) {
   return GetKlass(*self)->vtable().hash(self);
 }
 
-MaybeHandle<PyObject> PyObject::Call(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Call(Isolate* isolate,
+                                     Handle<PyObject> self,
                                      Handle<PyObject> host,
                                      Handle<PyObject> args,
                                      Handle<PyObject> kwargs) {
   auto* call_method = GetKlass(*self)->vtable().call;
-  return call_method(self, host, args, kwargs);
+  return call_method(isolate, self, host, args, kwargs);
 }
 
 // python virtual function

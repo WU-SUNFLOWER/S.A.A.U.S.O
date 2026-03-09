@@ -27,26 +27,31 @@ class PyListKlass : public Klass {
   void Finalize();
 
  private:
-  static MaybeHandle<PyObject> Virtual_ConstructInstance(
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
+                                                    Tagged<Klass> klass_self,
+                                                    Handle<PyObject> instance,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
-                                            Handle<PyObject> other);
+                                           Handle<PyObject> other);
   static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject> self,
-                                             Handle<PyObject> coeff);
+                                           Handle<PyObject> coeff);
 
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
-                                               Handle<PyObject> subscr);
+                                              Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_StoreSubscr(Handle<PyObject> self,
-                                                    Handle<PyObject> subscr,
-                                                    Handle<PyObject> value);
+                                                   Handle<PyObject> subscr,
+                                                   Handle<PyObject> value);
   static MaybeHandle<PyObject> Virtual_DelSubscr(Handle<PyObject> self,
-                                                  Handle<PyObject> subscr);
+                                                 Handle<PyObject> subscr);
   static Maybe<bool> Virtual_Less(Handle<PyObject> self,
                                   Handle<PyObject> other);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
