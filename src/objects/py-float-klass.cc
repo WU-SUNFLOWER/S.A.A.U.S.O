@@ -69,9 +69,9 @@ void PyFloatKlass::PreInitialize() {
   // 将自己注册到universe
   Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
 
-  // 初始化虚函数表
+  // Python中float类型只有默认的__new__而没有__init__
   vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
+
   vtable_.add = &Virtual_Add;
   vtable_.sub = &Virtual_Sub;
   vtable_.mul = &Virtual_Mul;
@@ -167,13 +167,6 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
       "float() argument must be a string or a real number, not '%s'\n",
       type_name->buffer());
   return kNullMaybeHandle;
-}
-
-Maybe<void> PyFloatKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
-                                               Handle<PyObject> instance,
-                                               Handle<PyObject> args,
-                                               Handle<PyObject> kwargs) {
-  return JustVoid();
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
