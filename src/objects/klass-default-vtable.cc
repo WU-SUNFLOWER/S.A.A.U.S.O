@@ -40,29 +40,29 @@ void ThrowCompareUnsupported(Handle<PyObject> self,
 }  // namespace
 
 void Klass::InitializeVTable() {
-  vtable_.add = &Klass::Virtual_Default_Add;
-  vtable_.getattr = &Klass::Virtual_Default_GetAttr;
-  vtable_.setattr = &Klass::Virtual_Default_SetAttr;
-  vtable_.subscr = &Klass::Virtual_Default_Subscr;
-  vtable_.store_subscr = &Klass::Virtual_Default_StoreSubscr;
-  vtable_.greater = &Klass::Virtual_Default_Greater;
-  vtable_.less = &Klass::Virtual_Default_Less;
-  vtable_.equal = &Klass::Virtual_Default_Equal;
-  vtable_.not_equal = &Klass::Virtual_Default_NotEqual;
-  vtable_.ge = &Klass::Virtual_Default_GreaterEqual;
-  vtable_.le = &Klass::Virtual_Default_LessEqual;
-  vtable_.call = &Klass::Virtual_Default_Call;
-  vtable_.len = &Klass::Virtual_Default_Len;
-  vtable_.print = &Klass::Virtual_Default_Print;
-  vtable_.repr = &Klass::Virtual_Default_Repr;
-  vtable_.del_subscr = &Klass::Virtual_Default_Delete_Subscr;
-  vtable_.iter = &Klass::Virtual_Default_Iter;
-  vtable_.next = &Klass::Virtual_Default_Next;
-  vtable_.new_instance = &Klass::Virtual_Default_NewInstance;
-  vtable_.init_instance = &Klass::Virtual_Default_InitInstance;
-  vtable_.hash = &Klass::Virtual_Default_Hash;
-  vtable_.iterate = &Klass::Virtual_Default_Iterate;
-  vtable_.instance_size = &Klass::Virtual_Default_InstanceSize;
+  vtable_.add_ = &Klass::Virtual_Default_Add;
+  vtable_.getattr_ = &Klass::Virtual_Default_GetAttr;
+  vtable_.setattr_ = &Klass::Virtual_Default_SetAttr;
+  vtable_.subscr_ = &Klass::Virtual_Default_Subscr;
+  vtable_.store_subscr_ = &Klass::Virtual_Default_StoreSubscr;
+  vtable_.greater_ = &Klass::Virtual_Default_Greater;
+  vtable_.less_ = &Klass::Virtual_Default_Less;
+  vtable_.equal_ = &Klass::Virtual_Default_Equal;
+  vtable_.not_equal_ = &Klass::Virtual_Default_NotEqual;
+  vtable_.ge_ = &Klass::Virtual_Default_GreaterEqual;
+  vtable_.le_ = &Klass::Virtual_Default_LessEqual;
+  vtable_.call_ = &Klass::Virtual_Default_Call;
+  vtable_.len_ = &Klass::Virtual_Default_Len;
+  vtable_.print_ = &Klass::Virtual_Default_Print;
+  vtable_.repr_ = &Klass::Virtual_Default_Repr;
+  vtable_.del_subscr_ = &Klass::Virtual_Default_Delete_Subscr;
+  vtable_.iter_ = &Klass::Virtual_Default_Iter;
+  vtable_.next_ = &Klass::Virtual_Default_Next;
+  vtable_.new_instance_ = &Klass::Virtual_Default_NewInstance;
+  vtable_.init_instance_ = &Klass::Virtual_Default_InitInstance;
+  vtable_.hash_ = &Klass::Virtual_Default_Hash;
+  vtable_.iterate_ = &Klass::Virtual_Default_Iterate;
+  vtable_.instance_size_ = &Klass::Virtual_Default_InstanceSize;
 }
 
 Maybe<uint64_t> Klass::Virtual_Default_Hash(Handle<PyObject> self) {
@@ -555,10 +555,10 @@ MaybeHandle<PyObject> Klass::Virtual_Default_InitInstance(
 
   if (!init_method.is_null()) {
     Handle<PyObject> init_result;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, init_result,
-        Execution::Call(isolate, init_method, instance,
-                        Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs)));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, init_result,
+                               Execution::Call(isolate, init_method, instance,
+                                               Handle<PyTuple>::cast(args),
+                                               Handle<PyDict>::cast(kwargs)));
     return init_result;
   }
 

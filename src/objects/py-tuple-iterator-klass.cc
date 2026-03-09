@@ -60,11 +60,11 @@ Tagged<PyTupleIteratorKlass> PyTupleIteratorKlass::GetInstance() {
 void PyTupleIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.next = &Virtual_Next;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.next_ = &Virtual_Next;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {

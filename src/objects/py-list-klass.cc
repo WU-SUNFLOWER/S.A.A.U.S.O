@@ -65,21 +65,21 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
   set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
-  vtable_.len = &Virtual_Len;
-  vtable_.print = &Virtual_Print;
-  vtable_.add = &Virtual_Add;
-  vtable_.mul = &Virtual_Mul;
-  vtable_.subscr = &Virtual_Subscr;
-  vtable_.store_subscr = &Virtual_StoreSubscr;
-  vtable_.del_subscr = &Virtual_DelSubscr;
-  vtable_.less = &Virtual_Less;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.init_instance_ = &Virtual_InitInstance;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.add_ = &Virtual_Add;
+  vtable_.mul_ = &Virtual_Mul;
+  vtable_.subscr_ = &Virtual_Subscr;
+  vtable_.store_subscr_ = &Virtual_StoreSubscr;
+  vtable_.del_subscr_ = &Virtual_DelSubscr;
+  vtable_.less_ = &Virtual_Less;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyListKlass::Initialize(Isolate* isolate) {

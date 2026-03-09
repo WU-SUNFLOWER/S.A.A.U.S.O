@@ -112,8 +112,8 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 // python virtual function
 MaybeHandle<PyObject> PyObject::Print(Handle<PyObject> self) {
   HandleScope scope;
-  assert(GetKlass(*self)->vtable().print);
-  return GetKlass(*self)->vtable().print(self);
+  assert(GetKlass(*self)->vtable().print_);
+  return GetKlass(*self)->vtable().print_(self);
 }
 
 // python virtual function
@@ -125,8 +125,8 @@ MaybeHandle<PyObject> PyObject::Add(Handle<PyObject> self,
                                            PySmi::cast(*other).value()));
   }
 
-  assert(GetKlass(*self)->vtable().add);
-  return GetKlass(*self)->vtable().add(self, other);
+  assert(GetKlass(*self)->vtable().add_);
+  return GetKlass(*self)->vtable().add_(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Sub(Handle<PyObject> self,
@@ -137,8 +137,8 @@ MaybeHandle<PyObject> PyObject::Sub(Handle<PyObject> self,
                                            PySmi::cast(*other).value()));
   }
 
-  assert(GetKlass(*self)->vtable().sub);
-  return GetKlass(*self)->vtable().sub(self, other);
+  assert(GetKlass(*self)->vtable().sub_);
+  return GetKlass(*self)->vtable().sub_(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Mul(Handle<PyObject> self,
@@ -149,14 +149,14 @@ MaybeHandle<PyObject> PyObject::Mul(Handle<PyObject> self,
                                            PySmi::cast(*other).value()));
   }
 
-  assert(GetKlass(*self)->vtable().mul);
-  return GetKlass(*self)->vtable().mul(self, other);
+  assert(GetKlass(*self)->vtable().mul_);
+  return GetKlass(*self)->vtable().mul_(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Div(Handle<PyObject> self,
                                     Handle<PyObject> other) {
-  assert(GetKlass(*self)->vtable().div);
-  return GetKlass(*self)->vtable().div(self, other);
+  assert(GetKlass(*self)->vtable().div_);
+  return GetKlass(*self)->vtable().div_(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
@@ -170,7 +170,7 @@ MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
         PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
   }
 
-  auto* floor_div = GetKlass(*self)->vtable().floor_div;
+  auto* floor_div = GetKlass(*self)->vtable().floor_div_;
   if (floor_div == nullptr) [[unlikely]] {
     auto self_name = GetKlass(self)->name();
     auto other_name = GetKlass(other)->name();
@@ -191,22 +191,22 @@ MaybeHandle<PyObject> PyObject::Mod(Handle<PyObject> self,
     return Handle<PyObject>(PySmi::FromInt(result));
   }
 
-  assert(GetKlass(*self)->vtable().mod);
-  return GetKlass(*self)->vtable().mod(self, other);
+  assert(GetKlass(*self)->vtable().mod_);
+  return GetKlass(*self)->vtable().mod_(self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Len(Handle<PyObject> self) {
-  assert(GetKlass(*self)->vtable().len);
-  return GetKlass(*self)->vtable().len(self);
+  assert(GetKlass(*self)->vtable().len_);
+  return GetKlass(*self)->vtable().len_(self);
 }
 
 MaybeHandle<PyBoolean> PyObject::Greater(Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  Maybe<bool> mb = GreaterBool(self, other);
-  if (mb.IsNothing()) {
-    return MaybeHandle<PyBoolean>();
+  bool result;
+  if (!GreaterBool(self, other).To(&result)) {
+    return kNullMaybeHandle;
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(result));
 }
 
 Maybe<bool> PyObject::GreaterBool(Handle<PyObject> self,
@@ -217,8 +217,8 @@ Maybe<bool> PyObject::GreaterBool(Handle<PyObject> self,
                        PySmi::cast(*other).value());
   }
 
-  assert(GetKlass(*self)->vtable().greater);
-  return GetKlass(*self)->vtable().greater(self, other);
+  assert(GetKlass(*self)->vtable().greater_);
+  return GetKlass(*self)->vtable().greater_(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::Less(Handle<PyObject> self,
@@ -237,8 +237,8 @@ Maybe<bool> PyObject::LessBool(Handle<PyObject> self, Handle<PyObject> other) {
                        PySmi::cast(*other).value());
   }
 
-  assert(GetKlass(*self)->vtable().less);
-  return GetKlass(*self)->vtable().less(self, other);
+  assert(GetKlass(*self)->vtable().less_);
+  return GetKlass(*self)->vtable().less_(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::Equal(Handle<PyObject> self,
@@ -254,8 +254,8 @@ Maybe<bool> PyObject::EqualBool(Handle<PyObject> self, Handle<PyObject> other) {
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
-  assert(GetKlass(*self)->vtable().equal);
-  return GetKlass(*self)->vtable().equal(self, other);
+  assert(GetKlass(*self)->vtable().equal_);
+  return GetKlass(*self)->vtable().equal_(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
@@ -273,8 +273,8 @@ Maybe<bool> PyObject::NotEqualBool(Handle<PyObject> self,
     return Maybe<bool>(PySmi::cast(*self).value() !=
                        PySmi::cast(*other).value());
   }
-  assert(GetKlass(*self)->vtable().not_equal);
-  return GetKlass(*self)->vtable().not_equal(self, other);
+  assert(GetKlass(*self)->vtable().not_equal_);
+  return GetKlass(*self)->vtable().not_equal_(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
@@ -292,8 +292,8 @@ Maybe<bool> PyObject::GreaterEqualBool(Handle<PyObject> self,
     return Maybe<bool>(PySmi::cast(*self).value() >=
                        PySmi::cast(*other).value());
   }
-  assert(GetKlass(*self)->vtable().ge);
-  return GetKlass(*self)->vtable().ge(self, other);
+  assert(GetKlass(*self)->vtable().ge_);
+  return GetKlass(*self)->vtable().ge_(self, other);
 }
 
 MaybeHandle<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
@@ -311,15 +311,15 @@ Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
     return Maybe<bool>(PySmi::cast(*self).value() <=
                        PySmi::cast(*other).value());
   }
-  assert(GetKlass(*self)->vtable().le);
-  return GetKlass(*self)->vtable().le(self, other);
+  assert(GetKlass(*self)->vtable().le_);
+  return GetKlass(*self)->vtable().le_(self, other);
 }
 
 Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
                                  Handle<PyObject> attr_name,
                                  Handle<PyObject>& out) {
   auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto* getattr = GetKlass(*self)->vtable().getattr;
+  auto* getattr = GetKlass(*self)->vtable().getattr_;
   assert(getattr != nullptr);
 
   out = Handle<PyObject>::null();
@@ -334,7 +334,7 @@ Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
                                         Handle<PyObject> attr_name) {
-  auto* getattr = GetKlass(*self)->vtable().getattr;
+  auto* getattr = GetKlass(*self)->vtable().getattr_;
   assert(getattr != nullptr);
 
   Handle<PyObject> result;
@@ -355,7 +355,7 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   // Fast Path:
   // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
   // MethodObject对象的操作。
-  if (klass->vtable().getattr == &Klass::Virtual_Default_GetAttr) {
+  if (klass->vtable().getattr_ == &Klass::Virtual_Default_GetAttr) {
     return Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null);
   }
 
@@ -375,58 +375,58 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
 MaybeHandle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
                                         Handle<PyObject> attr_name,
                                         Handle<PyObject> attr_value) {
-  assert(GetKlass(*self)->vtable().setattr);
-  return GetKlass(*self)->vtable().setattr(self, attr_name, attr_value);
+  assert(GetKlass(*self)->vtable().setattr_);
+  return GetKlass(*self)->vtable().setattr_(self, attr_name, attr_value);
 }
 
 MaybeHandle<PyObject> PyObject::Subscr(Handle<PyObject> self,
                                        Handle<PyObject> subscr_name) {
-  assert(GetKlass(*self)->vtable().subscr);
-  return GetKlass(*self)->vtable().subscr(self, subscr_name);
+  assert(GetKlass(*self)->vtable().subscr_);
+  return GetKlass(*self)->vtable().subscr_(self, subscr_name);
 }
 
 MaybeHandle<PyObject> PyObject::StoreSubscr(Handle<PyObject> self,
                                             Handle<PyObject> subscr_name,
                                             Handle<PyObject> subscr_value) {
-  assert(GetKlass(*self)->vtable().store_subscr);
-  return GetKlass(*self)->vtable().store_subscr(self, subscr_name,
-                                                subscr_value);
+  assert(GetKlass(*self)->vtable().store_subscr_);
+  return GetKlass(*self)->vtable().store_subscr_(self, subscr_name,
+                                                 subscr_value);
 }
 
 MaybeHandle<PyBoolean> PyObject::Contains(Handle<PyObject> self,
                                           Handle<PyObject> target) {
-  Maybe<bool> mb = ContainsBool(self, target);
-  if (mb.IsNothing()) {
-    return MaybeHandle<PyBoolean>();
+  bool result;
+  if (!ContainsBool(self, target).To(&result)) {
+    return kNullMaybeHandle;
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(result));
 }
 
 Maybe<bool> PyObject::ContainsBool(Handle<PyObject> self,
                                    Handle<PyObject> target) {
-  assert(GetKlass(*self)->vtable().contains);
-  return GetKlass(*self)->vtable().contains(self, target);
+  assert(GetKlass(*self)->vtable().contains_);
+  return GetKlass(*self)->vtable().contains_(self, target);
 }
 
 MaybeHandle<PyObject> PyObject::Iter(Handle<PyObject> self) {
-  assert(GetKlass(*self)->vtable().iter);
-  return GetKlass(*self)->vtable().iter(self);
+  assert(GetKlass(*self)->vtable().iter_);
+  return GetKlass(*self)->vtable().iter_(self);
 }
 
 MaybeHandle<PyObject> PyObject::Next(Handle<PyObject> self) {
-  assert(GetKlass(*self)->vtable().next);
-  return GetKlass(*self)->vtable().next(self);
+  assert(GetKlass(*self)->vtable().next_);
+  return GetKlass(*self)->vtable().next_(self);
 }
 
 MaybeHandle<PyObject> PyObject::DeletSubscr(Handle<PyObject> self,
                                             Handle<PyObject> subscr_name) {
-  assert(GetKlass(*self)->vtable().del_subscr);
-  return GetKlass(*self)->vtable().del_subscr(self, subscr_name);
+  assert(GetKlass(*self)->vtable().del_subscr_);
+  return GetKlass(*self)->vtable().del_subscr_(self, subscr_name);
 }
 
 Maybe<uint64_t> PyObject::Hash(Handle<PyObject> self) {
-  assert(GetKlass(*self)->vtable().hash);
-  return GetKlass(*self)->vtable().hash(self);
+  assert(GetKlass(*self)->vtable().hash_);
+  return GetKlass(*self)->vtable().hash_(self);
 }
 
 MaybeHandle<PyObject> PyObject::Call(Isolate* isolate,
@@ -434,21 +434,21 @@ MaybeHandle<PyObject> PyObject::Call(Isolate* isolate,
                                      Handle<PyObject> host,
                                      Handle<PyObject> args,
                                      Handle<PyObject> kwargs) {
-  auto* call_method = GetKlass(*self)->vtable().call;
+  auto* call_method = GetKlass(*self)->vtable().call_;
   return call_method(isolate, self, host, args, kwargs);
 }
 
 // python virtual function
 size_t PyObject::GetInstanceSize(Tagged<PyObject> self) {
-  return GetKlass(self)->vtable().instance_size(self);
+  return GetKlass(self)->vtable().instance_size_(self);
 }
 
 // python virtual function
 void PyObject::Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
   v->VisitPointer(&self->properties_);
 
-  assert(GetKlass(self)->vtable().iterate);
-  GetKlass(self)->vtable().iterate(self, v);
+  assert(GetKlass(self)->vtable().iterate_);
+  GetKlass(self)->vtable().iterate_(self, v);
 }
 
 }  // namespace saauso::internal

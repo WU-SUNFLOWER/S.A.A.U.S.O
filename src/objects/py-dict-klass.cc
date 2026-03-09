@@ -60,19 +60,19 @@ void PyDictKlass::PreInitialize(Isolate* isolate) {
   set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.len = &Virtual_Len;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.subscr = &Virtual_Subscr;
-  vtable_.store_subscr = &Virtual_StoreSubscr;
-  vtable_.del_subscr = &Virtual_DeleteSubscr;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.subscr_ = &Virtual_Subscr;
+  vtable_.store_subscr_ = &Virtual_StoreSubscr;
+  vtable_.del_subscr_ = &Virtual_DeleteSubscr;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.init_instance_ = &Virtual_InitInstance;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {

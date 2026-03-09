@@ -46,10 +46,10 @@ void PyBooleanKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.hash = &Virtual_Hash;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.hash_ = &Virtual_Hash;
 }
 
 Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
@@ -132,10 +132,10 @@ void PyNoneKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.hash = &Virtual_Hash;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.hash_ = &Virtual_Hash;
 }
 
 Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {

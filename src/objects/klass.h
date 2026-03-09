@@ -10,6 +10,7 @@
 
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
+#include "src/objects/klass-vtable.h"
 #include "src/objects/objects.h"
 #include "src/utils/maybe.h"
 #include "src/utils/vector.h"
@@ -25,115 +26,6 @@ class PyList;
 class PyTuple;
 class PyBoolean;
 class ObjectVisitor;
-
-/////////////////虚函数表 定义开始///////////////////////////
-
-struct VirtualTable {
-  using Oop = Tagged<PyObject>;
-  using OopHandle = Handle<PyObject>;
-
-  VirtualTable() = delete;
-
-  using VirtualFuncType_0_1 = void (*)(Oop);
-  using VirtualFuncType_1_1 = Oop (*)(Oop);
-  using VirtualFuncType_0_2 = void (*)(Oop, Oop);
-  using VirtualFuncType_1_2 = Oop (*)(Oop, Oop);
-  using VirtualFuncType_0_3 = void (*)(Oop, Oop, Oop);
-  using VirtualFuncType_1_3 = Oop (*)(Oop, Oop, Oop);
-
-  using VirtualFuncType_0_1_SAFE = void (*)(OopHandle);
-  using VirtualFuncType_1_1_SAFE = OopHandle (*)(OopHandle);
-  using VirtualFuncType_0_2_SAFE = void (*)(OopHandle, OopHandle);
-  using VirtualFuncType_1_2_SAFE = OopHandle (*)(OopHandle, OopHandle);
-  using VirtualFuncType_0_3_SAFE = void (*)(OopHandle, OopHandle, OopHandle);
-  using VirtualFuncType_1_3_SAFE = OopHandle (*)(OopHandle,
-                                                 OopHandle,
-                                                 OopHandle);
-  using VirtualFuncType_1_4_SAFE = OopHandle (*)(OopHandle,
-                                                 OopHandle,
-                                                 OopHandle,
-                                                 OopHandle);
-
-  using VirtualFuncType_1_1_SAFE_CBOOL = bool (*)(OopHandle);
-  using VirtualFuncType_1_2_SAFE_CBOOL = bool (*)(OopHandle, OopHandle);
-  using VirtualFuncType_1_3_SAFE_CBOOL = bool (*)(OopHandle,
-                                                  OopHandle,
-                                                  OopHandle);
-
-  // Fallible slot：返回 MaybeHandle<PyObject>，失败时设置 pending exception
-  using MaybeOopHandle = MaybeHandle<PyObject>;
-  using VirtualFuncType_Maybe_1_1 = MaybeOopHandle (*)(OopHandle);
-  using VirtualFuncType_Maybe_1_2 = MaybeOopHandle (*)(OopHandle, OopHandle);
-  using VirtualFuncType_Maybe_0_3 = MaybeOopHandle (*)(OopHandle,
-                                                       OopHandle,
-                                                       OopHandle);
-  using VirtualFuncType_Maybe_Call = MaybeOopHandle (*)(Isolate* isolate,
-                                                        OopHandle,
-                                                        OopHandle,
-                                                        OopHandle,
-                                                        OopHandle);
-  using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Isolate*,
-                                                       Tagged<Klass>,
-                                                       OopHandle,
-                                                       OopHandle);
-  using VirtualFuncType_Maybe_Init =
-      MaybeOopHandle (*)(Isolate*, Tagged<Klass>, OopHandle, OopHandle,
-                         OopHandle);
-  // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
-  using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
-  // getattr：true=命中（out 写入值），false=未命中（out 为 null），Nothing=异常
-  using VirtualFuncType_MaybeGetAttr = Maybe<bool> (*)(OopHandle,
-                                                       OopHandle,
-                                                       bool,
-                                                       OopHandle&);
-  // Fallible slot：返回 Maybe<uint64_t>
-  using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
-
-  // add/sub/mul/div/floor_div/mod：可能抛 TypeError 等
-  VirtualFuncType_Maybe_1_2 add{nullptr};
-  VirtualFuncType_Maybe_1_2 sub{nullptr};
-  VirtualFuncType_Maybe_1_2 mul{nullptr};
-  VirtualFuncType_Maybe_1_2 div{nullptr};
-  VirtualFuncType_Maybe_1_2 floor_div{nullptr};
-  VirtualFuncType_Maybe_1_2 mod{nullptr};
-
-  VirtualFuncType_MaybeHash hash{nullptr};
-
-  VirtualFuncType_MaybeGetAttr getattr{nullptr};
-  // setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle
-  VirtualFuncType_Maybe_0_3 setattr{nullptr};
-  VirtualFuncType_Maybe_1_2 subscr{nullptr};
-  VirtualFuncType_Maybe_0_3 store_subscr{nullptr};
-
-  // 比较/contains：返回 Maybe<bool>，失败时设置 pending exception
-  VirtualFuncType_MaybeBool_1_2 greater{nullptr};
-  VirtualFuncType_MaybeBool_1_2 less{nullptr};
-  VirtualFuncType_MaybeBool_1_2 equal{nullptr};
-  VirtualFuncType_MaybeBool_1_2 not_equal{nullptr};
-  VirtualFuncType_MaybeBool_1_2 ge{nullptr};
-  VirtualFuncType_MaybeBool_1_2 le{nullptr};
-  VirtualFuncType_MaybeBool_1_2 contains{nullptr};
-
-  VirtualFuncType_Maybe_1_1 iter{nullptr};
-  VirtualFuncType_Maybe_1_1 next{nullptr};
-  VirtualFuncType_Maybe_Call call{nullptr};
-  VirtualFuncType_Maybe_1_1 len{nullptr};
-
-  // print：成功返回 None，失败返回空 MaybeHandle
-  VirtualFuncType_Maybe_1_1 print{nullptr};
-  VirtualFuncType_Maybe_1_1 repr{nullptr};
-  VirtualFuncType_Maybe_1_2 del_subscr{nullptr};
-
-  // 获取实例对象大小，调用该函数绝对不允许触发GC
-  size_t (*instance_size)(Oop){nullptr};
-
-  VirtualFuncType_Maybe_New new_instance{nullptr};
-  VirtualFuncType_Maybe_Init init_instance{nullptr};
-
-  // 扫描对象内部数据，用于GC
-  void (*iterate)(Oop, ObjectVisitor*){nullptr};
-};
-/////////////////虚函数表 定义结束///////////////////////////
 
 enum class NativeLayoutKind : uint8_t {
   kPyObject = 0,
@@ -176,7 +68,7 @@ class Klass : public Object {
 
   void CopyVTableFrom(Tagged<Klass> base);
 
-  const VirtualTable& vtable() const { return vtable_; }
+  const KlassVtable& vtable() const { return vtable_; }
 
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
@@ -268,7 +160,7 @@ class Klass : public Object {
 
  protected:
   // Python对象虚函数表
-  VirtualTable vtable_;
+  KlassVtable vtable_;
 
   // PyDict* klass_properties_
   Tagged<PyObject> klass_properties_{kNullAddress};

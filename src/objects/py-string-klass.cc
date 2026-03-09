@@ -61,21 +61,21 @@ void PyStringKlass::PreInitialize(Isolate* isolate) {
   set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.len = &Virtual_Len;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.less = &Virtual_Less;
-  vtable_.greater = &Virtual_Greater;
-  vtable_.le = &Virtual_LessEqual;
-  vtable_.ge = &Virtual_GreaterEqual;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.subscr = &Virtual_Subscr;
-  vtable_.add = &Virtual_Add;
-  vtable_.print = &Virtual_Print;
-  vtable_.hash = &Virtual_Hash;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.less_ = &Virtual_Less;
+  vtable_.greater_ = &Virtual_Greater;
+  vtable_.le_ = &Virtual_LessEqual;
+  vtable_.ge_ = &Virtual_GreaterEqual;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.subscr_ = &Virtual_Subscr;
+  vtable_.add_ = &Virtual_Add;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.hash_ = &Virtual_Hash;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {

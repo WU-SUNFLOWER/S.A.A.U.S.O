@@ -39,9 +39,9 @@ void PyCodeObjectKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {

@@ -77,12 +77,12 @@ Tagged<PyDictKeysKlass> PyDictKeysKlass::GetInstance() {
 void PyDictKeysKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.len = &Virtual_Len;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
@@ -165,12 +165,12 @@ Tagged<PyDictValuesKlass> PyDictValuesKlass::GetInstance() {
 void PyDictValuesKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.len = &Virtual_Len;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
@@ -270,12 +270,12 @@ Tagged<PyDictItemsKlass> PyDictItemsKlass::GetInstance() {
 void PyDictItemsKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.len = &Virtual_Len;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
@@ -384,11 +384,11 @@ Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance() {
 void PyDictKeyIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.next = &Virtual_Next;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.next_ = &Virtual_Next;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
@@ -465,11 +465,11 @@ Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance() {
 void PyDictItemIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.next = &Virtual_Next;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.next_ = &Virtual_Next;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
@@ -546,11 +546,11 @@ Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance() {
 void PyDictValueIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.next = &Virtual_Next;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.next_ = &Virtual_Next;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {

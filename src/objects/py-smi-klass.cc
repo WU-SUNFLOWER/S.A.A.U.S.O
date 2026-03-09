@@ -46,22 +46,22 @@ void PySmiKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // Python中int类型只有默认的__new__而没有__init__
-  vtable_.new_instance = &Virtual_NewInstance;
+  vtable_.new_instance_ = &Virtual_NewInstance;
 
-  vtable_.add = &Virtual_Add;
-  vtable_.sub = &Virtual_Sub;
-  vtable_.mul = &Virtual_Mul;
-  vtable_.div = &Virtual_Div;
-  vtable_.floor_div = &Virtual_FloorDiv;
-  vtable_.mod = &Virtual_Mod;
-  vtable_.hash = &Virtual_Hash;
-  vtable_.greater = &Virtual_Greater;
-  vtable_.less = &Virtual_Less;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.ge = &Virtual_GreaterEqual;
-  vtable_.le = &Virtual_LessEqual;
-  vtable_.print = &Virtual_Print;
+  vtable_.add_ = &Virtual_Add;
+  vtable_.sub_ = &Virtual_Sub;
+  vtable_.mul_ = &Virtual_Mul;
+  vtable_.div_ = &Virtual_Div;
+  vtable_.floor_div_ = &Virtual_FloorDiv;
+  vtable_.mod_ = &Virtual_Mod;
+  vtable_.hash_ = &Virtual_Hash;
+  vtable_.greater_ = &Virtual_Greater;
+  vtable_.less_ = &Virtual_Less;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.ge_ = &Virtual_GreaterEqual;
+  vtable_.le_ = &Virtual_LessEqual;
+  vtable_.print_ = &Virtual_Print;
 }
 
 Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {

@@ -47,17 +47,17 @@ void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.getattr = &Virtual_GetAttr;
-  vtable_.setattr = &Virtual_SetAttr;
-  vtable_.hash = &Virtual_Hash;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
-  vtable_.call = &Virtual_Call;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.getattr_ = &Virtual_GetAttr;
+  vtable_.setattr_ = &Virtual_SetAttr;
+  vtable_.hash_ = &Virtual_Hash;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.init_instance_ = &Virtual_InitInstance;
+  vtable_.call_ = &Virtual_Call;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {

@@ -42,9 +42,9 @@ void PyFunctionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
@@ -110,10 +110,10 @@ void NativeFunctionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.call = &Virtual_Call;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.call_ = &Virtual_Call;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
@@ -180,9 +180,9 @@ void MethodObjectKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
