@@ -118,12 +118,12 @@ void PyTupleKlass::Finalize() {
 // TypeError: T.__init__() missing 2 required positional arguments: 'y' and 'z'
 // ```
 MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kTuple);
 
-  auto* isolate = Isolate::Current();
   bool is_exact_tuple = klass_self == PyTupleKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);

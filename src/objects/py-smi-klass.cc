@@ -84,14 +84,13 @@ void PySmiKlass::Finalize() {
 
 ////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
-    Tagged<Klass> klass_self,
-    Handle<PyObject> args,
-    Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(Isolate* isolate,
+                                                      Tagged<Klass> klass_self,
+                                                      Handle<PyObject> args,
+                                                      Handle<PyObject> kwargs) {
   assert(klass_self == PySmiKlass::GetInstance());
   return Runtime_NewSmi(args, kwargs);
 }
-
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Print(Handle<PyObject> self) {
   std::printf("%" PRId64, PySmi::cast(*self).value());

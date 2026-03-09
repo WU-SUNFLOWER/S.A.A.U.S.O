@@ -283,8 +283,9 @@ void Interpreter::EvalCurrentFrame() {
     if (IsPyTypeObject(exception)) {
       auto type_object = Handle<PyTypeObject>::cast(exception);
       ASSIGN_GOTO_ON_EXCEPTION(
-          exception, Runtime_NewObject(type_object, Handle<PyObject>::null(),
-                                       Handle<PyObject>::null()));
+          exception,
+          Runtime_NewObject(isolate_, type_object, Handle<PyObject>::null(),
+                            Handle<PyObject>::null()));
     }
 
     // 执行真正的抛错操作

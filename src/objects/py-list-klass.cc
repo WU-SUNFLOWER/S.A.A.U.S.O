@@ -110,11 +110,12 @@ void PyListKlass::Finalize() {
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
-  auto* isolate = Isolate::Current();
+
   bool is_exact_list = klass_self == PyListKlass::GetInstance();
 
   Handle<PyList> result = isolate->factory()->NewPyListLike(
@@ -128,13 +129,13 @@ MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
   return result;
 }
 
-Maybe<void> PyListKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+Maybe<void> PyListKlass::Virtual_InitInstance(Isolate* isolate,
+                                              Tagged<Klass> klass_self,
                                               Handle<PyObject> instance,
                                               Handle<PyObject> args,
                                               Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
 
-  auto* isolate = Isolate::Current();
   bool is_exact_list = klass_self == PyListKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);

@@ -26,10 +26,10 @@ class PySmiKlass : public Klass {
  private:
   PySmiKlass();
 
-  static MaybeHandle<PyObject> Virtual_NewInstance(
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject>);
 
@@ -38,7 +38,7 @@ class PySmiKlass : public Klass {
   static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_FloorDiv(Handle<PyObject>,
-                                                 Handle<PyObject>);
+                                                Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
 
   static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);

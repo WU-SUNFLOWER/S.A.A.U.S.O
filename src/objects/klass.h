@@ -71,13 +71,12 @@ struct VirtualTable {
                                                        OopHandle,
                                                        OopHandle,
                                                        OopHandle);
-  using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Tagged<Klass>,
+  using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Isolate*,
+                                                       Tagged<Klass>,
                                                        OopHandle,
                                                        OopHandle);
-  using VirtualFuncType_MaybeVoid_Init = Maybe<void> (*)(Tagged<Klass>,
-                                                         OopHandle,
-                                                         OopHandle,
-                                                         OopHandle);
+  using VirtualFuncType_MaybeVoid_Init =
+      Maybe<void> (*)(Isolate*, Tagged<Klass>, OopHandle, OopHandle, OopHandle);
   // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
   using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
   // getattr：true=命中（out 写入值），false=未命中（out 为 null），Nothing=异常
@@ -190,11 +189,13 @@ class Klass : public Object {
 
   // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
   // 对齐原版 CPython 中 __new__ 操作的语义。
-  MaybeHandle<PyObject> NewInstance(Handle<PyObject> args,
+  MaybeHandle<PyObject> NewInstance(Isolate* isolate,
+                                    Handle<PyObject> args,
                                     Handle<PyObject> kwargs);
   // 对创建好的对象实例进行初始化（一般可以理解为填充数据）。
   // 对齐原版 CPython 中 __init__ 操作的语义。
-  Maybe<void> InitInstance(Handle<PyObject> instance,
+  Maybe<void> InitInstance(Isolate* isolate,
+                           Handle<PyObject> instance,
                            Handle<PyObject> args,
                            Handle<PyObject> kwargs);
 

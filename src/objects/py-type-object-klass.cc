@@ -159,14 +159,16 @@ Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
-  return Runtime_NewType(args, kwargs);
+  return Runtime_NewType(isolate, args, kwargs);
 }
 
-Maybe<void> PyTypeObjectKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+Maybe<void> PyTypeObjectKlass::Virtual_InitInstance(Isolate* isolate,
+                                                    Tagged<Klass> klass_self,
                                                     Handle<PyObject> instance,
                                                     Handle<PyObject> args,
                                                     Handle<PyObject> kwargs) {
@@ -178,7 +180,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
                                                       Handle<PyObject> args,
                                                       Handle<PyObject> kwargs) {
   auto type_object = Handle<PyTypeObject>::cast(self);
-  return Runtime_NewObject(type_object, args, kwargs);
+  return Runtime_NewObject(Isolate::Current(), type_object, args, kwargs);
 }
 
 // static

@@ -206,11 +206,12 @@ Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
-  auto* isolate = Isolate::Current();
+
   bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
 
   Handle<PyDict> result = isolate->factory()->NewDictLike(
@@ -218,12 +219,13 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
   return result;
 }
 
-Maybe<void> PyDictKlass::Virtual_InitInstance(Tagged<Klass> klass_self,
+Maybe<void> PyDictKlass::Virtual_InitInstance(Isolate* isolate,
+                                              Tagged<Klass> klass_self,
                                               Handle<PyObject> instance,
                                               Handle<PyObject> args,
                                               Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
-  auto* isolate = Isolate::Current();
+
   bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
 
   if (is_exact_dict) {

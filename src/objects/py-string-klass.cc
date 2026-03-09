@@ -107,12 +107,12 @@ void PyStringKlass::Finalize() {
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kString);
 
-  auto* isolate = Isolate::Current();
   bool is_exact_str = klass_self == PyStringKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);

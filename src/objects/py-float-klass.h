@@ -23,7 +23,8 @@ class PyFloatKlass : public Klass {
  private:
   PyFloatKlass();
 
-  static MaybeHandle<PyObject> Virtual_NewInstance(Tagged<Klass> klass_self,
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs);
 

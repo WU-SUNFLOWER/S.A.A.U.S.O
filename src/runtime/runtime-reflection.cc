@@ -166,27 +166,27 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> Runtime_NewObject(Handle<PyTypeObject> type_object,
+MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
+                                        Handle<PyTypeObject> type_object,
                                         Handle<PyObject> args,
                                         Handle<PyObject> kwargs) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto own_klass = type_object->own_klass();
 
   Handle<PyObject> result;
   // 创建实例对象
   ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             own_klass->NewInstance(args, kwargs));
+                             own_klass->NewInstance(isolate, args, kwargs));
   // 初始化实例对象
-  RETURN_ON_EXCEPTION(isolate, own_klass->InitInstance(result, args, kwargs));
+  RETURN_ON_EXCEPTION(isolate,
+                      own_klass->InitInstance(isolate, result, args, kwargs));
 
   return result;
 }
 
-MaybeHandle<PyObject> Runtime_NewType(Handle<PyObject> args,
+MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
+                                      Handle<PyObject> args,
                                       Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();

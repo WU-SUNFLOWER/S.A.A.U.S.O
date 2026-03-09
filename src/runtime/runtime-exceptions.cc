@@ -103,7 +103,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
   Handle<PyObject> exception = Handle<PyObject>::null();
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, exception,
-      Runtime_NewObject(Handle<PyTypeObject>::cast(exception_type),
+      Runtime_NewObject(isolate, Handle<PyTypeObject>::cast(exception_type),
                         Handle<PyObject>::null(), Handle<PyObject>::null()));
 
   if (!message_or_null.is_null()) {

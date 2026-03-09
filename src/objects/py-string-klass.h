@@ -26,7 +26,8 @@ class PyStringKlass : public Klass {
   void Finalize();
 
  private:
-  static MaybeHandle<PyObject> Virtual_NewInstance(Tagged<Klass> klass_self,
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs);
 

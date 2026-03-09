@@ -11,6 +11,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -113,6 +114,7 @@ void PyFloatKlass::Finalize() {
 ////////////////////////////////////////////////////////////////////
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
@@ -127,8 +129,9 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc == 0) {
-    return PyFloat::NewInstance(0.0);
+    return isolate->factory()->NewPyFloat(0.0);
   }
+
   if (argc != 1) {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -141,12 +144,12 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     return value;
   }
   if (IsPySmi(value)) {
-    return PyFloat::NewInstance(
-        static_cast<double>(PySmi::ToInt(Handle<PySmi>::cast(value))));
+    return isolate->factory()->NewPyFloat(
+        PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
   if (IsPyBoolean(value)) {
     bool v = Tagged<PyBoolean>::cast(*value)->value();
-    return PyFloat::NewInstance(v ? 1.0 : 0.0);
+    return isolate->factory()->NewPyFloat(v ? 1.0 : 0.0);
   }
   if (IsPyString(value)) {
     auto s = Handle<PyString>::cast(value);
@@ -158,7 +161,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
                           s->buffer());
       return kNullMaybeHandle;
     }
-    return PyFloat::NewInstance(*parsed);
+    return isolate->factory()->NewPyFloat(*parsed);
   }
 
   auto type_name = PyObject::GetKlass(value)->name();

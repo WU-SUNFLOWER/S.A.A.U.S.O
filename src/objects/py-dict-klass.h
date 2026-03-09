@@ -34,20 +34,21 @@ class PyDictKlass : public Klass {
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
-                                               Handle<PyObject> subscr);
+                                              Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_StoreSubscr(Handle<PyObject> self,
-                                                     Handle<PyObject> subscr,
-                                                     Handle<PyObject> value);
+                                                   Handle<PyObject> subscr,
+                                                   Handle<PyObject> value);
   static MaybeHandle<PyObject> Virtual_DeleteSubscr(Handle<PyObject> self,
-                                                     Handle<PyObject> subscr);
+                                                    Handle<PyObject> subscr);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
                                       Handle<PyObject> subscr);
 
-  static MaybeHandle<PyObject> Virtual_NewInstance(
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
-  static Maybe<void> Virtual_InitInstance(Tagged<Klass> klass_self,
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
+  static Maybe<void> Virtual_InitInstance(Isolate* isolate,
+                                          Tagged<Klass> klass_self,
                                           Handle<PyObject> instance,
                                           Handle<PyObject> args,
                                           Handle<PyObject> kwargs);
