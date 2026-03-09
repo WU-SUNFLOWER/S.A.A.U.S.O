@@ -16,6 +16,7 @@ class PyTuple;
 // 将一个可迭代对象展开并追加到 list 末尾。
 // - list 必须为非空。
 // - iteratable 必须可被 Iter(...)。
+// - 成功时返回 None，同时 list 被成功拓展。
 // - 失败时返回 empty，并保证已设置 pending exception。
 MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     Handle<PyList> list,

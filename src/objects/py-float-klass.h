@@ -23,10 +23,10 @@ class PyFloatKlass : public Klass {
  private:
   PyFloatKlass();
 
-  static MaybeHandle<PyObject> Virtual_ConstructInstance(
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject>);
 
@@ -35,7 +35,7 @@ class PyFloatKlass : public Klass {
   static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_FloorDiv(Handle<PyObject>,
-                                                  Handle<PyObject>);
+                                                Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
 
   static Maybe<bool> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);

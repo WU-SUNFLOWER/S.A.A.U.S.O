@@ -130,7 +130,8 @@ class PyObject : public Object {
 
   static Maybe<uint64_t> Hash(Handle<PyObject> self);
 
-  static MaybeHandle<PyObject> Call(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Call(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> host,
                                     Handle<PyObject> args,
                                     Handle<PyObject> kwargs);

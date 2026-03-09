@@ -87,9 +87,15 @@ class Factory {
                                     bool in_meta_space,
                                     bool allocate_properties_dict);
   Handle<PyString> NewRawString(int64_t str_length, bool in_meta_space);
+
   Handle<PyString> NewString(const char* source,
                              int64_t str_length,
                              bool in_meta_space);
+  Handle<PyString> NewStringLike(Tagged<Klass> klass_self,
+                                 const char* source,
+                                 int64_t str_length,
+                                 bool allocate_properties_dict);
+
   Handle<PyString> NewConsString(Handle<PyString> left, Handle<PyString> right);
 
   Handle<PyCodeObject> NewPyCodeObject();

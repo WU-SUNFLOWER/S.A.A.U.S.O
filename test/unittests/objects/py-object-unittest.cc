@@ -8,15 +8,14 @@
 #include "src/objects/py-list-klass.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
-#include "src/objects/py-smi.h"
 #include "src/objects/py-tuple-klass.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-reflection.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
-
 
 namespace saauso::internal {
 
@@ -65,13 +64,15 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyString> list_like_name = PyString::NewInstance("ListLikeCase");
   Handle<PyDict> list_like_props = PyDict::NewInstance();
   Handle<PyList> list_like_supers = PyList::NewInstance(1);
-  list_like_supers->SetAndExtendLength(0, PyListKlass::GetInstance()->type_object());
+  list_like_supers->SetAndExtendLength(
+      0, PyListKlass::GetInstance()->type_object());
   Handle<PyTypeObject> list_like_type;
-  ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, list_like_name, list_like_props,
-                                        list_like_supers)
+  ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, list_like_name,
+                                        list_like_props, list_like_supers)
                   .ToHandle(&list_like_type));
   Handle<PyObject> list_like;
-  ASSERT_TRUE(Runtime_NewObject(list_like_type, Handle<PyObject>::null(),
+  ASSERT_TRUE(Runtime_NewObject(isolate_, list_like_type,
+                                Handle<PyObject>::null(),
                                 Handle<PyObject>::null())
                   .ToHandle(&list_like));
   EXPECT_TRUE(IsPyList(list_like));
@@ -80,13 +81,15 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyString> dict_like_name = PyString::NewInstance("DictLikeCase");
   Handle<PyDict> dict_like_props = PyDict::NewInstance();
   Handle<PyList> dict_like_supers = PyList::NewInstance(1);
-  dict_like_supers->SetAndExtendLength(0, PyDictKlass::GetInstance()->type_object());
+  dict_like_supers->SetAndExtendLength(
+      0, PyDictKlass::GetInstance()->type_object());
   Handle<PyTypeObject> dict_like_type;
-  ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, dict_like_name, dict_like_props,
-                                        dict_like_supers)
+  ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, dict_like_name,
+                                        dict_like_props, dict_like_supers)
                   .ToHandle(&dict_like_type));
   Handle<PyObject> dict_like;
-  ASSERT_TRUE(Runtime_NewObject(dict_like_type, Handle<PyObject>::null(),
+  ASSERT_TRUE(Runtime_NewObject(isolate_, dict_like_type,
+                                Handle<PyObject>::null(),
                                 Handle<PyObject>::null())
                   .ToHandle(&dict_like));
   EXPECT_TRUE(IsPyDict(dict_like));
@@ -95,14 +98,15 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyString> tuple_like_name = PyString::NewInstance("TupleLikeCase");
   Handle<PyDict> tuple_like_props = PyDict::NewInstance();
   Handle<PyList> tuple_like_supers = PyList::NewInstance(1);
-  tuple_like_supers->SetAndExtendLength(0,
-                                        PyTupleKlass::GetInstance()->type_object());
+  tuple_like_supers->SetAndExtendLength(
+      0, PyTupleKlass::GetInstance()->type_object());
   Handle<PyTypeObject> tuple_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, tuple_like_name,
                                         tuple_like_props, tuple_like_supers)
                   .ToHandle(&tuple_like_type));
   Handle<PyObject> tuple_like;
-  ASSERT_TRUE(Runtime_NewObject(tuple_like_type, Handle<PyObject>::null(),
+  ASSERT_TRUE(Runtime_NewObject(isolate_, tuple_like_type,
+                                Handle<PyObject>::null(),
                                 Handle<PyObject>::null())
                   .ToHandle(&tuple_like));
   EXPECT_TRUE(IsPyTuple(tuple_like));
@@ -118,7 +122,8 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                                         string_like_props, string_like_supers)
                   .ToHandle(&string_like_type));
   Handle<PyObject> string_like;
-  ASSERT_TRUE(Runtime_NewObject(string_like_type, Handle<PyObject>::null(),
+  ASSERT_TRUE(Runtime_NewObject(isolate_, string_like_type,
+                                Handle<PyObject>::null(),
                                 Handle<PyObject>::null())
                   .ToHandle(&string_like));
   EXPECT_TRUE(IsPyString(string_like));

@@ -4,11 +4,7 @@
 
 #include "src/objects/py-string-klass.h"
 
-#include <algorithm>
 #include <cinttypes>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 
 #include "src/builtins/builtins-py-string-methods.h"
 #include "src/execution/exception-utils.h"
@@ -65,7 +61,7 @@ void PyStringKlass::PreInitialize() {
   set_native_layout_base(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  vtable_.new_instance = &Virtual_NewInstance;
   vtable_.len = &Virtual_Len;
   vtable_.equal = &Virtual_Equal;
   vtable_.not_equal = &Virtual_NotEqual;
@@ -110,101 +106,77 @@ void PyStringKlass::Finalize() {
   Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_ConstructInstance(
+MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kString);
-  auto* isolate = Isolate::Current();
+
   bool is_exact_str = klass_self == PyStringKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
-  if (is_exact_str) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "str() takes no keyword arguments\n");
-      return kNullMaybeHandle;
-    }
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "str() takes no keyword arguments\n");
+    return kNullMaybeHandle;
   }
 
-  if (is_exact_str && argc == 1) {
-    Handle<PyObject> value = pos_args->Get(0);
-    if (IsPyStringExact(value)) {
-      return value;
-    }
-  }
-
-  auto probe =
+  Handle<PyObject> input_value;
+  Handle<PyString> result =
       isolate->factory()->NewRawStringLike(klass_self, 0, false, !is_exact_str);
-  if (!is_exact_str) {
-    auto properties = PyObject::GetProperties(probe);
-    RETURN_ON_EXCEPTION(
-        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+
+  if (argc == 0) {
+    goto default_return_result;
   }
 
-  Handle<PyObject> init_method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, probe, ST(init), init_method));
+  input_value = pos_args->Get(0);
+  if (argc == 1) {
+    if (is_exact_str && IsPyStringExact(input_value)) {
+      return input_value;
+    }
 
-  if (init_method.is_null()) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    Handle<PyString> converted;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, converted, Runtime_NewStr(input_value));
+    if (is_exact_str) {
+      return converted;
+    }
+
+    result = isolate->factory()->NewStringLike(klass_self, converted->buffer(),
+                                               converted->length(), true);
+    goto default_return_result;
+  }
+
+  if (argc == 2 || argc == 3) {
+    if (IsPyString(input_value)) {
       Runtime_ThrowError(ExceptionType::kTypeError,
-                         "str() takes no keyword arguments\n");
-      return kNullMaybeHandle;
-    }
-
-    if (argc == 0) {
-      return probe;
-    }
-
-    if (argc == 1) {
-      Handle<PyObject> value = pos_args->Get(0);
-      Handle<PyString> converted;
-      if (!Runtime_NewStr(value).ToHandle(&converted)) {
-        return kNullMaybeHandle;
-      }
-      if (is_exact_str) {
-        return converted;
-      }
-      auto result = isolate->factory()->NewRawStringLike(
-          klass_self, converted->length(), false, true);
-      auto properties = PyObject::GetProperties(result);
-      RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
-                                               klass_self->type_object()));
-      std::memcpy(result->writable_buffer(), converted->buffer(),
-                  static_cast<size_t>(converted->length()));
-      return result;
-    }
-
-    if (argc == 2 || argc == 3) {
-      Handle<PyObject> value = pos_args->Get(0);
-      if (IsPyString(value)) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
-                           "decoding str is not supported\n");
-        return kNullMaybeHandle;
-      }
-      auto type_name = PyObject::GetKlass(value)->name();
+                         "decoding str is not supported\n");
+    } else {
+      auto type_name = PyObject::GetKlass(input_value)->name();
       Runtime_ThrowErrorf(
           ExceptionType::kTypeError,
           "decoding to str: need a bytes-like object, %s found\n",
           type_name->buffer());
-      return kNullMaybeHandle;
     }
+    return kNullMaybeHandle;
+  }
 
+  if (argc > 3) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "str() takes at most 3 arguments (%" PRId64 " given)\n",
                         argc);
     return kNullMaybeHandle;
   }
 
-  if (Execution::Call(isolate, init_method, probe, pos_args,
-                      Handle<PyDict>::cast(kwargs))
-          .IsEmpty()) {
-    return kNullMaybeHandle;
+default_return_result:
+  if (!is_exact_str) {
+    auto properties = PyObject::GetProperties(result);
+    RETURN_ON_EXCEPTION(
+        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
   }
-  return probe;
+  return result;
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {

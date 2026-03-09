@@ -53,7 +53,8 @@ void PyTupleKlass::PreInitialize() {
   set_native_layout_kind(NativeLayoutKind::kTuple);
   set_native_layout_base(Tagged<Klass>(this));
 
-  vtable_.construct_instance = &Virtual_ConstructInstance;
+  // 注意，tuple是不可变类型，在Python中只有__new__，没有__init__。
+  vtable_.new_instance = &Virtual_NewInstance;
   vtable_.len = &Virtual_Len;
   vtable_.print = &Virtual_Print;
   vtable_.subscr = &Virtual_Subscr;
@@ -91,93 +92,88 @@ void PyTupleKlass::Finalize() {
   Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_ConstructInstance(
+// 构造实例对象时，针对用户输入参数的校验，不需要特判当前要创建的是tuple-like还是tuple-exact对象！
+// 直接严格按照创建标准tuple-exact对象的校验要求即可，也不需要考虑tuple-like类的__init__方法！
+//
+// 可参考以下例子：
+// ```
+// >>> class T(tuple):
+// ...   def __init__(self, x, y, z):
+// ...     self.x = x
+// ...     self.y = y
+// ...     self.z = z
+// ...
+// >>> t = T()
+// Traceback (most recent call last):
+//   File "<stdin>", line 1, in <module>
+// TypeError: T.__init__() missing 3 required positional arguments: 'x', 'y',
+// and 'z'
+// >>> t = T(1, 2, 3)
+// Traceback (most recent call last):
+//   File "<stdin>", line 1, in <module>
+// TypeError: tuple expected at most 1 argument, got 3
+// >>> t = T([1, 2, 3])
+// Traceback (most recent call last):
+//   File "<stdin>", line 1, in <module>
+// TypeError: T.__init__() missing 2 required positional arguments: 'y' and 'z'
+// ```
+MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kTuple);
-  auto* isolate = Isolate::Current();
+
   bool is_exact_tuple = klass_self == PyTupleKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
-  if (is_exact_tuple) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "tuple() takes no keyword arguments\n");
-      return kNullMaybeHandle;
-    }
-    if (argc > 1) {
-      Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
-          "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
-      return kNullMaybeHandle;
-    }
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "tuple() takes no keyword arguments\n");
+    return kNullMaybeHandle;
   }
 
-  if (is_exact_tuple && argc == 1) {
+  if (argc > 1) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "tuple expected at most 1 argument, got %" PRId64 "\n",
+                        argc);
+    return kNullMaybeHandle;
+  }
+
+  Handle<PyTuple> result;
+  if (argc == 1) {
     Handle<PyObject> iterable = pos_args->Get(0);
-    if (IsPyTupleExact(iterable)) {
+    // 对齐 CPython 3.12：
+    // 如果要创建一个tuple-exact实例，同时传入的参数恰好是一个tuple-exact对象，
+    // 那么不分配内存，直接返回即可。
+    if (is_exact_tuple && IsPyTupleExact(iterable)) {
       return iterable;
     }
+
+    Handle<PyTuple> unpacked;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, unpacked,
+                               Runtime_UnpackIterableObjectToTuple(iterable));
+
+    int64_t unpacked_length = unpacked->length();
+    result = isolate->factory()->NewPyTupleLike(klass_self, unpacked_length,
+                                                !is_exact_tuple);
+
+    for (int64_t i = 0; i < unpacked_length; ++i) {
+      result->SetInternal(i, unpacked->GetTagged(i));
+    }
+  } else {
+    result = isolate->factory()->NewPyTupleLike(klass_self, 0, !is_exact_tuple);
   }
 
-  auto probe =
-      isolate->factory()->NewPyTupleLike(klass_self, 0, !is_exact_tuple);
   if (!is_exact_tuple) {
-    auto properties = PyObject::GetProperties(probe);
+    auto properties = PyObject::GetProperties(result);
     RETURN_ON_EXCEPTION(
         isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
   }
 
-  Handle<PyObject> init_method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, probe, ST(init), init_method));
-
-  if (init_method.is_null()) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "tuple() takes no keyword arguments\n");
-      return kNullMaybeHandle;
-    }
-    if (argc > 1) {
-      Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
-          "tuple expected at most 1 argument, got %" PRId64 "\n", argc);
-      return kNullMaybeHandle;
-    }
-
-    if (argc == 0) {
-      return probe;
-    }
-
-    Handle<PyObject> iterable = pos_args->Get(0);
-    Handle<PyTuple> unpacked;
-    if (!Runtime_UnpackIterableObjectToTuple(iterable).ToHandle(&unpacked)) {
-      return kNullMaybeHandle;
-    }
-
-    auto length = unpacked->length();
-    auto result =
-        isolate->factory()->NewPyTupleLike(klass_self, length, !is_exact_tuple);
-    if (!is_exact_tuple) {
-      auto properties = PyObject::GetProperties(result);
-      RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
-                                               klass_self->type_object()));
-    }
-    for (auto i = 0; i < length; ++i) {
-      result->SetInternal(i, unpacked->GetTagged(i));
-    }
-    return result;
-  }
-
-  if (Execution::Call(isolate, init_method, probe, pos_args,
-                      Handle<PyDict>::cast(kwargs))
-          .IsEmpty()) {
-    return kNullMaybeHandle;
-  }
-  return probe;
+  return result;
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {

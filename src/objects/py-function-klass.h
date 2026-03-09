@@ -38,10 +38,11 @@ class NativeFunctionKlass : public Klass {
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Call(Handle<PyObject> self,
-                                              Handle<PyObject> host,
-                                              Handle<PyObject> args,
-                                              Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_Call(Isolate* isolate,
+                                            Handle<PyObject> self,
+                                            Handle<PyObject> host,
+                                            Handle<PyObject> args,
+                                            Handle<PyObject> kwargs);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

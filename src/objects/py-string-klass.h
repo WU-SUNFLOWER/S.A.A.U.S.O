@@ -26,10 +26,10 @@ class PyStringKlass : public Klass {
   void Finalize();
 
  private:
-  static MaybeHandle<PyObject> Virtual_ConstructInstance(
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
 
