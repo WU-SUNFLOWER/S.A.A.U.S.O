@@ -14,9 +14,9 @@ class ObjectVisitor;
 class FixedArrayKlass : public Klass {
  public:
   static Tagged<FixedArrayKlass> GetInstance();
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   FixedArrayKlass();

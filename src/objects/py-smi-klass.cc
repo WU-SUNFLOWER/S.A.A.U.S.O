@@ -42,8 +42,8 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PySmiKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PySmiKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // Python中int类型只有默认的__new__而没有__init__
   vtable_.new_instance = &Virtual_NewInstance;
@@ -78,8 +78,8 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PySmiKlass::Finalize() {
-  Isolate::Current()->set_py_smi_klass(Tagged<PySmiKlass>::null());
+void PySmiKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_smi_klass(Tagged<PySmiKlass>::null());
 }
 
 ////////////////////////////////////////////////////////////////////

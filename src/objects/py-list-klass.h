@@ -22,9 +22,9 @@ class PyListKlass : public Klass {
 
   static Tagged<PyListKlass> GetInstance();
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,

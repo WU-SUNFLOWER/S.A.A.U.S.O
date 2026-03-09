@@ -42,9 +42,9 @@ Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
   return instance;
 }
 
-void PyTypeObjectKlass::PreInitialize() {
+void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到isolate
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -82,9 +82,8 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyTypeObjectKlass::Finalize() {
-  Isolate::Current()->set_py_type_object_klass(
-      Tagged<PyTypeObjectKlass>::null());
+void PyTypeObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_type_object_klass(Tagged<PyTypeObjectKlass>::null());
 }
 
 ///////////////////////////////////////////////////////////////////////////

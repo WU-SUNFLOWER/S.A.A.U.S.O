@@ -52,9 +52,9 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
   return instance;
 }
 
-void PyDictKlass::PreInitialize() {
+void PyDictKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kDict);
   set_native_layout_base(Tagged<Klass>(this));
@@ -253,8 +253,8 @@ void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 }
 
 // static
-void PyDictKlass::Finalize() {
-  Isolate::Current()->set_py_dict_klass(Tagged<PyDictKlass>::null());
+void PyDictKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_klass(Tagged<PyDictKlass>::null());
 }
 
 }  // namespace saauso::internal

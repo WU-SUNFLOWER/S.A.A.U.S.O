@@ -34,9 +34,9 @@ Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
   return instance;
 }
 
-void PyCodeObjectKlass::PreInitialize() {
+void PyCodeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -79,9 +79,8 @@ MaybeHandle<PyObject> PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   return handle(Isolate::Current()->py_none_object());
 }
 
-void PyCodeObjectKlass::Finalize() {
-  Isolate::Current()->set_py_code_object_klass(
-      Tagged<PyCodeObjectKlass>::null());
+void PyCodeObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_code_object_klass(Tagged<PyCodeObjectKlass>::null());
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -16,9 +16,9 @@ class PyFloatKlass : public Klass {
  public:
   static Tagged<PyFloatKlass> GetInstance();
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   PyFloatKlass();

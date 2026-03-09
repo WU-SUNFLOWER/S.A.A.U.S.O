@@ -19,16 +19,16 @@ class PyDictKeysKlass : public Klass {
 
   PyDictKeysKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
-                                     Handle<PyObject> subscr);
+                                      Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -40,16 +40,16 @@ class PyDictValuesKlass : public Klass {
 
   PyDictValuesKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
-                                     Handle<PyObject> subscr);
+                                      Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -61,16 +61,16 @@ class PyDictItemsKlass : public Klass {
 
   PyDictItemsKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
-                                     Handle<PyObject> subscr);
+                                      Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
@@ -82,9 +82,9 @@ class PyDictKeyIteratorKlass : public Klass {
 
   PyDictKeyIteratorKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -101,9 +101,9 @@ class PyDictItemIteratorKlass : public Klass {
 
   PyDictItemIteratorKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -120,9 +120,9 @@ class PyDictValueIteratorKlass : public Klass {
 
   PyDictValueIteratorKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);

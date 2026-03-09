@@ -37,9 +37,9 @@ Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
   return instance;
 }
 
-void PyFunctionKlass::PreInitialize() {
+void PyFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -64,8 +64,8 @@ Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyFunctionKlass::Finalize() {
-  Isolate::Current()->set_py_function_klass(Tagged<PyFunctionKlass>::null());
+void PyFunctionKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_function_klass(Tagged<PyFunctionKlass>::null());
 }
 
 MaybeHandle<PyObject> PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
@@ -105,9 +105,9 @@ Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
   return instance;
 }
 
-void NativeFunctionKlass::PreInitialize() {
+void NativeFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -120,9 +120,8 @@ Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void NativeFunctionKlass::Finalize() {
-  Isolate::Current()->set_native_function_klass(
-      Tagged<NativeFunctionKlass>::null());
+void NativeFunctionKlass::Finalize(Isolate* isolate) {
+  isolate->set_native_function_klass(Tagged<NativeFunctionKlass>::null());
 }
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
@@ -176,9 +175,9 @@ Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
   return instance;
 }
 
-void MethodObjectKlass::PreInitialize() {
+void MethodObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -203,9 +202,8 @@ Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void MethodObjectKlass::Finalize() {
-  Isolate::Current()->set_method_object_klass(
-      Tagged<MethodObjectKlass>::null());
+void MethodObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_method_object_klass(Tagged<MethodObjectKlass>::null());
 }
 
 MaybeHandle<PyObject> MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {
