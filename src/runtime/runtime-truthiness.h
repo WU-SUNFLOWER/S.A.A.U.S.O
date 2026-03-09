@@ -19,12 +19,6 @@ bool Runtime_PyObjectIsTrue(Handle<PyObject> object);
 // - 参数允许为 null；null 会被按 false 处理（与上层调用点习惯对齐）。
 bool Runtime_PyObjectIsTrue(Tagged<PyObject> object);
 
-// 判断一个 Python 对象是否可调用（callable）。
-// - 参数允许为 null；null 返回 false。
-// - 该函数不会触发 Python 层的 __call__ 查找，仅检查已知可调用对象与 vtable
-//   slot。
-bool Runtime_IsPyObjectCallable(Tagged<PyObject> object);
-
 }  // namespace saauso::internal
 
 #endif  // SSAUSO_RUNTIME_RUNTIME_TRUTHINESS_H_
