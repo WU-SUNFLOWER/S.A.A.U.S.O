@@ -25,8 +25,8 @@ Tagged<CellKlass> CellKlass::GetInstance() {
   return instance;
 }
 
-void CellKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void CellKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
@@ -36,8 +36,8 @@ Maybe<void> CellKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void CellKlass::Finalize() {
-  Isolate::Current()->set_cell_klass(Tagged<CellKlass>::null());
+void CellKlass::Finalize(Isolate* isolate) {
+  isolate->set_cell_klass(Tagged<CellKlass>::null());
 }
 
 // static

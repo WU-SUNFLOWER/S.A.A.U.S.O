@@ -57,8 +57,8 @@ Tagged<PyTupleIteratorKlass> PyTupleIteratorKlass::GetInstance() {
   return instance;
 }
 
-void PyTupleIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyTupleIteratorKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -84,9 +84,8 @@ Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyTupleIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_tuple_iterator_klass(
-      Tagged<PyTupleIteratorKlass>::null());
+void PyTupleIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_tuple_iterator_klass(Tagged<PyTupleIteratorKlass>::null());
 }
 
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Print(

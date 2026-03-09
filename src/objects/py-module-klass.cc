@@ -29,8 +29,8 @@ Tagged<PyModuleKlass> PyModuleKlass::GetInstance() {
   return instance;
 }
 
-void PyModuleKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyModuleKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;
@@ -50,8 +50,8 @@ Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyModuleKlass::Finalize() {
-  Isolate::Current()->set_py_module_klass(Tagged<PyModuleKlass>::null());
+void PyModuleKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_module_klass(Tagged<PyModuleKlass>::null());
 }
 
 size_t PyModuleKlass::Virtual_InstanceSize(Tagged<PyObject>) {

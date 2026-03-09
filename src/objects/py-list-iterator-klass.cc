@@ -56,8 +56,8 @@ Tagged<PyListIteratorKlass> PyListIteratorKlass::GetInstance() {
   return instance;
 }
 
-void PyListIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyListIteratorKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
@@ -89,9 +89,8 @@ Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyListIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_list_iterator_klass(
-      Tagged<PyListIteratorKlass>::null());
+void PyListIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_list_iterator_klass(Tagged<PyListIteratorKlass>::null());
 }
 
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Print(

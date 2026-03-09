@@ -53,9 +53,9 @@ Tagged<PyStringKlass> PyStringKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PyStringKlass::PreInitialize() {
+void PyStringKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kString);
   set_native_layout_base(Tagged<Klass>(this));
@@ -102,8 +102,8 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyStringKlass::Finalize() {
-  Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
+void PyStringKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_string_klass(Tagged<PyStringKlass>::null());
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(

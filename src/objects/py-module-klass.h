@@ -15,9 +15,9 @@ class PyModuleKlass : public Klass {
 
   static Tagged<PyModuleKlass> GetInstance();
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

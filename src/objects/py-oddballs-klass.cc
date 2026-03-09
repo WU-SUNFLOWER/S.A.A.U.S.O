@@ -41,9 +41,9 @@ Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
   return instance;
 }
 
-void PyBooleanKlass::PreInitialize() {
+void PyBooleanKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -70,8 +70,8 @@ Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
 }
 
 // static
-void PyBooleanKlass::Finalize() {
-  Isolate::Current()->set_py_boolean_klass(Tagged<PyBooleanKlass>::null());
+void PyBooleanKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_boolean_klass(Tagged<PyBooleanKlass>::null());
 }
 
 // static
@@ -127,9 +127,9 @@ Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
   return instance;
 }
 
-void PyNoneKlass::PreInitialize() {
+void PyNoneKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -155,8 +155,8 @@ Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyNoneKlass::Finalize() {
-  Isolate::Current()->set_py_none_klass(Tagged<PyNoneKlass>::null());
+void PyNoneKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_none_klass(Tagged<PyNoneKlass>::null());
 }
 
 // static
