@@ -16,7 +16,7 @@ class PyObjectKlass : public Klass {
 
   PyObjectKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

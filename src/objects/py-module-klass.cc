@@ -29,8 +29,8 @@ Tagged<PyModuleKlass> PyModuleKlass::GetInstance() {
   return instance;
 }
 
-void PyModuleKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyModuleKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.instance_size = &Virtual_InstanceSize;
   vtable_.iterate = &Virtual_Iterate;

@@ -16,7 +16,7 @@ class PyFunctionKlass : public Klass {
 
   PyFunctionKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
@@ -32,7 +32,7 @@ class NativeFunctionKlass : public Klass {
 
   NativeFunctionKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
@@ -54,7 +54,7 @@ class MethodObjectKlass : public Klass {
 
   MethodObjectKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

@@ -52,9 +52,9 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
   return instance;
 }
 
-void PyDictKlass::PreInitialize() {
+void PyDictKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kDict);
   set_native_layout_base(Tagged<Klass>(this));

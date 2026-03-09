@@ -16,7 +16,7 @@ class PyCodeObjectKlass : public Klass {
 
   PyCodeObjectKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

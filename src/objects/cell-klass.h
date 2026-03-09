@@ -17,7 +17,7 @@ class CellKlass : public Klass {
 
   CellKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

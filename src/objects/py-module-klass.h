@@ -15,7 +15,7 @@ class PyModuleKlass : public Klass {
 
   static Tagged<PyModuleKlass> GetInstance();
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

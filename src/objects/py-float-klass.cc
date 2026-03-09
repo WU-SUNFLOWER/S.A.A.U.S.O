@@ -66,9 +66,9 @@ Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PyFloatKlass::PreInitialize() {
+void PyFloatKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // Python中float类型只有默认的__new__而没有__init__
   vtable_.new_instance = &Virtual_NewInstance;

@@ -41,9 +41,9 @@ Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
   return instance;
 }
 
-void PyBooleanKlass::PreInitialize() {
+void PyBooleanKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -127,9 +127,9 @@ Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
   return instance;
 }
 
-void PyNoneKlass::PreInitialize() {
+void PyNoneKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // TODO: 初始化虚函数表
   vtable_.print = &Virtual_Print;

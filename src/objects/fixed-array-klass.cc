@@ -24,9 +24,9 @@ Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance() {
   return instance;
 }
 
-void FixedArrayKlass::PreInitialize() {
+void FixedArrayKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.instance_size = &Virtual_InstanceSize;

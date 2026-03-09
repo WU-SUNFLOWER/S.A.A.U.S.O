@@ -37,9 +37,9 @@ Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
   return instance;
 }
 
-void PyFunctionKlass::PreInitialize() {
+void PyFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -105,9 +105,9 @@ Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
   return instance;
 }
 
-void NativeFunctionKlass::PreInitialize() {
+void NativeFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;
@@ -176,9 +176,9 @@ Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
   return instance;
 }
 
-void MethodObjectKlass::PreInitialize() {
+void MethodObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;

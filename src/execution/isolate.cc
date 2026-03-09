@@ -244,7 +244,7 @@ Maybe<void> Isolate::InitMetaArea() {
   do {                                 \
     auto klass = Klass::GetInstance(); \
     klass->InitializeVTable();         \
-    klass->PreInitialize();            \
+    klass->PreInitialize(this);        \
   } while (false);
   ISOLATE_KLASS_LIST(PREINIT_PY_KLASS)
 #undef PREINIT_PY_KLASS

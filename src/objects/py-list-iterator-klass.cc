@@ -56,8 +56,8 @@ Tagged<PyListIteratorKlass> PyListIteratorKlass::GetInstance() {
   return instance;
 }
 
-void PyListIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyListIteratorKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;

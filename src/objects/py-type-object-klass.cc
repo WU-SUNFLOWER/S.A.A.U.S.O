@@ -42,9 +42,9 @@ Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
   return instance;
 }
 
-void PyTypeObjectKlass::PreInitialize() {
+void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到isolate
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;

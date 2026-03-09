@@ -34,9 +34,9 @@ Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
   return instance;
 }
 
-void PyCodeObjectKlass::PreInitialize() {
+void PyCodeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
   vtable_.print = &Virtual_Print;

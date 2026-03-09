@@ -47,8 +47,8 @@ Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
   return instance;
 }
 
-void PyTupleKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyTupleKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kTuple);
   set_native_layout_base(Tagged<Klass>(this));

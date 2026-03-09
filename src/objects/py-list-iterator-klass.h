@@ -16,7 +16,7 @@ class PyListIteratorKlass : public Klass {
 
   PyListIteratorKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

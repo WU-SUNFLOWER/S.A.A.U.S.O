@@ -19,7 +19,7 @@ class PySmiKlass : public Klass {
  public:
   static Tagged<PySmiKlass> GetInstance();
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 

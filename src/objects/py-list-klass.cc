@@ -56,9 +56,9 @@ Tagged<PyListKlass> PyListKlass::GetInstance() {
 
 ////////////////////////////////////////////////////////////////////
 
-void PyListKlass::PreInitialize() {
+void PyListKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 设置内建布局字段
   set_native_layout_kind(NativeLayoutKind::kList);

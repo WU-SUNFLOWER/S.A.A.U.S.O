@@ -57,8 +57,8 @@ Tagged<PyTupleIteratorKlass> PyTupleIteratorKlass::GetInstance() {
   return instance;
 }
 
-void PyTupleIteratorKlass::PreInitialize() {
-  Isolate::Current()->klass_list().PushBack(Tagged<Klass>(this));
+void PyTupleIteratorKlass::PreInitialize(Isolate* isolate) {
+  isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   vtable_.print = &Virtual_Print;
   vtable_.iter = &Virtual_Iter;
