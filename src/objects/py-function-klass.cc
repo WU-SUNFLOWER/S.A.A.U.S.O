@@ -137,6 +137,7 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
 }
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> host,
     Handle<PyObject> args,

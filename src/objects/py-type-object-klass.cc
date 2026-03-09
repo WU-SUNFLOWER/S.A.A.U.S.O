@@ -175,12 +175,13 @@ Maybe<void> PyTypeObjectKlass::Virtual_InitInstance(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Handle<PyObject> self,
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Isolate* isolate,
+                                                      Handle<PyObject> self,
                                                       Handle<PyObject> host,
                                                       Handle<PyObject> args,
                                                       Handle<PyObject> kwargs) {
   auto type_object = Handle<PyTypeObject>::cast(self);
-  return Runtime_NewObject(Isolate::Current(), type_object, args, kwargs);
+  return Runtime_NewObject(isolate, type_object, args, kwargs);
 }
 
 // static

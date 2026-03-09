@@ -119,12 +119,11 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
   return result;
 }
 
-MaybeHandle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
+MaybeHandle<PyObject> Klass::Virtual_Default_Call(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> host,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, self, ST(call), callable));
@@ -137,11 +136,10 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Call(Handle<PyObject> self,
   }
 
   Handle<PyObject> result;
-  if (!Execution::Call(isolate, callable, host, Handle<PyTuple>::cast(args),
-                       Handle<PyDict>::cast(kwargs))
-           .ToHandle(&result)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      Execution::Call(isolate, callable, host, Handle<PyTuple>::cast(args),
+                      Handle<PyDict>::cast(kwargs)));
   return result;
 }
 
@@ -534,11 +532,10 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Iter(Handle<PyObject> self) {
 }
 
 MaybeHandle<PyObject> Klass::Virtual_Default_NewInstance(
+    Isolate* isolate,
     Tagged<Klass> klass_self,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> instance;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, instance,
@@ -546,11 +543,11 @@ MaybeHandle<PyObject> Klass::Virtual_Default_NewInstance(
   return instance;
 }
 
-Maybe<void> Klass::Virtual_Default_InitInstance(Tagged<Klass> klass_self,
+Maybe<void> Klass::Virtual_Default_InitInstance(Isolate* isolate,
+                                                Tagged<Klass> klass_self,
                                                 Handle<PyObject> instance,
                                                 Handle<PyObject> args,
                                                 Handle<PyObject> kwargs) {
-  auto* isolate = Isolate::Current();
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, instance, ST(init), init_method));

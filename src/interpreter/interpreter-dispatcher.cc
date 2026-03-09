@@ -1179,8 +1179,9 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
 
   // 兜底：调用对象的__call__虚函数
   Handle<PyObject> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
-                             PyObject::Call(callable, host, pos_args, kw_args));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, result,
+      PyObject::Call(isolate_, callable, host, pos_args, kw_args));
   PUSH(result);
 
   return JustVoid();
@@ -1205,8 +1206,9 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
   }
 
   Handle<PyObject> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
-                             PyObject::Call(callable, host, pos_args, kw_args));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, result,
+      PyObject::Call(isolate_, callable, host, pos_args, kw_args));
   PUSH(result);
 
   return JustVoid();

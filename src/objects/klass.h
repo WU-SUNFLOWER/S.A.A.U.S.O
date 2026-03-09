@@ -67,10 +67,11 @@ struct VirtualTable {
   using VirtualFuncType_Maybe_0_3 = MaybeOopHandle (*)(OopHandle,
                                                        OopHandle,
                                                        OopHandle);
-  using VirtualFuncType_Maybe_1_4 = MaybeOopHandle (*)(OopHandle,
-                                                       OopHandle,
-                                                       OopHandle,
-                                                       OopHandle);
+  using VirtualFuncType_Maybe_Call = MaybeOopHandle (*)(Isolate* isolate,
+                                                        OopHandle,
+                                                        OopHandle,
+                                                        OopHandle,
+                                                        OopHandle);
   using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Isolate*,
                                                        Tagged<Klass>,
                                                        OopHandle,
@@ -114,7 +115,7 @@ struct VirtualTable {
 
   VirtualFuncType_Maybe_1_1 iter{nullptr};
   VirtualFuncType_Maybe_1_1 next{nullptr};
-  VirtualFuncType_Maybe_1_4 call{nullptr};
+  VirtualFuncType_Maybe_Call call{nullptr};
   VirtualFuncType_Maybe_1_1 len{nullptr};
 
   // print：成功返回 None，失败返回空 MaybeHandle
@@ -203,7 +204,8 @@ class Klass : public Object {
   static MaybeHandle<PyObject> Virtual_Default_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Default_Call(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Default_Call(Isolate* isolate,
+                                                    Handle<PyObject> self,
                                                     Handle<PyObject> host,
                                                     Handle<PyObject> args,
                                                     Handle<PyObject> kwargs);
@@ -244,10 +246,12 @@ class Klass : public Object {
                                                Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Virtual_Default_NewInstance(
+      Isolate* isolate,
       Tagged<Klass> klass_self,
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
-  static Maybe<void> Virtual_Default_InitInstance(Tagged<Klass> klass_self,
+  static Maybe<void> Virtual_Default_InitInstance(Isolate* isolate,
+                                                  Tagged<Klass> klass_self,
                                                   Handle<PyObject> instance,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs);

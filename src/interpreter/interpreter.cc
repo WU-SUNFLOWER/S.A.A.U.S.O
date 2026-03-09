@@ -168,9 +168,10 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   // 兜底：尝试调用callable的call虚方法
   // 如果对象无法被调用，执行PyObject::Call后会抛出错误。
   // 类似于TypeError: 'xxx' object is not callable
-  if (!PyObject::Call(callable, host, pos_args, kw_args).ToHandle(&result)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, result,
+      PyObject::Call(isolate_, callable, host, pos_args, kw_args));
+
   return scope.Escape(result);
 }
 

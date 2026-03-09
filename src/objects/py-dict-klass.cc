@@ -235,8 +235,8 @@ Maybe<void> PyDictKlass::Virtual_InitInstance(Isolate* isolate,
     return JustVoid();
   }
 
-  return Klass::Virtual_Default_InitInstance(klass_self, instance, args,
-                                             kwargs);
+  return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,
+                                             args, kwargs);
 }
 
 // static
