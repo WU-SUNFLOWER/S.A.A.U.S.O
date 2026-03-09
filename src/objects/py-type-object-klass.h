@@ -19,7 +19,7 @@ class PyTypeObjectKlass : public Klass {
 
   PyTypeObjectKlass() = delete;
 
-  void PreInitialize();
+  void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize();
 
@@ -40,10 +40,15 @@ class PyTypeObjectKlass : public Klass {
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Virtual_ConstructInstance(
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Tagged<Klass> klass_self,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
+                                                    Tagged<Klass> klass_self,
+                                                    Handle<PyObject> instance,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Call(Handle<PyObject> self,
                                             Handle<PyObject> host,
