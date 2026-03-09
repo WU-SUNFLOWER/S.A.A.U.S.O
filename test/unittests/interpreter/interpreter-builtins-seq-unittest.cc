@@ -952,8 +952,46 @@ print(len(s.foo()))
 
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SubclassStrCustomInitWithMoreParamsAndArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class S(str):
+  def __init__(self, a, b, c, d):
+    self.a = a
+    self.b = b
+    self.c = c
+    self.d = d
+
+s1 = S(1,2,3,4)
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "TypeError: str() takes at most 3 arguments (4 given)",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, SubclassStrCustomInitWithMoreParams) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class S(str):
+  def __init__(self, a, b, c, d):
+    self.a = a
+    self.b = b
+    self.c = c
+    self.d = d
+
+s1 = S("Hello World")
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "__init__() missing 3 required positional argument",
+      kTestFileName);
 }
 
 }  // namespace saauso::internal

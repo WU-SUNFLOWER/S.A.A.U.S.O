@@ -306,6 +306,17 @@ Handle<PyString> Factory::NewString(const char* source,
   return scope.Escape(object);
 }
 
+Handle<PyString> Factory::NewStringLike(Tagged<Klass> klass_self,
+                                        const char* source,
+                                        int64_t str_length,
+                                        bool allocate_properties_dict) {
+  EscapableHandleScope scope;
+  Handle<PyString> object =
+      NewRawStringLike(klass_self, str_length, false, allocate_properties_dict);
+  std::memcpy(object->writable_buffer(), source, str_length);
+  return scope.Escape(object);
+}
+
 Handle<PyString> Factory::NewConsString(Handle<PyString> left,
                                         Handle<PyString> right) {
   EscapableHandleScope scope;
