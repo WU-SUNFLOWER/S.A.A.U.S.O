@@ -31,11 +31,11 @@ class PyListKlass : public Klass {
                                                    Tagged<Klass> klass_self,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs);
-  static Maybe<void> Virtual_InitInstance(Isolate* isolate,
-                                          Tagged<Klass> klass_self,
-                                          Handle<PyObject> instance,
-                                          Handle<PyObject> args,
-                                          Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
+                                                    Tagged<Klass> klass_self,
+                                                    Handle<PyObject> instance,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);

@@ -13,6 +13,7 @@
 #include "src/heap/heap.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -20,6 +21,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/templates.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
@@ -27,6 +29,47 @@
 #include "src/utils/maybe.h"
 
 namespace saauso::internal {
+
+namespace {
+
+// MaybeHandle<PyObject> BuiltinTypeInitSlotBridge(Handle<PyObject> host,
+//                                                 Handle<PyTuple> args,
+//                                                 Handle<PyDict> kwargs) {
+//   auto* isolate = Isolate::Current();
+//   if (host.is_null() || !IsPyTypeObject(host)) {
+//     Runtime_ThrowError(ExceptionType::kTypeError,
+//                        "__init__ slot bridge requires type host");
+//     return kNullMaybeHandle;
+//   }
+//   int64_t argc = args.is_null() ? 0 : args->length();
+//   if (argc < 1) {
+//     Runtime_ThrowError(ExceptionType::kTypeError,
+//                        "__init__() takes at least 1 argument (0 given)");
+//     return kNullMaybeHandle;
+//   }
+
+//   Handle<PyObject> instance = args->Get(0);
+//   Handle<PyTuple> init_args = PyTuple::NewInstance(argc - 1);
+//   for (int64_t i = 1; i < argc; ++i) {
+//     init_args->SetInternal(i - 1, *args->Get(i));
+//   }
+
+//   auto owner_type = Handle<PyTypeObject>::cast(host);
+//   auto owner_klass = owner_type->own_klass();
+//   Handle<PyObject> init_result;
+//   ASSIGN_RETURN_ON_EXCEPTION(
+//       isolate, init_result,
+//       owner_klass->InitInstance(isolate, instance, init_args, kwargs));
+//   if (!init_result.is_identical_to(handle(isolate->py_none_object()))) {
+//     Runtime_ThrowErrorf(ExceptionType::kTypeError,
+//                         "__init__() should return None, not '%s'\n",
+//                         PyObject::GetKlass(init_result)->name()->buffer());
+//     return kNullMaybeHandle;
+//   }
+//   return init_result;
+// }
+
+}  // namespace
 
 // static
 Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
@@ -114,6 +157,16 @@ Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
     out_prop_val = result;
     return Maybe<bool>(true);
   }
+  // if (Handle<PyString>::cast(prop_name)->IsEqualTo(*ST(init))) {
+  //   Handle<PyString> func_name = ST(init);
+  //   FunctionTemplateInfo func_template(BuiltinTypeInitSlotBridge, func_name);
+  //   Handle<PyFunction> func_object;
+  //   ASSIGN_RETURN_ON_EXCEPTION(
+  //       isolate, func_object,
+  //       isolate->factory()->NewPyFunctionWithTemplate(func_template));
+  //   out_prop_val = MethodObject::NewInstance(func_object, self);
+  //   return Maybe<bool>(true);
+  // }
   if (is_try) {
     return Maybe<bool>(false);
   }
@@ -167,12 +220,13 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
   return Runtime_NewType(isolate, args, kwargs);
 }
 
-Maybe<void> PyTypeObjectKlass::Virtual_InitInstance(Isolate* isolate,
-                                                    Tagged<Klass> klass_self,
-                                                    Handle<PyObject> instance,
-                                                    Handle<PyObject> args,
-                                                    Handle<PyObject> kwargs) {
-  return JustVoid();
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_InitInstance(
+    Isolate* isolate,
+    Tagged<Klass> klass_self,
+    Handle<PyObject> instance,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  return handle(isolate->py_none_object());
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Isolate* isolate,

@@ -219,11 +219,12 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
   return result;
 }
 
-Maybe<void> PyDictKlass::Virtual_InitInstance(Isolate* isolate,
-                                              Tagged<Klass> klass_self,
-                                              Handle<PyObject> instance,
-                                              Handle<PyObject> args,
-                                              Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
+    Isolate* isolate,
+    Tagged<Klass> klass_self,
+    Handle<PyObject> instance,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
 
   bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
@@ -232,7 +233,7 @@ Maybe<void> PyDictKlass::Virtual_InitInstance(Isolate* isolate,
     RETURN_ON_EXCEPTION(
         isolate, Runtime_InitDictFromArgsKwargs(Handle<PyDict>::cast(instance),
                                                 args, kwargs));
-    return JustVoid();
+    return handle(isolate->py_none_object());
   }
 
   return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,

@@ -28,17 +28,13 @@ using namespace saauso::internal;
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"(
-class T(tuple):
-  pass
+class L(list):
+    def __init__(self, iterable, x):
+        list.__init__(self, iterable)
+        self.x = x
 
-t1 = (1, 2)
-t2 = T(t1)
-t3 = tuple(t1)
-
-print(t1 == t2 == t3) # True
-print(t1 is t2) # False
-print(t2 is t3) # False
-print(t1 is t3) # True
+l = L([1, 2, 3], 100)
+print(l[0] + l[1] + l[2] + l.x)
 )";
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 

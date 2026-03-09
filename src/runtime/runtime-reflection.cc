@@ -177,8 +177,18 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
   ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
                              own_klass->NewInstance(isolate, args, kwargs));
   // 初始化实例对象
-  RETURN_ON_EXCEPTION(isolate,
-                      own_klass->InitInstance(isolate, result, args, kwargs));
+  Handle<PyObject> init_result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, init_result,
+      own_klass->InitInstance(isolate, result, args, kwargs));
+
+  if (!IsPyNone(init_result)) [[unlikely]] {
+    auto type_name = PyObject::GetKlass(init_result)->name();
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "__init__() should return None, not '%s'\n",
+                        type_name->buffer());
+    return kNullMaybeHandle;
+  }
 
   return result;
 }

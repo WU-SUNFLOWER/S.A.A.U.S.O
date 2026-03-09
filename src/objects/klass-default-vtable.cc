@@ -543,22 +543,26 @@ MaybeHandle<PyObject> Klass::Virtual_Default_NewInstance(
   return instance;
 }
 
-Maybe<void> Klass::Virtual_Default_InitInstance(Isolate* isolate,
-                                                Tagged<Klass> klass_self,
-                                                Handle<PyObject> instance,
-                                                Handle<PyObject> args,
-                                                Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> Klass::Virtual_Default_InitInstance(
+    Isolate* isolate,
+    Tagged<Klass> klass_self,
+    Handle<PyObject> instance,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
                                    isolate, instance, ST(init), init_method));
 
   if (!init_method.is_null()) {
-    RETURN_ON_EXCEPTION(isolate, Execution::Call(isolate, init_method, instance,
-                                                 Handle<PyTuple>::cast(args),
-                                                 Handle<PyDict>::cast(kwargs)));
+    Handle<PyObject> init_result;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, init_result,
+        Execution::Call(isolate, init_method, instance,
+                        Handle<PyTuple>::cast(args), Handle<PyDict>::cast(kwargs)));
+    return init_result;
   }
 
-  return JustVoid();
+  return handle(isolate->py_none_object());
 }
 
 void Klass::Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*) {

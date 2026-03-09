@@ -214,10 +214,10 @@ MaybeHandle<PyObject> Klass::NewInstance(Isolate* isolate,
   return vtable_.new_instance(isolate, Tagged<Klass>(this), args, kwargs);
 }
 
-Maybe<void> Klass::InitInstance(Isolate* isolate,
-                                Handle<PyObject> instance,
-                                Handle<PyObject> args,
-                                Handle<PyObject> kwargs) {
+MaybeHandle<PyObject> Klass::InitInstance(Isolate* isolate,
+                                          Handle<PyObject> instance,
+                                          Handle<PyObject> args,
+                                          Handle<PyObject> kwargs) {
   return vtable_.init_instance(isolate, Tagged<Klass>(this), instance, args,
                                kwargs);
 }
