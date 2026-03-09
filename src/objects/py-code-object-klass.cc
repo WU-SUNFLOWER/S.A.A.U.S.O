@@ -79,9 +79,8 @@ MaybeHandle<PyObject> PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
   return handle(Isolate::Current()->py_none_object());
 }
 
-void PyCodeObjectKlass::Finalize() {
-  Isolate::Current()->set_py_code_object_klass(
-      Tagged<PyCodeObjectKlass>::null());
+void PyCodeObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_code_object_klass(Tagged<PyCodeObjectKlass>::null());
 }
 
 /////////////////////////////////////////////////////////////////////////

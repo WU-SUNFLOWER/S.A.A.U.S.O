@@ -88,8 +88,8 @@ Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyTupleKlass::Finalize() {
-  Isolate::Current()->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
+void PyTupleKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_tuple_klass(Tagged<PyTupleKlass>::null());
 }
 
 // 构造实例对象时，针对用户输入参数的校验，不需要特判当前要创建的是tuple-like还是tuple-exact对象！

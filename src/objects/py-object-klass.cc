@@ -54,8 +54,8 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
 }
 
 // static
-void PyObjectKlass::Finalize() {
-  Isolate::Current()->set_py_object_klass(Tagged<PyObjectKlass>::null());
+void PyObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_object_klass(Tagged<PyObjectKlass>::null());
 }
 
 size_t PyObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

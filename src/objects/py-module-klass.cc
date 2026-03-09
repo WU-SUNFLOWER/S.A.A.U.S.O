@@ -50,8 +50,8 @@ Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyModuleKlass::Finalize() {
-  Isolate::Current()->set_py_module_klass(Tagged<PyModuleKlass>::null());
+void PyModuleKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_module_klass(Tagged<PyModuleKlass>::null());
 }
 
 size_t PyModuleKlass::Virtual_InstanceSize(Tagged<PyObject>) {

@@ -253,8 +253,8 @@ void PyDictKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 }
 
 // static
-void PyDictKlass::Finalize() {
-  Isolate::Current()->set_py_dict_klass(Tagged<PyDictKlass>::null());
+void PyDictKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_klass(Tagged<PyDictKlass>::null());
 }
 
 }  // namespace saauso::internal

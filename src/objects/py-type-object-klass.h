@@ -21,7 +21,7 @@ class PyTypeObjectKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);

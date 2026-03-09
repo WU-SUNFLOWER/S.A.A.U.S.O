@@ -21,7 +21,7 @@ class PyDictKeysKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -42,7 +42,7 @@ class PyDictValuesKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -63,7 +63,7 @@ class PyDictItemsKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -84,7 +84,7 @@ class PyDictKeyIteratorKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -103,7 +103,7 @@ class PyDictItemIteratorKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -122,7 +122,7 @@ class PyDictValueIteratorKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);

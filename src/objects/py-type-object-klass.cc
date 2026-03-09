@@ -82,9 +82,8 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyTypeObjectKlass::Finalize() {
-  Isolate::Current()->set_py_type_object_klass(
-      Tagged<PyTypeObjectKlass>::null());
+void PyTypeObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_type_object_klass(Tagged<PyTypeObjectKlass>::null());
 }
 
 ///////////////////////////////////////////////////////////////////////////

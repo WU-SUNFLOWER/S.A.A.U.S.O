@@ -99,8 +99,8 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyDictKeysKlass::Finalize() {
-  Isolate::Current()->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::null());
+void PyDictKeysKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::null());
 }
 
 MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
@@ -187,9 +187,8 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyDictValuesKlass::Finalize() {
-  Isolate::Current()->set_py_dict_values_klass(
-      Tagged<PyDictValuesKlass>::null());
+void PyDictValuesKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_values_klass(Tagged<PyDictValuesKlass>::null());
 }
 
 MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
@@ -293,8 +292,8 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyDictItemsKlass::Finalize() {
-  Isolate::Current()->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::null());
+void PyDictItemsKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::null());
 }
 
 MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
@@ -410,8 +409,8 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyDictKeyIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_dict_keyiterator_klass(
+void PyDictKeyIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_keyiterator_klass(
       Tagged<PyDictKeyIteratorKlass>::null());
 }
 
@@ -491,8 +490,8 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyDictItemIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_dict_itemiterator_klass(
+void PyDictItemIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_itemiterator_klass(
       Tagged<PyDictItemIteratorKlass>::null());
 }
 
@@ -572,8 +571,8 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyDictValueIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_dict_valueiterator_klass(
+void PyDictValueIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_dict_valueiterator_klass(
       Tagged<PyDictValueIteratorKlass>::null());
 }
 

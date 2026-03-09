@@ -89,9 +89,8 @@ Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyListIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_list_iterator_klass(
-      Tagged<PyListIteratorKlass>::null());
+void PyListIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_list_iterator_klass(Tagged<PyListIteratorKlass>::null());
 }
 
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Print(

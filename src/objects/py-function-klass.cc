@@ -64,8 +64,8 @@ Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyFunctionKlass::Finalize() {
-  Isolate::Current()->set_py_function_klass(Tagged<PyFunctionKlass>::null());
+void PyFunctionKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_function_klass(Tagged<PyFunctionKlass>::null());
 }
 
 MaybeHandle<PyObject> PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
@@ -120,9 +120,8 @@ Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void NativeFunctionKlass::Finalize() {
-  Isolate::Current()->set_native_function_klass(
-      Tagged<NativeFunctionKlass>::null());
+void NativeFunctionKlass::Finalize(Isolate* isolate) {
+  isolate->set_native_function_klass(Tagged<NativeFunctionKlass>::null());
 }
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
@@ -203,9 +202,8 @@ Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void MethodObjectKlass::Finalize() {
-  Isolate::Current()->set_method_object_klass(
-      Tagged<MethodObjectKlass>::null());
+void MethodObjectKlass::Finalize(Isolate* isolate) {
+  isolate->set_method_object_klass(Tagged<MethodObjectKlass>::null());
 }
 
 MaybeHandle<PyObject> MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {

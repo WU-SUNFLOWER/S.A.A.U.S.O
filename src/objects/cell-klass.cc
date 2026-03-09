@@ -36,8 +36,8 @@ Maybe<void> CellKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void CellKlass::Finalize() {
-  Isolate::Current()->set_cell_klass(Tagged<CellKlass>::null());
+void CellKlass::Finalize(Isolate* isolate) {
+  isolate->set_cell_klass(Tagged<CellKlass>::null());
 }
 
 // static

@@ -78,8 +78,8 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PySmiKlass::Finalize() {
-  Isolate::Current()->set_py_smi_klass(Tagged<PySmiKlass>::null());
+void PySmiKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_smi_klass(Tagged<PySmiKlass>::null());
 }
 
 ////////////////////////////////////////////////////////////////////

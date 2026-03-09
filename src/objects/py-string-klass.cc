@@ -102,8 +102,8 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyStringKlass::Finalize() {
-  Isolate::Current()->set_py_string_klass(Tagged<PyStringKlass>::null());
+void PyStringKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_string_klass(Tagged<PyStringKlass>::null());
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(

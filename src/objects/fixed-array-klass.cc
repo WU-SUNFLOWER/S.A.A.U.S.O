@@ -38,8 +38,8 @@ Maybe<void> FixedArrayKlass::Initialize(Isolate* isolate) {
 }
 
 // static
-void FixedArrayKlass::Finalize() {
-  Isolate::Current()->set_fixed_array_klass(Tagged<FixedArrayKlass>::null());
+void FixedArrayKlass::Finalize(Isolate* isolate) {
+  isolate->set_fixed_array_klass(Tagged<FixedArrayKlass>::null());
 }
 
 // static

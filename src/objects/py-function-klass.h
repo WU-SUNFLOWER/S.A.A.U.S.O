@@ -18,7 +18,7 @@ class PyFunctionKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -34,7 +34,7 @@ class NativeFunctionKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
@@ -56,7 +56,7 @@ class MethodObjectKlass : public Klass {
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
-  void Finalize();
+  void Finalize(Isolate* isolate);
 
  private:
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);

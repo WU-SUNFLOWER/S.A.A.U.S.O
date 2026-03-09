@@ -84,9 +84,8 @@ Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyTupleIteratorKlass::Finalize() {
-  Isolate::Current()->set_py_tuple_iterator_klass(
-      Tagged<PyTupleIteratorKlass>::null());
+void PyTupleIteratorKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_tuple_iterator_klass(Tagged<PyTupleIteratorKlass>::null());
 }
 
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Print(

@@ -105,8 +105,8 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyListKlass::Finalize() {
-  Isolate::Current()->set_py_list_klass(Tagged<PyListKlass>::null());
+void PyListKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_list_klass(Tagged<PyListKlass>::null());
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(

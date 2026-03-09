@@ -107,8 +107,8 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-void PyFloatKlass::Finalize() {
-  Isolate::Current()->set_py_float_klass(Tagged<PyFloatKlass>::null());
+void PyFloatKlass::Finalize(Isolate* isolate) {
+  isolate->set_py_float_klass(Tagged<PyFloatKlass>::null());
 }
 
 ////////////////////////////////////////////////////////////////////
