@@ -195,11 +195,6 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   return JustVoid();
 }
 
-void Klass::CopyVTableFrom(Tagged<Klass> base) {
-  assert(!base.is_null());
-  vtable_ = base->vtable_;
-}
-
 MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,

@@ -61,7 +61,7 @@ Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
 
   // 后续算法依赖槽位值是否为nullptr来判断槽位是否被填充。
   // 由于不保证分配器分配出来的内存已经置零，因此首先需要显式清空所有槽位。
-  Clear();
+  // Clear();
 
   InitializeFromSupers(klass);
   RETURN_ON_EXCEPTION(isolate, UpdateOverrideSlots(isolate, klass));
@@ -80,7 +80,7 @@ void KlassVtable::InitializeFromSupers(Tagged<Klass> klass) {
   assert(!klass->mro().is_null());
 
   Handle<PyList> mro = klass->mro();
-  for (int64_t i = 0; i < mro->length(); ++i) {
+  for (int64_t i = 1; i < mro->length(); ++i) {
     auto super = Handle<PyTypeObject>::cast(mro->Get(i));
     auto super_klass = super->own_klass();
     CopyInheritedSlotsFromSuper(super_klass);

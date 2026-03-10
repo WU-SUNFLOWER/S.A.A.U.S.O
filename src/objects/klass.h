@@ -67,9 +67,8 @@ class Klass : public Object {
     native_layout_base_ = base;
   }
 
-  void CopyVTableFrom(Tagged<Klass> base);
-
   const KlassVtable& vtable() const { return vtable_; }
+  void set_vtable(const KlassVtable& vtable) { vtable_ = vtable; }
 
   // Klass被视为一种GC ROOT，这是暴露给GC的接口
   void Iterate(ObjectVisitor* v);
