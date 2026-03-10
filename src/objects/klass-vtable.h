@@ -72,55 +72,79 @@ using VirtualFuncType_MaybeGetAttr = Maybe<bool> (*)(OopHandle,
                                                      OopHandle&);
 // Fallible slot：返回 Maybe<uint64_t>
 using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
+
+using VirtualFuncType_InstanceSize = size_t (*)(Oop);
+
+using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
 }  // namespace
+
+// TODO:
+// print这个虚函数在原版CPython中并不存在，需要移除并替换成repr+str的打印模式
+#define KLASS_VTABLE_SLOT_INTERNAL(V)                \
+  V(VirtualFuncType_Maybe_1_1, print, "")            \
+  /* 获取实例对象大小，调用该函数绝对不允许触发GC */ \
+  V(VirtualFuncType_InstanceSize, instance_size, "") \
+  /* 扫描对象内部数据，用于GC */                     \
+  V(VirtualFuncType_Iterate, iterate, "")
+
+#define KLASS_VTABLE_SLOT_EXPOSED(V)                                           \
+  /* add/sub/mul/div/floor_div/mod/hash：可能抛 TypeError 等*/                 \
+  V(VirtualFuncType_Maybe_1_2, add, "__add__")                                 \
+  V(VirtualFuncType_Maybe_1_2, sub, "__sub__")                                 \
+  V(VirtualFuncType_Maybe_1_2, mul, "__mul__")                                 \
+  V(VirtualFuncType_Maybe_1_2, div, "__truediv__")                             \
+  V(VirtualFuncType_Maybe_1_2, floor_div, "__floordiv__")                      \
+  V(VirtualFuncType_Maybe_1_2, mod, "__mod__")                                 \
+  V(VirtualFuncType_MaybeHash, hash, "__hash__")                               \
+                                                                               \
+  /* setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle */ \
+  V(VirtualFuncType_MaybeGetAttr, getattr, "__getattr__")                      \
+  V(VirtualFuncType_Maybe_0_3, setattr, "__setattr__")                         \
+  V(VirtualFuncType_Maybe_1_2, subscr, "__getitem__")                          \
+  V(VirtualFuncType_Maybe_0_3, store_subscr, "__setitem__")                    \
+  V(VirtualFuncType_Maybe_1_2, del_subscr, "__delitem__")                      \
+                                                                               \
+  /* 比较/contains：返回 Maybe<bool>，失败时设置 pending exception */          \
+  V(VirtualFuncType_MaybeBool_1_2, greater, "__gt__")                          \
+  V(VirtualFuncType_MaybeBool_1_2, less, "__lt__")                             \
+  V(VirtualFuncType_MaybeBool_1_2, equal, "__eq__")                            \
+  V(VirtualFuncType_MaybeBool_1_2, not_equal, "__ne__")                        \
+  V(VirtualFuncType_MaybeBool_1_2, ge, "__ge__")                               \
+  V(VirtualFuncType_MaybeBool_1_2, le, "__le__")                               \
+  V(VirtualFuncType_MaybeBool_1_2, contains, "__contains__")                   \
+                                                                               \
+  V(VirtualFuncType_Maybe_1_1, iter, "__iter__")                               \
+  V(VirtualFuncType_Maybe_1_1, next, "__next__")                               \
+                                                                               \
+  V(VirtualFuncType_Maybe_Call, call, "__call__")                              \
+  V(VirtualFuncType_Maybe_1_1, len, "__len__")                                 \
+  V(VirtualFuncType_Maybe_1_1, repr, "__repr__")                               \
+  V(VirtualFuncType_Maybe_1_1, str, "__str__")                                 \
+                                                                               \
+  V(VirtualFuncType_Maybe_New, new_instance, "__new__")                        \
+  V(VirtualFuncType_Maybe_Init, init_instance, "__init__")
+
+#define KLASS_VTABLE_SLOT_LIST(V) \
+  KLASS_VTABLE_SLOT_INTERNAL(V)   \
+  KLASS_VTABLE_SLOT_EXPOSED(V)
 
 class KlassVtable {
  public:
   KlassVtable() = delete;
 
-  // add/sub/mul/div/floor_div/mod：可能抛 TypeError 等
-  VirtualFuncType_Maybe_1_2 add_{nullptr};
-  VirtualFuncType_Maybe_1_2 sub_{nullptr};
-  VirtualFuncType_Maybe_1_2 mul_{nullptr};
-  VirtualFuncType_Maybe_1_2 div_{nullptr};
-  VirtualFuncType_Maybe_1_2 floor_div_{nullptr};
-  VirtualFuncType_Maybe_1_2 mod_{nullptr};
+  void Initialize(Tagged<Klass> klass);
 
-  VirtualFuncType_MaybeHash hash_{nullptr};
+#define DEFINE_VTABLE_SLOT(signature, field_name, ignore1) \
+  signature field_name##_{nullptr};
+  KLASS_VTABLE_SLOT_LIST(DEFINE_VTABLE_SLOT)
+#undef DEFINE_VTABLE_SLOT
 
-  VirtualFuncType_MaybeGetAttr getattr_{nullptr};
-  // setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle
-  VirtualFuncType_Maybe_0_3 setattr_{nullptr};
-  VirtualFuncType_Maybe_1_2 subscr_{nullptr};
-  VirtualFuncType_Maybe_0_3 store_subscr_{nullptr};
+ private:
+  void InitializeFromSupers(Tagged<Klass> klass);
 
-  // 比较/contains：返回 Maybe<bool>，失败时设置 pending exception
-  VirtualFuncType_MaybeBool_1_2 greater_{nullptr};
-  VirtualFuncType_MaybeBool_1_2 less_{nullptr};
-  VirtualFuncType_MaybeBool_1_2 equal_{nullptr};
-  VirtualFuncType_MaybeBool_1_2 not_equal_{nullptr};
-  VirtualFuncType_MaybeBool_1_2 ge_{nullptr};
-  VirtualFuncType_MaybeBool_1_2 le_{nullptr};
-  VirtualFuncType_MaybeBool_1_2 contains_{nullptr};
+  void FillInheritedSlotsFromSuper(Tagged<Klass> super_klass);
 
-  VirtualFuncType_Maybe_1_1 iter_{nullptr};
-  VirtualFuncType_Maybe_1_1 next_{nullptr};
-  VirtualFuncType_Maybe_Call call_{nullptr};
-  VirtualFuncType_Maybe_1_1 len_{nullptr};
-
-  // print：成功返回 None，失败返回空 MaybeHandle
-  VirtualFuncType_Maybe_1_1 print_{nullptr};
-  VirtualFuncType_Maybe_1_1 repr_{nullptr};
-  VirtualFuncType_Maybe_1_2 del_subscr_{nullptr};
-
-  // 获取实例对象大小，调用该函数绝对不允许触发GC
-  size_t (*instance_size_)(Oop){nullptr};
-
-  VirtualFuncType_Maybe_New new_instance_{nullptr};
-  VirtualFuncType_Maybe_Init init_instance_{nullptr};
-
-  // 扫描对象内部数据，用于GC
-  void (*iterate_)(Oop, ObjectVisitor*){nullptr};
+  void UpdateOverrideSlots(Tagged<Klass> klass);
 };
 
 }  // namespace saauso::internal
