@@ -32,8 +32,42 @@ void PyObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.instance_size_ = &Virtual_InstanceSize;
-  vtable_.iterate_ = &Virtual_Iterate;
+  vtable_.add_ = &Klass::Virtual_Default_Add;
+  vtable_.sub_ = &Klass::Virtual_Default_Sub;
+  vtable_.mul_ = &Klass::Virtual_Default_Mul;
+  vtable_.div_ = &Klass::Virtual_Default_Div;
+  vtable_.floor_div_ = &Klass::Virtual_Default_FloorDiv;
+  vtable_.mod_ = &Klass::Virtual_Default_Mod;
+  vtable_.hash_ = &Klass::Virtual_Default_Hash;
+
+  vtable_.getattr_ = &Klass::Virtual_Default_GetAttr;
+  vtable_.setattr_ = &Klass::Virtual_Default_SetAttr;
+  vtable_.subscr_ = &Klass::Virtual_Default_Subscr;
+  vtable_.store_subscr_ = &Klass::Virtual_Default_StoreSubscr;
+  vtable_.del_subscr_ = &Klass::Virtual_Default_Delete_Subscr;
+
+  vtable_.greater_ = &Klass::Virtual_Default_Greater;
+  vtable_.less_ = &Klass::Virtual_Default_Less;
+  vtable_.equal_ = &Klass::Virtual_Default_Equal;
+  vtable_.not_equal_ = &Klass::Virtual_Default_NotEqual;
+  vtable_.ge_ = &Klass::Virtual_Default_GreaterEqual;
+  vtable_.le_ = &Klass::Virtual_Default_LessEqual;
+  vtable_.contains_ = &Klass::Virtual_Default_Contains;
+
+  vtable_.iter_ = &Klass::Virtual_Default_Iter;
+  vtable_.next_ = &Klass::Virtual_Default_Next;
+
+  vtable_.call_ = &Klass::Virtual_Default_Call;
+  vtable_.len_ = &Klass::Virtual_Default_Len;
+  vtable_.repr_ = &Klass::Virtual_Default_Repr;
+  vtable_.str_ = &Klass::Virtual_Default_Str;
+
+  vtable_.new_instance_ = &Klass::Virtual_Default_NewInstance;
+  vtable_.init_instance_ = &Klass::Virtual_Default_InitInstance;
+
+  vtable_.print_ = &Klass::Virtual_Default_Print;
+  vtable_.instance_size_ = &Klass::Virtual_Default_InstanceSize;
+  vtable_.iterate_ = &Klass::Virtual_Default_Iterate;
 }
 
 Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
@@ -57,11 +91,5 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
 void PyObjectKlass::Finalize(Isolate* isolate) {
   isolate->set_py_object_klass(Tagged<PyObjectKlass>::null());
 }
-
-size_t PyObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  return ObjectSizeAlign(sizeof(PyObject));
-}
-
-void PyObjectKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {}
 
 }  // namespace saauso::internal

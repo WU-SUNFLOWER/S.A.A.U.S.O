@@ -77,6 +77,8 @@ Tagged<PyDictKeysKlass> PyDictKeysKlass::GetInstance() {
 void PyDictKeysKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.len_ = &Virtual_Len;
@@ -89,10 +91,16 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   set_name(PyString::NewInstance("dict_keys"));
 
@@ -165,6 +173,8 @@ Tagged<PyDictValuesKlass> PyDictValuesKlass::GetInstance() {
 void PyDictValuesKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.len_ = &Virtual_Len;
@@ -177,10 +187,16 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   set_name(PyString::NewInstance("dict_values"));
 
@@ -270,6 +286,8 @@ Tagged<PyDictItemsKlass> PyDictItemsKlass::GetInstance() {
 void PyDictItemsKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.len_ = &Virtual_Len;
@@ -282,10 +300,16 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   set_name(PyString::NewInstance("dict_items"));
 
@@ -384,6 +408,8 @@ Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance() {
 void PyDictKeyIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
@@ -395,14 +421,20 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-  RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
 
   set_name(PyString::NewInstance("dict_keyiterator"));
 
@@ -465,6 +497,8 @@ Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance() {
 void PyDictItemIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
@@ -476,14 +510,20 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-  RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
 
   set_name(PyString::NewInstance("dict_itemiterator"));
 
@@ -546,6 +586,8 @@ Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance() {
 void PyDictValueIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
@@ -557,14 +599,20 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-  RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
 
   set_name(PyString::NewInstance("dict_valueiterator"));
 

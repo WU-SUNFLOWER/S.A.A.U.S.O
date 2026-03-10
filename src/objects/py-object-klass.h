@@ -19,10 +19,6 @@ class PyObjectKlass : public Klass {
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize(Isolate* isolate);
-
- private:
-  static size_t Virtual_InstanceSize(Tagged<PyObject> self);
-  static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };
 
 }  // namespace saauso::internal

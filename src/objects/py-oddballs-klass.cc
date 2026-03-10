@@ -45,7 +45,8 @@ void PyBooleanKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
@@ -62,6 +63,10 @@ Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PySmiKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("bool"));
@@ -131,7 +136,8 @@ void PyNoneKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // TODO: 初始化虚函数表
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
@@ -148,6 +154,10 @@ Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("NoneType"));

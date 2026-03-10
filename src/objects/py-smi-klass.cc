@@ -45,9 +45,10 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 void PySmiKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   // Python中int类型只有默认的__new__而没有__init__
   vtable_.new_instance_ = &Virtual_NewInstance;
-
   vtable_.add_ = &Virtual_Add;
   vtable_.sub_ = &Virtual_Sub;
   vtable_.mul_ = &Virtual_Mul;
@@ -68,10 +69,16 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   set_name(PyString::NewInstance("int"));
 

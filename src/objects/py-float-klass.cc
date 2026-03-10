@@ -70,9 +70,10 @@ void PyFloatKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   // Python中float类型只有默认的__new__而没有__init__
   vtable_.new_instance_ = &Virtual_NewInstance;
-
   vtable_.add_ = &Virtual_Add;
   vtable_.sub_ = &Virtual_Sub;
   vtable_.mul_ = &Virtual_Mul;
@@ -100,6 +101,10 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("float"));

@@ -53,6 +53,8 @@ void PyTupleKlass::PreInitialize(Isolate* isolate) {
   set_native_layout_kind(NativeLayoutKind::kTuple);
   set_native_layout_base(PyObjectKlass::GetInstance());
 
+  // 初始化虚函数表
+  vtable_.Clear();
   // 注意，tuple是不可变类型，在Python中只有__new__，没有__init__。
   vtable_.new_instance_ = &Virtual_NewInstance;
   vtable_.len_ = &Virtual_Len;
@@ -73,15 +75,19 @@ Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
 
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
+  set_klass_properties(klass_properties);
+
+  // 设置父类并计算mro序列
+  AddSuper(PyObjectKlass::GetInstance());
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(
       isolate, PyTupleBuiltinMethods::Install(isolate, klass_properties));
-
-  set_klass_properties(klass_properties);
-
-  AddSuper(PyObjectKlass::GetInstance());
-  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   set_name(PyString::NewInstance("tuple"));
 

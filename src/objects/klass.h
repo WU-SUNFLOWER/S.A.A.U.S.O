@@ -39,7 +39,6 @@ class Klass : public Object {
  public:
   Klass() = delete;
 
-  void InitializeVTable();
   Maybe<void> InitializeVtableNew(Isolate* isolate);
 
   Handle<PyString> name();

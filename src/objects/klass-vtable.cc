@@ -9,6 +9,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -114,16 +115,17 @@ void KlassVtable::CopyInheritedSlotsFromSuper(Tagged<Klass> super_klass) {
 
 Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
                                              Tagged<Klass> klass) {
-  Handle<PyDict> properties = klass->klass_properties();
+  Handle<PyObject> dummy;
 
-#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2)               \
-  do {                                                                  \
-    bool has_magic_method = false;                                      \
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, has_magic_method,               \
-                               properties->ContainsKey(ST(slot_name))); \
-    if (has_magic_method) {                                             \
-      slot_name##_ = kDefaultVtable.slot_name##_;                       \
-    }                                                                   \
+#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2)                      \
+  do {                                                                         \
+    bool has_magic_method = false;                                             \
+    ASSIGN_RETURN_ON_EXCEPTION(                                                \
+        isolate, has_magic_method,                                             \
+        Runtime_FindPropertyInKlassMro(isolate, klass, ST(slot_name), dummy)); \
+    if (has_magic_method) {                                                    \
+      slot_name##_ = kDefaultVtable.slot_name##_;                              \
+    }                                                                          \
   } while (0);
 
   KLASS_VTABLE_SLOT_EXPOSED(UPDATE_OVERRIDE_SLOT)

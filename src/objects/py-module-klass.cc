@@ -32,6 +32,8 @@ Tagged<PyModuleKlass> PyModuleKlass::GetInstance() {
 void PyModuleKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
 }
@@ -40,10 +42,16 @@ Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   set_klass_properties(PyDict::NewInstance());
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   set_name(PyString::NewInstance("module"));
 

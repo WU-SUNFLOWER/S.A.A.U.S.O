@@ -29,6 +29,7 @@ void FixedArrayKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
+  vtable_.Clear();
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
 }

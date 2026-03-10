@@ -60,6 +60,8 @@ Tagged<PyTupleIteratorKlass> PyTupleIteratorKlass::GetInstance() {
 void PyTupleIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
@@ -71,13 +73,20 @@ Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-  RETURN_ON_EXCEPTION(isolate, PyTupleIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
   set_klass_properties(klass_properties);
 
+  // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  RETURN_ON_EXCEPTION(isolate, PyTupleIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
 
   set_name(PyString::NewInstance("tuple_iterator"));
 
