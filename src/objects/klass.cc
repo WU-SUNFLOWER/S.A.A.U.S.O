@@ -13,6 +13,7 @@
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
@@ -211,6 +212,8 @@ MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
 MaybeHandle<PyObject> Klass::NewInstance(Isolate* isolate,
                                          Handle<PyObject> args,
                                          Handle<PyObject> kwargs) {
+  // 任何有效的Python类型都必须实现__new__语义
+  assert(vtable_.new_instance_ != nullptr);
   return vtable_.new_instance_(isolate, Tagged<Klass>(this), args, kwargs);
 }
 
@@ -218,6 +221,10 @@ MaybeHandle<PyObject> Klass::InitInstance(Isolate* isolate,
                                           Handle<PyObject> instance,
                                           Handle<PyObject> args,
                                           Handle<PyObject> kwargs) {
+  // 在Python中类型的__init__语义是可选的
+  if (vtable_.init_instance_ == nullptr) {
+    return handle(isolate->py_none_object());
+  }
   return vtable_.init_instance_(isolate, Tagged<Klass>(this), instance, args,
                                 kwargs);
 }
