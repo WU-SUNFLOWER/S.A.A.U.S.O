@@ -38,6 +38,12 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   // 设置klass字段
   klass->set_klass_properties(class_properties);
   klass->set_name(class_name);
+
+  // 如果没有有效的supers列表，那么显式创建一个列表，并将object作为基类添加进去
+  if (supers.is_null() || supers->IsEmpty()) {
+    supers = PyList::NewInstance(1);
+    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
+  }
   klass->set_supers(supers);
 
   int native_layout_count = 0;
@@ -259,10 +265,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
       isolate->factory()->CopyPyDict(Handle<PyDict>::cast(dict_obj));
 
   Handle<PyList> supers;
-  if (bases_tuple->length() == 0) {
-    supers = PyList::NewInstance(1);
-    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
-  } else {
+  if (bases_tuple->length() > 0) {
     supers = PyList::NewInstance(bases_tuple->length());
     for (int64_t i = 0; i < bases_tuple->length(); ++i) {
       Handle<PyObject> base = bases_tuple->Get(i);
