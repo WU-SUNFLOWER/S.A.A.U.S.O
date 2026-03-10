@@ -65,6 +65,10 @@ void Klass::InitializeVTable() {
   vtable_.instance_size_ = &Klass::Virtual_Default_InstanceSize;
 }
 
+Maybe<void> Klass::InitializeVtableNew(Isolate* isolate) {
+  return vtable_.Initialize(isolate, Tagged<Klass>(this));
+}
+
 Maybe<uint64_t> Klass::Virtual_Default_Hash(Handle<PyObject> self) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError, "unhashable type: '%s'",
                       PyObject::GetKlass(self)->name()->buffer());
@@ -113,6 +117,16 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Repr(Handle<PyObject> self) {
   Handle<PyObject> result;
   if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(repr))
+           .ToHandle(&result)) {
+    return kNullMaybeHandle;
+  }
+  return result;
+}
+
+MaybeHandle<PyObject> Klass::Virtual_Default_Str(Handle<PyObject> self) {
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+                                          Handle<PyDict>::null(), ST(str))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -355,6 +369,76 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Add(Handle<PyObject> self,
   return result;
 }
 
+MaybeHandle<PyObject> Klass::Virtual_Default_Sub(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(sub))
+           .ToHandle(&result)) {
+    return kNullMaybeHandle;
+  }
+  return result;
+}
+
+MaybeHandle<PyObject> Klass::Virtual_Default_Mul(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(mul))
+           .ToHandle(&result)) {
+    return kNullMaybeHandle;
+  }
+  return result;
+}
+
+MaybeHandle<PyObject> Klass::Virtual_Default_Div(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(div))
+           .ToHandle(&result)) {
+    return kNullMaybeHandle;
+  }
+  return result;
+}
+
+MaybeHandle<PyObject> Klass::Virtual_Default_Mod(Handle<PyObject> self,
+                                                 Handle<PyObject> other) {
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(mod))
+           .ToHandle(&result)) {
+    return kNullMaybeHandle;
+  }
+  return result;
+}
+
+MaybeHandle<PyObject> Klass::Virtual_Default_FloorDiv(Handle<PyObject> self,
+                                                      Handle<PyObject> other) {
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(floor_div))
+           .ToHandle(&result)) {
+    return kNullMaybeHandle;
+  }
+  return result;
+}
+
 Maybe<bool> Klass::Virtual_Default_Greater(Handle<PyObject> self,
                                            Handle<PyObject> other) {
   auto* isolate = Isolate::Current();
@@ -511,6 +595,20 @@ Maybe<bool> Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
   return Maybe<bool>(lt || eq);
 }
 
+Maybe<bool> Klass::Virtual_Default_Contains(Handle<PyObject> self,
+                                            Handle<PyObject> other) {
+  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  args->SetInternal(0, other);
+
+  Handle<PyObject> result;
+  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+                                          ST(contains))
+           .ToHandle(&result)) {
+    return kNullMaybe;
+  }
+  return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+}
+
 MaybeHandle<PyObject> Klass::Virtual_Default_Next(Handle<PyObject> self) {
   Handle<PyObject> result;
   if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
@@ -550,8 +648,9 @@ MaybeHandle<PyObject> Klass::Virtual_Default_InitInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Handle<PyObject> init_method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, instance, ST(init_instance), init_method));
+  RETURN_ON_EXCEPTION(isolate,
+                      Runtime_FindPropertyInInstanceTypeMro(
+                          isolate, instance, ST(init_instance), init_method));
 
   if (!init_method.is_null()) {
     Handle<PyObject> init_result;

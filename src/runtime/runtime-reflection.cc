@@ -51,7 +51,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
       // 如果是第一个super，那么先把它作为 native_layout_base 和
       // native_layout_kind 的初值
-      if (native_layout_base.is_null()) {
+      if (native_layout_base.is_null()) [[unlikely]] {
         native_layout_kind = base_klass->native_layout_kind();
         native_layout_base = base_klass;
       }
@@ -86,10 +86,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   // 为klass计算mro
   RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
 
-  // TODO:
-  // 当前只是暂且强制复制native layout的虚函数表！
-  // 待虚函数表的初始化逻辑完工后，此处需要替换！
-  klass->CopyVTableFrom(klass->native_layout_base());
+  // 初始化虚函数表
+  RETURN_ON_EXCEPTION(isolate, klass->InitializeVtableNew(isolate));
 
   return scope.Escape(type_object);
 }

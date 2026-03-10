@@ -57,7 +57,7 @@ void PyDictKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kDict);
-  set_native_layout_base(Tagged<Klass>(this));
+  set_native_layout_base(PyObjectKlass::GetInstance());
 
   // 初始化虚函数表
   vtable_.print_ = &Virtual_Print;

@@ -78,15 +78,6 @@ using VirtualFuncType_InstanceSize = size_t (*)(Oop);
 using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
 }  // namespace
 
-// TODO:
-// print这个虚函数在原版CPython中并不存在，需要移除并替换成repr+str的打印模式
-#define KLASS_VTABLE_SLOT_INTERNAL(V)                \
-  V(VirtualFuncType_Maybe_1_1, print, "")            \
-  /* 获取实例对象大小，调用该函数绝对不允许触发GC */ \
-  V(VirtualFuncType_InstanceSize, instance_size, "") \
-  /* 扫描对象内部数据，用于GC */                     \
-  V(VirtualFuncType_Iterate, iterate, "")
-
 #define KLASS_VTABLE_SLOT_EXPOSED(V)                                           \
   /* add/sub/mul/div/floor_div/mod/hash：可能抛 TypeError 等*/                 \
   V(VirtualFuncType_Maybe_1_2, add, "__add__")                                 \
@@ -124,15 +115,24 @@ using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
   V(VirtualFuncType_Maybe_New, new_instance, "__new__")                        \
   V(VirtualFuncType_Maybe_Init, init_instance, "__init__")
 
+// TODO:
+// print这个虚函数在原版CPython中并不存在，需要移除并替换成repr+str的打印模式
+#define KLASS_VTABLE_SLOT_INTERNAL(V)                \
+  V(VirtualFuncType_Maybe_1_1, print, "")            \
+  /* 获取实例对象大小，调用该函数绝对不允许触发GC */ \
+  V(VirtualFuncType_InstanceSize, instance_size, "") \
+  /* 扫描对象内部数据，用于GC */                     \
+  V(VirtualFuncType_Iterate, iterate, "")
+
 #define KLASS_VTABLE_SLOT_LIST(V) \
-  KLASS_VTABLE_SLOT_INTERNAL(V)   \
-  KLASS_VTABLE_SLOT_EXPOSED(V)
+  KLASS_VTABLE_SLOT_EXPOSED(V)    \
+  KLASS_VTABLE_SLOT_INTERNAL(V)
 
 class KlassVtable {
  public:
-  KlassVtable() = delete;
+  // KlassVtable() = delete;
 
-  void Initialize(Tagged<Klass> klass);
+  Maybe<void> Initialize(Isolate* isolate, Tagged<Klass> klass);
 
 #define DEFINE_VTABLE_SLOT(signature, field_name, ignore1) \
   signature field_name##_{nullptr};
@@ -142,9 +142,9 @@ class KlassVtable {
  private:
   void InitializeFromSupers(Tagged<Klass> klass);
 
-  void FillInheritedSlotsFromSuper(Tagged<Klass> super_klass);
+  void CopyInheritedSlotsFromSuper(Tagged<Klass> super_klass);
 
-  void UpdateOverrideSlots(Tagged<Klass> klass);
+  Maybe<void> UpdateOverrideSlots(Isolate* isolate, Tagged<Klass> klass);
 };
 
 }  // namespace saauso::internal

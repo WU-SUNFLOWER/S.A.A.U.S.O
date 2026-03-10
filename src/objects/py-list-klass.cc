@@ -62,7 +62,7 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
 
   // 设置内建布局字段
   set_native_layout_kind(NativeLayoutKind::kList);
-  set_native_layout_base(Tagged<Klass>(this));
+  set_native_layout_base(PyObjectKlass::GetInstance());
 
   // 初始化虚函数表
   vtable_.new_instance_ = &Virtual_NewInstance;

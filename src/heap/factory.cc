@@ -51,7 +51,7 @@ Tagged<Klass> Factory::NewPythonKlass() {
   auto klass = Allocate<Klass>(Heap::AllocationSpace::kMetaSpace);
   {
     DisallowHeapAllocation disallow(isolate_);
-    klass->InitializeVTable();
+    //klass->InitializeVTable();
     klass->set_klass_properties(Handle<PyDict>::null());
     klass->set_name(Handle<PyString>::null());
     klass->set_type_object(Handle<PyTypeObject>::null());

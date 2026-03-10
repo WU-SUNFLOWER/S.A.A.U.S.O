@@ -58,7 +58,7 @@ void PyStringKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kString);
-  set_native_layout_base(Tagged<Klass>(this));
+  set_native_layout_base(PyObjectKlass::GetInstance());
 
   // 初始化虚函数表
   vtable_.new_instance_ = &Virtual_NewInstance;

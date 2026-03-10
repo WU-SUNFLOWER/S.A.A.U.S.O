@@ -51,7 +51,7 @@ void PyTupleKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kTuple);
-  set_native_layout_base(Tagged<Klass>(this));
+  set_native_layout_base(PyObjectKlass::GetInstance());
 
   // 注意，tuple是不可变类型，在Python中只有__new__，没有__init__。
   vtable_.new_instance_ = &Virtual_NewInstance;

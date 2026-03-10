@@ -40,6 +40,7 @@ class Klass : public Object {
   Klass() = delete;
 
   void InitializeVTable();
+  Maybe<void> InitializeVtableNew(Isolate* isolate);
 
   Handle<PyString> name();
   void set_name(Handle<PyString> name);
@@ -97,6 +98,7 @@ class Klass : public Object {
   static MaybeHandle<PyObject> Virtual_Default_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Default_Str(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Default_Call(Isolate* isolate,
                                                     Handle<PyObject> self,
                                                     Handle<PyObject> host,
@@ -123,8 +125,20 @@ class Klass : public Object {
   static MaybeHandle<PyObject> Virtual_Default_Delete_Subscr(
       Handle<PyObject> self,
       Handle<PyObject> subscr);
+
   static MaybeHandle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
                                                    Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Default_Sub(Handle<PyObject> self,
+                                                   Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Default_Mul(Handle<PyObject> self,
+                                                   Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Default_Div(Handle<PyObject> self,
+                                                   Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Default_FloorDiv(Handle<PyObject> self,
+                                                        Handle<PyObject> other);
+  static MaybeHandle<PyObject> Virtual_Default_Mod(Handle<PyObject> self,
+                                                   Handle<PyObject> other);
+
   static Maybe<bool> Virtual_Default_Greater(Handle<PyObject> self,
                                              Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_Less(Handle<PyObject> self,
@@ -137,6 +151,8 @@ class Klass : public Object {
                                                   Handle<PyObject> other);
   static Maybe<bool> Virtual_Default_LessEqual(Handle<PyObject> self,
                                                Handle<PyObject> other);
+  static Maybe<bool> Virtual_Default_Contains(Handle<PyObject> self,
+                                              Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Virtual_Default_NewInstance(
       Isolate* isolate,
