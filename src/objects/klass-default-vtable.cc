@@ -300,7 +300,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Subscr(Handle<PyObject> self,
 
   Handle<PyObject> result;
   if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(getitem))
+                                          ST(subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -318,7 +318,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_StoreSubscr(
 
   Handle<PyObject> result;
   if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(setitem))
+                                          ST(store_subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -334,7 +334,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Delete_Subscr(
 
   Handle<PyObject> result;
   if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(delitem))
+                                          ST(del_subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -361,7 +361,7 @@ Maybe<bool> Klass::Virtual_Default_Greater(Handle<PyObject> self,
 
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, self, ST(gt), callable));
+                                   isolate, self, ST(greater), callable));
 
   if (callable.is_null()) {
     ThrowCompareUnsupported(self, other, ">");
@@ -385,7 +385,7 @@ Maybe<bool> Klass::Virtual_Default_Less(Handle<PyObject> self,
 
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, self, ST(lt), callable));
+                                   isolate, self, ST(less), callable));
 
   if (callable.is_null()) {
     ThrowCompareUnsupported(self, other, "<");
@@ -413,7 +413,7 @@ Maybe<bool> Klass::Virtual_Default_Equal(Handle<PyObject> self,
 
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, self, ST(eq), callable));
+                                   isolate, self, ST(equal), callable));
 
   if (callable.is_null()) {
     return Maybe<bool>(false);
@@ -436,7 +436,7 @@ Maybe<bool> Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
 
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, self, ST(ne), callable));
+                                   isolate, self, ST(not_equal), callable));
 
   if (!callable.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
@@ -551,7 +551,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_InitInstance(
     Handle<PyObject> kwargs) {
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, instance, ST(init), init_method));
+                                   isolate, instance, ST(init_instance), init_method));
 
   if (!init_method.is_null()) {
     Handle<PyObject> init_result;
