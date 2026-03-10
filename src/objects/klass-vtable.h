@@ -134,6 +134,8 @@ class KlassVtable {
 
   Maybe<void> Initialize(Isolate* isolate, Tagged<Klass> klass);
 
+  void Clear();
+
 #define DEFINE_VTABLE_SLOT(signature, field_name, ignore1) \
   signature field_name##_{nullptr};
   KLASS_VTABLE_SLOT_LIST(DEFINE_VTABLE_SLOT)

@@ -58,9 +58,21 @@ KlassVtable kDefaultVtable = {
 
 Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
   HandleScope scope;
+
+  // 后续算法依赖槽位值是否为nullptr来判断槽位是否被填充。
+  // 由于不保证分配器分配出来的内存已经置零，因此首先需要显式清空所有槽位。
+  Clear();
+
   InitializeFromSupers(klass);
   RETURN_ON_EXCEPTION(isolate, UpdateOverrideSlots(isolate, klass));
+
   return JustVoid();
+}
+
+void KlassVtable::Clear() {
+#define CLEAR_SLOT(ignore1, slot_name, ignore2) slot_name##_ = nullptr;
+  KLASS_VTABLE_SLOT_LIST(CLEAR_SLOT)
+#undef CLEAR_SLOT
 }
 
 void KlassVtable::InitializeFromSupers(Tagged<Klass> klass) {
