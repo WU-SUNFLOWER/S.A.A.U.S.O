@@ -178,8 +178,11 @@ class Klass : public Object {
   // C3算法的运行结果
   Tagged<PyObject> mro_{kNullAddress};
 
-  // 内建内存布局信息
+  // 当选Python类型的主基类
+  // 该字段的语义对应CPython中类的tp_base/__base__
   Tagged<Klass> native_layout_base_{kNullAddress};
+  // 当前Python类型在虚拟机内部采用的是哪种基础内存布局
+  // 该字段的语义类似于V8当中Map的InstanceType字段
   NativeLayoutKind native_layout_kind_{NativeLayoutKind::kPyObject};
 };
 

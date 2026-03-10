@@ -33,48 +33,63 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
   // 创建新的klass并注册进isolate
   Tagged<Klass> klass = isolate->factory()->NewPythonKlass();
-  Isolate::Current()->klass_list().PushBack(klass);
+  isolate->klass_list().PushBack(klass);
 
   // 设置klass字段
   klass->set_klass_properties(class_properties);
   klass->set_name(class_name);
   klass->set_supers(supers);
 
-  int native_base_count = 0;
+  int native_layout_count = 0;
   Tagged<Klass> native_layout_base = Tagged<Klass>::null();
   NativeLayoutKind native_layout_kind = NativeLayoutKind::kPyObject;
+
   if (!supers.is_null()) {
     for (int64_t i = 0; i < supers->length(); ++i) {
       auto base_type_object = Handle<PyTypeObject>::cast(supers->Get(i));
       Tagged<Klass> base_klass = base_type_object->own_klass();
+
+      // 如果是第一个super，那么先把它作为 native_layout_base 和
+      // native_layout_kind 的初值
+      if (native_layout_base.is_null()) {
+        native_layout_kind = base_klass->native_layout_kind();
+        native_layout_base = base_klass;
+      }
+
+      // 如果当前基类没有特殊内存布局，就不用往下看了
       if (base_klass->native_layout_kind() == NativeLayoutKind::kPyObject) {
         continue;
       }
-      ++native_base_count;
-      if (native_base_count > 1) {
+
+      // 不允许出现一种以上的特殊内存布局基类
+      if (++native_layout_count > 1) {
         Runtime_ThrowError(ExceptionType::kTypeError,
-                           "multiple native base classes are not supported");
+                           "multiple bases have instance lay-out conflict");
         return kNullMaybeHandle;
       }
+
+      // 如果遇到有特殊内存布局的基类，那么更新 native_layout_base 和
+      // native_layout_kind
       native_layout_kind = base_klass->native_layout_kind();
-      native_layout_base = base_klass->native_layout_base().is_null()
-                               ? base_klass
-                               : base_klass->native_layout_base();
+      native_layout_base = base_klass;
     }
   }
+
   klass->set_native_layout_kind(native_layout_kind);
   klass->set_native_layout_base(native_layout_base.is_null()
                                     ? PyObjectKlass::GetInstance()
                                     : native_layout_base);
-  if (native_layout_kind != NativeLayoutKind::kPyObject) {
-    klass->CopyVTableFrom(klass->native_layout_base());
-  }
 
   // 建立双向绑定
   type_object->BindWithKlass(klass);
 
   // 为klass计算mro
   RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
+
+  // TODO:
+  // 当前只是暂且强制复制native layout的虚函数表！
+  // 待虚函数表的初始化逻辑完工后，此处需要替换！
+  klass->CopyVTableFrom(klass->native_layout_base());
 
   return scope.Escape(type_object);
 }
