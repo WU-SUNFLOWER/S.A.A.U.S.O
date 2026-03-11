@@ -110,24 +110,23 @@ Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
 
   out_prop_val = Handle<PyObject>::null();
 
-  // 沿着当前type object的mro序列进行查找
   Handle<PyObject> result;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInKlassMro(
-                                   isolate, own_klass, prop_name, result));
+  if (is_try) {
+    // 沿着当前type object的mro序列进行查找（Lookup语义）
+    RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInKlassMro(
+                                     isolate, own_klass, prop_name, result));
+  } else {
+    // 对外语义：找不到属性时直接抛出 AttributeError（Get语义）
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result,
+        Runtime_GetPropertyInKlassMro(isolate, own_klass, prop_name));
+  }
 
   if (!result.is_null()) {
     out_prop_val = result;
     return Maybe<bool>(true);
   }
-  if (is_try) {
-    return Maybe<bool>(false);
-  }
-
-  Runtime_ThrowErrorf(ExceptionType::kAttributeError,
-                      "'%s' object has no attribute '%s'\n",
-                      PyObject::GetKlass(self)->name()->buffer(),
-                      Handle<PyString>::cast(prop_name)->buffer());
-  return kNullMaybe;
+  return Maybe<bool>(false);
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(

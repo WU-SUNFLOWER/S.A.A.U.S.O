@@ -118,19 +118,19 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
   return Maybe<bool>(false);
 }
 
-Maybe<bool> Runtime_FindPropertyInInstanceTypeMro(
+Maybe<bool> Runtime_LookupPropertyInInstanceTypeMro(
     Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> prop_name,
     Handle<PyObject>& out_prop_val) {
-  return Runtime_FindPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
-                                        prop_name, out_prop_val);
+  return Runtime_LookupPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
+                                          prop_name, out_prop_val);
 }
 
-Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
-                                           Tagged<Klass> klass,
-                                           Handle<PyObject> prop_name,
-                                           Handle<PyObject>& out_prop_val) {
+Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
+                                             Tagged<Klass> klass,
+                                             Handle<PyObject> prop_name,
+                                             Handle<PyObject>& out_prop_val) {
   EscapableHandleScope scope;
 
   // 预设默认输出
@@ -157,6 +157,37 @@ Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
   return Maybe<bool>(false);
 }
 
+MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
+    Isolate* isolate,
+    Tagged<Klass> klass,
+    Handle<PyObject> prop_name) {
+  EscapableHandleScope scope;
+
+  Handle<PyObject> out_prop_val;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             Runtime_LookupPropertyInKlassMro(
+                                 isolate, klass, prop_name, out_prop_val));
+
+  if (found) {
+    assert(!out_prop_val.is_null());
+    return scope.Escape(out_prop_val);
+  }
+
+  Runtime_ThrowErrorf(
+      ExceptionType::kAttributeError, "type object '%s' has no attribute '%s'",
+      klass->name()->buffer(), Handle<PyString>::cast(prop_name)->buffer());
+  return kNullMaybeHandle;
+}
+
+MaybeHandle<PyObject> Runtime_GetPropertyInInstanceTypeMro(
+    Isolate* isolate,
+    Handle<PyObject> instance,
+    Handle<PyObject> prop_name) {
+  return Runtime_GetPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
+                                       prop_name);
+}
+
 MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     Handle<PyObject> object,
     Handle<PyTuple> args,
@@ -166,23 +197,18 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, method,
+      Runtime_GetPropertyInInstanceTypeMro(isolate, object, func_name));
+
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, object, func_name, method));
 
-  if (!method.is_null()) {
-    Handle<PyObject> result;
+  Handle<PyObject> result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result, Execution::Call(isolate, method, object, args, kwargs));
 
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, result,
-        Execution::Call(isolate, method, object, args, kwargs));
-
-    return scope.Escape(result);
-  }
-
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "unsupported operation for class %s",
-                      PyObject::GetKlass(object)->name()->buffer());
-  return kNullMaybeHandle;
+  return scope.Escape(result);
 }
 
 MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,

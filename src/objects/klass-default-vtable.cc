@@ -53,7 +53,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Print(Handle<PyObject> self) {
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(str), method));
 
   if (method.is_null()) {
@@ -113,7 +113,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_Call(Isolate* isolate,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs) {
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(call), callable));
 
   if (callable.is_null()) {
@@ -161,7 +161,7 @@ Maybe<bool> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
   }
 
   // 2. 沿着 MRO 序列在类字典中查找prop_name
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, prop_name, result));
   if (!result.is_null()) {
     // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
@@ -176,7 +176,7 @@ Maybe<bool> Klass::Virtual_Default_GetAttr(Handle<PyObject> self,
 
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(getattr), getattr_func));
   if (!getattr_func.is_null()) {
     Handle<PyTuple> args = PyTuple::NewInstance(1);
@@ -242,7 +242,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_GetAttrForCall(
     }
   }
 
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, prop_name, result));
   if (!result.is_null()) {
     if (IsPyFunction(result) || IsNativePyFunction(result)) {
@@ -418,7 +418,7 @@ Maybe<bool> Klass::Virtual_Default_Greater(Handle<PyObject> self,
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(greater), callable));
 
   if (callable.is_null()) {
@@ -442,7 +442,7 @@ Maybe<bool> Klass::Virtual_Default_Less(Handle<PyObject> self,
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(less), callable));
 
   if (callable.is_null()) {
@@ -470,7 +470,7 @@ Maybe<bool> Klass::Virtual_Default_Equal(Handle<PyObject> self,
   }
 
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(equal), callable));
 
   if (callable.is_null()) {
@@ -493,7 +493,7 @@ Maybe<bool> Klass::Virtual_Default_NotEqual(Handle<PyObject> self,
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(not_equal), callable));
 
   if (!callable.is_null()) {
@@ -520,7 +520,7 @@ Maybe<bool> Klass::Virtual_Default_GreaterEqual(Handle<PyObject> self,
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(ge), callable));
 
   if (!callable.is_null()) {
@@ -547,7 +547,7 @@ Maybe<bool> Klass::Virtual_Default_LessEqual(Handle<PyObject> self,
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> callable;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(le), callable));
 
   if (!callable.is_null()) {
@@ -623,7 +623,7 @@ MaybeHandle<PyObject> Klass::Virtual_Default_InitInstance(
     Handle<PyObject> kwargs) {
   Handle<PyObject> init_method;
   RETURN_ON_EXCEPTION(isolate,
-                      Runtime_FindPropertyInInstanceTypeMro(
+                      Runtime_LookupPropertyInInstanceTypeMro(
                           isolate, instance, ST(init_instance), init_method));
 
   if (!init_method.is_null()) {

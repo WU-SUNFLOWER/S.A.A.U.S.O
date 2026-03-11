@@ -122,7 +122,7 @@ Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
     bool has_magic_method = false;                                             \
     ASSIGN_RETURN_ON_EXCEPTION(                                                \
         isolate, has_magic_method,                                             \
-        Runtime_FindPropertyInKlassMro(isolate, klass, ST(slot_name), dummy)); \
+        Runtime_LookupPropertyInKlassMro(isolate, klass, ST(slot_name), dummy)); \
     if (has_magic_method) {                                                    \
       slot_name##_ = kDefaultVtable.slot_name##_;                              \
     }                                                                          \

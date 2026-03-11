@@ -33,24 +33,42 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object);
 
-// 沿着 klass 的 mro 查找属性。
+// 沿着实例对象的 type mro 查找属性（Lookup 语义）。
 // - 命中通过out_prop_val输出属性值，并且返回true
 // - 未命中通过out_prop_val输出null，并且返回false
 // - 查询过程中出现异常，out_prop_val输出null，并且返回empty
-Maybe<bool> Runtime_FindPropertyInInstanceTypeMro(
+Maybe<bool> Runtime_LookupPropertyInInstanceTypeMro(
     Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> prop_name,
     Handle<PyObject>& out_prop_val);
 
-// 沿着 klass 的 mro 查找属性。
+// 沿着 klass 的 mro 查找属性（Lookup 语义）。
 // - 命中通过out_prop_val输出属性值，并且返回true
 // - 未命中通过out_prop_val输出null，并且返回false
 // - 查询过程中出现异常，out_prop_val输出null，并且返回empty
-Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
-                                           Tagged<Klass> klass,
-                                           Handle<PyObject> prop_name,
-                                           Handle<PyObject>& out_prop_val);
+Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
+                                             Tagged<Klass> klass,
+                                             Handle<PyObject> prop_name,
+                                             Handle<PyObject>& out_prop_val);
+
+// 沿着 klass 的 mro 获取属性（Get 语义）。
+// - 命中返回属性值
+// - 未命中抛出 AttributeError，并返回empty
+// - 查询过程中出现异常，透传异常并返回empty
+MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
+    Isolate* isolate,
+    Tagged<Klass> klass,
+    Handle<PyObject> prop_name);
+
+// 沿着实例对象的 type mro 获取属性（Get 语义）。
+// - 命中返回属性值
+// - 未命中抛出 AttributeError，并返回empty
+// - 查询过程中出现异常，透传异常并返回empty
+MaybeHandle<PyObject> Runtime_GetPropertyInInstanceTypeMro(
+    Isolate* isolate,
+    Handle<PyObject> instance,
+    Handle<PyObject> prop_name);
 
 // 沿着对象的 type mro 查找某个 magic method 并立即调用。
 // - func_name 必须为非空的 str。
