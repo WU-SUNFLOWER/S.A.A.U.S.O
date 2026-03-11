@@ -11,6 +11,7 @@
 namespace saauso::internal {
 
 #define BASE_EXCEPTION_BUILTINS(V) \
+  V(Init, "__init__")              \
   V(Str, "__str__")                \
   V(Repr, "__repr__")
 

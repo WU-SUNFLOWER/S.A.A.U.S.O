@@ -26,7 +26,6 @@ class ObjectVisitor;
   V(name, "__name__")                \
   V(package, "__package__")          \
   V(path, "__path__")                \
-  V(_new, "__new__")                 \
   V(classcell, "__classcell__")      \
   V(class, "__class__")              \
   V(traceback, "__traceback__")      \
@@ -56,6 +55,7 @@ class ObjectVisitor;
   V(so, LIB_EXT)                \
   V(builtins, "__builtins__")   \
   V(file, "__file__")           \
+  V(args, "args")               \
   V(message, "message")         \
   V(end, "end")                 \
   V(eol, "eol")                 \
