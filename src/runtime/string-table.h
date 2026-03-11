@@ -70,7 +70,7 @@ class StringTable {
 #define DECLARE_STR_FIELD_NORMAL(name, _) DECLARE_STR_FIELD(name)
 #define DECLARE_STR_FIELD_FOR_EXCEPTION(ignore1, name, ignore2) \
   DECLARE_STR_FIELD(name)
-#define DECLARE_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, ignore2) \
+#define DECLARE_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, ignore2, ignore3) \
   DECLARE_STR_FIELD(name)
 
   KLASS_VTABLE_SLOT_EXPOSED(DECLARE_STR_FIELD_FOR_MAGIC_METHOD)

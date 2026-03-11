@@ -27,6 +27,10 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
     Handle<PyList> supers) {
   EscapableHandleScope scope;
 
+  if (class_name.is_null()) {
+    class_name = PyString::NewInstance("<unknown>");
+  }
+
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
                              isolate->factory()->NewPyTypeObject());
@@ -93,7 +97,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
 
   // 初始化虚函数表
-  RETURN_ON_EXCEPTION(isolate, klass->InitializeVtableNew(isolate));
+  RETURN_ON_EXCEPTION(isolate, klass->InitializeVtable(isolate));
 
   return scope.Escape(type_object);
 }
@@ -200,13 +204,15 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, method,
       Runtime_GetPropertyInInstanceTypeMro(isolate, object, func_name));
+  if (method.is_null()) {
+    return kNullMaybeHandle;
+  }
 
-  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
-                                   isolate, object, func_name, method));
-
+  Handle<PyTuple> call_args = args.is_null() ? PyTuple::NewInstance(0) : args;
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, result, Execution::Call(isolate, method, object, args, kwargs));
+      isolate, result,
+      Execution::Call(isolate, method, object, call_args, kwargs));
 
   return scope.Escape(result);
 }

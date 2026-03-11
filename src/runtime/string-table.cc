@@ -13,7 +13,7 @@ StringTable::StringTable() {
 #define INIT_STR_FIELD(name, value) \
   name##_str_ = *PyString::NewInstance(value, true);
 #define INIT_STR_FIELD_FOR_EXCEPTION(_, name, value) INIT_STR_FIELD(name, value)
-#define INIT_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, value) \
+#define INIT_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, value, ignore2) \
   INIT_STR_FIELD(name, value)
 
   KLASS_VTABLE_SLOT_EXPOSED(INIT_STR_FIELD_FOR_MAGIC_METHOD)
@@ -40,7 +40,7 @@ void StringTable::Iterate(ObjectVisitor* v) {
 #define VISIT_STR_FIELD_FOR_EXCEPTION(ignore1, name, ignore2) \
   VISIT_STR_FIELD(name)
 
-#define VISIT_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, ignore2) \
+#define VISIT_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, ignore2, ignore3) \
   VISIT_STR_FIELD(name)
 
   KLASS_VTABLE_SLOT_EXPOSED(VISIT_STR_FIELD_FOR_MAGIC_METHOD)

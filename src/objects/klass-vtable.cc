@@ -5,6 +5,7 @@
 #include "src/objects/klass-vtable.h"
 
 #include "src/execution/exception-utils.h"
+#include "src/objects/klass-vtable-trampolines.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -13,49 +14,6 @@
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
-
-namespace {
-
-KlassVtable kDefaultVtable = {
-    .add_ = &Klass::Virtual_Default_Add,
-    .sub_ = &Klass::Virtual_Default_Sub,
-    .mul_ = &Klass::Virtual_Default_Mul,
-    .div_ = &Klass::Virtual_Default_Div,
-    .floor_div_ = &Klass::Virtual_Default_FloorDiv,
-    .mod_ = &Klass::Virtual_Default_Mod,
-    .hash_ = &Klass::Virtual_Default_Hash,
-
-    .getattr_ = &Klass::Virtual_Default_GetAttr,
-    .setattr_ = &Klass::Virtual_Default_SetAttr,
-    .subscr_ = &Klass::Virtual_Default_Subscr,
-    .store_subscr_ = &Klass::Virtual_Default_StoreSubscr,
-    .del_subscr_ = &Klass::Virtual_Default_Delete_Subscr,
-
-    .greater_ = &Klass::Virtual_Default_Greater,
-    .less_ = &Klass::Virtual_Default_Less,
-    .equal_ = &Klass::Virtual_Default_Equal,
-    .not_equal_ = &Klass::Virtual_Default_NotEqual,
-    .ge_ = &Klass::Virtual_Default_GreaterEqual,
-    .le_ = &Klass::Virtual_Default_LessEqual,
-    .contains_ = &Klass::Virtual_Default_Contains,
-
-    .iter_ = &Klass::Virtual_Default_Iter,
-    .next_ = &Klass::Virtual_Default_Next,
-
-    .call_ = &Klass::Virtual_Default_Call,
-    .len_ = &Klass::Virtual_Default_Len,
-    .repr_ = &Klass::Virtual_Default_Repr,
-    .str_ = &Klass::Virtual_Default_Str,
-
-    .new_instance_ = &Klass::Virtual_Default_NewInstance,
-    .init_instance_ = &Klass::Virtual_Default_InitInstance,
-
-    .print_ = &Klass::Virtual_Default_Print,
-    .instance_size_ = &Klass::Virtual_Default_InstanceSize,
-    .iterate_ = &Klass::Virtual_Default_Iterate,
-};
-
-}  // namespace
 
 Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
   HandleScope scope;
@@ -71,7 +29,7 @@ Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
 }
 
 void KlassVtable::Clear() {
-#define CLEAR_SLOT(ignore1, slot_name, ignore2) slot_name##_ = nullptr;
+#define CLEAR_SLOT(ignore1, slot_name, ignore2, ignore3) slot_name##_ = nullptr;
   KLASS_VTABLE_SLOT_LIST(CLEAR_SLOT)
 #undef CLEAR_SLOT
 }
@@ -105,7 +63,8 @@ void KlassVtable::CopyInheritedSlotsFromSuper(Tagged<Klass> super_klass) {
     slot = super_vtable->slot;                  \
   }
 
-#define COPY_SLOT(ignore1, slot_name, ignore2) COPY_SLOT_IMPL(slot_name##_)
+#define COPY_SLOT(ignore1, slot_name, ignore2, ignore3) \
+  COPY_SLOT_IMPL(slot_name##_)
   KLASS_VTABLE_SLOT_LIST(COPY_SLOT)
 #undef COPY_SLOT
 
@@ -117,15 +76,15 @@ Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
                                              Tagged<Klass> klass) {
   Handle<PyObject> dummy;
 
-#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2)                      \
-  do {                                                                         \
-    bool has_magic_method = false;                                             \
-    ASSIGN_RETURN_ON_EXCEPTION(                                                \
-        isolate, has_magic_method,                                             \
-        Runtime_LookupPropertyInKlassMro(isolate, klass, ST(slot_name), dummy)); \
-    if (has_magic_method) {                                                    \
-      slot_name##_ = kDefaultVtable.slot_name##_;                              \
-    }                                                                          \
+#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2, trampoline_name) \
+  do {                                                                     \
+    bool has_magic_method = false;                                         \
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, has_magic_method,                  \
+                               Runtime_LookupPropertyInKlassMro(           \
+                                   isolate, klass, ST(slot_name), dummy)); \
+    if (has_magic_method) {                                                \
+      slot_name##_ = &KlassVtableTrampolines::trampoline_name;             \
+    }                                                                      \
   } while (0);
 
   KLASS_VTABLE_SLOT_EXPOSED(UPDATE_OVERRIDE_SLOT)

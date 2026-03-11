@@ -39,7 +39,7 @@ class Klass : public Object {
  public:
   Klass() = delete;
 
-  Maybe<void> InitializeVtableNew(Isolate* isolate);
+  Maybe<void> InitializeVtable(Isolate* isolate);
 
   Handle<PyString> name();
   void set_name(Handle<PyString> name);
@@ -91,86 +91,6 @@ class Klass : public Object {
                                      Handle<PyObject> instance,
                                      Handle<PyObject> args,
                                      Handle<PyObject> kwargs);
-
-  // 默认虚函数（Fallible 均返回 MaybeHandle<PyObject> 或 Maybe<bool>）
-  static MaybeHandle<PyObject> Virtual_Default_Print(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Default_Len(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Default_Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Default_Str(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Default_Call(Isolate* isolate,
-                                                    Handle<PyObject> self,
-                                                    Handle<PyObject> host,
-                                                    Handle<PyObject> args,
-                                                    Handle<PyObject> kwargs);
-  static Maybe<bool> Virtual_Default_GetAttr(Handle<PyObject> self,
-                                             Handle<PyObject> prop_name,
-                                             bool is_try,
-                                             Handle<PyObject>& out_prop_val);
-  static MaybeHandle<PyObject> Virtual_Default_GetAttrForCall(
-      Handle<PyObject> self,
-      Handle<PyObject> property_name,
-      Handle<PyObject>& self_or_null);
-  static MaybeHandle<PyObject> Virtual_Default_SetAttr(
-      Handle<PyObject> self,
-      Handle<PyObject> property_name,
-      Handle<PyObject> property_value);
-  static MaybeHandle<PyObject> Virtual_Default_Subscr(Handle<PyObject> self,
-                                                      Handle<PyObject> subscr);
-  static MaybeHandle<PyObject> Virtual_Default_StoreSubscr(
-      Handle<PyObject> self,
-      Handle<PyObject> subscr,
-      Handle<PyObject> value);
-  static MaybeHandle<PyObject> Virtual_Default_Delete_Subscr(
-      Handle<PyObject> self,
-      Handle<PyObject> subscr);
-
-  static MaybeHandle<PyObject> Virtual_Default_Add(Handle<PyObject> self,
-                                                   Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Default_Sub(Handle<PyObject> self,
-                                                   Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Default_Mul(Handle<PyObject> self,
-                                                   Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Default_Div(Handle<PyObject> self,
-                                                   Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Default_FloorDiv(Handle<PyObject> self,
-                                                        Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Default_Mod(Handle<PyObject> self,
-                                                   Handle<PyObject> other);
-
-  static Maybe<bool> Virtual_Default_Greater(Handle<PyObject> self,
-                                             Handle<PyObject> other);
-  static Maybe<bool> Virtual_Default_Less(Handle<PyObject> self,
-                                          Handle<PyObject> other);
-  static Maybe<bool> Virtual_Default_Equal(Handle<PyObject> self,
-                                           Handle<PyObject> other);
-  static Maybe<bool> Virtual_Default_NotEqual(Handle<PyObject> self,
-                                              Handle<PyObject> other);
-  static Maybe<bool> Virtual_Default_GreaterEqual(Handle<PyObject> self,
-                                                  Handle<PyObject> other);
-  static Maybe<bool> Virtual_Default_LessEqual(Handle<PyObject> self,
-                                               Handle<PyObject> other);
-  static Maybe<bool> Virtual_Default_Contains(Handle<PyObject> self,
-                                              Handle<PyObject> other);
-
-  static MaybeHandle<PyObject> Virtual_Default_NewInstance(
-      Isolate* isolate,
-      Tagged<Klass> klass_self,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
-  static MaybeHandle<PyObject> Virtual_Default_InitInstance(
-      Isolate* isolate,
-      Tagged<Klass> klass_self,
-      Handle<PyObject> instance,
-      Handle<PyObject> args,
-      Handle<PyObject> kwargs);
-
-  static MaybeHandle<PyObject> Virtual_Default_Next(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Default_Iter(Handle<PyObject> object);
-
-  static Maybe<uint64_t> Virtual_Default_Hash(Handle<PyObject> self);
-
-  static void Virtual_Default_Iterate(Tagged<PyObject>, ObjectVisitor*);
-  static size_t Virtual_Default_InstanceSize(Tagged<PyObject> self);
 
  protected:
   // Python对象虚函数表

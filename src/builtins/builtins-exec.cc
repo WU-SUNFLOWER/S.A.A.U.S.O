@@ -25,7 +25,7 @@ namespace {
 // 将 obj 解析为 dict。失败时抛出 TypeError 并返回 null。
 MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
                                                const char* role_name) {
-  if (IsPyDictExact(*obj)) {
+  if (IsPyDictExact(obj)) {
     return MaybeHandle<PyDict>(Handle<PyDict>::cast(obj));
   }
 
@@ -58,12 +58,14 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
     }
 
     bool eq = false;
-    RETURN_ON_EXCEPTION(isolate, PyObject::EqualBool(key, globals_key));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
+                               PyObject::EqualBool(key, globals_key));
     if (eq) {
       continue;
     }
 
-    RETURN_ON_EXCEPTION(isolate, PyObject::EqualBool(key, locals_key));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
+                               PyObject::EqualBool(key, locals_key));
     if (eq) {
       continue;
     }

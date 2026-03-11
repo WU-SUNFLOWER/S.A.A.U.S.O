@@ -355,8 +355,8 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   // Fast Path:
   // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
   // MethodObject对象的操作。
-  if (klass->vtable().getattr_ == &Klass::Virtual_Default_GetAttr) {
-    return Klass::Virtual_Default_GetAttrForCall(self, attr_name, self_or_null);
+  if (klass->vtable().getattr_ == &PyObjectKlass::Generic_GetAttr) {
+    return PyObjectKlass::Generic_GetAttrForCall(self, attr_name, self_or_null);
   }
 
   // Fallback

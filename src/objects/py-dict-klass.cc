@@ -231,17 +231,10 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
 
-  bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
-
-  if (is_exact_dict) {
-    RETURN_ON_EXCEPTION(
-        isolate, Runtime_InitDictFromArgsKwargs(Handle<PyDict>::cast(instance),
-                                                args, kwargs));
-    return handle(isolate->py_none_object());
-  }
-
-  return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,
-                                             args, kwargs);
+  RETURN_ON_EXCEPTION(
+      isolate, Runtime_InitDictFromArgsKwargs(Handle<PyDict>::cast(instance),
+                                              args, kwargs));
+  return handle(isolate->py_none_object());
 }
 
 // static

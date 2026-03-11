@@ -141,33 +141,25 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
     Handle<PyObject> kwargs) {
   assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
 
-  bool is_exact_list = klass_self == PyListKlass::GetInstance();
-
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
-  if (is_exact_list) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "list() takes no keyword arguments\n");
-      return kNullMaybeHandle;
-    }
-    if (argc > 1) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "list expected at most 1 argument, got %" PRId64,
-                          argc);
-      return kNullMaybeHandle;
-    }
-    if (argc == 1) {
-      RETURN_ON_EXCEPTION(
-          isolate, Runtime_ExtendListByItratableObject(
-                       Handle<PyList>::cast(instance), pos_args->Get(0)));
-    }
-    return handle(isolate->py_none_object());
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "list() takes no keyword arguments\n");
+    return kNullMaybeHandle;
   }
-
-  return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,
-                                             args, kwargs);
+  if (argc > 1) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "list expected at most 1 argument, got %" PRId64, argc);
+    return kNullMaybeHandle;
+  }
+  if (argc == 1) {
+    RETURN_ON_EXCEPTION(isolate,
+                        Runtime_ExtendListByItratableObject(
+                            Handle<PyList>::cast(instance), pos_args->Get(0)));
+  }
+  return handle(isolate->py_none_object());
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

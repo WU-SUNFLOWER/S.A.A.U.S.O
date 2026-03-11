@@ -80,49 +80,49 @@ using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
 
 #define KLASS_VTABLE_SLOT_EXPOSED(V)                                           \
   /* add/sub/mul/div/floor_div/mod/hash：可能抛 TypeError 等*/                 \
-  V(VirtualFuncType_Maybe_1_2, add, "__add__")                                 \
-  V(VirtualFuncType_Maybe_1_2, sub, "__sub__")                                 \
-  V(VirtualFuncType_Maybe_1_2, mul, "__mul__")                                 \
-  V(VirtualFuncType_Maybe_1_2, div, "__truediv__")                             \
-  V(VirtualFuncType_Maybe_1_2, floor_div, "__floordiv__")                      \
-  V(VirtualFuncType_Maybe_1_2, mod, "__mod__")                                 \
-  V(VirtualFuncType_MaybeHash, hash, "__hash__")                               \
+  V(VirtualFuncType_Maybe_1_2, add, "__add__", Add)                            \
+  V(VirtualFuncType_Maybe_1_2, sub, "__sub__", Sub)                            \
+  V(VirtualFuncType_Maybe_1_2, mul, "__mul__", Mul)                            \
+  V(VirtualFuncType_Maybe_1_2, div, "__truediv__", Div)                        \
+  V(VirtualFuncType_Maybe_1_2, floor_div, "__floordiv__", FloorDiv)            \
+  V(VirtualFuncType_Maybe_1_2, mod, "__mod__", Mod)                            \
+  V(VirtualFuncType_MaybeHash, hash, "__hash__", Hash)                         \
                                                                                \
   /* setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle */ \
-  V(VirtualFuncType_MaybeGetAttr, getattr, "__getattr__")                      \
-  V(VirtualFuncType_Maybe_0_3, setattr, "__setattr__")                         \
-  V(VirtualFuncType_Maybe_1_2, subscr, "__getitem__")                          \
-  V(VirtualFuncType_Maybe_0_3, store_subscr, "__setitem__")                    \
-  V(VirtualFuncType_Maybe_1_2, del_subscr, "__delitem__")                      \
+  V(VirtualFuncType_MaybeGetAttr, getattr, "__getattr__", GetAttr)             \
+  V(VirtualFuncType_Maybe_0_3, setattr, "__setattr__", SetAttr)                \
+  V(VirtualFuncType_Maybe_1_2, subscr, "__getitem__", Subscr)                  \
+  V(VirtualFuncType_Maybe_0_3, store_subscr, "__setitem__", StoreSubscr)       \
+  V(VirtualFuncType_Maybe_1_2, del_subscr, "__delitem__", DeleteSubscr)        \
                                                                                \
   /* 比较/contains：返回 Maybe<bool>，失败时设置 pending exception */          \
-  V(VirtualFuncType_MaybeBool_1_2, greater, "__gt__")                          \
-  V(VirtualFuncType_MaybeBool_1_2, less, "__lt__")                             \
-  V(VirtualFuncType_MaybeBool_1_2, equal, "__eq__")                            \
-  V(VirtualFuncType_MaybeBool_1_2, not_equal, "__ne__")                        \
-  V(VirtualFuncType_MaybeBool_1_2, ge, "__ge__")                               \
-  V(VirtualFuncType_MaybeBool_1_2, le, "__le__")                               \
-  V(VirtualFuncType_MaybeBool_1_2, contains, "__contains__")                   \
+  V(VirtualFuncType_MaybeBool_1_2, greater, "__gt__", Greater)                 \
+  V(VirtualFuncType_MaybeBool_1_2, less, "__lt__", Less)                       \
+  V(VirtualFuncType_MaybeBool_1_2, equal, "__eq__", Equal)                     \
+  V(VirtualFuncType_MaybeBool_1_2, not_equal, "__ne__", NotEqual)              \
+  V(VirtualFuncType_MaybeBool_1_2, ge, "__ge__", GreaterEqual)                 \
+  V(VirtualFuncType_MaybeBool_1_2, le, "__le__", LessEqual)                    \
+  V(VirtualFuncType_MaybeBool_1_2, contains, "__contains__", Contains)         \
                                                                                \
-  V(VirtualFuncType_Maybe_1_1, iter, "__iter__")                               \
-  V(VirtualFuncType_Maybe_1_1, next, "__next__")                               \
+  V(VirtualFuncType_Maybe_1_1, iter, "__iter__", Iter)                         \
+  V(VirtualFuncType_Maybe_1_1, next, "__next__", Next)                         \
                                                                                \
-  V(VirtualFuncType_Maybe_Call, call, "__call__")                              \
-  V(VirtualFuncType_Maybe_1_1, len, "__len__")                                 \
-  V(VirtualFuncType_Maybe_1_1, repr, "__repr__")                               \
-  V(VirtualFuncType_Maybe_1_1, str, "__str__")                                 \
+  V(VirtualFuncType_Maybe_Call, call, "__call__", Call)                        \
+  V(VirtualFuncType_Maybe_1_1, len, "__len__", Len)                            \
+  V(VirtualFuncType_Maybe_1_1, repr, "__repr__", Repr)                         \
+  V(VirtualFuncType_Maybe_1_1, str, "__str__", Str)                            \
                                                                                \
-  V(VirtualFuncType_Maybe_New, new_instance, "__new__")                        \
-  V(VirtualFuncType_Maybe_Init, init_instance, "__init__")
+  V(VirtualFuncType_Maybe_New, new_instance, "__new__", NewInstance)           \
+  V(VirtualFuncType_Maybe_Init, init_instance, "__init__", InitInstance)
 
 // TODO:
 // print这个虚函数在原版CPython中并不存在，需要移除并替换成repr+str的打印模式
-#define KLASS_VTABLE_SLOT_INTERNAL(V)                \
-  V(VirtualFuncType_Maybe_1_1, print, "")            \
-  /* 获取实例对象大小，调用该函数绝对不允许触发GC */ \
-  V(VirtualFuncType_InstanceSize, instance_size, "") \
-  /* 扫描对象内部数据，用于GC */                     \
-  V(VirtualFuncType_Iterate, iterate, "")
+#define KLASS_VTABLE_SLOT_INTERNAL(V)                              \
+  V(VirtualFuncType_Maybe_1_1, print, "", Print)                   \
+  /* 获取实例对象大小，调用该函数绝对不允许触发GC */               \
+  V(VirtualFuncType_InstanceSize, instance_size, "", InstanceSize) \
+  /* 扫描对象内部数据，用于GC */                                   \
+  V(VirtualFuncType_Iterate, iterate, "", Iterate)
 
 #define KLASS_VTABLE_SLOT_LIST(V) \
   KLASS_VTABLE_SLOT_EXPOSED(V)    \
@@ -136,7 +136,7 @@ class KlassVtable {
 
   void Clear();
 
-#define DEFINE_VTABLE_SLOT(signature, field_name, ignore1) \
+#define DEFINE_VTABLE_SLOT(signature, field_name, ignore1, ignore2) \
   signature field_name##_{nullptr};
   KLASS_VTABLE_SLOT_LIST(DEFINE_VTABLE_SLOT)
 #undef DEFINE_VTABLE_SLOT
