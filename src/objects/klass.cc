@@ -216,16 +216,11 @@ MaybeHandle<PyObject> Klass::NewInstance(Isolate* isolate,
   return vtable_.new_instance_(isolate, Tagged<Klass>(this), args, kwargs);
 }
 
-MaybeHandle<PyObject> Klass::InitInstance(Isolate* isolate,
-                                          Handle<PyObject> instance,
+MaybeHandle<PyObject> Klass::InitInstance(Handle<PyObject> instance,
                                           Handle<PyObject> args,
                                           Handle<PyObject> kwargs) {
-  // 在Python中类型的__init__语义是可选的
-  if (vtable_.init_instance_ == nullptr) {
-    return handle(isolate->py_none_object());
-  }
-  return vtable_.init_instance_(isolate, Tagged<Klass>(this), instance, args,
-                                kwargs);
+  assert(vtable_.init_instance_);
+  return vtable_.init_instance_(instance, args, kwargs);
 }
 
 }  // namespace saauso::internal

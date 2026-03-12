@@ -263,11 +263,12 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_NewInstance(
 // static
 // 默认的__init__方法什么也不会做！！！
 MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
-    Isolate* isolate,
-    Tagged<Klass> klass_self,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
+  auto* isolate = Isolate::Current();
+  Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
+
   int64_t arg_count =
       args.is_null() ? 0 : Handle<PyTuple>::cast(args)->length();
   int64_t kwarg_count =
@@ -280,7 +281,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     // 但代码流却显式调用了 object_init 并且传递了参数。
     // 触发场景 ：
     // 你在子类的 __init__ 中显式调用了 object.__init__() 并传递了参数。
-    if (klass_self->vtable().init_instance_ != &Generic_InitInstance)
+    if (instance_klass->vtable().init_instance_ != &Generic_InitInstance)
         [[unlikely]] {
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "object.__init__() takes exactly one argument (the "
@@ -292,7 +293,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     // 子类既没重写 __init__ 也没重写 __new__
     // 触发场景：
     // 你给一个“空空如也”的类（或者只继承 object 的类）传递了参数。
-    if (klass_self->vtable().new_instance_ == &Generic_NewInstance)
+    if (instance_klass->vtable().new_instance_ == &Generic_NewInstance)
         [[unlikely]] {
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.__init__() takes exactly one argument (the "

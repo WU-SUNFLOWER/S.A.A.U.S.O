@@ -87,8 +87,7 @@ class Klass : public Object {
                                     Handle<PyObject> kwargs);
   // 对创建好的对象实例进行初始化（一般可以理解为填充数据）。
   // 对齐原版 CPython 中 __init__ 操作的语义。
-  MaybeHandle<PyObject> InitInstance(Isolate* isolate,
-                                     Handle<PyObject> instance,
+  MaybeHandle<PyObject> InitInstance(Handle<PyObject> instance,
                                      Handle<PyObject> args,
                                      Handle<PyObject> kwargs);
 

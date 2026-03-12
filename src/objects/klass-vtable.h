@@ -58,11 +58,6 @@ using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Isolate*,
                                                      Tagged<Klass>,
                                                      OopHandle,
                                                      OopHandle);
-using VirtualFuncType_Maybe_Init = MaybeOopHandle (*)(Isolate*,
-                                                      Tagged<Klass>,
-                                                      OopHandle,
-                                                      OopHandle,
-                                                      OopHandle);
 // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
 using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
 // getattr：true=命中（out 写入值），false=未命中（out 为 null），Nothing=异常
@@ -113,7 +108,7 @@ using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
   V(VirtualFuncType_Maybe_1_1, str, "__str__", Str)                            \
                                                                                \
   V(VirtualFuncType_Maybe_New, new_instance, "__new__", NewInstance)           \
-  V(VirtualFuncType_Maybe_Init, init_instance, "__init__", InitInstance)
+  V(VirtualFuncType_Maybe_0_3, init_instance, "__init__", InitInstance)
 
 // TODO:
 // print这个虚函数在原版CPython中并不存在，需要移除并替换成repr+str的打印模式

@@ -134,19 +134,27 @@ MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
-    Isolate* isolate,
-    Tagged<Klass> klass_self,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
+  auto* isolate = Isolate::Current();
+
+  Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
+  if (instance_klass->native_layout_kind() != NativeLayoutKind::kList)
+      [[unlikely]] {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "descriptor '__init__' requires a 'list' object but received a '%s'",
+        instance_klass->name()->buffer());
+    return kNullMaybeHandle;
+  }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
-                       "list() takes no keyword arguments\n");
+                       "list() takes no keyword arguments");
     return kNullMaybeHandle;
   }
   if (argc > 1) {
