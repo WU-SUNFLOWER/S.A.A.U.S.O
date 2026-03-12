@@ -10,17 +10,12 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-type-object.h"
-#include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
 Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
   HandleScope scope;
-
-  // 后续算法依赖槽位值是否为nullptr来判断槽位是否被填充。
-  // 由于不保证分配器分配出来的内存已经置零，因此首先需要显式清空所有槽位。
-  // Clear();
 
   InitializeFromSupers(klass);
   RETURN_ON_EXCEPTION(isolate, UpdateOverrideSlots(isolate, klass));
@@ -75,22 +70,22 @@ void KlassVtable::CopyInheritedSlotsFromSuper(Tagged<Klass> super_klass) {
 Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
                                              Tagged<Klass> klass) {
   Handle<PyObject> dummy;
+  Handle<PyDict> klass_properties = klass->klass_properties();
 
-#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2, trampoline_name) \
-  do {                                                                     \
-    bool has_magic_method = false;                                         \
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, has_magic_method,                  \
-                               Runtime_LookupPropertyInKlassMro(           \
-                                   isolate, klass, ST(slot_name), dummy)); \
-    if (has_magic_method) {                                                \
-      slot_name##_ = &KlassVtableTrampolines::trampoline_name;             \
-    }                                                                      \
+#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2, trampoline_name)   \
+  do {                                                                       \
+    bool has_magic_method = false;                                           \
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, has_magic_method,                    \
+                               klass_properties->Get(ST(slot_name), dummy)); \
+    if (has_magic_method) {                                                  \
+      slot_name##_ = &KlassVtableTrampolines::trampoline_name;               \
+    }                                                                        \
   } while (0);
 
   KLASS_VTABLE_SLOT_EXPOSED(UPDATE_OVERRIDE_SLOT)
 #undef UPDATE_OVERRIDE_SLOT
 
   return JustVoid();
-}  // namespace saauso::internal
+}
 
 }  // namespace saauso::internal

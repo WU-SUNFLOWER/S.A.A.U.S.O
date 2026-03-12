@@ -203,17 +203,18 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
 
   auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, object_type);
-  Handle<PyDict> base_exception_dict = PyDict::NewInstance();
 
+  // 注入 BaseException 内建方法
+  Handle<PyDict> base_exception_dict = PyDict::NewInstance();
+  RETURN_ON_EXCEPTION(
+      isolate_, BaseExceptionMethods::Install(isolate_, base_exception_dict));
+
+  // 创建 BaseException 类型
   Handle<PyTypeObject> base_exception;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, base_exception,
       Runtime_CreatePythonClass(isolate_, ST(base_exception),
                                 base_exception_dict, supers));
-
-  // 注入 BaseException 内建方法
-  RETURN_ON_EXCEPTION(
-      isolate_, BaseExceptionMethods::Install(isolate_, base_exception_dict));
 
   supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);
