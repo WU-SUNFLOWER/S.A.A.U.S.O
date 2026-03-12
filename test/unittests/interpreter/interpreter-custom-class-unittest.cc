@@ -681,4 +681,66 @@ A()
                                    kInterpreterTestFileName);
 }
 
+TEST_F(BasicInterpreterTest,
+       ObjectInitRejectsArgsWhenTypeDefinesNeitherInitNorNew) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class B:
+    pass
+
+b = B()
+object.__init__(b, 1)
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "B.__init__() takes exactly one argument",
+                                   kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, ObjectInitRejectsArgsWhenTypeOverridesInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self, x):
+        object.__init__(self, x)
+
+a = A(1)
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "object.__init__() takes exactly one argument",
+      kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DiamondMroCallDispatchUsesNearestOverride) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __call__(self):
+        return "A"
+
+class B(A):
+    pass
+
+class C(A):
+    def __call__(self):
+        return "C"
+
+class D(B, C):
+    pass
+
+d = D()
+print(d())
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("C"));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal
