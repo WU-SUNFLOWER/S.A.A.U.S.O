@@ -42,9 +42,10 @@ void PyFunctionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
@@ -57,6 +58,10 @@ Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("function"));
@@ -110,13 +115,26 @@ void NativeFunctionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.call = &Virtual_Call;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.call_ = &Virtual_Call;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
+  RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
+
+  set_klass_properties(PyDict::NewInstance());
+
+  AddSuper(PyObjectKlass::GetInstance());
+  RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  set_name(PyString::NewInstance("builtin_function_or_method"));
+
   return JustVoid();
 }
 
@@ -180,9 +198,10 @@ void MethodObjectKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
@@ -195,6 +214,10 @@ Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("method"));

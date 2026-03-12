@@ -27,54 +27,75 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
     Handle<PyList> supers) {
   EscapableHandleScope scope;
 
+  assert(!class_name.is_null());
+
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
                              isolate->factory()->NewPyTypeObject());
 
   // 创建新的klass并注册进isolate
   Tagged<Klass> klass = isolate->factory()->NewPythonKlass();
-  Isolate::Current()->klass_list().PushBack(klass);
+  isolate->klass_list().PushBack(klass);
 
   // 设置klass字段
   klass->set_klass_properties(class_properties);
   klass->set_name(class_name);
+
+  // 如果没有有效的supers列表，那么显式创建一个列表，并将object作为基类添加进去
+  if (supers.is_null() || supers->IsEmpty()) {
+    supers = PyList::NewInstance(1);
+    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
+  }
   klass->set_supers(supers);
 
-  int native_base_count = 0;
+  int native_layout_count = 0;
   Tagged<Klass> native_layout_base = Tagged<Klass>::null();
   NativeLayoutKind native_layout_kind = NativeLayoutKind::kPyObject;
+
   if (!supers.is_null()) {
     for (int64_t i = 0; i < supers->length(); ++i) {
       auto base_type_object = Handle<PyTypeObject>::cast(supers->Get(i));
       Tagged<Klass> base_klass = base_type_object->own_klass();
+
+      // 如果是第一个super，那么先把它作为 native_layout_base 和
+      // native_layout_kind 的初值
+      if (native_layout_base.is_null()) [[unlikely]] {
+        native_layout_kind = base_klass->native_layout_kind();
+        native_layout_base = base_klass;
+      }
+
+      // 如果当前基类没有特殊内存布局，就不用往下看了
       if (base_klass->native_layout_kind() == NativeLayoutKind::kPyObject) {
         continue;
       }
-      ++native_base_count;
-      if (native_base_count > 1) {
+
+      // 不允许出现一种以上的特殊内存布局基类
+      if (++native_layout_count > 1) {
         Runtime_ThrowError(ExceptionType::kTypeError,
-                           "multiple native base classes are not supported");
+                           "multiple bases have instance lay-out conflict");
         return kNullMaybeHandle;
       }
+
+      // 如果遇到有特殊内存布局的基类，那么更新 native_layout_base 和
+      // native_layout_kind
       native_layout_kind = base_klass->native_layout_kind();
-      native_layout_base = base_klass->native_layout_base().is_null()
-                               ? base_klass
-                               : base_klass->native_layout_base();
+      native_layout_base = base_klass;
     }
   }
+
   klass->set_native_layout_kind(native_layout_kind);
   klass->set_native_layout_base(native_layout_base.is_null()
                                     ? PyObjectKlass::GetInstance()
                                     : native_layout_base);
-  if (native_layout_kind != NativeLayoutKind::kPyObject) {
-    klass->CopyVTableFrom(klass->native_layout_base());
-  }
 
   // 建立双向绑定
   type_object->BindWithKlass(klass);
 
   // 为klass计算mro
   RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
+
+  // 初始化虚函数表
+  RETURN_ON_EXCEPTION(isolate, klass->InitializeVtable(isolate));
 
   return scope.Escape(type_object);
 }
@@ -99,19 +120,19 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
   return Maybe<bool>(false);
 }
 
-Maybe<bool> Runtime_FindPropertyInInstanceTypeMro(
+Maybe<bool> Runtime_LookupPropertyInInstanceTypeMro(
     Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> prop_name,
     Handle<PyObject>& out_prop_val) {
-  return Runtime_FindPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
-                                        prop_name, out_prop_val);
+  return Runtime_LookupPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
+                                          prop_name, out_prop_val);
 }
 
-Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
-                                           Tagged<Klass> klass,
-                                           Handle<PyObject> prop_name,
-                                           Handle<PyObject>& out_prop_val) {
+Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
+                                             Tagged<Klass> klass,
+                                             Handle<PyObject> prop_name,
+                                             Handle<PyObject>& out_prop_val) {
   EscapableHandleScope scope;
 
   // 预设默认输出
@@ -138,6 +159,37 @@ Maybe<bool> Runtime_FindPropertyInKlassMro(Isolate* isolate,
   return Maybe<bool>(false);
 }
 
+MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
+    Isolate* isolate,
+    Tagged<Klass> klass,
+    Handle<PyObject> prop_name) {
+  EscapableHandleScope scope;
+
+  Handle<PyObject> out_prop_val;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             Runtime_LookupPropertyInKlassMro(
+                                 isolate, klass, prop_name, out_prop_val));
+
+  if (found) {
+    assert(!out_prop_val.is_null());
+    return scope.Escape(out_prop_val);
+  }
+
+  Runtime_ThrowErrorf(
+      ExceptionType::kAttributeError, "type object '%s' has no attribute '%s'",
+      klass->name()->buffer(), Handle<PyString>::cast(prop_name)->buffer());
+  return kNullMaybeHandle;
+}
+
+MaybeHandle<PyObject> Runtime_GetPropertyInInstanceTypeMro(
+    Isolate* isolate,
+    Handle<PyObject> instance,
+    Handle<PyObject> prop_name) {
+  return Runtime_GetPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
+                                       prop_name);
+}
+
 MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     Handle<PyObject> object,
     Handle<PyTuple> args,
@@ -147,23 +199,18 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
   auto* isolate = Isolate::Current();
 
   Handle<PyObject> method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
-                                   isolate, object, func_name, method));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, method,
+      Runtime_GetPropertyInInstanceTypeMro(isolate, object, func_name));
+  assert(!method.is_null());
 
-  if (!method.is_null()) {
-    Handle<PyObject> result;
+  Handle<PyTuple> call_args = args.is_null() ? PyTuple::NewInstance(0) : args;
+  Handle<PyObject> result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      Execution::Call(isolate, method, object, call_args, kwargs));
 
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, result,
-        Execution::Call(isolate, method, object, args, kwargs));
-
-    return scope.Escape(result);
-  }
-
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "unsupported operation for class %s",
-                      PyObject::GetKlass(object)->name()->buffer());
-  return kNullMaybeHandle;
+  return scope.Escape(result);
 }
 
 MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
@@ -246,10 +293,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
       isolate->factory()->CopyPyDict(Handle<PyDict>::cast(dict_obj));
 
   Handle<PyList> supers;
-  if (bases_tuple->length() == 0) {
-    supers = PyList::NewInstance(1);
-    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
-  } else {
+  if (bases_tuple->length() > 0) {
     supers = PyList::NewInstance(bases_tuple->length());
     for (int64_t i = 0; i < bases_tuple->length(); ++i) {
       Handle<PyObject> base = bases_tuple->Get(i);

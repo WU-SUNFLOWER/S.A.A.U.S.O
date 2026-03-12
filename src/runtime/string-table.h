@@ -10,6 +10,7 @@
 #include "src/execution/exception-types.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/objects/klass-vtable.h"
 #include "src/objects/py-string.h"
 
 namespace saauso::internal {
@@ -20,33 +21,13 @@ class ObjectVisitor;
 #define ST(x) (handle(ST_TAGGED(x)))
 
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
-  V(add, "__add__")                  \
-  V(call, "__call__")                \
   V(all, "__all__")                  \
-  V(eq, "__eq__")                    \
-  V(delitem, "__delitem__")          \
-  V(ge, "__ge__")                    \
-  V(getitem, "__getitem__")          \
-  V(getattr, "__getattr__")          \
-  V(gt, "__gt__")                    \
-  V(init, "__init__")                \
-  V(le, "__le__")                    \
-  V(len, "__len__")                  \
-  V(lt, "__lt__")                    \
   V(mro, "__mro__")                  \
   V(name, "__name__")                \
   V(package, "__package__")          \
   V(path, "__path__")                \
-  V(ne, "__ne__")                    \
-  V(_new, "__new__")                 \
   V(classcell, "__classcell__")      \
   V(class, "__class__")              \
-  V(next, "__next__")                \
-  V(iter, "__iter__")                \
-  V(repr, "__repr__")                \
-  V(setitem, "__setitem__")          \
-  V(setattr, "__setattr__")          \
-  V(str, "__str__")                  \
   V(traceback, "__traceback__")      \
   V(context, "__context__")          \
   V(main, "__main_")                 \
@@ -74,6 +55,7 @@ class ObjectVisitor;
   V(so, LIB_EXT)                \
   V(builtins, "__builtins__")   \
   V(file, "__file__")           \
+  V(args, "args")               \
   V(message, "message")         \
   V(end, "end")                 \
   V(eol, "eol")                 \
@@ -88,13 +70,17 @@ class StringTable {
 #define DECLARE_STR_FIELD_NORMAL(name, _) DECLARE_STR_FIELD(name)
 #define DECLARE_STR_FIELD_FOR_EXCEPTION(ignore1, name, ignore2) \
   DECLARE_STR_FIELD(name)
+#define DECLARE_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, ignore2, ignore3) \
+  DECLARE_STR_FIELD(name)
 
+  KLASS_VTABLE_SLOT_EXPOSED(DECLARE_STR_FIELD_FOR_MAGIC_METHOD)
   PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD_NORMAL)
   PY_BUILTIN_FUNC_LIST(DECLARE_STR_FIELD_NORMAL)
   STRING_IN_TABLE_LIST(DECLARE_STR_FIELD_NORMAL)
 
   EXCEPTION_TYPE_LIST(DECLARE_STR_FIELD_FOR_EXCEPTION);
 
+#undef DECLARE_STR_FIELD_FOR_MAGIC_METHOD
 #undef DECLARE_STR_FIELD_FOR_EXCEPTION
 #undef DECLARE_STR_FIELD_NORMAL
 #undef DECLARE_STR_FIELD

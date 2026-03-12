@@ -4,15 +4,15 @@
 
 #include <string_view>
 
+#include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/code/compiler.h"
-#include "src/interpreter/interpreter.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
@@ -330,7 +330,7 @@ a = A()
 print(a.miss)
 )";
   RunScriptExpectExceptionContains(kSource, "AttributeError",
-                                  kInterpreterTestFileName);
+                                   kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
@@ -446,10 +446,12 @@ except TypeError as e:
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
-  AppendExpected(expected_printv_result,
-                 PyString::NewInstance("__build_class__: not enough arguments"));
-  AppendExpected(expected_printv_result,
-                 PyString::NewInstance("__build_class__: name is not a string"));
+  AppendExpected(
+      expected_printv_result,
+      PyString::NewInstance("__build_class__: not enough arguments"));
+  AppendExpected(
+      expected_printv_result,
+      PyString::NewInstance("__build_class__: name is not a string"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -556,7 +558,7 @@ class A(object):
 print(A.miss)
 )";
   RunScriptExpectExceptionContains(kSource, "AttributeError",
-                                  kInterpreterTestFileName);
+                                   kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnInstanceFallsBackToClassMroProperty) {
@@ -580,44 +582,89 @@ print(b.x)
   ExpectPrintResult(expected_printv_result);
 }
 
-// TODO: 支持虚函数重写（override）之后，开放本测试用例
-// TEST_F(BasicInterpreterTest, ListSubclassInitCanInvokeBaseListInit) {
-//   HandleScope scope;
+TEST_F(BasicInterpreterTest, ListSubclassInitCanInvokeBaseListInit) {
+  HandleScope scope;
 
-//   constexpr std::string_view kSource = R"(
-// class L(list):
-//     def __init__(self, iterable, x):
-//         list.__init__(self, iterable)
-//         self.x = x
+  constexpr std::string_view kSource = R"(
+class L(list):
+    def __init__(self, iterable, x):
+        list.__init__(self, iterable)
+        self.x = x
 
-// l = L([1, 2, 3], 100)
-// print(l[0] + l[1] + l[2] + l.x)
-// )";
+l = L([1, 2, 3], 100)
+print(l[0] + l[1] + l[2] + l.x)
+)";
 
-//   RunScript(kSource, kInterpreterTestFileName);
+  RunScript(kSource, kInterpreterTestFileName);
 
-//   auto expected_printv_result = PyList::NewInstance();
-//   AppendExpected(expected_printv_result, handle(PySmi::FromInt(106)));
-//   ExpectPrintResult(expected_printv_result);
-// }
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(106)));
+  ExpectPrintResult(expected_printv_result);
+}
 
-// TODO: 支持虚函数重写（override）之后，开放本测试用例
-// TEST_F(BasicInterpreterTest, InitSlotBridgeStaysCallableAfterAttributeLoad) {
-//   HandleScope scope;
+TEST_F(BasicInterpreterTest,
+       ListInitSlotBridgeStaysCallableAfterAttributeLoad) {
+  HandleScope scope;
 
-//   constexpr std::string_view kSource = R"(
-// f = list.__init__
-// a = list()
-// f(a, [1, 2, 3])
-// print(a[0] + a[1] + a[2])
-// )";
+  constexpr std::string_view kSource = R"(
+f = list.__init__
+a = list()
+f(a, [1, 2, 3])
+print(a[0] + a[1] + a[2])
+)";
 
-//   RunScript(kSource, kInterpreterTestFileName);
+  RunScript(kSource, kInterpreterTestFileName);
 
-//   auto expected_printv_result = PyList::NewInstance();
-//   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
-//   ExpectPrintResult(expected_printv_result);
-// }
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest,
+       DictInitSlotBridgeStaysCallableAfterAttributeLoad) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+f = dict.__init__
+d = dict()
+f(d, {"x": 1, "y": 2})
+print(d["x"] + d["y"])
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinInitBridgeOnInstancePathWorks) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+a = []
+a.__init__([4, 5, 6])
+print(a[0] + a[1] + a[2])
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(15)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinInitBridgeRejectsWrongReceiverType) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+list.__init__(dict(), [1, 2, 3])
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "descriptor '__init__' requires a 'list' object",
+      kInterpreterTestFileName);
+}
 
 TEST_F(BasicInterpreterTest, InitMustReturnNone) {
   HandleScope scope;
@@ -633,6 +680,68 @@ A()
   RunScriptExpectExceptionContains(kSource,
                                    "__init__() should return None, not 'int'",
                                    kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest,
+       ObjectInitRejectsArgsWhenTypeDefinesNeitherInitNorNew) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class B:
+    pass
+
+b = B()
+object.__init__(b, 1)
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "B.__init__() takes exactly one argument",
+                                   kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, ObjectInitRejectsArgsWhenTypeOverridesInit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __init__(self, x):
+        object.__init__(self, x)
+
+a = A(1)
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "object.__init__() takes exactly one argument",
+      kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, DiamondMroCallDispatchUsesNearestOverride) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __call__(self):
+        return "A"
+
+class B(A):
+    pass
+
+class C(A):
+    def __call__(self):
+        return "C"
+
+class D(B, C):
+    pass
+
+d = D()
+print(d())
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("C"));
+  ExpectPrintResult(expected_printv_result);
 }
 
 }  // namespace saauso::internal

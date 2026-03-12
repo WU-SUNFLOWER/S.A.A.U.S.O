@@ -39,9 +39,10 @@ void PyCodeObjectKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
@@ -57,6 +58,10 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("code"));

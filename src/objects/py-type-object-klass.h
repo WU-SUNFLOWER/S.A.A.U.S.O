@@ -44,11 +44,6 @@ class PyTypeObjectKlass : public Klass {
                                                    Tagged<Klass> klass_self,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs);
-  static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
-                                                    Tagged<Klass> klass_self,
-                                                    Handle<PyObject> instance,
-                                                    Handle<PyObject> args,
-                                                    Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Call(Isolate* isolate,
                                             Handle<PyObject> self,

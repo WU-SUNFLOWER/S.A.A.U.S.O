@@ -57,22 +57,23 @@ void PyDictKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   set_native_layout_kind(NativeLayoutKind::kDict);
-  set_native_layout_base(Tagged<Klass>(this));
+  set_native_layout_base(PyObjectKlass::GetInstance());
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.len = &Virtual_Len;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.subscr = &Virtual_Subscr;
-  vtable_.store_subscr = &Virtual_StoreSubscr;
-  vtable_.del_subscr = &Virtual_DeleteSubscr;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.subscr_ = &Virtual_Subscr;
+  vtable_.store_subscr_ = &Virtual_StoreSubscr;
+  vtable_.del_subscr_ = &Virtual_DeleteSubscr;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.init_instance_ = &Virtual_InitInstance;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
@@ -81,16 +82,19 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
 
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-
-  // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDictBuiltinMethods::Install(isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  // 安装内建方法
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDictBuiltinMethods::Install(isolate, klass_properties));
 
   // 设置类名
   set_name(PyString::NewInstance("dict"));
@@ -221,23 +225,24 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
-
-  bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
-
-  if (is_exact_dict) {
-    RETURN_ON_EXCEPTION(
-        isolate, Runtime_InitDictFromArgsKwargs(Handle<PyDict>::cast(instance),
-                                                args, kwargs));
-    return handle(isolate->py_none_object());
+  Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
+  if (instance_klass->native_layout_kind() != NativeLayoutKind::kDict)
+      [[unlikely]] {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "descriptor '__init__' requires a 'dict' object but received a '%s'",
+        instance_klass->name()->buffer());
+    return kNullMaybeHandle;
   }
 
-  return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,
-                                             args, kwargs);
+  RETURN_ON_EXCEPTION(
+      isolate, Runtime_InitDictFromArgsKwargs(
+                   isolate, Handle<PyDict>::cast(instance), args, kwargs));
+
+  return handle(isolate->py_none_object());
 }
 
 // static

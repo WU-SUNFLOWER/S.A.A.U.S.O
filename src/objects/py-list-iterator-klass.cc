@@ -59,29 +59,34 @@ Tagged<PyListIteratorKlass> PyListIteratorKlass::GetInstance() {
 void PyListIteratorKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  vtable_.print = &Virtual_Print;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.next = &Virtual_Next;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  // 初始化虚函数表
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.next_ = &Virtual_Next;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
-  // 设置类属性
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-
-  // 注入内建方法
-  RETURN_ON_EXCEPTION(isolate, PyListIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  // 注入内建方法
+  RETURN_ON_EXCEPTION(isolate, PyListIteratorBuiltinMethods::Install(
+                                   isolate, klass_properties));
 
   // 设置类名
   set_name(PyString::NewInstance("list_iterator"));

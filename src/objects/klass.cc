@@ -13,6 +13,7 @@
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
@@ -108,6 +109,10 @@ Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
 
 ///////////////////////////////////////////////////////////////////////
 
+Maybe<void> Klass::InitializeVtable(Isolate* isolate) {
+  return vtable_.Initialize(isolate, Tagged<Klass>(this));
+}
+
 Handle<PyString> Klass::name() {
   return Handle<PyString>(Tagged<PyString>::cast(name_));
 }
@@ -194,11 +199,6 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   return JustVoid();
 }
 
-void Klass::CopyVTableFrom(Tagged<Klass> base) {
-  assert(!base.is_null());
-  vtable_ = base->vtable_;
-}
-
 MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
@@ -211,15 +211,17 @@ MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
 MaybeHandle<PyObject> Klass::NewInstance(Isolate* isolate,
                                          Handle<PyObject> args,
                                          Handle<PyObject> kwargs) {
-  return vtable_.new_instance(isolate, Tagged<Klass>(this), args, kwargs);
+  // 任何有效的Python类型都必须实现__new__语义
+  assert(vtable_.new_instance_ != nullptr);
+  return vtable_.new_instance_(isolate, Tagged<Klass>(this), args, kwargs);
 }
 
 MaybeHandle<PyObject> Klass::InitInstance(Isolate* isolate,
                                           Handle<PyObject> instance,
                                           Handle<PyObject> args,
                                           Handle<PyObject> kwargs) {
-  return vtable_.init_instance(isolate, Tagged<Klass>(this), instance, args,
-                               kwargs);
+  assert(vtable_.init_instance_);
+  return vtable_.init_instance_(isolate, instance, args, kwargs);
 }
 
 }  // namespace saauso::internal

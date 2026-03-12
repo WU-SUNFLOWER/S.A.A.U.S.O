@@ -254,7 +254,7 @@ MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
   }
 
   Handle<PyObject> method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInInstanceTypeMro(
+  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, value, ST(str), method));
 
   if (!method.is_null()) {

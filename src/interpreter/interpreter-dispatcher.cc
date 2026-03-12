@@ -552,10 +552,9 @@ void Interpreter::EvalCurrentFrame() {
     if ((op_arg & 1) != 0) {
       Handle<PyObject> self_or_null;
       Handle<PyObject> value;
-      if (!PyObject::GetAttrForCall(object, attr_name, self_or_null)
-               .ToHandle(&value)) {
-        goto pending_exception_unwind;
-      }
+      ASSIGN_GOTO_ON_EXCEPTION(
+          value, PyObject::GetAttrForCall(object, attr_name, self_or_null));
+
       if (!self_or_null.is_null()) {
         // Happy case: attr_name的确对应一个对象方法
         PUSH(value);

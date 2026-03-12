@@ -70,24 +70,25 @@ void PyFloatKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 初始化虚函数表
+  vtable_.Clear();
   // Python中float类型只有默认的__new__而没有__init__
-  vtable_.new_instance = &Virtual_NewInstance;
-
-  vtable_.add = &Virtual_Add;
-  vtable_.sub = &Virtual_Sub;
-  vtable_.mul = &Virtual_Mul;
-  vtable_.div = &Virtual_Div;
-  vtable_.floor_div = &Virtual_FloorDiv;
-  vtable_.mod = &Virtual_Mod;
-  vtable_.greater = &Virtual_Greater;
-  vtable_.less = &Virtual_Less;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.ge = &Virtual_GreaterEqual;
-  vtable_.le = &Virtual_LessEqual;
-  vtable_.print = &Virtual_Print;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.add_ = &Virtual_Add;
+  vtable_.sub_ = &Virtual_Sub;
+  vtable_.mul_ = &Virtual_Mul;
+  vtable_.div_ = &Virtual_Div;
+  vtable_.floor_div_ = &Virtual_FloorDiv;
+  vtable_.mod_ = &Virtual_Mod;
+  vtable_.greater_ = &Virtual_Greater;
+  vtable_.less_ = &Virtual_Less;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.ge_ = &Virtual_GreaterEqual;
+  vtable_.le_ = &Virtual_LessEqual;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
@@ -100,6 +101,10 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
   set_name(PyString::NewInstance("float"));

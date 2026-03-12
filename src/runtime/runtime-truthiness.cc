@@ -50,21 +50,4 @@ bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
   return true;
 }
 
-bool Runtime_IsPyObjectCallable(Tagged<PyObject> object) {
-  if (object.is_null()) {
-    return false;
-  }
-
-  if (IsPyFunction(object) || IsMethodObject(object)) {
-    return true;
-  }
-
-  Tagged<Klass> klass = PyObject::GetKlass(object);
-  if (klass->vtable().call != nullptr) {
-    return true;
-  }
-
-  return false;
-}
-
 }  // namespace saauso::internal

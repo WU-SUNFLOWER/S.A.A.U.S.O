@@ -15,6 +15,7 @@
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
@@ -24,6 +25,16 @@ namespace saauso::internal {
 namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
+
+MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
+  if (exception_args.is_null() || exception_args->length() == 0) {
+    return PyString::NewInstance("");
+  }
+  if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
+    return Handle<PyString>::cast(exception_args->Get(0));
+  }
+  return PyString::NewInstance("");
+}
 
 void ThrowNewException(Handle<PyString> exception_type_name,
                        Handle<PyString> message_or_null) {
@@ -100,11 +111,17 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
                       builtins->Get(exception_type_name, exception_type));
   assert(!exception_type.is_null());
 
+  Handle<PyTuple> init_args = Handle<PyTuple>::null();
+  if (!message_or_null.is_null()) {
+    init_args = PyTuple::NewInstance(1);
+    init_args->SetInternal(0, message_or_null);
+  }
+
   Handle<PyObject> exception = Handle<PyObject>::null();
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, exception,
       Runtime_NewObject(isolate, Handle<PyTypeObject>::cast(exception_type),
-                        Handle<PyObject>::null(), Handle<PyObject>::null()));
+                        init_args, Handle<PyObject>::null()));
 
   if (!message_or_null.is_null()) {
     Handle<PyDict> properties = PyObject::GetProperties(exception);
@@ -152,12 +169,22 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr() {
   Handle<PyString> message = Handle<PyString>::null();
   Handle<PyDict> properties = PyObject::GetProperties(exception);
   if (!properties.is_null()) {
-    Handle<PyObject> msg_obj;
+    Handle<PyObject> args_obj;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message), msg_obj));
+                               properties->Get(ST(args), args_obj));
+    if (found && IsPyTuple(args_obj)) {
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, message,
+          MessageFromArgsTuple(Handle<PyTuple>::cast(args_obj)));
+    }
 
-    if (found && IsPyString(msg_obj)) {
+    Handle<PyObject> msg_obj;
+    found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               properties->Get(ST(message), msg_obj));
+    if ((message.is_null() || message->IsEmpty()) && found &&
+        IsPyString(msg_obj)) {
       message = Handle<PyString>::cast(msg_obj);
     }
   }

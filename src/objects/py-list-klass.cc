@@ -62,42 +62,46 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
 
   // 设置内建布局字段
   set_native_layout_kind(NativeLayoutKind::kList);
-  set_native_layout_base(Tagged<Klass>(this));
+  set_native_layout_base(PyObjectKlass::GetInstance());
 
   // 初始化虚函数表
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
-  vtable_.len = &Virtual_Len;
-  vtable_.print = &Virtual_Print;
-  vtable_.add = &Virtual_Add;
-  vtable_.mul = &Virtual_Mul;
-  vtable_.subscr = &Virtual_Subscr;
-  vtable_.store_subscr = &Virtual_StoreSubscr;
-  vtable_.del_subscr = &Virtual_DelSubscr;
-  vtable_.less = &Virtual_Less;
-  vtable_.iter = &Virtual_Iter;
-  vtable_.contains = &Virtual_Contains;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.init_instance_ = &Virtual_InitInstance;
+  vtable_.len_ = &Virtual_Len;
+  vtable_.print_ = &Virtual_Print;
+  vtable_.add_ = &Virtual_Add;
+  vtable_.mul_ = &Virtual_Mul;
+  vtable_.subscr_ = &Virtual_Subscr;
+  vtable_.store_subscr_ = &Virtual_StoreSubscr;
+  vtable_.del_subscr_ = &Virtual_DelSubscr;
+  vtable_.less_ = &Virtual_Less;
+  vtable_.iter_ = &Virtual_Iter;
+  vtable_.contains_ = &Virtual_Contains;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
   // 建立与type object的双向绑定
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
-  // 设置类属性
+  // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-
-  // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate,
-                      PyListBuiltinMethods::Install(isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  // 安装内建方法
+  RETURN_ON_EXCEPTION(isolate,
+                      PyListBuiltinMethods::Install(isolate, klass_properties));
 
   // 设置类名
   set_name(PyString::NewInstance("list"));
@@ -131,39 +135,38 @@ MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
-
-  bool is_exact_list = klass_self == PyListKlass::GetInstance();
+  Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
+  if (instance_klass->native_layout_kind() != NativeLayoutKind::kList)
+      [[unlikely]] {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "descriptor '__init__' requires a 'list' object but received a '%s'",
+        instance_klass->name()->buffer());
+    return kNullMaybeHandle;
+  }
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
-  if (is_exact_list) {
-    if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "list() takes no keyword arguments\n");
-      return kNullMaybeHandle;
-    }
-    if (argc > 1) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "list expected at most 1 argument, got %" PRId64,
-                          argc);
-      return kNullMaybeHandle;
-    }
-    if (argc == 1) {
-      RETURN_ON_EXCEPTION(
-          isolate, Runtime_ExtendListByItratableObject(
-                       Handle<PyList>::cast(instance), pos_args->Get(0)));
-    }
-    return handle(isolate->py_none_object());
+  if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "list() takes no keyword arguments");
+    return kNullMaybeHandle;
   }
-
-  return Klass::Virtual_Default_InitInstance(isolate, klass_self, instance,
-                                             args, kwargs);
+  if (argc > 1) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "list expected at most 1 argument, got %" PRId64, argc);
+    return kNullMaybeHandle;
+  }
+  if (argc == 1) {
+    RETURN_ON_EXCEPTION(isolate,
+                        Runtime_ExtendListByItratableObject(
+                            Handle<PyList>::cast(instance), pos_args->Get(0)));
+  }
+  return handle(isolate->py_none_object());
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {

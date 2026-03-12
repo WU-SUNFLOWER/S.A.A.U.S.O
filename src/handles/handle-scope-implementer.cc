@@ -2,9 +2,10 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/handles/handle-scope-implementer.h"
+
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
-#include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 #include "src/objects/visitors.h"
 #include "src/utils/allocation.h"

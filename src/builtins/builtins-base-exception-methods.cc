@@ -8,6 +8,8 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
@@ -30,6 +32,33 @@ Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 namespace {
+
+MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
+  if (exception_args.is_null() || exception_args->length() == 0) {
+    return PyString::NewInstance("");
+  }
+  if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
+    return Handle<PyString>::cast(exception_args->Get(0));
+  }
+  return PyString::NewInstance("");
+}
+
+MaybeHandle<PyTuple> ReadExceptionArgs(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyDict> properties = PyObject::GetProperties(self);
+  if (properties.is_null()) {
+    return Handle<PyTuple>::null();
+  }
+
+  Handle<PyObject> args_obj;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             properties->Get(ST(args), args_obj));
+  if (!found || !IsPyTuple(args_obj)) {
+    return Handle<PyTuple>::null();
+  }
+  return Handle<PyTuple>::cast(args_obj);
+}
 
 MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
                                            Handle<PyTuple> args,
@@ -54,6 +83,16 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
+  Handle<PyTuple> exception_args;
+  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), exception_args,
+                             ReadExceptionArgs(self));
+  if (!exception_args.is_null()) {
+    Handle<PyString> args_message;
+    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), args_message,
+                               MessageFromArgsTuple(exception_args));
+    return scope.Escape(args_message);
+  }
+
   Handle<PyDict> properties = PyObject::GetProperties(self);
   if (!properties.is_null()) {
     Handle<PyObject> message;
@@ -72,6 +111,38 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////
+
+BUILTIN_METHOD(BaseExceptionMethods, Init) {
+  auto* isolate = Isolate::Current();
+  if (self.is_null()) [[unlikely]] {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__init__() expects a non-null receiver");
+    return kNullMaybeHandle;
+  }
+
+  if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "BaseException.__init__() takes no keyword arguments");
+    return kNullMaybeHandle;
+  }
+
+  Handle<PyTuple> init_args = args.is_null() ? PyTuple::NewInstance(0) : args;
+  Handle<PyDict> properties = PyObject::GetProperties(self);
+  if (properties.is_null()) {
+    properties = PyDict::NewInstance();
+    PyObject::SetProperties(*self, *properties);
+  }
+
+  RETURN_ON_EXCEPTION_VALUE(
+      isolate, PyDict::Put(properties, ST(args), init_args), kNullMaybeHandle);
+
+  Handle<PyString> message;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message, MessageFromArgsTuple(init_args));
+  RETURN_ON_EXCEPTION_VALUE(
+      isolate, PyDict::Put(properties, ST(message), message), kNullMaybeHandle);
+
+  return handle(isolate->py_none_object());
+}
 
 // BaseException.__str__ 的最小实现：返回 message 字段。
 // 该实现用于提升 MVP 阶段的可用性，使用户能够通过 str(e) 获取错误原因。

@@ -47,17 +47,17 @@ void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
   // 初始化虚函数表
-  vtable_.print = &Virtual_Print;
-  vtable_.getattr = &Virtual_GetAttr;
-  vtable_.setattr = &Virtual_SetAttr;
-  vtable_.hash = &Virtual_Hash;
-  vtable_.equal = &Virtual_Equal;
-  vtable_.not_equal = &Virtual_NotEqual;
-  vtable_.new_instance = &Virtual_NewInstance;
-  vtable_.init_instance = &Virtual_InitInstance;
-  vtable_.call = &Virtual_Call;
-  vtable_.instance_size = &Virtual_InstanceSize;
-  vtable_.iterate = &Virtual_Iterate;
+  vtable_.Clear();
+  vtable_.print_ = &Virtual_Print;
+  vtable_.getattr_ = &Virtual_GetAttr;
+  vtable_.setattr_ = &Virtual_SetAttr;
+  vtable_.hash_ = &Virtual_Hash;
+  vtable_.equal_ = &Virtual_Equal;
+  vtable_.not_equal_ = &Virtual_NotEqual;
+  vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.call_ = &Virtual_Call;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
@@ -66,15 +66,18 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
 
   // 初始化类字典
   auto klass_properties = PyDict::NewInstance();
-
-  RETURN_ON_EXCEPTION(
-      isolate, PyTypeObjectBuiltinMethods::Install(isolate, klass_properties));
-
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance());
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 根据继承关系填充虚函数表
+  RETURN_ON_EXCEPTION(isolate,
+                      vtable_.Initialize(isolate, Tagged<Klass>(this)));
+
+  RETURN_ON_EXCEPTION(
+      isolate, PyTypeObjectBuiltinMethods::Install(isolate, klass_properties));
 
   // 设置类名
   set_name(PyString::NewInstance("type"));
@@ -106,24 +109,23 @@ Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
 
   out_prop_val = Handle<PyObject>::null();
 
-  // 沿着当前type object的mro序列进行查找
   Handle<PyObject> result;
-  RETURN_ON_EXCEPTION(isolate, Runtime_FindPropertyInKlassMro(
-                                   isolate, own_klass, prop_name, result));
+  if (is_try) {
+    // 沿着当前type object的mro序列进行查找（Lookup语义）
+    RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInKlassMro(
+                                     isolate, own_klass, prop_name, result));
+  } else {
+    // 对外语义：找不到属性时直接抛出 AttributeError（Get语义）
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result,
+        Runtime_GetPropertyInKlassMro(isolate, own_klass, prop_name));
+  }
 
   if (!result.is_null()) {
     out_prop_val = result;
     return Maybe<bool>(true);
   }
-  if (is_try) {
-    return Maybe<bool>(false);
-  }
-
-  Runtime_ThrowErrorf(ExceptionType::kAttributeError,
-                      "'%s' object has no attribute '%s'\n",
-                      PyObject::GetKlass(self)->name()->buffer(),
-                      Handle<PyString>::cast(prop_name)->buffer());
-  return kNullMaybe;
+  return Maybe<bool>(false);
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
@@ -166,15 +168,6 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
   return Runtime_NewType(isolate, args, kwargs);
-}
-
-MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_InitInstance(
-    Isolate* isolate,
-    Tagged<Klass> klass_self,
-    Handle<PyObject> instance,
-    Handle<PyObject> args,
-    Handle<PyObject> kwargs) {
-  return handle(isolate->py_none_object());
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Isolate* isolate,

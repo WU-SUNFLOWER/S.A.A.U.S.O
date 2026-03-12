@@ -243,7 +243,6 @@ Maybe<void> Isolate::InitMetaArea() {
 #define PREINIT_PY_KLASS(_, Klass, __) \
   do {                                 \
     auto klass = Klass::GetInstance(); \
-    klass->InitializeVTable();         \
     klass->PreInitialize(this);        \
   } while (false);
   ISOLATE_KLASS_LIST(PREINIT_PY_KLASS)
@@ -287,8 +286,7 @@ void Isolate::TearDown() {
   Scope isolate_scope(this);
 
   // 反向操作：先销毁 Klass
-#define FINALIZE_PY_KLASS(_, Klass, __) \
-  Klass::GetInstance()->Finalize(this);
+#define FINALIZE_PY_KLASS(_, Klass, __) Klass::GetInstance()->Finalize(this);
   ISOLATE_KLASS_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 
