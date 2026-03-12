@@ -9,6 +9,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
+#include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -50,6 +51,35 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
     return kNullMaybeHandle;
   }
   return scope.Escape(result);
+}
+
+BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
+  Handle<PyObject> instance;
+  Handle<PyObject> init_args = args;
+
+  if (!self.is_null()) {
+    instance = self;
+  } else {
+    int64_t argc = args.is_null() ? 0 : args->length();
+    if (argc == 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "descriptor '__init__' of 'dict' object needs an "
+                         "argument");
+      return kNullMaybeHandle;
+    }
+    instance = args->Get(0);
+    if (argc == 1) {
+      init_args = Handle<PyTuple>::null();
+    } else {
+      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
+      for (int64_t i = 1; i < argc; ++i) {
+        tail->SetInternal(i - 1, *args->Get(i));
+      }
+      init_args = tail;
+    }
+  }
+
+  return PyDictKlass::GetInstance()->InitInstance(instance, init_args, kwargs);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {

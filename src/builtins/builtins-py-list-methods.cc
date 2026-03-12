@@ -16,6 +16,7 @@
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-list-klass.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -51,6 +52,35 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
   auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0));
   return scope.Escape(handle(Isolate::Current()->py_none_object()));
+}
+
+BUILTIN_METHOD(PyListBuiltinMethods, Init) {
+  Handle<PyObject> instance;
+  Handle<PyObject> init_args = args;
+
+  if (!self.is_null()) {
+    instance = self;
+  } else {
+    int64_t argc = args.is_null() ? 0 : args->length();
+    if (argc == 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "descriptor '__init__' of 'list' object needs an "
+                         "argument");
+      return kNullMaybeHandle;
+    }
+    instance = args->Get(0);
+    if (argc == 1) {
+      init_args = Handle<PyTuple>::null();
+    } else {
+      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
+      for (int64_t i = 1; i < argc; ++i) {
+        tail->SetInternal(i - 1, *args->Get(i));
+      }
+      init_args = tail;
+    }
+  }
+
+  return PyListKlass::GetInstance()->InitInstance(instance, init_args, kwargs);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
