@@ -55,7 +55,6 @@ void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.new_instance_ = &Virtual_NewInstance;
-  vtable_.init_instance_ = &Virtual_InitInstance;
   vtable_.call_ = &Virtual_Call;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
@@ -169,15 +168,6 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
     Handle<PyObject> kwargs) {
   assert(klass_self == PyTypeObjectKlass::GetInstance());
   return Runtime_NewType(isolate, args, kwargs);
-}
-
-MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_InitInstance(
-    Isolate* isolate,
-    Tagged<Klass> klass_self,
-    Handle<PyObject> instance,
-    Handle<PyObject> args,
-    Handle<PyObject> kwargs) {
-  return handle(isolate->py_none_object());
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Isolate* isolate,
