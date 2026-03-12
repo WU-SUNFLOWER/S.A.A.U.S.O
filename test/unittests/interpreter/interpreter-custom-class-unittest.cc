@@ -602,7 +602,8 @@ print(l[0] + l[1] + l[2] + l.x)
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, InitSlotBridgeStaysCallableAfterAttributeLoad) {
+TEST_F(BasicInterpreterTest,
+       ListInitSlotBridgeStaysCallableAfterAttributeLoad) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
