@@ -4,6 +4,7 @@
 
 #include "src/objects/py-object-klass.h"
 
+#include "src/builtins/builtins-py-object-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
@@ -58,11 +59,16 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  set_klass_properties(PyDict::NewInstance());
+  Handle<PyDict> klass_properties = PyDict::NewInstance();
+  set_klass_properties(klass_properties);
 
   // Python中object类型之上没有父类。
   // 直接调用OrderSupers会得到一个仅含有自己的mro序列。
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
+
+  // 安装内建方法
+  RETURN_ON_EXCEPTION(
+      isolate, PyObjectBuiltinMethods::Install(isolate, klass_properties));
 
   // 设置类名
   set_name(PyString::NewInstance("object"));
