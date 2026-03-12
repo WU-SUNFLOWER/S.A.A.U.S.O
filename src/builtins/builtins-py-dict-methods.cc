@@ -54,6 +54,8 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
+  auto* isolate = Isolate::Current();
+
   Handle<PyObject> instance;
   Handle<PyObject> init_args = args;
 
@@ -79,7 +81,8 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
     }
   }
 
-  return PyDictKlass::GetInstance()->InitInstance(instance, init_args, kwargs);
+  return PyDictKlass::GetInstance()->InitInstance(isolate, instance, init_args,
+                                                  kwargs);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {

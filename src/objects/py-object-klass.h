@@ -47,7 +47,8 @@ class PyObjectKlass : public Klass {
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs);
 
-  static MaybeHandle<PyObject> Generic_InitInstance(Handle<PyObject> instance,
+  static MaybeHandle<PyObject> Generic_InitInstance(Isolate* isolate,
+                                                    Handle<PyObject> instance,
                                                     Handle<PyObject> args,
                                                     Handle<PyObject> kwargs);
 

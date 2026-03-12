@@ -55,6 +55,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Init) {
+  auto* isolate = Isolate::Current();
+
   Handle<PyObject> instance;
   Handle<PyObject> init_args = args;
 
@@ -80,7 +82,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Init) {
     }
   }
 
-  return PyListKlass::GetInstance()->InitInstance(instance, init_args, kwargs);
+  return PyListKlass::GetInstance()->InitInstance(isolate, instance, init_args,
+                                                  kwargs);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Pop) {

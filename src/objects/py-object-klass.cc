@@ -269,10 +269,10 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_NewInstance(
 // static
 // 默认的__init__方法什么也不会做！！！
 MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
+    Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  auto* isolate = Isolate::Current();
   Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
 
   int64_t arg_count =

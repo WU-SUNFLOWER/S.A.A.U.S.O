@@ -134,11 +134,10 @@ MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
+    Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  auto* isolate = Isolate::Current();
-
   Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
   if (instance_klass->native_layout_kind() != NativeLayoutKind::kList)
       [[unlikely]] {

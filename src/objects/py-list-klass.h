@@ -31,7 +31,8 @@ class PyListKlass : public Klass {
                                                    Tagged<Klass> klass_self,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs);
-  static MaybeHandle<PyObject> Virtual_InitInstance(Handle<PyObject> instance,
+  static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
+                                                    Handle<PyObject> instance,
                                                     Handle<PyObject> args,
                                                     Handle<PyObject> kwargs);
 

@@ -224,11 +224,10 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
+    Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  auto* isolate = Isolate::Current();
-
   Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
   if (instance_klass->native_layout_kind() != NativeLayoutKind::kDict)
       [[unlikely]] {
@@ -240,8 +239,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
   }
 
   RETURN_ON_EXCEPTION(
-      isolate, Runtime_InitDictFromArgsKwargs(Handle<PyDict>::cast(instance),
-                                              args, kwargs));
+      isolate, Runtime_InitDictFromArgsKwargs(
+                   isolate, Handle<PyDict>::cast(instance), args, kwargs));
 
   return handle(isolate->py_none_object());
 }

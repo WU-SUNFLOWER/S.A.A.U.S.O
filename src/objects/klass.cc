@@ -216,11 +216,12 @@ MaybeHandle<PyObject> Klass::NewInstance(Isolate* isolate,
   return vtable_.new_instance_(isolate, Tagged<Klass>(this), args, kwargs);
 }
 
-MaybeHandle<PyObject> Klass::InitInstance(Handle<PyObject> instance,
+MaybeHandle<PyObject> Klass::InitInstance(Isolate* isolate,
+                                          Handle<PyObject> instance,
                                           Handle<PyObject> args,
                                           Handle<PyObject> kwargs) {
   assert(vtable_.init_instance_);
-  return vtable_.init_instance_(instance, args, kwargs);
+  return vtable_.init_instance_(isolate, instance, args, kwargs);
 }
 
 }  // namespace saauso::internal

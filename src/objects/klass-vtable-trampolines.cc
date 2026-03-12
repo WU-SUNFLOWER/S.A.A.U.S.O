@@ -473,6 +473,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::NewInstance(
 }
 
 MaybeHandle<PyObject> KlassVtableTrampolines::InitInstance(
+    Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {

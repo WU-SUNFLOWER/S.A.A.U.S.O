@@ -28,6 +28,8 @@ Maybe<void> PyObjectBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
+  auto* isolate = Isolate::Current();
+
   Handle<PyObject> instance;
   Handle<PyObject> init_args = args;
 
@@ -53,8 +55,8 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
     }
   }
 
-  return PyObjectKlass::GetInstance()->InitInstance(instance, init_args,
-                                                    kwargs);
+  return PyObjectKlass::GetInstance()->InitInstance(isolate, instance,
+                                                    init_args, kwargs);
 }
 
 }  // namespace saauso::internal
