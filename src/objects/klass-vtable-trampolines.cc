@@ -418,7 +418,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Call(Isolate* isolate,
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, callable, host, call_args, call_kwargs));
+      Execution::Call(isolate, callable, self, call_args, call_kwargs));
   return result;
 }
 
