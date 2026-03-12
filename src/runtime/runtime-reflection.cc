@@ -27,9 +27,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
     Handle<PyList> supers) {
   EscapableHandleScope scope;
 
-  if (class_name.is_null()) {
-    class_name = PyString::NewInstance("<unknown>");
-  }
+  assert(!class_name.is_null());
 
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
@@ -204,9 +202,7 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, method,
       Runtime_GetPropertyInInstanceTypeMro(isolate, object, func_name));
-  if (method.is_null()) {
-    return kNullMaybeHandle;
-  }
+  assert(!method.is_null());
 
   Handle<PyTuple> call_args = args.is_null() ? PyTuple::NewInstance(0) : args;
   Handle<PyObject> result;
