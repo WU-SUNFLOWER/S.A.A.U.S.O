@@ -2,17 +2,14 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include <string>
 #include <string_view>
 
-#include "src/code/compiler.h"
-#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/interpreter/interpreter.h"
-#include "src/objects/py-function.h"
+#include "src/objects/py-list.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
-#include "src/runtime/runtime-exceptions.h"
 #include "test/unittests/test-helpers.h"
+#include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -21,133 +18,85 @@ namespace {
 
 constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 
-std::string TakePendingExceptionMessage(Isolate* isolate) {
-  HandleScope scope;
-  if (!isolate->HasPendingException()) {
-    return std::string();
-  }
-  Handle<PyString> formatted;
-  if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
-    isolate->exception_state()->Clear();
-    return std::string();
-  }
-  std::string msg = formatted->ToStdString();
-  isolate->exception_state()->Clear();
-  return msg;
-}
-
 }  // namespace
 
-class AttributeConstraintInterpreterTest : public VmTestBase {};
-
-TEST_F(AttributeConstraintInterpreterTest,
-       BuiltinObjectRejectsInstanceSetAttr) {
+TEST_F(BasicInterpreterTest, BuiltinObjectRejectsInstanceSetAttr) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 o = object()
 o.x = 233
 print(o.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_TRUE(run_result.IsNothing());
-  std::string msg = TakePendingExceptionMessage(isolate_);
-  EXPECT_NE(msg.find("AttributeError: 'object' object has no attribute 'x'"),
-            std::string::npos);
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'object' object has no attribute 'x'",
+      kTestFileName);
 }
 
-TEST_F(AttributeConstraintInterpreterTest,
-       BuiltinStringRejectsInstanceSetAttr) {
+TEST_F(BasicInterpreterTest, BuiltinStringRejectsInstanceSetAttr) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 s = "Hello"
 s.x = 123
 print(s.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_TRUE(run_result.IsNothing());
-  std::string msg = TakePendingExceptionMessage(isolate_);
-  EXPECT_NE(msg.find("AttributeError: 'str' object has no attribute 'x'"),
-            std::string::npos);
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'str' object has no attribute 'x'",
+      kTestFileName);
 }
 
-TEST_F(AttributeConstraintInterpreterTest, BuiltinTupleRejectsInstanceSetAttr) {
+TEST_F(BasicInterpreterTest, BuiltinTupleRejectsInstanceSetAttr) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 t = (1, 2, 3)
 t.x = 233
 print(t.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_TRUE(run_result.IsNothing());
-  std::string msg = TakePendingExceptionMessage(isolate_);
-  EXPECT_NE(msg.find("AttributeError: 'tuple' object has no attribute 'x'"),
-            std::string::npos);
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'tuple' object has no attribute 'x'",
+      kTestFileName);
 }
 
-TEST_F(AttributeConstraintInterpreterTest, BuiltinListRejectsInstanceSetAttr) {
+TEST_F(BasicInterpreterTest, BuiltinListRejectsInstanceSetAttr) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 l = []
 l.x = 233
 print(l.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_TRUE(run_result.IsNothing());
-  std::string msg = TakePendingExceptionMessage(isolate_);
-  EXPECT_NE(msg.find("AttributeError: 'list' object has no attribute 'x'"),
-            std::string::npos);
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'list' object has no attribute 'x'",
+      kTestFileName);
 }
 
-TEST_F(AttributeConstraintInterpreterTest, BuiltinDictRejectsInstanceSetAttr) {
+TEST_F(BasicInterpreterTest, BuiltinDictRejectsInstanceSetAttr) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 d = {}
 d.x = 233
 print(d.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_TRUE(run_result.IsNothing());
-  std::string msg = TakePendingExceptionMessage(isolate_);
-  EXPECT_NE(msg.find("AttributeError: 'dict' object has no attribute 'x'"),
-            std::string::npos);
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'dict' object has no attribute 'x'",
+      kTestFileName);
 }
 
-TEST_F(AttributeConstraintInterpreterTest,
-       FunctionSupportsDynamicAttributeSetAttr) {
+TEST_F(BasicInterpreterTest, FunctionSupportsDynamicAttributeSetAttr) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 def foo():
     pass
 
 foo.x = 233
-if foo.x != 233:
-    raise RuntimeError("foo.x mismatch")
+print(foo.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_FALSE(run_result.IsNothing());
-  ASSERT_FALSE(isolate_->HasPendingException());
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
+  ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(AttributeConstraintInterpreterTest,
-       BuiltinSubclassesSupportDynamicAttributes) {
+TEST_F(BasicInterpreterTest, BuiltinSubclassesSupportDynamicAttributes) {
   HandleScope scope;
   constexpr std::string_view kSource = R"(
 class MyList(list):
@@ -164,30 +113,28 @@ class MyStr(str):
 
 l = MyList()
 l.x = 1
-if l.x != 1:
-    raise RuntimeError("list subclass property mismatch")
+print(l.x)
 
 d = MyDict()
 d.x = 2
-if d.x != 2:
-    raise RuntimeError("dict subclass property mismatch")
+print(d.x)
 
 t = MyTuple()
 t.x = 3
-if t.x != 3:
-    raise RuntimeError("tuple subclass property mismatch")
+print(t.x)
 
 s = MyStr()
 s.x = 4
-if s.x != 4:
-    raise RuntimeError("str subclass property mismatch")
+print(s.x)
 )";
-  Handle<PyFunction> boilerplate;
-  ASSERT_TRUE(Compiler::CompileSource(isolate_, kSource, kTestFileName)
-                  .To(&boilerplate));
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
-  ASSERT_FALSE(run_result.IsNothing());
-  ASSERT_FALSE(isolate_->HasPendingException());
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  ExpectPrintResult(expected_printv_result);
 }
 
 }  // namespace saauso::internal
