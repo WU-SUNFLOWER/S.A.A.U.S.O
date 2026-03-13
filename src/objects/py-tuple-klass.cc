@@ -50,6 +50,9 @@ Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
 void PyTupleKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   set_native_layout_kind(NativeLayoutKind::kTuple);
   set_native_layout_base(PyObjectKlass::GetInstance());
 

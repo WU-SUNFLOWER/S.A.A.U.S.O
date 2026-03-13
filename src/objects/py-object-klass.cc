@@ -41,6 +41,9 @@ void PyObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   // 初始化虚函数表
   vtable_.Clear();
   vtable_.hash_ = &Generic_Hash;

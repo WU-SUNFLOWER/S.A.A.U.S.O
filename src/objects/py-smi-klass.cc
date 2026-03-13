@@ -45,6 +45,9 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 void PySmiKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   // 初始化虚函数表
   vtable_.Clear();
   // Python中int类型只有默认的__new__而没有__init__

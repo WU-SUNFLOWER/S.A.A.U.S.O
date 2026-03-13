@@ -40,6 +40,9 @@ Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
 void PyFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+  
+  // 实例对象创建__dict__字典
+  set_instance_has_properties_dict(true);
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -113,6 +116,9 @@ Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
 void NativeFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+  
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -196,6 +202,9 @@ Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
 void MethodObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   // 初始化虚函数表
   vtable_.Clear();

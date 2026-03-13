@@ -57,6 +57,9 @@ void PyStringKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   set_native_layout_kind(NativeLayoutKind::kString);
   set_native_layout_base(PyObjectKlass::GetInstance());
 
@@ -149,9 +152,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
       return converted;
     }
 
-    result = isolate->factory()->NewStringLike(receiver_klass,
-                                               converted->buffer(),
-                                               converted->length());
+    result = isolate->factory()->NewStringLike(
+        receiver_klass, converted->buffer(), converted->length());
     goto default_return_result;
   }
 

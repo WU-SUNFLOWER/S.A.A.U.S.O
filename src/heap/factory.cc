@@ -65,7 +65,6 @@ Tagged<Klass> Factory::NewPythonKlass() {
 }
 
 Handle<PyDict> Factory::NewPyDict(int64_t init_capacity) {
-  EscapableHandleScope scope;
   return NewDictLike(PyDictKlass::GetInstance(), init_capacity);
 }
 
@@ -459,12 +458,15 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
-  Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(
-      isolate_,
-      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+  if (klass->instance_has_properties_dict()) [[likely]] {
+    Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
+    RETURN_ON_EXCEPTION(
+        isolate_,
+        PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
 
-  PyObject::SetProperties(*object, *properties);
+    PyObject::SetProperties(*object, *properties);
+  }
+
   return scope.Escape(object);
 }
 

@@ -55,6 +55,9 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
 void PyDictKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+  
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   set_native_layout_kind(NativeLayoutKind::kDict);
   set_native_layout_base(PyObjectKlass::GetInstance());
