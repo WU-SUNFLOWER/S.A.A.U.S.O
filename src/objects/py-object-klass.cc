@@ -226,17 +226,23 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   auto* isolate = Isolate::Current();
   auto properties = PyObject::GetProperties(self);
 
-  if (properties.is_null()) {
+  if (!IsPyString(property_name)) [[unlikely]] {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "attribute name must be string, not '%s'",
+                        PyObject::GetKlass(property_name)->name()->buffer());
+    return kNullMaybeHandle;
+  }
+
+  if (properties.is_null()) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kAttributeError,
-                        "'%s' object has no attribute '%s'\n",
+                        "'%s' object has no attribute '%s'",
                         PyObject::GetKlass(self)->name()->buffer(),
                         Handle<PyString>::cast(property_name)->buffer());
     return kNullMaybeHandle;
   }
 
-  if (PyDict::Put(properties, property_name, property_value).IsNothing()) {
-    return kNullMaybeHandle;
-  }
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(properties, property_name, property_value));
 
   return handle(isolate->py_none_object());
 }
