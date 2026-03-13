@@ -862,6 +862,49 @@ print(red1 is blue)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, CustomNewDispatchPrefersNearestOverrideInMro) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Base:
+    def __new__(cls, *args):
+        obj = object.__new__(cls)
+        obj.from_new = "base"
+        return obj
+
+class Mid(Base):
+    def __new__(cls, *args):
+        obj = object.__new__(cls)
+        obj.from_new = "mid"
+        return obj
+
+class Derived(Mid):
+    pass
+
+class DerivedOverride(Mid):
+    def __new__(cls, *args):
+        obj = object.__new__(cls)
+        obj.from_new = "derived"
+        return obj
+
+a = Derived()
+b = DerivedOverride()
+print(a.from_new == "mid")
+print(b.from_new == "derived")
+print(isinstance(a, Derived))
+print(isinstance(b, DerivedOverride))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, InitMustReturnNone) {
   HandleScope scope;
 
