@@ -26,10 +26,11 @@ class PySmiKlass : public Klass {
  private:
   PySmiKlass();
 
-  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
-                                                   Tagged<Klass> klass_self,
-                                                   Handle<PyObject> args,
-                                                   Handle<PyObject> kwargs);
+  static MaybeHandle<PyObject> Virtual_NewInstance(
+      Isolate* isolate,
+      Handle<PyTypeObject> receiver_type,
+      Handle<PyObject> args,
+      Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject>);
 

@@ -83,7 +83,7 @@ class KlassVtableTrampolines : public AllStatic {
   static MaybeHandle<PyObject> Str(Handle<PyObject> self);
 
   static MaybeHandle<PyObject> NewInstance(Isolate* isolate,
-                                           Tagged<Klass> klass_self,
+                                           Handle<PyTypeObject> receiver_type,
                                            Handle<PyObject> args,
                                            Handle<PyObject> kwargs);
 

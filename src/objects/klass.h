@@ -83,6 +83,7 @@ class Klass : public Object {
   // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
   // 对齐原版 CPython 中 __new__ 操作的语义。
   MaybeHandle<PyObject> NewInstance(Isolate* isolate,
+                                    Handle<PyTypeObject> receiver_type,
                                     Handle<PyObject> args,
                                     Handle<PyObject> kwargs);
   // 对创建好的对象实例进行初始化（一般可以理解为填充数据）。

@@ -12,11 +12,13 @@ namespace saauso::internal {
 
 class Klass;
 class PyObject;
+class PyTypeObject;
 class ObjectVisitor;
 
 namespace {
 using Oop = Tagged<PyObject>;
 using OopHandle = Handle<PyObject>;
+using OopTypeObjectHandle = Handle<PyTypeObject>;
 
 using VirtualFuncType_0_1 = void (*)(Oop);
 using VirtualFuncType_1_1 = Oop (*)(Oop);
@@ -56,7 +58,7 @@ using VirtualFuncType_Maybe_Call = MaybeOopHandle (*)(Isolate* isolate,
                                                       OopHandle);
 
 using VirtualFuncType_Maybe_New = MaybeOopHandle (*)(Isolate*,
-                                                     Tagged<Klass>,
+                                                     OopTypeObjectHandle,
                                                      OopHandle,
                                                      OopHandle);
 using VirtualFuncType_Maybe_Init = MaybeOopHandle (*)(Isolate* isolate,

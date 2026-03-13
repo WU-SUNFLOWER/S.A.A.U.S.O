@@ -91,11 +91,12 @@ void PySmiKlass::Finalize(Isolate* isolate) {
 
 ////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(Isolate* isolate,
-                                                      Tagged<Klass> klass_self,
-                                                      Handle<PyObject> args,
-                                                      Handle<PyObject> kwargs) {
-  assert(klass_self == PySmiKlass::GetInstance());
+MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
+    Isolate* isolate,
+    Handle<PyTypeObject> receiver_type,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(receiver_type->own_klass() == PySmiKlass::GetInstance());
   return Runtime_NewSmi(args, kwargs);
 }
 

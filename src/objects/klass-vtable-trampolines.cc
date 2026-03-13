@@ -454,20 +454,20 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Str(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> KlassVtableTrampolines::NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Handle<PyObject> new_method;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, new_method,
-      Runtime_GetPropertyInKlassMro(isolate, klass_self, ST(new_instance)));
+      Runtime_GetPropertyInKlassMro(isolate, receiver_type->own_klass(),
+                                    ST(new_instance)));
 
   Handle<PyObject> result;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, result,
-      Execution::Call(isolate, new_method, klass_self->type_object(),
-                      Handle<PyTuple>::cast(args),
-                      Handle<PyDict>::cast(kwargs)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                             Execution::Call(isolate, new_method, receiver_type,
+                                             Handle<PyTuple>::cast(args),
+                                             Handle<PyDict>::cast(kwargs)));
 
   return result;
 }

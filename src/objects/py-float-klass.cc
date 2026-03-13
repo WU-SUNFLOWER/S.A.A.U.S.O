@@ -120,10 +120,10 @@ void PyFloatKlass::Finalize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyFloatKlass::GetInstance());
+  assert(receiver_type->own_klass() == PyFloatKlass::GetInstance());
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,

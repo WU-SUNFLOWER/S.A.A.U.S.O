@@ -64,10 +64,8 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
 
-  Tagged<Klass> receiver_klass =
-      Handle<PyTypeObject>::cast(type_object)->own_klass();
-  return PyObjectKlass::GetInstance()->vtable().new_instance_(
-      isolate, receiver_klass, new_args, kwargs);
+  return PyObjectKlass::GetInstance()->NewInstance(
+      isolate, Handle<PyTypeObject>::cast(type_object), new_args, kwargs);
 }
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {

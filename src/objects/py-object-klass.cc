@@ -256,13 +256,12 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Call(Isolate* isolate,
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Handle<PyObject> instance;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, instance,
-      isolate->factory()->NewPythonObject(klass_self->type_object()));
+      isolate, instance, isolate->factory()->NewPythonObject(receiver_type));
   return instance;
 }
 

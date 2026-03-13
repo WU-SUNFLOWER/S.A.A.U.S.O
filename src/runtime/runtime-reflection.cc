@@ -221,8 +221,9 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
 
   Handle<PyObject> result;
   // 创建实例对象
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             own_klass->NewInstance(isolate, args, kwargs));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      own_klass->NewInstance(isolate, type_object, args, kwargs));
 
   // 对齐 CPython 的 type.__call__ 语义：
   // 1. 先执行 __new__（这里对应 own_klass->NewInstance）
@@ -237,7 +238,6 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
       isolate, is_instance_of_called_type,
       Runtime_IsInstanceOfTypeObject(result, type_object));
   if (!is_instance_of_called_type) {
-    // __new__ 返回异类对象：不应再对其执行“被调用类型”的 __init__。
     return result;
   }
 

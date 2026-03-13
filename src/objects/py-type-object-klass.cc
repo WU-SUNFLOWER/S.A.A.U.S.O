@@ -163,10 +163,10 @@ Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyTypeObjectKlass::GetInstance());
+  assert(receiver_type->own_klass() == PyTypeObjectKlass::GetInstance());
   return Runtime_NewType(isolate, args, kwargs);
 }
 

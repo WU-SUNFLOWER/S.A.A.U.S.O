@@ -211,15 +211,17 @@ Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
+  Tagged<Klass> receiver_klass = receiver_type->own_klass();
 
-  bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
+  assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kDict);
+
+  bool is_exact_dict = receiver_klass == PyDictKlass::GetInstance();
 
   Handle<PyDict> result = isolate->factory()->NewDictLike(
-      klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
+      receiver_klass, PyDict::kMinimumCapacity, !is_exact_dict);
   return result;
 }
 

@@ -115,19 +115,21 @@ void PyListKlass::Finalize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
+  Tagged<Klass> receiver_klass = receiver_type->own_klass();
 
-  bool is_exact_list = klass_self == PyListKlass::GetInstance();
+  assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kList);
+
+  bool is_exact_list = receiver_klass == PyListKlass::GetInstance();
 
   Handle<PyList> result = isolate->factory()->NewPyListLike(
-      klass_self, PyList::kMinimumCapacity, !is_exact_list);
+      receiver_klass, PyList::kMinimumCapacity, !is_exact_list);
   if (!is_exact_list) {
     auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(
-        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+    RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
+                                             receiver_klass->type_object()));
   }
 
   return result;
