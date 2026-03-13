@@ -384,9 +384,7 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
   }
 
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(
-      isolate_,
-      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(properties, ST(dict), properties));
 
   PyObject::SetProperties(*object, *properties);
 
@@ -460,9 +458,8 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
 
   if (klass->instance_has_properties_dict()) [[likely]] {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-    RETURN_ON_EXCEPTION(
-        isolate_,
-        PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+    RETURN_ON_EXCEPTION(isolate_,
+                        PyDict::Put(properties, ST(dict), properties));
 
     PyObject::SetProperties(*object, *properties);
   }
@@ -485,9 +482,7 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   }
 
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(
-      isolate_,
-      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(properties, ST(dict), properties));
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);

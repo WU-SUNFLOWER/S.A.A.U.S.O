@@ -21,6 +21,7 @@ class ObjectVisitor;
 #define ST(x) (handle(ST_TAGGED(x)))
 
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
+  V(dict, "__dict__")                \
   V(all, "__all__")                  \
   V(mro, "__mro__")                  \
   V(name, "__name__")                \
