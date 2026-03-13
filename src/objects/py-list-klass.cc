@@ -141,14 +141,20 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
-  if (instance_klass->native_layout_kind() != NativeLayoutKind::kList)
-      [[unlikely]] {
+
+  bool is_valid_klass = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, is_valid_klass,
+      Runtime_IsSubtype(instance_klass, PyListKlass::GetInstance()));
+
+  if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'list' object but received a '%s'",
         instance_klass->name()->buffer());
     return kNullMaybeHandle;
   }
+  assert(instance_klass->native_layout_kind() == NativeLayoutKind::kList);
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
