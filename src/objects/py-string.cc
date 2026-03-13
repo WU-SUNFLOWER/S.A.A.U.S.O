@@ -37,7 +37,7 @@ constexpr int kSentinelValueSizeInBytes = 1;
 // static
 Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   return Isolate::Current()->factory()->NewRawStringLike(
-      PyStringKlass::GetInstance(), str_length, in_meta_space, false);
+      PyStringKlass::GetInstance(), str_length, in_meta_space);
 }
 
 // static

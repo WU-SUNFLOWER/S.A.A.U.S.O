@@ -165,15 +165,14 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
                                Runtime_UnpackIterableObjectToTuple(iterable));
 
     int64_t unpacked_length = unpacked->length();
-    result = isolate->factory()->NewPyTupleLike(receiver_klass, unpacked_length,
-                                                !is_exact_tuple);
+    result =
+        isolate->factory()->NewPyTupleLike(receiver_klass, unpacked_length);
 
     for (int64_t i = 0; i < unpacked_length; ++i) {
       result->SetInternal(i, unpacked->GetTagged(i));
     }
   } else {
-    result =
-        isolate->factory()->NewPyTupleLike(receiver_klass, 0, !is_exact_tuple);
+    result = isolate->factory()->NewPyTupleLike(receiver_klass, 0);
   }
 
   if (!is_exact_tuple) {

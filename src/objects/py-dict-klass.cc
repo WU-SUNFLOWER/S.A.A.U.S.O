@@ -218,10 +218,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
 
   assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kDict);
 
-  bool is_exact_dict = receiver_klass == PyDictKlass::GetInstance();
-
-  Handle<PyDict> result = isolate->factory()->NewDictLike(
-      receiver_klass, PyDict::kMinimumCapacity, !is_exact_dict);
+  Handle<PyDict> result =
+      isolate->factory()->NewDictLike(receiver_klass, PyDict::kMinimumCapacity);
   return result;
 }
 

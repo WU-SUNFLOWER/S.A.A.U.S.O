@@ -61,6 +61,13 @@ class Klass : public Object {
     native_layout_kind_ = kind;
   }
 
+  bool instance_has_properties_dict() const {
+    return instance_has_properties_dict_;
+  }
+  void set_instance_has_properties_dict(bool value) {
+    instance_has_properties_dict_ = value;
+  }
+
   Tagged<Klass> native_layout_base() const { return native_layout_base_; }
   void set_native_layout_base(Tagged<Klass> base) {
     native_layout_base_ = base;
@@ -119,6 +126,9 @@ class Klass : public Object {
   // 当前Python类型在虚拟机内部采用的是哪种基础内存布局
   // 该字段的语义类似于V8当中Map的InstanceType字段
   NativeLayoutKind native_layout_kind_{NativeLayoutKind::kPyObject};
+
+  // 类型的实例是否拥有 __dict__ 字典
+  bool instance_has_properties_dict_{false};
 };
 
 }  // namespace saauso::internal

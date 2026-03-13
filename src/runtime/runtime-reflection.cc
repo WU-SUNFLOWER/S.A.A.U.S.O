@@ -87,6 +87,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   klass->set_native_layout_base(native_layout_base.is_null()
                                     ? PyObjectKlass::GetInstance()
                                     : native_layout_base);
+  // Python中一种类型的实例对象，默认有__dict__字典
+  klass->set_instance_has_properties_dict(true);
 
   // 建立双向绑定
   type_object->BindWithKlass(klass);

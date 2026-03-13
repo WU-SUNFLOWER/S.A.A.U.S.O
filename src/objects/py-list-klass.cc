@@ -124,8 +124,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
 
   bool is_exact_list = receiver_klass == PyListKlass::GetInstance();
 
-  Handle<PyList> result = isolate->factory()->NewPyListLike(
-      receiver_klass, PyList::kMinimumCapacity, !is_exact_list);
+  Handle<PyList> result =
+      isolate->factory()->NewPyListLike(receiver_klass, PyList::kMinimumCapacity);
   if (!is_exact_list) {
     auto properties = PyObject::GetProperties(result);
     RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),

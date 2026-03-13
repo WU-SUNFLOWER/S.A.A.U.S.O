@@ -130,8 +130,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
   }
 
   Handle<PyObject> input_value;
-  Handle<PyString> result = isolate->factory()->NewRawStringLike(
-      receiver_klass, 0, false, !is_exact_str);
+  Handle<PyString> result =
+      isolate->factory()->NewRawStringLike(receiver_klass, 0, false);
 
   if (argc == 0) {
     goto default_return_result;
@@ -149,8 +149,9 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
       return converted;
     }
 
-    result = isolate->factory()->NewStringLike(
-        receiver_klass, converted->buffer(), converted->length(), true);
+    result = isolate->factory()->NewStringLike(receiver_klass,
+                                               converted->buffer(),
+                                               converted->length());
     goto default_return_result;
   }
 
