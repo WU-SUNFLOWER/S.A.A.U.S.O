@@ -10,7 +10,9 @@
 
 namespace saauso::internal {
 
-#define PY_OBJECT_BUILTINS(V) V(Init, "__init__")
+#define PY_OBJECT_BUILTINS(V) \
+  V(New, "__new__")           \
+  V(Init, "__init__")
 
 class PyObjectBuiltinMethods : public AllStatic {
  public:

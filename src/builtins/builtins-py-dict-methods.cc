@@ -17,6 +17,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-dict.h"
 
@@ -35,6 +36,47 @@ Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+BUILTIN_METHOD(PyDictBuiltinMethods, New) {
+  auto* isolate = Isolate::Current();
+
+  Handle<PyObject> type_object;
+  Handle<PyObject> new_args = args;
+
+  if (!self.is_null()) {
+    type_object = self;
+  } else {
+    int64_t argc = args.is_null() ? 0 : args->length();
+    if (argc == 0) {
+      Runtime_ThrowError(ExceptionType::kTypeError,
+                         "descriptor '__new__' of 'dict' object needs an "
+                         "argument");
+      return kNullMaybeHandle;
+    }
+    type_object = args->Get(0);
+    if (argc == 1) {
+      new_args = Handle<PyTuple>::null();
+    } else {
+      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
+      for (int64_t i = 1; i < argc; ++i) {
+        tail->SetInternal(i - 1, *args->Get(i));
+      }
+      new_args = tail;
+    }
+  }
+
+  if (!IsPyTypeObject(type_object)) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "dict.__new__() argument 1 must be type, not '%s'",
+                        PyObject::GetKlass(type_object)->name()->buffer());
+    return kNullMaybeHandle;
+  }
+
+  Tagged<Klass> receiver_klass =
+      Handle<PyTypeObject>::cast(type_object)->own_klass();
+  return PyDictKlass::GetInstance()->vtable().new_instance_(
+      isolate, receiver_klass, new_args, kwargs);
+}
 
 BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
   EscapableHandleScope scope;

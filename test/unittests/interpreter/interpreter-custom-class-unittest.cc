@@ -666,6 +666,202 @@ list.__init__(dict(), [1, 2, 3])
       kInterpreterTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, ListNewSlotBridgeStaysCallableAfterAttributeLoad) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+f = list.__new__
+a = f(list)
+list.__init__(a, [1, 2, 3])
+print(a[0] + a[1] + a[2])
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictNewSlotBridgeStaysCallableAfterAttributeLoad) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+f = dict.__new__
+d = f(dict)
+dict.__init__(d, {"x": 1, "y": 2})
+print(d["x"] + d["y"])
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ObjectNewSlotBridgeSupportsCustomClassReceiver) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+f = object.__new__
+a = f(A)
+print(isinstance(a, A))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinNewBridgeRejectsWrongReceiverType) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+list.__new__(1)
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "list.__new__() argument 1 must be type, not 'int'",
+      kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, CustomClassNewCanParticipateInConstruction) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    def __new__(cls, x):
+        obj = object.__new__(cls)
+        obj.value = x + 1
+        return obj
+
+    def __init__(self, x):
+        self.value = self.value + x
+
+a = A(3)
+print(a.value)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, BaseNewReceivesDerivedTypeAsCls) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Base:
+    def __new__(cls, *args):
+        return object.__new__(cls)
+
+class Derived(Base):
+    pass
+
+obj = Derived()
+print(isinstance(obj, Derived))
+print(isinstance(obj, Base))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CustomNewCanImplementSingletonPattern) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Singleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = object.__new__(cls)
+        return cls._instance
+
+a = Singleton()
+b = Singleton()
+print(a is b)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CustomNewCanReturnOtherTypeInstance) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Dog:
+    pass
+
+class Cat:
+    pass
+
+class AnimalFactory:
+    def __new__(cls, animal_type):
+        if animal_type == "dog":
+            return Dog()
+        elif animal_type == "cat":
+            return Cat()
+        else:
+            return object.__new__(cls)
+
+pet = AnimalFactory("dog")
+print(isinstance(pet, Dog))
+print(isinstance(pet, AnimalFactory))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_false_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CustomNewCanCacheInstancesByKey) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class Color:
+    _cache = {}
+
+    def __new__(cls, name):
+        if name not in cls._cache:
+            cls._cache[name] = object.__new__(cls)
+        return cls._cache[name]
+
+red1 = Color("red")
+red2 = Color("red")
+blue = Color("blue")
+print(red1 is red2)
+print(red1 is blue)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_false_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, InitMustReturnNone) {
   HandleScope scope;
 
