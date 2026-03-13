@@ -120,6 +120,24 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
   return Maybe<bool>(false);
 }
 
+Maybe<bool> Runtime_IsSubtype(Handle<PyTypeObject> derive_type_object,
+                              Handle<PyTypeObject> super_type_object) {
+  return Runtime_IsSubtype(derive_type_object->own_klass(),
+                           super_type_object->own_klass());
+}
+
+Maybe<bool> Runtime_IsSubtype(Tagged<Klass> derive_klass,
+                              Tagged<Klass> super_klass) {
+  auto mro_of_derive = derive_klass->mro();
+  for (auto i = 0; i < mro_of_derive->length(); ++i) {
+    auto curr_type_object = Handle<PyTypeObject>::cast(mro_of_derive->Get(i));
+    if (curr_type_object->own_klass() == super_klass) {
+      return Maybe<bool>(true);
+    }
+  }
+  return Maybe<bool>(false);
+}
+
 Maybe<bool> Runtime_LookupPropertyInInstanceTypeMro(
     Isolate* isolate,
     Handle<PyObject> instance,
