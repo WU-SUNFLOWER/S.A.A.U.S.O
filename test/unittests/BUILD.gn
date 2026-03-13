@@ -35,6 +35,7 @@ executable("ut") {
       "./interpreter/interpreter-builtins-bootstrap-unittest.cc",
       "./interpreter/interpreter-builtins-constructor-unittest.cc",
       "./interpreter/interpreter-builtins-seq-unittest.cc",
+      "./interpreter/interpreter-attribute-constraints-unittest.cc",
       "./interpreter/interpreter-call-stack-unittest.cc",
       "./interpreter/interpreter-closure-unittest.cc",
       "./interpreter/interpreter-controlflow-unittest.cc",
