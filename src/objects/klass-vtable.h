@@ -133,7 +133,7 @@ using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
 
 class KlassVtable {
  public:
-  // KlassVtable() = delete;
+  KlassVtable() = default;
 
   Maybe<void> Initialize(Isolate* isolate, Tagged<Klass> klass);
 
