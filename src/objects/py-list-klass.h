@@ -38,8 +38,8 @@ class PyListKlass : public Klass {
                                                     Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
-
+  static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
                                            Handle<PyObject> other);
   static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject> self,

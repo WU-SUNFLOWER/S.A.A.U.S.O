@@ -118,10 +118,7 @@ using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
   V(VirtualFuncType_Maybe_New, new_instance, "__new__", NewInstance)           \
   V(VirtualFuncType_Maybe_Init, init_instance, "__init__", InitInstance)
 
-// TODO:
-// print这个虚函数在原版CPython中并不存在，需要移除并替换成repr+str的打印模式
 #define KLASS_VTABLE_SLOT_INTERNAL(V)                              \
-  V(VirtualFuncType_Maybe_1_1, print, "", Print)                   \
   /* 获取实例对象大小，调用该函数绝对不允许触发GC */               \
   V(VirtualFuncType_InstanceSize, instance_size, "", InstanceSize) \
   /* 扫描对象内部数据，用于GC */                                   \

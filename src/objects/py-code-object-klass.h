@@ -21,8 +21,6 @@ class PyCodeObjectKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
-
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 };

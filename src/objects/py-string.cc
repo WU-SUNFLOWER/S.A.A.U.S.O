@@ -92,6 +92,12 @@ Handle<PyString> PyString::FromDouble(double n) {
   return scope.Escape(result);
 }
 
+// static
+Handle<PyString> PyString::FromStdString(std::string source) {
+  return PyString::NewInstance(source.data(),
+                               static_cast<int64_t>(source.size()));
+}
+
 ////////////////////////////////////////////////////////////
 
 // static

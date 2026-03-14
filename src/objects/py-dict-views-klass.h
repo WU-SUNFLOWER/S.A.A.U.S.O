@@ -24,7 +24,6 @@ class PyDictKeysKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
@@ -45,7 +44,6 @@ class PyDictValuesKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
@@ -66,7 +64,6 @@ class PyDictItemsKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
@@ -87,7 +84,6 @@ class PyDictKeyIteratorKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 
@@ -106,7 +102,6 @@ class PyDictItemIteratorKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 
@@ -125,7 +120,6 @@ class PyDictValueIteratorKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 

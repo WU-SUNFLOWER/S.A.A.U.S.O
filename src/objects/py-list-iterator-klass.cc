@@ -64,7 +64,6 @@ void PyListIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
   vtable_.instance_size_ = &Virtual_InstanceSize;
@@ -99,13 +98,6 @@ Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
 
 void PyListIteratorKlass::Finalize(Isolate* isolate) {
   isolate->set_py_list_iterator_klass(Tagged<PyListIteratorKlass>::null());
-}
-
-MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Print(
-    Handle<PyObject> self) {
-  std::printf("<list_iterator object at 0x%p>",
-              reinterpret_cast<void*>((*self).ptr()));
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Handle<PyObject> self) {

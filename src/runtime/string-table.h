@@ -37,6 +37,7 @@ class ObjectVisitor;
 #define PY_BUILTIN_FUNC_LIST(V)          \
   V(func_build_class, "__build_class__") \
   V(func_print, "print")                 \
+  V(func_repr, "repr")                   \
   V(func_len, "len")                     \
   V(func_isinstance, "isinstance")       \
   V(func_sysgc, "sysgc")                 \
@@ -60,6 +61,8 @@ class ObjectVisitor;
   V(message, "message")         \
   V(end, "end")                 \
   V(eol, "eol")                 \
+  V(print_file, "file")         \
+  V(flush, "flush")             \
   V(sep, "sep")
 
 class StringTable {

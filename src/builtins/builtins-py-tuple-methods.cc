@@ -17,6 +17,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-conversions.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-string.h"
 
 namespace saauso::internal {
 
@@ -33,6 +34,26 @@ Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+BUILTIN_METHOD(PyTupleBuiltinMethods, Repr) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__repr__' of 'tuple' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Repr(self);
+}
+
+BUILTIN_METHOD(PyTupleBuiltinMethods, Str) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__str__' of 'tuple' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Str(self);
+}
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   EscapableHandleScope scope;

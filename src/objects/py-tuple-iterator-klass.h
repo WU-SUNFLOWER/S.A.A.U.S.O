@@ -21,7 +21,6 @@ class PyTupleIteratorKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Next(Handle<PyObject> self);
 

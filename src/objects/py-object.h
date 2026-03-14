@@ -50,8 +50,8 @@ class PyObject : public Object {
   static Tagged<PyObject> cast(Tagged<PyObject> object) { return object; }
 
   ////////////////// 多态函数 开始 //////////////////
-  // 成功返回 None，失败返回空 MaybeHandle 并已设置 pending exception。
-  static MaybeHandle<PyObject> Print(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Str(Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Add(Handle<PyObject> self,
                                    Handle<PyObject> other);

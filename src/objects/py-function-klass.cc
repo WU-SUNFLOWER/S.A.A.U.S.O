@@ -20,6 +20,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
+#include "src/runtime/runtime-py-function.h"
 
 namespace saauso::internal {
 
@@ -40,13 +41,14 @@ Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
 void PyFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
-  
+
   // 实例对象创建__dict__字典
   set_instance_has_properties_dict(true);
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
 }
@@ -76,14 +78,16 @@ void PyFunctionKlass::Finalize(Isolate* isolate) {
   isolate->set_py_function_klass(Tagged<PyFunctionKlass>::null());
 }
 
-MaybeHandle<PyObject> PyFunctionKlass::Virtual_Print(Handle<PyObject> self) {
-  auto func = Handle<PyFunction>::cast(self);
-  std::printf("<function ");
-  if (PyObject::Print(func->func_name()).IsEmpty()) {
-    return kNullMaybeHandle;
-  }
-  std::printf(" at 0x%p>", reinterpret_cast<void*>((*func).ptr()));
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr, Runtime_NewFunctionRepr(Handle<PyFunction>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> PyFunctionKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 size_t PyFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -116,13 +120,14 @@ Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
 void NativeFunctionKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
-  
+
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.call_ = &Virtual_Call;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
@@ -148,15 +153,16 @@ void NativeFunctionKlass::Finalize(Isolate* isolate) {
   isolate->set_native_function_klass(Tagged<NativeFunctionKlass>::null());
 }
 
-MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
-    Handle<PyObject> self) {
-  auto func = Handle<PyFunction>::cast(self);
-  std::printf("<built-in function ");
-  if (PyObject::Print(func->func_name()).IsEmpty()) {
-    return kNullMaybeHandle;
-  }
-  std::printf(">");
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr, Runtime_NewFunctionRepr(Handle<PyFunction>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
@@ -208,7 +214,8 @@ void MethodObjectKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
 }
@@ -238,9 +245,17 @@ void MethodObjectKlass::Finalize(Isolate* isolate) {
   isolate->set_method_object_klass(Tagged<MethodObjectKlass>::null());
 }
 
-MaybeHandle<PyObject> MethodObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  // TODO: 实现method object类型的print方法
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> MethodObjectKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr,
+      Runtime_NewMethodObjectRepr(Handle<MethodObject>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> MethodObjectKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 size_t MethodObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

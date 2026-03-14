@@ -9,6 +9,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
+#include "src/objects/fixed-array.h"
 #include "src/objects/py-dict-views.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-oddballs.h"
@@ -81,9 +82,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         Handle<PyObject> key = item->Get(0);
         if (!IsPyString(key)) {
           Handle<PyString> key_str;
-          if (!Runtime_NewStr(key).ToHandle(&key_str)) {
-            return kNullMaybe;
-          }
+          ASSIGN_RETURN_ON_EXCEPTION(isolate, key_str, PyObject::Str(key));
           key = key_str;
         }
 
@@ -242,6 +241,37 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
   }
 
   return scope.Escape(dst_dict);
+}
+
+MaybeHandle<PyString> Runtime_NewDictRepr(Handle<PyDict> dict) {
+  EscapableHandleScope scope;
+  auto* isolate = Isolate::Current();
+
+  std::string repr("{");
+  bool first = true;
+  for (int64_t i = 0; i < dict->capacity(); ++i) {
+    Tagged<PyObject> key_tagged = dict->data()->Get(i << 1);
+    if (key_tagged.is_null()) {
+      continue;
+    }
+    if (!first) {
+      repr.append(", ");
+    }
+    first = false;
+    Handle<PyString> key_repr;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, key_repr,
+                               PyObject::Repr(Handle<PyObject>(key_tagged)));
+    repr.append(key_repr->ToStdString());
+    repr.append(": ");
+    Handle<PyString> value_repr;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, value_repr,
+        PyObject::Repr(handle(dict->data()->Get((i << 1) + 1))));
+    repr.append(value_repr->ToStdString());
+  }
+  repr.push_back('}');
+
+  return scope.Escape(PyString::FromStdString(repr));
 }
 
 }  // namespace saauso::internal

@@ -29,6 +29,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-py-tuple.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -61,7 +62,8 @@ void PyTupleKlass::PreInitialize(Isolate* isolate) {
   // 注意，tuple是不可变类型，在Python中只有__new__，没有__init__。
   vtable_.new_instance_ = &Virtual_NewInstance;
   vtable_.len_ = &Virtual_Len;
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.subscr_ = &Virtual_Subscr;
   vtable_.store_subscr_ = &Virtual_StoreSubscr;
   vtable_.del_subscr_ = &Virtual_DelSubscr;
@@ -186,21 +188,16 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
       PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_Print(Handle<PyObject> self) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto tuple = Handle<PyTuple>::cast(self);
-  std::printf("(");
-  for (auto i = 0; i < tuple->length(); ++i) {
-    if (i > 0) {
-      std::printf(", ");
-    }
-    RETURN_ON_EXCEPTION(isolate, PyObject::Print(tuple->Get(i)));
-  }
-  if (tuple->length() == 1) {
-    std::printf(",");
-  }
-  std::printf(")");
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
+                             Runtime_NewTupleRepr(Handle<PyTuple>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,

@@ -33,6 +33,8 @@ class PyStringKlass : public Klass {
       Handle<PyObject> kwargs);
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
 
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
                                    Handle<PyObject> other);
@@ -54,7 +56,6 @@ class PyStringKlass : public Klass {
                                               Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
                                            Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
   static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
 
   // GC相关接口

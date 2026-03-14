@@ -13,6 +13,8 @@ namespace saauso::internal {
 #define PY_DICT_BUILTINS(V)   \
   V(New, "__new__")           \
   V(Init, "__init__")         \
+  V(Repr, "__repr__")         \
+  V(Str, "__str__")           \
   V(SetDefault, "setdefault") \
   V(Pop, "pop")               \
   V(Keys, "keys")             \

@@ -14,6 +14,7 @@ BUILTIN(Print);
 
 // builtins-refection
 BUILTIN(Len);
+BUILTIN(Repr);
 BUILTIN(IsInstance);
 BUILTIN(BuildTypeObject);
 

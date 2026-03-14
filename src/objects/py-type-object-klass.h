@@ -24,8 +24,8 @@ class PyTypeObjectKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Print(Handle<PyObject> self);
-
+  static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
   static Maybe<bool> Virtual_GetAttr(Handle<PyObject> self,
                                      Handle<PyObject> prop_name,
                                      bool is_try,

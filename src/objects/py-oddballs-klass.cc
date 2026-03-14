@@ -50,7 +50,8 @@ void PyBooleanKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.hash_ = &Virtual_Hash;
@@ -83,11 +84,6 @@ void PyBooleanKlass::Finalize(Isolate* isolate) {
 }
 
 // static
-MaybeHandle<PyObject> PyBooleanKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf(Handle<PyBoolean>::cast(self)->value() ? "True" : "False");
-  return handle(Isolate::Current()->py_none_object());
-}
-
 // static
 Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
                                           Handle<PyObject> other) {
@@ -103,6 +99,15 @@ Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
   }
 
   return Maybe<bool>(result);
+}
+
+MaybeHandle<PyObject> PyBooleanKlass::Virtual_Repr(Handle<PyObject> self) {
+  bool v = Handle<PyBoolean>::cast(self)->value();
+  return PyString::NewInstance(v ? "True" : "False");
+}
+
+MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 // static
@@ -144,7 +149,8 @@ void PyNoneKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.hash_ = &Virtual_Hash;
@@ -176,16 +182,18 @@ void PyNoneKlass::Finalize(Isolate* isolate) {
 }
 
 // static
-MaybeHandle<PyObject> PyNoneKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("None");
-  return handle(Isolate::Current()->py_none_object());
-}
-
-// static
 Maybe<bool> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
                                        Handle<PyObject> other) {
   assert(IsPyNone(self));
   return Maybe<bool>(self.is_identical_to(other));
+}
+
+MaybeHandle<PyObject> PyNoneKlass::Virtual_Repr(Handle<PyObject> self) {
+  return PyString::NewInstance("None");
+}
+
+MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 // static

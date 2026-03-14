@@ -439,6 +439,13 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Repr(Handle<PyObject> self) {
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
+
+  if (!IsPyString(result)) [[unlikely]] {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "__repr__ returned non-string");
+    return kNullMaybeHandle;
+  }
+
   return result;
 }
 
@@ -449,6 +456,13 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Str(Handle<PyObject> self) {
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
+
+  if (!IsPyString(result)) [[unlikely]] {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "__str__ returned non-string");
+    return kNullMaybeHandle;
+  }
+
   return result;
 }
 

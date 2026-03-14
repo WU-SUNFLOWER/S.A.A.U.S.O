@@ -67,6 +67,8 @@ void PyStringKlass::PreInitialize(Isolate* isolate) {
   vtable_.Clear();
   vtable_.new_instance_ = &Virtual_NewInstance;
   vtable_.len_ = &Virtual_Len;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.less_ = &Virtual_Less;
@@ -76,7 +78,6 @@ void PyStringKlass::PreInitialize(Isolate* isolate) {
   vtable_.contains_ = &Virtual_Contains;
   vtable_.subscr_ = &Virtual_Subscr;
   vtable_.add_ = &Virtual_Add;
-  vtable_.print_ = &Virtual_Print;
   vtable_.hash_ = &Virtual_Hash;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
@@ -146,14 +147,14 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
       return input_value;
     }
 
-    Handle<PyString> converted;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, converted, Runtime_NewStr(input_value));
+    Handle<PyString> resolved;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, resolved, PyObject::Str(input_value));
     if (is_exact_str) {
-      return converted;
+      return resolved;
     }
 
     result = isolate->factory()->NewStringLike(
-        receiver_klass, converted->buffer(), converted->length());
+        receiver_klass, resolved->buffer(), resolved->length());
     goto default_return_result;
   }
 
@@ -185,6 +186,18 @@ default_return_result:
 MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(
       PySmi::FromInt(Handle<PyString>::cast(self)->length()));
+}
+
+MaybeHandle<PyObject> PyStringKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr, Runtime_NewPyStringRepr(Handle<PyString>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> PyStringKlass::Virtual_Str(Handle<PyObject> self) {
+  return self;
 }
 
 Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
@@ -306,12 +319,6 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
   return PyString::Append(s1, s2);
-}
-
-MaybeHandle<PyObject> PyStringKlass::Virtual_Print(Handle<PyObject> self) {
-  auto s = Handle<PyString>::cast(self);
-  std::printf("%s", s->buffer());
-  return handle(Isolate::Current()->py_none_object());
 }
 
 Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {

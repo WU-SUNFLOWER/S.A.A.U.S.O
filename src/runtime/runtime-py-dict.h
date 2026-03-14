@@ -12,6 +12,7 @@ namespace saauso::internal {
 
 class PyObject;
 class PyDict;
+class PyString;
 
 // - 成功：返回有效 Maybe，同时 result 被正确初始化
 // - 失败：返回空
@@ -61,6 +62,8 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
                                         Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting);
+
+MaybeHandle<PyString> Runtime_NewDictRepr(Handle<PyDict> dict);
 
 }  // namespace saauso::internal
 

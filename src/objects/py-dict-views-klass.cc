@@ -82,7 +82,6 @@ void PyDictKeysKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.len_ = &Virtual_Len;
   vtable_.contains_ = &Virtual_Contains;
@@ -112,29 +111,6 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
 
 void PyDictKeysKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::null());
-}
-
-MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Print(Handle<PyObject> self) {
-  auto view = Handle<PyDictKeys>::cast(self);
-  auto dict = view->owner();
-
-  std::printf("dict_keys([");
-  bool first = true;
-  for (int64_t i = 0; i < dict->capacity(); ++i) {
-    Handle<PyObject> key = dict->KeyAtIndex(i);
-    if (key.is_null()) {
-      continue;
-    }
-    if (!first) {
-      std::printf(", ");
-    }
-
-    first = false;
-
-    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(key));
-  }
-  std::printf("])");
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -181,7 +157,6 @@ void PyDictValuesKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.len_ = &Virtual_Len;
   vtable_.contains_ = &Virtual_Contains;
@@ -211,29 +186,6 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
 
 void PyDictValuesKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_values_klass(Tagged<PyDictValuesKlass>::null());
-}
-
-MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Print(Handle<PyObject> self) {
-  auto view = Handle<PyDictValues>::cast(self);
-  auto dict = view->owner();
-
-  std::printf("dict_values([");
-  bool first = true;
-  for (int64_t i = 0; i < dict->capacity(); ++i) {
-    Handle<PyObject> value = dict->ValueAtIndex(i);
-    if (value.is_null()) {
-      continue;
-    }
-    if (!first) {
-      std::printf(", ");
-    }
-
-    first = false;
-
-    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(value));
-  }
-  std::printf("])");
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -297,7 +249,6 @@ void PyDictItemsKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.len_ = &Virtual_Len;
   vtable_.contains_ = &Virtual_Contains;
@@ -327,27 +278,6 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
 
 void PyDictItemsKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::null());
-}
-
-MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Print(Handle<PyObject> self) {
-  auto view = Handle<PyDictItems>::cast(self);
-  auto dict = view->owner();
-
-  std::printf("dict_items([");
-  bool first = true;
-  for (int64_t i = 0; i < dict->capacity(); ++i) {
-    Handle<PyObject> item = dict->ItemAtIndex(i);
-    if (item.is_null()) {
-      continue;
-    }
-    if (!first) {
-      std::printf(", ");
-    }
-    first = false;
-    RETURN_ON_EXCEPTION(Isolate::Current(), PyObject::Print(item));
-  }
-  std::printf("])");
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
@@ -422,7 +352,6 @@ void PyDictKeyIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
   vtable_.instance_size_ = &Virtual_InstanceSize;
@@ -456,13 +385,6 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
 void PyDictKeyIteratorKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_keyiterator_klass(
       Tagged<PyDictKeyIteratorKlass>::null());
-}
-
-MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Print(
-    Handle<PyObject> self) {
-  std::printf("<dict_keyiterator object at 0x%p>",
-              reinterpret_cast<void*>((*self).ptr()));
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Iter(
@@ -514,7 +436,6 @@ void PyDictItemIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
   vtable_.instance_size_ = &Virtual_InstanceSize;
@@ -548,13 +469,6 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
 void PyDictItemIteratorKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_itemiterator_klass(
       Tagged<PyDictItemIteratorKlass>::null());
-}
-
-MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Print(
-    Handle<PyObject> self) {
-  std::printf("<dict_itemiterator object at 0x%p>",
-              reinterpret_cast<void*>((*self).ptr()));
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Iter(
@@ -606,7 +520,6 @@ void PyDictValueIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.iter_ = &Virtual_Iter;
   vtable_.next_ = &Virtual_Next;
   vtable_.instance_size_ = &Virtual_InstanceSize;
@@ -640,13 +553,6 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
 void PyDictValueIteratorKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_valueiterator_klass(
       Tagged<PyDictValueIteratorKlass>::null());
-}
-
-MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Print(
-    Handle<PyObject> self) {
-  std::printf("<dict_valueiterator object at 0x%p>",
-              reinterpret_cast<void*>((*self).ptr()));
-  return handle(Isolate::Current()->py_none_object());
 }
 
 MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Iter(

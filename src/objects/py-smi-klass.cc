@@ -52,6 +52,8 @@ void PySmiKlass::PreInitialize(Isolate* isolate) {
   vtable_.Clear();
   // Python中int类型只有默认的__new__而没有__init__
   vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.add_ = &Virtual_Add;
   vtable_.sub_ = &Virtual_Sub;
   vtable_.mul_ = &Virtual_Mul;
@@ -65,7 +67,6 @@ void PySmiKlass::PreInitialize(Isolate* isolate) {
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.ge_ = &Virtual_GreaterEqual;
   vtable_.le_ = &Virtual_LessEqual;
-  vtable_.print_ = &Virtual_Print;
 }
 
 Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
@@ -103,9 +104,12 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
   return Runtime_NewSmi(args, kwargs);
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("%" PRId64, PySmi::cast(*self).value());
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Handle<PyObject> self) {
+  return PyString::FromPySmi(Tagged<PySmi>::cast(*self));
+}
+
+MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,

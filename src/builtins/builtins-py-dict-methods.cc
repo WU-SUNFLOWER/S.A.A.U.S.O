@@ -20,6 +20,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-dict.h"
+#include "src/runtime/runtime-py-string.h"
 
 namespace saauso::internal {
 
@@ -123,6 +124,26 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
 
   return PyDictKlass::GetInstance()->InitInstance(isolate, instance, init_args,
                                                   kwargs);
+}
+
+BUILTIN_METHOD(PyDictBuiltinMethods, Repr) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__repr__' of 'dict' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Repr(self);
+}
+
+BUILTIN_METHOD(PyDictBuiltinMethods, Str) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__str__' of 'dict' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Str(self);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {

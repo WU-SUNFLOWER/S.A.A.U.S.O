@@ -43,7 +43,6 @@ void PyCodeObjectKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
 }
@@ -70,21 +69,6 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   set_name(PyString::NewInstance("code"));
 
   return JustVoid();
-}
-
-MaybeHandle<PyObject> PyCodeObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  auto code = Handle<PyCodeObject>::cast(self);
-  Tagged<PyObject> file_name_obj = code->file_name_;
-  if (file_name_obj.is_null() || !IsPyString(file_name_obj)) {
-    std::printf("<code object greet at 0x%p, file <unknown>, line %d>",
-                reinterpret_cast<void*>((*code).ptr()), code->line_no_);
-    return handle(Isolate::Current()->py_none_object());
-  }
-  auto file_name = handle(Tagged<PyString>::cast(file_name_obj));
-  std::printf("<code object greet at 0x%p, file \"%s\", line %d>",
-              reinterpret_cast<void*>((*code).ptr()), file_name->buffer(),
-              code->line_no_);
-  return handle(Isolate::Current()->py_none_object());
 }
 
 void PyCodeObjectKlass::Finalize(Isolate* isolate) {
