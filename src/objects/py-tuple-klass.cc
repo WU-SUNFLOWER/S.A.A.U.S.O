@@ -178,12 +178,6 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
     result = isolate->factory()->NewPyTupleLike(receiver_klass, 0);
   }
 
-  if (!is_exact_tuple) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(isolate,
-                        PyDict::Put(properties, ST(class), receiver_type));
-  }
-
   return result;
 }
 

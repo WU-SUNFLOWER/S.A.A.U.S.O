@@ -197,10 +197,6 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
       isolate_,
       PyDict::Put(module_dict, ST(file), ModuleUtils::NewPyString(loc.origin)));
 
-  RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::Put(module_dict, ST(class),
-                                  PyObject::GetKlass(module)->type_object()));
-
   if (loc.is_package) {
     Handle<PyList> pkg_path = PyList::NewInstance();
     PyList::Append(pkg_path, ModuleUtils::NewPyString(loc.package_dir));

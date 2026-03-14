@@ -135,6 +135,10 @@ bool PyString::HasHashCache() const {
 }
 
 bool PyString::IsEqualTo(Tagged<PyString> other) {
+  if (Tagged<PyString>(this) == other) {
+    return true;
+  }
+
   if (length_ != other->length()) {
     return false;
   }

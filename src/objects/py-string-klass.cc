@@ -179,11 +179,6 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
   }
 
 default_return_result:
-  if (!is_exact_str) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(isolate,
-                        PyDict::Put(properties, ST(class), receiver_type));
-  }
   return result;
 }
 

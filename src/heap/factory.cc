@@ -384,8 +384,6 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
   }
 
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(properties, ST(dict), properties));
-
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);
@@ -458,9 +456,6 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
 
   if (klass->instance_has_properties_dict()) [[likely]] {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-    RETURN_ON_EXCEPTION(isolate_,
-                        PyDict::Put(properties, ST(dict), properties));
-
     PyObject::SetProperties(*object, *properties);
   }
 
@@ -482,7 +477,6 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   }
 
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(properties, ST(dict), properties));
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);
@@ -507,10 +501,6 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
 
   // 建立object实例与type object和klass之间的绑定关系
   PyObject::SetKlass(object, type_object->own_klass());
-  if (!PyObject::GetProperties(object).is_null()) {
-    RETURN_ON_EXCEPTION(isolate_, PyDict::Put(PyObject::GetProperties(object),
-                                              ST(class), type_object));
-  }
 
   return scope.Escape(object);
 }

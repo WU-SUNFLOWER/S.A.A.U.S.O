@@ -125,15 +125,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
 
   assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kList);
 
-  bool is_exact_list = receiver_klass == PyListKlass::GetInstance();
-
   Handle<PyList> result = isolate->factory()->NewPyListLike(
       receiver_klass, PyList::kMinimumCapacity);
-  if (!is_exact_list) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(isolate, PyDict::Put(properties, ST(class),
-                                             receiver_klass->type_object()));
-  }
 
   return result;
 }

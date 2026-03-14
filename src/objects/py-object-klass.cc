@@ -4,6 +4,7 @@
 
 #include "src/objects/py-object-klass.h"
 
+#include "src/builtins/accessor-manager.h"
 #include "src/builtins/builtins-py-object-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -104,6 +105,15 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Handle<PyObject> self,
 
   // 0. 在正式逻辑前，我们先给out_prop_val设置一个没找到时的默认值
   out_prop_val = Handle<PyObject>::null();
+
+  bool handled_by_accessor = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, handled_by_accessor,
+      AccessorManager::TryGet(self, prop_name, out_prop_val));
+  if (handled_by_accessor) {
+    assert(!out_prop_val.is_null());
+    return Maybe<bool>(true);
+  }
 
   // 1. 如果对象存在实例字典（__dict__），
   //    尝试直接在实例字典中查找prop_name
@@ -234,6 +244,14 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
                         "attribute name must be string, not '%s'",
                         PyObject::GetKlass(property_name)->name()->buffer());
     return kNullMaybeHandle;
+  }
+
+  bool handled_by_accessor = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, handled_by_accessor,
+      AccessorManager::TrySet(self, property_name, property_value));
+  if (handled_by_accessor) {
+    return handle(isolate->py_none_object());
   }
 
   if (properties.is_null()) [[unlikely]] {
