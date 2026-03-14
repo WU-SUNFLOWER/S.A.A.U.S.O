@@ -59,19 +59,17 @@ Tagged<Klass> Factory::NewPythonKlass() {
     klass->set_mro(Handle<PyList>::null());
     klass->set_native_layout_base(Tagged<Klass>::null());
     klass->set_native_layout_kind(NativeLayoutKind::kPyObject);
+    klass->set_instance_has_properties_dict(false);
   }
   return klass;
 }
 
 Handle<PyDict> Factory::NewPyDict(int64_t init_capacity) {
-  EscapableHandleScope scope;
-  return scope.Escape(
-      NewDictLike(PyDictKlass::GetInstance(), init_capacity, false));
+  return NewDictLike(PyDictKlass::GetInstance(), init_capacity);
 }
 
 Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
-                                    int64_t init_capacity,
-                                    bool allocate_properties_dict) {
+                                    int64_t init_capacity) {
   assert((init_capacity & (init_capacity - 1)) == 0);
 
   EscapableHandleScope scope;
@@ -87,7 +85,7 @@ Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
   Handle<FixedArray> data = NewFixedArray(init_capacity * 2);
   object->data_ = *data;
 
-  if (allocate_properties_dict) {
+  if (klass_self->instance_has_properties_dict()) {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
     PyObject::SetProperties(*object, *properties);
   }
@@ -190,8 +188,7 @@ Handle<PyFloat> Factory::NewPyFloat(double value) {
 }
 
 Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
-                                      int64_t init_capacity,
-                                      bool allocate_properties_dict) {
+                                      int64_t init_capacity) {
   EscapableHandleScope scope;
 
   Handle<PyList> object(Allocate<PyList>(Heap::AllocationSpace::kNewSpace));
@@ -207,7 +204,7 @@ Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
       NewFixedArray(std::max(PyList::kMinimumCapacity, init_capacity));
   object->array_ = *array;
 
-  if (allocate_properties_dict) {
+  if (klass_self->instance_has_properties_dict()) {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
     PyObject::SetProperties(*object, *properties);
   }
@@ -217,13 +214,11 @@ Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
 
 Handle<PyList> Factory::NewPyList(int64_t init_capacity) {
   EscapableHandleScope scope;
-  return scope.Escape(
-      NewPyListLike(PyListKlass::GetInstance(), init_capacity, false));
+  return scope.Escape(NewPyListLike(PyListKlass::GetInstance(), init_capacity));
 }
 
 Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
-                                        int64_t length,
-                                        bool allocate_properties_dict) {
+                                        int64_t length) {
   assert(0 <= length);
 
   EscapableHandleScope scope;
@@ -241,7 +236,7 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
     }
   }
 
-  if (allocate_properties_dict) {
+  if (klass_self->instance_has_properties_dict()) {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
     PyObject::SetProperties(object, *properties);
   }
@@ -250,7 +245,7 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
 }
 
 Handle<PyTuple> Factory::NewPyTuple(int64_t length) {
-  return NewPyTupleLike(PyTupleKlass::GetInstance(), length, false);
+  return NewPyTupleLike(PyTupleKlass::GetInstance(), length);
 }
 
 Handle<PyTuple> Factory::NewPyTupleWithElements(Handle<PyList> elements) {
@@ -265,8 +260,7 @@ Handle<PyTuple> Factory::NewPyTupleWithElements(Handle<PyList> elements) {
 
 Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
                                            int64_t str_length,
-                                           bool in_meta_space,
-                                           bool allocate_properties_dict) {
+                                           bool in_meta_space) {
   size_t object_size = PyString::ComputeObjectSize(str_length);
   Tagged<PyString> object(AllocateRaw(
       object_size, in_meta_space ? Heap::AllocationSpace::kMetaSpace
@@ -280,7 +274,7 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
     PyObject::SetProperties(object, Tagged<PyDict>::null());
   }
 
-  if (allocate_properties_dict) {
+  if (klass_self->instance_has_properties_dict()) {
     EscapableHandleScope scope;
     Handle<PyString> str_handle(object);
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
@@ -294,7 +288,7 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
 Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
   EscapableHandleScope scope;
   return scope.Escape(NewRawStringLike(PyStringKlass::GetInstance(), str_length,
-                                       in_meta_space, false));
+                                       in_meta_space));
 }
 
 Handle<PyString> Factory::NewString(const char* source,
@@ -308,11 +302,9 @@ Handle<PyString> Factory::NewString(const char* source,
 
 Handle<PyString> Factory::NewStringLike(Tagged<Klass> klass_self,
                                         const char* source,
-                                        int64_t str_length,
-                                        bool allocate_properties_dict) {
+                                        int64_t str_length) {
   EscapableHandleScope scope;
-  Handle<PyString> object =
-      NewRawStringLike(klass_self, str_length, false, allocate_properties_dict);
+  Handle<PyString> object = NewRawStringLike(klass_self, str_length, false);
   std::memcpy(object->writable_buffer(), source, str_length);
   return scope.Escape(object);
 }
@@ -323,7 +315,7 @@ Handle<PyString> Factory::NewConsString(Handle<PyString> left,
 
   auto new_length = left->length() + right->length();
   Handle<PyString> new_object =
-      NewRawStringLike(PyStringKlass::GetInstance(), new_length, false, false);
+      NewRawStringLike(PyStringKlass::GetInstance(), new_length, false);
 
   std::memcpy(new_object->writable_buffer(), left->buffer(), left->length());
   std::memcpy(new_object->writable_buffer() + left->length(), right->buffer(),
@@ -392,10 +384,6 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
   }
 
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(
-      isolate_,
-      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
-
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);
@@ -466,12 +454,11 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
-  Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(
-      isolate_,
-      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
+  if (klass->instance_has_properties_dict()) [[likely]] {
+    Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
+    PyObject::SetProperties(*object, *properties);
+  }
 
-  PyObject::SetProperties(*object, *properties);
   return scope.Escape(object);
 }
 
@@ -490,9 +477,6 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   }
 
   Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  RETURN_ON_EXCEPTION(
-      isolate_,
-      PyDict::Put(properties, PyString::NewInstance("__dict__"), properties));
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);
@@ -510,13 +494,13 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
-  Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-  PyObject::SetProperties(*object, *properties);
+  if (type_object->own_klass()->instance_has_properties_dict()) {
+    Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
+    PyObject::SetProperties(*object, *properties);
+  }
 
   // 建立object实例与type object和klass之间的绑定关系
   PyObject::SetKlass(object, type_object->own_klass());
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(PyObject::GetProperties(object),
-                                            ST(class), type_object));
 
   return scope.Escape(object);
 }

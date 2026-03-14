@@ -50,6 +50,9 @@ Tagged<PyTupleKlass> PyTupleKlass::GetInstance() {
 void PyTupleKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   set_native_layout_kind(NativeLayoutKind::kTuple);
   set_native_layout_base(PyObjectKlass::GetInstance());
 
@@ -125,12 +128,14 @@ void PyTupleKlass::Finalize(Isolate* isolate) {
 // ```
 MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kTuple);
+  Tagged<Klass> receiver_klass = receiver_type->own_klass();
 
-  bool is_exact_tuple = klass_self == PyTupleKlass::GetInstance();
+  assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kTuple);
+
+  bool is_exact_tuple = receiver_klass == PyTupleKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
@@ -163,20 +168,14 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
                                Runtime_UnpackIterableObjectToTuple(iterable));
 
     int64_t unpacked_length = unpacked->length();
-    result = isolate->factory()->NewPyTupleLike(klass_self, unpacked_length,
-                                                !is_exact_tuple);
+    result =
+        isolate->factory()->NewPyTupleLike(receiver_klass, unpacked_length);
 
     for (int64_t i = 0; i < unpacked_length; ++i) {
       result->SetInternal(i, unpacked->GetTagged(i));
     }
   } else {
-    result = isolate->factory()->NewPyTupleLike(klass_self, 0, !is_exact_tuple);
-  }
-
-  if (!is_exact_tuple) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(
-        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
+    result = isolate->factory()->NewPyTupleLike(receiver_klass, 0);
   }
 
   return result;

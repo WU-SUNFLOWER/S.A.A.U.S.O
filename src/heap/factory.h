@@ -52,9 +52,7 @@ class Factory {
   Tagged<Klass> NewPythonKlass();
 
   Handle<PyDict> NewPyDict(int64_t init_capacity);
-  Handle<PyDict> NewDictLike(Tagged<Klass> klass_self,
-                             int64_t init_capacity,
-                             bool allocate_properties_dict);
+  Handle<PyDict> NewDictLike(Tagged<Klass> klass_self, int64_t init_capacity);
   Handle<PyDict> NewPyDictWithoutAllocateData();
   Handle<PyDict> CopyPyDict(Handle<PyDict> dict);
 
@@ -71,21 +69,16 @@ class Factory {
 
   Handle<PyFloat> NewPyFloat(double value);
 
-  Handle<PyList> NewPyListLike(Tagged<Klass> klass_self,
-                               int64_t init_capacity,
-                               bool allocate_properties_dict);
+  Handle<PyList> NewPyListLike(Tagged<Klass> klass_self, int64_t init_capacity);
   Handle<PyList> NewPyList(int64_t init_capacity);
 
-  Handle<PyTuple> NewPyTupleLike(Tagged<Klass> klass_self,
-                                 int64_t length,
-                                 bool allocate_properties_dict);
+  Handle<PyTuple> NewPyTupleLike(Tagged<Klass> klass_self, int64_t length);
   Handle<PyTuple> NewPyTuple(int64_t length);
   Handle<PyTuple> NewPyTupleWithElements(Handle<PyList> elements);
 
   Handle<PyString> NewRawStringLike(Tagged<Klass> klass_self,
                                     int64_t str_length,
-                                    bool in_meta_space,
-                                    bool allocate_properties_dict);
+                                    bool in_meta_space);
   Handle<PyString> NewRawString(int64_t str_length, bool in_meta_space);
 
   Handle<PyString> NewString(const char* source,
@@ -93,8 +86,7 @@ class Factory {
                              bool in_meta_space);
   Handle<PyString> NewStringLike(Tagged<Klass> klass_self,
                                  const char* source,
-                                 int64_t str_length,
-                                 bool allocate_properties_dict);
+                                 int64_t str_length);
 
   Handle<PyString> NewConsString(Handle<PyString> left, Handle<PyString> right);
 

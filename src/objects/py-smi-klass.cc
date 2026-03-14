@@ -45,6 +45,9 @@ Tagged<PySmiKlass> PySmiKlass::GetInstance() {
 void PySmiKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   // 初始化虚函数表
   vtable_.Clear();
   // Python中int类型只有默认的__new__而没有__init__
@@ -91,11 +94,12 @@ void PySmiKlass::Finalize(Isolate* isolate) {
 
 ////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(Isolate* isolate,
-                                                      Tagged<Klass> klass_self,
-                                                      Handle<PyObject> args,
-                                                      Handle<PyObject> kwargs) {
-  assert(klass_self == PySmiKlass::GetInstance());
+MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
+    Isolate* isolate,
+    Handle<PyTypeObject> receiver_type,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  assert(receiver_type->own_klass() == PySmiKlass::GetInstance());
   return Runtime_NewSmi(args, kwargs);
 }
 

@@ -219,6 +219,10 @@ source_set("saauso_core") {
     "//src/modules/module-utils.h",
 
     # builtins (内建函数)
+    "//src/builtins/accessor-proxy.cc",
+    "//src/builtins/accessor-proxy.h",
+    "//src/builtins/accessors.cc",
+    "//src/builtins/accessors.h",
     "//src/builtins/builtins-base-exception-methods.cc",
     "//src/builtins/builtins-base-exception-methods.h",
     "//src/builtins/builtins-debug.cc",

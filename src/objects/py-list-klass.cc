@@ -60,6 +60,9 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   // 设置内建布局字段
   set_native_layout_kind(NativeLayoutKind::kList);
   set_native_layout_base(PyObjectKlass::GetInstance());
@@ -115,20 +118,15 @@ void PyListKlass::Finalize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyListKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kList);
+  Tagged<Klass> receiver_klass = receiver_type->own_klass();
 
-  bool is_exact_list = klass_self == PyListKlass::GetInstance();
+  assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kList);
 
   Handle<PyList> result = isolate->factory()->NewPyListLike(
-      klass_self, PyList::kMinimumCapacity, !is_exact_list);
-  if (!is_exact_list) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(
-        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
-  }
+      receiver_klass, PyList::kMinimumCapacity);
 
   return result;
 }
@@ -139,14 +137,20 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
-  if (instance_klass->native_layout_kind() != NativeLayoutKind::kList)
-      [[unlikely]] {
+
+  bool is_valid_klass = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, is_valid_klass,
+      Runtime_IsSubtype(instance_klass, PyListKlass::GetInstance()));
+
+  if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'list' object but received a '%s'",
         instance_klass->name()->buffer());
     return kNullMaybeHandle;
   }
+  assert(instance_klass->native_layout_kind() == NativeLayoutKind::kList);
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();

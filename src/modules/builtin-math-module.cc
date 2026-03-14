@@ -95,7 +95,7 @@ Maybe<void> InstallFunc(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -119,7 +119,7 @@ MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> host,
   return PyFloat::NewInstance(std::sqrt(x));
 }
 
-MaybeHandle<PyObject> Math_Floor(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Floor(Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -139,7 +139,7 @@ MaybeHandle<PyObject> Math_Floor(Handle<PyObject> host,
   return ReturnPyIntFromDouble(std::floor(x), "floor");
 }
 
-MaybeHandle<PyObject> Math_Ceil(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Ceil(Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -159,7 +159,7 @@ MaybeHandle<PyObject> Math_Ceil(Handle<PyObject> host,
   return ReturnPyIntFromDouble(std::ceil(x), "ceil");
 }
 
-MaybeHandle<PyObject> Math_Fabs(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Fabs(Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -179,7 +179,7 @@ MaybeHandle<PyObject> Math_Fabs(Handle<PyObject> host,
   return PyFloat::NewInstance(std::fabs(x));
 }
 
-MaybeHandle<PyObject> Math_Sin(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Sin(Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -199,7 +199,7 @@ MaybeHandle<PyObject> Math_Sin(Handle<PyObject> host,
   return PyFloat::NewInstance(std::sin(x));
 }
 
-MaybeHandle<PyObject> Math_Cos(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Cos(Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -219,7 +219,7 @@ MaybeHandle<PyObject> Math_Cos(Handle<PyObject> host,
   return PyFloat::NewInstance(std::cos(x));
 }
 
-MaybeHandle<PyObject> Math_Tan(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Tan(Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -239,7 +239,7 @@ MaybeHandle<PyObject> Math_Tan(Handle<PyObject> host,
   return PyFloat::NewInstance(std::tan(x));
 }
 
-MaybeHandle<PyObject> Math_Exp(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Exp(Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -259,7 +259,7 @@ MaybeHandle<PyObject> Math_Exp(Handle<PyObject> host,
   return PyFloat::NewInstance(std::exp(x));
 }
 
-MaybeHandle<PyObject> Math_Log(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Log(Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -283,7 +283,7 @@ MaybeHandle<PyObject> Math_Log(Handle<PyObject> host,
   return PyFloat::NewInstance(std::log(x));
 }
 
-MaybeHandle<PyObject> Math_Log2(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Log2(Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -307,7 +307,7 @@ MaybeHandle<PyObject> Math_Log2(Handle<PyObject> host,
   return PyFloat::NewInstance(std::log2(x));
 }
 
-MaybeHandle<PyObject> Math_Log10(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Log10(Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -331,7 +331,7 @@ MaybeHandle<PyObject> Math_Log10(Handle<PyObject> host,
   return PyFloat::NewInstance(std::log10(x));
 }
 
-MaybeHandle<PyObject> Math_Pow(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_Pow(Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -357,7 +357,7 @@ MaybeHandle<PyObject> Math_Pow(Handle<PyObject> host,
   return PyFloat::NewInstance(std::pow(x, y));
 }
 
-MaybeHandle<PyObject> Math_IsFinite(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_IsFinite(Handle<PyObject> receiver,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -377,7 +377,7 @@ MaybeHandle<PyObject> Math_IsFinite(Handle<PyObject> host,
   return handle(Isolate::ToPyBoolean(std::isfinite(x)));
 }
 
-MaybeHandle<PyObject> Math_IsNaN(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_IsNaN(Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -397,7 +397,7 @@ MaybeHandle<PyObject> Math_IsNaN(Handle<PyObject> host,
   return handle(Isolate::ToPyBoolean(std::isnan(x)));
 }
 
-MaybeHandle<PyObject> Math_IsInf(Handle<PyObject> host,
+MaybeHandle<PyObject> Math_IsInf(Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {

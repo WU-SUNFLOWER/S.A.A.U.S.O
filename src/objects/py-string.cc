@@ -37,7 +37,7 @@ constexpr int kSentinelValueSizeInBytes = 1;
 // static
 Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
   return Isolate::Current()->factory()->NewRawStringLike(
-      PyStringKlass::GetInstance(), str_length, in_meta_space, false);
+      PyStringKlass::GetInstance(), str_length, in_meta_space);
 }
 
 // static
@@ -135,6 +135,10 @@ bool PyString::HasHashCache() const {
 }
 
 bool PyString::IsEqualTo(Tagged<PyString> other) {
+  if (Tagged<PyString>(this) == other) {
+    return true;
+  }
+
   if (length_ != other->length()) {
     return false;
   }

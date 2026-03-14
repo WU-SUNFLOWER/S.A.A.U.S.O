@@ -976,8 +976,8 @@ void Interpreter::EvalCurrentFrame() {
 
     Handle<PyObject> args_obj = POP();
     Handle<PyObject> callable;
-    Handle<PyObject> host;
-    PopCallTarget(callable, host);
+    Handle<PyObject> receiver;
+    PopCallTarget(callable, receiver);
 
     Handle<PyTuple> pos_args;
     if (!args_obj.is_null()) {
@@ -990,7 +990,7 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     GOTO_ON_EXCEPTION(
-        InvokeCallableWithNormalizedArgs(callable, host, pos_args, kw_args));
+        InvokeCallableWithNormalizedArgs(callable, receiver, pos_args, kw_args));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {
@@ -1005,10 +1005,11 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     Handle<PyObject> callable;
-    Handle<PyObject> host;
-    PopCallTarget(callable, host);
+    Handle<PyObject> receiver;
+    PopCallTarget(callable, receiver);
 
-    GOTO_ON_EXCEPTION(InvokeCallable(callable, host, args, ReleaseKwArgKeys()));
+    GOTO_ON_EXCEPTION(
+        InvokeCallable(callable, receiver, args, ReleaseKwArgKeys()));
   })
 
   INTERPRETER_HANDLER_DISPATCH(
@@ -1127,23 +1128,23 @@ exit_interpreter:
 // 这里需要根据arg1左边倒数第2个槽位是否为NULL，来确定属于哪一种调用操作，
 // 并相应地完成从栈中提取数据的操作。
 void Interpreter::PopCallTarget(Handle<PyObject>& callable,
-                                Handle<PyObject>& host) {
+                                Handle<PyObject>& receiver) {
   Handle<PyObject> callable_or_self = POP();
   Handle<PyObject> method = POP();
 
-  host = Handle<PyObject>::null();
+  receiver = Handle<PyObject>::null();
   callable = callable_or_self;
   if (!method.is_null()) {
-    host = callable_or_self;
+    receiver = callable_or_self;
     callable = method;
   }
 }
 
 Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
-                                        Handle<PyObject> host,
+                                        Handle<PyObject> receiver,
                                         Handle<PyTuple> actual_args,
                                         Handle<PyTuple> kwarg_keys) {
-  NormalizeCallable(callable, host);
+  NormalizeCallable(callable, receiver);
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
@@ -1151,7 +1152,7 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate_, frame,
         FrameObjectBuilder::BuildFastPath(Handle<PyFunction>::cast(callable),
-                                          host, actual_args, kwarg_keys));
+                                          receiver, actual_args, kwarg_keys));
 
     EnterFrame(frame);
     return JustVoid();
@@ -1170,7 +1171,7 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
 
     Handle<PyObject> result;
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
-                               native_func_ptr(host, pos_args, kw_args));
+                               native_func_ptr(receiver, pos_args, kw_args));
     PUSH(result);
 
     return JustVoid();
@@ -1180,7 +1181,7 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, result,
-      PyObject::Call(isolate_, callable, host, pos_args, kw_args));
+      PyObject::Call(isolate_, callable, receiver, pos_args, kw_args));
   PUSH(result);
 
   return JustVoid();
@@ -1188,17 +1189,17 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
 
 Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
     Handle<PyObject> callable,
-    Handle<PyObject> host,
+    Handle<PyObject> receiver,
     Handle<PyTuple> pos_args,
     Handle<PyDict> kw_args) {
-  NormalizeCallable(callable, host);
+  NormalizeCallable(callable, receiver);
 
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate_, frame,
         FrameObjectBuilder::BuildSlowPath(Handle<PyFunction>::cast(callable),
-                                          host, pos_args, kw_args));
+                                          receiver, pos_args, kw_args));
 
     EnterFrame(frame);
     return JustVoid();
@@ -1207,7 +1208,7 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, result,
-      PyObject::Call(isolate_, callable, host, pos_args, kw_args));
+      PyObject::Call(isolate_, callable, receiver, pos_args, kw_args));
   PUSH(result);
 
   return JustVoid();

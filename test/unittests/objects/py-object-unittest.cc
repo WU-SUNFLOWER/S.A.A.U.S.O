@@ -77,6 +77,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                   .ToHandle(&list_like));
   EXPECT_TRUE(IsPyList(list_like));
   EXPECT_FALSE(IsPyListExact(list_like));
+  EXPECT_FALSE(PyObject::GetProperties(list_like).is_null());
 
   Handle<PyString> dict_like_name = PyString::NewInstance("DictLikeCase");
   Handle<PyDict> dict_like_props = PyDict::NewInstance();
@@ -94,6 +95,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                   .ToHandle(&dict_like));
   EXPECT_TRUE(IsPyDict(dict_like));
   EXPECT_FALSE(IsPyDictExact(dict_like));
+  EXPECT_FALSE(PyObject::GetProperties(dict_like).is_null());
 
   Handle<PyString> tuple_like_name = PyString::NewInstance("TupleLikeCase");
   Handle<PyDict> tuple_like_props = PyDict::NewInstance();
@@ -111,6 +113,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                   .ToHandle(&tuple_like));
   EXPECT_TRUE(IsPyTuple(tuple_like));
   EXPECT_FALSE(IsPyTupleExact(tuple_like));
+  EXPECT_FALSE(PyObject::GetProperties(tuple_like).is_null());
 
   Handle<PyString> string_like_name = PyString::NewInstance("StringLikeCase");
   Handle<PyDict> string_like_props = PyDict::NewInstance();
@@ -128,6 +131,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                   .ToHandle(&string_like));
   EXPECT_TRUE(IsPyString(string_like));
   EXPECT_FALSE(IsPyStringExact(string_like));
+  EXPECT_FALSE(PyObject::GetProperties(string_like).is_null());
 }
 
 }  // namespace saauso::internal

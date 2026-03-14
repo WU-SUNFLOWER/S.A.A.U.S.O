@@ -33,6 +33,18 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object);
 
+// 判断 derive_type_object 是否是 super_type_object 的派生类型（含自身）。
+// - 基于 derive_type_object 的 klass mro 进行判定。
+// - 命中返回true，未命中返回false，比较过程中出现异常返回empty。
+Maybe<bool> Runtime_IsSubtype(Handle<PyTypeObject> derive_type_object,
+                              Handle<PyTypeObject> super_type_object);
+
+// 判断 derive_klass 是否是 super_klass 的派生类型（含自身）。
+// - 基于 derive_klass 的 mro 进行判定。
+// - 命中返回true，未命中返回false。
+Maybe<bool> Runtime_IsSubtype(Tagged<Klass> derive_klass,
+                              Tagged<Klass> super_klass);
+
 // 沿着实例对象的 type mro 查找属性（Lookup 语义）。
 // - 命中通过out_prop_val输出属性值，并且返回true
 // - 未命中通过out_prop_val输出null，并且返回false
@@ -56,10 +68,9 @@ Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
 // - 命中返回属性值
 // - 未命中抛出 AttributeError，并返回empty
 // - 查询过程中出现异常，透传异常并返回empty
-MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
-    Isolate* isolate,
-    Tagged<Klass> klass,
-    Handle<PyObject> prop_name);
+MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(Isolate* isolate,
+                                                    Tagged<Klass> klass,
+                                                    Handle<PyObject> prop_name);
 
 // 沿着实例对象的 type mro 获取属性（Get 语义）。
 // - 命中返回属性值

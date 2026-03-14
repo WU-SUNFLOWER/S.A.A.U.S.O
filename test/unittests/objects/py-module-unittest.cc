@@ -9,6 +9,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/string-table.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -30,11 +31,22 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   ASSERT_FALSE(module_dict.is_null());
 
   // 测试__dict__获取到对象properties的能力
-  Handle<PyString> dict_name = PyString::NewInstance("__dict__");
   Handle<PyObject> dict_value;
-  ASSERT_TRUE(PyObject::GetAttr(module_obj, dict_name).ToHandle(&dict_value));
+  ASSERT_TRUE(PyObject::GetAttr(module_obj, ST(dict)).ToHandle(&dict_value));
   ASSERT_TRUE(IsPyDict(dict_value));
   EXPECT_TRUE(Handle<PyDict>::cast(dict_value).is_identical_to(module_dict));
+
+  // __dict__不是存储在对象properties字典当中的实体，因此直接访问字典是查询不到的
+  Handle<PyObject> mirrored_value;
+  bool mirrored_found = true;
+  ASSERT_TRUE(module_dict->Get(ST(dict), mirrored_value).To(&mirrored_found));
+  EXPECT_FALSE(mirrored_found);
+  EXPECT_TRUE(mirrored_value.is_null());
+
+  // 同理，__class__也查询不到
+  ASSERT_TRUE(module_dict->Get(ST(class), mirrored_value).To(&mirrored_found));
+  EXPECT_FALSE(mirrored_found);
+  EXPECT_TRUE(mirrored_value.is_null());
 
   Handle<PyString> x_name = PyString::NewInstance("x");
   Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)));

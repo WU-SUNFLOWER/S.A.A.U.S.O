@@ -101,30 +101,30 @@ Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
 }
 
 MaybeHandle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
-                                              Handle<PyObject> host,
+                                              Handle<PyObject> receiver,
                                               Handle<PyTuple> pos_args,
                                               Handle<PyDict> kw_args) {
-  return CallPythonImpl(callable, host, pos_args, kw_args);
+  return CallPythonImpl(callable, receiver, pos_args, kw_args);
 }
 
 MaybeHandle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
-                                              Handle<PyObject> host,
+                                              Handle<PyObject> receiver,
                                               Handle<PyTuple> pos_args,
                                               Handle<PyDict> kw_args,
                                               Handle<PyDict> bound_locals) {
-  return CallPythonImpl(callable, host, pos_args, kw_args, bound_locals);
+  return CallPythonImpl(callable, receiver, pos_args, kw_args, bound_locals);
 }
 
 // private
 template <typename... ExtendArgs>
 MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
-                                                  Handle<PyObject> host,
+                                                  Handle<PyObject> receiver,
                                                   Handle<PyTuple> pos_args,
                                                   Handle<PyDict> kw_args,
                                                   ExtendArgs... extend_args) {
   EscapableHandleScope scope;
 
-  NormalizeCallable(callable, host);
+  NormalizeCallable(callable, receiver);
 
   Handle<PyObject> result = Handle<PyObject>::null();
 
@@ -134,7 +134,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     // 构建栈帧
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
                                FrameObjectBuilder::BuildSlowPath(
-                                   Handle<PyFunction>::cast(callable), host,
+                                   Handle<PyFunction>::cast(callable), receiver,
                                    pos_args, kw_args, extend_args...));
 
     // 确保Python栈帧处理结束后能够退回到C++栈帧
@@ -160,7 +160,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     auto func_object = Handle<PyFunction>::cast(callable);
     auto* native_func_ptr = func_object->native_func();
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
-                               native_func_ptr(host, pos_args, kw_args));
+                               native_func_ptr(receiver, pos_args, kw_args));
 
     return scope.Escape(result);
   }
@@ -170,21 +170,21 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   // 类似于TypeError: 'xxx' object is not callable
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, result,
-      PyObject::Call(isolate_, callable, host, pos_args, kw_args));
+      PyObject::Call(isolate_, callable, receiver, pos_args, kw_args));
 
   return scope.Escape(result);
 }
 
 // private
 void Interpreter::NormalizeCallable(Handle<PyObject>& callable,
-                                    Handle<PyObject>& host) {
+                                    Handle<PyObject>& receiver) {
   // 如果是对象方法，那么进行解包
   if (IsMethodObject(callable)) {
-    // 如果传入的已经是待解包的host，理论上不应该再显式传入host
-    assert(host.is_null());
+    // 如果传入的已经是待解包的 receiver，理论上不应该再显式传入 receiver。
+    assert(receiver.is_null());
     auto method = Handle<MethodObject>::cast(callable);
     callable = method->func();
-    host = method->owner();
+    receiver = method->owner();
   }
 }
 

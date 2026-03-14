@@ -87,6 +87,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   klass->set_native_layout_base(native_layout_base.is_null()
                                     ? PyObjectKlass::GetInstance()
                                     : native_layout_base);
+  // Python中一种类型的实例对象，默认有__dict__字典
+  klass->set_instance_has_properties_dict(true);
 
   // 建立双向绑定
   type_object->BindWithKlass(klass);
@@ -114,6 +116,24 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
         PyObject::EqualBool(curr_type_object, type_or_tuple));
 
     if (is_equal) {
+      return Maybe<bool>(true);
+    }
+  }
+  return Maybe<bool>(false);
+}
+
+Maybe<bool> Runtime_IsSubtype(Handle<PyTypeObject> derive_type_object,
+                              Handle<PyTypeObject> super_type_object) {
+  return Runtime_IsSubtype(derive_type_object->own_klass(),
+                           super_type_object->own_klass());
+}
+
+Maybe<bool> Runtime_IsSubtype(Tagged<Klass> derive_klass,
+                              Tagged<Klass> super_klass) {
+  auto mro_of_derive = derive_klass->mro();
+  for (auto i = 0; i < mro_of_derive->length(); ++i) {
+    auto curr_type_object = Handle<PyTypeObject>::cast(mro_of_derive->Get(i));
+    if (curr_type_object->own_klass() == super_klass) {
       return Maybe<bool>(true);
     }
   }
@@ -221,8 +241,26 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
 
   Handle<PyObject> result;
   // 创建实例对象
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             own_klass->NewInstance(isolate, args, kwargs));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      own_klass->NewInstance(isolate, type_object, args, kwargs));
+
+  // 对齐 CPython 的 type.__call__ 语义：
+  // 1. 先执行 __new__（这里对应 own_klass->NewInstance）
+  // 2. 仅当 __new__ 返回“当前被调用类型（或其子类）的实例”时，才继续执行
+  // __init__
+  // 3. 若 __new__ 返回了其他类型对象，则直接返回该对象，跳过 __init__
+  //
+  // 参见：
+  // CPython 的核心判定逻辑（type_call 中对 new 返回值与 type 的关系检查）。
+  bool is_instance_of_called_type = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, is_instance_of_called_type,
+      Runtime_IsInstanceOfTypeObject(result, type_object));
+  if (!is_instance_of_called_type) {
+    return result;
+  }
+
   // 初始化实例对象
   Handle<PyObject> init_result;
   ASSIGN_RETURN_ON_EXCEPTION(

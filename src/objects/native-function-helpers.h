@@ -14,7 +14,7 @@ class PyObject;
 class PyTuple;
 class PyDict;
 
-using NativeFuncPointer = MaybeHandle<PyObject> (*)(Handle<PyObject> host,
+using NativeFuncPointer = MaybeHandle<PyObject> (*)(Handle<PyObject> receiver,
                                                     Handle<PyTuple> args,
                                                     Handle<PyDict> kwargs);
 

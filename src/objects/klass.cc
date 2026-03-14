@@ -209,11 +209,12 @@ MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
 }
 
 MaybeHandle<PyObject> Klass::NewInstance(Isolate* isolate,
+                                         Handle<PyTypeObject> receiver_type,
                                          Handle<PyObject> args,
                                          Handle<PyObject> kwargs) {
   // 任何有效的Python类型都必须实现__new__语义
   assert(vtable_.new_instance_ != nullptr);
-  return vtable_.new_instance_(isolate, Tagged<Klass>(this), args, kwargs);
+  return vtable_.new_instance_(isolate, receiver_type, args, kwargs);
 }
 
 MaybeHandle<PyObject> Klass::InitInstance(Isolate* isolate,

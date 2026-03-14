@@ -46,6 +46,9 @@ void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到isolate
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象创建__dict__字典
+  set_instance_has_properties_dict(true);
+
   // 初始化虚函数表
   vtable_.Clear();
   vtable_.print_ = &Virtual_Print;
@@ -163,16 +166,16 @@ Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyTypeObjectKlass::GetInstance());
+  assert(receiver_type->own_klass() == PyTypeObjectKlass::GetInstance());
   return Runtime_NewType(isolate, args, kwargs);
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Isolate* isolate,
                                                       Handle<PyObject> self,
-                                                      Handle<PyObject> host,
+                                                      Handle<PyObject> receiver,
                                                       Handle<PyObject> args,
                                                       Handle<PyObject> kwargs) {
   auto type_object = Handle<PyTypeObject>::cast(self);

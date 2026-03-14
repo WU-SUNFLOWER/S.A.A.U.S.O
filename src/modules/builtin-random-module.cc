@@ -90,7 +90,7 @@ Maybe<void> InstallFunc(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_Seed(Handle<PyObject> receiver,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -123,7 +123,7 @@ MaybeHandle<PyObject> Random_Seed(Handle<PyObject> host,
   return handle(Isolate::Current()->py_none_object());
 }
 
-MaybeHandle<PyObject> Random_Random(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_Random(Handle<PyObject> receiver,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -142,7 +142,7 @@ MaybeHandle<PyObject> Random_Random(Handle<PyObject> host,
   return PyFloat::NewInstance(g_rng.NextDouble01());
 }
 
-MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> receiver,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -176,7 +176,7 @@ MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> host,
   return handle(PySmi::FromInt(result));
 }
 
-MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> receiver,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -242,7 +242,7 @@ MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> host,
   return handle(PySmi::FromInt(result));
 }
 
-MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> receiver,
                                          Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -282,7 +282,7 @@ MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> host,
   return handle(PySmi::FromInt(static_cast<int64_t>(x)));
 }
 
-MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_Choice(Handle<PyObject> receiver,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -342,7 +342,7 @@ MaybeHandle<PyObject> Random_Choice(Handle<PyObject> host,
   return kNullMaybe;
 }
 
-MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> host,
+MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> receiver,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {

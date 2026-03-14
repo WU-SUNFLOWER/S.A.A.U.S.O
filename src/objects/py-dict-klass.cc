@@ -55,6 +55,9 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
 void PyDictKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+  
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   set_native_layout_kind(NativeLayoutKind::kDict);
   set_native_layout_base(PyObjectKlass::GetInstance());
@@ -211,15 +214,15 @@ Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kDict);
+  Tagged<Klass> receiver_klass = receiver_type->own_klass();
 
-  bool is_exact_dict = klass_self == PyDictKlass::GetInstance();
+  assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kDict);
 
-  Handle<PyDict> result = isolate->factory()->NewDictLike(
-      klass_self, PyDict::kMinimumCapacity, !is_exact_dict);
+  Handle<PyDict> result =
+      isolate->factory()->NewDictLike(receiver_klass, PyDict::kMinimumCapacity);
   return result;
 }
 
@@ -229,14 +232,20 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
-  if (instance_klass->native_layout_kind() != NativeLayoutKind::kDict)
-      [[unlikely]] {
+
+  bool is_valid_klass = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, is_valid_klass,
+      Runtime_IsSubtype(instance_klass, PyDictKlass::GetInstance()));
+
+  if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'dict' object but received a '%s'",
         instance_klass->name()->buffer());
     return kNullMaybeHandle;
   }
+  assert(instance_klass->native_layout_kind() == NativeLayoutKind::kDict);
 
   RETURN_ON_EXCEPTION(
       isolate, Runtime_InitDictFromArgsKwargs(

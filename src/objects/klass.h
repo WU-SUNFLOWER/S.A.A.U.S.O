@@ -61,6 +61,13 @@ class Klass : public Object {
     native_layout_kind_ = kind;
   }
 
+  bool instance_has_properties_dict() const {
+    return instance_has_properties_dict_;
+  }
+  void set_instance_has_properties_dict(bool value) {
+    instance_has_properties_dict_ = value;
+  }
+
   Tagged<Klass> native_layout_base() const { return native_layout_base_; }
   void set_native_layout_base(Tagged<Klass> base) {
     native_layout_base_ = base;
@@ -83,6 +90,7 @@ class Klass : public Object {
   // 创建一个对象实例。失败时返回空 MaybeHandle 并已设置 pending exception。
   // 对齐原版 CPython 中 __new__ 操作的语义。
   MaybeHandle<PyObject> NewInstance(Isolate* isolate,
+                                    Handle<PyTypeObject> receiver_type,
                                     Handle<PyObject> args,
                                     Handle<PyObject> kwargs);
   // 对创建好的对象实例进行初始化（一般可以理解为填充数据）。
@@ -118,6 +126,9 @@ class Klass : public Object {
   // 当前Python类型在虚拟机内部采用的是哪种基础内存布局
   // 该字段的语义类似于V8当中Map的InstanceType字段
   NativeLayoutKind native_layout_kind_{NativeLayoutKind::kPyObject};
+
+  // 类型的实例是否拥有 __dict__ 字典
+  bool instance_has_properties_dict_{false};
 };
 
 }  // namespace saauso::internal

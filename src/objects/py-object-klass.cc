@@ -4,6 +4,7 @@
 
 #include "src/objects/py-object-klass.h"
 
+#include "src/builtins/accessor-proxy.h"
 #include "src/builtins/builtins-py-object-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -40,6 +41,9 @@ Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
 void PyObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -101,6 +105,15 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Handle<PyObject> self,
 
   // 0. 在正式逻辑前，我们先给out_prop_val设置一个没找到时的默认值
   out_prop_val = Handle<PyObject>::null();
+
+  bool handled_by_accessor = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, handled_by_accessor,
+      AccessorProxy::TryGet(self, prop_name, out_prop_val));
+  if (handled_by_accessor) {
+    assert(!out_prop_val.is_null());
+    return Maybe<bool>(true);
+  }
 
   // 1. 如果对象存在实例字典（__dict__），
   //    尝试直接在实例字典中查找prop_name
@@ -226,17 +239,31 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   auto* isolate = Isolate::Current();
   auto properties = PyObject::GetProperties(self);
 
-  if (properties.is_null()) {
+  if (!IsPyString(property_name)) [[unlikely]] {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "attribute name must be string, not '%s'",
+                        PyObject::GetKlass(property_name)->name()->buffer());
+    return kNullMaybeHandle;
+  }
+
+  bool handled_by_accessor = false;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, handled_by_accessor,
+      AccessorProxy::TrySet(self, property_name, property_value));
+  if (handled_by_accessor) {
+    return handle(isolate->py_none_object());
+  }
+
+  if (properties.is_null()) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kAttributeError,
-                        "'%s' object has no attribute '%s'\n",
+                        "'%s' object has no attribute '%s'",
                         PyObject::GetKlass(self)->name()->buffer(),
                         Handle<PyString>::cast(property_name)->buffer());
     return kNullMaybeHandle;
   }
 
-  if (PyDict::Put(properties, property_name, property_value).IsNothing()) {
-    return kNullMaybeHandle;
-  }
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(properties, property_name, property_value));
 
   return handle(isolate->py_none_object());
 }
@@ -244,7 +271,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_Call(Isolate* isolate,
                                                   Handle<PyObject> self,
-                                                  Handle<PyObject> host,
+                                                  Handle<PyObject> receiver,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -256,13 +283,12 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Call(Isolate* isolate,
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Handle<PyObject> instance;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, instance,
-      isolate->factory()->NewPythonObject(klass_self->type_object()));
+      isolate, instance, isolate->factory()->NewPythonObject(receiver_type));
   return instance;
 }
 

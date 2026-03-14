@@ -24,7 +24,7 @@ class PyTuple;
 
 #define BUILTIN(name)                            \
   MaybeHandle<PyObject> BUILTIN_FUNC_NAME(name)( \
-      Handle<PyObject> host, Handle<PyTuple> args, Handle<PyDict> kwargs)
+      Handle<PyObject> receiver, Handle<PyTuple> args, Handle<PyDict> kwargs)
 
 #define DECL_BUILTIN_METHOD(name, _) static BUILTIN(name);
 

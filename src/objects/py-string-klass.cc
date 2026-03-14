@@ -57,6 +57,9 @@ void PyStringKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
+
   set_native_layout_kind(NativeLayoutKind::kString);
   set_native_layout_base(PyObjectKlass::GetInstance());
 
@@ -111,12 +114,14 @@ void PyStringKlass::Finalize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self->native_layout_kind() == NativeLayoutKind::kString);
+  Tagged<Klass> receiver_klass = receiver_type->own_klass();
 
-  bool is_exact_str = klass_self == PyStringKlass::GetInstance();
+  assert(receiver_klass->native_layout_kind() == NativeLayoutKind::kString);
+
+  bool is_exact_str = receiver_klass == PyStringKlass::GetInstance();
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
@@ -129,7 +134,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
 
   Handle<PyObject> input_value;
   Handle<PyString> result =
-      isolate->factory()->NewRawStringLike(klass_self, 0, false, !is_exact_str);
+      isolate->factory()->NewRawStringLike(receiver_klass, 0, false);
 
   if (argc == 0) {
     goto default_return_result;
@@ -147,8 +152,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
       return converted;
     }
 
-    result = isolate->factory()->NewStringLike(klass_self, converted->buffer(),
-                                               converted->length(), true);
+    result = isolate->factory()->NewStringLike(
+        receiver_klass, converted->buffer(), converted->length());
     goto default_return_result;
   }
 
@@ -174,11 +179,6 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
   }
 
 default_return_result:
-  if (!is_exact_str) {
-    auto properties = PyObject::GetProperties(result);
-    RETURN_ON_EXCEPTION(
-        isolate, PyDict::Put(properties, ST(class), klass_self->type_object()));
-  }
   return result;
 }
 

@@ -69,6 +69,9 @@ Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
 void PyFloatKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
+  
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -120,10 +123,10 @@ void PyFloatKlass::Finalize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     Isolate* isolate,
-    Tagged<Klass> klass_self,
+    Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(klass_self == PyFloatKlass::GetInstance());
+  assert(receiver_type->own_klass() == PyFloatKlass::GetInstance());
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,
