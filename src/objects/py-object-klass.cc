@@ -4,7 +4,7 @@
 
 #include "src/objects/py-object-klass.h"
 
-#include "src/builtins/accessor-manager.h"
+#include "src/builtins/accessor-proxy.h"
 #include "src/builtins/builtins-py-object-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -109,7 +109,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Handle<PyObject> self,
   bool handled_by_accessor = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, handled_by_accessor,
-      AccessorManager::TryGet(self, prop_name, out_prop_val));
+      AccessorProxy::TryGet(self, prop_name, out_prop_val));
   if (handled_by_accessor) {
     assert(!out_prop_val.is_null());
     return Maybe<bool>(true);
@@ -249,7 +249,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   bool handled_by_accessor = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, handled_by_accessor,
-      AccessorManager::TrySet(self, property_name, property_value));
+      AccessorProxy::TrySet(self, property_name, property_value));
   if (handled_by_accessor) {
     return handle(isolate->py_none_object());
   }

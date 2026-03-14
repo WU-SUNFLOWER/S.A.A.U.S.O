@@ -2,8 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_BUILTINS_ACCESSOR_MANAGER_H_
-#define SAAUSO_BUILTINS_ACCESSOR_MANAGER_H_
+#ifndef SAAUSO_BUILTINS_ACCESSOR_PROXY_H_
+#define SAAUSO_BUILTINS_ACCESSOR_PROXY_H_
 
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
@@ -13,7 +13,7 @@ namespace saauso::internal {
 
 struct AccessorDescriptor;
 
-class AccessorManager : public AllStatic {
+class AccessorProxy : public AllStatic {
  public:
   static Maybe<bool> TryGet(Handle<PyObject> receiver,
                             Handle<PyObject> name,
@@ -28,4 +28,4 @@ class AccessorManager : public AllStatic {
 
 }  // namespace saauso::internal
 
-#endif  // SAAUSO_BUILTINS_ACCESSOR_MANAGER_H_
+#endif  // SAAUSO_BUILTINS_ACCESSOR_PROXY_H_

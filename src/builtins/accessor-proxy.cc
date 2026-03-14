@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/builtins/accessor-manager.h"
+#include "src/builtins/accessor-proxy.h"
 
 #include "src/builtins/accessors.h"
 #include "src/objects/py-string.h"
@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-Maybe<bool> AccessorManager::TryGet(Handle<PyObject> receiver,
+Maybe<bool> AccessorProxy::TryGet(Handle<PyObject> receiver,
                                     Handle<PyObject> name,
                                     Handle<PyObject>& out_value) {
   const AccessorDescriptor* descriptor = LookupAccessor(name);
@@ -28,7 +28,7 @@ Maybe<bool> AccessorManager::TryGet(Handle<PyObject> receiver,
   return Maybe<bool>(true);
 }
 
-Maybe<bool> AccessorManager::TrySet(Handle<PyObject> receiver,
+Maybe<bool> AccessorProxy::TrySet(Handle<PyObject> receiver,
                                     Handle<PyObject> name,
                                     Handle<PyObject> value) {
   const AccessorDescriptor* descriptor = LookupAccessor(name);
@@ -43,7 +43,7 @@ Maybe<bool> AccessorManager::TrySet(Handle<PyObject> receiver,
   return Maybe<bool>(true);
 }
 
-const AccessorDescriptor* AccessorManager::LookupAccessor(
+const AccessorDescriptor* AccessorProxy::LookupAccessor(
     Handle<PyObject> name) {
   if (!IsPyString(name)) {
     return nullptr;
