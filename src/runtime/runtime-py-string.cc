@@ -7,13 +7,11 @@
 #include <cassert>
 #include <cctype>
 #include <cinttypes>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
 
 #include "src/execution/exception-utils.h"
-#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -25,11 +23,41 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-py-string.h"
-#include "src/runtime/runtime-reflection.h"
-#include "src/runtime/string-table.h"
 #include "src/utils/string-search.h"
 
 namespace saauso::internal {
+
+namespace {
+
+void AppendStringReprContent(Handle<PyString> value, std::string& out) {
+  out.push_back('\'');
+  for (int64_t i = 0; i < value->length(); ++i) {
+    const char ch = value->Get(i);
+    switch (ch) {
+      case '\'':
+        out.append("\\'");
+        break;
+      case '\\':
+        out.append("\\\\");
+        break;
+      case '\n':
+        out.append("\\n");
+        break;
+      case '\r':
+        out.append("\\r");
+        break;
+      case '\t':
+        out.append("\\t");
+        break;
+      default:
+        out.push_back(ch);
+        break;
+    }
+  }
+  out.push_back('\'');
+}
+
+}  // namespace
 
 MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
                                           Handle<PyObject> sep_or_null,
@@ -222,62 +250,10 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
   return scope.Escape(result);
 }
 
-MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value) {
-  EscapableHandleScope scope;
-  auto* isolate = Isolate::Current();
-
-  if (value.is_null()) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "str() argument must not be null");
-    return kNullMaybeHandle;
-  }
-
-  if (IsPyString(value)) {
-    Handle<PyString> s = Handle<PyString>::cast(value);
-    if (IsPyString(value)) {
-      return scope.Escape(s);
-    }
-    return scope.Escape(PyString::NewInstance(s->buffer(), s->length()));
-  }
-  if (IsPySmi(value)) {
-    return scope.Escape(PyString::FromPySmi(Tagged<PySmi>::cast(*value)));
-  }
-  if (IsPyFloat(value)) {
-    return scope.Escape(PyString::FromPyFloat(Handle<PyFloat>::cast(value)));
-  }
-  if (IsPyBoolean(value)) {
-    bool v = Tagged<PyBoolean>::cast(*value)->value();
-    return scope.Escape(PyString::NewInstance(v ? "True" : "False"));
-  }
-  if (IsPyNone(value)) {
-    return scope.Escape(PyString::NewInstance("None"));
-  }
-
-  Handle<PyObject> method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
-                                   isolate, value, ST(str), method));
-
-  if (!method.is_null()) {
-    Handle<PyObject> result;
-
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, result,
-        Execution::Call(isolate, method, value, Handle<PyTuple>::null(),
-                        Handle<PyDict>::null()));
-
-    if (!IsPyStringExact(result)) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "__str__ returned non-string");
-      return kNullMaybeHandle;
-    }
-
-    return scope.Escape(Handle<PyString>::cast(result));
-  }
-
-  char buffer[64];
-  std::snprintf(buffer, sizeof(buffer), "<object at %p>",
-                reinterpret_cast<void*>((*value).ptr()));
-  return scope.Escape(PyString::NewInstance(buffer));
+MaybeHandle<PyString> Runtime_NewPyStringRepr(Handle<PyString> str) {
+  std::string repr;
+  AppendStringReprContent(str, repr);
+  return PyString::FromStdString(repr);
 }
 
 }  // namespace saauso::internal
