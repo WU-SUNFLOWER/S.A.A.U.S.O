@@ -72,7 +72,7 @@ class KlassVtableTrampolines : public AllStatic {
 
   static MaybeHandle<PyObject> Call(Isolate* isolate,
                                     Handle<PyObject> self,
-                                    Handle<PyObject> host,
+                                    Handle<PyObject> receiver,
                                     Handle<PyObject> args,
                                     Handle<PyObject> kwargs);
 

@@ -56,7 +56,7 @@ struct FrameBuildContext {
   int64_t real_formal_pos_arg_cnt{0};
   // 不算 self、*args 和 **kwargs 的“用户可见”形参个数。
   int64_t formal_pos_arg_cnt{0};
-  // 若 host 非空，则注入为首个参数（self），此处记录 self 的个数（0/1）。
+  // 若 receiver 非空，则注入为首个参数（self），此处记录 self 的个数（0/1）。
   int self_arg_cnt{0};
   // localsplus 的“写入游标”：
   // 指向下一个可放置元素的位置（用于顺序写入位置实参、以及逻辑上统计已填充的形参槽位）。
@@ -71,7 +71,7 @@ Handle<PyDict> GetDefaultBoundLocals(Handle<PyFunction> func) {
 }
 
 FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
-                                     Handle<PyObject> host,
+                                     Handle<PyObject> receiver,
                                      Handle<PyDict> bound_locals) {
   FrameBuildContext ctx;
   ctx.code_object = func->func_code();
@@ -88,9 +88,9 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
 
   ctx.real_formal_pos_arg_cnt = ctx.code_object->arg_count();
 
-  // 将 host 填充为首个函数参数（self）。
-  if (!host.is_null()) {
-    ctx.localsplus->Set(ctx.localsplus_idx++, host);
+  // 将 receiver 填充为首个函数参数（self）。
+  if (!receiver.is_null()) {
+    ctx.localsplus->Set(ctx.localsplus_idx++, receiver);
     ctx.self_arg_cnt = 1;
   }
   // 不算 self、*args 和 **kwargs 的形参个数。
@@ -349,16 +349,16 @@ ret:
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
     Handle<PyFunction> func,
-    Handle<PyObject> host,
+    Handle<PyObject> receiver,
     Handle<PyTuple> actual_pos_args,
     Handle<PyDict> actual_kw_args) {
-  return BuildSlowPath(func, host, actual_pos_args, actual_kw_args,
+  return BuildSlowPath(func, receiver, actual_pos_args, actual_kw_args,
                        GetDefaultBoundLocals(func));
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
     Handle<PyFunction> func,
-    Handle<PyObject> host,
+    Handle<PyObject> receiver,
     Handle<PyTuple> actual_pos_args,
     Handle<PyDict> actual_kw_args,
     Handle<PyDict> bound_locals) {
@@ -369,7 +369,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   auto* isolate = Isolate::Current();
 
   // 创建一般的 python 栈帧（慢速路径）。
-  FrameBuildContext ctx = PrepareForFunction(func, host, bound_locals);
+  FrameBuildContext ctx = PrepareForFunction(func, receiver, bound_locals);
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置实参优先）。
   if (!actual_pos_args.is_null()) {
@@ -402,16 +402,16 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
     Handle<PyFunction> func,
-    Handle<PyObject> host,
+    Handle<PyObject> receiver,
     Handle<PyTuple> actual_args,
     Handle<PyTuple> kwarg_keys) {
-  return BuildFastPath(func, host, actual_args, kwarg_keys,
+  return BuildFastPath(func, receiver, actual_args, kwarg_keys,
                        GetDefaultBoundLocals(func));
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
     Handle<PyFunction> func,
-    Handle<PyObject> host,
+    Handle<PyObject> receiver,
     Handle<PyTuple> actual_args,
     Handle<PyTuple> kwarg_keys,
     Handle<PyDict> bound_locals) {
@@ -422,7 +422,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   auto* isolate = Isolate::Current();
 
   // 创建一般的 python 栈帧（快速路径）。
-  FrameBuildContext ctx = PrepareForFunction(func, host, bound_locals);
+  FrameBuildContext ctx = PrepareForFunction(func, receiver, bound_locals);
 
   // 用户传入的全体实参个数。
   int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();

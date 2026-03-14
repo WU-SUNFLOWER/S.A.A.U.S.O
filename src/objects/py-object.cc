@@ -431,11 +431,11 @@ Maybe<uint64_t> PyObject::Hash(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyObject::Call(Isolate* isolate,
                                      Handle<PyObject> self,
-                                     Handle<PyObject> host,
+                                     Handle<PyObject> receiver,
                                      Handle<PyObject> args,
                                      Handle<PyObject> kwargs) {
   auto* call_method = GetKlass(*self)->vtable().call_;
-  return call_method(isolate, self, host, args, kwargs);
+  return call_method(isolate, self, receiver, args, kwargs);
 }
 
 // python virtual function

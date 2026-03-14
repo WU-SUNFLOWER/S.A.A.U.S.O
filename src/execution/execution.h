@@ -23,13 +23,13 @@ class Execution final : public AllStatic {
  public:
   static MaybeHandle<PyObject> Call(Isolate* isolate,
                                     Handle<PyObject> callable,
-                                    Handle<PyObject> host,
+                                    Handle<PyObject> receiver,
                                     Handle<PyTuple> pos_args,
                                     Handle<PyDict> kw_args);
 
   static MaybeHandle<PyObject> Call(Isolate* isolate,
                                     Handle<PyObject> callable,
-                                    Handle<PyObject> host,
+                                    Handle<PyObject> receiver,
                                     Handle<PyTuple> pos_args,
                                     Handle<PyDict> kw_args,
                                     Handle<PyDict> bound_locals);

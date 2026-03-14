@@ -30,12 +30,12 @@ class Interpreter {
   Maybe<void> Run(Handle<PyFunction> boilerplate);
 
   MaybeHandle<PyObject> CallPython(Handle<PyObject> callable,
-                                   Handle<PyObject> host,
+                                   Handle<PyObject> receiver,
                                    Handle<PyTuple> pos_args,
                                    Handle<PyDict> kw_args);
 
   MaybeHandle<PyObject> CallPython(Handle<PyObject> callable,
-                                   Handle<PyObject> host,
+                                   Handle<PyObject> receiver,
                                    Handle<PyTuple> pos_args,
                                    Handle<PyDict> kw_args,
                                    Handle<PyDict> bound_locals);
@@ -59,23 +59,24 @@ class Interpreter {
 
  private:
   Maybe<void> InvokeCallable(Handle<PyObject> callable,
-                             Handle<PyObject> host,
+                             Handle<PyObject> receiver,
                              Handle<PyTuple> actual_args,
                              Handle<PyTuple> kwarg_keys);
 
   Maybe<void> InvokeCallableWithNormalizedArgs(Handle<PyObject> callable,
-                                               Handle<PyObject> host,
+                                               Handle<PyObject> receiver,
                                                Handle<PyTuple> pos_args,
                                                Handle<PyDict> kw_args);
 
   template <typename... ExtendArgs>
   MaybeHandle<PyObject> CallPythonImpl(Handle<PyObject> callable,
-                                       Handle<PyObject> host,
+                                       Handle<PyObject> receiver,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs,
                                        ExtendArgs... extend_args);
 
-  void NormalizeCallable(Handle<PyObject>& callable, Handle<PyObject>& host);
+  void NormalizeCallable(Handle<PyObject>& callable,
+                         Handle<PyObject>& receiver);
   Maybe<void> NormalizeArguments(Handle<PyTuple> actual_args,
                                  Handle<PyTuple> kwarg_keys,
                                  Handle<PyTuple>& pos_args,
@@ -87,7 +88,7 @@ class Interpreter {
   void DestroyCurrentFrame();
   void UnwindCurrentFrameForException();
 
-  void PopCallTarget(Handle<PyObject>& callable, Handle<PyObject>& host);
+  void PopCallTarget(Handle<PyObject>& callable, Handle<PyObject>& receiver);
 
   Handle<PyObject> ReleaseReturnValue();
   Handle<PyTuple> ReleaseKwArgKeys();

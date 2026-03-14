@@ -162,12 +162,12 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Print(
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
     Isolate* isolate,
     Handle<PyObject> self,
-    Handle<PyObject> host,
+    Handle<PyObject> receiver,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(IsNativePyFunction(self));
   auto func = Handle<PyFunction>::cast(self);
-  return func->native_func_(host, Handle<PyTuple>::cast(args),
+  return func->native_func_(receiver, Handle<PyTuple>::cast(args),
                             Handle<PyDict>::cast(kwargs));
 }
 

@@ -16,20 +16,21 @@ namespace saauso::internal {
 
 MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                       Handle<PyObject> callable,
-                                      Handle<PyObject> host,
+                                      Handle<PyObject> receiver,
                                       Handle<PyTuple> pos_args,
                                       Handle<PyDict> kw_args) {
-  return isolate->interpreter()->CallPython(callable, host, pos_args, kw_args);
+  return isolate->interpreter()->CallPython(callable, receiver, pos_args,
+                                            kw_args);
 }
 
 MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                       Handle<PyObject> callable,
-                                      Handle<PyObject> host,
+                                      Handle<PyObject> receiver,
                                       Handle<PyTuple> pos_args,
                                       Handle<PyDict> kw_args,
                                       Handle<PyDict> bound_locals) {
-  return isolate->interpreter()->CallPython(callable, host, pos_args, kw_args,
-                                            bound_locals);
+  return isolate->interpreter()->CallPython(callable, receiver, pos_args,
+                                            kw_args, bound_locals);
 }
 
 Handle<PyDict> Execution::CurrentFrameGlobals(Isolate* isolate) {

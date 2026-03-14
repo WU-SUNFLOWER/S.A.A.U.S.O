@@ -403,7 +403,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Next(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> KlassVtableTrampolines::Call(Isolate* isolate,
                                                    Handle<PyObject> self,
-                                                   Handle<PyObject> host,
+                                                   Handle<PyObject> receiver,
                                                    Handle<PyObject> args,
                                                    Handle<PyObject> kwargs) {
   Handle<PyObject> callable;

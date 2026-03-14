@@ -271,7 +271,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_Call(Isolate* isolate,
                                                   Handle<PyObject> self,
-                                                  Handle<PyObject> host,
+                                                  Handle<PyObject> receiver,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError,

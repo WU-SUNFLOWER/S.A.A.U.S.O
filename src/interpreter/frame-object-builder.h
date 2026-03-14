@@ -37,12 +37,12 @@ class FrameObjectBuilder {
   // 或报错。
   // - 支持默认参数回填、*args/**kwargs 的打包与注入。
   static Maybe<FrameObject*> BuildSlowPath(Handle<PyFunction> func,
-                                           Handle<PyObject> host,
+                                           Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_pos_args,
                                            Handle<PyDict> actual_kw_args);
 
   static Maybe<FrameObject*> BuildSlowPath(Handle<PyFunction> func,
-                                           Handle<PyObject> host,
+                                           Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_pos_args,
                                            Handle<PyDict> actual_kw_args,
                                            Handle<PyDict> bound_locals);
@@ -52,12 +52,12 @@ class FrameObjectBuilder {
   // - 遍历 kwarg_keys（从尾部取 key/value），尽量用 tuple 索引完成处理。
   // - 同样支持默认参数回填、*args/**kwargs 的打包与注入。
   static Maybe<FrameObject*> BuildFastPath(Handle<PyFunction> func,
-                                           Handle<PyObject> host,
+                                           Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_args,
                                            Handle<PyTuple> kwarg_keys);
 
   static Maybe<FrameObject*> BuildFastPath(Handle<PyFunction> func,
-                                           Handle<PyObject> host,
+                                           Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_args,
                                            Handle<PyTuple> kwarg_keys,
                                            Handle<PyDict> bound_locals);

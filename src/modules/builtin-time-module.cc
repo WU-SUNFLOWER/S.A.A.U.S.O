@@ -82,7 +82,7 @@ Maybe<void> InstallFunc(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Time_Time(Handle<PyObject> host,
+MaybeHandle<PyObject> Time_Time(Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -101,7 +101,7 @@ MaybeHandle<PyObject> Time_Time(Handle<PyObject> host,
   return PyFloat::NewInstance(WallTimeSeconds());
 }
 
-MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> host,
+MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> receiver,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -119,13 +119,13 @@ MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> host,
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
-MaybeHandle<PyObject> Time_Monotonic(Handle<PyObject> host,
+MaybeHandle<PyObject> Time_Monotonic(Handle<PyObject> receiver,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  return Time_PerfCounter(host, args, kwargs);
+  return Time_PerfCounter(receiver, args, kwargs);
 }
 
-MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> host,
+MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {

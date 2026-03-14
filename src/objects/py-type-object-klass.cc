@@ -175,7 +175,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Call(Isolate* isolate,
                                                       Handle<PyObject> self,
-                                                      Handle<PyObject> host,
+                                                      Handle<PyObject> receiver,
                                                       Handle<PyObject> args,
                                                       Handle<PyObject> kwargs) {
   auto type_object = Handle<PyTypeObject>::cast(self);
