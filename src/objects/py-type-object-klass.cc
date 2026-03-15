@@ -47,8 +47,8 @@ void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到isolate
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // 实例对象创建__dict__字典
-  set_instance_has_properties_dict(true);
+  // 实例对象不创建__dict__字典
+  set_instance_has_properties_dict(false);
 
   // 初始化虚函数表
   vtable_.Clear();

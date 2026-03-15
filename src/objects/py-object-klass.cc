@@ -221,7 +221,6 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
   if (!result.is_null()) {
     if (IsPyFunction(result) || IsNativePyFunction(result)) {
       self_or_null = self;
-      return result;
     }
     return result;
   }
