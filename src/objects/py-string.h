@@ -36,6 +36,7 @@ class PyString : public PyObject {
   static Handle<PyString> FromInt(int64_t n);
   static Handle<PyString> FromPyFloat(Handle<PyFloat> py_float);
   static Handle<PyString> FromDouble(double n);
+  static Handle<PyString> FromStdString(std::string source);
 
   static Tagged<PyString> cast(Tagged<PyObject> object);
 

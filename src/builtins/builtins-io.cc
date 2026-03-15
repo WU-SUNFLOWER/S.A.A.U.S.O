@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <cstdio>
+
 #include "src/builtins/builtins-utils.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
@@ -10,52 +12,63 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-string.h"
+#include "src/runtime/runtime-truthiness.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
 namespace {
 
-// 校验 print() 的关键字参数名称：只允许 sep/end/eol。
-// 成功时返回 Python None；失败时抛异常并返回空 MaybeHandle。
-// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
-// 通过引用返回给调用方，导致悬垂句柄。
-MaybeHandle<PyObject> ValidatePrintKeywordArguments(Isolate* isolate,
-                                                    Handle<PyDict> kwargs,
-                                                    Handle<PyObject> sep_key,
-                                                    Handle<PyObject> end_key,
-                                                    Handle<PyObject> eol_key) {
-  for (auto i = 0; i < kwargs->capacity(); ++i) {
+struct PrintOptions {
+  Handle<PyObject> sep;
+  Handle<PyObject> end;
+  Handle<PyObject> file;
+  Handle<PyObject> flush;
+};
+
+MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
+                                            Handle<PyDict> kwargs,
+                                            PrintOptions& options) {
+  if (kwargs.is_null()) {
+    return handle(isolate->py_none_object());
+  }
+
+  auto sep_key = ST(sep);
+  auto end_key = ST(end);
+  auto file_key = ST(print_file);
+  auto flush_key = ST(flush);
+
+  for (int64_t i = 0; i < kwargs->capacity(); ++i) {
     auto item = kwargs->ItemAtIndex(i);
     if (item.is_null()) {
       continue;
     }
-
     auto key = item->Get(0);
     if (!IsPyString(*key)) {
       Runtime_ThrowError(ExceptionType::kTypeError, "keywords must be strings");
       return kNullMaybeHandle;
     }
 
-    bool eq = false;
-    if (!PyObject::EqualBool(key, sep_key).To(&eq)) {
+    bool accepted = false;
+    bool equal = false;
+    if (!PyObject::EqualBool(key, sep_key).To(&equal)) {
       return kNullMaybeHandle;
     }
-    if (eq) {
-      continue;
-    }
-
-    if (!PyObject::EqualBool(key, end_key).To(&eq)) {
+    accepted |= equal;
+    if (!PyObject::EqualBool(key, end_key).To(&equal)) {
       return kNullMaybeHandle;
     }
-    if (eq) {
-      continue;
-    }
-
-    if (!PyObject::EqualBool(key, eol_key).To(&eq)) {
+    accepted |= equal;
+    if (!PyObject::EqualBool(key, file_key).To(&equal)) {
       return kNullMaybeHandle;
     }
-    if (eq) {
+    accepted |= equal;
+    if (!PyObject::EqualBool(key, flush_key).To(&equal)) {
+      return kNullMaybeHandle;
+    }
+    accepted |= equal;
+    if (accepted) {
       continue;
     }
 
@@ -66,106 +79,56 @@ MaybeHandle<PyObject> ValidatePrintKeywordArguments(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return handle(isolate->py_none_object());
-}
-
-// 从 kwargs 中提取 sep/end/eol 的值（未提供则返回 null）。
-// 成功时返回 Python None；失败时返回空 MaybeHandle。
-// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
-// 通过引用返回给调用方，导致悬垂句柄。
-MaybeHandle<PyObject> ExtractPrintKeywordValues(Isolate* isolate,
-                                                Handle<PyDict> kwargs,
-                                                Handle<PyObject> sep_key,
-                                                Handle<PyObject> end_key,
-                                                Handle<PyObject> eol_key,
-                                                Handle<PyObject>& sep,
-                                                Handle<PyObject>& end,
-                                                Handle<PyObject>& eol) {
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found, kwargs->Get(sep_key, sep),
-                                   kNullMaybeHandle);
-  assert(!found || !sep.is_null());
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, found, kwargs->Get(sep_key, options.sep), kNullMaybeHandle);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, found, kwargs->Get(end_key, options.end), kNullMaybeHandle);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, found, kwargs->Get(file_key, options.file), kNullMaybeHandle);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, found, kwargs->Get(flush_key, options.flush), kNullMaybeHandle);
 
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found, kwargs->Get(end_key, end),
-                                   kNullMaybeHandle);
-  assert(!found || !end.is_null());
-
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found, kwargs->Get(eol_key, eol),
-                                   kNullMaybeHandle);
-  assert(!found || !eol.is_null());
-
-  return handle(isolate->py_none_object());
-}
-
-// 校验 sep/end 参数类型，并处理 end/eol 的互斥与兜底赋值规则。
-// 成功时返回 Python None；失败时抛异常并返回空 MaybeHandle。
-// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
-// 通过引用返回给调用方，导致悬垂句柄。
-MaybeHandle<PyObject> ValidateAndResolvePrintSeparators(Isolate* isolate,
-                                                        Handle<PyObject>& sep,
-                                                        Handle<PyObject>& end,
-                                                        Handle<PyObject> eol) {
-  if (!sep.is_null() && !IsPyString(*sep)) {
-    auto type_name = PyObject::GetKlass(sep)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError, "sep must be str, not %s",
-                        type_name->buffer());
-    return kNullMaybeHandle;
+  if (!options.sep.is_null() && !IsPyNone(options.sep)) {
+    if (!IsPyString(*options.sep)) {
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "sep must be None or str, not %s",
+                          PyObject::GetKlass(options.sep)->name()->buffer());
+      return kNullMaybeHandle;
+    }
+  } else {
+    options.sep = Handle<PyObject>::null();
   }
 
-  if (!end.is_null() && !eol.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "print() got multiple values for keyword argument 'end'");
-    return kNullMaybeHandle;
+  if (!options.end.is_null() && !IsPyNone(options.end)) {
+    if (!IsPyString(*options.end)) {
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "end must be None or str, not %s",
+                          PyObject::GetKlass(options.end)->name()->buffer());
+      return kNullMaybeHandle;
+    }
+  } else {
+    options.end = Handle<PyObject>::null();
   }
 
-  if (end.is_null()) {
-    end = eol;
-  }
-
-  if (!end.is_null() && !IsPyString(*end)) {
-    auto type_name = PyObject::GetKlass(end)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError, "end must be str, not %s",
-                        type_name->buffer());
+  if (!options.file.is_null() && !IsPyNone(options.file)) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "print() currently only supports file=None");
     return kNullMaybeHandle;
   }
 
   return handle(isolate->py_none_object());
 }
 
-// 解析 print() 的关键字参数（sep/end/eol）。
-// - 成功时返回 Python None；失败时抛出 TypeError 并返回空 MaybeHandle。
-// - sep/end 通过引用返回：null 表示未提供。
-// 注意：该函数不能创建独立的 HandleScope，否则会把短生命周期的 handle
-// 通过引用返回给调用方，导致悬垂句柄。
-MaybeHandle<PyObject> NormalizePrintArgs(Isolate* isolate,
-                                         Handle<PyDict> kwargs,
-                                         Handle<PyObject>& sep,
-                                         Handle<PyObject>& end) {
-  if (!kwargs.is_null()) {
-    Handle<PyObject> eol;
-
-    auto sep_key = ST(sep);
-    auto end_key = ST(end);
-    auto eol_key = ST(eol);
-
-    RETURN_ON_EXCEPTION_VALUE(isolate,
-                              ValidatePrintKeywordArguments(
-                                  isolate, kwargs, sep_key, end_key, eol_key),
-                              kNullMaybeHandle);
-
-    RETURN_ON_EXCEPTION_VALUE(
-        isolate,
-        ExtractPrintKeywordValues(isolate, kwargs, sep_key, end_key, eol_key,
-                                  sep, end, eol),
-        kNullMaybeHandle);
-
-    RETURN_ON_EXCEPTION_VALUE(
-        isolate, ValidateAndResolvePrintSeparators(isolate, sep, end, eol),
-        kNullMaybeHandle);
+void WriteRawString(const char* buffer, int64_t length) {
+  if (length <= 0) {
+    return;
   }
+  std::fwrite(buffer, 1, static_cast<size_t>(length), stdout);
+}
 
-  return handle(isolate->py_none_object());
+void WriteHandleString(Handle<PyString> value) {
+  WriteRawString(value->buffer(), value->length());
 }
 
 }  // namespace
@@ -174,31 +137,34 @@ BUILTIN(Print) {
   EscapableHandleScope scope;
   Isolate* isolate = Isolate::Current();
 
-  Handle<PyObject> sep;
-  Handle<PyObject> end;
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, NormalizePrintArgs(isolate, kwargs, sep, end), kNullMaybeHandle);
+  PrintOptions options;
+  RETURN_ON_EXCEPTION_VALUE(isolate,
+                            NormalizePrintOptions(isolate, kwargs, options),
+                            kNullMaybeHandle);
 
-  for (auto i = 0; i < args->length(); ++i) {
+  const int64_t argc = args.is_null() ? 0 : args->length();
+  for (int64_t i = 0; i < argc; ++i) {
     if (i > 0) {
-      if (sep.is_null()) {
-        std::printf(" ");
+      if (options.sep.is_null()) {
+        std::fputc(' ', stdout);
       } else {
-        if (PyObject::Print(sep).IsEmpty()) {
-          return kNullMaybeHandle;
-        }
+        WriteHandleString(Handle<PyString>::cast(options.sep));
       }
     }
-    if (PyObject::Print(args->Get(i)).IsEmpty()) {
-      return kNullMaybeHandle;
-    }
+    Handle<PyString> value;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, value, PyObject::Str(args->Get(i)));
+    WriteHandleString(value);
   }
 
-  if (end.is_null()) {
-    std::printf("\n");
+  if (options.end.is_null()) {
+    std::fputc('\n', stdout);
   } else {
-    if (PyObject::Print(end).IsEmpty()) {
-      return kNullMaybeHandle;
+    WriteHandleString(Handle<PyString>::cast(options.end));
+  }
+
+  if (!options.flush.is_null()) {
+    if (Runtime_PyObjectIsTrue(options.flush)) {
+      std::fflush(stdout);
     }
   }
 

@@ -64,8 +64,9 @@ void PyDictKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
   vtable_.len_ = &Virtual_Len;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.equal_ = &Virtual_Equal;
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.subscr_ = &Virtual_Subscr;
@@ -105,31 +106,6 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_Print(Handle<PyObject> self) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-  auto dict = Handle<PyDict>::cast(self);
-  std::printf("{");
-  bool first = true;
-  for (int64_t i = 0; i < dict->capacity(); ++i) {
-    auto key = dict->data()->Get(i << 1);
-    if (!key.is_null()) {
-      if (!first) {
-        std::printf(", ");
-      }
-      first = false;
-
-      RETURN_ON_EXCEPTION(isolate, PyObject::Print(Handle<PyObject>(key)));
-
-      std::printf(": ");
-
-      auto value = handle(dict->data()->Get((i << 1) + 1));
-      RETURN_ON_EXCEPTION(isolate, PyObject::Print(value));
-    }
-  }
-  std::printf("}");
-  return handle(isolate->py_none_object());
-}
-
 MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
   return Isolate::Current()->factory()->NewPyDictKeyIterator(self);
 }
@@ -137,6 +113,18 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
   auto value = Handle<PyDict>::cast(self)->occupied();
   return Handle<PyObject>(PySmi::FromInt(value));
+}
+
+MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr, Runtime_NewDictRepr(Handle<PyDict>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> PyDictKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,

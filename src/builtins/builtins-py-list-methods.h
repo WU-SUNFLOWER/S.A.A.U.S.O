@@ -13,6 +13,8 @@ namespace saauso::internal {
 #define PY_LIST_BUILTINS(V) \
   V(New, "__new__")         \
   V(Init, "__init__")       \
+  V(Repr, "__repr__")       \
+  V(Str, "__str__")         \
   V(Append, "append")       \
   V(Pop, "pop")             \
   V(Insert, "insert")       \

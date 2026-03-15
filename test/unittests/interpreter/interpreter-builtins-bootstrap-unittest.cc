@@ -7,9 +7,11 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-type-object.h"
 #include "src/runtime/string-table.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -65,8 +67,8 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_none_object());
 
-  const char* const kBuiltinFunctions[] = {"print",       "len",   "isinstance",
-                                           "build_class", "sysgc", "exec"};
+  const char* const kBuiltinFunctions[] = {
+      "print", "repr", "len", "isinstance", "build_class", "sysgc", "exec"};
   for (const char* name : kBuiltinFunctions) {
     Handle<PyString> key = PyString::NewInstance(name);
     if (std::string_view(name) == "build_class") {
@@ -107,6 +109,34 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
     ASSERT_TRUE(builtins->GetTagged(key, value).To(&found)) << name;
     ASSERT_TRUE(found) << name;
     EXPECT_TRUE(IsPyTypeObject(value)) << name;
+  }
+}
+
+TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
+  HandleScope scope;
+  Handle<PyDict> builtins = handle(isolate_->builtins());
+
+  const char* const kTypeNames[] = {"object", "list", "dict",
+                                    "tuple",  "str",  "type"};
+  for (const char* name : kTypeNames) {
+    Tagged<PyObject> value;
+    bool found = false;
+    ASSERT_TRUE(
+        builtins->GetTagged(PyString::NewInstance(name), value).To(&found))
+        << name;
+    ASSERT_TRUE(found) << name;
+    ASSERT_TRUE(IsPyTypeObject(value)) << name;
+
+    auto type_obj = Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(value));
+    auto props = type_obj->own_klass()->klass_properties();
+
+    bool has_repr = false;
+    ASSERT_TRUE(props->ContainsKey(ST(repr)).To(&has_repr)) << name;
+    EXPECT_TRUE(has_repr) << name;
+
+    bool has_str = false;
+    ASSERT_TRUE(props->ContainsKey(ST(str)).To(&has_str)) << name;
+    EXPECT_TRUE(has_str) << name;
   }
 }
 

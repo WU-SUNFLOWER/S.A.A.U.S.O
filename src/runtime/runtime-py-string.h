@@ -30,10 +30,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
                                            Handle<PyObject> iterable);
 
-// 按 Python 语义将任意对象转换为 str。
-// - 支持 str/int/float/bool/None 的快速路径。
-// - 其它对象会尝试调用 __str__；若找不到 __str__，回退为 "<object at 0x...>"。
-MaybeHandle<PyString> Runtime_NewStr(Handle<PyObject> value);
+MaybeHandle<PyString> Runtime_NewPyStringRepr(Handle<PyString> str);
 
 }  // namespace saauso::internal
 

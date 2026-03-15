@@ -77,6 +77,8 @@ void PyFloatKlass::PreInitialize(Isolate* isolate) {
   vtable_.Clear();
   // Python中float类型只有默认的__new__而没有__init__
   vtable_.new_instance_ = &Virtual_NewInstance;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.add_ = &Virtual_Add;
   vtable_.sub_ = &Virtual_Sub;
   vtable_.mul_ = &Virtual_Mul;
@@ -89,7 +91,6 @@ void PyFloatKlass::PreInitialize(Isolate* isolate) {
   vtable_.not_equal_ = &Virtual_NotEqual;
   vtable_.ge_ = &Virtual_GreaterEqual;
   vtable_.le_ = &Virtual_LessEqual;
-  vtable_.print_ = &Virtual_Print;
   vtable_.instance_size_ = &Virtual_InstanceSize;
   vtable_.iterate_ = &Virtual_Iterate;
 }
@@ -180,9 +181,12 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Print(Handle<PyObject> self) {
-  std::printf("%g", PyFloat::cast(*self)->value());
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Repr(Handle<PyObject> self) {
+  return PyString::FromPyFloat(Handle<PyFloat>::cast(self));
+}
+
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,

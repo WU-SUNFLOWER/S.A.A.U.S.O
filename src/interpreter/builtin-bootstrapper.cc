@@ -131,6 +131,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinFunctions() {
 
 #define BUILTIN_FUNC_LIST(V)           \
   V(func_print, Print)                 \
+  V(func_repr, Repr)                   \
   V(func_len, Len)                     \
   V(func_isinstance, IsInstance)       \
   V(func_build_class, BuildTypeObject) \

@@ -32,6 +32,7 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
+#include "src/runtime/runtime-py-list.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -72,7 +73,8 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
   vtable_.new_instance_ = &Virtual_NewInstance;
   vtable_.init_instance_ = &Virtual_InitInstance;
   vtable_.len_ = &Virtual_Len;
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.add_ = &Virtual_Add;
   vtable_.mul_ = &Virtual_Mul;
   vtable_.subscr_ = &Virtual_Subscr;
@@ -177,22 +179,16 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Print(Handle<PyObject> self) {
-  auto list = Handle<PyList>::cast(self);
+MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
+                             Runtime_NewListRepr(Handle<PyList>::cast(self)));
+  return repr;
+}
 
-  std::printf("[");
-
-  for (auto i = 0; i < list->length(); ++i) {
-    if (i > 0) {
-      std::printf(", ");
-    }
-    if (PyObject::Print(list->Get(i)).IsEmpty()) {
-      return kNullMaybeHandle;
-    }
-  }
-
-  std::printf("]");
-  return handle(Isolate::Current()->py_none_object());
+MaybeHandle<PyObject> PyListKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,

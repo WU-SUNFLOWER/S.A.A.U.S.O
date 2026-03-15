@@ -25,6 +25,10 @@ BUILTIN(Len) {
   return PyObject::Len(args->Get(0));
 }
 
+BUILTIN(Repr) {
+  return PyObject::Repr(args->Get(0));
+}
+
 BUILTIN(IsInstance) {
   EscapableHandleScope scope;
 

@@ -9,6 +9,8 @@
 #include "src/objects/py-list.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-string.h"
 
 namespace saauso::internal {
 
@@ -25,6 +27,26 @@ Maybe<void> PyTypeObjectBuiltinMethods::Install(Isolate* isolate,
 }
 
 ////////////////////////////////////////////////////////////////////////
+
+BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Repr) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__repr__' of 'type' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Repr(self);
+}
+
+BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Str) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__str__' of 'type' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Str(self);
+}
 
 BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Mro) {
   return Handle<PyTypeObject>::cast(self)->mro();

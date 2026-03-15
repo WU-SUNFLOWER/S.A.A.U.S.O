@@ -40,6 +40,26 @@ Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
 
 ////////////////////////////////////////////////////////////////////////
 
+BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__repr__' of 'str' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Repr(self);
+}
+
+BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
+  if (self.is_null()) {
+    Runtime_ThrowError(
+        ExceptionType::kTypeError,
+        "descriptor '__str__' of 'str' object needs an argument");
+    return kNullMaybeHandle;
+  }
+  return PyObject::Str(self);
+}
+
 BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
   EscapableHandleScope scope;
 

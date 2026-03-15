@@ -11,6 +11,8 @@
 namespace saauso::internal {
 
 #define PY_STRING_BUILTINS(V) \
+  V(Repr, "__repr__")         \
+  V(Str, "__str__")           \
   V(Upper, "upper")           \
   V(Index, "index")           \
   V(Find, "find")             \

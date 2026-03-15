@@ -379,22 +379,34 @@ g(a)
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, CustomClassStrUsedByPrint) {
+TEST_F(BasicInterpreterTest, CustomClassStrAndReprWorkForPrintAndBuiltinRepr) {
   HandleScope scope;
 
-  constexpr std::string_view kSource = R"(
+  constexpr std::string_view kSource = R"PY(
 class A:
     def __str__(self):
-        return "object of A"
+        return "str(A)"
+
+    def __repr__(self):
+        return "repr(A)"
+
+class B:
+    def __repr__(self):
+        return "repr(B)"
 
 a = A()
-print(a.__str__())
-)";
+b = B()
+print(str(a))
+print(repr(a))
+print(str(b))
+)PY";
 
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
-  AppendExpected(expected_printv_result, PyString::NewInstance("object of A"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("str(A)"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("repr(A)"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("repr(B)"));
   ExpectPrintResult(expected_printv_result);
 }
 

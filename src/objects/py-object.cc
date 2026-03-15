@@ -109,11 +109,14 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 ///////////////////////////////////////////////////////////////////////////
 // 多态虚方法入口 开始
 
-// python virtual function
-MaybeHandle<PyObject> PyObject::Print(Handle<PyObject> self) {
-  HandleScope scope;
-  assert(GetKlass(*self)->vtable().print_);
-  return GetKlass(*self)->vtable().print_(self);
+MaybeHandle<PyObject> PyObject::Repr(Handle<PyObject> self) {
+  assert(GetKlass(*self)->vtable().repr_);
+  return GetKlass(*self)->vtable().repr_(self);
+}
+
+MaybeHandle<PyObject> PyObject::Str(Handle<PyObject> self) {
+  assert(GetKlass(*self)->vtable().str_);
+  return GetKlass(*self)->vtable().str_(self);
 }
 
 // python virtual function

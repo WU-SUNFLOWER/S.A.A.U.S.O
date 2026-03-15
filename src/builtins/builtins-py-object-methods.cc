@@ -12,8 +12,44 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-string.h"
 
 namespace saauso::internal {
+
+namespace {
+
+MaybeHandle<PyObject> ResolveUnaryMethodSelf(const char* type_name,
+                                             const char* method_name,
+                                             Handle<PyObject> self,
+                                             Handle<PyTuple> args) {
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (!self.is_null()) {
+    if (argc != 0) {
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.%s() takes no arguments (%" PRId64 " given)",
+                          type_name, method_name, argc);
+      return kNullMaybeHandle;
+    }
+    return self;
+  }
+
+  if (argc == 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "descriptor '%s' of '%s' object needs an argument",
+                        method_name, type_name);
+    return kNullMaybeHandle;
+  }
+  if (argc != 1) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s.%s() takes exactly one argument (%" PRId64
+                        " given)",
+                        type_name, method_name, argc);
+    return kNullMaybeHandle;
+  }
+  return args->Get(0);
+}
+
+}  // namespace
 
 Maybe<void> PyObjectBuiltinMethods::Install(Isolate* isolate,
                                             Handle<PyDict> target) {
@@ -98,6 +134,23 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
 
   return PyObjectKlass::GetInstance()->InitInstance(isolate, instance,
                                                     init_args, kwargs);
+}
+
+BUILTIN_METHOD(PyObjectBuiltinMethods, Repr) {
+  auto* isolate = Isolate::Current();
+  Handle<PyObject> target;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, target,
+      ResolveUnaryMethodSelf("object", "__repr__", self, args));
+  return PyObject::Repr(target);
+}
+
+BUILTIN_METHOD(PyObjectBuiltinMethods, Str) {
+  auto* isolate = Isolate::Current();
+  Handle<PyObject> target;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, target, ResolveUnaryMethodSelf("object", "__str__", self, args));
+  return PyObject::Str(target);
 }
 
 }  // namespace saauso::internal

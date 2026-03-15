@@ -19,6 +19,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-string.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 
@@ -53,7 +54,8 @@ void PyObjectKlass::PreInitialize(Isolate* isolate) {
   vtable_.call_ = &Generic_Call;
   vtable_.new_instance_ = &Generic_NewInstance;
   vtable_.init_instance_ = &Generic_InitInstance;
-  vtable_.print_ = &Generic_Print;
+  vtable_.repr_ = &Generic_Repr;
+  vtable_.str_ = &Generic_Str;
   vtable_.instance_size_ = &Generic_InstanceSize;
   vtable_.iterate_ = &Generic_Iterate;
 }
@@ -349,32 +351,19 @@ size_t PyObjectKlass::Generic_InstanceSize(Tagged<PyObject> self) {
 }
 
 // static
-MaybeHandle<PyObject> PyObjectKlass::Generic_Print(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Handle<PyObject> self) {
+  EscapableHandleScope scope;
+  char buffer[128];
+  std::snprintf(buffer, sizeof(buffer), "<%s object at %p>",
+                PyObject::GetKlass(self)->name()->buffer(),
+                reinterpret_cast<void*>((*self).ptr()));
+  return scope.Escape(PyString::NewInstance(buffer));
+}
 
-  Handle<PyObject> method;
-  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
-                                   isolate, self, ST(str), method));
-
-  if (method.is_null()) {
-    RETURN_ON_EXCEPTION(isolate, PyObject::LookupAttr(self, ST(repr), method));
-  }
-
-  if (!method.is_null()) {
-    Handle<PyObject> s;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, s,
-        Execution::Call(isolate, method, self, Handle<PyTuple>::null(),
-                        Handle<PyDict>::null()));
-    MaybeHandle<PyObject> print_result = PyObject::Print(s);
-    if (print_result.IsEmpty()) {
-      return kNullMaybeHandle;
-    }
-    return handle(isolate->py_none_object());
-  }
-
-  std::printf("<object at %p>", reinterpret_cast<void*>((*self).ptr()));
-  return handle(Isolate::Current()->py_none_object());
+// static
+MaybeHandle<PyObject> PyObjectKlass::Generic_Str(Handle<PyObject> self) {
+  // 默认的__str__什么也不做，直接把操作转发给对象的__repr__进行处理
+  return PyObject::Repr(self);
 }
 
 }  // namespace saauso::internal

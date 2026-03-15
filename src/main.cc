@@ -27,19 +27,24 @@ using namespace saauso::internal;
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 constexpr std::string_view kFileName = "test.py";
-constexpr std::string_view kSourceCode = R"(
-class Base:
-    def __new__(cls, *args):
-        print(cls)
-        return object.__new__(cls)
+constexpr std::string_view kSourceCode = R"PY(
+class A:
+    def __str__(self):
+        return "str(A)"
 
-class Derived(Base):
-    pass
+    def __repr__(self):
+        return "repr(A)"
 
-obj = Derived()
-print(isinstance(obj, Derived))
-print(isinstance(obj, Base))
-)";
+class B:
+    def __repr__(self):
+        return "repr(B)"
+
+a = A()
+b = B()
+print(str(a))
+print(repr(a))
+print(str(b))
+)PY";
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
 bool CheckAndPrintException(Isolate* isolate) {

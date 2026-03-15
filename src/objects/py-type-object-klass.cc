@@ -24,6 +24,7 @@
 #include "src/objects/templates.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-type-object.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -51,7 +52,8 @@ void PyTypeObjectKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
-  vtable_.print_ = &Virtual_Print;
+  vtable_.repr_ = &Virtual_Repr;
+  vtable_.str_ = &Virtual_Str;
   vtable_.getattr_ = &Virtual_GetAttr;
   vtable_.setattr_ = &Virtual_SetAttr;
   vtable_.hash_ = &Virtual_Hash;
@@ -94,13 +96,6 @@ void PyTypeObjectKlass::Finalize(Isolate* isolate) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Print(Handle<PyObject> self) {
-  auto type_object = Handle<PyTypeObject>::cast(self);
-  auto type_name = type_object->own_klass()->name();
-  std::printf("<class '%s'>", type_name->buffer());
-  return handle(Isolate::Current()->py_none_object());
-}
-
 Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
                                                Handle<PyObject> prop_name,
                                                bool is_try,
@@ -129,6 +124,19 @@ Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
     return Maybe<bool>(true);
   }
   return Maybe<bool>(false);
+}
+
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Repr(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  Handle<PyString> repr;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr,
+      Runtime_NewTypeObjectRepr(Handle<PyTypeObject>::cast(self)));
+  return repr;
+}
+
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Str(Handle<PyObject> self) {
+  return Virtual_Repr(self);
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
