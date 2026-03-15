@@ -156,16 +156,33 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     return scope.Escape(result);
   }
 
+  // 处理其他类型的callable
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, result,
+      CallNonNormalFunction(callable, receiver, pos_args, kw_args));
+
+  return scope.Escape(result);
+}
+
+// private
+MaybeHandle<PyObject> Interpreter::CallNonNormalFunction(
+    Handle<PyObject> callable,
+    Handle<PyObject> receiver,
+    Handle<PyTuple> pos_args,
+    Handle<PyDict> kw_args) {
+  // 该API只允许传入非普通Python函数的callable对象
+  assert(!IsNormalPyFunction(callable));
+
+  Handle<PyObject> result;
+
   // Fast Path: 如果是NativeFunction，直接执行调用
   if (IsNativePyFunction(callable)) {
-    auto func_object = Handle<PyFunction>::cast(callable);
-    RETURN_ON_EXCEPTION(isolate_, Runtime_NormalizeNativeMethodCall(
-                                      isolate_, func_object, receiver, pos_args));
-    auto* native_func_ptr = func_object->native_func();
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
-                               native_func_ptr(receiver, pos_args, kw_args));
+                               Runtime_CallNativePyFunction(
+                                   isolate_, Handle<PyFunction>::cast(callable),
+                                   receiver, pos_args, kw_args));
 
-    return scope.Escape(result);
+    return result;
   }
 
   // 兜底：尝试调用callable的call虚方法
@@ -175,7 +192,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
       isolate_, result,
       PyObject::Call(isolate_, callable, receiver, pos_args, kw_args));
 
-  return scope.Escape(result);
+  return result;
 }
 
 // private

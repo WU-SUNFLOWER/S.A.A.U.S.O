@@ -75,6 +75,11 @@ class Interpreter {
                                        Handle<PyDict> kwargs,
                                        ExtendArgs... extend_args);
 
+  MaybeHandle<PyObject> CallNonNormalFunction(Handle<PyObject> callable,
+                                              Handle<PyObject> receiver,
+                                              Handle<PyTuple> pos_args,
+                                              Handle<PyDict> kw_args);
+
   void NormalizeCallable(Handle<PyObject>& callable,
                          Handle<PyObject>& receiver);
   Maybe<void> NormalizeArguments(Handle<PyTuple> actual_args,

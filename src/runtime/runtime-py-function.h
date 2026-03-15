@@ -16,6 +16,7 @@ class MethodObject;
 class Isolate;
 class PyObject;
 class PyTuple;
+class PyDict;
 
 MaybeHandle<PyString> Runtime_NewFunctionRepr(Handle<PyFunction> func);
 
@@ -25,6 +26,12 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
                                               Handle<PyFunction> func,
                                               Handle<PyObject>& receiver,
                                               Handle<PyTuple>& args);
+
+MaybeHandle<PyObject> Runtime_CallNativePyFunction(Isolate* isolate,
+                                                   Handle<PyFunction> func,
+                                                   Handle<PyObject> receiver,
+                                                   Handle<PyTuple> args,
+                                                   Handle<PyDict> kwargs);
 
 }  // namespace saauso::internal
 

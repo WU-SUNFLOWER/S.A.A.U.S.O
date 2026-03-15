@@ -990,8 +990,8 @@ void Interpreter::EvalCurrentFrame() {
       }
     }
 
-    GOTO_ON_EXCEPTION(
-        InvokeCallableWithNormalizedArgs(callable, receiver, pos_args, kw_args));
+    GOTO_ON_EXCEPTION(InvokeCallableWithNormalizedArgs(callable, receiver,
+                                                       pos_args, kw_args));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(Call, {
@@ -1165,26 +1165,10 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
   RETURN_ON_EXCEPTION(
       isolate_, NormalizeArguments(actual_args, kwarg_keys, pos_args, kw_args));
 
-  // 如果是NativeFunction，直接执行调用，不走开销昂贵的虚函数
-  if (IsNativePyFunction(callable)) {
-    auto func_object = Handle<PyFunction>::cast(callable);
-    RETURN_ON_EXCEPTION(isolate_, Runtime_NormalizeNativeMethodCall(
-                                      isolate_, func_object, receiver, pos_args));
-    auto* native_func_ptr = func_object->native_func();
-
-    Handle<PyObject> result;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
-                               native_func_ptr(receiver, pos_args, kw_args));
-    PUSH(result);
-
-    return JustVoid();
-  }
-
-  // 兜底：调用对象的__call__虚函数
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, result,
-      PyObject::Call(isolate_, callable, receiver, pos_args, kw_args));
+      CallNonNormalFunction(callable, receiver, pos_args, kw_args));
   PUSH(result);
 
   return JustVoid();
@@ -1197,6 +1181,7 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
     Handle<PyDict> kw_args) {
   NormalizeCallable(callable, receiver);
 
+  // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -1208,11 +1193,11 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
     return JustVoid();
   }
 
+  // Slow Path：处理其他类型的callable
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, result,
-      PyObject::Call(isolate_, callable, receiver, pos_args, kw_args));
-  PUSH(result);
+      CallNonNormalFunction(callable, receiver, pos_args, kw_args));
 
   return JustVoid();
 }

@@ -94,4 +94,22 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
   return JustVoid();
 }
 
+MaybeHandle<PyObject> Runtime_CallNativePyFunction(Isolate* isolate,
+                                                   Handle<PyFunction> func,
+                                                   Handle<PyObject> receiver,
+                                                   Handle<PyTuple> args,
+                                                   Handle<PyDict> kwargs) {
+  assert(IsNativePyFunction(func));
+
+  RETURN_ON_EXCEPTION(isolate, Runtime_NormalizeNativeMethodCall(
+                                   isolate, func, receiver, args));
+
+  NativeFuncPointer native_func_ptr = func->native_func();
+  Handle<PyObject> result;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
+                             native_func_ptr(receiver, args, kwargs));
+
+  return result;
+}
+
 }  // namespace saauso::internal

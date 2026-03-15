@@ -171,13 +171,9 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
     Handle<PyObject> receiver,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(IsNativePyFunction(self));
-  auto func = Handle<PyFunction>::cast(self);
-  auto pos_args = Handle<PyTuple>::cast(args);
-  RETURN_ON_EXCEPTION(
-      isolate,
-      Runtime_NormalizeNativeMethodCall(isolate, func, receiver, pos_args));
-  return func->native_func_(receiver, pos_args, Handle<PyDict>::cast(kwargs));
+  return Runtime_CallNativePyFunction(isolate, Handle<PyFunction>::cast(self),
+                                      receiver, Handle<PyTuple>::cast(args),
+                                      Handle<PyDict>::cast(kwargs));
 }
 
 size_t NativeFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
