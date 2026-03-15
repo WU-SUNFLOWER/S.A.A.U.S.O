@@ -14,6 +14,11 @@ class PyObject;
 class PyTuple;
 class PyDict;
 
+enum class NativeFunctionCallKind : uint8_t {
+  kPlainFunction = 0,
+  kMethodDescriptor = 1,
+};
+
 using NativeFuncPointer = MaybeHandle<PyObject> (*)(Handle<PyObject> receiver,
                                                     Handle<PyTuple> args,
                                                     Handle<PyDict> kwargs);

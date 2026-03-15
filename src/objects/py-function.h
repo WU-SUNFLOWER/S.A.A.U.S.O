@@ -8,6 +8,7 @@
 #include "src/handles/maybe-handles.h"
 #include "src/objects/native-function-helpers.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-type-object.h"
 
 namespace saauso::internal {
 
@@ -40,6 +41,20 @@ class PyFunction : public PyObject {
     return native_func_;
   }
 
+  NativeFunctionCallKind native_call_kind() const { return native_call_kind_; }
+  void set_native_call_kind(NativeFunctionCallKind kind) {
+    native_call_kind_ = kind;
+  }
+  bool is_native_method_descriptor() const {
+    return native_call_kind_ == NativeFunctionCallKind::kMethodDescriptor;
+  }
+  Handle<PyTypeObject> descriptor_owner_type() const {
+    return handle(Tagged<PyTypeObject>::cast(descriptor_owner_type_));
+  }
+  void set_descriptor_owner_type(Handle<PyTypeObject> owner_type) {
+    descriptor_owner_type_ = *owner_type;
+  }
+
  private:
   friend class PyFunctionKlass;
   friend class NativeFunctionKlass;
@@ -65,6 +80,9 @@ class PyFunction : public PyObject {
   PyFuncFlags flags_{0};
 
   NativeFuncPointer native_func_{nullptr};
+  NativeFunctionCallKind native_call_kind_{
+      NativeFunctionCallKind::kPlainFunction};
+  Tagged<PyObject> descriptor_owner_type_{kNullAddress};
 };
 
 class MethodObject : public PyObject {

@@ -16,46 +16,13 @@
 
 namespace saauso::internal {
 
-namespace {
-
-MaybeHandle<PyObject> ResolveUnaryMethodSelf(const char* type_name,
-                                             const char* method_name,
-                                             Handle<PyObject> self,
-                                             Handle<PyTuple> args) {
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (!self.is_null()) {
-    if (argc != 0) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "%s.%s() takes no arguments (%" PRId64 " given)",
-                          type_name, method_name, argc);
-      return kNullMaybeHandle;
-    }
-    return self;
-  }
-
-  if (argc == 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "descriptor '%s' of '%s' object needs an argument",
-                        method_name, type_name);
-    return kNullMaybeHandle;
-  }
-  if (argc != 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "%s.%s() takes exactly one argument (%" PRId64
-                        " given)",
-                        type_name, method_name, argc);
-    return kNullMaybeHandle;
-  }
-  return args->Get(0);
-}
-
-}  // namespace
-
 Maybe<void> PyObjectBuiltinMethods::Install(Isolate* isolate,
-                                            Handle<PyDict> target) {
+                                            Handle<PyDict> target,
+                                            Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(func_name, method_name)                 \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              owner_type)
 
   PY_OBJECT_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -106,51 +73,30 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
   auto* isolate = Isolate::Current();
-
-  Handle<PyObject> instance;
-  Handle<PyObject> init_args = args;
-
-  if (!self.is_null()) {
-    instance = self;
-  } else {
-    int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "descriptor '__init__' of 'object' object needs an "
-                         "argument");
-      return kNullMaybeHandle;
-    }
-    instance = args->Get(0);
-    if (argc == 1) {
-      init_args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      init_args = tail;
-    }
-  }
-
-  return PyObjectKlass::GetInstance()->InitInstance(isolate, instance,
-                                                    init_args, kwargs);
+  return PyObjectKlass::GetInstance()->InitInstance(isolate, self, args,
+                                                    kwargs);
 }
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Repr) {
-  auto* isolate = Isolate::Current();
-  Handle<PyObject> target;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, target,
-      ResolveUnaryMethodSelf("object", "__repr__", self, args));
-  return PyObject::Repr(target);
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "object.__repr__() takes no arguments (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
+  }
+  return PyObject::Repr(self);
 }
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Str) {
-  auto* isolate = Isolate::Current();
-  Handle<PyObject> target;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, target, ResolveUnaryMethodSelf("object", "__str__", self, args));
-  return PyObject::Str(target);
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "object.__str__() takes no arguments (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
+  }
+  return PyObject::Str(self);
 }
 
 }  // namespace saauso::internal

@@ -19,6 +19,7 @@ namespace saauso::internal {
 class Isolate;
 class PyObject;
 class PyTuple;
+class PyTypeObject;
 
 #define BUILTIN_FUNC_NAME(name) Builtin_##name
 
@@ -35,13 +36,17 @@ class PyTuple;
 Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
                                      Handle<PyDict> target,
                                      NativeFuncPointer func,
-                                     const char* method_name);
+                                     const char* method_name,
+                                     Handle<PyTypeObject> owner_type =
+                                         Handle<PyTypeObject>::null());
 
-#define INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name) \
-  RETURN_ON_EXCEPTION(                                                       \
-      isolate,                                                               \
-      InstallBuiltinMethodImpl((isolate), (target),                          \
-                               &BUILTIN_FUNC_NAME(func_name), (method_name)));
+#define INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name,  \
+                                    owner_type)                                \
+  RETURN_ON_EXCEPTION(                                                          \
+      isolate,                                                                  \
+      InstallBuiltinMethodImpl((isolate), (target),                             \
+                               &BUILTIN_FUNC_NAME(func_name), (method_name),    \
+                               (owner_type)));
 
 }  // namespace saauso::internal
 

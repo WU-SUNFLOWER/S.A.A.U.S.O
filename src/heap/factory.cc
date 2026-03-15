@@ -379,6 +379,8 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
     object->closures_ = Tagged<PyObject>::null();
     object->flags_ = 0;
     object->native_func_ = nullptr;
+    object->native_call_kind_ = NativeFunctionCallKind::kPlainFunction;
+    object->descriptor_owner_type_ = Tagged<PyObject>::null();
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
@@ -415,6 +417,8 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
 
   assert(func_template.function() != nullptr);
   object->native_func_ = func_template.function();
+  object->native_call_kind_ = func_template.native_call_kind();
+  object->descriptor_owner_type_ = *func_template.descriptor_owner_type();
 
   assert(!func_template.name().is_null());
   object->func_name_ = *func_template.name();

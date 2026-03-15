@@ -88,7 +88,7 @@ Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
 
   // 注入内建方法
   RETURN_ON_EXCEPTION(isolate, PyListIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
+                                   isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("list_iterator"));

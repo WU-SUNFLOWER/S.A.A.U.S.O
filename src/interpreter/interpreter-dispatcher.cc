@@ -33,6 +33,7 @@
 #include "src/runtime/runtime-intrinsics.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-py-dict.h"
+#include "src/runtime/runtime-py-function.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/runtime/string-table.h"
@@ -1167,6 +1168,8 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
   // 如果是NativeFunction，直接执行调用，不走开销昂贵的虚函数
   if (IsNativePyFunction(callable)) {
     auto func_object = Handle<PyFunction>::cast(callable);
+    RETURN_ON_EXCEPTION(isolate_, Runtime_NormalizeNativeMethodCall(
+                                      isolate_, func_object, receiver, pos_args));
     auto* native_func_ptr = func_object->native_func();
 
     Handle<PyObject> result;

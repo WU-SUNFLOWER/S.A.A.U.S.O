@@ -82,7 +82,8 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   RETURN_ON_EXCEPTION(
-      isolate, PyTypeObjectBuiltinMethods::Install(isolate, klass_properties));
+      isolate, PyTypeObjectBuiltinMethods::Install(
+                   isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("type"));

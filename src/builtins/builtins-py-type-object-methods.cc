@@ -4,10 +4,13 @@
 
 #include "src/builtins/builtins-py-type-object-methods.h"
 
+#include <cinttypes>
+
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-string.h"
@@ -15,10 +18,12 @@
 namespace saauso::internal {
 
 Maybe<void> PyTypeObjectBuiltinMethods::Install(Isolate* isolate,
-                                                Handle<PyDict> target) {
+                                                Handle<PyDict> target,
+                                                Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              owner_type)
 
   PY_TYPE_OBJECT_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -29,20 +34,24 @@ Maybe<void> PyTypeObjectBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Repr) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__repr__' of 'type' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "type.__repr__() takes no arguments (%" PRId64
+                        " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
 }
 
 BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Str) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__str__' of 'type' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "type.__str__() takes no arguments (%" PRId64
+                        " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Str(self);

@@ -173,8 +173,11 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
     Handle<PyObject> kwargs) {
   assert(IsNativePyFunction(self));
   auto func = Handle<PyFunction>::cast(self);
-  return func->native_func_(receiver, Handle<PyTuple>::cast(args),
-                            Handle<PyDict>::cast(kwargs));
+  auto pos_args = Handle<PyTuple>::cast(args);
+  RETURN_ON_EXCEPTION(
+      isolate,
+      Runtime_NormalizeNativeMethodCall(isolate, func, receiver, pos_args));
+  return func->native_func_(receiver, pos_args, Handle<PyDict>::cast(kwargs));
 }
 
 size_t NativeFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -189,6 +192,7 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&func->func_code_);
   v->VisitPointer(&func->func_globals_);
   v->VisitPointer(&func->closures_);
+  v->VisitPointer(&func->descriptor_owner_type_);
 }
 
 ///////////////////////////////////////////////////////////////

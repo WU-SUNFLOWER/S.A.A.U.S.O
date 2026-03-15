@@ -12,10 +12,12 @@
 namespace saauso::internal {
 
 Maybe<void> PyDictKeyIteratorBuiltinMethods::Install(Isolate* isolate,
-                                                     Handle<PyDict> target) {
+                                                     Handle<PyDict> target,
+                                                     Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              owner_type)
 
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -24,10 +26,12 @@ Maybe<void> PyDictKeyIteratorBuiltinMethods::Install(Isolate* isolate,
 }
 
 Maybe<void> PyDictItemIteratorBuiltinMethods::Install(Isolate* isolate,
-                                                      Handle<PyDict> target) {
+                                                      Handle<PyDict> target,
+                                                      Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              owner_type)
 
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -36,10 +40,12 @@ Maybe<void> PyDictItemIteratorBuiltinMethods::Install(Isolate* isolate,
 }
 
 Maybe<void> PyDictValueIteratorBuiltinMethods::Install(Isolate* isolate,
-                                                       Handle<PyDict> target) {
+                                                       Handle<PyDict> target,
+                                                       Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              owner_type)
 
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD

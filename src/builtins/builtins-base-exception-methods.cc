@@ -21,7 +21,8 @@ Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
                                           Handle<PyDict> target) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              Handle<PyTypeObject>::null())
 
   BASE_EXCEPTION_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -77,12 +78,6 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
-  if (self.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__str__() expects a non-null receiver");
-    return kNullMaybeHandle;
-  }
-
   Handle<PyTuple> exception_args;
   ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), exception_args,
                              ReadExceptionArgs(self));
@@ -114,11 +109,6 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
 
 BUILTIN_METHOD(BaseExceptionMethods, Init) {
   auto* isolate = Isolate::Current();
-  if (self.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__init__() expects a non-null receiver");
-    return kNullMaybeHandle;
-  }
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -165,12 +155,6 @@ BUILTIN_METHOD(BaseExceptionMethods, Repr) {
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__repr__() takes no arguments");
-    return kNullMaybeHandle;
-  }
-
-  if (self.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__repr__() expects a non-null receiver");
     return kNullMaybeHandle;
   }
 

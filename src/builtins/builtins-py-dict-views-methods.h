@@ -14,7 +14,9 @@ namespace saauso::internal {
 
 class PyDictKeyIteratorBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_DICT_ITERATOR_BUILTINS(DECL_BUILTIN_METHOD)
@@ -22,7 +24,9 @@ class PyDictKeyIteratorBuiltinMethods : public AllStatic {
 
 class PyDictItemIteratorBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_DICT_ITERATOR_BUILTINS(DECL_BUILTIN_METHOD)
@@ -30,7 +34,9 @@ class PyDictItemIteratorBuiltinMethods : public AllStatic {
 
 class PyDictValueIteratorBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_DICT_ITERATOR_BUILTINS(DECL_BUILTIN_METHOD)

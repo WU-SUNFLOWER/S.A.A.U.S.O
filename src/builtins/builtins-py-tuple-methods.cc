@@ -22,10 +22,12 @@
 namespace saauso::internal {
 
 Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
-                                           Handle<PyDict> target) {
+                                           Handle<PyDict> target,
+                                           Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
+                              owner_type)
 
   PY_TUPLE_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -36,20 +38,24 @@ Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Repr) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__repr__' of 'tuple' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "tuple.__repr__() takes no arguments (%" PRId64
+                        " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
 }
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Str) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__str__' of 'tuple' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "tuple.__str__() takes no arguments (%" PRId64
+                        " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Str(self);

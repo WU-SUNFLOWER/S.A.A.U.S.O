@@ -17,7 +17,9 @@ namespace saauso::internal {
 
 class PyTupleBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_TUPLE_BUILTINS(DECL_BUILTIN_METHOD)

@@ -18,7 +18,9 @@ namespace saauso::internal {
 
 class PyObjectBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_OBJECT_BUILTINS(DECL_BUILTIN_METHOD)

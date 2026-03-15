@@ -13,10 +13,18 @@ namespace saauso::internal {
 class PyString;
 class PyFunction;
 class MethodObject;
+class Isolate;
+class PyObject;
+class PyTuple;
 
 MaybeHandle<PyString> Runtime_NewFunctionRepr(Handle<PyFunction> func);
 
 MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Handle<MethodObject> method);
+
+Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
+                                              Handle<PyFunction> func,
+                                              Handle<PyObject>& receiver,
+                                              Handle<PyTuple>& args);
 
 }  // namespace saauso::internal
 

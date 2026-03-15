@@ -34,6 +34,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-function.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
@@ -158,6 +159,8 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   // Fast Path: 如果是NativeFunction，直接执行调用
   if (IsNativePyFunction(callable)) {
     auto func_object = Handle<PyFunction>::cast(callable);
+    RETURN_ON_EXCEPTION(isolate_, Runtime_NormalizeNativeMethodCall(
+                                      isolate_, func_object, receiver, pos_args));
     auto* native_func_ptr = func_object->native_func();
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
                                native_func_ptr(receiver, pos_args, kw_args));
