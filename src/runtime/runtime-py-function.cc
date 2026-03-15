@@ -107,7 +107,7 @@ MaybeHandle<PyObject> Runtime_CallNativePyFunction(Isolate* isolate,
   NativeFuncPointer native_func_ptr = func->native_func();
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             native_func_ptr(receiver, args, kwargs));
+                             native_func_ptr(isolate, receiver, args, kwargs));
 
   return result;
 }

@@ -30,7 +30,7 @@ Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
                                             Handle<PyDict> target,
                                             Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
+#define INSTALL_BUILTIN_METHOD(func_name, method_name)                 \
   INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
                               owner_type)
 
@@ -46,8 +46,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "str.__repr__() takes no arguments (%" PRId64
-                        " given)",
+                        "str.__repr__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
   }
@@ -269,8 +268,6 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   Handle<PyObject> sep_obj = Handle<PyObject>::null();
   int64_t maxsplit = -1;
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-
   if (argc >= 1) {
     sep_obj = args->Get(0);
     sep_from_positional = true;
@@ -393,7 +390,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
 
   Handle<PyObject> iterable = args->Get(0);
   Handle<PyString> result;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), result,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
                              Runtime_PyStringJoin(str_object, iterable));
 
   return scope.Escape(result);

@@ -23,30 +23,31 @@ class PyTypeObject;
 
 #define BUILTIN_FUNC_NAME(name) Builtin_##name
 
-#define BUILTIN(name)                            \
-  MaybeHandle<PyObject> BUILTIN_FUNC_NAME(name)( \
-      Handle<PyObject> receiver, Handle<PyTuple> args, Handle<PyDict> kwargs)
+#define BUILTIN(name)                                                     \
+  MaybeHandle<PyObject> BUILTIN_FUNC_NAME(name)(                          \
+      Isolate * isolate, Handle<PyObject> receiver, Handle<PyTuple> args, \
+      Handle<PyDict> kwargs)
 
 #define DECL_BUILTIN_METHOD(name, _) static BUILTIN(name);
 
-#define BUILTIN_METHOD(type, name)                     \
-  MaybeHandle<PyObject> type::BUILTIN_FUNC_NAME(name)( \
-      Handle<PyObject> self, Handle<PyTuple> args, Handle<PyDict> kwargs)
+#define BUILTIN_METHOD(type, name)                                    \
+  MaybeHandle<PyObject> type::BUILTIN_FUNC_NAME(name)(                \
+      Isolate * isolate, Handle<PyObject> self, Handle<PyTuple> args, \
+      Handle<PyDict> kwargs)
 
-Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
-                                     Handle<PyDict> target,
-                                     NativeFuncPointer func,
-                                     const char* method_name,
-                                     Handle<PyTypeObject> owner_type =
-                                         Handle<PyTypeObject>::null());
+Maybe<void> InstallBuiltinMethodImpl(
+    Isolate* isolate,
+    Handle<PyDict> target,
+    NativeFuncPointer func,
+    const char* method_name,
+    Handle<PyTypeObject> owner_type = Handle<PyTypeObject>::null());
 
 #define INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name,  \
-                                    owner_type)                                \
-  RETURN_ON_EXCEPTION(                                                          \
-      isolate,                                                                  \
-      InstallBuiltinMethodImpl((isolate), (target),                             \
-                               &BUILTIN_FUNC_NAME(func_name), (method_name),    \
-                               (owner_type)));
+                                    owner_type)                               \
+  RETURN_ON_EXCEPTION(isolate,                                                \
+                      InstallBuiltinMethodImpl((isolate), (target),           \
+                                               &BUILTIN_FUNC_NAME(func_name), \
+                                               (method_name), (owner_type)));
 
 }  // namespace saauso::internal
 

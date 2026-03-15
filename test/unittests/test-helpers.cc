@@ -167,6 +167,7 @@ void BasicInterpreterTest::RunScriptExpectExceptionContains(
 }
 
 MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
+    Isolate* isolate,
     Handle<PyObject> host,
     Handle<PyTuple> args,
     Handle<PyDict> kwargs) {
@@ -174,7 +175,7 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     HandleScope scope;
     PyList::Append(printv_result_.Get(), args->Get(i));
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {

@@ -41,8 +41,6 @@ Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyDictBuiltinMethods, New) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> type_object;
   Handle<PyObject> new_args = args;
 
@@ -97,7 +95,6 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
-  auto* isolate = Isolate::Current();
   return PyDictKlass::GetInstance()->InitInstance(isolate, self, args, kwargs);
 }
 
@@ -149,17 +146,17 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Keys) {
   EscapableHandleScope scope;
-  return scope.Escape(Isolate::Current()->factory()->NewPyDictKeys(self));
+  return scope.Escape(isolate->factory()->NewPyDictKeys(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Values) {
   EscapableHandleScope scope;
-  return scope.Escape(Isolate::Current()->factory()->NewPyDictValues(self));
+  return scope.Escape(isolate->factory()->NewPyDictValues(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Items) {
   EscapableHandleScope scope;
-  return scope.Escape(Isolate::Current()->factory()->NewPyDictItems(self));
+  return scope.Escape(isolate->factory()->NewPyDictItems(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Get) {

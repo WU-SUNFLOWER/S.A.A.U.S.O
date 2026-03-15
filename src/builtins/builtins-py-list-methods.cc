@@ -52,8 +52,6 @@ Maybe<void> PyListBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyListBuiltinMethods, New) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> type_object;
   Handle<PyObject> new_args = args;
 
@@ -103,11 +101,10 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
 
   auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0));
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Init) {
-  auto* isolate = Isolate::Current();
   return PyListKlass::GetInstance()->InitInstance(isolate, self, args, kwargs);
 }
 
@@ -148,7 +145,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1));
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Index) {
@@ -180,8 +177,6 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   int64_t length = list->length();
   int64_t begin = 0;
   int64_t end = length;
-
-  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
@@ -228,7 +223,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
     list->Set(length - i - 1, tmp);
   }
 
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
@@ -237,7 +232,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
           .IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
@@ -249,7 +244,6 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     return kNullMaybeHandle;
   }
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto list = Handle<PyList>::cast(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {

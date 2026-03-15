@@ -159,7 +159,6 @@ MaybeHandle<PyObject> NormalizeExecArgs(Isolate* isolate,
 
 BUILTIN(Exec) {
   EscapableHandleScope scope;
-  Isolate* isolate = Isolate::Current();
 
   // 位置参数：exec(obj) / exec(obj, globals) / exec(obj, globals, locals)。
   const int64_t argc = args.is_null() ? 0 : args->length();

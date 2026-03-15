@@ -33,8 +33,6 @@ Maybe<void> PyObjectBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> type_object;
   Handle<PyObject> new_args = args;
 
@@ -72,7 +70,6 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
 }
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
-  auto* isolate = Isolate::Current();
   return PyObjectKlass::GetInstance()->InitInstance(isolate, self, args,
                                                     kwargs);
 }

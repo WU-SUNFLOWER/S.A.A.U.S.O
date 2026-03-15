@@ -82,7 +82,8 @@ Maybe<void> InstallFunc(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Time_Time(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Time_Time(Isolate* isolate,
+                                Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -101,7 +102,8 @@ MaybeHandle<PyObject> Time_Time(Handle<PyObject> receiver,
   return PyFloat::NewInstance(WallTimeSeconds());
 }
 
-MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Time_PerfCounter(Isolate* isolate,
+                                       Handle<PyObject> receiver,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -119,13 +121,15 @@ MaybeHandle<PyObject> Time_PerfCounter(Handle<PyObject> receiver,
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
-MaybeHandle<PyObject> Time_Monotonic(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Time_Monotonic(Isolate* isolate,
+                                     Handle<PyObject> receiver,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
-  return Time_PerfCounter(receiver, args, kwargs);
+  return Time_PerfCounter(isolate, receiver, args, kwargs);
 }
 
-MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Time_Sleep(Isolate* isolate,
+                                 Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -141,7 +145,7 @@ MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> receiver,
   }
 
   double seconds = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), seconds,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, seconds,
                              ExtractSeconds(args->Get(0), "sleep"));
 
   if (seconds < 0) {
@@ -151,7 +155,7 @@ MaybeHandle<PyObject> Time_Sleep(Handle<PyObject> receiver,
   }
 
   std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 }  // namespace

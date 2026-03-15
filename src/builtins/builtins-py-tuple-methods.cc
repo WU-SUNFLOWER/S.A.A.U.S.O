@@ -25,7 +25,7 @@ Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
                                            Handle<PyDict> target,
                                            Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
+#define INSTALL_BUILTIN_METHOD(func_name, method_name)                 \
   INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
                               owner_type)
 
@@ -40,10 +40,9 @@ Maybe<void> PyTupleBuiltinMethods::Install(Isolate* isolate,
 BUILTIN_METHOD(PyTupleBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "tuple.__repr__() takes no arguments (%" PRId64
-                        " given)",
-                        argc);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "tuple.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
@@ -52,10 +51,9 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Repr) {
 BUILTIN_METHOD(PyTupleBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "tuple.__str__() takes no arguments (%" PRId64
-                        " given)",
-                        argc);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "tuple.__str__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   return PyObject::Str(self);
@@ -89,8 +87,6 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t length = tuple->length();
   int64_t begin = 0;
   int64_t end = length;
-
-  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
