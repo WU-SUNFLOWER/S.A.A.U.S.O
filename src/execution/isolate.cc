@@ -18,6 +18,7 @@
 #include "src/objects/cell-klass.h"
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-base-exception-klass.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict-views-klass.h"

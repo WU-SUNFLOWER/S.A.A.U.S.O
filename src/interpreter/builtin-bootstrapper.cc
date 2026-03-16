@@ -12,6 +12,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
+#include "src/objects/py-base-exception-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
@@ -81,16 +82,17 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinTypes() {
 #define BUILTIN_TYPE_ENTRY(name, klass) \
   {name, klass::GetInstance()->type_object()},
 
-#define BUILTIN_TYPE_LIST(V) \
-  V("object", PyObjectKlass) \
-  V("int", PySmiKlass)       \
-  V("str", PyStringKlass)    \
-  V("float", PyFloatKlass)   \
-  V("list", PyListKlass)     \
-  V("bool", PyBooleanKlass)  \
-  V("dict", PyDictKlass)     \
-  V("tuple", PyTupleKlass)   \
-  V("type", PyTypeObjectKlass)
+#define BUILTIN_TYPE_LIST(V)   \
+  V("object", PyObjectKlass)   \
+  V("int", PySmiKlass)         \
+  V("str", PyStringKlass)      \
+  V("float", PyFloatKlass)     \
+  V("list", PyListKlass)       \
+  V("bool", PyBooleanKlass)    \
+  V("dict", PyDictKlass)       \
+  V("tuple", PyTupleKlass)     \
+  V("type", PyTypeObjectKlass) \
+  V("BaseException", PyBaseExceptionKlass)
 
   const BuiltinTypeEntry entries[] = {BUILTIN_TYPE_LIST(BUILTIN_TYPE_ENTRY)};
 
@@ -158,7 +160,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinsSelfReference() {
 }
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
-  // 先创建BaseException和Exception，确保后续代码中Exception可用
+  // 先创建 Exception（派生自内建类型 BaseException），
+  // 确保后续代码中 Exception 可用。
   RETURN_ON_EXCEPTION(isolate_, InstallBuiltinBasicExceptionTypes());
 
   auto builtins_handle = builtins_.Get();
@@ -190,25 +193,10 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
 }
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
-  Handle<PyTypeObject> object_type =
-      Handle<PyTypeObject>::cast(PyObjectKlass::GetInstance()->type_object());
+  Handle<PyTypeObject> base_exception =
+      PyBaseExceptionKlass::GetInstance()->type_object();
 
   auto supers = PyList::NewInstance(1);
-  supers->SetAndExtendLength(0, object_type);
-
-  // 注入 BaseException 内建方法
-  Handle<PyDict> base_exception_dict = PyDict::NewInstance();
-  RETURN_ON_EXCEPTION(
-      isolate_, BaseExceptionMethods::Install(isolate_, base_exception_dict));
-
-  // 创建 BaseException 类型
-  Handle<PyTypeObject> base_exception;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, base_exception,
-      Runtime_CreatePythonClass(isolate_, ST(base_exception),
-                                base_exception_dict, supers));
-
-  supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);
 
   Handle<PyTypeObject> exception;
@@ -217,8 +205,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
       Runtime_CreatePythonClass(isolate_, ST(exception), PyDict::NewInstance(),
                                 supers));
 
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_.Get(), ST(base_exception),
-                                            base_exception));
+  // 注入 Exception 类型到 builtin 字典
   RETURN_ON_EXCEPTION(isolate_,
                       PyDict::Put(builtins_.Get(), ST(exception), exception));
 

@@ -21,6 +21,7 @@
   V(PyTuple, PyTupleKlass, py_tuple)                                      \
   V(PyTupleIterator, PyTupleIteratorKlass, py_tuple_iterator)             \
   V(PyDict, PyDictKlass, py_dict)                                         \
+  V(PyBaseException, PyBaseExceptionKlass, py_base_exception)             \
   V(PyDictKeys, PyDictKeysKlass, py_dict_keys)                            \
   V(PyDictValues, PyDictValuesKlass, py_dict_values)                      \
   V(PyDictItems, PyDictItemsKlass, py_dict_items)                         \
