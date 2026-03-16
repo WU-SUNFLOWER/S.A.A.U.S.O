@@ -8,6 +8,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-base-exception-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
@@ -99,6 +100,10 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
       "BaseException",  "Exception",  "TypeError", "ValueError",   "NameError",
       "AttributeError", "IndexError", "KeyError",  "RuntimeError",
   };
+  // 第一层校验：
+  // 1) 这些 MVP 异常类型都已注册到 builtins；
+  // 2) 每个条目都是 type object；
+  // 3) BaseException 的 type object 必须绑定到独立的 PyBaseExceptionKlass。
   for (const char* name : kExceptionTypes) {
     Handle<PyString> key = PyString::NewInstance(name);
     bool exists = false;
@@ -110,6 +115,37 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
     ASSERT_TRUE(found) << name;
     EXPECT_TRUE(IsPyTypeObject(value)) << name;
   }
+
+  Tagged<PyObject> base_exception_value;
+  bool found = false;
+  ASSERT_TRUE(builtins
+                  ->GetTagged(PyString::NewInstance("BaseException"),
+                              base_exception_value)
+                  .To(&found));
+  ASSERT_TRUE(found);
+
+  // 第二层校验：校验 BaseException 的 klass 指向正确
+  auto base_exception_type = Tagged<PyTypeObject>::cast(base_exception_value);
+  auto base_exception_klass = base_exception_type->own_klass();
+  EXPECT_EQ(base_exception_klass, PyBaseExceptionKlass::GetInstance());
+
+  // 第三层校验：
+  // 直接检查 BaseException 的类字典，确认关键魔法方法入口已存在。
+  // 这里验证的是“类型对象安装正确”，而不是方法行为语义本身。
+  auto base_exception_props = base_exception_klass->klass_properties();
+
+  bool has_init = false;
+  ASSERT_TRUE(
+      base_exception_props->ContainsKey(ST(init_instance)).To(&has_init));
+  EXPECT_TRUE(has_init);
+
+  bool has_repr = false;
+  ASSERT_TRUE(base_exception_props->ContainsKey(ST(repr)).To(&has_repr));
+  EXPECT_TRUE(has_repr);
+
+  bool has_str = false;
+  ASSERT_TRUE(base_exception_props->ContainsKey(ST(str)).To(&has_str));
+  EXPECT_TRUE(has_str);
 }
 
 TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
