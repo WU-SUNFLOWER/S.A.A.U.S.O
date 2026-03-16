@@ -7,7 +7,6 @@
 #include "include/saauso-internal.h"
 #include "src/builtins/builtins-base-exception-methods.h"
 #include "src/execution/exception-utils.h"
-#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
@@ -22,6 +21,37 @@
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
+
+namespace {
+
+MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
+  if (exception_args.is_null() || exception_args->length() == 0) {
+    return PyString::NewInstance("");
+  }
+  if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
+    return Handle<PyString>::cast(exception_args->Get(0));
+  }
+  return PyString::NewInstance("");
+}
+
+MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
+                                       Handle<PyObject> self) {
+  Handle<PyDict> properties = PyObject::GetProperties(self);
+  if (properties.is_null()) {
+    return Handle<PyTuple>::null();
+  }
+
+  Handle<PyObject> args_obj;
+  bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             properties->Get(ST(args), args_obj));
+  if (!found || !IsPyTuple(args_obj)) {
+    return Handle<PyTuple>::null();
+  }
+  return Handle<PyTuple>::cast(args_obj);
+}
+
+}  // namespace
 
 // static
 Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance() {
@@ -45,6 +75,8 @@ void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
 
   vtable_.Clear();
   vtable_.init_instance_ = &Virtual_InitInstance;
+  vtable_.str_ = &Virtual_Str;
+  vtable_.repr_ = &Virtual_Repr;
 }
 
 Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
@@ -115,26 +147,61 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   RETURN_ON_EXCEPTION_VALUE(
       isolate, PyDict::Put(properties, ST(args), init_args), kNullMaybeHandle);
 
-  Handle<PyObject> str_method;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, str_method,
-      Runtime_GetPropertyInKlassMro(isolate, instance_klass, ST(str)));
-  Handle<PyObject> message_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, message_obj,
-      Execution::Call(isolate, str_method, instance, PyTuple::NewInstance(0),
-                      Handle<PyDict>::null()));
-  if (!IsPyString(message_obj)) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__str__() returned non-string");
-    return kNullMaybeHandle;
-  }
-
-  RETURN_ON_EXCEPTION_VALUE(isolate,
-                            PyDict::Put(properties, ST(message), message_obj),
-                            kNullMaybeHandle);
+  Handle<PyString> message;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message, MessageFromArgsTuple(init_args));
+  RETURN_ON_EXCEPTION_VALUE(
+      isolate, PyDict::Put(properties, ST(message), message), kNullMaybeHandle);
 
   return handle(isolate->py_none_object());
+}
+
+MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  EscapableHandleScope scope;
+
+  Handle<PyTuple> exception_args;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, exception_args,
+                             ReadExceptionArgs(isolate, self));
+  if (!exception_args.is_null()) {
+    Handle<PyString> args_message;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
+                               MessageFromArgsTuple(exception_args));
+    return scope.Escape(args_message);
+  }
+
+  Handle<PyDict> properties = PyObject::GetProperties(self);
+  if (!properties.is_null()) {
+    Handle<PyObject> message;
+    bool found = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               properties->Get(ST(message), message));
+    if (found && IsPyString(message)) {
+      return scope.Escape(Handle<PyString>::cast(message));
+    }
+  }
+
+  return scope.Escape(PyString::NewInstance(""));
+}
+
+MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
+    Handle<PyObject> self) {
+  auto* isolate = Isolate::Current();
+  EscapableHandleScope scope;
+
+  Handle<PyString> type_name = PyObject::GetKlass(self)->name();
+  Handle<PyObject> message_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(self));
+  Handle<PyString> message = Handle<PyString>::cast(message_obj);
+
+  Handle<PyString> result = PyString::NewInstance("<");
+  result = PyString::Append(result, type_name);
+  if (!message.is_null() && !message->IsEmpty()) {
+    result = PyString::Append(result, PyString::NewInstance(": "));
+    result = PyString::Append(result, message);
+  }
+  result = PyString::Append(result, PyString::NewInstance(">"));
+
+  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal
