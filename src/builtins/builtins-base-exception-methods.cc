@@ -6,6 +6,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-base-exception-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
@@ -18,11 +19,12 @@
 namespace saauso::internal {
 
 Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
-                                          Handle<PyDict> target) {
+                                          Handle<PyDict> target,
+                                          Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
 #define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
   INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
-                              access_flag, Handle<PyTypeObject>::null())
+                              access_flag, owner_type)
 
   BASE_EXCEPTION_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -109,28 +111,8 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(BaseExceptionMethods, Init) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__init__() takes no keyword arguments");
-    return kNullMaybeHandle;
-  }
-
-  Handle<PyTuple> init_args = args.is_null() ? PyTuple::NewInstance(0) : args;
-  Handle<PyDict> properties = PyObject::GetProperties(self);
-  if (properties.is_null()) {
-    properties = PyDict::NewInstance();
-    PyObject::SetProperties(*self, *properties);
-  }
-
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(args), init_args), kNullMaybeHandle);
-
-  Handle<PyString> message;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message, MessageFromArgsTuple(init_args));
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(message), message), kNullMaybeHandle);
-
-  return handle(isolate->py_none_object());
+  return PyBaseExceptionKlass::GetInstance()->InitInstance(isolate, self, args,
+                                                           kwargs);
 }
 
 // BaseException.__str__ 的最小实现：返回 message 字段。

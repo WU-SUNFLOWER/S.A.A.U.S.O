@@ -191,14 +191,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
 }
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
-  Handle<PyTypeObject> base_exception = Handle<PyTypeObject>::cast(
-      PyBaseExceptionKlass::GetInstance()->type_object());
-  Handle<PyDict> base_exception_dict =
-      base_exception->own_klass()->klass_properties();
-  RETURN_ON_EXCEPTION(
-      isolate_, BaseExceptionMethods::Install(isolate_, base_exception_dict));
-  RETURN_ON_EXCEPTION(isolate_,
-                      base_exception->own_klass()->InitializeVtable(isolate_));
+  Handle<PyTypeObject> base_exception =
+      PyBaseExceptionKlass::GetInstance()->type_object();
 
   auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);

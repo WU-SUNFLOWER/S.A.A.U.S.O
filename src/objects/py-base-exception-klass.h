@@ -18,6 +18,12 @@ class PyBaseExceptionKlass : public Klass {
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize(Isolate* isolate);
+
+ private:
+  static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
+                                                    Handle<PyObject> instance,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs);
 };
 
 }  // namespace saauso::internal
