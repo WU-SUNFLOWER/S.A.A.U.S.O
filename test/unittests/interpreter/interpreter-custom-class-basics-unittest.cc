@@ -361,6 +361,46 @@ print(a.miss)
                                    kInterpreterTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, InstanceCallableAttributeDoesNotAutoBindReceiver) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+def f(self):
+    print(self is a)
+
+a = A()
+a.f = f
+a.f(a)
+)";
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, ClassCallableAttributeAutoBindsReceiver) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+def f(self):
+    print(self is a)
+
+a = A()
+A.f = f
+a.f()
+)";
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
   HandleScope scope;
 

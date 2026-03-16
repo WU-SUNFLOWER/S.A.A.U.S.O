@@ -170,4 +170,24 @@ print(d.__dict__)
       kTestFileName);
 }
 
+TEST_F(BasicInterpreterTest,
+       ClassAccessorPriorityOverridesPropertiesShadowing) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+a = A()
+a.__dict__["__class__"] = 123
+print(a.__dict__["__class__"])
+print(a.__class__ is A)
+)";
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
+  AppendExpected(expected_printv_result, PyTrueObject());
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

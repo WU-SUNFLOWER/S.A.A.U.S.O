@@ -154,4 +154,23 @@ class C(list, dict):
       kInterpreterTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, ClassAssignmentUpdatesClassAndInstanceLookup) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+a = A()
+A.x = 42
+print(A.x)
+print(a.x)
+)";
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal
