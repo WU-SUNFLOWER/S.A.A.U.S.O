@@ -20,9 +20,9 @@ namespace saauso::internal {
 Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
                                           Handle<PyDict> target) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name)                 \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
-                              Handle<PyTypeObject>::null())
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, Handle<PyTypeObject>::null())
 
   BASE_EXCEPTION_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD

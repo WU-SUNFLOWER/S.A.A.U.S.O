@@ -10,10 +10,10 @@
 
 namespace saauso::internal {
 
-#define PY_TUPLE_BUILTINS(V) \
-  V(Repr, "__repr__")        \
-  V(Str, "__str__")          \
-  V(Index, "index")
+#define PY_TUPLE_BUILTINS(V)           \
+  V(Repr, "__repr__", kInstanceMethod) \
+  V(Str, "__str__", kInstanceMethod)   \
+  V(Index, "index", kInstanceMethod)
 
 class PyTupleBuiltinMethods : public AllStatic {
  public:

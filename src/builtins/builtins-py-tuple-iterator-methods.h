@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-#define PY_TUPLE_ITERATOR_BUILTINS(V) V(Next, "next")
+#define PY_TUPLE_ITERATOR_BUILTINS(V) V(Next, "next", kInstanceMethod)
 
 class PyTupleIteratorBuiltinMethods : public AllStatic {
  public:

@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-#define PY_DICT_ITERATOR_BUILTINS(V) V(Next, "next")
+#define PY_DICT_ITERATOR_BUILTINS(V) V(Next, "next", kInstanceMethod)
 
 class PyDictKeyIteratorBuiltinMethods : public AllStatic {
  public:

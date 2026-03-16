@@ -17,13 +17,14 @@
 
 namespace saauso::internal {
 
-Maybe<void> PyTypeObjectBuiltinMethods::Install(Isolate* isolate,
-                                                Handle<PyDict> target,
-                                                Handle<PyTypeObject> owner_type) {
+Maybe<void> PyTypeObjectBuiltinMethods::Install(
+    Isolate* isolate,
+    Handle<PyDict> target,
+    Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name, \
-                              owner_type)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_TYPE_OBJECT_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -36,10 +37,9 @@ Maybe<void> PyTypeObjectBuiltinMethods::Install(Isolate* isolate,
 BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "type.__repr__() takes no arguments (%" PRId64
-                        " given)",
-                        argc);
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "type.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
@@ -49,8 +49,7 @@ BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "type.__str__() takes no arguments (%" PRId64
-                        " given)",
+                        "type.__str__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
   }

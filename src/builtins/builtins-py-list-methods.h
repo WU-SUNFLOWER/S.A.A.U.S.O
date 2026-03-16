@@ -10,18 +10,18 @@
 
 namespace saauso::internal {
 
-#define PY_LIST_BUILTINS(V) \
-  V(New, "__new__")         \
-  V(Init, "__init__")       \
-  V(Repr, "__repr__")       \
-  V(Str, "__str__")         \
-  V(Append, "append")       \
-  V(Pop, "pop")             \
-  V(Insert, "insert")       \
-  V(Index, "index")         \
-  V(Reverse, "reverse")     \
-  V(Extend, "extend")       \
-  V(Sort, "sort")
+#define PY_LIST_BUILTINS(V)              \
+  V(New, "__new__", kStatic)             \
+  V(Init, "__init__", kInstanceMethod)   \
+  V(Repr, "__repr__", kInstanceMethod)   \
+  V(Str, "__str__", kInstanceMethod)     \
+  V(Append, "append", kInstanceMethod)   \
+  V(Pop, "pop", kInstanceMethod)         \
+  V(Insert, "insert", kInstanceMethod)   \
+  V(Index, "index", kInstanceMethod)     \
+  V(Reverse, "reverse", kInstanceMethod) \
+  V(Extend, "extend", kInstanceMethod)   \
+  V(Sort, "sort", kInstanceMethod)
 
 class PyListBuiltinMethods : public AllStatic {
  public:

@@ -10,7 +10,7 @@
 
 namespace saauso::internal {
 
-#define PY_LIST_ITERATOR_BUILTINS(V) V(Next, "next")
+#define PY_LIST_ITERATOR_BUILTINS(V) V(Next, "next", kInstanceMethod)
 
 class PyListIteratorBuiltinMethods : public AllStatic {
  public:

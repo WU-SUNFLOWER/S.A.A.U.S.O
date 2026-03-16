@@ -10,10 +10,10 @@
 
 namespace saauso::internal {
 
-#define PY_TYPE_OBJECT_BUILTINS(V) \
-  V(Repr, "__repr__")              \
-  V(Str, "__str__")                \
-  V(Mro, "mro")
+#define PY_TYPE_OBJECT_BUILTINS(V)     \
+  V(Repr, "__repr__", kInstanceMethod) \
+  V(Str, "__str__", kInstanceMethod)   \
+  V(Mro, "mro", kInstanceMethod)
 
 class PyTypeObjectBuiltinMethods : public AllStatic {
  public:

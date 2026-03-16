@@ -28,7 +28,7 @@ class PyTypeObject;
       Isolate * isolate, Handle<PyObject> receiver, Handle<PyTuple> args, \
       Handle<PyDict> kwargs)
 
-#define DECL_BUILTIN_METHOD(name, _) static BUILTIN(name);
+#define DECL_BUILTIN_METHOD(name, ignore1, ignore2) static BUILTIN(name);
 
 #define BUILTIN_METHOD(type, name)                                    \
   MaybeHandle<PyObject> type::BUILTIN_FUNC_NAME(name)(                \
@@ -38,16 +38,18 @@ class PyTypeObject;
 Maybe<void> InstallBuiltinMethodImpl(
     Isolate* isolate,
     Handle<PyDict> target,
-    NativeFuncPointer func,
+    NativeFuncPointer cpp_func,
     const char* method_name,
+    NativeFuncAccessFlag access_flag,
     Handle<PyTypeObject> owner_type = Handle<PyTypeObject>::null());
 
-#define INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name,  \
-                                    owner_type)                               \
-  RETURN_ON_EXCEPTION(isolate,                                                \
-                      InstallBuiltinMethodImpl((isolate), (target),           \
-                                               &BUILTIN_FUNC_NAME(func_name), \
-                                               (method_name), (owner_type)));
+#define INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name,       \
+                                    method_name, access_flag, owner_type) \
+  RETURN_ON_EXCEPTION(                                                    \
+      isolate,                                                            \
+      InstallBuiltinMethodImpl(                                           \
+          (isolate), (target), &BUILTIN_FUNC_NAME(cpp_func_name),         \
+          (method_name), (NativeFuncAccessFlag::access_flag), (owner_type)));
 
 }  // namespace saauso::internal
 
