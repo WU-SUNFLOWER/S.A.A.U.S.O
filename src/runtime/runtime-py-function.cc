@@ -14,6 +14,7 @@
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/runtime-py-tuple.h"
 #include "src/runtime/runtime-reflection.h"
 
 namespace saauso::internal {
@@ -83,15 +84,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
     }
 
     receiver = args->Get(0);
-    if (argc == 1) {
-      args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      args = tail;
-    }
+    args = Runtime_NewTupleTailOrNull(args, 1);
   }
 
   bool is_valid_receiver = false;

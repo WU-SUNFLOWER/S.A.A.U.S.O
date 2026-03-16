@@ -21,6 +21,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-dict.h"
 #include "src/runtime/runtime-py-string.h"
+#include "src/runtime/runtime-py-tuple.h"
 
 namespace saauso::internal {
 
@@ -42,7 +43,6 @@ Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
 
 BUILTIN_METHOD(PyDictBuiltinMethods, New) {
   Handle<PyObject> type_object;
-  Handle<PyObject> new_args = args;
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc == 0) {
@@ -52,15 +52,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
   type_object = args->Get(0);
-  if (argc == 1) {
-    new_args = Handle<PyTuple>::null();
-  } else {
-    Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-    for (int64_t i = 1; i < argc; ++i) {
-      tail->SetInternal(i - 1, *args->Get(i));
-    }
-    new_args = tail;
-  }
+  args = Runtime_NewTupleTailOrNull(args, 1);
 
   if (!IsPyTypeObject(type_object)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -70,7 +62,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
   }
 
   return PyDictKlass::GetInstance()->NewInstance(
-      isolate, Handle<PyTypeObject>::cast(type_object), new_args, kwargs);
+      isolate, Handle<PyTypeObject>::cast(type_object), args, kwargs);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {

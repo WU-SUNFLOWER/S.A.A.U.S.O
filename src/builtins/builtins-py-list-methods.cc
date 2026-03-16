@@ -28,6 +28,7 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-iterable.h"
 #include "src/runtime/runtime-py-string.h"
+#include "src/runtime/runtime-py-tuple.h"
 #include "src/runtime/runtime-truthiness.h"
 #include "src/utils/maybe.h"
 #include "src/utils/stable-merge-sort.h"
@@ -63,15 +64,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
   type_object = args->Get(0);
-  if (argc == 1) {
-    new_args = Handle<PyTuple>::null();
-  } else {
-    Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-    for (int64_t i = 1; i < argc; ++i) {
-      tail->SetInternal(i - 1, *args->Get(i));
-    }
-    new_args = tail;
-  }
+  new_args = Runtime_NewTupleTailOrNull(args, 1);
 
   if (!IsPyTypeObject(type_object)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
