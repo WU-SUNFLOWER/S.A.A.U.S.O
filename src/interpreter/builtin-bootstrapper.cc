@@ -12,6 +12,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
+#include "src/objects/py-base-exception-klass.h"
 #include "src/objects/py-dict-klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float-klass.h"
@@ -190,25 +191,16 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
 }
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
-  Handle<PyTypeObject> object_type =
-      Handle<PyTypeObject>::cast(PyObjectKlass::GetInstance()->type_object());
-
-  auto supers = PyList::NewInstance(1);
-  supers->SetAndExtendLength(0, object_type);
-
-  // 注入 BaseException 内建方法
-  Handle<PyDict> base_exception_dict = PyDict::NewInstance();
+  Handle<PyTypeObject> base_exception = Handle<PyTypeObject>::cast(
+      PyBaseExceptionKlass::GetInstance()->type_object());
+  Handle<PyDict> base_exception_dict =
+      base_exception->own_klass()->klass_properties();
   RETURN_ON_EXCEPTION(
       isolate_, BaseExceptionMethods::Install(isolate_, base_exception_dict));
+  RETURN_ON_EXCEPTION(isolate_,
+                      base_exception->own_klass()->InitializeVtable(isolate_));
 
-  // 创建 BaseException 类型
-  Handle<PyTypeObject> base_exception;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, base_exception,
-      Runtime_CreatePythonClass(isolate_, ST(base_exception),
-                                base_exception_dict, supers));
-
-  supers = PyList::NewInstance(1);
+  auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);
 
   Handle<PyTypeObject> exception;
