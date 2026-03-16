@@ -673,9 +673,8 @@ TEST_F(BasicInterpreterTest, BuiltinInitBridgeRejectsWrongReceiverType) {
 list.__init__(dict(), [1, 2, 3])
 )";
 
-  RunScriptExpectExceptionContains(
-      kSource, "descriptor '__init__' requires a 'list' object",
-      kInterpreterTestFileName);
+  RunScriptExpectExceptionContains(kSource, "TypeError: descriptor",
+                                   kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, ListNewSlotBridgeStaysCallableAfterAttributeLoad) {

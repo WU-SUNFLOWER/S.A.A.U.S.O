@@ -49,20 +49,36 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
                                               Handle<PyFunction> func,
                                               Handle<PyObject>& receiver,
                                               Handle<PyTuple>& args) {
-  Handle<PyTypeObject> owner_type = func->descriptor_owner_type();
-  if (owner_type.is_null()) {
+  // Fast Path: 非instance method的 native 函数，不需要任何预处理，直接返回
+  if (!func->is_native_instance_method()) {
     return JustVoid();
   }
 
+  Handle<PyTypeObject> owner_type = func->native_owner_type();
+
+  // Fast Path: 对于已知receiver显式方法调用，直接返回
+  if (!receiver.is_null()) [[likely]] {
+#if defined(_DEBUG)
+    bool is_valid_receiver = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, is_valid_receiver,
+                               Runtime_IsSubtype(PyObject::GetKlass(receiver),
+                                                 owner_type->own_klass()));
+    assert(is_valid_receiver);
+#endif  // defined(_DEBUG)
+
+    return JustVoid();
+  }
+
+  // Slow Path:
+  // 类似于`str.upper(s)`、`list.append(l,1)`
+  // 的间接方法调用，需要手工从 args 中解包出 receiver
   if (receiver.is_null()) {
     int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      const char* owner_name = owner_type.is_null()
-                                   ? "<unknown>"
-                                   : owner_type->own_klass()->name()->buffer();
+    if (argc == 0) [[unlikely]] {
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "descriptor '%s' of '%s' object needs an argument",
-                          func->func_name()->buffer(), owner_name);
+                          "unbound method %s.%s() needs an argument",
+                          owner_type->own_klass()->name()->buffer(),
+                          func->func_name()->buffer());
       return kNullMaybe;
     }
 
@@ -82,10 +98,10 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_receiver,
       Runtime_IsSubtype(PyObject::GetKlass(receiver), owner_type->own_klass()));
-  if (!is_valid_receiver) {
+  if (!is_valid_receiver) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
-        "descriptor '%s' requires a '%s' object but received a '%s'",
+        "descriptor '%s' for '%s' objects doesn't apply to a '%s' object",
         func->func_name()->buffer(), owner_type->own_klass()->name()->buffer(),
         PyObject::GetKlass(receiver)->name()->buffer());
     return kNullMaybe;

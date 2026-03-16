@@ -70,8 +70,7 @@ str.upper()
 )";
 
   RunScriptExpectExceptionContains(
-      kSource, "descriptor 'upper' of 'str' object needs an argument",
-      kTestFileName);
+      kSource, "unbound method str.upper() needs an argument", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObjectWithWrongReceiver) {
@@ -81,8 +80,10 @@ TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObjectWithWrongReceiver) {
 list.append(1, 2)
 )";
 
-  RunScriptExpectExceptionContains(kSource, "requires a 'list' object",
-                                   kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource,
+      "descriptor 'append' for 'list' objects doesn't apply to a 'int' object",
+      kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuildList) {
