@@ -14,9 +14,9 @@ class PyObject;
 class PyTuple;
 class PyDict;
 
-enum class NativeFunctionCallKind : uint8_t {
-  kPlainFunction = 0,
-  kMethodDescriptor = 1,
+enum class NativeFuncAccessFlag : uint8_t {
+  kStatic = 0,
+  kInstanceMethod = 1,
 };
 
 using NativeFuncPointer = MaybeHandle<PyObject> (*)(Isolate* isolate,

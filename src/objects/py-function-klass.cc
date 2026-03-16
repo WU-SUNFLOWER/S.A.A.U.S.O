@@ -188,7 +188,7 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&func->func_code_);
   v->VisitPointer(&func->func_globals_);
   v->VisitPointer(&func->closures_);
-  v->VisitPointer(&func->descriptor_owner_type_);
+  v->VisitPointer(&func->native_owner_type_);
 }
 
 ///////////////////////////////////////////////////////////////
