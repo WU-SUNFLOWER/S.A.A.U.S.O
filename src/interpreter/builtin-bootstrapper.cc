@@ -82,16 +82,17 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinTypes() {
 #define BUILTIN_TYPE_ENTRY(name, klass) \
   {name, klass::GetInstance()->type_object()},
 
-#define BUILTIN_TYPE_LIST(V) \
-  V("object", PyObjectKlass) \
-  V("int", PySmiKlass)       \
-  V("str", PyStringKlass)    \
-  V("float", PyFloatKlass)   \
-  V("list", PyListKlass)     \
-  V("bool", PyBooleanKlass)  \
-  V("dict", PyDictKlass)     \
-  V("tuple", PyTupleKlass)   \
-  V("type", PyTypeObjectKlass)
+#define BUILTIN_TYPE_LIST(V)   \
+  V("object", PyObjectKlass)   \
+  V("int", PySmiKlass)         \
+  V("str", PyStringKlass)      \
+  V("float", PyFloatKlass)     \
+  V("list", PyListKlass)       \
+  V("bool", PyBooleanKlass)    \
+  V("dict", PyDictKlass)       \
+  V("tuple", PyTupleKlass)     \
+  V("type", PyTypeObjectKlass) \
+  V("BaseException", PyBaseExceptionKlass)
 
   const BuiltinTypeEntry entries[] = {BUILTIN_TYPE_LIST(BUILTIN_TYPE_ENTRY)};
 
@@ -159,7 +160,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinsSelfReference() {
 }
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
-  // 先创建BaseException和Exception，确保后续代码中Exception可用
+  // 先创建 Exception（派生自内建类型 BaseException），
+  // 确保后续代码中 Exception 可用。
   RETURN_ON_EXCEPTION(isolate_, InstallBuiltinBasicExceptionTypes());
 
   auto builtins_handle = builtins_.Get();
@@ -203,8 +205,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
       Runtime_CreatePythonClass(isolate_, ST(exception), PyDict::NewInstance(),
                                 supers));
 
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_.Get(), ST(base_exception),
-                                            base_exception));
+  // 注入 Exception 类型到 builtin 字典
   RETURN_ON_EXCEPTION(isolate_,
                       PyDict::Put(builtins_.Get(), ST(exception), exception));
 
