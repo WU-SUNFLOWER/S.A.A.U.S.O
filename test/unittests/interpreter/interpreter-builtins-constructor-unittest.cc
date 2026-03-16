@@ -14,6 +14,7 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/string-table.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -49,8 +50,8 @@ print(str(float("nan")))
   AppendExpected(expected_printv_result, PyString::NewInstance(""));
   AppendExpected(expected_printv_result, PyString::NewInstance("123"));
   AppendExpected(expected_printv_result, PyString::NewInstance("3.0"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("True"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("None"));
+  AppendExpected(expected_printv_result, ST(true_symbol));
+  AppendExpected(expected_printv_result, ST(none_symbol));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1234)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(255)));

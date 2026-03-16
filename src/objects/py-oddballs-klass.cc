@@ -21,6 +21,7 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-type-object.h"
+#include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
@@ -103,7 +104,7 @@ Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyBooleanKlass::Virtual_Repr(Handle<PyObject> self) {
   bool v = Handle<PyBoolean>::cast(self)->value();
-  return PyString::NewInstance(v ? "True" : "False");
+  return v ? ST(true_symbol) : ST(false_symbol);
 }
 
 MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Handle<PyObject> self) {

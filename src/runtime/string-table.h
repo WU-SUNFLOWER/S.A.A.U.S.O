@@ -20,6 +20,11 @@ class ObjectVisitor;
 #define ST_TAGGED(x) (Isolate::Current()->string_table()->x##_str_)
 #define ST(x) (handle(ST_TAGGED(x)))
 
+#define PY_ODDBALLS(V)     \
+  V(true_symbol, "True")   \
+  V(false_symbol, "False") \
+  V(none_symbol, "None")
+
 #define PY_OBJECT_MAGIC_ATTR_LIST(V) \
   V(dict, "__dict__")                \
   V(all, "__all__")                  \
@@ -78,6 +83,7 @@ class StringTable {
   DECLARE_STR_FIELD(name)
 
   KLASS_VTABLE_SLOT_EXPOSED(DECLARE_STR_FIELD_FOR_MAGIC_METHOD)
+  PY_ODDBALLS(DECLARE_STR_FIELD_NORMAL)
   PY_OBJECT_MAGIC_ATTR_LIST(DECLARE_STR_FIELD_NORMAL)
   PY_BUILTIN_FUNC_LIST(DECLARE_STR_FIELD_NORMAL)
   STRING_IN_TABLE_LIST(DECLARE_STR_FIELD_NORMAL)

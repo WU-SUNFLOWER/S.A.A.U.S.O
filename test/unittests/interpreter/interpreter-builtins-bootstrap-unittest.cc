@@ -55,16 +55,13 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   }
   Tagged<PyObject> value;
   bool found = false;
-  ASSERT_TRUE(
-      builtins->GetTagged(PyString::NewInstance("True"), value).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(true_symbol), value).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_true_object());
-  ASSERT_TRUE(
-      builtins->GetTagged(PyString::NewInstance("False"), value).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(false_symbol), value).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_false_object());
-  ASSERT_TRUE(
-      builtins->GetTagged(PyString::NewInstance("None"), value).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(none_symbol), value).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_none_object());
 

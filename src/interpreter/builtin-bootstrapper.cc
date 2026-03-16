@@ -44,7 +44,7 @@ struct BuiltinTypeEntry {
 };
 
 struct BuiltinOddballEntry {
-  const char* name;
+  Handle<PyString> name;
   Tagged<PyObject> value;
 };
 
@@ -112,15 +112,14 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinTypes() {
 Maybe<void> BuiltinBootstrapper::InstallOddballs() {
   // 注册解释器侧可见的单例对象。
   const BuiltinOddballEntry entries[] = {
-      {"True", isolate_->py_true_object()},
-      {"False", isolate_->py_false_object()},
-      {"None", isolate_->py_none_object()},
+      {ST(true_symbol), isolate_->py_true_object()},
+      {ST(false_symbol), isolate_->py_false_object()},
+      {ST(none_symbol), isolate_->py_none_object()},
   };
 
   auto builtins_handle = builtins_.Get();
   for (const auto& entry : entries) {
-    RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_handle,
-                                              PyString::NewInstance(entry.name),
+    RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_handle, entry.name,
                                               handle(entry.value)));
   }
 
