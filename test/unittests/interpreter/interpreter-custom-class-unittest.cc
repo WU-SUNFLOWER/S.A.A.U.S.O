@@ -730,6 +730,46 @@ print(isinstance(a, A))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, TryToCallDictNewSlotLikeCommonInstanceMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class D(dict):
+  pass
+
+d = {"x": 1, "y": 2}
+a = d.__new__(D)
+print(isinstance(a, D))
+print(isinstance(a, dict))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, TryToCallListNewSlotLikeCommonInstanceMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class L(list):
+  pass
+
+l = [1, 2, 3]
+a = l.__new__(L)
+print(isinstance(a, L))
+print(isinstance(a, list))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, BuiltinNewBridgeRejectsWrongReceiverType) {
   HandleScope scope;
 
