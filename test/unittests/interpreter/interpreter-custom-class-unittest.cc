@@ -747,6 +747,7 @@ print(isinstance(a, dict))
 
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -766,6 +767,7 @@ print(isinstance(a, list))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
