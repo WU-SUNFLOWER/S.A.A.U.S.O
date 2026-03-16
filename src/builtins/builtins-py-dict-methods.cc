@@ -44,26 +44,22 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
   Handle<PyObject> type_object;
   Handle<PyObject> new_args = args;
 
-  if (!self.is_null()) {
-    type_object = self;
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc == 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "descriptor '__new__' of 'dict' object needs an "
+                       "argument");
+    return kNullMaybeHandle;
+  }
+  type_object = args->Get(0);
+  if (argc == 1) {
+    new_args = Handle<PyTuple>::null();
   } else {
-    int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "descriptor '__new__' of 'dict' object needs an "
-                         "argument");
-      return kNullMaybeHandle;
+    Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
+    for (int64_t i = 1; i < argc; ++i) {
+      tail->SetInternal(i - 1, *args->Get(i));
     }
-    type_object = args->Get(0);
-    if (argc == 1) {
-      new_args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      new_args = tail;
-    }
+    new_args = tail;
   }
 
   if (!IsPyTypeObject(type_object)) {
