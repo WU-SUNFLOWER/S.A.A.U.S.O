@@ -4,6 +4,7 @@
 
 #include "src/runtime/runtime-py-tuple.h"
 
+#include <algorithm>
 #include <string>
 
 #include "src/execution/exception-utils.h"
@@ -32,6 +33,35 @@ MaybeHandle<PyString> Runtime_NewTupleRepr(Handle<PyTuple> tuple) {
   repr.push_back(')');
 
   return scope.Escape(PyString::FromStdString(repr));
+}
+
+Handle<PyTuple> Runtime_NewTupleSlice(Handle<PyTuple> tuple,
+                                      int64_t begin,
+                                      int64_t end) {
+  if (tuple.is_null()) {
+    return Handle<PyTuple>::null();
+  }
+
+  int64_t length = tuple->length();
+  begin = std::max(static_cast<int64_t>(0), std::min(begin, length));
+  end = std::max(begin, std::min(end, length));
+
+  Handle<PyTuple> sliced = PyTuple::NewInstance(end - begin);
+  for (int64_t i = begin; i < end; ++i) {
+    sliced->SetInternal(i - begin, tuple->GetTagged(i));
+  }
+  return sliced;
+}
+
+Handle<PyTuple> Runtime_NewTupleTailOrNull(Handle<PyTuple> tuple,
+                                           int64_t begin) {
+  if (tuple.is_null()) {
+    return Handle<PyTuple>::null();
+  }
+  if (begin >= tuple->length()) {
+    return Handle<PyTuple>::null();
+  }
+  return Runtime_NewTupleSlice(tuple, begin, tuple->length());
 }
 
 }  // namespace saauso::internal
