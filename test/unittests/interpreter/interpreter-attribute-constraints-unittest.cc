@@ -137,4 +137,37 @@ print(s.x)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuiltinObjectDictAccessorReadFails) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+o = object()
+print(o.__dict__)
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'object' object has no attribute '__dict__'",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinListDictAccessorReadFails) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+l = []
+print(l.__dict__)
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'list' object has no attribute '__dict__'",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinDictObjectDictAccessorReadFails) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+d = {"x": 1, "y": 2}
+print(d.__dict__)
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'dict' object has no attribute '__dict__'",
+      kTestFileName);
+}
+
 }  // namespace saauso::internal

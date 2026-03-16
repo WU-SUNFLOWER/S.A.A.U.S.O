@@ -206,4 +206,47 @@ type()
                                   kTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg1MustBeStr) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+type(1, (), {})
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "argument 1 must be str, not 'int'",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg2MustBeTuple) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+type("C", [], {})
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "argument 2 must be tuple, not 'list'",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg3MustBeDict) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+type("C", (), [])
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "argument 3 must be dict, not 'list'",
+      kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeBasesMustBeTypes) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+type("C", (1,), {})
+)";
+  RunScriptExpectExceptionContains(kSource, "TypeError: type() bases must be types",
+                                   kTestFileName);
+}
+
 }  // namespace saauso::internal

@@ -143,4 +143,15 @@ print(b.x)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, MultipleNativeLayoutBasesRaiseTypeError) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class C(list, dict):
+    pass
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "TypeError: multiple bases have instance lay-out conflict",
+      kInterpreterTestFileName);
+}
+
 }  // namespace saauso::internal

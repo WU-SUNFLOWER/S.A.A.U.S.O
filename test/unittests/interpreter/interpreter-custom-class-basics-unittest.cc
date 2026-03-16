@@ -329,6 +329,38 @@ print(a.miss)
                                    kInterpreterTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, GetAttrHookMustBeLookedUpFromTypeMro) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+def instance_hook(name):
+    return 123
+
+a = A()
+a.__getattr__ = instance_hook
+print(a.miss)
+)";
+  RunScriptExpectExceptionContains(
+      kSource, "AttributeError: 'A' object has no attribute 'miss'",
+      kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, GetAttrExceptionPropagatesToCaller) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    def __getattr__(self, name):
+        raise ValueError("boom-from-getattr")
+
+a = A()
+print(a.miss)
+)";
+  RunScriptExpectExceptionContains(kSource, "ValueError: boom-from-getattr",
+                                   kInterpreterTestFileName);
+}
+
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
   HandleScope scope;
 
