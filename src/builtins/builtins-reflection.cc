@@ -92,7 +92,7 @@ BUILTIN(BuildTypeObject) {
   auto class_builder_obj = args->Get(0);
   if (!IsPyFunction(class_builder_obj)) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
-                       "__build_class__: func is not a function");
+                       "__build_class__: func must be a function");
     return kNullMaybeHandle;
   }
   auto class_builder = Handle<PyFunction>::cast(class_builder_obj);

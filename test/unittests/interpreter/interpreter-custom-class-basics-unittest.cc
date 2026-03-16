@@ -535,4 +535,42 @@ except TypeError as e:
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuildClassFuncMustBeFunction) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+__build_class__(1, "A")
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "__build_class__: func must be a function",
+                                   kInterpreterTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, ClassFunctionFromTypeRequiresExplicitSelf) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+def f(self):
+    pass
+
+A.f = f
+ok = False
+try:
+    A.f()
+except TypeError:
+    ok = True
+print(ok)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal
