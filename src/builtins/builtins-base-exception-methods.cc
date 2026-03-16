@@ -20,8 +20,9 @@ namespace saauso::internal {
 Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
                                           Handle<PyDict> target) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, Handle<PyTypeObject>::null())
 
   BASE_EXCEPTION_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -43,8 +44,8 @@ MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
   return PyString::NewInstance("");
 }
 
-MaybeHandle<PyTuple> ReadExceptionArgs(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
+                                       Handle<PyObject> self) {
   Handle<PyDict> properties = PyObject::GetProperties(self);
   if (properties.is_null()) {
     return Handle<PyTuple>::null();
@@ -60,7 +61,8 @@ MaybeHandle<PyTuple> ReadExceptionArgs(Handle<PyObject> self) {
   return Handle<PyTuple>::cast(args_obj);
 }
 
-MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
+MaybeHandle<PyObject> BaseExceptionStrImpl(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyTuple> args,
                                            Handle<PyDict> kwargs) {
   EscapableHandleScope scope;
@@ -77,18 +79,12 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
     return kNullMaybeHandle;
   }
 
-  if (self.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__str__() expects a non-null receiver");
-    return kNullMaybeHandle;
-  }
-
   Handle<PyTuple> exception_args;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), exception_args,
-                             ReadExceptionArgs(self));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, exception_args,
+                             ReadExceptionArgs(isolate, self));
   if (!exception_args.is_null()) {
     Handle<PyString> args_message;
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), args_message,
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
                                MessageFromArgsTuple(exception_args));
     return scope.Escape(args_message);
   }
@@ -113,13 +109,6 @@ MaybeHandle<PyObject> BaseExceptionStrImpl(Handle<PyObject> self,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(BaseExceptionMethods, Init) {
-  auto* isolate = Isolate::Current();
-  if (self.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__init__() expects a non-null receiver");
-    return kNullMaybeHandle;
-  }
-
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "BaseException.__init__() takes no keyword arguments");
@@ -147,7 +136,7 @@ BUILTIN_METHOD(BaseExceptionMethods, Init) {
 // BaseException.__str__ 的最小实现：返回 message 字段。
 // 该实现用于提升 MVP 阶段的可用性，使用户能够通过 str(e) 获取错误原因。
 BUILTIN_METHOD(BaseExceptionMethods, Str) {
-  return BaseExceptionStrImpl(self, args, kwargs);
+  return BaseExceptionStrImpl(isolate, self, args, kwargs);
 }
 
 // BaseException.__repr__ 的最小实现：返回 "<TypeName: message>"（message
@@ -168,16 +157,10 @@ BUILTIN_METHOD(BaseExceptionMethods, Repr) {
     return kNullMaybeHandle;
   }
 
-  if (self.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
-                       "BaseException.__repr__() expects a non-null receiver");
-    return kNullMaybeHandle;
-  }
-
   Handle<PyString> type_name = PyObject::GetKlass(self)->name();
   Handle<PyString> message;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), message,
-                             BaseExceptionStrImpl(self, args, kwargs));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
+                             BaseExceptionStrImpl(isolate, self, args, kwargs));
 
   Handle<PyString> result = PyString::NewInstance("<");
   if (message.is_null() || message->IsEmpty()) {

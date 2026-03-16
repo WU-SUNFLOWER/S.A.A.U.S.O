@@ -92,7 +92,8 @@ Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(
-      isolate, PyTupleBuiltinMethods::Install(isolate, klass_properties));
+      isolate, PyTupleBuiltinMethods::Install(
+                   isolate, klass_properties, type_object()));
 
   set_name(PyString::NewInstance("tuple"));
 

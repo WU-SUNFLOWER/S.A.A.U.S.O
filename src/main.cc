@@ -28,22 +28,10 @@ using namespace saauso::internal;
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 constexpr std::string_view kFileName = "test.py";
 constexpr std::string_view kSourceCode = R"PY(
-class A:
-    def __str__(self):
-        return "str(A)"
-
-    def __repr__(self):
-        return "repr(A)"
-
-class B:
-    def __repr__(self):
-        return "repr(B)"
-
-a = A()
-b = B()
-print(str(a))
-print(repr(a))
-print(str(b))
+f = list.__new__
+a = f(list)
+list.__init__(a, [1, 2, 3])
+print(a[0] + a[1] + a[2])
 )PY";
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 

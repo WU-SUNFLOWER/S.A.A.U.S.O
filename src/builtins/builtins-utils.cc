@@ -4,6 +4,8 @@
 
 #include "src/builtins/builtins-utils.h"
 
+#include <cassert>
+
 #include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -15,9 +17,15 @@ namespace saauso::internal {
 Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
                                      Handle<PyDict> target,
                                      NativeFuncPointer func,
-                                     const char* method_name) {
+                                     const char* method_name,
+                                     NativeFuncAccessFlag access_flag,
+                                     Handle<PyTypeObject> owner_type) {
+  HandleScope scope;
+
   auto prop_name = PyString::NewInstance(method_name);
-  auto func_template = FunctionTemplateInfo(func, prop_name);
+  auto func_template =
+      FunctionTemplateInfo(func, prop_name, access_flag, owner_type);
+
   Handle<PyFunction> func_object;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, func_object,

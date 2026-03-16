@@ -14,10 +14,16 @@ class PyObject;
 class PyTuple;
 class PyDict;
 
-using NativeFuncPointer = MaybeHandle<PyObject> (*)(Handle<PyObject> receiver,
+enum class NativeFuncAccessFlag : uint8_t {
+  kStatic = 0,
+  kInstanceMethod = 1,
+};
+
+using NativeFuncPointer = MaybeHandle<PyObject> (*)(Isolate* isolate,
+                                                    Handle<PyObject> receiver,
                                                     Handle<PyTuple> args,
                                                     Handle<PyDict> kwargs);
 
-}
+}  // namespace saauso::internal
 
 #endif  // INCLUDE_SAAUSO_NATIVE_FUNCTION_H_

@@ -64,7 +64,8 @@ struct FrameBuildContext {
 };
 
 Handle<PyDict> GetDefaultBoundLocals(Handle<PyFunction> func) {
-  if ((func->flags() & PyCodeObject::Flag::kOptimized) != 0) [[unlikely]] {
+  if ((func->func_code()->flags() & PyCodeObject::Flag::kOptimized) != 0)
+      [[unlikely]] {
     return func->func_globals();
   }
   return Handle<PyDict>::null();

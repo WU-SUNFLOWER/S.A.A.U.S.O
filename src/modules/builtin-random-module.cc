@@ -90,7 +90,8 @@ Maybe<void> InstallFunc(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Random_Seed(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_Seed(Isolate* isolate,
+                                  Handle<PyObject> receiver,
                                   Handle<PyTuple> args,
                                   Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -113,17 +114,17 @@ MaybeHandle<PyObject> Random_Seed(Handle<PyObject> receiver,
       seed = NowSeed();
     } else {
       int64_t val = 0;
-      ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), val,
-                                 ExtractSmi(a, "seed"));
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, val, ExtractSmi(a, "seed"));
       seed = static_cast<uint64_t>(val);
     }
   }
   g_rng.Seed(seed);
   g_seeded = true;
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> Random_Random(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_Random(Isolate* isolate,
+                                    Handle<PyObject> receiver,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -142,7 +143,8 @@ MaybeHandle<PyObject> Random_Random(Handle<PyObject> receiver,
   return PyFloat::NewInstance(g_rng.NextDouble01());
 }
 
-MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_RandInt(Isolate* isolate,
+                                     Handle<PyObject> receiver,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -158,12 +160,10 @@ MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> receiver,
   }
 
   int64_t a = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), a,
-                             ExtractSmi(args->Get(0), "randint"));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, a, ExtractSmi(args->Get(0), "randint"));
 
   int64_t b = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), b,
-                             ExtractSmi(args->Get(1), "randint"));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, b, ExtractSmi(args->Get(1), "randint"));
 
   if (a > b) {
     FailArgRangeEmpty("randint");
@@ -176,7 +176,8 @@ MaybeHandle<PyObject> Random_RandInt(Handle<PyObject> receiver,
   return handle(PySmi::FromInt(result));
 }
 
-MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_RandRange(Isolate* isolate,
+                                       Handle<PyObject> receiver,
                                        Handle<PyTuple> args,
                                        Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -196,15 +197,15 @@ MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> receiver,
   int64_t step = 1;
 
   if (argc == 1) {
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), stop,
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, stop,
                                ExtractSmi(args->Get(0), "randrange"));
   } else {
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), start,
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, start,
                                ExtractSmi(args->Get(0), "randrange"));
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), stop,
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, stop,
                                ExtractSmi(args->Get(1), "randrange"));
     if (argc == 3) {
-      ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), step,
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, step,
                                  ExtractSmi(args->Get(2), "randrange"));
     }
   }
@@ -242,7 +243,8 @@ MaybeHandle<PyObject> Random_RandRange(Handle<PyObject> receiver,
   return handle(PySmi::FromInt(result));
 }
 
-MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_GetRandBits(Isolate* isolate,
+                                         Handle<PyObject> receiver,
                                          Handle<PyTuple> args,
                                          Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -259,7 +261,7 @@ MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> receiver,
   }
 
   int64_t k = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), k,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, k,
                              ExtractSmi(args->Get(0), "getrandbits"));
 
   if (k < 0) {
@@ -282,7 +284,8 @@ MaybeHandle<PyObject> Random_GetRandBits(Handle<PyObject> receiver,
   return handle(PySmi::FromInt(static_cast<int64_t>(x)));
 }
 
-MaybeHandle<PyObject> Random_Choice(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_Choice(Isolate* isolate,
+                                    Handle<PyObject> receiver,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -342,7 +345,8 @@ MaybeHandle<PyObject> Random_Choice(Handle<PyObject> receiver,
   return kNullMaybe;
 }
 
-MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Random_Shuffle(Isolate* isolate,
+                                     Handle<PyObject> receiver,
                                      Handle<PyTuple> args,
                                      Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -378,7 +382,7 @@ MaybeHandle<PyObject> Random_Shuffle(Handle<PyObject> receiver,
     list->Set(static_cast<int64_t>(j), vi);
   }
 
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 }  // namespace

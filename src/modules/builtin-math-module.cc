@@ -95,7 +95,8 @@ Maybe<void> InstallFunc(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Sqrt(Isolate* isolate,
+                                Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -109,8 +110,7 @@ MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   if (x < 0) {
     Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
@@ -119,7 +119,8 @@ MaybeHandle<PyObject> Math_Sqrt(Handle<PyObject> receiver,
   return PyFloat::NewInstance(std::sqrt(x));
 }
 
-MaybeHandle<PyObject> Math_Floor(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Floor(Isolate* isolate,
+                                 Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -133,13 +134,13 @@ MaybeHandle<PyObject> Math_Floor(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return ReturnPyIntFromDouble(std::floor(x), "floor");
 }
 
-MaybeHandle<PyObject> Math_Ceil(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Ceil(Isolate* isolate,
+                                Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -153,13 +154,13 @@ MaybeHandle<PyObject> Math_Ceil(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return ReturnPyIntFromDouble(std::ceil(x), "ceil");
 }
 
-MaybeHandle<PyObject> Math_Fabs(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Fabs(Isolate* isolate,
+                                Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -173,13 +174,13 @@ MaybeHandle<PyObject> Math_Fabs(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return PyFloat::NewInstance(std::fabs(x));
 }
 
-MaybeHandle<PyObject> Math_Sin(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Sin(Isolate* isolate,
+                               Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -193,13 +194,13 @@ MaybeHandle<PyObject> Math_Sin(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return PyFloat::NewInstance(std::sin(x));
 }
 
-MaybeHandle<PyObject> Math_Cos(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Cos(Isolate* isolate,
+                               Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -213,13 +214,13 @@ MaybeHandle<PyObject> Math_Cos(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return PyFloat::NewInstance(std::cos(x));
 }
 
-MaybeHandle<PyObject> Math_Tan(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Tan(Isolate* isolate,
+                               Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -233,13 +234,13 @@ MaybeHandle<PyObject> Math_Tan(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return PyFloat::NewInstance(std::tan(x));
 }
 
-MaybeHandle<PyObject> Math_Exp(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Exp(Isolate* isolate,
+                               Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -253,13 +254,13 @@ MaybeHandle<PyObject> Math_Exp(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return PyFloat::NewInstance(std::exp(x));
 }
 
-MaybeHandle<PyObject> Math_Log(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Log(Isolate* isolate,
+                               Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -273,8 +274,7 @@ MaybeHandle<PyObject> Math_Log(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   if (x <= 0) {
     Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
@@ -283,7 +283,8 @@ MaybeHandle<PyObject> Math_Log(Handle<PyObject> receiver,
   return PyFloat::NewInstance(std::log(x));
 }
 
-MaybeHandle<PyObject> Math_Log2(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Log2(Isolate* isolate,
+                                Handle<PyObject> receiver,
                                 Handle<PyTuple> args,
                                 Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -297,8 +298,7 @@ MaybeHandle<PyObject> Math_Log2(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   if (x <= 0) {
     Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
@@ -307,7 +307,8 @@ MaybeHandle<PyObject> Math_Log2(Handle<PyObject> receiver,
   return PyFloat::NewInstance(std::log2(x));
 }
 
-MaybeHandle<PyObject> Math_Log10(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Log10(Isolate* isolate,
+                                 Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -321,8 +322,7 @@ MaybeHandle<PyObject> Math_Log10(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   if (x <= 0) {
     Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
@@ -331,7 +331,8 @@ MaybeHandle<PyObject> Math_Log10(Handle<PyObject> receiver,
   return PyFloat::NewInstance(std::log10(x));
 }
 
-MaybeHandle<PyObject> Math_Pow(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_Pow(Isolate* isolate,
+                               Handle<PyObject> receiver,
                                Handle<PyTuple> args,
                                Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -347,17 +348,16 @@ MaybeHandle<PyObject> Math_Pow(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   double y = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(1)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(1)));
 
   return PyFloat::NewInstance(std::pow(x, y));
 }
 
-MaybeHandle<PyObject> Math_IsFinite(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_IsFinite(Isolate* isolate,
+                                    Handle<PyObject> receiver,
                                     Handle<PyTuple> args,
                                     Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -371,13 +371,13 @@ MaybeHandle<PyObject> Math_IsFinite(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return handle(Isolate::ToPyBoolean(std::isfinite(x)));
 }
 
-MaybeHandle<PyObject> Math_IsNaN(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_IsNaN(Isolate* isolate,
+                                 Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -391,13 +391,13 @@ MaybeHandle<PyObject> Math_IsNaN(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return handle(Isolate::ToPyBoolean(std::isnan(x)));
 }
 
-MaybeHandle<PyObject> Math_IsInf(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Math_IsInf(Isolate* isolate,
+                                 Handle<PyObject> receiver,
                                  Handle<PyTuple> args,
                                  Handle<PyDict> kwargs) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -411,8 +411,7 @@ MaybeHandle<PyObject> Math_IsInf(Handle<PyObject> receiver,
   }
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), x,
-                             ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   return handle(Isolate::ToPyBoolean(std::isinf(x)));
 }

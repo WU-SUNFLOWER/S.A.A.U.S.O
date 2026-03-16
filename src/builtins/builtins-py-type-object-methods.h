@@ -10,14 +10,16 @@
 
 namespace saauso::internal {
 
-#define PY_TYPE_OBJECT_BUILTINS(V) \
-  V(Repr, "__repr__")              \
-  V(Str, "__str__")                \
-  V(Mro, "mro")
+#define PY_TYPE_OBJECT_BUILTINS(V)     \
+  V(Repr, "__repr__", kInstanceMethod) \
+  V(Str, "__str__", kInstanceMethod)   \
+  V(Mro, "mro", kInstanceMethod)
 
 class PyTypeObjectBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_TYPE_OBJECT_BUILTINS(DECL_BUILTIN_METHOD)

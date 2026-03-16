@@ -32,8 +32,6 @@ BUILTIN(Repr) {
 BUILTIN(IsInstance) {
   EscapableHandleScope scope;
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length != 2) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -84,8 +82,6 @@ BUILTIN(IsInstance) {
 BUILTIN(BuildTypeObject) {
   EscapableHandleScope scope;
 
-  auto* isolate = Isolate::Current();
-
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length < 2) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -115,9 +111,9 @@ BUILTIN(BuildTypeObject) {
   }
 
   auto class_properties = PyDict::NewInstance();
-  if (Execution::Call(Isolate::Current(), class_builder,
-                      Handle<PyTuple>::null(), Handle<PyTuple>::null(),
-                      Handle<PyDict>::null(), class_properties)
+  if (Execution::Call(isolate, class_builder, Handle<PyTuple>::null(),
+                      Handle<PyTuple>::null(), Handle<PyDict>::null(),
+                      class_properties)
           .IsEmpty()) {
     return kNullMaybeHandle;
   }

@@ -375,7 +375,7 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
+                                   isolate, klass_properties, type_object()));
 
   set_name(PyString::NewInstance("dict_keyiterator"));
 
@@ -459,7 +459,7 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
+                                   isolate, klass_properties, type_object()));
 
   set_name(PyString::NewInstance("dict_itemiterator"));
 
@@ -543,7 +543,7 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties));
+                                   isolate, klass_properties, type_object()));
 
   set_name(PyString::NewInstance("dict_valueiterator"));
 

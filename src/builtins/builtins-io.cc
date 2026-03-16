@@ -135,7 +135,6 @@ void WriteHandleString(Handle<PyString> value) {
 
 BUILTIN(Print) {
   EscapableHandleScope scope;
-  Isolate* isolate = Isolate::Current();
 
   PrintOptions options;
   RETURN_ON_EXCEPTION_VALUE(isolate,

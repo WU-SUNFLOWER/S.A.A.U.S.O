@@ -27,10 +27,12 @@
 namespace saauso::internal {
 
 Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
-                                            Handle<PyDict> target) {
+                                            Handle<PyDict> target,
+                                            Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_STRING_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -41,20 +43,22 @@ Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__repr__' of 'str' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) [[unlikely]] {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "str.__repr__() takes no arguments (%" PRId64 " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__str__' of 'str' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) [[unlikely]] {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "str.__str__() takes no arguments (%" PRId64 " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Str(self);
@@ -62,6 +66,14 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
   EscapableHandleScope scope;
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) [[unlikely]] {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "str.upper() takes no arguments (%" PRId64 " given)",
+                        argc);
+    return kNullMaybeHandle;
+  }
 
   auto str_object = Handle<PyString>::cast(self);
   auto result =
@@ -85,20 +97,20 @@ bool ValidateStringSearchArgs(Handle<PyDict> kwargs,
                               Handle<PyTuple> args,
                               const char* method_name,
                               int64_t& argc) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+  if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s takes no keyword arguments", method_name);
     return false;
   }
 
   argc = args.is_null() ? 0 : args->length();
-  if (argc < 1) {
+  if (argc < 1) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s takes at least 1 argument (%" PRId64 " given)",
                         method_name, argc);
     return false;
   }
-  if (argc > 3) {
+  if (argc > 3) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s takes at most 3 arguments (%" PRId64 " given)",
                         method_name, argc);
@@ -117,7 +129,7 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
                              int64_t& begin,
                              int64_t& end) {
   auto target = args->Get(0);
-  if (!IsPyString(target)) {
+  if (!IsPyString(target)) [[unlikely]] {
     auto type_name = PyObject::GetKlass(target)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %s",
                         type_name->buffer());
@@ -256,8 +268,6 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   Handle<PyObject> sep_obj = Handle<PyObject>::null();
   int64_t maxsplit = -1;
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-
   if (argc >= 1) {
     sep_obj = args->Get(0);
     sep_from_positional = true;
@@ -380,7 +390,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
 
   Handle<PyObject> iterable = args->Get(0);
   Handle<PyString> result;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), result,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
                              Runtime_PyStringJoin(str_object, iterable));
 
   return scope.Escape(result);

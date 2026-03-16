@@ -104,7 +104,8 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(
-      isolate, PyStringBuiltinMethods::Install(isolate, klass_properties));
+      isolate, PyStringBuiltinMethods::Install(
+                   isolate, klass_properties, type_object()));
 
   return JustVoid();
 }

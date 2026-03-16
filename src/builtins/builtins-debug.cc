@@ -10,8 +10,8 @@
 namespace saauso::internal {
 
 BUILTIN(Sysgc) {
-  Isolate::Current()->heap()->CollectGarbage();
-  return handle(Isolate::Current()->py_none_object());
+  isolate->heap()->CollectGarbage();
+  return handle(isolate->py_none_object());
 }
 
 }  // namespace saauso::internal

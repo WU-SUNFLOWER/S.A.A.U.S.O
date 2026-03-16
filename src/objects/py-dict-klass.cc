@@ -98,7 +98,8 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(isolate,
-                      PyDictBuiltinMethods::Install(isolate, klass_properties));
+                      PyDictBuiltinMethods::Install(
+                          isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("dict"));

@@ -11,11 +11,14 @@
 
 namespace saauso::internal {
 
-Maybe<void> PyDictKeyIteratorBuiltinMethods::Install(Isolate* isolate,
-                                                     Handle<PyDict> target) {
+Maybe<void> PyDictKeyIteratorBuiltinMethods::Install(
+    Isolate* isolate,
+    Handle<PyDict> target,
+    Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -23,11 +26,14 @@ Maybe<void> PyDictKeyIteratorBuiltinMethods::Install(Isolate* isolate,
   return JustVoid();
 }
 
-Maybe<void> PyDictItemIteratorBuiltinMethods::Install(Isolate* isolate,
-                                                      Handle<PyDict> target) {
+Maybe<void> PyDictItemIteratorBuiltinMethods::Install(
+    Isolate* isolate,
+    Handle<PyDict> target,
+    Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -35,11 +41,14 @@ Maybe<void> PyDictItemIteratorBuiltinMethods::Install(Isolate* isolate,
   return JustVoid();
 }
 
-Maybe<void> PyDictValueIteratorBuiltinMethods::Install(Isolate* isolate,
-                                                       Handle<PyDict> target) {
+Maybe<void> PyDictValueIteratorBuiltinMethods::Install(
+    Isolate* isolate,
+    Handle<PyDict> target,
+    Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_DICT_ITERATOR_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD

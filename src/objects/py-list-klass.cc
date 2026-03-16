@@ -106,7 +106,8 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(isolate,
-                      PyListBuiltinMethods::Install(isolate, klass_properties));
+                      PyListBuiltinMethods::Install(
+                          isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("list"));

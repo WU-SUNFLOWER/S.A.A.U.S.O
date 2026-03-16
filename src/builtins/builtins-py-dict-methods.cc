@@ -25,10 +25,12 @@
 namespace saauso::internal {
 
 Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
-                                          Handle<PyDict> target) {
+                                          Handle<PyDict> target,
+                                          Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_DICT_BUILTINS(INSTALL_BUILTIN_METHOD);
 #undef INSTALL_BUILTIN_METHOD
@@ -39,31 +41,25 @@ Maybe<void> PyDictBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyDictBuiltinMethods, New) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> type_object;
   Handle<PyObject> new_args = args;
 
-  if (!self.is_null()) {
-    type_object = self;
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc == 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "descriptor '__new__' of 'dict' object needs an "
+                       "argument");
+    return kNullMaybeHandle;
+  }
+  type_object = args->Get(0);
+  if (argc == 1) {
+    new_args = Handle<PyTuple>::null();
   } else {
-    int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "descriptor '__new__' of 'dict' object needs an "
-                         "argument");
-      return kNullMaybeHandle;
+    Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
+    for (int64_t i = 1; i < argc; ++i) {
+      tail->SetInternal(i - 1, *args->Get(i));
     }
-    type_object = args->Get(0);
-    if (argc == 1) {
-      new_args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      new_args = tail;
-    }
+    new_args = tail;
   }
 
   if (!IsPyTypeObject(type_object)) {
@@ -95,52 +91,26 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
-  auto* isolate = Isolate::Current();
-
-  Handle<PyObject> instance;
-  Handle<PyObject> init_args = args;
-
-  if (!self.is_null()) {
-    instance = self;
-  } else {
-    int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "descriptor '__init__' of 'dict' object needs an "
-                         "argument");
-      return kNullMaybeHandle;
-    }
-    instance = args->Get(0);
-    if (argc == 1) {
-      init_args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      init_args = tail;
-    }
-  }
-
-  return PyDictKlass::GetInstance()->InitInstance(isolate, instance, init_args,
-                                                  kwargs);
+  return PyDictKlass::GetInstance()->InitInstance(isolate, self, args, kwargs);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Repr) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
-        "descriptor '__repr__' of 'dict' object needs an argument");
+        "dict.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Str) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__str__' of 'dict' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "dict.__str__() takes no arguments (%" PRId64 " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Str(self);
@@ -172,17 +142,17 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Keys) {
   EscapableHandleScope scope;
-  return scope.Escape(Isolate::Current()->factory()->NewPyDictKeys(self));
+  return scope.Escape(isolate->factory()->NewPyDictKeys(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Values) {
   EscapableHandleScope scope;
-  return scope.Escape(Isolate::Current()->factory()->NewPyDictValues(self));
+  return scope.Escape(isolate->factory()->NewPyDictValues(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Items) {
   EscapableHandleScope scope;
-  return scope.Escape(Isolate::Current()->factory()->NewPyDictItems(self));
+  return scope.Escape(isolate->factory()->NewPyDictItems(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Get) {

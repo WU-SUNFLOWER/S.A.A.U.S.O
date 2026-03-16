@@ -85,7 +85,8 @@ class BasicInterpreterTest : public VmTestBase {
 
  private:
   // 测试用 native print：把 args 中的每个实参追加到 printv_result_。
-  static MaybeHandle<PyObject> Builtin_PrintV(Handle<PyObject> host,
+  static MaybeHandle<PyObject> Builtin_PrintV(Isolate* isolate,
+                                              Handle<PyObject> host,
                                               Handle<PyTuple> args,
                                               Handle<PyDict> kwargs);
 

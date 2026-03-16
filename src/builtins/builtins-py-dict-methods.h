@@ -10,21 +10,23 @@
 
 namespace saauso::internal {
 
-#define PY_DICT_BUILTINS(V)   \
-  V(New, "__new__")           \
-  V(Init, "__init__")         \
-  V(Repr, "__repr__")         \
-  V(Str, "__str__")           \
-  V(SetDefault, "setdefault") \
-  V(Pop, "pop")               \
-  V(Keys, "keys")             \
-  V(Values, "values")         \
-  V(Items, "items")           \
-  V(Get, "get")
+#define PY_DICT_BUILTINS(V)                    \
+  V(New, "__new__", kStatic)                   \
+  V(Init, "__init__", kInstanceMethod)         \
+  V(Repr, "__repr__", kInstanceMethod)         \
+  V(Str, "__str__", kInstanceMethod)           \
+  V(SetDefault, "setdefault", kInstanceMethod) \
+  V(Pop, "pop", kInstanceMethod)               \
+  V(Keys, "keys", kInstanceMethod)             \
+  V(Values, "values", kInstanceMethod)         \
+  V(Items, "items", kInstanceMethod)           \
+  V(Get, "get", kInstanceMethod)
 
 class PyDictBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_DICT_BUILTINS(DECL_BUILTIN_METHOD)

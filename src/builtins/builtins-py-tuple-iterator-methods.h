@@ -10,11 +10,13 @@
 
 namespace saauso::internal {
 
-#define PY_TUPLE_ITERATOR_BUILTINS(V) V(Next, "next")
+#define PY_TUPLE_ITERATOR_BUILTINS(V) V(Next, "next", kInstanceMethod)
 
 class PyTupleIteratorBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_TUPLE_ITERATOR_BUILTINS(DECL_BUILTIN_METHOD)

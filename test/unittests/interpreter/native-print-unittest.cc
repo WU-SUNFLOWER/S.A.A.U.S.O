@@ -26,8 +26,8 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
   auto kwargs = PyDict::NewInstance();
 
   testing::internal::CaptureStdout();
-  auto maybe_result =
-      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(
+      isolate_, Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b\n");
@@ -44,8 +44,8 @@ TEST_F(NativePrintTest, EndParameter) {
       PyDict::Put(kwargs, ST(end), PyString::NewInstance("!")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result =
-      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(
+      isolate_, Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a b!");
@@ -60,8 +60,8 @@ TEST_F(NativePrintTest, EolKeywordRejected) {
   auto kwargs = PyDict::NewInstance();
   ASSERT_FALSE(
       PyDict::Put(kwargs, ST(eol), PyString::NewInstance("??")).IsNothing());
-  auto maybe_result =
-      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(
+      isolate_, Handle<PyObject>::null(), args, kwargs);
   ASSERT_TRUE(maybe_result.IsEmpty());
   ASSERT_TRUE(isolate_->HasPendingException());
   isolate_->interpreter()->ClearPendingException();
@@ -79,8 +79,8 @@ TEST_F(NativePrintTest, SepParameter) {
       PyDict::Put(kwargs, ST(sep), PyString::NewInstance(",")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result =
-      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(
+      isolate_, Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "a,b,c\n");
@@ -95,8 +95,8 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
       PyDict::Put(kwargs, ST(end), PyString::NewInstance("X")).IsNothing());
 
   testing::internal::CaptureStdout();
-  auto maybe_result =
-      BUILTIN_FUNC_NAME(Print)(Handle<PyObject>::null(), args, kwargs);
+  auto maybe_result = BUILTIN_FUNC_NAME(Print)(
+      isolate_, Handle<PyObject>::null(), args, kwargs);
   ASSERT_FALSE(maybe_result.IsEmpty());
   std::string out = testing::internal::GetCapturedStdout();
   EXPECT_EQ(out, "X");
@@ -107,7 +107,7 @@ TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
 
   auto repr_args = PyTuple::NewInstance(1);
   repr_args->SetInternal(0, PyString::NewInstance("abc"));
-  auto repr_result = BUILTIN_FUNC_NAME(Repr)(Handle<PyObject>::null(),
+  auto repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),
                                              repr_args, PyDict::NewInstance());
   ASSERT_FALSE(repr_result.IsEmpty());
   EXPECT_TRUE(IsPyString(*repr_result.ToHandleChecked()));
@@ -119,8 +119,8 @@ TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
   auto list = PyList::NewInstance(1);
   list->SetAndExtendLength(0, PyString::NewInstance("x"));
   repr_args->SetInternal(0, list);
-  repr_result = BUILTIN_FUNC_NAME(Repr)(Handle<PyObject>::null(), repr_args,
-                                        PyDict::NewInstance());
+  repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),
+                                        repr_args, PyDict::NewInstance());
   ASSERT_FALSE(repr_result.IsEmpty());
   repr_text = Handle<PyString>::cast(repr_result.ToHandleChecked());
   EXPECT_EQ(std::string(repr_text->buffer(),

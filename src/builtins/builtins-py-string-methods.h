@@ -10,19 +10,21 @@
 
 namespace saauso::internal {
 
-#define PY_STRING_BUILTINS(V) \
-  V(Repr, "__repr__")         \
-  V(Str, "__str__")           \
-  V(Upper, "upper")           \
-  V(Index, "index")           \
-  V(Find, "find")             \
-  V(Rfind, "rfind")           \
-  V(Split, "split")           \
-  V(Join, "join")
+#define PY_STRING_BUILTINS(V)          \
+  V(Repr, "__repr__", kInstanceMethod) \
+  V(Str, "__str__", kInstanceMethod)   \
+  V(Upper, "upper", kInstanceMethod)   \
+  V(Index, "index", kInstanceMethod)   \
+  V(Find, "find", kInstanceMethod)     \
+  V(Rfind, "rfind", kInstanceMethod)   \
+  V(Split, "split", kInstanceMethod)   \
+  V(Join, "join", kInstanceMethod)
 
 class PyStringBuiltinMethods : public AllStatic {
  public:
-  static Maybe<void> Install(Isolate* isolate, Handle<PyDict> target);
+  static Maybe<void> Install(Isolate* isolate,
+                             Handle<PyDict> target,
+                             Handle<PyTypeObject> owner_type);
 
  private:
   PY_STRING_BUILTINS(DECL_BUILTIN_METHOD)

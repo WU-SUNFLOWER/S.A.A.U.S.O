@@ -8,10 +8,9 @@
 #include "src/handles/maybe-handles.h"
 #include "src/objects/native-function-helpers.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-type-object.h"
 
 namespace saauso::internal {
-
-using PyFuncFlags = uint32_t;
 
 class PyFunction : public PyObject {
  public:
@@ -21,8 +20,6 @@ class PyFunction : public PyObject {
 
   Handle<PyString> func_name() const;
   void set_func_name(Handle<PyString> name);
-
-  PyFuncFlags flags() const { return flags_; }
 
   Handle<PyDict> func_globals() const;
   void set_func_globals(Handle<PyDict> func_globals);
@@ -38,6 +35,22 @@ class PyFunction : public PyObject {
   NativeFuncPointer native_func() const {
     assert(native_func_ != nullptr);
     return native_func_;
+  }
+
+  NativeFuncAccessFlag native_access_flag() const {
+    return native_access_flag_;
+  }
+  void set_native_access_flag(NativeFuncAccessFlag kind) {
+    native_access_flag_ = kind;
+  }
+  bool is_native_instance_method() const {
+    return native_access_flag_ == NativeFuncAccessFlag::kInstanceMethod;
+  }
+  Handle<PyTypeObject> native_owner_type() const {
+    return handle(Tagged<PyTypeObject>::cast(native_owner_type_));
+  }
+  void set_native_owner_type(Handle<PyTypeObject> owner_type) {
+    native_owner_type_ = *owner_type;
   }
 
  private:
@@ -60,11 +73,12 @@ class PyFunction : public PyObject {
   Tagged<PyObject> default_args_{kNullAddress};
 
   // PyTuple* closures_
-  Tagged<PyObject> closures_;
-
-  PyFuncFlags flags_{0};
+  Tagged<PyObject> closures_{kNullAddress};
 
   NativeFuncPointer native_func_{nullptr};
+  NativeFuncAccessFlag native_access_flag_{NativeFuncAccessFlag::kStatic};
+  // PyTypeObject* native_owner_type_
+  Tagged<PyObject> native_owner_type_{kNullAddress};
 };
 
 class MethodObject : public PyObject {

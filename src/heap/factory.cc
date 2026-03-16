@@ -377,8 +377,9 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
     object->func_globals_ = Tagged<PyObject>::null();
     object->default_args_ = Tagged<PyObject>::null();
     object->closures_ = Tagged<PyObject>::null();
-    object->flags_ = 0;
     object->native_func_ = nullptr;
+    object->native_access_flag_ = NativeFuncAccessFlag::kStatic;
+    object->native_owner_type_ = Tagged<PyObject>::null();
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
@@ -398,7 +399,6 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
 
   object->func_code_ = *code_object;
   object->func_name_ = *code_object->co_name();
-  object->flags_ = code_object->flags();
 
   // 绑定klass
   PyObject::SetKlass(object, PyFunctionKlass::GetInstance());
@@ -415,6 +415,8 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
 
   assert(func_template.function() != nullptr);
   object->native_func_ = func_template.function();
+  object->native_access_flag_ = func_template.native_access_flag();
+  object->native_owner_type_ = *func_template.native_owner_type();
 
   assert(!func_template.name().is_null());
   object->func_name_ = *func_template.name();

@@ -43,6 +43,49 @@ print(t)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObject) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+s = "hello"
+print(str.upper(s))
+l = [1, 2, 3]
+list.append(l, 233)
+print(l[3])
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("HELLO"));
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObjectWithoutReceiver) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+str.upper()
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource, "unbound method str.upper() needs an argument", kTestFileName);
+}
+
+TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObjectWithWrongReceiver) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+list.append(1, 2)
+)";
+
+  RunScriptExpectExceptionContains(
+      kSource,
+      "descriptor 'append' for 'list' objects doesn't apply to a 'int' object",
+      kTestFileName);
+}
+
 TEST_F(BasicInterpreterTest, BuildList) {
   HandleScope scope;
 

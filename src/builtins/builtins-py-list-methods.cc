@@ -35,10 +35,12 @@
 namespace saauso::internal {
 
 Maybe<void> PyListBuiltinMethods::Install(Isolate* isolate,
-                                          Handle<PyDict> target) {
+                                          Handle<PyDict> target,
+                                          Handle<PyTypeObject> owner_type) {
   // INSTALL_BUILTIN_METHOD宏用于显式捕获局部变量isolate和target
-#define INSTALL_BUILTIN_METHOD(func_name, method_name) \
-  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, func_name, method_name)
+#define INSTALL_BUILTIN_METHOD(cpp_func_name, method_name, access_flag)    \
+  INSTALL_BUILTIN_METHOD_IMPL(isolate, target, cpp_func_name, method_name, \
+                              access_flag, owner_type)
 
   PY_LIST_BUILTINS(INSTALL_BUILTIN_METHOD);
 
@@ -50,31 +52,25 @@ Maybe<void> PyListBuiltinMethods::Install(Isolate* isolate,
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyListBuiltinMethods, New) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> type_object;
   Handle<PyObject> new_args = args;
 
-  if (!self.is_null()) {
-    type_object = self;
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc == 0) {
+    Runtime_ThrowError(ExceptionType::kTypeError,
+                       "descriptor '__new__' of 'list' object needs an "
+                       "argument");
+    return kNullMaybeHandle;
+  }
+  type_object = args->Get(0);
+  if (argc == 1) {
+    new_args = Handle<PyTuple>::null();
   } else {
-    int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "descriptor '__new__' of 'list' object needs an "
-                         "argument");
-      return kNullMaybeHandle;
+    Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
+    for (int64_t i = 1; i < argc; ++i) {
+      tail->SetInternal(i - 1, *args->Get(i));
     }
-    type_object = args->Get(0);
-    if (argc == 1) {
-      new_args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      new_args = tail;
-    }
+    new_args = tail;
   }
 
   if (!IsPyTypeObject(type_object)) {
@@ -90,58 +86,41 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
 
 BUILTIN_METHOD(PyListBuiltinMethods, Append) {
   EscapableHandleScope scope;
+
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 1) {
+    Runtime_ThrowErrorf(
+        ExceptionType::kTypeError,
+        "list.append() takes exactly one argument (%" PRId64 " given)", argc);
+    return kNullMaybeHandle;
+  }
+
   auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0));
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Init) {
-  auto* isolate = Isolate::Current();
-
-  Handle<PyObject> instance;
-  Handle<PyObject> init_args = args;
-
-  if (!self.is_null()) {
-    instance = self;
-  } else {
-    int64_t argc = args.is_null() ? 0 : args->length();
-    if (argc == 0) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
-                         "descriptor '__init__' of 'list' object needs an "
-                         "argument");
-      return kNullMaybeHandle;
-    }
-    instance = args->Get(0);
-    if (argc == 1) {
-      init_args = Handle<PyTuple>::null();
-    } else {
-      Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-      for (int64_t i = 1; i < argc; ++i) {
-        tail->SetInternal(i - 1, *args->Get(i));
-      }
-      init_args = tail;
-    }
-  }
-
-  return PyListKlass::GetInstance()->InitInstance(isolate, instance, init_args,
-                                                  kwargs);
+  return PyListKlass::GetInstance()->InitInstance(isolate, self, args, kwargs);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Repr) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
-        "descriptor '__repr__' of 'list' object needs an argument");
+        "list.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   return PyObject::Repr(self);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Str) {
-  if (self.is_null()) {
-    Runtime_ThrowError(
-        ExceptionType::kTypeError,
-        "descriptor '__str__' of 'list' object needs an argument");
+  int64_t argc = args.is_null() ? 0 : args->length();
+  if (argc != 0) {
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "list.__str__() takes no arguments (%" PRId64 " given)",
+                        argc);
     return kNullMaybeHandle;
   }
   return PyObject::Str(self);
@@ -162,7 +141,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1));
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Index) {
@@ -194,8 +173,6 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   int64_t length = list->length();
   int64_t begin = 0;
   int64_t end = length;
-
-  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
@@ -242,7 +219,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
     list->Set(length - i - 1, tmp);
   }
 
-  return scope.Escape(handle(Isolate::Current()->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object()));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
@@ -251,7 +228,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
           .IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
@@ -263,7 +240,6 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     return kNullMaybeHandle;
   }
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto list = Handle<PyList>::cast(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {

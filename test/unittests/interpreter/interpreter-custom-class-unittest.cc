@@ -673,9 +673,8 @@ TEST_F(BasicInterpreterTest, BuiltinInitBridgeRejectsWrongReceiverType) {
 list.__init__(dict(), [1, 2, 3])
 )";
 
-  RunScriptExpectExceptionContains(
-      kSource, "descriptor '__init__' requires a 'list' object",
-      kInterpreterTestFileName);
+  RunScriptExpectExceptionContains(kSource, "TypeError: descriptor",
+                                   kInterpreterTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, ListNewSlotBridgeStaysCallableAfterAttributeLoad) {
@@ -727,6 +726,48 @@ print(isinstance(a, A))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, TryToCallDictNewSlotLikeCommonInstanceMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class D(dict):
+  pass
+
+d = {"x": 1, "y": 2}
+a = d.__new__(D)
+print(isinstance(a, D))
+print(isinstance(a, dict))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, TryToCallListNewSlotLikeCommonInstanceMethod) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class L(list):
+  pass
+
+l = [1, 2, 3]
+a = l.__new__(L)
+print(isinstance(a, L))
+print(isinstance(a, list))
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
@@ -992,6 +1033,36 @@ print(d())
 
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, PyString::NewInstance("C"));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, CallInstanceMethodImplicit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C:
+  def __init__(self, name):
+    self.name = name
+
+  def foo(self):
+    print(self.name)
+
+class D:
+  pass
+
+o1 = C("baoluo")
+o2 = D()
+o2.name = "wanxiang"
+
+C.foo(o1)
+C.foo(o2)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("baoluo"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("wanxiang"));
   ExpectPrintResult(expected_printv_result);
 }
 
