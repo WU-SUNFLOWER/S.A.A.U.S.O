@@ -13,6 +13,7 @@
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-string.h"
+#include "src/runtime/runtime-py-tuple.h"
 
 namespace saauso::internal {
 
@@ -44,15 +45,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
   type_object = args->Get(0);
-  if (argc == 1) {
-    new_args = Handle<PyTuple>::null();
-  } else {
-    Handle<PyTuple> tail = PyTuple::NewInstance(argc - 1);
-    for (int64_t i = 1; i < argc; ++i) {
-      tail->SetInternal(i - 1, *args->Get(i));
-    }
-    new_args = tail;
-  }
+  new_args = Runtime_NewTupleTailOrNull(args, 1);
 
   if (!IsPyTypeObject(type_object)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
