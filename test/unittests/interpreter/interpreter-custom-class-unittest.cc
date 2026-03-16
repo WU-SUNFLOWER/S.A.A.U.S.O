@@ -1036,4 +1036,34 @@ print(d())
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, CallInstanceMethodImplicit) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+class C:
+  def __init__(self, name):
+    self.name = name
+
+  def foo(self):
+    print(self.name)
+
+class D:
+  pass
+
+o1 = C("baoluo")
+o2 = D()
+o2.name = "wanxiang"
+
+C.foo(o1)
+C.foo(o2)
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyString::NewInstance("baoluo"));
+  AppendExpected(expected_printv_result, PyString::NewInstance("wanxiang"));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal
