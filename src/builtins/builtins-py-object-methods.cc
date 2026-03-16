@@ -72,7 +72,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
+  if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "object.__repr__() takes no arguments (%" PRId64 " given)", argc);
@@ -83,7 +83,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Repr) {
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
+  if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
         "object.__str__() takes no arguments (%" PRId64 " given)", argc);

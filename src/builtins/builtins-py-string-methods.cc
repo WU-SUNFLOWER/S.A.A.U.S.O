@@ -44,7 +44,7 @@ Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
+  if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "str.__repr__() takes no arguments (%" PRId64 " given)",
                         argc);
@@ -55,7 +55,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
+  if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "str.__str__() takes no arguments (%" PRId64 " given)",
                         argc);
@@ -68,7 +68,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
   EscapableHandleScope scope;
 
   int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
+  if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "str.upper() takes no arguments (%" PRId64 " given)",
                         argc);
@@ -97,20 +97,20 @@ bool ValidateStringSearchArgs(Handle<PyDict> kwargs,
                               Handle<PyTuple> args,
                               const char* method_name,
                               int64_t& argc) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
+  if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s takes no keyword arguments", method_name);
     return false;
   }
 
   argc = args.is_null() ? 0 : args->length();
-  if (argc < 1) {
+  if (argc < 1) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s takes at least 1 argument (%" PRId64 " given)",
                         method_name, argc);
     return false;
   }
-  if (argc > 3) {
+  if (argc > 3) [[unlikely]] {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "%s takes at most 3 arguments (%" PRId64 " given)",
                         method_name, argc);
@@ -129,7 +129,7 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
                              int64_t& begin,
                              int64_t& end) {
   auto target = args->Get(0);
-  if (!IsPyString(target)) {
+  if (!IsPyString(target)) [[unlikely]] {
     auto type_name = PyObject::GetKlass(target)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %s",
                         type_name->buffer());
