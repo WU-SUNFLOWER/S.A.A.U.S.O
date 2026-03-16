@@ -15,9 +15,7 @@
 namespace saauso::internal {
 
 namespace {
-
 constexpr std::string_view kTestFileName = kInterpreterTestFileName;
-
 }  // namespace
 
 TEST_F(BasicInterpreterTest, BuiltinObjectRejectsInstanceSetAttr) {
@@ -206,6 +204,27 @@ print(isinstance(a.__dict__, dict))
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
   AppendExpected(expected_printv_result, PyTrueObject());
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, DictAccessorReturnsStableIdentityAcrossReads) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+a = A()
+d1 = a.__dict__
+d2 = a.__dict__
+print(d1 is d2)
+d1["x"] = 1
+print(a.x)
+)";
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected_printv_result);
 }
 

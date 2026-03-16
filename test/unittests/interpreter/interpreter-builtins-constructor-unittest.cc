@@ -77,8 +77,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
   constexpr std::string_view kSource = R"(
 str("abc", "utf-8")
 )";
-  RunScriptExpectExceptionContains(kSource, "TypeError: decoding str is not supported",
-                                  kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "TypeError: decoding str is not supported", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
@@ -87,8 +87,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
   constexpr std::string_view kSource = R"(
 int(x=1)
 )";
-  RunScriptExpectExceptionContains(kSource, "TypeError: int() takes no keyword arguments",
-                                  kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "TypeError: int() takes no keyword arguments", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
@@ -98,7 +98,7 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
 int("4611686018427387904")
 )";
   RunScriptExpectExceptionContains(kSource, "int too large to convert to Smi",
-                                  kTestFileName);
+                                   kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
@@ -107,8 +107,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
   constexpr std::string_view kSource = R"(
 int("0x10", 10)
 )";
-  RunScriptExpectExceptionContains(kSource, "ValueError: invalid literal for int()",
-                                  kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "ValueError: invalid literal for int()", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsListAndTuple) {
@@ -196,14 +196,31 @@ print(isinstance(o, object))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeCopiesNamespaceDict) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+ns = {"x": 1}
+C = type("C", (), ns)
+ns["x"] = 2
+print(C.x)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArgCountError) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
 type()
 )";
-  RunScriptExpectExceptionContains(kSource, "TypeError: type() takes 1 or 3 arguments",
-                                  kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "TypeError: type() takes 1 or 3 arguments", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg1MustBeStr) {
@@ -212,9 +229,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg1MustBeStr) {
   constexpr std::string_view kSource = R"(
 type(1, (), {})
 )";
-  RunScriptExpectExceptionContains(
-      kSource, "argument 1 must be str, not 'int'",
-      kTestFileName);
+  RunScriptExpectExceptionContains(kSource, "argument 1 must be str, not 'int'",
+                                   kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg2MustBeTuple) {
@@ -224,8 +240,7 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg2MustBeTuple) {
 type("C", [], {})
 )";
   RunScriptExpectExceptionContains(
-      kSource, "argument 2 must be tuple, not 'list'",
-      kTestFileName);
+      kSource, "argument 2 must be tuple, not 'list'", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg3MustBeDict) {
@@ -235,8 +250,7 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg3MustBeDict) {
 type("C", (), [])
 )";
   RunScriptExpectExceptionContains(
-      kSource, "argument 3 must be dict, not 'list'",
-      kTestFileName);
+      kSource, "argument 3 must be dict, not 'list'", kTestFileName);
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeBasesMustBeTypes) {
@@ -245,8 +259,8 @@ TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeBasesMustBeTypes) {
   constexpr std::string_view kSource = R"(
 type("C", (1,), {})
 )";
-  RunScriptExpectExceptionContains(kSource, "TypeError: type() bases must be types",
-                                   kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "TypeError: type() bases must be types", kTestFileName);
 }
 
 }  // namespace saauso::internal

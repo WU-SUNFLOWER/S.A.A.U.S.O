@@ -401,6 +401,25 @@ a.f()
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, ClassFunctionLookupOnTypeReturnsOriginalFunction) {
+  HandleScope scope;
+  constexpr std::string_view kSource = R"(
+class A:
+    pass
+
+def f(self):
+    pass
+
+A.f = f
+print(A.f is f)
+)";
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::NewInstance();
+  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
   HandleScope scope;
 
