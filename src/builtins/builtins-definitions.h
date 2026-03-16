@@ -9,20 +9,23 @@
 
 namespace saauso::internal {
 
-// builtins-io
-BUILTIN(Print);
+#define BUILTIN_FUNC_LIST(V)           \
+  /* builtins-io */                    \
+  V(func_print, Print)                 \
+  /* builtins-refection */             \
+  V(func_repr, Repr)                   \
+  V(func_len, Len)                     \
+  V(func_isinstance, IsInstance)       \
+  V(func_build_class, BuildTypeObject) \
+  /* builtins-exec */                  \
+  V(func_exec, Exec)                   \
+  /* builtins-debug */                 \
+  V(func_sysgc, Sysgc)
 
-// builtins-refection
-BUILTIN(Len);
-BUILTIN(Repr);
-BUILTIN(IsInstance);
-BUILTIN(BuildTypeObject);
-
-// builtins-exec
-BUILTIN(Exec);
-
-// builtins-debug
-BUILTIN(Sysgc);
+#define DECL_BUILTIN_FUNC(func_name_in_string_table, cpp_func_name) \
+  BUILTIN(cpp_func_name);
+BUILTIN_FUNC_LIST(DECL_BUILTIN_FUNC)
+#undef DECL_BUILTIN_FUNC
 
 }  // namespace saauso::internal
 

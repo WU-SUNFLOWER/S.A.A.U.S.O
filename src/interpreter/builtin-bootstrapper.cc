@@ -129,15 +129,6 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinFunctions() {
 #define BUILTIN_FUNC_ENTRY(func_name_in_string_table, func_cpp_symbol) \
   {ST(func_name_in_string_table), &BUILTIN_FUNC_NAME(func_cpp_symbol)},
 
-#define BUILTIN_FUNC_LIST(V)           \
-  V(func_print, Print)                 \
-  V(func_repr, Repr)                   \
-  V(func_len, Len)                     \
-  V(func_isinstance, IsInstance)       \
-  V(func_build_class, BuildTypeObject) \
-  V(func_sysgc, Sysgc)                 \
-  V(func_exec, Exec)
-
   const BuiltinFunctionEntry entries[] = {
       BUILTIN_FUNC_LIST(BUILTIN_FUNC_ENTRY)};
 
