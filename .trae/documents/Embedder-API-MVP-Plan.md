@@ -130,15 +130,19 @@ S.A.A.U.S.O 的核心项目定位之一是**可作为轻量级脚本引擎提供
 
 ### Phase 3: 数据交互与函数互调 (预计 2-3 周)
 
-* **目标**：实现 C++ 与 Python 的深度交互（传参、获取返回值、C++ API 注入）。
+*   **目标**：实现 C++ 与 Python 的深度交互（传参、获取返回值、C++ API 注入）。
 
-* **核心任务**：
+*   **核心任务**：
 
-  1. 实现 `saauso::Object`, `saauso::List`, `saauso::Dict`，封装内部的 `PyDict::PutMaybe` 等 Fallible API。
-  2. 实现 `saauso::Function` 及其 `Call` 方法。
-  3. 实现 `FunctionCallbackInfo` 机制，允许把 C++ 函数包装成 `PyNativeFunction` 注册到 Python 模块中。
+    1.  实现 `saauso::Object`, `saauso::List`, `saauso::Dict`，封装内部的 `PyDict::PutMaybe` 等 Fallible API。
+    2.  实现 `saauso::Function` 及其 `Call` 方法。
+    3.  实现 `FunctionCallbackInfo` 机制，允许把 C++ 函数包装成 `PyNativeFunction` 注册到 Python 模块中。
 
-* **测试验证**：编写**游戏引擎模拟测试**：C++ 暴露 `GetPlayerHealth()` 等函数给 Python；Python 脚本调用后根据血量返回状态；C++ 接收返回的状态并更新外部变量。
+*   **测试验证**：编写**宿主程序模拟测试 (Host Mock Test)**：
+    1.  在 C++ 测试代码中定义几个宿主函数（如 `Host_GetConfig(key)` 返回字符串，`Host_SetStatus(code)` 接收整数）。
+    2.  通过 API 将这些 C++ 函数注入到 Python 的 Context 中。
+    3.  执行一段 Python 脚本，该脚本调用 `Host_GetConfig`，进行逻辑判断后，再调用 `Host_SetStatus` 将结果回传给 C++。
+    4.  在 C++ 层断言 `Host_SetStatus` 接收到的参数是否符合预期，以此验证双向通信（C++ -> Python -> C++）的正确性。
 
 ### Phase 4: 健壮性增强与文档化 (预计 1 周)
 
