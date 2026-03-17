@@ -189,8 +189,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
       PySmi::FromInt(Handle<PyString>::cast(self)->length()));
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> PyStringKlass::Virtual_Repr(Isolate* isolate,
+                                                  Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, repr, Runtime_NewPyStringRepr(Handle<PyString>::cast(self)));

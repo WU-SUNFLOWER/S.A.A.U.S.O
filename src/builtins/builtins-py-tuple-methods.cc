@@ -45,7 +45,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Repr) {
         "tuple.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Repr(self);
+  return PyObject::Repr(isolate, self);
 }
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Str) {

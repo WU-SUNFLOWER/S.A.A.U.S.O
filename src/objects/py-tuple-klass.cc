@@ -188,8 +188,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
       PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Isolate* isolate,
+                                                 Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
                              Runtime_NewTupleRepr(Handle<PyTuple>::cast(self)));
@@ -198,7 +198,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Str(Isolate* isolate,
                                                 Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,

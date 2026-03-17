@@ -115,8 +115,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(PySmi::FromInt(value));
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Isolate* isolate,
+                                                Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
                              Runtime_NewDictRepr(Handle<PyDict>::cast(self)));
@@ -125,7 +125,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Str(Isolate* isolate,
                                                Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,

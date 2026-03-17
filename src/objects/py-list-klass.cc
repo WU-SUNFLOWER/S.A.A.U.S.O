@@ -179,8 +179,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
   return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Isolate* isolate,
+                                                Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
                              Runtime_NewListRepr(Handle<PyList>::cast(self)));
@@ -189,7 +189,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Str(Isolate* isolate,
                                                Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,

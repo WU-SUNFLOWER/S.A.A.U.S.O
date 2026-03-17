@@ -181,13 +181,14 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Repr(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Repr(Isolate* isolate,
+                                                 Handle<PyObject> self) {
   return PyString::FromPyFloat(Handle<PyFloat>::cast(self));
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Isolate* isolate,
                                                 Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,

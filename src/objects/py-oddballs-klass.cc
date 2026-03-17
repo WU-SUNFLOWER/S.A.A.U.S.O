@@ -102,14 +102,15 @@ Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(result);
 }
 
-MaybeHandle<PyObject> PyBooleanKlass::Virtual_Repr(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyBooleanKlass::Virtual_Repr(Isolate* isolate,
+                                                   Handle<PyObject> self) {
   bool v = Handle<PyBoolean>::cast(self)->value();
   return v ? ST(true_symbol) : ST(false_symbol);
 }
 
 MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Isolate* isolate,
                                                   Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 // static
@@ -190,13 +191,14 @@ Maybe<bool> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(self.is_identical_to(other));
 }
 
-MaybeHandle<PyObject> PyNoneKlass::Virtual_Repr(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyNoneKlass::Virtual_Repr(Isolate* isolate,
+                                                Handle<PyObject> self) {
   return PyString::NewInstance("None");
 }
 
 MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Isolate* isolate,
                                                Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 // static

@@ -115,7 +115,7 @@ using VirtualFuncType_Maybe_Str = MaybeOopHandle (*)(Isolate*, OopHandle);
                                                                                \
   V(VirtualFuncType_Maybe_Call, call, "__call__", Call)                        \
   V(VirtualFuncType_Maybe_1_1, len, "__len__", Len)                            \
-  V(VirtualFuncType_Maybe_1_1, repr, "__repr__", Repr)                         \
+  V(VirtualFuncType_Maybe_Repr, repr, "__repr__", Repr)                        \
   V(VirtualFuncType_Maybe_Str, str, "__str__", Str)                            \
                                                                                \
   V(VirtualFuncType_Maybe_New, new_instance, "__new__", NewInstance)           \

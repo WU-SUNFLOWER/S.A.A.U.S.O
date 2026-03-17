@@ -78,8 +78,8 @@ void PyFunctionKlass::Finalize(Isolate* isolate) {
   isolate->set_py_function_klass(Tagged<PyFunctionKlass>::null());
 }
 
-MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Isolate* isolate,
+                                                    Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, repr, Runtime_NewFunctionRepr(Handle<PyFunction>::cast(self)));
@@ -88,7 +88,7 @@ MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> PyFunctionKlass::Virtual_Str(Isolate* isolate,
                                                    Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 size_t PyFunctionKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -154,8 +154,9 @@ void NativeFunctionKlass::Finalize(Isolate* isolate) {
   isolate->set_native_function_klass(Tagged<NativeFunctionKlass>::null());
 }
 
-MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(
+    Isolate* isolate,
+    Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, repr, Runtime_NewFunctionRepr(Handle<PyFunction>::cast(self)));
@@ -164,7 +165,7 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Str(Isolate* isolate,
                                                        Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Call(
@@ -247,8 +248,8 @@ void MethodObjectKlass::Finalize(Isolate* isolate) {
   isolate->set_method_object_klass(Tagged<MethodObjectKlass>::null());
 }
 
-MaybeHandle<PyObject> MethodObjectKlass::Virtual_Repr(Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
+MaybeHandle<PyObject> MethodObjectKlass::Virtual_Repr(Isolate* isolate,
+                                                      Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, repr,
@@ -258,7 +259,7 @@ MaybeHandle<PyObject> MethodObjectKlass::Virtual_Repr(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> MethodObjectKlass::Virtual_Str(Isolate* isolate,
                                                      Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 size_t MethodObjectKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
