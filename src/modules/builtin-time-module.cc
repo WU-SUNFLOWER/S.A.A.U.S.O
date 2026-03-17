@@ -137,13 +137,9 @@ BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+                             NewBuiltinModuleWithDefaultMeta(isolate, "time"));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("time")));
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
 
   const BuiltinModuleFuncSpec kTimeModuleFuncs[] = {
 #define DEFINE_TIME_FUNC_SPEC(name, func) \

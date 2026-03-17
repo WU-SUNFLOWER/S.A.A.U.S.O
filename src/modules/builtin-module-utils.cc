@@ -8,11 +8,41 @@
 #include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-module.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
+
+Maybe<void> InitializeBuiltinModuleDict(Isolate* isolate,
+                                        Handle<PyDict> module_dict,
+                                        const char* module_name,
+                                        const char* package_name) {
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
+                                           PyString::NewInstance(module_name)));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(module_dict, ST(package),
+                           PyString::NewInstance(package_name)));
+  return JustVoid();
+}
+
+MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(Isolate* isolate,
+                                                      const char* module_name,
+                                                      const char* package_name) {
+  EscapableHandleScope scope;
+
+  Handle<PyModule> module;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module, isolate->factory()->NewPyModule());
+
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  RETURN_ON_EXCEPTION(isolate, InitializeBuiltinModuleDict(
+                                   isolate, module_dict, module_name,
+                                   package_name));
+  return scope.Escape(module);
+}
 
 void ThrowNoKeywordArgsError(const char* module_name, const char* func_name) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError,

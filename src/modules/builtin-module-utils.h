@@ -21,6 +21,18 @@ struct BuiltinModuleFuncSpec {
   NativeFuncPointer func;
 };
 
+// 为内建模块字典写入 __name__/__package__ 元信息。
+Maybe<void> InitializeBuiltinModuleDict(Isolate* isolate,
+                                        Handle<PyDict> module_dict,
+                                        const char* module_name,
+                                        const char* package_name = "");
+
+// 创建内建模块对象，并初始化 __name__/__package__ 元信息。
+MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(
+    Isolate* isolate,
+    const char* module_name,
+    const char* package_name = "");
+
 // 抛出“内建模块函数不支持关键字参数”的统一 TypeError。
 void ThrowNoKeywordArgsError(const char* module_name, const char* func_name);
 
@@ -46,4 +58,3 @@ constexpr int64_t BuiltinModuleFuncSpecCount(
 }  // namespace saauso::internal
 
 #endif  // SAAUSO_MODULES_BUILTIN_MODULE_UTILS_H_
-

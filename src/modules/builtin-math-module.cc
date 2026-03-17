@@ -371,14 +371,9 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+                             NewBuiltinModuleWithDefaultMeta(isolate, "math"));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("math")));
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("pi"),
                                   PyFloat::NewInstance(std::acos(-1.0))));
@@ -403,10 +398,10 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
       MATH_MODULE_FUNC_LIST(DEFINE_MATH_FUNC_SPEC)
 #undef DEFINE_MATH_FUNC_SPEC
   };
-  RETURN_ON_EXCEPTION(
-      isolate, InstallBuiltinModuleFuncsFromSpec(
-                   isolate, module_dict, kMathModuleFuncs,
-                   BuiltinModuleFuncSpecCount(kMathModuleFuncs)));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallBuiltinModuleFuncsFromSpec(
+                          isolate, module_dict, kMathModuleFuncs,
+                          BuiltinModuleFuncSpecCount(kMathModuleFuncs)));
 
   return scope.Escape(module);
 }

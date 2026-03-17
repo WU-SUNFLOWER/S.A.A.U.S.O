@@ -49,6 +49,38 @@ print(sys.version)
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, BuiltinModuleMetadataIsStable) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+import sys
+import math
+import random
+import time
+print(sys.__name__)
+print(math.__name__)
+print(random.__name__)
+print(time.__name__)
+print(sys.__package__)
+print(math.__package__)
+print(random.__package__)
+print(time.__package__)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::NewInstance();
+  AppendExpected(expected, PyString::NewInstance("sys"));
+  AppendExpected(expected, PyString::NewInstance("math"));
+  AppendExpected(expected, PyString::NewInstance("random"));
+  AppendExpected(expected, PyString::NewInstance("time"));
+  AppendExpected(expected, PyString::NewInstance(""));
+  AppendExpected(expected, PyString::NewInstance(""));
+  AppendExpected(expected, PyString::NewInstance(""));
+  AppendExpected(expected, PyString::NewInstance(""));
+  ExpectPrintResult(expected);
+}
+
 TEST_F(BasicInterpreterTest, ImportUserModuleIsCached) {
   HandleScope scope;
 

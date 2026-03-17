@@ -31,13 +31,13 @@ namespace saauso::internal {
 
 namespace {
 
-#define RANDOM_MODULE_FUNC_LIST(V)   \
-  V("seed", Random_Seed)             \
-  V("random", Random_Random)         \
-  V("randint", Random_RandInt)       \
-  V("randrange", Random_RandRange)   \
+#define RANDOM_MODULE_FUNC_LIST(V)     \
+  V("seed", Random_Seed)               \
+  V("random", Random_Random)           \
+  V("randint", Random_RandInt)         \
+  V("randrange", Random_RandRange)     \
   V("getrandbits", Random_GetRandBits) \
-  V("choice", Random_Choice)         \
+  V("choice", Random_Choice)           \
   V("shuffle", Random_Shuffle)
 
 RandomNumberGenerator g_rng;
@@ -356,14 +356,10 @@ BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, module, NewBuiltinModuleWithDefaultMeta(isolate, "random"));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("random")));
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
 
   g_rng.Seed(NowSeed());
   g_seeded = true;
@@ -374,10 +370,10 @@ BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
       RANDOM_MODULE_FUNC_LIST(DEFINE_RANDOM_FUNC_SPEC)
 #undef DEFINE_RANDOM_FUNC_SPEC
   };
-  RETURN_ON_EXCEPTION(
-      isolate, InstallBuiltinModuleFuncsFromSpec(
-                   isolate, module_dict, kRandomModuleFuncs,
-                   BuiltinModuleFuncSpecCount(kRandomModuleFuncs)));
+  RETURN_ON_EXCEPTION(isolate,
+                      InstallBuiltinModuleFuncsFromSpec(
+                          isolate, module_dict, kRandomModuleFuncs,
+                          BuiltinModuleFuncSpecCount(kRandomModuleFuncs)));
 
   return scope.Escape(module);
 }
