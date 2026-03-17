@@ -89,4 +89,17 @@ print(c.x.v)
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, TimeRejectKeywordArgs) {
+  HandleScope scope;
+
+  constexpr std::string_view kSource = R"(
+import time
+time.sleep(seconds=0.01)
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "time.sleep() takes no keyword arguments",
+                                   kTestFileName);
+}
+
 }  // namespace saauso::internal

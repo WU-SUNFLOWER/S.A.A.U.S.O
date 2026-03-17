@@ -214,6 +214,8 @@ source_set("saauso_core") {
     "//src/modules/builtin-module-registry.cc",
     "//src/modules/builtin-module-registry.h",
     "//src/modules/builtin-module.h",
+    "//src/modules/builtin-module-utils.cc",
+    "//src/modules/builtin-module-utils.h",
     "//src/modules/builtin-random-module.cc",
     "//src/modules/builtin-sys-module.cc",
     "//src/modules/builtin-time-module.cc",

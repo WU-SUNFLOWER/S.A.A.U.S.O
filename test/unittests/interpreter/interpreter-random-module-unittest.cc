@@ -61,5 +61,17 @@ print(random.choice((7, 8, 9)) in (7, 8, 9))
   ExpectPrintResult(expected);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, RandomRejectKeywordArgs) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+import random
+random.seed(a=1)
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "random.seed() takes no keyword arguments",
+                                   kTestFileName);
+}
+
+}  // namespace saauso::internal
