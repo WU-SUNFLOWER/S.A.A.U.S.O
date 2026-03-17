@@ -91,9 +91,8 @@ Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(
-      isolate, PyTupleBuiltinMethods::Install(
-                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate, PyTupleBuiltinMethods::Install(
+                                   isolate, klass_properties, type_object()));
 
   set_name(PyString::NewInstance("tuple"));
 
@@ -197,7 +196,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Handle<PyObject> self) {
   return repr;
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Str(Isolate* isolate,
+                                                Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 

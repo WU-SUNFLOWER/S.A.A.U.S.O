@@ -69,7 +69,7 @@ Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
 void PyFloatKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
-  
+
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
 
@@ -185,7 +185,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Repr(Handle<PyObject> self) {
   return PyString::FromPyFloat(Handle<PyFloat>::cast(self));
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Isolate* isolate,
+                                                Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 

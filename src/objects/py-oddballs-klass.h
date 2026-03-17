@@ -25,7 +25,8 @@ class PyBooleanKlass : public Klass {
 
  private:
   static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
+                                           Handle<PyObject> self);
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
                                    Handle<PyObject> other);
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
@@ -44,7 +45,8 @@ class PyNoneKlass : public Klass {
   PyNoneKlass();
 
   static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
+                                           Handle<PyObject> self);
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
                                    Handle<PyObject> other);
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,

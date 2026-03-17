@@ -82,7 +82,8 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         Handle<PyObject> key = item->Get(0);
         if (!IsPyString(key)) {
           Handle<PyString> key_str;
-          ASSIGN_RETURN_ON_EXCEPTION(isolate, key_str, PyObject::Str(key));
+          ASSIGN_RETURN_ON_EXCEPTION(isolate, key_str,
+                                     PyObject::Str(isolate, key));
           key = key_str;
         }
 

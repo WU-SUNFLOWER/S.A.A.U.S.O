@@ -43,7 +43,7 @@ BUILTIN_METHOD(BaseExceptionMethods, Str) {
                        "BaseException.__str__() takes no arguments");
     return kNullMaybeHandle;
   }
-  return PyObject::Str(self);
+  return PyObject::Str(isolate, self);
 }
 
 BUILTIN_METHOD(BaseExceptionMethods, Repr) {

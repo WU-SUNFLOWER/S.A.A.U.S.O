@@ -24,8 +24,10 @@ class PyBaseExceptionKlass : public Klass {
                                                     Handle<PyObject> instance,
                                                     Handle<PyObject> args,
                                                     Handle<PyObject> kwargs);
-  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
+
   static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
+                                           Handle<PyObject> self);
 };
 
 }  // namespace saauso::internal

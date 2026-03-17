@@ -86,7 +86,8 @@ MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
   return repr;
 }
 
-MaybeHandle<PyObject> PyFunctionKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyFunctionKlass::Virtual_Str(Isolate* isolate,
+                                                   Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 
@@ -161,7 +162,8 @@ MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(Handle<PyObject> self) {
   return repr;
 }
 
-MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Str(Isolate* isolate,
+                                                       Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 
@@ -254,7 +256,8 @@ MaybeHandle<PyObject> MethodObjectKlass::Virtual_Repr(Handle<PyObject> self) {
   return repr;
 }
 
-MaybeHandle<PyObject> MethodObjectKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> MethodObjectKlass::Virtual_Str(Isolate* isolate,
+                                                     Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 

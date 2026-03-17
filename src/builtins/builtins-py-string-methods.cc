@@ -61,7 +61,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
                         argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Str(self);
+  return PyObject::Str(isolate, self);
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {

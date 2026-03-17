@@ -51,7 +51,7 @@ class PyObject : public Object {
 
   ////////////////// 多态函数 开始 //////////////////
   static MaybeHandle<PyObject> Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Str(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Str(Isolate* isolate, Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Add(Handle<PyObject> self,
                                    Handle<PyObject> other);

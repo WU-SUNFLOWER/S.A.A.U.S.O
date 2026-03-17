@@ -105,7 +105,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Str) {
                         argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Str(self);
+  return PyObject::Str(isolate, self);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {

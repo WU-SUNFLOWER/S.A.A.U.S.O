@@ -34,7 +34,8 @@ class PyStringKlass : public Klass {
 
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
+                                           Handle<PyObject> self);
 
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
                                    Handle<PyObject> other);

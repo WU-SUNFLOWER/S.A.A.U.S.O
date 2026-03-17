@@ -107,7 +107,8 @@ MaybeHandle<PyObject> PyBooleanKlass::Virtual_Repr(Handle<PyObject> self) {
   return v ? ST(true_symbol) : ST(false_symbol);
 }
 
-MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Isolate* isolate,
+                                                  Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 
@@ -193,7 +194,8 @@ MaybeHandle<PyObject> PyNoneKlass::Virtual_Repr(Handle<PyObject> self) {
   return PyString::NewInstance("None");
 }
 
-MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Isolate* isolate,
+                                               Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 

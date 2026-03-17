@@ -108,7 +108,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Handle<PyObject> self) {
   return PyString::FromPySmi(Tagged<PySmi>::cast(*self));
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Isolate* isolate,
+                                              Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 
