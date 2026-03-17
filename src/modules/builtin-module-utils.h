@@ -52,12 +52,6 @@ struct BuiltinModuleFuncSpec {
 
 class BuiltinModuleUtils final : public AllStatic {
  public:
-  // 为内建模块字典写入 __name__/__package__ 元信息。
-  static Maybe<void> InitializeBuiltinModule(Isolate* isolate,
-                                             Handle<PyModule> module,
-                                             const char* module_name,
-                                             const char* package_name = "");
-
   // 创建内建模块对象，并初始化 __name__/__package__ 元信息。
   static MaybeHandle<PyModule> NewBuiltinModule(Isolate* isolate,
                                                 const char* module_name,
@@ -86,6 +80,13 @@ class BuiltinModuleUtils final : public AllStatic {
       const BuiltinModuleFuncSpec (&specs)[N]) {
     return static_cast<int64_t>(N);
   }
+
+ private:
+  // 为内建模块字典写入 __name__/__package__ 元信息。
+  static Maybe<void> InitializeBuiltinModule(Isolate* isolate,
+                                             Handle<PyModule> module,
+                                             const char* module_name,
+                                             const char* package_name);
 };
 
 }  // namespace saauso::internal

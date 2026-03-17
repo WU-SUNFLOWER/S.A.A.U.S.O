@@ -17,6 +17,29 @@
 
 namespace saauso::internal {
 
+MaybeHandle<PyModule> BuiltinModuleUtils::NewBuiltinModule(
+    Isolate* isolate,
+    const char* module_name,
+    const char* package_name) {
+  EscapableHandleScope scope;
+
+  Handle<PyModule> module;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
+                             isolate->factory()->NewPyModule());
+
+  RETURN_ON_EXCEPTION(isolate, BuiltinModuleUtils::InitializeBuiltinModule(
+                                   isolate, module, module_name, package_name));
+  return scope.Escape(module);
+}
+
+void BuiltinModuleUtils::ThrowNoKeywordArgsError(Isolate* isolate,
+                                                 const char* module_name,
+                                                 const char* func_name) {
+  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                      "%s.%s() takes no keyword arguments", module_name,
+                      func_name);
+}
+
 Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
     Isolate* isolate,
     Handle<PyModule> module,
@@ -31,29 +54,6 @@ Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
                                   PyString::NewInstance(package_name)));
 
   return JustVoid();
-}
-
-MaybeHandle<PyModule> BuiltinModuleUtils::NewBuiltinModule(
-    Isolate* isolate,
-    const char* module_name,
-    const char* package_name) {
-  EscapableHandleScope scope;
-
-  Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
-
-  RETURN_ON_EXCEPTION(isolate, BuiltinModuleUtils::InitializeBuiltinModule(
-                                   isolate, module, package_name));
-  return scope.Escape(module);
-}
-
-void BuiltinModuleUtils::ThrowNoKeywordArgsError(Isolate* isolate,
-                                                 const char* module_name,
-                                                 const char* func_name) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "%s.%s() takes no keyword arguments", module_name,
-                      func_name);
 }
 
 Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
