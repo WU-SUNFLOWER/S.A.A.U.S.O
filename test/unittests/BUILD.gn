@@ -34,7 +34,8 @@ executable("ut") {
       # "./heap/gc-interpreter-stress-unittest.cc",
       "./interpreter/interpreter-builtins-bootstrap-unittest.cc",
       "./interpreter/interpreter-builtins-constructor-unittest.cc",
-      "./interpreter/interpreter-builtins-seq-unittest.cc",
+      "./interpreter/interpreter-builtins-method-dispatch-unittest.cc",
+      "./interpreter/interpreter-builtins-subclass-gc-unittest.cc",
       "./interpreter/interpreter-attribute-constraints-unittest.cc",
       "./interpreter/interpreter-call-stack-unittest.cc",
       "./interpreter/interpreter-closure-unittest.cc",
@@ -56,7 +57,10 @@ executable("ut") {
       "./interpreter/interpreter-ops-unittest.cc",
       "./interpreter/interpreter-random-module-unittest.cc",
       "./interpreter/interpreter-smoke-unittest.cc",
+      "./interpreter/interpreter-str-unittest.cc",
       "./interpreter/interpreter-time-module-unittest.cc",
+      "./interpreter/interpreter-tuple-unittest.cc",
+      "./interpreter/interpreter-list-unittest.cc",
       "./interpreter/native-print-unittest.cc",
     ]
   }
