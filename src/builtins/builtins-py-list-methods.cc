@@ -195,7 +195,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
     Handle<PyString> repr_content;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, repr_content,
                                PyObject::Repr(isolate, target));
-    Runtime_ThrowErrorf(ExceptionType::kValueError, "%s not in list",
+    Runtime_ThrowErrorf(ExceptionType::kValueError, "%s is not in list",
                         repr_content->buffer());
     return kNullMaybeHandle;
   }
