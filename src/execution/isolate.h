@@ -25,6 +25,7 @@ class HandleScopeImplementer;
 class Interpreter;
 class ModuleManager;
 class StringTable;
+class RandomNumberGenerator;
 class ObjectVisitor;
 class PyDict;
 class PyObject;
@@ -111,6 +112,11 @@ class Isolate {
   Interpreter* interpreter() const { return interpreter_; }
   ModuleManager* module_manager() const { return module_manager_; }
   StringTable* string_table() const { return string_table_; }
+
+  RandomNumberGenerator* random_number_generator() const {
+    return random_number_generator_;
+  }
+
   ExceptionState* exception_state() { return &exception_state_; }
   const ExceptionState* exception_state() const { return &exception_state_; }
 
@@ -156,6 +162,7 @@ class Isolate {
   Interpreter* interpreter_{nullptr};
   ModuleManager* module_manager_{nullptr};
   StringTable* string_table_{nullptr};
+  RandomNumberGenerator* random_number_generator_{nullptr};
   ExceptionState exception_state_;
 
   Tagged<PyObject> builtins_{kNullAddress};
