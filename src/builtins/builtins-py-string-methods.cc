@@ -50,7 +50,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
                         argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Repr(self);
+  return PyObject::Repr(isolate, self);
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Str) {

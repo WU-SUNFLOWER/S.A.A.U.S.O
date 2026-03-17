@@ -105,7 +105,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Repr) {
         "list.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Repr(self);
+  return PyObject::Repr(isolate, self);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Str) {

@@ -26,7 +26,7 @@ BUILTIN(Len) {
 }
 
 BUILTIN(Repr) {
-  return PyObject::Repr(args->Get(0));
+  return PyObject::Repr(isolate, args->Get(0));
 }
 
 BUILTIN(IsInstance) {

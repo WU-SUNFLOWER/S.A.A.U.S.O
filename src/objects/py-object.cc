@@ -109,9 +109,9 @@ void PyObject::SetProperties(Tagged<PyObject> object,
 ///////////////////////////////////////////////////////////////////////////
 // 多态虚方法入口 开始
 
-MaybeHandle<PyObject> PyObject::Repr(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObject::Repr(Isolate* isolate, Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().repr_);
-  return GetKlass(*self)->vtable().repr_(self);
+  return GetKlass(*self)->vtable().repr_(isolate, self);
 }
 
 MaybeHandle<PyObject> PyObject::Str(Isolate* isolate, Handle<PyObject> self) {

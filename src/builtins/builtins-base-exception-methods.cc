@@ -58,7 +58,7 @@ BUILTIN_METHOD(BaseExceptionMethods, Repr) {
                        "BaseException.__repr__() takes no arguments");
     return kNullMaybeHandle;
   }
-  return PyObject::Repr(self);
+  return PyObject::Repr(isolate, self);
 }
 
 }  // namespace saauso::internal

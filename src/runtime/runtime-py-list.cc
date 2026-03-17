@@ -23,7 +23,8 @@ MaybeHandle<PyString> Runtime_NewListRepr(Handle<PyList> list) {
       repr.append(", ");
     }
     Handle<PyString> elem;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, elem, PyObject::Repr(list->Get(i)));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, elem,
+                               PyObject::Repr(isolate, list->Get(i)));
     repr.append(elem->ToStdString());
   }
   repr.append("]");

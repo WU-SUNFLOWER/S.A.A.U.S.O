@@ -94,7 +94,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Repr) {
         "dict.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Repr(self);
+  return PyObject::Repr(isolate, self);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Str) {

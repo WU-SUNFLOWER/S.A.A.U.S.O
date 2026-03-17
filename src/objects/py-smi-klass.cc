@@ -104,13 +104,14 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
   return Runtime_NewSmi(args, kwargs);
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Handle<PyObject> self) {
+MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Isolate* isolate,
+                                               Handle<PyObject> self) {
   return PyString::FromPySmi(Tagged<PySmi>::cast(*self));
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Isolate* isolate,
                                               Handle<PyObject> self) {
-  return Virtual_Repr(self);
+  return Virtual_Repr(isolate, self);
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,

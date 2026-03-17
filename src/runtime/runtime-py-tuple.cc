@@ -24,7 +24,8 @@ MaybeHandle<PyString> Runtime_NewTupleRepr(Handle<PyTuple> tuple) {
       repr.append(", ");
     }
     Handle<PyString> elem;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, elem, PyObject::Repr(tuple->Get(i)));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, elem,
+                               PyObject::Repr(isolate, tuple->Get(i)));
     repr.append(elem->ToStdString());
   }
   if (tuple->length() == 1) {

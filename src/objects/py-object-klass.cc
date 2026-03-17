@@ -350,7 +350,8 @@ size_t PyObjectKlass::Generic_InstanceSize(Tagged<PyObject> self) {
 }
 
 // static
-MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Isolate* isolate,
+                                                  Handle<PyObject> self) {
   EscapableHandleScope scope;
   char buffer[128];
   std::snprintf(buffer, sizeof(buffer), "<%s object at %p>",
@@ -363,7 +364,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyObjectKlass::Generic_Str(Isolate* isolate,
                                                  Handle<PyObject> self) {
   // 默认的__str__什么也不做，直接把操作转发给对象的__repr__进行处理
-  return PyObject::Repr(self);
+  return PyObject::Repr(isolate, self);
 }
 
 }  // namespace saauso::internal

@@ -21,7 +21,8 @@ class PyFunctionKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Repr(Isolate* isolate,
+                                            Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
@@ -39,7 +40,8 @@ class NativeFunctionKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Repr(Isolate* isolate,
+                                            Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Call(Isolate* isolate,
@@ -63,7 +65,8 @@ class MethodObjectKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Repr(Isolate* isolate,
+                                            Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

@@ -156,9 +156,8 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
 }
 
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
+    Isolate* isolate,
     Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
-
   EscapableHandleScope scope;
 
   Handle<PyString> type_name = PyObject::GetKlass(self)->name();

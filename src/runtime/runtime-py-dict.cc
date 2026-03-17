@@ -261,13 +261,14 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Handle<PyDict> dict) {
     first = false;
     Handle<PyString> key_repr;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, key_repr,
-                               PyObject::Repr(Handle<PyObject>(key_tagged)));
+                               PyObject::Repr(isolate,
+                                              Handle<PyObject>(key_tagged)));
     repr.append(key_repr->ToStdString());
     repr.append(": ");
     Handle<PyString> value_repr;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, value_repr,
-        PyObject::Repr(handle(dict->data()->Get((i << 1) + 1))));
+        PyObject::Repr(isolate, handle(dict->data()->Get((i << 1) + 1))));
     repr.append(value_repr->ToStdString());
   }
   repr.push_back('}');

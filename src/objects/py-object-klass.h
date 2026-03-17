@@ -57,7 +57,8 @@ class PyObjectKlass : public Klass {
 
   static size_t Generic_InstanceSize(Tagged<PyObject> self);
 
-  static MaybeHandle<PyObject> Generic_Repr(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Generic_Repr(Isolate* isolate,
+                                            Handle<PyObject> self);
   static MaybeHandle<PyObject> Generic_Str(Isolate* isolate,
                                            Handle<PyObject> self);
 };
