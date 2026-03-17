@@ -17,19 +17,23 @@
 
 namespace saauso::internal {
 
-Maybe<void> InitializeBuiltinModuleDict(Isolate* isolate,
-                                        Handle<PyDict> module_dict,
-                                        const char* module_name,
-                                        const char* package_name) {
+Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
+    Isolate* isolate,
+    Handle<PyModule> module,
+    const char* module_name,
+    const char* package_name) {
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+
   RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
                                            PyString::NewInstance(module_name)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, ST(package),
                                   PyString::NewInstance(package_name)));
+
   return JustVoid();
 }
 
-MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(
+MaybeHandle<PyModule> BuiltinModuleUtils::NewBuiltinModule(
     Isolate* isolate,
     const char* module_name,
     const char* package_name) {
@@ -39,25 +43,24 @@ MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(
   ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
                              isolate->factory()->NewPyModule());
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  RETURN_ON_EXCEPTION(
-      isolate, InitializeBuiltinModuleDict(isolate, module_dict, module_name,
-                                           package_name));
+  RETURN_ON_EXCEPTION(isolate, BuiltinModuleUtils::InitializeBuiltinModule(
+                                   isolate, module, package_name));
   return scope.Escape(module);
 }
 
-void ThrowNoKeywordArgsError(Isolate* isolate,
-                             const char* module_name,
-                             const char* func_name) {
+void BuiltinModuleUtils::ThrowNoKeywordArgsError(Isolate* isolate,
+                                                 const char* module_name,
+                                                 const char* func_name) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError,
                       "%s.%s() takes no keyword arguments", module_name,
                       func_name);
 }
 
-Maybe<void> InstallBuiltinModuleFunc(Isolate* isolate,
-                                     Handle<PyDict> module_dict,
-                                     const char* name,
-                                     NativeFuncPointer func) {
+Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
+    Isolate* isolate,
+    Handle<PyDict> module_dict,
+    const char* name,
+    NativeFuncPointer func) {
   // 这里不直接复用 builtins-utils 的安装入口，是为了让 modules 层保持
   // “无 owner_type/access_flag
   // 语义”的最小接口，避免模块函数安装与类型方法安装耦合。
@@ -77,15 +80,16 @@ Maybe<void> InstallBuiltinModuleFunc(Isolate* isolate,
   return JustVoid();
 }
 
-Maybe<void> InstallBuiltinModuleFuncsFromSpec(
+Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
     Isolate* isolate,
-    Handle<PyDict> module_dict,
+    Handle<PyModule> module,
     const BuiltinModuleFuncSpec* specs,
     int64_t spec_count) {
+  Handle<PyDict> module_dict = PyObject::GetProperties(module);
   for (int64_t i = 0; i < spec_count; ++i) {
     RETURN_ON_EXCEPTION(
-        isolate, InstallBuiltinModuleFunc(isolate, module_dict, specs[i].name,
-                                          specs[i].func));
+        isolate, BuiltinModuleUtils::InstallBuiltinModuleFunc(
+                     isolate, module_dict, specs[i].name, specs[i].func));
   }
 
   return JustVoid();

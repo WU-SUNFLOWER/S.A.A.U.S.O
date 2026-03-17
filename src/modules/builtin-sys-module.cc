@@ -4,8 +4,8 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/handles/handles.h"
-#include "src/modules/builtin-module.h"
 #include "src/modules/builtin-module-utils.h"
+#include "src/modules/builtin-module.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -27,7 +27,7 @@ BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, module, NewBuiltinModuleWithDefaultMeta(isolate, "sys"));
+      isolate, module, BuiltinModuleUtils::NewBuiltinModule(isolate, "sys"));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 

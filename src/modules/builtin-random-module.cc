@@ -64,6 +64,12 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
   return kNullMaybe;
 }
 
+}  // namespace
+
+/////////////////////////////////////////////////////////////////////////////////
+
+namespace module_impl {
+
 BUILTIN_MODULE_FUNC(Random_Seed) {
   BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
                                             "seed");
@@ -330,27 +336,29 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
   return handle(isolate->py_none_object());
 }
 
-}  // namespace
+}  // namespace module_impl
+
+/////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, module, NewBuiltinModuleWithDefaultMeta(isolate, kModuleName));
-
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+      isolate, module,
+      BuiltinModuleUtils::NewBuiltinModule(isolate, kModuleName));
 
   const BuiltinModuleFuncSpec kRandomModuleFuncs[] = {
 #define DEFINE_RANDOM_FUNC_SPEC(name, func) \
-  {name, &BUILTIN_MODULE_FUNC_NAME(func)},
+  {name, &module_impl::BUILTIN_MODULE_FUNC_NAME(func)},
       RANDOM_MODULE_FUNC_LIST(DEFINE_RANDOM_FUNC_SPEC)
 #undef DEFINE_RANDOM_FUNC_SPEC
   };
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallBuiltinModuleFuncsFromSpec(
-                          isolate, module_dict, kRandomModuleFuncs,
-                          BuiltinModuleFuncSpecCount(kRandomModuleFuncs)));
+  RETURN_ON_EXCEPTION(
+      isolate,
+      BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
+          isolate, module, kRandomModuleFuncs,
+          BuiltinModuleUtils::BuiltinModuleFuncSpecCount(kRandomModuleFuncs)));
 
   return scope.Escape(module);
 }

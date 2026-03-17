@@ -67,6 +67,12 @@ double MonotonicSeconds() {
   return std::chrono::duration_cast<std::chrono::duration<double>>(now).count();
 }
 
+}  // namespace
+
+/////////////////////////////////////////////////////////////////////////////////
+
+namespace module_impl {
+
 BUILTIN_MODULE_FUNC(Time_Time) {
   BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
                                             "time");
@@ -123,27 +129,29 @@ BUILTIN_MODULE_FUNC(Time_Sleep) {
   return handle(isolate->py_none_object());
 }
 
-}  // namespace
+}  // namespace module_impl
+
+/////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, module, NewBuiltinModuleWithDefaultMeta(isolate, kModuleName));
-
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+      isolate, module,
+      BuiltinModuleUtils::NewBuiltinModule(isolate, kModuleName));
 
   const BuiltinModuleFuncSpec kTimeModuleFuncs[] = {
 #define DEFINE_TIME_FUNC_SPEC(name, func) \
-  {name, &BUILTIN_MODULE_FUNC_NAME(func)},
+  {name, &module_impl::BUILTIN_MODULE_FUNC_NAME(func)},
       TIME_MODULE_FUNC_LIST(DEFINE_TIME_FUNC_SPEC)
 #undef DEFINE_TIME_FUNC_SPEC
   };
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallBuiltinModuleFuncsFromSpec(
-                          isolate, module_dict, kTimeModuleFuncs,
-                          BuiltinModuleFuncSpecCount(kTimeModuleFuncs)));
+  RETURN_ON_EXCEPTION(
+      isolate,
+      BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
+          isolate, module, kTimeModuleFuncs,
+          BuiltinModuleUtils::BuiltinModuleFuncSpecCount(kTimeModuleFuncs)));
 
   return scope.Escape(module);
 }

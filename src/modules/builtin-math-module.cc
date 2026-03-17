@@ -96,6 +96,12 @@ MaybeHandle<PyObject> ReturnPyIntFromDouble(double v, const char* func_name) {
   return handle(PySmi::FromInt(static_cast<int64_t>(v)));
 }
 
+}  // namespace
+
+/////////////////////////////////////////////////////////////////////////////////
+
+namespace module_impl {
+
 BUILTIN_MODULE_FUNC(Math_Sqrt) {
   BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
                                             "sqrt");
@@ -314,16 +320,17 @@ BUILTIN_MODULE_FUNC(Math_IsInf) {
   return handle(Isolate::ToPyBoolean(std::isinf(x)));
 }
 
-}  // namespace
+}  // namespace module_impl
 
-////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, module, NewBuiltinModuleWithDefaultMeta(isolate, kModuleName));
+      isolate, module,
+      BuiltinModuleUtils::NewBuiltinModule(isolate, kModuleName));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate,
@@ -346,14 +353,15 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
 
   const BuiltinModuleFuncSpec kMathModuleFuncs[] = {
 #define DEFINE_MATH_FUNC_SPEC(name, func) \
-  {name, &BUILTIN_MODULE_FUNC_NAME(func)},
+  {name, &module_impl::BUILTIN_MODULE_FUNC_NAME(func)},
       MATH_MODULE_FUNC_LIST(DEFINE_MATH_FUNC_SPEC)
 #undef DEFINE_MATH_FUNC_SPEC
   };
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallBuiltinModuleFuncsFromSpec(
-                          isolate, module_dict, kMathModuleFuncs,
-                          BuiltinModuleFuncSpecCount(kMathModuleFuncs)));
+  RETURN_ON_EXCEPTION(
+      isolate,
+      BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
+          isolate, module, kMathModuleFuncs,
+          BuiltinModuleUtils::BuiltinModuleFuncSpecCount(kMathModuleFuncs)));
 
   return scope.Escape(module);
 }
