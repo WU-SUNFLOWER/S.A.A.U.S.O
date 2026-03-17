@@ -38,8 +38,6 @@
 S.A.A.U.S.O 是一款高性能 Python 虚拟机，旨在兼容 CPython3.12 字节码。
 
 - **开发者**: WU-SUNFLOWER（Computer Science专业本科大四学生）
-  - GitHub主页：<https://github.com/WU-SUNFLOWER>
-  - 个人博客：<https://juejin.cn/user/3544481220008744>
 - **开发目的**：
 - 这是WU-SUNFLOWER的本科毕业设计。
 - 他希望通过开发这个项目，在顺利拿到CS专业学士学位的同时，帮助自己提升对编程语言虚拟机的理解和工程实现能力。为深入阅读和学习工业级虚拟机（如HotSpot JVM、V8、CPython）的源代码打下坚实的基础。
