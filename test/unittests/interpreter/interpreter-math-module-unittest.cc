@@ -30,6 +30,7 @@ print(math.sqrt(9))
 print(math.floor(1.9))
 print(math.ceil(1.1))
 print(math.fabs(-3))
+print(math.pow(2, 3))
 )";
 
   RunScript(kSource, kTestFileName);
@@ -39,6 +40,7 @@ print(math.fabs(-3))
   AppendExpected(expected, handle(PySmi::FromInt(1)));
   AppendExpected(expected, handle(PySmi::FromInt(2)));
   AppendExpected(expected, PyFloat::NewInstance(3.0));
+  AppendExpected(expected, PyFloat::NewInstance(8.0));
   ExpectPrintResult(expected);
 }
 
@@ -59,5 +61,17 @@ print(math.e)
   ExpectPrintResult(expected);
 }
 
-}  // namespace saauso::internal
+TEST_F(BasicInterpreterTest, MathRejectKeywordArgs) {
+  HandleScope scope;
 
+  constexpr std::string_view kSource = R"(
+import math
+math.sqrt(x=9)
+)";
+
+  RunScriptExpectExceptionContains(kSource,
+                                   "math.sqrt() takes no keyword arguments",
+                                   kTestFileName);
+}
+
+}  // namespace saauso::internal

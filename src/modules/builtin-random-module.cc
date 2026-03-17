@@ -2,7 +2,6 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include <chrono>
 #include <cinttypes>
 #include <cstdint>
 
@@ -10,11 +9,11 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
+#include "src/modules/builtin-module-utils.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
@@ -22,7 +21,6 @@
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -32,26 +30,19 @@ namespace saauso::internal {
 
 namespace {
 
-RandomNumberGenerator g_rng;
-bool g_seeded = false;
+constexpr const char* kModuleName = "random";
 
-uint64_t NowSeed() {
-  auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
-  return static_cast<uint64_t>(
-      std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
-}
+#define RANDOM_MODULE_FUNC_LIST(V)     \
+  V("seed", Random_Seed)               \
+  V("random", Random_Random)           \
+  V("randint", Random_RandInt)         \
+  V("randrange", Random_RandRange)     \
+  V("getrandbits", Random_GetRandBits) \
+  V("choice", Random_Choice)           \
+  V("shuffle", Random_Shuffle)
 
-void EnsureSeeded() {
-  if (g_seeded) {
-    return;
-  }
-  g_rng.Seed(NowSeed());
-  g_seeded = true;
-}
-
-void FailNoKeywordArgs(const char* func_name) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "random.%s() takes no keyword arguments", func_name);
+RandomNumberGenerator* GetRng(Isolate* isolate) {
+  return isolate->random_number_generator();
 }
 
 void FailArgRangeEmpty(const char* func_name) {
@@ -73,91 +64,64 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
   return kNullMaybe;
 }
 
-Maybe<void> InstallFunc(Isolate* isolate,
-                        Handle<PyDict> module_dict,
-                        const char* name,
-                        NativeFuncPointer func) {
-  Handle<PyString> py_name = PyString::NewInstance(name);
+}  // namespace
 
-  FunctionTemplateInfo func_template(func, py_name);
-  Handle<PyFunction> func_object;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, func_object,
-      isolate->factory()->NewPyFunctionWithTemplate(func_template));
+/////////////////////////////////////////////////////////////////////////////////
 
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, py_name, func_object));
+namespace module_impl {
 
-  return JustVoid();
-}
-
-MaybeHandle<PyObject> Random_Seed(Isolate* isolate,
-                                  Handle<PyObject> receiver,
-                                  Handle<PyTuple> args,
-                                  Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("seed");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
+BUILTIN_MODULE_FUNC(Random_Seed) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "seed");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc > 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.seed() takes at most 1 argument (" PRId64 " given)", argc);
+    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                        "%s.seed() takes at most 1 argument (" PRId64 " given)",
+                        kModuleName, argc);
     return kNullMaybe;
   }
   uint64_t seed = 0;
   if (argc == 0) {
-    seed = NowSeed();
+    seed = RandomNumberGenerator::NowSeed();
   } else {
     Handle<PyObject> a = args->Get(0);
     if (IsPyNone(a)) {
-      seed = NowSeed();
+      seed = RandomNumberGenerator::NowSeed();
     } else {
       int64_t val = 0;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, val, ExtractSmi(a, "seed"));
       seed = static_cast<uint64_t>(val);
     }
   }
-  g_rng.Seed(seed);
-  g_seeded = true;
+  GetRng(isolate)->SetSeed(seed);
+
   return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> Random_Random(Isolate* isolate,
-                                    Handle<PyObject> receiver,
-                                    Handle<PyTuple> args,
-                                    Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("random");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "random.random() takes 0 positional arguments but "
-                        "%" PRId64 " were given",
-                        argc);
-    return kNullMaybe;
-  }
-  EnsureSeeded();
-  return PyFloat::NewInstance(g_rng.NextDouble01());
+BUILTIN_MODULE_FUNC(Random_Random) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "random");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 0,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.random() takes 0 positional arguments but "
+                          "%" PRId64 " were given",
+                          kModuleName, argc));
+
+  return PyFloat::NewInstance(GetRng(isolate)->NextDouble01());
 }
 
-MaybeHandle<PyObject> Random_RandInt(Isolate* isolate,
-                                     Handle<PyObject> receiver,
-                                     Handle<PyTuple> args,
-                                     Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("randint");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 2) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.randint() takes exactly 2 arguments (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Random_RandInt) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "randint");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 2,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.randint() takes exactly 2 arguments (%" PRId64
+                          " given)",
+                          kModuleName, argc));
 
   int64_t a = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, a, ExtractSmi(args->Get(0), "randint"));
@@ -169,27 +133,22 @@ MaybeHandle<PyObject> Random_RandInt(Isolate* isolate,
     FailArgRangeEmpty("randint");
     return kNullMaybe;
   }
-  EnsureSeeded();
+
   const uint64_t bound = static_cast<uint64_t>(b - a) + 1;
-  uint64_t offset = g_rng.NextU64Bounded(bound);
+  uint64_t offset = GetRng(isolate)->NextU64Bounded(bound);
   int64_t result = a + static_cast<int64_t>(offset);
   return handle(PySmi::FromInt(result));
 }
 
-MaybeHandle<PyObject> Random_RandRange(Isolate* isolate,
-                                       Handle<PyObject> receiver,
-                                       Handle<PyTuple> args,
-                                       Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("randrange");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
+BUILTIN_MODULE_FUNC(Random_RandRange) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "randrange");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc < 1 || argc > 3) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "random.randrange() takes from 1 to 3 positional "
+                        "%s.randrange() takes from 1 to 3 positional "
                         "arguments but %" PRId64 " were given",
-                        argc);
+                        kModuleName, argc);
     return kNullMaybe;
   }
   int64_t start = 0;
@@ -215,8 +174,6 @@ MaybeHandle<PyObject> Random_RandRange(Isolate* isolate,
     return kNullMaybe;
   }
 
-  EnsureSeeded();
-
   if (step > 0) {
     if (start >= stop) {
       FailArgRangeEmpty("randrange");
@@ -225,7 +182,7 @@ MaybeHandle<PyObject> Random_RandRange(Isolate* isolate,
     uint64_t width = static_cast<uint64_t>(stop - start);
     uint64_t step_u = static_cast<uint64_t>(step);
     uint64_t n = (width + step_u - 1) / step_u;
-    uint64_t k = g_rng.NextU64Bounded(n);
+    uint64_t k = GetRng(isolate)->NextU64Bounded(n);
     int64_t result = start + static_cast<int64_t>(k * step_u);
     return handle(PySmi::FromInt(result));
   }
@@ -235,30 +192,29 @@ MaybeHandle<PyObject> Random_RandRange(Isolate* isolate,
     return kNullMaybe;
   }
 
-  uint64_t step_u = static_cast<uint64_t>(-step);
+  // 这里不能直接 `static_cast<uint64_t>(-step)`。
+  // 因为如果 step 恰好是 `INT64_MIN`，对它取反就会出现有符号类型的溢出。
+  // 在 C++ 中，有符号类型溢出是一个 UB 行为！！！
+  // 参见：https://juejin.cn/post/7609924915807043630#heading-7
+  uint64_t step_u = static_cast<uint64_t>(0) - static_cast<uint64_t>(step);
+
   uint64_t width = static_cast<uint64_t>(start - stop);
   uint64_t n = (width + step_u - 1) / step_u;
-  uint64_t k = g_rng.NextU64Bounded(n);
+  uint64_t k = GetRng(isolate)->NextU64Bounded(n);
   int64_t result = start - static_cast<int64_t>(k * step_u);
   return handle(PySmi::FromInt(result));
 }
 
-MaybeHandle<PyObject> Random_GetRandBits(Isolate* isolate,
-                                         Handle<PyObject> receiver,
-                                         Handle<PyTuple> args,
-                                         Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("getrandbits");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "random.getrandbits() takes exactly 1 argument "
-                        "(%" PRId64 " given)",
-                        argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Random_GetRandBits) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "getrandbits");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.getrandbits() takes exactly 1 argument "
+                          "(%" PRId64 " given)",
+                          kModuleName, argc));
 
   int64_t k = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, k,
@@ -278,30 +234,30 @@ MaybeHandle<PyObject> Random_GetRandBits(Isolate* isolate,
                        "getrandbits() k too large for SAAUSO MVP int");
     return kNullMaybe;
   }
-  EnsureSeeded();
+
   uint64_t mask = (uint64_t{1} << static_cast<uint64_t>(k)) - 1;
-  uint64_t x = g_rng.NextU64() & mask;
+  uint64_t x = GetRng(isolate)->NextU64() & mask;
   return handle(PySmi::FromInt(static_cast<int64_t>(x)));
 }
 
-MaybeHandle<PyObject> Random_Choice(Isolate* isolate,
-                                    Handle<PyObject> receiver,
-                                    Handle<PyTuple> args,
-                                    Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("choice");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.choice() takes exactly 1 argument (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Random_Choice) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "choice");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.choice() takes exactly 1 argument (%" PRId64
+                          " given)",
+                          kModuleName, argc));
   Handle<PyObject> seq = args->Get(0);
-  EnsureSeeded();
 
+  // TODO:
+  // 这种设计在未来引入 bytearray 或用户自定义序列时会违反 DRY 和 OCP 原则。
+  // 建议在 VM 运行时层（如 PyObject 或新的 PySequence Helper 中）抽象出
+  // 通用的 Runtime_SequenceLength(Isolate*, Handle<PyObject>)
+  // 和 Runtime_SequenceGetItem(Isolate*, Handle<PyObject>, int64_t) 接口，
+  // 将多态分发下沉，让 Random_Choice 只需面对一套通用 API。
   if (IsPyList(seq)) {
     auto list = Handle<PyList>::cast(seq);
     if (list->length() == 0) {
@@ -310,7 +266,7 @@ MaybeHandle<PyObject> Random_Choice(Isolate* isolate,
       return kNullMaybe;
     }
     uint64_t index =
-        g_rng.NextU64Bounded(static_cast<uint64_t>(list->length()));
+        GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(list->length()));
     return list->Get(static_cast<int64_t>(index));
   }
 
@@ -322,7 +278,7 @@ MaybeHandle<PyObject> Random_Choice(Isolate* isolate,
       return kNullMaybe;
     }
     uint64_t index =
-        g_rng.NextU64Bounded(static_cast<uint64_t>(tuple->length()));
+        GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(tuple->length()));
     return tuple->Get(static_cast<int64_t>(index));
   }
 
@@ -333,46 +289,41 @@ MaybeHandle<PyObject> Random_Choice(Isolate* isolate,
                          "Cannot choose from an empty sequence");
       return kNullMaybe;
     }
-    uint64_t index = g_rng.NextU64Bounded(static_cast<uint64_t>(s->length()));
+    uint64_t index =
+        GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(s->length()));
     return PyString::Slice(s, static_cast<int64_t>(index),
                            static_cast<int64_t>(index) + 1);
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(seq)->name();
   Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "choice() unsupported sequence type '%s'",
+                      "%s.choice() unsupported sequence type '%s'", kModuleName,
                       type_name->buffer());
   return kNullMaybe;
 }
 
-MaybeHandle<PyObject> Random_Shuffle(Isolate* isolate,
-                                     Handle<PyObject> receiver,
-                                     Handle<PyTuple> args,
-                                     Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("shuffle");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.shuffle() takes exactly 1 argument (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Random_Shuffle) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "shuffle");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.shuffle() takes exactly 1 argument (%" PRId64
+                          " given)",
+                          kModuleName, argc));
   Handle<PyObject> x = args->Get(0);
   if (!IsPyListExact(x)) {
     Handle<PyString> type_name = PyObject::GetKlass(x)->name();
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "shuffle() argument must be list, not '%s'",
-                        type_name->buffer());
+                        "%s.shuffle() argument must be list, not '%s'",
+                        kModuleName, type_name->buffer());
     return kNullMaybe;
   }
-  EnsureSeeded();
 
   auto list = Handle<PyList>::cast(x);
   for (int64_t i = list->length() - 1; i > 0; i--) {
-    uint64_t j = g_rng.NextU64Bounded(static_cast<uint64_t>(i) + 1);
+    uint64_t j = GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(i) + 1);
     if (static_cast<int64_t>(j) == i) {
       continue;
     }
@@ -385,38 +336,29 @@ MaybeHandle<PyObject> Random_Shuffle(Isolate* isolate,
   return handle(isolate->py_none_object());
 }
 
-}  // namespace
+}  // namespace module_impl
+
+/////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, module,
+      BuiltinModuleUtils::NewBuiltinModule(isolate, kModuleName));
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("random")));
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
-
-  g_rng.Seed(NowSeed());
-  g_seeded = true;
-
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "seed", &Random_Seed));
+  const BuiltinModuleFuncSpec kRandomModuleFuncs[] = {
+#define DEFINE_RANDOM_FUNC_SPEC(name, func) \
+  {name, &module_impl::BUILTIN_MODULE_FUNC_NAME(func)},
+      RANDOM_MODULE_FUNC_LIST(DEFINE_RANDOM_FUNC_SPEC)
+#undef DEFINE_RANDOM_FUNC_SPEC
+  };
   RETURN_ON_EXCEPTION(
-      isolate, InstallFunc(isolate, module_dict, "random", &Random_Random));
-  RETURN_ON_EXCEPTION(
-      isolate, InstallFunc(isolate, module_dict, "randint", &Random_RandInt));
-  RETURN_ON_EXCEPTION(isolate, InstallFunc(isolate, module_dict, "randrange",
-                                           &Random_RandRange));
-  RETURN_ON_EXCEPTION(isolate, InstallFunc(isolate, module_dict, "getrandbits",
-                                           &Random_GetRandBits));
-  RETURN_ON_EXCEPTION(
-      isolate, InstallFunc(isolate, module_dict, "choice", &Random_Choice));
-  RETURN_ON_EXCEPTION(
-      isolate, InstallFunc(isolate, module_dict, "shuffle", &Random_Shuffle));
+      isolate,
+      BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
+          isolate, module, kRandomModuleFuncs,
+          BuiltinModuleUtils::BuiltinModuleFuncSpecCount(kRandomModuleFuncs)));
 
   return scope.Escape(module);
 }

@@ -4,7 +4,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/handles/handles.h"
-#include "src/heap/factory.h"
+#include "src/modules/builtin-module-utils.h"
 #include "src/modules/builtin-module.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/py-dict.h"
@@ -26,16 +26,10 @@ BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, module, BuiltinModuleUtils::NewBuiltinModule(isolate, "sys"));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("sys")));
-
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
 
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("modules"),

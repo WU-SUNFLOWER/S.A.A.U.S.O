@@ -11,18 +11,17 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
+#include "src/modules/builtin-module-utils.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -31,12 +30,15 @@ namespace saauso::internal {
 
 namespace {
 
-void FailNoKeywordArgs(const char* func_name) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "time.%s() takes no keyword arguments", func_name);
-}
+constexpr const char* kModuleName = "time";
 
-// 成功时返回 true 并写入 *out；类型不符时抛 TypeError 并返回 false。
+#define TIME_MODULE_FUNC_LIST(V)      \
+  V("time", Time_Time)                \
+  V("perf_counter", Time_PerfCounter) \
+  V("monotonic", Time_Monotonic)      \
+  V("sleep", Time_Sleep)
+
+// 成功时返回有效值；类型不符时抛 TypeError 并返回 kNullMaybe。
 Maybe<double> ExtractSeconds(Handle<PyObject> value, const char* func_name) {
   if (IsPyFloat(value)) {
     return Maybe<double>(Handle<PyFloat>::cast(value)->value());
@@ -65,84 +67,53 @@ double MonotonicSeconds() {
   return std::chrono::duration_cast<std::chrono::duration<double>>(now).count();
 }
 
-Maybe<void> InstallFunc(Isolate* isolate,
-                        Handle<PyDict> module_dict,
-                        const char* name,
-                        NativeFuncPointer func) {
-  Handle<PyString> py_name = PyString::NewInstance(name);
+}  // namespace
 
-  FunctionTemplateInfo func_template(func, py_name);
-  Handle<PyFunction> func_object;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, func_object,
-      isolate->factory()->NewPyFunctionWithTemplate(func_template));
+/////////////////////////////////////////////////////////////////////////////////
 
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, py_name, func_object));
+namespace module_impl {
 
-  return JustVoid();
-}
-
-MaybeHandle<PyObject> Time_Time(Isolate* isolate,
-                                Handle<PyObject> receiver,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("time");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "time.time() takes 0 positional arguments but %" PRId64
-                        " "
-                        "were given",
-                        argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Time_Time) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "time");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 0,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.time() takes 0 positional arguments but %" PRId64
+                          " were given",
+                          kModuleName, argc));
   return PyFloat::NewInstance(WallTimeSeconds());
 }
 
-MaybeHandle<PyObject> Time_PerfCounter(Isolate* isolate,
-                                       Handle<PyObject> receiver,
-                                       Handle<PyTuple> args,
-                                       Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("perf_counter");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "time.perf_counter() takes 0 positional arguments but "
-                        "%" PRId64 " were given",
-                        argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Time_PerfCounter) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "perf_counter");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 0,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.perf_counter() takes 0 positional arguments "
+                          "but %" PRId64 " were given",
+                          kModuleName, argc));
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
-MaybeHandle<PyObject> Time_Monotonic(Isolate* isolate,
-                                     Handle<PyObject> receiver,
-                                     Handle<PyTuple> args,
-                                     Handle<PyDict> kwargs) {
-  return Time_PerfCounter(isolate, receiver, args, kwargs);
+BUILTIN_MODULE_FUNC(Time_Monotonic) {
+  return BUILTIN_MODULE_FUNC_NAME(Time_PerfCounter)(isolate, receiver, args,
+                                                    kwargs);
 }
 
-MaybeHandle<PyObject> Time_Sleep(Isolate* isolate,
-                                 Handle<PyObject> receiver,
-                                 Handle<PyTuple> args,
-                                 Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("sleep");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "time.sleep() takes exactly 1 argument (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Time_Sleep) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "sleep");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.sleep() takes exactly 1 argument (%" PRId64
+                          " given)",
+                          kModuleName, argc));
 
   double seconds = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, seconds,
@@ -158,29 +129,29 @@ MaybeHandle<PyObject> Time_Sleep(Isolate* isolate,
   return handle(isolate->py_none_object());
 }
 
-}  // namespace
+}  // namespace module_impl
+
+/////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, module,
+      BuiltinModuleUtils::NewBuiltinModule(isolate, kModuleName));
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("time")));
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
-
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "time", &Time_Time));
-  RETURN_ON_EXCEPTION(isolate, InstallFunc(isolate, module_dict, "perf_counter",
-                                           &Time_PerfCounter));
+  const BuiltinModuleFuncSpec kTimeModuleFuncs[] = {
+#define DEFINE_TIME_FUNC_SPEC(name, func) \
+  {name, &module_impl::BUILTIN_MODULE_FUNC_NAME(func)},
+      TIME_MODULE_FUNC_LIST(DEFINE_TIME_FUNC_SPEC)
+#undef DEFINE_TIME_FUNC_SPEC
+  };
   RETURN_ON_EXCEPTION(
-      isolate, InstallFunc(isolate, module_dict, "monotonic", &Time_Monotonic));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "sleep", &Time_Sleep));
+      isolate,
+      BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
+          isolate, module, kTimeModuleFuncs,
+          BuiltinModuleUtils::BuiltinModuleFuncSpecCount(kTimeModuleFuncs)));
 
   return scope.Escape(module);
 }

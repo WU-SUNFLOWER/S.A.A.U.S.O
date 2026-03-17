@@ -6,24 +6,24 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numbers>
 
 #include "src/execution/exception-types.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
+#include "src/modules/builtin-module-utils.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
-#include "src/objects/py-function.h"
 #include "src/objects/py-module.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/maybe.h"
@@ -32,18 +32,38 @@ namespace saauso::internal {
 
 namespace {
 
-// 无关键字参数时抛 TypeError，调用方随后应 return kNullMaybe。
-void FailNoKeywordArgs(const char* func_name) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "math.%s() takes no keyword arguments", func_name);
-}
+constexpr const char* kModuleName = "math";
+
+constexpr double kPI = 3.1415926535897932;
+constexpr double kE = std::numbers::e;
+constexpr double kTau = 2 * kPI;
+
+#define MATH_MODULE_FUNC_LIST(V) \
+  V("sqrt", Math_Sqrt)           \
+  V("floor", Math_Floor)         \
+  V("ceil", Math_Ceil)           \
+  V("fabs", Math_Fabs)           \
+  V("sin", Math_Sin)             \
+  V("cos", Math_Cos)             \
+  V("tan", Math_Tan)             \
+  V("exp", Math_Exp)             \
+  V("log", Math_Log)             \
+  V("log2", Math_Log2)           \
+  V("log10", Math_Log10)         \
+  V("pow", Math_Pow)             \
+  V("isfinite", Math_IsFinite)   \
+  V("isnan", Math_IsNaN)         \
+  V("isinf", Math_IsInf)
 
 // 参数个数不符时抛 TypeError。
-void FailArgc(const char* func_name, int64_t expected, int64_t actual) {
+void FailArgc(Isolate* isolate,
+              const char* func_name,
+              int64_t expected,
+              int64_t actual) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                      "math.%s() takes exactly %" PRId64 " argument (%" PRId64
+                      "%s.%s() takes exactly %" PRId64 " argument (%" PRId64
                       " given)",
-                      func_name, expected, actual);
+                      kModuleName, func_name, expected, actual);
 }
 
 // 成功时返回有效 double；类型不符时抛 TypeError 并返回空。
@@ -76,38 +96,18 @@ MaybeHandle<PyObject> ReturnPyIntFromDouble(double v, const char* func_name) {
   return handle(PySmi::FromInt(static_cast<int64_t>(v)));
 }
 
-Maybe<void> InstallFunc(Isolate* isolate,
-                        Handle<PyDict> module_dict,
-                        const char* name,
-                        NativeFuncPointer func) {
-  Handle<PyString> py_name = PyString::NewInstance(name);
+}  // namespace
 
-  FunctionTemplateInfo function_template(func, py_name);
+/////////////////////////////////////////////////////////////////////////////////
 
-  Handle<PyFunction> function_object;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, function_object,
-      isolate->factory()->NewPyFunctionWithTemplate(function_template));
+namespace module_impl {
 
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, py_name, function_object));
-
-  return JustVoid();
-}
-
-MaybeHandle<PyObject> Math_Sqrt(Isolate* isolate,
-                                Handle<PyObject> receiver,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("sqrt");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("sqrt", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Sqrt) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "sqrt");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "sqrt", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -119,19 +119,12 @@ MaybeHandle<PyObject> Math_Sqrt(Isolate* isolate,
   return PyFloat::NewInstance(std::sqrt(x));
 }
 
-MaybeHandle<PyObject> Math_Floor(Isolate* isolate,
-                                 Handle<PyObject> receiver,
-                                 Handle<PyTuple> args,
-                                 Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("floor");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("floor", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Floor) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "floor");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "floor", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -139,19 +132,12 @@ MaybeHandle<PyObject> Math_Floor(Isolate* isolate,
   return ReturnPyIntFromDouble(std::floor(x), "floor");
 }
 
-MaybeHandle<PyObject> Math_Ceil(Isolate* isolate,
-                                Handle<PyObject> receiver,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("ceil");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("ceil", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Ceil) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "ceil");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "ceil", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -159,19 +145,12 @@ MaybeHandle<PyObject> Math_Ceil(Isolate* isolate,
   return ReturnPyIntFromDouble(std::ceil(x), "ceil");
 }
 
-MaybeHandle<PyObject> Math_Fabs(Isolate* isolate,
-                                Handle<PyObject> receiver,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("fabs");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("fabs", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Fabs) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "fabs");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "fabs", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -179,19 +158,12 @@ MaybeHandle<PyObject> Math_Fabs(Isolate* isolate,
   return PyFloat::NewInstance(std::fabs(x));
 }
 
-MaybeHandle<PyObject> Math_Sin(Isolate* isolate,
-                               Handle<PyObject> receiver,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("sin");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("sin", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Sin) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "sin");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "sin", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -199,19 +171,12 @@ MaybeHandle<PyObject> Math_Sin(Isolate* isolate,
   return PyFloat::NewInstance(std::sin(x));
 }
 
-MaybeHandle<PyObject> Math_Cos(Isolate* isolate,
-                               Handle<PyObject> receiver,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("cos");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("cos", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Cos) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "cos");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "cos", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -219,19 +184,12 @@ MaybeHandle<PyObject> Math_Cos(Isolate* isolate,
   return PyFloat::NewInstance(std::cos(x));
 }
 
-MaybeHandle<PyObject> Math_Tan(Isolate* isolate,
-                               Handle<PyObject> receiver,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("tan");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("tan", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Tan) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "tan");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "tan", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -239,19 +197,12 @@ MaybeHandle<PyObject> Math_Tan(Isolate* isolate,
   return PyFloat::NewInstance(std::tan(x));
 }
 
-MaybeHandle<PyObject> Math_Exp(Isolate* isolate,
-                               Handle<PyObject> receiver,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("exp");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("exp", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Exp) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "exp");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "exp", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -259,19 +210,12 @@ MaybeHandle<PyObject> Math_Exp(Isolate* isolate,
   return PyFloat::NewInstance(std::exp(x));
 }
 
-MaybeHandle<PyObject> Math_Log(Isolate* isolate,
-                               Handle<PyObject> receiver,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("log");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("log", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Log) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "log");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "log", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -283,19 +227,12 @@ MaybeHandle<PyObject> Math_Log(Isolate* isolate,
   return PyFloat::NewInstance(std::log(x));
 }
 
-MaybeHandle<PyObject> Math_Log2(Isolate* isolate,
-                                Handle<PyObject> receiver,
-                                Handle<PyTuple> args,
-                                Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("log2");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("log2", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Log2) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "log2");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "log2", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -307,19 +244,12 @@ MaybeHandle<PyObject> Math_Log2(Isolate* isolate,
   return PyFloat::NewInstance(std::log2(x));
 }
 
-MaybeHandle<PyObject> Math_Log10(Isolate* isolate,
-                                 Handle<PyObject> receiver,
-                                 Handle<PyTuple> args,
-                                 Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("log10");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("log10", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Log10) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "log10");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "log10", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -331,44 +261,32 @@ MaybeHandle<PyObject> Math_Log10(Isolate* isolate,
   return PyFloat::NewInstance(std::log10(x));
 }
 
-MaybeHandle<PyObject> Math_Pow(Isolate* isolate,
-                               Handle<PyObject> receiver,
-                               Handle<PyTuple> args,
-                               Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("pow");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 2) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "math.pow() takes exactly 2 arguments (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_Pow) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "pow");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 2,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.pow() takes exactly 2 arguments (%" PRId64
+                          " given)",
+                          kModuleName, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
 
   double y = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(1)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, y, ExtractDouble(args->Get(1)));
 
   return PyFloat::NewInstance(std::pow(x, y));
 }
 
-MaybeHandle<PyObject> Math_IsFinite(Isolate* isolate,
-                                    Handle<PyObject> receiver,
-                                    Handle<PyTuple> args,
-                                    Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("isfinite");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("isfinite", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_IsFinite) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "isfinite");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 1, FailArgc(isolate, "isfinite", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -376,19 +294,12 @@ MaybeHandle<PyObject> Math_IsFinite(Isolate* isolate,
   return handle(Isolate::ToPyBoolean(std::isfinite(x)));
 }
 
-MaybeHandle<PyObject> Math_IsNaN(Isolate* isolate,
-                                 Handle<PyObject> receiver,
-                                 Handle<PyTuple> args,
-                                 Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("isnan");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("isnan", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_IsNaN) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "isnan");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "isnan", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -396,19 +307,12 @@ MaybeHandle<PyObject> Math_IsNaN(Isolate* isolate,
   return handle(Isolate::ToPyBoolean(std::isnan(x)));
 }
 
-MaybeHandle<PyObject> Math_IsInf(Isolate* isolate,
-                                 Handle<PyObject> receiver,
-                                 Handle<PyTuple> args,
-                                 Handle<PyDict> kwargs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    FailNoKeywordArgs("isinf");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("isinf", 1, argc);
-    return kNullMaybe;
-  }
+BUILTIN_MODULE_FUNC(Math_IsInf) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "isinf");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "isinf", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -416,32 +320,28 @@ MaybeHandle<PyObject> Math_IsInf(Isolate* isolate,
   return handle(Isolate::ToPyBoolean(std::isinf(x)));
 }
 
-}  // namespace
+}  // namespace module_impl
 
-////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             isolate->factory()->NewPyModule());
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, module,
+      BuiltinModuleUtils::NewBuiltinModule(isolate, kModuleName));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance("math")));
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(package),
-                                           PyString::NewInstance("")));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("pi"),
-                                  PyFloat::NewInstance(std::acos(-1.0))));
+                                  PyFloat::NewInstance(kPI)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("e"),
-                                  PyFloat::NewInstance(std::exp(1.0))));
+                                  PyFloat::NewInstance(kE)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("tau"),
-                                  PyFloat::NewInstance(2.0 * std::acos(-1.0))));
+                                  PyFloat::NewInstance(kTau)));
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(module_dict, PyString::NewInstance("inf"),
                            PyFloat::NewInstance(
@@ -451,36 +351,17 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
                            PyFloat::NewInstance(
                                std::numeric_limits<double>::quiet_NaN())));
 
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "sqrt", &Math_Sqrt));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "floor", &Math_Floor));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "ceil", &Math_Ceil));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "fabs", &Math_Fabs));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "sin", &Math_Sin));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "cos", &Math_Cos));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "tan", &Math_Tan));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "exp", &Math_Exp));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "log", &Math_Log));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "log2", &Math_Log2));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "log10", &Math_Log10));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "pow", &Math_Pow));
+  const BuiltinModuleFuncSpec kMathModuleFuncs[] = {
+#define DEFINE_MATH_FUNC_SPEC(name, func) \
+  {name, &module_impl::BUILTIN_MODULE_FUNC_NAME(func)},
+      MATH_MODULE_FUNC_LIST(DEFINE_MATH_FUNC_SPEC)
+#undef DEFINE_MATH_FUNC_SPEC
+  };
   RETURN_ON_EXCEPTION(
-      isolate, InstallFunc(isolate, module_dict, "isfinite", &Math_IsFinite));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "isnan", &Math_IsNaN));
-  RETURN_ON_EXCEPTION(isolate,
-                      InstallFunc(isolate, module_dict, "isinf", &Math_IsInf));
+      isolate,
+      BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
+          isolate, module, kMathModuleFuncs,
+          BuiltinModuleUtils::BuiltinModuleFuncSpecCount(kMathModuleFuncs)));
 
   return scope.Escape(module);
 }

@@ -4,6 +4,7 @@
 
 #include "src/utils/random-number-generator.h"
 
+#include <chrono>
 #include <limits>
 
 namespace saauso::internal {
@@ -22,11 +23,17 @@ uint64_t SplitMix64(uint64_t* x) {
 
 }  // namespace
 
+/////////////////////////////////////////////////////////////////////////////////
+
 RandomNumberGenerator::RandomNumberGenerator() : s0_(0), s1_(0) {
-  Seed(0);
+  SetSeed(NowSeed());
 }
 
-void RandomNumberGenerator::Seed(uint64_t seed) {
+RandomNumberGenerator::RandomNumberGenerator(uint64_t seed) : s0_(0), s1_(0) {
+  SetSeed(seed);
+}
+
+void RandomNumberGenerator::SetSeed(uint64_t seed) {
   uint64_t x = seed;
   s0_ = SplitMix64(&x);
   s1_ = SplitMix64(&x);
@@ -71,5 +78,10 @@ uint64_t RandomNumberGenerator::NextU64Bounded(uint64_t bound) {
   return x % bound;
 }
 
-}  // namespace saauso::internal
+uint64_t RandomNumberGenerator::NowSeed() {
+  auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
+  return static_cast<uint64_t>(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+}
 
+}  // namespace saauso::internal

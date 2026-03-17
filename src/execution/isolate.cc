@@ -39,6 +39,7 @@
 #include "src/objects/py-type-object-klass.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/random-number-generator.h"
 
 namespace saauso::internal {
 
@@ -228,6 +229,9 @@ void Isolate::Init() {
   // 初始化模块管理器（sys.modules/sys.path 等）。
   module_manager_ = new ModuleManager(this);
 
+  // 初始化每个 Isolate 独立持有的随机数状态。
+  random_number_generator_ = new RandomNumberGenerator();
+
   // 初始化内建对象字典
   Handle<PyDict> builtins;
   if (!BuiltinBootstrapper(this).CreateBuiltins().ToHandle(&builtins)) {
@@ -302,6 +306,10 @@ void Isolate::TearDown() {
   // 销毁模块管理器
   delete module_manager_;
   module_manager_ = nullptr;
+
+  // 销毁 Isolate 独立随机数状态。
+  delete random_number_generator_;
+  random_number_generator_ = nullptr;
 
   // 销毁句柄作用域实现
   delete handle_scope_implementer_;
