@@ -155,8 +155,30 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
+    Handle<PyObject> self) {
   auto* isolate = Isolate::Current();
+
+  EscapableHandleScope scope;
+
+  Handle<PyString> type_name = PyObject::GetKlass(self)->name();
+  Handle<PyObject> message_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(isolate, self));
+  Handle<PyString> message = Handle<PyString>::cast(message_obj);
+
+  Handle<PyString> result = PyString::NewInstance("<");
+  result = PyString::Append(result, type_name);
+  if (!message.is_null() && !message->IsEmpty()) {
+    result = PyString::Append(result, PyString::NewInstance(": "));
+    result = PyString::Append(result, message);
+  }
+  result = PyString::Append(result, PyString::NewInstance(">"));
+
+  return scope.Escape(result);
+}
+
+MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
+                                                        Handle<PyObject> self) {
   EscapableHandleScope scope;
 
   Handle<PyTuple> exception_args;
@@ -181,27 +203,6 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Handle<PyObject> self) {
   }
 
   return scope.Escape(PyString::NewInstance(""));
-}
-
-MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
-    Handle<PyObject> self) {
-  auto* isolate = Isolate::Current();
-  EscapableHandleScope scope;
-
-  Handle<PyString> type_name = PyObject::GetKlass(self)->name();
-  Handle<PyObject> message_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(self));
-  Handle<PyString> message = Handle<PyString>::cast(message_obj);
-
-  Handle<PyString> result = PyString::NewInstance("<");
-  result = PyString::Append(result, type_name);
-  if (!message.is_null() && !message->IsEmpty()) {
-    result = PyString::Append(result, PyString::NewInstance(": "));
-    result = PyString::Append(result, message);
-  }
-  result = PyString::Append(result, PyString::NewInstance(">"));
-
-  return scope.Escape(result);
 }
 
 }  // namespace saauso::internal

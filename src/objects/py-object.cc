@@ -114,9 +114,9 @@ MaybeHandle<PyObject> PyObject::Repr(Handle<PyObject> self) {
   return GetKlass(*self)->vtable().repr_(self);
 }
 
-MaybeHandle<PyObject> PyObject::Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObject::Str(Isolate* isolate, Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().str_);
-  return GetKlass(*self)->vtable().str_(self);
+  return GetKlass(*self)->vtable().str_(isolate, self);
 }
 
 // python virtual function

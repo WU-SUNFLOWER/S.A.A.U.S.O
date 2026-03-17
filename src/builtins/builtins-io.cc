@@ -151,7 +151,8 @@ BUILTIN(Print) {
       }
     }
     Handle<PyString> value;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, value, PyObject::Str(args->Get(i)));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, value,
+                               PyObject::Str(isolate, args->Get(i)));
     WriteHandleString(value);
   }
 

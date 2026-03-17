@@ -73,9 +73,8 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(
-      isolate, PyObjectBuiltinMethods::Install(
-                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate, PyObjectBuiltinMethods::Install(
+                                   isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("object"));
@@ -361,7 +360,8 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Handle<PyObject> self) {
 }
 
 // static
-MaybeHandle<PyObject> PyObjectKlass::Generic_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObjectKlass::Generic_Str(Isolate* isolate,
+                                                 Handle<PyObject> self) {
   // 默认的__str__什么也不做，直接把操作转发给对象的__repr__进行处理
   return PyObject::Repr(self);
 }

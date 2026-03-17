@@ -29,7 +29,8 @@ class PyFloatKlass : public Klass {
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
   static MaybeHandle<PyObject> Virtual_Repr(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Str(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
+                                           Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
   static MaybeHandle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);

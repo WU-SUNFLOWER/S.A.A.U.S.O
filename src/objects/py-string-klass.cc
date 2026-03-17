@@ -103,9 +103,8 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
   set_name(PyString::NewInstance("str"));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(
-      isolate, PyStringBuiltinMethods::Install(
-                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate, PyStringBuiltinMethods::Install(
+                                   isolate, klass_properties, type_object()));
 
   return JustVoid();
 }
@@ -149,7 +148,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
     }
 
     Handle<PyString> resolved;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, resolved, PyObject::Str(input_value));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, resolved,
+                               PyObject::Str(isolate, input_value));
     if (is_exact_str) {
       return resolved;
     }
@@ -197,7 +197,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Repr(Handle<PyObject> self) {
   return repr;
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyStringKlass::Virtual_Str(Isolate* isolate,
+                                                 Handle<PyObject> self) {
   return self;
 }
 

@@ -79,6 +79,9 @@ using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
 using VirtualFuncType_InstanceSize = size_t (*)(Oop);
 
 using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
+
+using VirtualFuncType_Maybe_Repr = MaybeOopHandle (*)(Isolate*, OopHandle);
+using VirtualFuncType_Maybe_Str = MaybeOopHandle (*)(Isolate*, OopHandle);
 }  // namespace
 
 #define KLASS_VTABLE_SLOT_EXPOSED(V)                                           \
@@ -113,7 +116,7 @@ using VirtualFuncType_Iterate = void (*)(Oop, ObjectVisitor*);
   V(VirtualFuncType_Maybe_Call, call, "__call__", Call)                        \
   V(VirtualFuncType_Maybe_1_1, len, "__len__", Len)                            \
   V(VirtualFuncType_Maybe_1_1, repr, "__repr__", Repr)                         \
-  V(VirtualFuncType_Maybe_1_1, str, "__str__", Str)                            \
+  V(VirtualFuncType_Maybe_Str, str, "__str__", Str)                            \
                                                                                \
   V(VirtualFuncType_Maybe_New, new_instance, "__new__", NewInstance)           \
   V(VirtualFuncType_Maybe_Init, init_instance, "__init__", InitInstance)

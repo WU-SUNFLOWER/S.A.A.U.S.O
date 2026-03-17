@@ -81,9 +81,8 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  RETURN_ON_EXCEPTION(
-      isolate, PyTypeObjectBuiltinMethods::Install(
-                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate, PyTypeObjectBuiltinMethods::Install(
+                                   isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("type"));
@@ -136,7 +135,8 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Repr(Handle<PyObject> self) {
   return repr;
 }
 
-MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Str(Isolate* isolate,
+                                                     Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 

@@ -82,7 +82,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Str) {
         "object.__str__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Str(self);
+  return PyObject::Str(isolate, self);
 }
 
 }  // namespace saauso::internal

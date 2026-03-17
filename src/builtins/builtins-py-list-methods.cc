@@ -116,7 +116,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Str) {
                         argc);
     return kNullMaybeHandle;
   }
-  return PyObject::Str(self);
+  return PyObject::Str(isolate, self);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Pop) {

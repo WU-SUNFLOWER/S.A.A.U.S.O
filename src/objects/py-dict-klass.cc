@@ -55,7 +55,7 @@ Tagged<PyDictKlass> PyDictKlass::GetInstance() {
 void PyDictKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
-  
+
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
 
@@ -97,9 +97,8 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDictBuiltinMethods::Install(
-                          isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate, PyDictBuiltinMethods::Install(
+                                   isolate, klass_properties, type_object()));
 
   // 设置类名
   set_name(PyString::NewInstance("dict"));
@@ -119,12 +118,13 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Handle<PyObject> self) {
   auto* isolate = Isolate::Current();
   Handle<PyString> repr;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, repr, Runtime_NewDictRepr(Handle<PyDict>::cast(self)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
+                             Runtime_NewDictRepr(Handle<PyDict>::cast(self)));
   return repr;
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_Str(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_Str(Isolate* isolate,
+                                               Handle<PyObject> self) {
   return Virtual_Repr(self);
 }
 
