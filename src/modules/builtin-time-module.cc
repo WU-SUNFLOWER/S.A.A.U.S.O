@@ -38,7 +38,7 @@ constexpr const char* kModuleName = "time";
   V("monotonic", Time_Monotonic)      \
   V("sleep", Time_Sleep)
 
-// 成功时返回 true 并写入 *out；类型不符时抛 TypeError 并返回 false。
+// 成功时返回有效值；类型不符时抛 TypeError 并返回 kNullMaybe。
 Maybe<double> ExtractSeconds(Handle<PyObject> value, const char* func_name) {
   if (IsPyFloat(value)) {
     return Maybe<double>(Handle<PyFloat>::cast(value)->value());

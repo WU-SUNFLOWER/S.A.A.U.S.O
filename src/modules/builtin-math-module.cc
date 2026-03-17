@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numbers>
 
 #include "src/execution/exception-types.h"
 #include "src/execution/exception-utils.h"
@@ -32,6 +33,10 @@ namespace saauso::internal {
 namespace {
 
 constexpr const char* kModuleName = "math";
+
+constexpr double kPI = 3.1415926535897932;
+constexpr double kE = std::numbers::e;
+constexpr double kTau = 2 * kPI;
 
 #define MATH_MODULE_FUNC_LIST(V) \
   V("sqrt", Math_Sqrt)           \
@@ -295,13 +300,13 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("pi"),
-                                  PyFloat::NewInstance(std::acos(-1.0))));
+                                  PyFloat::NewInstance(kPI)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("e"),
-                                  PyFloat::NewInstance(std::exp(1.0))));
+                                  PyFloat::NewInstance(kE)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("tau"),
-                                  PyFloat::NewInstance(2.0 * std::acos(-1.0))));
+                                  PyFloat::NewInstance(kTau)));
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(module_dict, PyString::NewInstance("inf"),
                            PyFloat::NewInstance(
