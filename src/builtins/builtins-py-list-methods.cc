@@ -192,9 +192,11 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
                                list->IndexOf(target, begin, end));
   }
   if (result == PyList::kNotFound) {
-    // 对齐 CPython：list.index(x) 未找到时抛出 ValueError。
-    // TODO: 当 repr 机制完善后，改为携带 x 的 repr 信息。
-    Runtime_ThrowError(ExceptionType::kValueError, "x not in list");
+    Handle<PyString> repr_content;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, repr_content,
+                               PyObject::Repr(isolate, target));
+    Runtime_ThrowErrorf(ExceptionType::kValueError, "%s not in list",
+                        repr_content->buffer());
     return kNullMaybeHandle;
   }
 
