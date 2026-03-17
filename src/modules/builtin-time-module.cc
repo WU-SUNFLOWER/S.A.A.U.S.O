@@ -30,6 +30,8 @@ namespace saauso::internal {
 
 namespace {
 
+constexpr const char* kModuleName = "time";
+
 #define TIME_MODULE_FUNC_LIST(V)      \
   V("time", Time_Time)                \
   V("perf_counter", Time_PerfCounter) \
@@ -66,26 +68,26 @@ double MonotonicSeconds() {
 }
 
 BUILTIN_MODULE_FUNC(Time_Time) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "time", "time");
-  int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
-      argc, 0,
-      Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
-          "time.time() takes 0 positional arguments but %" PRId64 " were given",
-          argc));
-  return PyFloat::NewInstance(WallTimeSeconds());
-}
-
-BUILTIN_MODULE_FUNC(Time_PerfCounter) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "time", "perf_counter");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "time");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 0,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                          "time.perf_counter() takes 0 positional arguments "
+                          "%s.time() takes 0 positional arguments but %" PRId64
+                          " were given",
+                          kModuleName, argc));
+  return PyFloat::NewInstance(WallTimeSeconds());
+}
+
+BUILTIN_MODULE_FUNC(Time_PerfCounter) {
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "perf_counter");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 0,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.perf_counter() takes 0 positional arguments "
                           "but %" PRId64 " were given",
-                          argc));
+                          kModuleName, argc));
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
@@ -95,13 +97,14 @@ BUILTIN_MODULE_FUNC(Time_Monotonic) {
 }
 
 BUILTIN_MODULE_FUNC(Time_Sleep) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "time", "sleep");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "sleep");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 1,
-      Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
-          "time.sleep() takes exactly 1 argument (%" PRId64 " given)", argc));
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "%s.sleep() takes exactly 1 argument (%" PRId64
+                          " given)",
+                          kModuleName, argc));
 
   double seconds = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, seconds,
@@ -123,8 +126,8 @@ BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
-                             NewBuiltinModuleWithDefaultMeta(isolate, "time"));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, module, NewBuiltinModuleWithDefaultMeta(isolate, kModuleName));
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
