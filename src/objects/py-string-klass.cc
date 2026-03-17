@@ -193,7 +193,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Repr(Isolate* isolate,
                                                   Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, repr, Runtime_NewPyStringRepr(Handle<PyString>::cast(self)));
+      isolate, repr,
+      Runtime_NewPyStringRepr(isolate, Handle<PyString>::cast(self)));
   return repr;
 }
 

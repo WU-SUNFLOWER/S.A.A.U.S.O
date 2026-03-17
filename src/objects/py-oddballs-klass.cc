@@ -193,7 +193,7 @@ Maybe<bool> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
 
 MaybeHandle<PyObject> PyNoneKlass::Virtual_Repr(Isolate* isolate,
                                                 Handle<PyObject> self) {
-  return PyString::NewInstance("None");
+  return ST(none_symbol);
 }
 
 MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Isolate* isolate,

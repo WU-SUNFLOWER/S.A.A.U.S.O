@@ -30,7 +30,8 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
                                            Handle<PyObject> iterable);
 
-MaybeHandle<PyString> Runtime_NewPyStringRepr(Handle<PyString> str);
+MaybeHandle<PyString> Runtime_NewPyStringRepr(Isolate* isolate,
+                                              Handle<PyString> str);
 
 }  // namespace saauso::internal
 

@@ -17,18 +17,6 @@
 
 namespace saauso::internal {
 
-MaybeHandle<PyString> Runtime_NewTypeObjectRepr(
-    Handle<PyTypeObject> type_object) {
-  EscapableHandleScope scope;
-
-  Handle<PyString> type_name = type_object->own_klass()->name();
-  std::string repr = "<class '";
-  repr.append(type_name->ToStdString());
-  repr.append("'>");
-
-  return scope.Escape(PyString::FromStdString(repr));
-}
-
 MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
                                       Handle<PyObject> args,
                                       Handle<PyObject> kwargs) {
@@ -100,6 +88,19 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
       isolate, result,
       Runtime_CreatePythonClass(isolate, name, class_dict, supers));
   return scope.Escape(result);
+}
+
+MaybeHandle<PyString> Runtime_NewTypeObjectRepr(
+    Isolate* isolate,
+    Handle<PyTypeObject> type_object) {
+  EscapableHandleScope scope;
+
+  Handle<PyString> type_name = type_object->own_klass()->name();
+  std::string repr = "<class '";
+  repr.append(type_name->ToStdString());
+  repr.append("'>");
+
+  return scope.Escape(PyString::FromStdString(repr));
 }
 
 }  // namespace saauso::internal

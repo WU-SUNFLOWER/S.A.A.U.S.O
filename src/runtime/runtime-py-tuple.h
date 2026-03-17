@@ -12,11 +12,13 @@ namespace saauso::internal {
 
 class PyString;
 class PyTuple;
+class Isolate;
 
 // 生成 tuple 的 repr 字符串。
 // - tuple 不允许为 null，由调用方保证。
 // - 返回值为新建的 str；若元素 repr 过程中抛异常则返回 empty。
-MaybeHandle<PyString> Runtime_NewTupleRepr(Handle<PyTuple> tuple);
+MaybeHandle<PyString> Runtime_NewTupleRepr(Isolate* isolate,
+                                           Handle<PyTuple> tuple);
 
 // 复制 tuple 的半开区间 [begin, end) 并返回新 tuple。
 // - tuple 允许为 null；为 null 时直接返回 null Handle。

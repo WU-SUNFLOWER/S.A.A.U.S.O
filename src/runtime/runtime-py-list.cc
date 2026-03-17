@@ -13,9 +13,9 @@
 
 namespace saauso::internal {
 
-MaybeHandle<PyString> Runtime_NewListRepr(Handle<PyList> list) {
+MaybeHandle<PyString> Runtime_NewListRepr(Isolate* isolate,
+                                          Handle<PyList> list) {
   EscapableHandleScope scope;
-  auto* isolate = Isolate::Current();
 
   std::string repr("[");
   for (int64_t i = 0; i < list->length(); ++i) {

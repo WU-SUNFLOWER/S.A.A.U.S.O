@@ -18,6 +18,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
                                       Handle<PyObject> kwargs);
 
 MaybeHandle<PyString> Runtime_NewTypeObjectRepr(
+    Isolate* isolate,
     Handle<PyTypeObject> type_object);
 
 }  // namespace saauso::internal

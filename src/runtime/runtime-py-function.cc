@@ -19,7 +19,8 @@
 
 namespace saauso::internal {
 
-MaybeHandle<PyString> Runtime_NewFunctionRepr(Handle<PyFunction> func) {
+MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
+                                              Handle<PyFunction> func) {
   EscapableHandleScope scope;
   std::string repr;
   if (IsNativePyFunction(func)) {
@@ -39,7 +40,8 @@ MaybeHandle<PyString> Runtime_NewFunctionRepr(Handle<PyFunction> func) {
   return scope.Escape(PyString::FromStdString(repr));
 }
 
-MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Handle<MethodObject> method) {
+MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Isolate* isolate,
+                                                  Handle<MethodObject> method) {
   char buffer[64];
   std::snprintf(buffer, sizeof(buffer), "<method object at %p>",
                 reinterpret_cast<void*>((*method).ptr()));

@@ -131,7 +131,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Repr(Isolate* isolate,
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, repr,
-      Runtime_NewTypeObjectRepr(Handle<PyTypeObject>::cast(self)));
+      Runtime_NewTypeObjectRepr(isolate, Handle<PyTypeObject>::cast(self)));
   return repr;
 }
 
