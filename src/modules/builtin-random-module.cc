@@ -65,7 +65,8 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Seed) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "seed");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "seed");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc > 1) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -92,9 +93,10 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Random) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "random");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "random");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 0,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.random() takes 0 positional arguments but "
@@ -105,9 +107,10 @@ BUILTIN_MODULE_FUNC(Random_Random) {
 }
 
 BUILTIN_MODULE_FUNC(Random_RandInt) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "randint");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "randint");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 2,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.randint() takes exactly 2 arguments (%" PRId64
@@ -132,7 +135,8 @@ BUILTIN_MODULE_FUNC(Random_RandInt) {
 }
 
 BUILTIN_MODULE_FUNC(Random_RandRange) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "randrange");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "randrange");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc < 1 || argc > 3) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -196,9 +200,10 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
 }
 
 BUILTIN_MODULE_FUNC(Random_GetRandBits) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "getrandbits");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "getrandbits");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.getrandbits() takes exactly 1 argument "
@@ -230,9 +235,10 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Choice) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "choice");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "choice");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.choice() takes exactly 1 argument (%" PRId64
@@ -240,6 +246,12 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
                           kModuleName, argc));
   Handle<PyObject> seq = args->Get(0);
 
+  // TODO:
+  // 这种设计在未来引入 bytearray 或用户自定义序列时会违反 DRY 和 OCP 原则。
+  // 建议在 VM 运行时层（如 PyObject 或新的 PySequence Helper 中）抽象出
+  // 通用的 Runtime_SequenceLength(Isolate*, Handle<PyObject>)
+  // 和 Runtime_SequenceGetItem(Isolate*, Handle<PyObject>, int64_t) 接口，
+  // 将多态分发下沉，让 Random_Choice 只需面对一套通用 API。
   if (IsPyList(seq)) {
     auto list = Handle<PyList>::cast(seq);
     if (list->length() == 0) {
@@ -285,9 +297,10 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Shuffle) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "shuffle");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "shuffle");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.shuffle() takes exactly 1 argument (%" PRId64

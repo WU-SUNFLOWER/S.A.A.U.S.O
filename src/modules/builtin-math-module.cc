@@ -97,9 +97,11 @@ MaybeHandle<PyObject> ReturnPyIntFromDouble(double v, const char* func_name) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Sqrt) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "sqrt");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "sqrt");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "sqrt", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "sqrt", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -112,9 +114,11 @@ BUILTIN_MODULE_FUNC(Math_Sqrt) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Floor) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "floor");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "floor");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "floor", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "floor", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -123,9 +127,11 @@ BUILTIN_MODULE_FUNC(Math_Floor) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Ceil) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "ceil");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "ceil");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "ceil", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "ceil", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -134,9 +140,11 @@ BUILTIN_MODULE_FUNC(Math_Ceil) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Fabs) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "fabs");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "fabs");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "fabs", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "fabs", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -145,9 +153,11 @@ BUILTIN_MODULE_FUNC(Math_Fabs) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Sin) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "sin");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "sin");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "sin", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "sin", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -156,9 +166,11 @@ BUILTIN_MODULE_FUNC(Math_Sin) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Cos) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "cos");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "cos");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "cos", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "cos", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -167,9 +179,11 @@ BUILTIN_MODULE_FUNC(Math_Cos) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Tan) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "tan");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "tan");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "tan", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "tan", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -178,9 +192,11 @@ BUILTIN_MODULE_FUNC(Math_Tan) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Exp) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "exp");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "exp");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "exp", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "exp", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -189,9 +205,11 @@ BUILTIN_MODULE_FUNC(Math_Exp) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Log) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "log");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "log");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "log", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "log", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -204,9 +222,11 @@ BUILTIN_MODULE_FUNC(Math_Log) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Log2) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "log2");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "log2");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "log2", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "log2", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -219,9 +239,11 @@ BUILTIN_MODULE_FUNC(Math_Log2) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Log10) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "log10");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "log10");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "log10", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "log10", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -234,9 +256,10 @@ BUILTIN_MODULE_FUNC(Math_Log10) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Pow) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "pow");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "pow");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 2,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.pow() takes exactly 2 arguments (%" PRId64
@@ -253,10 +276,11 @@ BUILTIN_MODULE_FUNC(Math_Pow) {
 }
 
 BUILTIN_MODULE_FUNC(Math_IsFinite) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "isfinite");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "isfinite");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1,
-                                FailArgc(isolate, "isfinite", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
+      argc, 1, FailArgc(isolate, "isfinite", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -265,9 +289,11 @@ BUILTIN_MODULE_FUNC(Math_IsFinite) {
 }
 
 BUILTIN_MODULE_FUNC(Math_IsNaN) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "isnan");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "isnan");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "isnan", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "isnan", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -276,9 +302,11 @@ BUILTIN_MODULE_FUNC(Math_IsNaN) {
 }
 
 BUILTIN_MODULE_FUNC(Math_IsInf) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "isinf");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "isinf");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc(isolate, "isinf", 1, argc));
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(argc, 1,
+                                          FailArgc(isolate, "isinf", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));

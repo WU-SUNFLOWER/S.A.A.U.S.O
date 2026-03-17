@@ -68,9 +68,10 @@ double MonotonicSeconds() {
 }
 
 BUILTIN_MODULE_FUNC(Time_Time) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "time");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "time");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 0,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.time() takes 0 positional arguments but %" PRId64
@@ -80,9 +81,10 @@ BUILTIN_MODULE_FUNC(Time_Time) {
 }
 
 BUILTIN_MODULE_FUNC(Time_PerfCounter) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "perf_counter");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "perf_counter");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 0,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.perf_counter() takes 0 positional arguments "
@@ -97,9 +99,10 @@ BUILTIN_MODULE_FUNC(Time_Monotonic) {
 }
 
 BUILTIN_MODULE_FUNC(Time_Sleep) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, kModuleName, "sleep");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS_OR_RETURN(isolate, kwargs, kModuleName,
+                                            "sleep");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
-  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+  BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
       Runtime_ThrowErrorf(ExceptionType::kTypeError,
                           "%s.sleep() takes exactly 1 argument (%" PRId64
