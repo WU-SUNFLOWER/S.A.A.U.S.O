@@ -1,158 +1,284 @@
-# S.A.A.U.S.O Embedder API (MVP) 架构与开发方案
+# S.A.A.U.S.O Embedder API (MVP) 可落地实施方案（修订版）
 
-## 1. 背景与目标
+## 1. 背景、目标与范围
 
-S.A.A.U.S.O 的核心项目定位之一是**可作为轻量级脚本引擎提供给游戏引擎、办公软件等 Embedder 使用，且便于嵌入方开发者进行自由修改或功能裁剪**。
-随着当前虚拟机核心架构（如 `Isolate`、`HandleScope`、`MaybeHandle`、`Factory`、`ExceptionState` 等）逐渐趋于稳定并与 V8 架构高度对齐，当前已具备构建标准 Embedder API 的基础。
+S.A.A.U.S.O 的核心定位之一是作为轻量级脚本引擎供游戏引擎、办公软件等宿主程序嵌入使用，并支持嵌入方按需裁剪与扩展。当前 VM 内部基础能力（`Isolate`、`HandleScope`、`MaybeHandle`、`Factory`、`ExceptionState`、`Runtime_Execute*`）已具备构建 Embedder API 的前提。
 
-本方案旨在制定一套 MVP（最小可行性产品）版本的 V8-like 风格 Embedder API 开发蓝图，为外部 C++ 程序提供安全、隔离、易用的 Python 脚本嵌入能力。
+本修订版目标是将原方案从“技术方向正确”提升为“可直接执行”，重点补齐：
 
-***
+1. 可见性边界与构建目标的硬门禁。
+2. TryCatch/Context 等关键语义的明确契约。
+3. 每阶段可验证、可回归、可交付的验收标准。
 
-## 2. MVP 阶段 Embedder API 设计
+## 2. 当前现状与差距（作为实施基线）
 
-在 MVP 阶段，我们将通过 `include/saauso.h` 等公开头文件向外暴露以下核心 API，屏蔽底层 `Tagged<T>`、`Klass` 等内部细节。
+### 2.1 已具备能力
 
-### 2.1 基础设施与生命周期管理
+1. Isolate 生命周期、线程进入与作用域机制已成熟。
+2. 句柄与作用域体系完整（`Handle`/`HandleScope`/`MaybeHandle`）。
+3. 编译与执行链路可复用（`Compiler`、`Runtime_Execute*`）。
+4. 异常状态集中在 `ExceptionState`，具备清理与传播基础。
 
-* **`saauso::Isolate`**: 虚拟机的物理实例。嵌入方通过 `saauso::Isolate::New()` 创建，拥有独立的堆内存和执行栈。提供完全的运行实例隔离。
+### 2.2 当前缺口
 
-* **`saauso::HandleScope`**: RAII 风格的句柄作用域。嵌入方在 C++ 栈上声明，用于自动管理 C++ 层持有的 Python 对象引用（`Local<T>`），防止垃圾回收（GC）误回收或内存泄漏。
+1. 对外 API 仍极薄，`include/saauso.h` 仅初始化相关接口。
+2. 尚无 V8-like 的 `Local<T>`、`Script`、`TryCatch`、`Context` 对外桥接层。
+3. 公开/内部头文件边界未硬化，存在外部误用 `src/**` 的风险。
+4. 缺少 `test/embedder` 与 `examples/embedder` 的独立验证闭环。
 
-* **`saauso::Local<T>`**: 暴露给嵌入方的安全对象指针（对应内部的 `Handle<T>`）。
+## 3. MVP 设计原则与非目标
 
-* **`saauso::Context`** *(可选/建议)*: 运行上下文，封装全局变量环境（如 `__main__` 模块的 `__dict__`），实现同一个 Isolate 下的隔离执行环境。
+### 3.1 设计原则
 
-### 2.2 数据类型映射 (Value Hierarchy)
+1. **对外稳定语义优先**：先稳定 API 行为，再扩展类型覆盖面。
+2. **内部零重构优先桥接**：MVP 只做边界桥接，不进行解释器核心重写。
+3. **失败显式化**：所有可失败路径必须通过 `Maybe*` 或 `TryCatch` 可观察。
+4. **可裁剪构建**：Embedder 能按构建选项裁剪能力且不破坏核心接口。
 
-提供一个从 `saauso::Value` 派生的 C++ 类层次结构，安全包装内部的 `Tagged<PyObject>`：
+### 3.2 MVP 非目标
 
-* **`saauso::Value`**: 所有 Python 对象的基类，提供类型判断接口（如 `IsString()`, `IsInt()`, `IsDict()`）。
+1. 不承诺首版二进制 ABI 长期稳定。
+2. 不在 MVP 阶段实现全量 Python 类型映射。
+3. 不在 MVP 阶段引入复杂多上下文并发调度模型。
 
-* **基本类型**: `saauso::String`, `saauso::Integer`, `saauso::Float`, `saauso::Boolean`。提供与 C++ 原生类型（`int`, `double`, `std::string`）的互转。
+## 4. 对外 API 形态（MVP）
 
-* **容器类型**:
+通过 `include/saauso.h` + `include/saauso-embedder.h` 暴露最小可用接口。`saauso.h` 继续承载全局初始化；新增 `saauso-embedder.h` 承载嵌入 API，避免单头膨胀。
 
-  * `saauso::Object`: 提供 `Set(key, value)`, `Get(key)` 用于属性访问。
+### 4.1 基础设施
 
-  * `saauso::List`, `saauso::Dict`, `saauso::Tuple`: 提供基础的容器操作（如 `Length()`, `Get(index)`）。
+1. `saauso::Isolate`
 
-* **`saauso::Function`**: 包装可调用对象，提供 `Call(receiver, argc, argv)` 接口供 C++ 主动调用 Python 函数。
+   * `static Isolate* New(const IsolateCreateParams&)`
 
-### 2.3 脚本编译与执行
+   * `void Dispose()`
+2. `saauso::HandleScope`
 
-* **`saauso::Script`**:
+   * 栈上 RAII，对应内部 `HandleScopeImplementer`。
+3. `saauso::Local<T>`
 
-  * `Script::Compile(source_string)`: 将 Python 源码字符串编译为字节码对象。
+   * 仅作轻量句柄包装，禁止暴露底层 `Tagged<T>`。
+4. `saauso::Context`（MVP 建议纳入）
 
-  * `Script::Run(context)`: 在指定的上下文中执行字节码并返回结果（`Local<Value>`）。
+   * `static Local<Context> New(Isolate*)`
 
-### 2.4 异常处理
+   * 提供 `Enter()`/`Exit()` 或 `ContextScope`。
 
-* **`saauso::TryCatch`**: RAII 风格的异常捕获器。当 C++ 代码调用 `Script::Run` 或 `Function::Call` 时，如果虚拟机内部抛出异常，会被拦截到最近的 `TryCatch` 块中。嵌入方可通过 `HasCaught()` 和 `Exception()` 获取异常信息并进行 C++ 层的处理，防止宿主程序崩溃。
+### 4.2 Value 层次（MVP 最小集合）
 
-### 2.5 C++ 扩展注入 (Interop)
+1. `Value`：类型判断（`IsString/IsInteger/IsDict/...`）。
+2. 基础类型：`String`、`Integer`、`Boolean`。
+3. 最小容器：`Object`、`Dict`（`List/Tuple` 放入 Phase 3 扩展）。
+4. `Function`：`Call(context, receiver, argc, argv)`。
 
-* **Function Callback**: 允许嵌入方注册 C++ 函数给 Python 调用。通过签名（如 `void MyCppFunc(const saauso::FunctionCallbackInfo& info)`）将游戏引擎或宿主 API 暴露给脚本层。
+### 4.3 脚本执行
 
-***
+1. `Script::Compile(isolate, source, origin?) -> MaybeLocal<Script>`
+2. `Script::Run(context) -> MaybeLocal<Value>`
 
-## 3. 虚拟机内部架构准备工作
+说明：MVP 阶段统一返回 `MaybeLocal<T>`，避免“返回空值 + 异常状态”二义性。
 
-为了支撑上述对外的干净 API，内部代码需要进行严格的边界划分和桥接准备：
+### 4.4 异常处理契约（必须冻结）
 
-### 3.1 目录结构与可见性隔离
+`TryCatch` 语义定义如下：
 
-* **机制**：建立严格的 `include/`（公开 API）与 `src/`（内部实现）分离机制。
+1. 生效范围：构造后到析构前，当前线程、当前 isolate。
+2. 捕获行为：当 API 调用失败且 isolate 有 pending exception 时，标记已捕获。
+3. 清理行为：`TryCatch::Reset()` 清理捕获；`ExceptionState::Clear()` 由 API 内部在“已消费异常”时调用，不允许静默吞错。
+4. 重抛行为：提供 `ReThrow()`，把已捕获异常重新设为 pending。
+5. 一致性规则：`MaybeLocal` 失败时，若存在 `TryCatch`，必须可见 `HasCaught()==true`；否则异常保持 pending 交给上层处理。
 
-* **规则**：`include/saauso.h` 及其包含的文件**绝对不能**引入 `src/objects/`、`src/interpreter/`、`src/heap/` 等内部头文件。对外完全隐藏 `Tagged<T>`、`Klass`、`Factory` 的实现。
+## 5. 目录与构建改造（先决条件）
 
-### 3.2 API 桥接层设计 (API Wrapper)
+### 5.1 目录规划
 
-* **机制**：在 `src/api/api.cc` 中实现桥接逻辑。
+1. `include/`
 
-* **实现**：利用 C++ 的强转（`reinterpret_cast`）将内部的 `Handle<T>` 零成本转换为公开的 `Local<T>`。例如，`saauso::String::New(isolate, "hello")` 内部会路由至 `isolate->factory()->NewStringFromAscii("hello")`。
+   * `saauso.h`
 
-### 3.3 异常机制 (TryCatch) 与 ExceptionState 打通
+   * `saauso-embedder.h`
+2. `src/api/`
 
-* **现状**：异常状态当前保存在 `Isolate::ExceptionState` 中。
+   * `api.cc`（桥接实现）
 
-* **改造**：在 `Isolate` 中维护一个 `TryCatch` 链表。当内部抛出异常时，如果存在外部 C++ 的 `TryCatch` 块，则挂起异常，不直接触发内部的 crash 或 print。当内部的 `MaybeHandle` 返回 `kNullMaybe` 时，控制权平滑交还给 C++ 嵌入层，由外部 `TryCatch` 消费异常。
+   * `api-inl.h`（仅内部使用）
+3. `test/embedder/`
 
-### 3.4 Context (全局环境) 的显式化
+   * `embedder-isolate-unittest.cc`
 
-* **现状**：目前执行可能隐式依赖单一的全局 Bootstrapper 或固定模块。
+   * `embedder-script-unittest.cc`
 
-* **改造**：明确“全局环境”的边界。执行 `Script::Run` 时，必须能传入或获取当前线程的 `Context`，以便正确解析全局变量和内置模块。
+   * `embedder-interop-unittest.cc`
+4. `examples/embedder/`
 
-***
+   * `hello_world.cc`
 
-## 4. 详细开发 Roadmap
+   * `host_callback.cc`
 
-建议将整个 Embedder API 的开发分为五个阶段推进，确保逐步交付、步步可测：
+### 5.2 构建规则（硬门禁）
 
-### Phase 0: 内部架构校验与微调 (预计 0.5 周)
+1. 新增 `embedder_api` 目标（链接 `saauso_core`）。
+2. 为外部示例目标移除对 `src/**` 的 include 权限，只保留 `include/`。
+3. 新增“头文件边界检查”目标：若 embedder 示例直接包含 `src/**`，构建失败。
+4. `vm` 保持独立可执行，避免 CLI 依赖反向污染 API 层。
 
-* **目标**：确认当前虚拟机内部组件对 Embedder API 的支撑度，并进行最小侵入式的微调。
+## 6. 分阶段实施 Roadmap（含 Gate）
 
-* **调研结论**：目前 S.A.A.U.S.O 的核心架构（`Isolate`、`Handle`、`Execution` 门面、`Runtime_Execute*` 家族）**极其成熟，无需进行任何伤筋动骨的底层重构**。相关机制已完美就绪，仅需在 API 边界进行桥接。
+### Phase 0：基线校验与门禁建立
 
-* **核心任务**：
+**目标**：在不改核心解释器前提下，完成可落地的工程先决条件。
 
-  1. **Context 执行原语确认**：无需修改底层的 `Interpreter::Run`。未来 `saauso::Script::Run(context)` 将直接复用 `src/runtime/runtime-exec.cc` 中的 `Runtime_ExecutePyCodeObject`，该函数已原生支持传入自定义的 `globals` 字典（即 Context）并安全创建临时 `PyFunction` 执行，避免了环境污染。
-  2. **TryCatch 机制复用**：确认内部 `ExceptionState::Clear()` 已完全可用。`saauso::TryCatch` 仅需在 `api.cc` 层面实现：检查 `Isolate::HasPendingException()` -> 提取异常信息 -> 调用 `Clear()` 恢复虚拟机状态，不涉及内部异常抛出链路的修改。
-  3. **构建系统 (BUILD.gn) 调整**：将现有的 `saauso_core` source\_set 进一步明确为供 Embedder 链接的库目标，准备将未来的 `src/api/api.cc` 统一纳入其中，并保持 CLI 入口 (`main.cc`) 作为独立可执行文件 (`vm`)。
+**任务**：
 
-### Phase 1: 基础设施与 API 骨架搭建 (预计 1-2 周)
+1. 固化“公开头不可包含 `src/**`”规则。
+2. 调整 `BUILD.gn`，引入 `embedder_api` 与 `test/embedder` 目标骨架。
+3. 形成 TryCatch 契约文档（本文件第 4.4 为唯一基线）。
 
-* **目标**：建立 `include/` 公开头文件体系，跑通第一个 Embedder 实例。
+**Gate 0（必须通过）**：
 
-* **核心任务**：
+1. `embedder` 示例只包含 `include/**` 也能通过编译。
+2. 人为在示例中 `#include "src/..."` 时构建应失败。
 
-  1. 定义 `include/saauso.h`（包含 `Isolate`, `HandleScope`, `Local<T>`, `Value` 基类的空壳/声明）。
-  2. 实现 `src/api/api.cc`，完成 `Isolate::New()`, `Isolate::Dispose()` 的内部绑定。
-  3. 完成 `HandleScope` 与内部 `HandleScopeImplementer` 的联动逻辑。
+### Phase 1：基础设施与最小生命周期
 
-* **测试验证**：编写 `test/embedder/test-isolate.cc`，能够成功初始化和销毁虚拟机，利用 AddressSanitizer (ASan) 或 Valgrind 验证无内存泄漏。
+**目标**：跑通最小“创建-进入-释放”流程。
 
-### Phase 2: 核心类型与脚本执行 MVP (预计 2-3 周)
+**任务**：
 
-* **目标**：Embedder 能够从 C++ 注入字符串/数字，并编译执行一段简单的 Python 脚本。
+1. 实现 `Isolate::New/Dispose` 对外桥接。
+2. 实现 `HandleScope` 与 `Local<T>` 基础封装。
+3. 实现 `Context::New` 与最小 Enter/Exit 机制。
 
-* **核心任务**：
+**验证**：
 
-  1. 实现基本类型 `saauso::String`, `saauso::Integer` 的 `New()` 创建和 `Value()` 数据提取。
-  2. 封装 `saauso::Script::Compile` (对接内部 `Compiler::CompileSource`)。
-  3. 封装 `saauso::Script::Run` (对接 `Interpreter::Run` 或 `Execution::Call`)。
-  4. 实现 `saauso::TryCatch` 机制，接管 `Isolate::ExceptionState`。
+1. `embedder-isolate-unittest` 覆盖重复创建销毁与嵌套 scope。
+2. 内存检查工具验证无明显泄漏（优先 ASan，可选 Valgrind）。
 
-* **测试验证**：编写 `hello_world.cc` 示例程序，在 C++ 中执行 `print("Hello from S.A.A.U.S.O Embedder!")`；验证 `TryCatch` 能否成功捕获包含语法错误或运行时错误的恶意脚本。
+**Gate 1（必须通过）**：
 
-### Phase 3: 数据交互与函数互调 (预计 2-3 周)
+1. 测试可稳定运行至少 1000 次创建销毁循环。
+2. 无崩溃、无 use-after-free、无 handle 泄漏告警。
 
-*   **目标**：实现 C++ 与 Python 的深度交互（传参、获取返回值、C++ API 注入）。
+### Phase 2：脚本编译执行与异常闭环（MVP 核心）
 
-*   **核心任务**：
+**目标**：宿主可执行脚本并可靠接收异常。
 
-    1.  实现 `saauso::Object`, `saauso::List`, `saauso::Dict`，封装内部的 `PyDict::PutMaybe` 等 Fallible API。
-    2.  实现 `saauso::Function` 及其 `Call` 方法。
-    3.  实现 `FunctionCallbackInfo` 机制，允许把 C++ 函数包装成 `PyNativeFunction` 注册到 Python 模块中。
+**任务**：
 
-*   **测试验证**：编写**宿主程序模拟测试 (Host Mock Test)**：
-    1.  在 C++ 测试代码中定义几个宿主函数（如 `Host_GetConfig(key)` 返回字符串，`Host_SetStatus(code)` 接收整数）。
-    2.  通过 API 将这些 C++ 函数注入到 Python 的 Context 中。
-    3.  执行一段 Python 脚本，该脚本调用 `Host_GetConfig`，进行逻辑判断后，再调用 `Host_SetStatus` 将结果回传给 C++。
-    4.  在 C++ 层断言 `Host_SetStatus` 接收到的参数是否符合预期，以此验证双向通信（C++ -> Python -> C++）的正确性。
+1. 实现 `String/Integer/Boolean` 与 `Value` 的最小互转。
+2. 实现 `Script::Compile` 与 `Script::Run`。
+3. 实现 `TryCatch` 并打通 `ExceptionState`。
 
-### Phase 4: 健壮性增强与文档化 (预计 1 周)
+**验证**：
 
-* **目标**：达到可正式发布给第三方使用的标准。
+1. `hello_world.cc` 成功运行。
+2. 语法错误 + 运行时错误均能被 `TryCatch` 捕获。
+3. `MaybeLocal` 与 `TryCatch` 一致性规则覆盖单测。
 
-* **核心任务**：
+**Gate 2（必须通过）**：
 
-  1. 补充 Embedder API 的 Doxygen 格式头文件注释。
-  2. 增加 API 层的边界参数校验（如 `Local<T>` 判空，多线程 `Isolate` 访问检查）。
-  3. 在 `examples/` 目录下提供标准的使用范例和 CMake 引用示例。
+1. 正常脚本路径零异常，错误脚本路径异常可见且可清理。
+2. 清理后 isolate 可继续执行后续脚本（无“脏异常态”残留）。
 
-* **测试验证**：进行极端的 GC 压力测试，验证 `HandleScope` 边界和 GC 回收阶段的稳定性。
+### Phase 3：数据交互与 C++ 回调
+
+**目标**：完成 C++ ↔ Python 双向通信最小闭环。
+
+**任务**：
+
+1. 增加 `Object/Dict/List/Tuple/Function` 的 MVP 级接口。
+2. 提供 `FunctionCallbackInfo` 与 native callback 注册路径。
+3. 统一 fallible API 使用规范（涉及 `__hash__/__eq__` 的字典路径必须走 `Maybe`）。
+
+**验证**：
+
+1. Host Mock Test：`Host_GetConfig` 与 `Host_SetStatus` 双向校验通过。
+2. callback 抛错时可由 `TryCatch` 在宿主侧接收并恢复。
+
+**Gate 3（必须通过）**：
+
+1. 至少 1 组双向调用回归用例稳定通过。
+2. callback 异常、参数类型错误均有稳定错误语义。
+
+### Phase 4：发布就绪（健壮性与文档）
+
+**目标**：达到“第三方可接入”的发布标准。
+
+**任务**：
+
+1. 补全 Doxygen 风格 API 注释与嵌入教程。
+2. 增加参数校验与线程访问保护（多线程 isolate 误用检测）。
+3. 提供 `examples/embedder` 与最小 CMake 消费示例。
+4. 增加 GC 压力与长稳测试。
+
+**Gate 4（必须通过）**：
+
+1. 外部最小 CMake 工程能独立编译并运行示例。
+2. 压力测试下无崩溃、无明显资源增长异常。
+
+## 7. 测试矩阵与验收标准
+
+### 7.1 测试分层
+
+1. **API 单测**：`test/embedder/*`，验证契约与边界。
+2. **示例回归**：`examples/embedder/*`，验证真实接入路径。
+3. **稳定性测试**：循环创建销毁、异常风暴、GC 压力。
+
+### 7.2 最终验收清单（全部必须满足）
+
+1. 对外头文件不暴露内部对象布局与内部头依赖。
+2. `Isolate + HandleScope + Context + Script + TryCatch` 全链路可用。
+3. 错误语义一致：`MaybeLocal` 失败与 `TryCatch` 可观测状态一致。
+4. 具备最小 callback 双向通信能力并有自动化回归。
+5. 外部工程可复制接入（含示例与构建说明）。
+
+## 8. 风险清单与缓解策略
+
+1. **风险：边界失真（embedder 误依赖内部头）**
+
+   * 缓解：构建门禁 + 示例目标 include 白名单。
+2. **风险：异常状态清理不一致**
+
+   * 缓解：统一 `TryCatch` 契约，单测覆盖“捕获/重抛/清理”。
+3. **风险：Context 生命周期混乱**
+
+   * 缓解：限制 MVP 为单线程显式 Enter/Exit，后续再扩展并发模型。
+4. **风险：接口增长过快导致维护负担**
+
+   * 缓解：按 Gate 推进，未达 Gate 不进入下一阶段。
+
+## 9. 里程碑交付物
+
+### M0（Phase 0 完成）
+
+1. 构建门禁生效。
+2. 契约文档冻结。
+
+### M1（Phase 1 完成）
+
+1. 基础 API 头文件与桥接实现。
+2. 生命周期单测通过。
+
+### M2（Phase 2 完成）
+
+1. 脚本编译执行 API。
+2. TryCatch 异常闭环。
+3. hello\_world 示例。
+
+### M3（Phase 3 完成）
+
+1. callback 互调能力。
+2. Host Mock Test 全通过。
+
+### M4（Phase 4 完成）
+
+1. 发布文档与示例齐全。
+2. 外部工程接入验证通过。
+
+## 10. 执行准则（强制）
+
+1. 任一 Phase 未通过 Gate，不得进入下一 Phase。
+2. 所有新增 API 先补测试再扩功能。
+3. API 层禁止直接泄漏 `Tagged<T>`、`Klass`、`Factory` 到公开头。
+4. 所有可失败路径必须有明确错误传播语义，禁止 silent failure。
 
