@@ -12,8 +12,10 @@ namespace saauso::internal {
 
 class PyString;
 class PyList;
+class Isolate;
 
-MaybeHandle<PyString> Runtime_NewListRepr(Handle<PyList> value);
+MaybeHandle<PyString> Runtime_NewListRepr(Isolate* isolate,
+                                          Handle<PyList> value);
 
 }  // namespace saauso::internal
 

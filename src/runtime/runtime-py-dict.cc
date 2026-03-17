@@ -244,9 +244,9 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
   return scope.Escape(dst_dict);
 }
 
-MaybeHandle<PyString> Runtime_NewDictRepr(Handle<PyDict> dict) {
+MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
+                                          Handle<PyDict> dict) {
   EscapableHandleScope scope;
-  auto* isolate = Isolate::Current();
 
   std::string repr("{");
   bool first = true;
@@ -260,9 +260,9 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Handle<PyDict> dict) {
     }
     first = false;
     Handle<PyString> key_repr;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, key_repr,
-                               PyObject::Repr(isolate,
-                                              Handle<PyObject>(key_tagged)));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, key_repr,
+        PyObject::Repr(isolate, Handle<PyObject>(key_tagged)));
     repr.append(key_repr->ToStdString());
     repr.append(": ");
     Handle<PyString> value_repr;

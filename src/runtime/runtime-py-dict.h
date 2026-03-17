@@ -63,7 +63,8 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting);
 
-MaybeHandle<PyString> Runtime_NewDictRepr(Handle<PyDict> dict);
+MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
+                                          Handle<PyDict> dict);
 
 }  // namespace saauso::internal
 

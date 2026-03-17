@@ -119,7 +119,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Isolate* isolate,
                                                 Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
-                             Runtime_NewDictRepr(Handle<PyDict>::cast(self)));
+                             Runtime_NewDictRepr(isolate,
+                                                 Handle<PyDict>::cast(self)));
   return repr;
 }
 

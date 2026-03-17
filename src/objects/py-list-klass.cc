@@ -183,7 +183,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Isolate* isolate,
                                                 Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
-                             Runtime_NewListRepr(Handle<PyList>::cast(self)));
+                             Runtime_NewListRepr(isolate,
+                                                 Handle<PyList>::cast(self)));
   return repr;
 }
 

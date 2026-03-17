@@ -191,8 +191,9 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Isolate* isolate,
                                                  Handle<PyObject> self) {
   Handle<PyString> repr;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
-                             Runtime_NewTupleRepr(Handle<PyTuple>::cast(self)));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr,
+      Runtime_NewTupleRepr(isolate, Handle<PyTuple>::cast(self)));
   return repr;
 }
 
