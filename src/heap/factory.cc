@@ -5,6 +5,7 @@
 #include "src/heap/factory.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "include/saauso-internal.h"
 #include "src/execution/exception-utils.h"
