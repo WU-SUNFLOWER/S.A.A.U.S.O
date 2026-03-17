@@ -56,6 +56,7 @@ executable("ut") {
       "./interpreter/interpreter-list-basic-unittest.cc",
       "./interpreter/interpreter-list-exceptions-unittest.cc",
       "./interpreter/interpreter-list-sort-unittest.cc",
+      "./interpreter/interpreter-list-subclass-unittest.cc",
       "./interpreter/interpreter-math-module-unittest.cc",
       "./interpreter/interpreter-ops-unittest.cc",
       "./interpreter/interpreter-random-module-unittest.cc",
