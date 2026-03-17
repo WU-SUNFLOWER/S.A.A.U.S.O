@@ -66,35 +66,26 @@ double MonotonicSeconds() {
 }
 
 BUILTIN_MODULE_FUNC(Time_Time) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("time", "time");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "time.time() takes 0 positional arguments but %" PRId64
-                        " "
-                        "were given",
-                        argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "time", "time");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 0,
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
+          "time.time() takes 0 positional arguments but %" PRId64 " were given",
+          argc));
   return PyFloat::NewInstance(WallTimeSeconds());
 }
 
 BUILTIN_MODULE_FUNC(Time_PerfCounter) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("time", "perf_counter");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "time.perf_counter() takes 0 positional arguments but "
-                        "%" PRId64 " were given",
-                        argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "time", "perf_counter");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 0,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "time.perf_counter() takes 0 positional arguments "
+                          "but %" PRId64 " were given",
+                          argc));
   return PyFloat::NewInstance(MonotonicSeconds());
 }
 
@@ -104,17 +95,13 @@ BUILTIN_MODULE_FUNC(Time_Monotonic) {
 }
 
 BUILTIN_MODULE_FUNC(Time_Sleep) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("time", "sleep");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "time.sleep() takes exactly 1 argument (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "time", "sleep");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 1,
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
+          "time.sleep() takes exactly 1 argument (%" PRId64 " given)", argc));
 
   double seconds = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, seconds,

@@ -15,6 +15,23 @@ namespace saauso::internal {
 
 #define BUILTIN_MODULE_FUNC_NAME(name) BUILTIN_FUNC_NAME(name)
 #define BUILTIN_MODULE_FUNC(name) BUILTIN(name)
+#define BUILTIN_MODULE_ARGC(args) ((args).is_null() ? 0 : (args)->length())
+
+#define BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, module_name, func_name) \
+  do {                                                                  \
+    if (!(kwargs).is_null() && (kwargs)->occupied() != 0) {             \
+      ThrowNoKeywordArgsError((module_name), (func_name));              \
+      return kNullMaybe;                                                \
+    }                                                                   \
+  } while (false)
+
+#define BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, expected, on_mismatch) \
+  do {                                                             \
+    if ((argc) != (expected)) {                                    \
+      on_mismatch;                                                 \
+      return kNullMaybe;                                           \
+    }                                                              \
+  } while (false)
 
 struct BuiltinModuleFuncSpec {
   const char* name;

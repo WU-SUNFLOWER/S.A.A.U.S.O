@@ -77,11 +77,8 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Seed) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "seed");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "seed");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc > 1) {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,
@@ -107,34 +104,27 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Random) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "random");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "random.random() takes 0 positional arguments but "
-                        "%" PRId64 " were given",
-                        argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "random");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 0,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "random.random() takes 0 positional arguments but "
+                          "%" PRId64 " were given",
+                          argc));
   EnsureSeeded();
   return PyFloat::NewInstance(g_rng.NextDouble01());
 }
 
 BUILTIN_MODULE_FUNC(Random_RandInt) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "randint");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 2) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.randint() takes exactly 2 arguments (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "randint");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 2,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "random.randint() takes exactly 2 arguments (%" PRId64
+                          " given)",
+                          argc));
 
   int64_t a = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, a, ExtractSmi(args->Get(0), "randint"));
@@ -154,11 +144,8 @@ BUILTIN_MODULE_FUNC(Random_RandInt) {
 }
 
 BUILTIN_MODULE_FUNC(Random_RandRange) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "randrange");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "randrange");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc < 1 || argc > 3) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
                         "random.randrange() takes from 1 to 3 positional "
@@ -218,18 +205,14 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
 }
 
 BUILTIN_MODULE_FUNC(Random_GetRandBits) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "getrandbits");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
-                        "random.getrandbits() takes exactly 1 argument "
-                        "(%" PRId64 " given)",
-                        argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "getrandbits");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "random.getrandbits() takes exactly 1 argument "
+                          "(%" PRId64 " given)",
+                          argc));
 
   int64_t k = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, k,
@@ -256,17 +239,14 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Choice) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "choice");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.choice() takes exactly 1 argument (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "choice");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "random.choice() takes exactly 1 argument (%" PRId64
+                          " given)",
+                          argc));
   Handle<PyObject> seq = args->Get(0);
   EnsureSeeded();
 
@@ -314,17 +294,14 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Shuffle) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("random", "shuffle");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "random.shuffle() takes exactly 1 argument (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "shuffle");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 1,
+      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+                          "random.shuffle() takes exactly 1 argument (%" PRId64
+                          " given)",
+                          argc));
   Handle<PyObject> x = args->Get(0);
   if (!IsPyListExact(x)) {
     Handle<PyString> type_name = PyObject::GetKlass(x)->name();

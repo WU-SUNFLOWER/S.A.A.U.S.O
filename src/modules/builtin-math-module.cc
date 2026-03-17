@@ -87,15 +87,9 @@ MaybeHandle<PyObject> ReturnPyIntFromDouble(double v, const char* func_name) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Sqrt) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "sqrt");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("sqrt", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "sqrt");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("sqrt", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -108,15 +102,9 @@ BUILTIN_MODULE_FUNC(Math_Sqrt) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Floor) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "floor");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("floor", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "floor");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("floor", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -125,15 +113,9 @@ BUILTIN_MODULE_FUNC(Math_Floor) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Ceil) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "ceil");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("ceil", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "ceil");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("ceil", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -142,15 +124,9 @@ BUILTIN_MODULE_FUNC(Math_Ceil) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Fabs) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "fabs");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("fabs", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "fabs");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("fabs", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -159,15 +135,9 @@ BUILTIN_MODULE_FUNC(Math_Fabs) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Sin) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "sin");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("sin", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "sin");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("sin", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -176,15 +146,9 @@ BUILTIN_MODULE_FUNC(Math_Sin) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Cos) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "cos");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("cos", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "cos");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("cos", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -193,15 +157,9 @@ BUILTIN_MODULE_FUNC(Math_Cos) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Tan) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "tan");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("tan", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "tan");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("tan", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -210,15 +168,9 @@ BUILTIN_MODULE_FUNC(Math_Tan) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Exp) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "exp");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("exp", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "exp");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("exp", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -227,15 +179,9 @@ BUILTIN_MODULE_FUNC(Math_Exp) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Log) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "log");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("log", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "log");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("log", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -248,15 +194,9 @@ BUILTIN_MODULE_FUNC(Math_Log) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Log2) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "log2");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("log2", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "log2");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("log2", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -269,15 +209,9 @@ BUILTIN_MODULE_FUNC(Math_Log2) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Log10) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "log10");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("log10", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "log10");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("log10", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -290,17 +224,13 @@ BUILTIN_MODULE_FUNC(Math_Log10) {
 }
 
 BUILTIN_MODULE_FUNC(Math_Pow) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "pow");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 2) {
-    Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
-        "math.pow() takes exactly 2 arguments (%" PRId64 " given)", argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "pow");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(
+      argc, 2,
+      Runtime_ThrowErrorf(
+          ExceptionType::kTypeError,
+          "math.pow() takes exactly 2 arguments (%" PRId64 " given)", argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -312,15 +242,9 @@ BUILTIN_MODULE_FUNC(Math_Pow) {
 }
 
 BUILTIN_MODULE_FUNC(Math_IsFinite) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "isfinite");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("isfinite", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "isfinite");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("isfinite", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -329,15 +253,9 @@ BUILTIN_MODULE_FUNC(Math_IsFinite) {
 }
 
 BUILTIN_MODULE_FUNC(Math_IsNaN) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "isnan");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("isnan", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "isnan");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("isnan", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
@@ -346,15 +264,9 @@ BUILTIN_MODULE_FUNC(Math_IsNaN) {
 }
 
 BUILTIN_MODULE_FUNC(Math_IsInf) {
-  if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    ThrowNoKeywordArgsError("math", "isinf");
-    return kNullMaybe;
-  }
-  int64_t argc = args.is_null() ? 0 : args->length();
-  if (argc != 1) {
-    FailArgc("isinf", 1, argc);
-    return kNullMaybe;
-  }
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "math", "isinf");
+  int64_t argc = BUILTIN_MODULE_ARGC(args);
+  BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, 1, FailArgc("isinf", 1, argc));
 
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
