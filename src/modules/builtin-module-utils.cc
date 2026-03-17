@@ -23,28 +23,32 @@ Maybe<void> InitializeBuiltinModuleDict(Isolate* isolate,
                                         const char* package_name) {
   RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
                                            PyString::NewInstance(module_name)));
-  RETURN_ON_EXCEPTION(
-      isolate, PyDict::Put(module_dict, ST(package),
-                           PyString::NewInstance(package_name)));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(module_dict, ST(package),
+                                  PyString::NewInstance(package_name)));
   return JustVoid();
 }
 
-MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(Isolate* isolate,
-                                                      const char* module_name,
-                                                      const char* package_name) {
+MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(
+    Isolate* isolate,
+    const char* module_name,
+    const char* package_name) {
   EscapableHandleScope scope;
 
   Handle<PyModule> module;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, module, isolate->factory()->NewPyModule());
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
+                             isolate->factory()->NewPyModule());
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
-  RETURN_ON_EXCEPTION(isolate, InitializeBuiltinModuleDict(
-                                   isolate, module_dict, module_name,
-                                   package_name));
+  RETURN_ON_EXCEPTION(
+      isolate, InitializeBuiltinModuleDict(isolate, module_dict, module_name,
+                                           package_name));
   return scope.Escape(module);
 }
 
-void ThrowNoKeywordArgsError(const char* module_name, const char* func_name) {
+void ThrowNoKeywordArgsError(Isolate* isolate,
+                             const char* module_name,
+                             const char* func_name) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError,
                       "%s.%s() takes no keyword arguments", module_name,
                       func_name);
@@ -55,7 +59,8 @@ Maybe<void> InstallBuiltinModuleFunc(Isolate* isolate,
                                      const char* name,
                                      NativeFuncPointer func) {
   // 这里不直接复用 builtins-utils 的安装入口，是为了让 modules 层保持
-  // “无 owner_type/access_flag 语义”的最小接口，避免模块函数安装与类型方法安装耦合。
+  // “无 owner_type/access_flag
+  // 语义”的最小接口，避免模块函数安装与类型方法安装耦合。
   HandleScope scope;
 
   Handle<PyString> py_name = PyString::NewInstance(name);

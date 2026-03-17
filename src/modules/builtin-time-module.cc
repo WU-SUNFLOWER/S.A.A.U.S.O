@@ -66,7 +66,7 @@ double MonotonicSeconds() {
 }
 
 BUILTIN_MODULE_FUNC(Time_Time) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "time", "time");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "time", "time");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 0,
@@ -78,7 +78,7 @@ BUILTIN_MODULE_FUNC(Time_Time) {
 }
 
 BUILTIN_MODULE_FUNC(Time_PerfCounter) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "time", "perf_counter");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "time", "perf_counter");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 0,
@@ -95,7 +95,7 @@ BUILTIN_MODULE_FUNC(Time_Monotonic) {
 }
 
 BUILTIN_MODULE_FUNC(Time_Sleep) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "time", "sleep");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "time", "sleep");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 1,

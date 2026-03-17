@@ -17,12 +17,13 @@ namespace saauso::internal {
 #define BUILTIN_MODULE_FUNC(name) BUILTIN(name)
 #define BUILTIN_MODULE_ARGC(args) ((args).is_null() ? 0 : (args)->length())
 
-#define BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, module_name, func_name) \
-  do {                                                                  \
-    if (!(kwargs).is_null() && (kwargs)->occupied() != 0) {             \
-      ThrowNoKeywordArgsError((module_name), (func_name));              \
-      return kNullMaybe;                                                \
-    }                                                                   \
+#define BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, module_name, \
+                                        func_name)                    \
+  do {                                                                \
+    if (!(kwargs).is_null() && (kwargs)->occupied() != 0) {           \
+      ThrowNoKeywordArgsError((isolate), (module_name), (func_name)); \
+      return kNullMaybe;                                              \
+    }                                                                 \
   } while (false)
 
 #define BUILTIN_MODULE_EXPECT_ARGC_EQ(argc, expected, on_mismatch) \
@@ -51,7 +52,9 @@ MaybeHandle<PyModule> NewBuiltinModuleWithDefaultMeta(
     const char* package_name = "");
 
 // 抛出“内建模块函数不支持关键字参数”的统一 TypeError。
-void ThrowNoKeywordArgsError(const char* module_name, const char* func_name);
+void ThrowNoKeywordArgsError(Isolate* isolate,
+                             const char* module_name,
+                             const char* func_name);
 
 // 在模块字典中安装单个内建模块函数。
 Maybe<void> InstallBuiltinModuleFunc(Isolate* isolate,

@@ -77,7 +77,7 @@ Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Seed) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "seed");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "seed");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc > 1) {
     Runtime_ThrowErrorf(
@@ -104,7 +104,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Random) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "random");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "random");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 0,
@@ -117,7 +117,7 @@ BUILTIN_MODULE_FUNC(Random_Random) {
 }
 
 BUILTIN_MODULE_FUNC(Random_RandInt) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "randint");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "randint");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 2,
@@ -144,7 +144,7 @@ BUILTIN_MODULE_FUNC(Random_RandInt) {
 }
 
 BUILTIN_MODULE_FUNC(Random_RandRange) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "randrange");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "randrange");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc < 1 || argc > 3) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -205,7 +205,7 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
 }
 
 BUILTIN_MODULE_FUNC(Random_GetRandBits) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "getrandbits");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "getrandbits");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 1,
@@ -239,7 +239,7 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Choice) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "choice");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "choice");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 1,
@@ -294,7 +294,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
 }
 
 BUILTIN_MODULE_FUNC(Random_Shuffle) {
-  BUILTIN_MODULE_EXPECT_NO_KWARGS(kwargs, "random", "shuffle");
+  BUILTIN_MODULE_EXPECT_NO_KWARGS(isolate, kwargs, "random", "shuffle");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ(
       argc, 1,
