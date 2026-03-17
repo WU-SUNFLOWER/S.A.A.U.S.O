@@ -82,7 +82,8 @@ MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Isolate* isolate,
                                                     Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, repr, Runtime_NewFunctionRepr(Handle<PyFunction>::cast(self)));
+      isolate, repr,
+      Runtime_NewFunctionRepr(isolate, Handle<PyFunction>::cast(self)));
   return repr;
 }
 
@@ -154,12 +155,12 @@ void NativeFunctionKlass::Finalize(Isolate* isolate) {
   isolate->set_native_function_klass(Tagged<NativeFunctionKlass>::null());
 }
 
-MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(
-    Isolate* isolate,
-    Handle<PyObject> self) {
+MaybeHandle<PyObject> NativeFunctionKlass::Virtual_Repr(Isolate* isolate,
+                                                        Handle<PyObject> self) {
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, repr, Runtime_NewFunctionRepr(Handle<PyFunction>::cast(self)));
+      isolate, repr,
+      Runtime_NewFunctionRepr(isolate, Handle<PyFunction>::cast(self)));
   return repr;
 }
 
@@ -253,7 +254,7 @@ MaybeHandle<PyObject> MethodObjectKlass::Virtual_Repr(Isolate* isolate,
   Handle<PyString> repr;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, repr,
-      Runtime_NewMethodObjectRepr(Handle<MethodObject>::cast(self)));
+      Runtime_NewMethodObjectRepr(isolate, Handle<MethodObject>::cast(self)));
   return repr;
 }
 

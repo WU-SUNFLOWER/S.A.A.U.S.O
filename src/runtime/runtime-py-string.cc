@@ -250,7 +250,8 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
   return scope.Escape(result);
 }
 
-MaybeHandle<PyString> Runtime_NewPyStringRepr(Handle<PyString> str) {
+MaybeHandle<PyString> Runtime_NewPyStringRepr(Isolate* isolate,
+                                              Handle<PyString> str) {
   std::string repr;
   AppendStringReprContent(str, repr);
   return PyString::FromStdString(repr);

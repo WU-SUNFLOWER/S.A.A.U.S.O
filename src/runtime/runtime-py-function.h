@@ -18,9 +18,11 @@ class PyObject;
 class PyTuple;
 class PyDict;
 
-MaybeHandle<PyString> Runtime_NewFunctionRepr(Handle<PyFunction> func);
+MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
+                                              Handle<PyFunction> func);
 
-MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Handle<MethodObject> method);
+MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Isolate* isolate,
+                                                  Handle<MethodObject> method);
 
 Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
                                               Handle<PyFunction> func,
