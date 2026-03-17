@@ -35,13 +35,13 @@ l.index(X())
 
 // ===== 错误信息语义 =====
 
-TEST_F(BasicInterpreterTest, ListIndexDictNotFoundValueError) {
+TEST_F(BasicInterpreterTest, ListIndexTupleNotFoundValueError) {
   HandleScope scope;
 
   constexpr std::string_view kSource = R"(
 l = [1,2,3,4,5]
-d = (2, 0, 2, 6)
-l.index(d)
+t = (2, 0, 2, 6)
+l.index(t)
 )";
 
   RunScriptExpectExceptionContains(
