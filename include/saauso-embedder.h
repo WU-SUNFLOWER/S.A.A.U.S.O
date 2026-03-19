@@ -5,18 +5,42 @@
 #ifndef INCLUDE_SAAUSO_EMBEDDER_H_
 #define INCLUDE_SAAUSO_EMBEDDER_H_
 
+#include <cstdint>
+#include <string>
+#include <string_view>
+
 namespace saauso {
 
 struct ApiAccess;
 
 struct IsolateCreateParams {};
 
+class Isolate;
+class Context;
+class String;
+class Integer;
+class Script;
+class TryCatch;
+
+template <typename T>
+class MaybeLocal;
+
 class Value {
  public:
   virtual ~Value() = default;
-};
 
-class Context;
+  bool IsString() const;
+  bool IsInteger() const;
+
+ protected:
+  Value() = default;
+
+ private:
+  void* impl_{nullptr};
+  Isolate* isolate_{nullptr};
+
+  friend struct ApiAccess;
+};
 
 template <typename T>
 class Local {
@@ -39,8 +63,29 @@ class Local {
   friend class Local;
   friend class Context;
   friend class Isolate;
+  friend struct ApiAccess;
 
   T* ptr_{nullptr};
+};
+
+template <typename T>
+class MaybeLocal {
+ public:
+  MaybeLocal() = default;
+  MaybeLocal(Local<T> local) : local_(local) {}
+
+  bool IsEmpty() const { return local_.IsEmpty(); }
+  bool ToLocal(Local<T>* out) const {
+    if (out == nullptr || IsEmpty()) {
+      return false;
+    }
+    *out = local_;
+    return true;
+  }
+  Local<T> ToLocalChecked() const { return local_; }
+
+ private:
+  Local<T> local_;
 };
 
 class Isolate {
@@ -57,8 +102,11 @@ class Isolate {
 
   void* internal_isolate_{nullptr};
   Context* default_context_{nullptr};
+  void* values_{nullptr};
+  TryCatch* try_catch_top_{nullptr};
 
   friend class Context;
+  friend class TryCatch;
   friend struct ApiAccess;
 };
 
@@ -84,8 +132,11 @@ class Context final : public Value {
   explicit Context(Isolate* isolate) : isolate_(isolate) {}
 
   Isolate* isolate_{nullptr};
+  void* impl_{nullptr};
 
   friend class Isolate;
+  friend class Script;
+  friend struct ApiAccess;
 };
 
 class ContextScope {
@@ -97,6 +148,43 @@ class ContextScope {
 
  private:
   Local<Context> context_;
+};
+
+class String final : public Value {
+ public:
+  static Local<String> New(Isolate* isolate, std::string_view value);
+  std::string Value() const;
+};
+
+class Integer final : public Value {
+ public:
+  static Local<Integer> New(Isolate* isolate, int64_t value);
+  int64_t Value() const;
+};
+
+class Script final : public Value {
+ public:
+  static MaybeLocal<Script> Compile(Isolate* isolate, Local<String> source);
+  MaybeLocal<Value> Run(Local<Context> context);
+};
+
+class TryCatch {
+ public:
+  explicit TryCatch(Isolate* isolate);
+  TryCatch(const TryCatch&) = delete;
+  TryCatch& operator=(const TryCatch&) = delete;
+  ~TryCatch();
+
+  bool HasCaught() const;
+  void Reset();
+  Local<Value> Exception() const;
+
+ private:
+  Isolate* isolate_{nullptr};
+  TryCatch* previous_{nullptr};
+  Local<Value> exception_;
+
+  friend struct ApiAccess;
 };
 
 }  // namespace saauso

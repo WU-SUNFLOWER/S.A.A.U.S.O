@@ -2,13 +2,49 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <string>
+#include <vector>
+
 #include "include/saauso-embedder.h"
 #include "src/api/api-inl.h"
 #include "src/handles/handle-scopes.h"
+#include "src/heap/factory.h"
+#include "src/objects/object-checkers.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-object.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/runtime-exec.h"
 
 namespace saauso {
 
 namespace {
+
+class RawValue final : public Value {};
+
+enum class ValueKind {
+  kNone,
+  kHostString,
+  kHostInteger,
+  kScriptSource,
+  kVmObject,
+};
+
+struct ValueImpl {
+  ValueKind kind{ValueKind::kNone};
+  std::string string_value;
+  int64_t int_value{0};
+  internal::Tagged<internal::PyObject> object{
+      internal::Tagged<internal::PyObject>::null()};
+};
+
+struct ContextImpl {
+  explicit ContextImpl(internal::Handle<internal::PyDict> globals)
+      : globals(globals.is_null() ? internal::Tagged<internal::PyDict>::null()
+                                  : *globals) {}
+
+  internal::Tagged<internal::PyDict> globals;
+};
 
 struct HandleScopeImpl {
   explicit HandleScopeImpl(internal::Isolate* isolate)
@@ -17,6 +53,96 @@ struct HandleScopeImpl {
   internal::Isolate::Scope isolate_scope;
   internal::HandleScope handle_scope;
 };
+
+template <typename T>
+Local<T> WrapObject(Isolate* isolate,
+                    internal::Handle<internal::PyObject> object) {
+  if (isolate == nullptr || object.is_null()) {
+    return Local<T>();
+  }
+  auto* value = new T();
+  ApiAccess::SetValueIsolate(value, isolate);
+  auto* impl = new ValueImpl();
+  impl->kind = ValueKind::kVmObject;
+  impl->object = *object;
+  ApiAccess::SetValueImpl(value, impl);
+  return ApiAccess::MakeLocal(value);
+}
+
+template <typename T>
+Local<T> WrapHostString(Isolate* isolate, std::string value) {
+  if (isolate == nullptr) {
+    return Local<T>();
+  }
+  auto* obj = new T();
+  ApiAccess::SetValueIsolate(obj, isolate);
+  auto* impl = new ValueImpl();
+  impl->kind = ValueKind::kHostString;
+  impl->string_value = std::move(value);
+  ApiAccess::SetValueImpl(obj, impl);
+  return ApiAccess::MakeLocal(obj);
+}
+
+template <typename T>
+Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
+  if (isolate == nullptr) {
+    return Local<T>();
+  }
+  auto* obj = new T();
+  ApiAccess::SetValueIsolate(obj, isolate);
+  auto* impl = new ValueImpl();
+  impl->kind = ValueKind::kHostInteger;
+  impl->int_value = value;
+  ApiAccess::SetValueImpl(obj, impl);
+  return ApiAccess::MakeLocal(obj);
+}
+
+Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
+  if (isolate == nullptr) {
+    return Local<Script>();
+  }
+  auto* script = new Script();
+  ApiAccess::SetValueIsolate(script, isolate);
+  auto* impl = new ValueImpl();
+  impl->kind = ValueKind::kScriptSource;
+  impl->string_value = std::move(source);
+  ApiAccess::SetValueImpl(script, impl);
+  return ApiAccess::MakeLocal(script);
+}
+
+ValueImpl* GetValueImpl(const Value* value) {
+  return reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
+}
+
+internal::Tagged<internal::PyObject> GetObjectTagged(const Value* value) {
+  auto* impl = GetValueImpl(value);
+  if (impl == nullptr || impl->kind != ValueKind::kVmObject) {
+    return internal::Tagged<internal::PyObject>::null();
+  }
+  return impl->object;
+}
+
+bool CapturePendingException(Isolate* isolate) {
+  if (isolate == nullptr) {
+    return false;
+  }
+  auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr || !internal_isolate->HasPendingException()) {
+    return false;
+  }
+  TryCatch* try_catch = ApiAccess::TryCatchTop(isolate);
+  if (try_catch == nullptr) {
+    return true;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyObject> exception =
+      internal_isolate->exception_state()->pending_exception();
+  ApiAccess::SetTryCatchException(
+      try_catch, Local<Value>::Cast(WrapObject<RawValue>(isolate, exception)));
+  internal_isolate->exception_state()->Clear();
+  return true;
+}
 
 }  // namespace
 
@@ -27,14 +153,29 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
   }
   auto* isolate = new Isolate();
   isolate->internal_isolate_ = internal_isolate;
+  isolate->values_ = new std::vector<Value*>();
   isolate->default_context_ = new Context(isolate);
+  {
+    internal::Isolate::Scope isolate_scope(internal_isolate);
+    internal::HandleScope handle_scope;
+    internal::Handle<internal::PyDict> globals =
+        internal_isolate->factory()->NewPyDict(
+            internal::PyDict::kMinimumCapacity);
+    ApiAccess::SetContextImpl(isolate->default_context_,
+                              new ContextImpl(globals));
+  }
   return isolate;
 }
 
 void Isolate::Dispose() {
   auto* internal_isolate = ApiAccess::UnwrapIsolate(this);
+  auto* context_impl = reinterpret_cast<ContextImpl*>(
+      ApiAccess::GetContextImpl(default_context_));
+  delete context_impl;
+  ApiAccess::SetContextImpl(default_context_, nullptr);
   delete default_context_;
   default_context_ = nullptr;
+  ApiAccess::DeleteRegisteredValues(this);
   internal::Isolate::Dispose(internal_isolate);
   internal_isolate_ = nullptr;
   delete this;
@@ -80,6 +221,157 @@ ContextScope::~ContextScope() {
   if (!context_.IsEmpty()) {
     context_->Exit();
   }
+}
+
+bool Value::IsString() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostString) {
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null()) {
+    return false;
+  }
+  return internal::IsPyString(object);
+}
+
+bool Value::IsInteger() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostInteger) {
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null()) {
+    return false;
+  }
+  return internal::IsPySmi(object);
+}
+
+Local<String> String::New(Isolate* isolate, std::string_view value) {
+  return WrapHostString<String>(isolate, std::string(value));
+}
+
+std::string String::Value() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return "";
+  }
+  if (impl->kind == ValueKind::kHostString ||
+      impl->kind == ValueKind::kScriptSource) {
+    return impl->string_value;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return "";
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null() || !internal::IsPyString(object)) {
+    return "";
+  }
+  internal::Tagged<internal::PyString> py_string =
+      internal::Tagged<internal::PyString>::cast(object);
+  return std::string(py_string->buffer(),
+                     static_cast<size_t>(py_string->length()));
+}
+
+Local<Integer> Integer::New(Isolate* isolate, int64_t value) {
+  return WrapHostInteger<Integer>(isolate, value);
+}
+
+int64_t Integer::Value() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return 0;
+  }
+  if (impl->kind == ValueKind::kHostInteger) {
+    return impl->int_value;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return 0;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null() || !internal::IsPySmi(object)) {
+    return 0;
+  }
+  return internal::PySmi::ToInt(
+      internal::Tagged<internal::PySmi>::cast(object));
+}
+
+MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
+  if (isolate == nullptr || source.IsEmpty()) {
+    return MaybeLocal<Script>();
+  }
+  if (!Local<Value>::Cast(source)->IsString()) {
+    return MaybeLocal<Script>();
+  }
+  return MaybeLocal<Script>(WrapScriptSource(isolate, source->Value()));
+}
+
+MaybeLocal<Value> Script::Run(Local<Context> context) {
+  if (context.IsEmpty()) {
+    return MaybeLocal<Value>();
+  }
+  auto* script_impl = GetValueImpl(this);
+  if (script_impl == nullptr || script_impl->kind != ValueKind::kScriptSource) {
+    return MaybeLocal<Value>();
+  }
+  auto* context_impl =
+      reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(&*context));
+  if (context_impl == nullptr || context_impl->globals.is_null()) {
+    return MaybeLocal<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> globals =
+      internal::handle(context_impl->globals);
+  internal::MaybeHandle<internal::PyObject> maybe_result =
+      internal::Runtime_ExecutePythonSourceCode(
+          internal_isolate,
+          std::string_view(script_impl->string_value.data(),
+                           script_impl->string_value.size()),
+          globals, globals);
+  internal::Handle<internal::PyObject> result;
+  if (!maybe_result.ToHandle(&result)) {
+    CapturePendingException(isolate);
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(
+      Local<Value>::Cast(WrapObject<RawValue>(isolate, result)));
+}
+
+TryCatch::TryCatch(Isolate* isolate) : isolate_(isolate) {
+  previous_ = ApiAccess::TryCatchTop(isolate_);
+  ApiAccess::SetTryCatchTop(isolate_, this);
+}
+
+TryCatch::~TryCatch() {
+  Reset();
+  ApiAccess::SetTryCatchTop(isolate_, previous_);
+}
+
+bool TryCatch::HasCaught() const {
+  return !exception_.IsEmpty();
+}
+
+void TryCatch::Reset() {
+  exception_ = ApiAccess::MakeLocal<Value>(nullptr);
+}
+
+Local<Value> TryCatch::Exception() const {
+  return exception_;
 }
 
 }  // namespace saauso

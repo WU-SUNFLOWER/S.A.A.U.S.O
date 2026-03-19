@@ -1,6 +1,9 @@
 executable("embedder_ut") {
   testonly = true
-  sources = [ "./embedder-isolate-unittest.cc" ]
+  sources = [
+    "./embedder-isolate-unittest.cc",
+    "./embedder-script-unittest.cc",
+  ]
   deps = [
     "//:embedder_api",
     "//testing/gtest",
