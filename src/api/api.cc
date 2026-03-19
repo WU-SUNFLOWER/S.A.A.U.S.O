@@ -14,6 +14,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-exec.h"
 
 namespace saauso {
@@ -50,12 +51,44 @@ struct ContextImpl {
   internal::Tagged<internal::PyDict> globals;
 };
 
-struct HandleScopeImpl {
-  explicit HandleScopeImpl(internal::Isolate* isolate)
-      : isolate_scope(isolate) {}
+void DestroyValue(Value* value) {
+  if (value == nullptr) {
+    return;
+  }
+  delete reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
+  ApiAccess::SetValueImpl(value, nullptr);
+  ApiAccess::DeleteValue(value);
+}
 
+struct HandleScopeImpl {
+  explicit HandleScopeImpl(Isolate* isolate)
+      : isolate(isolate),
+        isolate_scope(ApiAccess::UnwrapIsolate(isolate)),
+        begin_value_size(CurrentValueSize(isolate)) {}
+
+  ~HandleScopeImpl() {
+    auto* registry = ApiAccess::ValueRegistry(isolate);
+    if (registry == nullptr) {
+      return;
+    }
+    while (registry->size() > begin_value_size) {
+      DestroyValue(registry->back());
+      registry->pop_back();
+    }
+  }
+
+  static size_t CurrentValueSize(Isolate* isolate) {
+    auto* registry = ApiAccess::ValueRegistry(isolate);
+    if (registry == nullptr) {
+      return 0;
+    }
+    return registry->size();
+  }
+
+  Isolate* isolate{nullptr};
   internal::Isolate::Scope isolate_scope;
   internal::HandleScope handle_scope;
+  size_t begin_value_size{0};
 };
 
 template <typename T>
@@ -104,6 +137,7 @@ Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
   return ApiAccess::MakeLocal(obj);
 }
 
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
 Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
   if (isolate == nullptr) {
     return Local<Script>();
@@ -117,18 +151,10 @@ Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
   ApiAccess::SetValueImpl(script, impl);
   return ApiAccess::MakeLocal(script);
 }
+#endif
 
 ValueImpl* GetValueImpl(const Value* value) {
   return reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
-}
-
-void DestroyValue(Value* value) {
-  if (value == nullptr) {
-    return;
-  }
-  delete GetValueImpl(value);
-  ApiAccess::SetValueImpl(value, nullptr);
-  delete value;
 }
 
 internal::Tagged<internal::PyObject> GetObjectTagged(const Value* value) {
@@ -174,6 +200,7 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
   isolate->internal_isolate_ = internal_isolate;
   isolate->values_ = new std::vector<Value*>();
   isolate->default_context_ = new Context(isolate);
+  ApiAccess::SetValueIsolate(isolate->default_context_, isolate);
   {
     internal::Isolate::Scope isolate_scope(internal_isolate);
     internal::HandleScope handle_scope;
@@ -205,8 +232,16 @@ void Isolate::Dispose() {
   delete this;
 }
 
+size_t Isolate::ValueRegistrySizeForTesting() const {
+  const auto* registry = ApiAccess::ValueRegistry(this);
+  if (registry == nullptr) {
+    return 0;
+  }
+  return registry->size();
+}
+
 HandleScope::HandleScope(Isolate* isolate) {
-  impl_ = new HandleScopeImpl(ApiAccess::UnwrapIsolate(isolate));
+  impl_ = new HandleScopeImpl(isolate);
 }
 
 HandleScope::~HandleScope() {
@@ -222,14 +257,16 @@ Local<Context> Context::New(Isolate* isolate) {
 }
 
 void Context::Enter() {
-  auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate_);
+  auto* internal_isolate =
+      ApiAccess::UnwrapIsolate(ApiAccess::GetValueIsolate(this));
   if (internal_isolate != nullptr) {
     internal_isolate->Enter();
   }
 }
 
 void Context::Exit() {
-  auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate_);
+  auto* internal_isolate =
+      ApiAccess::UnwrapIsolate(ApiAccess::GetValueIsolate(this));
   if (internal_isolate != nullptr) {
     internal_isolate->Exit();
   }
@@ -390,7 +427,18 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   if (!Local<Value>::Cast(source)->IsString()) {
     return MaybeLocal<Script>();
   }
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
   return MaybeLocal<Script>(WrapScriptSource(isolate, source->Value()));
+#else
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Runtime_ThrowError(
+      internal::ExceptionType::kRuntimeError,
+      "Script::Compile requires CPython frontend compiler support");
+  CapturePendingException(isolate);
+  return MaybeLocal<Script>();
+#endif
 }
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {

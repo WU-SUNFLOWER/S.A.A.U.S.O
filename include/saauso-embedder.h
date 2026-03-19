@@ -5,6 +5,7 @@
 #ifndef INCLUDE_SAAUSO_EMBEDDER_H_
 #define INCLUDE_SAAUSO_EMBEDDER_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -27,8 +28,6 @@ class MaybeLocal;
 
 class Value {
  public:
-  virtual ~Value() = default;
-
   // 判断该值是否可按字符串语义读取。
   bool IsString() const;
   // 判断该值是否可按整数语义读取。
@@ -39,6 +38,7 @@ class Value {
   bool ToInteger(int64_t* out) const;
 
  protected:
+  virtual ~Value() = default;
   Value() = default;
 
  private:
@@ -99,6 +99,7 @@ class Isolate {
   static Isolate* New(
       const IsolateCreateParams& params = IsolateCreateParams());
   void Dispose();
+  size_t ValueRegistrySizeForTesting() const;
 
   Isolate(const Isolate&) = delete;
   Isolate& operator=(const Isolate&) = delete;
@@ -135,10 +136,7 @@ class Context final : public Value {
   void Exit();
 
  private:
-  explicit Context(Isolate* isolate) : isolate_(isolate) {}
-
-  Isolate* isolate_{nullptr};
-  void* impl_{nullptr};
+  explicit Context(Isolate* isolate) { (void)isolate; }
 
   friend class Isolate;
   friend class Script;

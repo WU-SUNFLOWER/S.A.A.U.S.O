@@ -41,6 +41,14 @@ struct ApiAccess {
     return reinterpret_cast<std::vector<Value*>*>(isolate->values_);
   }
 
+  static const std::vector<Value*>* ValueRegistry(
+      const saauso::Isolate* isolate) {
+    if (isolate == nullptr) {
+      return nullptr;
+    }
+    return reinterpret_cast<const std::vector<Value*>*>(isolate->values_);
+  }
+
   static void RegisterValue(saauso::Isolate* isolate, Value* value) {
     auto* registry = ValueRegistry(isolate);
     if (registry == nullptr || value == nullptr) {
@@ -114,15 +122,17 @@ struct ApiAccess {
     if (context == nullptr) {
       return;
     }
-    context->impl_ = impl;
+    SetValueImpl(static_cast<Value*>(context), impl);
   }
 
   static void* GetContextImpl(const Context* context) {
     if (context == nullptr) {
       return nullptr;
     }
-    return context->impl_;
+    return GetValueImpl(static_cast<const Value*>(context));
   }
+
+  static void DeleteValue(Value* value) { delete value; }
 };
 
 }  // namespace saauso
