@@ -116,6 +116,25 @@ TEST(EmbedderPhase3Test, FunctionCallbackInfo_ArgumentValidation) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase3Test, Context_Get_Miss_Test) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+    TryCatch try_catch(isolate);
+    MaybeLocal<Value> miss = context->Get(String::New(isolate, "missing_key"));
+    EXPECT_TRUE(miss.IsEmpty());
+    EXPECT_FALSE(try_catch.HasCaught());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 TEST(EmbedderPhase3Test, HostMock_PythonToCppRoundTrip) {
   g_last_status = -1;

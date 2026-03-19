@@ -116,9 +116,19 @@ MaybeHandle<PyObject> Runtime_CallNativePyFunction(Isolate* isolate,
                                    isolate, func, receiver, args));
 
   NativeFuncPointer native_func_ptr = func->native_func();
+  NativeFuncPointerWithClosure native_func_with_closure_ptr =
+      func->native_func_with_closure();
   Handle<PyObject> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             native_func_ptr(isolate, receiver, args, kwargs));
+  if (native_func_with_closure_ptr != nullptr) {
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result,
+        native_func_with_closure_ptr(isolate, receiver, args, kwargs,
+                                     func->native_closure_data()));
+  } else {
+    assert(native_func_ptr != nullptr);
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, result, native_func_ptr(isolate, receiver, args, kwargs));
+  }
 
   return result;
 }

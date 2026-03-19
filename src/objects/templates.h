@@ -19,13 +19,30 @@ class FunctionTemplateInfo {
       NativeFuncPointer function,
       Handle<PyString> name,
       NativeFuncAccessFlag native_access_flag = NativeFuncAccessFlag::kStatic,
-      Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null())
+      Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null(),
+      Handle<PyObject> closure_data = Handle<PyObject>::null())
       : function_(function),
         name_(name),
         native_access_flag_(native_access_flag),
-        native_owner_type_(native_owner_type) {}
+        native_owner_type_(native_owner_type),
+        closure_data_(closure_data) {}
+
+  explicit FunctionTemplateInfo(
+      NativeFuncPointerWithClosure function_with_closure,
+      Handle<PyString> name,
+      Handle<PyObject> closure_data,
+      NativeFuncAccessFlag native_access_flag = NativeFuncAccessFlag::kStatic,
+      Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null())
+      : function_with_closure_(function_with_closure),
+        name_(name),
+        native_access_flag_(native_access_flag),
+        native_owner_type_(native_owner_type),
+        closure_data_(closure_data) {}
 
   NativeFuncPointer function() const { return function_; }
+  NativeFuncPointerWithClosure function_with_closure() const {
+    return function_with_closure_;
+  }
   Handle<PyString> name() const { return name_.Get(); }
   NativeFuncAccessFlag native_access_flag() const {
     return native_access_flag_;
@@ -33,12 +50,15 @@ class FunctionTemplateInfo {
   Handle<PyTypeObject> native_owner_type() const {
     return native_owner_type_.Get();
   }
+  Handle<PyObject> closure_data() const { return closure_data_.Get(); }
 
  private:
-  NativeFuncPointer function_;
+  NativeFuncPointer function_{nullptr};
+  NativeFuncPointerWithClosure function_with_closure_{nullptr};
   Global<PyString> name_;
   NativeFuncAccessFlag native_access_flag_;
   Global<PyTypeObject> native_owner_type_;
+  Global<PyObject> closure_data_;
 };
 
 }  // namespace saauso::internal

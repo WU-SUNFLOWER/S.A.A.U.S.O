@@ -2,7 +2,10 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <atomic>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "include/saauso-embedder.h"
@@ -63,30 +66,43 @@ struct FunctionCallbackInfoImpl {
   Local<Value> return_value;
 };
 
-struct CallbackSlot {
+struct CallbackBinding {
   FunctionCallback callback{nullptr};
   Isolate* isolate{nullptr};
 };
 
-constexpr int kMaxEmbedderCallbackSlots = 16;
-CallbackSlot g_embedder_callback_slots[kMaxEmbedderCallbackSlots];
+std::mutex g_embedder_callback_mutex;
+std::unordered_map<int64_t, CallbackBinding> g_embedder_callback_bindings;
+std::atomic<int64_t> g_next_callback_binding_id{1};
 
-int AllocateCallbackSlot(Isolate* isolate, FunctionCallback callback) {
-  for (int i = 0; i < kMaxEmbedderCallbackSlots; ++i) {
-    if (g_embedder_callback_slots[i].callback == nullptr) {
-      g_embedder_callback_slots[i].callback = callback;
-      g_embedder_callback_slots[i].isolate = isolate;
-      return i;
-    }
-  }
-  return -1;
+int64_t RegisterCallbackBinding(Isolate* isolate, FunctionCallback callback) {
+  std::lock_guard<std::mutex> guard(g_embedder_callback_mutex);
+  int64_t binding_id = g_next_callback_binding_id.fetch_add(1);
+  g_embedder_callback_bindings[binding_id] =
+      CallbackBinding{.callback = callback, .isolate = isolate};
+  return binding_id;
 }
 
-void ReleaseCallbackSlotsForIsolate(Isolate* isolate) {
-  for (int i = 0; i < kMaxEmbedderCallbackSlots; ++i) {
-    if (g_embedder_callback_slots[i].isolate == isolate) {
-      g_embedder_callback_slots[i].callback = nullptr;
-      g_embedder_callback_slots[i].isolate = nullptr;
+bool LookupCallbackBinding(int64_t binding_id, CallbackBinding* out) {
+  std::lock_guard<std::mutex> guard(g_embedder_callback_mutex);
+  auto it = g_embedder_callback_bindings.find(binding_id);
+  if (it == g_embedder_callback_bindings.end()) {
+    return false;
+  }
+  if (out != nullptr) {
+    *out = it->second;
+  }
+  return true;
+}
+
+void ReleaseCallbackBindingsForIsolate(Isolate* isolate) {
+  std::lock_guard<std::mutex> guard(g_embedder_callback_mutex);
+  for (auto it = g_embedder_callback_bindings.begin();
+       it != g_embedder_callback_bindings.end();) {
+    if (it->second.isolate == isolate) {
+      it = g_embedder_callback_bindings.erase(it);
+    } else {
+      ++it;
     }
   }
 }
@@ -129,6 +145,44 @@ struct HandleScopeImpl {
   internal::Isolate::Scope isolate_scope;
   internal::HandleScope handle_scope;
   size_t begin_value_size{0};
+};
+
+struct EscapableHandleScopeImpl {
+  explicit EscapableHandleScopeImpl(Isolate* isolate)
+      : isolate(isolate),
+        begin_value_size(HandleScopeImpl::CurrentValueSize(isolate)) {}
+
+  ~EscapableHandleScopeImpl() {
+    auto* registry = ApiAccess::ValueRegistry(isolate);
+    if (registry == nullptr) {
+      return;
+    }
+    std::vector<Value*> escaped_tail;
+    while (registry->size() > begin_value_size) {
+      Value* value = registry->back();
+      bool should_keep = false;
+      for (Value* escaped_value : escaped_values) {
+        if (escaped_value == value) {
+          should_keep = true;
+          break;
+        }
+      }
+      if (should_keep) {
+        escaped_tail.push_back(value);
+        registry->pop_back();
+        continue;
+      }
+      DestroyValue(value);
+      registry->pop_back();
+    }
+    for (auto it = escaped_tail.rbegin(); it != escaped_tail.rend(); ++it) {
+      registry->push_back(*it);
+    }
+  }
+
+  Isolate* isolate{nullptr};
+  size_t begin_value_size{0};
+  std::vector<Value*> escaped_values;
 };
 
 template <typename T>
@@ -281,102 +335,40 @@ bool CapturePendingException(Isolate* isolate) {
   return true;
 }
 
-internal::MaybeHandle<internal::PyObject> InvokeEmbedderCallbackAtSlot(
-    int slot_index,
+internal::MaybeHandle<internal::PyObject> InvokeEmbedderCallback(
     internal::Isolate* internal_isolate,
     internal::Handle<internal::PyObject> receiver,
     internal::Handle<internal::PyTuple> args,
-    internal::Handle<internal::PyDict>) {
-  if (slot_index < 0 || slot_index >= kMaxEmbedderCallbackSlots) {
+    internal::Handle<internal::PyDict>,
+    internal::Handle<internal::PyObject> closure_data) {
+  if (closure_data.is_null() || !internal::IsPySmi(closure_data)) {
     internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
-                                 "Invalid embedder callback slot");
+                                 "Embedder callback closure_data is invalid");
     return internal::kNullMaybeHandle;
   }
-  CallbackSlot& slot = g_embedder_callback_slots[slot_index];
-  if (slot.callback == nullptr || slot.isolate == nullptr) {
+  int64_t binding_id = internal::PySmi::ToInt(
+      internal::Tagged<internal::PySmi>::cast(*closure_data));
+  CallbackBinding binding;
+  if (!LookupCallbackBinding(binding_id, &binding) ||
+      binding.callback == nullptr || binding.isolate == nullptr) {
     internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
-                                 "Embedder callback slot is empty");
+                                 "Embedder callback binding is missing");
     return internal::kNullMaybeHandle;
   }
+  EscapableHandleScope escapable_scope(binding.isolate);
   FunctionCallbackInfo callback_info;
   FunctionCallbackInfoImpl callback_info_impl;
-  callback_info_impl.isolate = slot.isolate;
+  callback_info_impl.isolate = binding.isolate;
   callback_info_impl.receiver = receiver;
   callback_info_impl.args = args;
   ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
-  slot.callback(callback_info);
+  binding.callback(callback_info);
   if (internal_isolate->HasPendingException()) {
     return internal::kNullMaybeHandle;
   }
-  return ToInternalObject(slot.isolate, callback_info_impl.return_value);
-}
-
-#define SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(SLOT)                        \
-  internal::MaybeHandle<internal::PyObject> EmbedderTrampoline##SLOT(  \
-      internal::Isolate* isolate,                                      \
-      internal::Handle<internal::PyObject> receiver,                   \
-      internal::Handle<internal::PyTuple> args,                        \
-      internal::Handle<internal::PyDict> kwargs) {                     \
-    return InvokeEmbedderCallbackAtSlot(SLOT, isolate, receiver, args, \
-                                        kwargs);                       \
-  }
-
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(0)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(1)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(2)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(3)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(4)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(5)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(6)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(7)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(8)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(9)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(10)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(11)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(12)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(13)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(14)
-SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(15)
-
-#undef SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE
-
-internal::NativeFuncPointer GetEmbedderTrampoline(int slot_index) {
-  switch (slot_index) {
-    case 0:
-      return &EmbedderTrampoline0;
-    case 1:
-      return &EmbedderTrampoline1;
-    case 2:
-      return &EmbedderTrampoline2;
-    case 3:
-      return &EmbedderTrampoline3;
-    case 4:
-      return &EmbedderTrampoline4;
-    case 5:
-      return &EmbedderTrampoline5;
-    case 6:
-      return &EmbedderTrampoline6;
-    case 7:
-      return &EmbedderTrampoline7;
-    case 8:
-      return &EmbedderTrampoline8;
-    case 9:
-      return &EmbedderTrampoline9;
-    case 10:
-      return &EmbedderTrampoline10;
-    case 11:
-      return &EmbedderTrampoline11;
-    case 12:
-      return &EmbedderTrampoline12;
-    case 13:
-      return &EmbedderTrampoline13;
-    case 14:
-      return &EmbedderTrampoline14;
-    case 15:
-      return &EmbedderTrampoline15;
-    default:
-      return nullptr;
-  }
+  Local<Value> escaped_return =
+      escapable_scope.Escape(callback_info_impl.return_value);
+  return ToInternalObject(binding.isolate, escaped_return);
 }
 
 }  // namespace
@@ -417,7 +409,7 @@ void Isolate::Dispose() {
     }
   }
   ApiAccess::DeleteRegisteredValues(this);
-  ReleaseCallbackSlotsForIsolate(this);
+  ReleaseCallbackBindingsForIsolate(this);
   internal::Isolate::Dispose(internal_isolate);
   internal_isolate_ = nullptr;
   delete this;
@@ -438,6 +430,27 @@ HandleScope::HandleScope(Isolate* isolate) {
 HandleScope::~HandleScope() {
   delete reinterpret_cast<HandleScopeImpl*>(impl_);
   impl_ = nullptr;
+}
+
+EscapableHandleScope::EscapableHandleScope(Isolate* isolate) {
+  impl_ = new EscapableHandleScopeImpl(isolate);
+}
+
+EscapableHandleScope::~EscapableHandleScope() {
+  delete reinterpret_cast<EscapableHandleScopeImpl*>(impl_);
+  impl_ = nullptr;
+}
+
+Local<Value> EscapableHandleScope::Escape(Local<Value> value) {
+  if (value.IsEmpty()) {
+    return value;
+  }
+  auto* impl = reinterpret_cast<EscapableHandleScopeImpl*>(impl_);
+  if (impl == nullptr) {
+    return value;
+  }
+  impl->escaped_values.push_back(&*value);
+  return value;
 }
 
 Local<Context> Context::New(Isolate* isolate) {
@@ -734,25 +747,18 @@ Local<Function> Function::New(Isolate* isolate,
   if (isolate == nullptr || callback == nullptr) {
     return Local<Function>();
   }
-  int slot_index = AllocateCallbackSlot(isolate, callback);
-  if (slot_index < 0) {
-    internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-    internal::Isolate::Scope isolate_scope(internal_isolate);
-    internal::HandleScope handle_scope;
-    internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
-                                 "No free embedder callback slots");
-    CapturePendingException(isolate);
-    return Local<Function>();
-  }
+  int64_t binding_id = RegisterCallbackBinding(isolate, callback);
   internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
   internal::Isolate::Scope isolate_scope(internal_isolate);
   internal::HandleScope handle_scope;
   internal::Handle<internal::PyString> py_name =
       internal::PyString::NewInstance(name.data(),
                                       static_cast<int64_t>(name.size()));
-  internal::NativeFuncPointer native_pointer =
-      GetEmbedderTrampoline(slot_index);
-  internal::FunctionTemplateInfo template_info(native_pointer, py_name);
+  internal::Handle<internal::PyObject> closure_data =
+      internal::handle(internal::Tagged<internal::PyObject>::cast(
+          internal::PySmi::FromInt(binding_id)));
+  internal::FunctionTemplateInfo template_info(&InvokeEmbedderCallback, py_name,
+                                               closure_data);
   internal::MaybeHandle<internal::PyFunction> maybe_function =
       internal_isolate->factory()->NewPyFunctionWithTemplate(template_info);
   internal::Handle<internal::PyFunction> function;

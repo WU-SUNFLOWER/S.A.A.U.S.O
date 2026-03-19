@@ -132,6 +132,19 @@ class HandleScope {
   void* impl_{nullptr};
 };
 
+class EscapableHandleScope {
+ public:
+  explicit EscapableHandleScope(Isolate* isolate);
+  EscapableHandleScope(const EscapableHandleScope&) = delete;
+  EscapableHandleScope& operator=(const EscapableHandleScope&) = delete;
+  ~EscapableHandleScope();
+
+  Local<Value> Escape(Local<Value> value);
+
+ private:
+  void* impl_{nullptr};
+};
+
 class Context final : public Value {
  public:
   static Local<Context> New(Isolate* isolate);
