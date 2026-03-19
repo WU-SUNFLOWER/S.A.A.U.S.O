@@ -2,16 +2,39 @@
 # Use of this source code is governed by a GNU-style license that can be
 # found in the LICENSE file.
 
+# =============================================================================
+# 根 BUILD 维护说明（请先阅读）
+# =============================================================================
+# 1) 该文件负责定义：
+#    - VM 核心实现目标（saauso_core）
+#    - 可选的 CPython312 前端编译器目标（saauso_cpython312_compiler）
+#    - Embedder API 及示例目标（embedder_api / embedder_hello_world）
+#    - 统一测试入口（ut）
+# 2) 依赖方向约束：
+#    - 上层目标可依赖 saauso_core，但 saauso_core 不依赖上层目标。
+#    - embedder_api 是对 saauso_core 的包装层，后续 Phase2+ 继续扩展。
+# 3) 修改建议：
+#    - 新增核心源码优先放入 saauso_core 的对应分区。
+#    - 新增对外 API 相关实现放入 src/api，并挂入 embedder_api。
+#    - 新增 Embedder 示例需同时纳入头文件边界检查 action。
+# =============================================================================
+
+# 宽 include 配置：面向核心目标与历史测试目标，允许使用仓库根路径做 include 根。
+# 说明：这是“内部开发便利”配置，不等价于“对外 API 边界”。
 config("saauso_includes") {
   include_dirs = [ "//" ]
 }
 
+# 窄 include 配置：面向 Embedder 对外目标，仅暴露 include/。
+# 说明：后续外部工程接入应以该配置为准，避免误依赖 src/** 内部头。
 config("saauso_public_api_includes") {
   include_dirs = [ "//include" ]
 }
 
-# 将核心代码定义为 source_set 或 static_library
-# source_set 在 Chromium 中更常用，因为它只是逻辑上的分组，不生成 .a/.lib
+# -----------------------------------------------------------------------------
+# 核心 VM 目标
+# -----------------------------------------------------------------------------
+# 采用 source_set：在 Chromium/GN 体系中便于快速增量构建，不直接产出静态库文件。
 source_set("saauso_core") {
   sources = [
     # include
@@ -217,9 +240,9 @@ source_set("saauso_core") {
     "//src/modules/builtin-math-module.cc",
     "//src/modules/builtin-module-registry.cc",
     "//src/modules/builtin-module-registry.h",
-    "//src/modules/builtin-module.h",
     "//src/modules/builtin-module-utils.cc",
     "//src/modules/builtin-module-utils.h",
+    "//src/modules/builtin-module.h",
     "//src/modules/builtin-random-module.cc",
     "//src/modules/builtin-sys-module.cc",
     "//src/modules/builtin-time-module.cc",
@@ -277,7 +300,12 @@ source_set("saauso_core") {
   public_configs = [ ":saauso_includes" ]
 }
 
-# 接入 cpython312 编译器前端
+# -----------------------------------------------------------------------------
+# 可选前端：CPython312 编译器桥接
+# -----------------------------------------------------------------------------
+# 受 saauso_enable_cpython_compiler 开关控制：
+# - true : 启用 pyc 编译前端相关实现并链接 third_party/cpython312
+# - false: 仅保留后端执行链路，适合纯后端回归和无 Python 开发库环境
 source_set("saauso_cpython312_compiler") {
   if (saauso_enable_cpython_compiler) {
     sources = [
@@ -292,6 +320,14 @@ source_set("saauso_cpython312_compiler") {
   }
 }
 
+# -----------------------------------------------------------------------------
+# Embedder API 目标（Phase0/1）
+# -----------------------------------------------------------------------------
+# 该目标承载 include/saauso-embedder.h + src/api/* 桥接实现。
+# 关键约束：
+# 1) 对外只通过 saauso_public_api_includes 暴露 include/。
+# 2) 在开启 cpython 前端时，需显式依赖 saauso_cpython312_compiler，
+#    否则可能出现链接期缺符号（如 EmbeddedPython312Compiler::*）。
 source_set("embedder_api") {
   sources = [
     "//include/saauso-embedder.h",
@@ -306,6 +342,9 @@ source_set("embedder_api") {
   public_configs = [ ":saauso_public_api_includes" ]
 }
 
+# -----------------------------------------------------------------------------
+# CLI 可执行入口（开发调试用）
+# -----------------------------------------------------------------------------
 executable("vm") {
   sources = [ "//src/main.cc" ]
   deps = [ ":saauso_core" ]
@@ -314,12 +353,20 @@ executable("vm") {
   }
 }
 
+# -----------------------------------------------------------------------------
+# Embedder 示例（Phase0/1 验证样例）
+# -----------------------------------------------------------------------------
 executable("embedder_hello_world") {
   testonly = true
   sources = [ "//examples/embedder/hello_world.cc" ]
   deps = [ ":embedder_api" ]
 }
 
+# -----------------------------------------------------------------------------
+# Embedder 头文件边界检查
+# -----------------------------------------------------------------------------
+# 目的：强制示例只能 include 对外头（include/**），不能 include src/**。
+# 这是“可见性隔离”的第一道自动化门禁，后续可扩展到更多示例文件。
 action("embedder_header_boundary_check") {
   testonly = true
   script = "//build/check_embedder_includes.py"
@@ -329,6 +376,12 @@ action("embedder_header_boundary_check") {
          rebase_path(sources, root_build_dir)
 }
 
+# -----------------------------------------------------------------------------
+# 统一测试入口
+# -----------------------------------------------------------------------------
+# 说明：
+# - 保留既有 test/unittests:ut 作为主回归集合。
+# - 额外纳入 Embedder Phase0/1 的边界检查与单测，确保演进不回退。
 group("ut") {
   testonly = true
   deps = [
