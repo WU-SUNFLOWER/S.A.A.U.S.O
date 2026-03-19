@@ -5,6 +5,7 @@
 #include "src/objects/py-function-klass.h"
 
 #include "src/execution/exception-utils.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -47,6 +48,7 @@ void PyFunctionKlass::PreInitialize(Isolate* isolate) {
 
   // 初始化虚函数表
   vtable_.Clear();
+  vtable_.call_ = &Virtual_Call;
   vtable_.repr_ = &Virtual_Repr;
   vtable_.str_ = &Virtual_Str;
   vtable_.instance_size_ = &Virtual_InstanceSize;
@@ -76,6 +78,19 @@ Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
 
 void PyFunctionKlass::Finalize(Isolate* isolate) {
   isolate->set_py_function_klass(Tagged<PyFunctionKlass>::null());
+}
+
+MaybeHandle<PyObject> PyFunctionKlass::Virtual_Call(Isolate* isolate,
+                                                    Handle<PyObject> self,
+                                                    Handle<PyObject> receiver,
+                                                    Handle<PyObject> args,
+                                                    Handle<PyObject> kwargs) {
+  // 友情提示：
+  // - 在虚拟机内部对普通Python函数的调用操作，会直接走
+  //   特化处理的 Fast Path，不会走开销昂贵的虚函数调用。
+  // - 因此此处的 PyFunctionKlass Call 虚函数仅充当 fallback！
+  return Execution::Call(isolate, self, receiver, Handle<PyTuple>::cast(args),
+                         Handle<PyDict>::cast(kwargs));
 }
 
 MaybeHandle<PyObject> PyFunctionKlass::Virtual_Repr(Isolate* isolate,
