@@ -618,6 +618,24 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   return MaybeLocal<Value>(WrapRuntimeResult(isolate, out));
 }
 
+Local<Object> Context::Global() {
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  auto* context_impl =
+      reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(this));
+  if (internal_isolate == nullptr || context_impl == nullptr ||
+      context_impl->globals.is_null()) {
+    return Local<Object>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> globals =
+      internal::handle(context_impl->globals);
+  return Local<Object>::Cast(WrapObject<RawObject>(
+      isolate,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*globals))));
+}
+
 ContextScope::ContextScope(Local<Context> context) : context_(context) {
   if (!context_.IsEmpty()) {
     context_->Enter();

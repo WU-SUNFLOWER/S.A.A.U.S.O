@@ -366,6 +366,12 @@ executable("embedder_hello_world") {
   deps = [ ":embedder_api" ]
 }
 
+executable("embedder_game_engine_demo") {
+  testonly = true
+  sources = [ "//examples/embedder/game_engine_demo.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
 # -----------------------------------------------------------------------------
 # Embedder 头文件边界检查
 # -----------------------------------------------------------------------------
@@ -374,7 +380,10 @@ executable("embedder_hello_world") {
 action("embedder_header_boundary_check") {
   testonly = true
   script = "//build/check_embedder_includes.py"
-  sources = [ "//examples/embedder/hello_world.cc" ]
+  sources = [
+    "//examples/embedder/game_engine_demo.cc",
+    "//examples/embedder/hello_world.cc",
+  ]
   outputs = [ "$target_gen_dir/embedder_header_boundary_check.stamp" ]
   args = [ rebase_path(outputs[0], root_build_dir) ] +
          rebase_path(sources, root_build_dir)

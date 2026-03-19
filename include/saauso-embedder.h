@@ -164,6 +164,7 @@ class Context final : public Value {
   void Exit();
   bool Set(Local<String> key, Local<Value> value);
   MaybeLocal<Value> Get(Local<String> key);
+  Local<Object> Global();
 
  private:
   explicit Context(Isolate* isolate) { (void)isolate; }

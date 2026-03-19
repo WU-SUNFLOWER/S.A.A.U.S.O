@@ -276,6 +276,32 @@ TEST(EmbedderPhase4Test, ObjectListTuple_RoundTrip) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, Context_Global_ObjectBridge) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+    Local<Object> global = context->Global();
+    ASSERT_FALSE(global.IsEmpty());
+    EXPECT_TRUE(global->Set(String::New(isolate, "score"),
+                            Local<Value>::Cast(Integer::New(isolate, 88))));
+    MaybeLocal<Value> score_value = context->Get(String::New(isolate, "score"));
+    ASSERT_FALSE(score_value.IsEmpty());
+    Local<Value> score_local;
+    ASSERT_TRUE(score_value.ToLocal(&score_local));
+    int64_t score = 0;
+    EXPECT_TRUE(score_local->ToInteger(&score));
+    EXPECT_EQ(score, 88);
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 TEST(EmbedderPhase4Test, Object_CallMethod_Miss_Captured) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
