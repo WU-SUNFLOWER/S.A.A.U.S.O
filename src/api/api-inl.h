@@ -133,6 +133,21 @@ struct ApiAccess {
   }
 
   static void DeleteValue(Value* value) { delete value; }
+
+  static void SetFunctionCallbackInfoImpl(FunctionCallbackInfo* info,
+                                          void* impl) {
+    if (info == nullptr) {
+      return;
+    }
+    info->impl_ = impl;
+  }
+
+  static void* GetFunctionCallbackInfoImpl(const FunctionCallbackInfo* info) {
+    if (info == nullptr) {
+      return nullptr;
+    }
+    return info->impl_;
+  }
 };
 
 }  // namespace saauso

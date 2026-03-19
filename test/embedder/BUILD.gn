@@ -1,6 +1,7 @@
 executable("embedder_ut") {
   testonly = true
   sources = [
+    "./embedder-interop-unittest.cc",
     "./embedder-isolate-unittest.cc",
     "./embedder-script-unittest.cc",
   ]

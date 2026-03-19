@@ -21,7 +21,11 @@ class Context;
 class String;
 class Integer;
 class Script;
+class Function;
 class TryCatch;
+class FunctionCallbackInfo;
+
+using FunctionCallback = void (*)(FunctionCallbackInfo& info);
 
 template <typename T>
 class MaybeLocal;
@@ -134,6 +138,8 @@ class Context final : public Value {
 
   void Enter();
   void Exit();
+  bool Set(Local<String> key, Local<Value> value);
+  MaybeLocal<Value> Get(Local<String> key);
 
  private:
   explicit Context(Isolate* isolate) { (void)isolate; }
@@ -176,6 +182,33 @@ class Script final : public Value {
   static MaybeLocal<Script> Compile(Isolate* isolate, Local<String> source);
   // 在给定上下文执行脚本；失败时返回空 MaybeLocal，并由 TryCatch 捕获异常。
   MaybeLocal<Value> Run(Local<Context> context);
+};
+
+class Function final : public Value {
+ public:
+  static Local<Function> New(Isolate* isolate,
+                             FunctionCallback callback,
+                             std::string_view name);
+  MaybeLocal<Value> Call(Local<Context> context,
+                         Local<Value> receiver,
+                         int argc,
+                         Local<Value> argv[]);
+};
+
+class FunctionCallbackInfo {
+ public:
+  FunctionCallbackInfo() = default;
+
+  int Length() const;
+  Local<Value> operator[](int index) const;
+  Local<Value> Receiver() const;
+  Isolate* GetIsolate() const;
+  void SetReturnValue(Local<Value> value);
+
+ private:
+  void* impl_{nullptr};
+
+  friend struct ApiAccess;
 };
 
 class TryCatch {

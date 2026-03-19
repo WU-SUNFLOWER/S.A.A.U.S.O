@@ -7,15 +7,20 @@
 
 #include "include/saauso-embedder.h"
 #include "src/api/api-inl.h"
+#include "src/execution/exception-types.h"
 #include "src/handles/handle-scopes.h"
 #include "src/heap/factory.h"
 #include "src/objects/object-checkers.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
+#include "src/objects/templates.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-exec.h"
+#include "src/runtime/runtime-py-function.h"
 
 namespace saauso {
 
@@ -50,6 +55,41 @@ struct ContextImpl {
 
   internal::Tagged<internal::PyDict> globals;
 };
+
+struct FunctionCallbackInfoImpl {
+  Isolate* isolate{nullptr};
+  internal::Handle<internal::PyObject> receiver;
+  internal::Handle<internal::PyTuple> args;
+  Local<Value> return_value;
+};
+
+struct CallbackSlot {
+  FunctionCallback callback{nullptr};
+  Isolate* isolate{nullptr};
+};
+
+constexpr int kMaxEmbedderCallbackSlots = 16;
+CallbackSlot g_embedder_callback_slots[kMaxEmbedderCallbackSlots];
+
+int AllocateCallbackSlot(Isolate* isolate, FunctionCallback callback) {
+  for (int i = 0; i < kMaxEmbedderCallbackSlots; ++i) {
+    if (g_embedder_callback_slots[i].callback == nullptr) {
+      g_embedder_callback_slots[i].callback = callback;
+      g_embedder_callback_slots[i].isolate = isolate;
+      return i;
+    }
+  }
+  return -1;
+}
+
+void ReleaseCallbackSlotsForIsolate(Isolate* isolate) {
+  for (int i = 0; i < kMaxEmbedderCallbackSlots; ++i) {
+    if (g_embedder_callback_slots[i].isolate == isolate) {
+      g_embedder_callback_slots[i].callback = nullptr;
+      g_embedder_callback_slots[i].isolate = nullptr;
+    }
+  }
+}
 
 void DestroyValue(Value* value) {
   if (value == nullptr) {
@@ -165,6 +205,58 @@ internal::Tagged<internal::PyObject> GetObjectTagged(const Value* value) {
   return impl->object;
 }
 
+internal::Handle<internal::PyObject> ToInternalObject(Isolate* isolate,
+                                                      Local<Value> value) {
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (value.IsEmpty()) {
+    return internal::handle(internal::Tagged<internal::PyObject>::cast(
+        internal_isolate->py_none_object()));
+  }
+  ValueImpl* impl = GetValueImpl(&*value);
+  if (impl == nullptr) {
+    return internal::handle(internal::Tagged<internal::PyObject>::cast(
+        internal_isolate->py_none_object()));
+  }
+  if (impl->kind == ValueKind::kHostString ||
+      impl->kind == ValueKind::kScriptSource) {
+    internal::Handle<internal::PyString> py_string =
+        internal::PyString::NewInstance(
+            impl->string_value.data(),
+            static_cast<int64_t>(impl->string_value.size()));
+    return internal::handle(
+        internal::Tagged<internal::PyObject>::cast(*py_string));
+  }
+  if (impl->kind == ValueKind::kHostInteger) {
+    return internal::handle(internal::Tagged<internal::PyObject>::cast(
+        internal::PySmi::FromInt(impl->int_value)));
+  }
+  if (impl->kind == ValueKind::kVmObject && !impl->object.is_null()) {
+    return internal::handle(impl->object);
+  }
+  return internal::handle(internal::Tagged<internal::PyObject>::cast(
+      internal_isolate->py_none_object()));
+}
+
+Local<Value> WrapRuntimeResult(Isolate* isolate,
+                               internal::Handle<internal::PyObject> result) {
+  if (result.is_null()) {
+    return Local<Value>();
+  }
+  if (internal::IsPyString(result)) {
+    internal::Tagged<internal::PyString> py_string =
+        internal::Tagged<internal::PyString>::cast(*result);
+    return Local<Value>::Cast(WrapHostString<String>(
+        isolate, std::string(py_string->buffer(),
+                             static_cast<size_t>(py_string->length()))));
+  }
+  if (internal::IsPySmi(result)) {
+    return Local<Value>::Cast(WrapHostInteger<Integer>(
+        isolate, internal::PySmi::ToInt(
+                     internal::Tagged<internal::PySmi>::cast(*result))));
+  }
+  return Local<Value>::Cast(WrapObject<RawValue>(isolate, result));
+}
+
 bool CapturePendingException(Isolate* isolate) {
   if (isolate == nullptr) {
     return false;
@@ -187,6 +279,101 @@ bool CapturePendingException(Isolate* isolate) {
       try_catch, Local<Value>::Cast(WrapObject<RawValue>(isolate, exception)));
   internal_isolate->exception_state()->Clear();
   return true;
+}
+
+internal::MaybeHandle<internal::PyObject> InvokeEmbedderCallbackAtSlot(
+    int slot_index,
+    internal::Isolate* internal_isolate,
+    internal::Handle<internal::PyObject> receiver,
+    internal::Handle<internal::PyTuple> args,
+    internal::Handle<internal::PyDict>) {
+  if (slot_index < 0 || slot_index >= kMaxEmbedderCallbackSlots) {
+    internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
+                                 "Invalid embedder callback slot");
+    return internal::kNullMaybeHandle;
+  }
+  CallbackSlot& slot = g_embedder_callback_slots[slot_index];
+  if (slot.callback == nullptr || slot.isolate == nullptr) {
+    internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
+                                 "Embedder callback slot is empty");
+    return internal::kNullMaybeHandle;
+  }
+  FunctionCallbackInfo callback_info;
+  FunctionCallbackInfoImpl callback_info_impl;
+  callback_info_impl.isolate = slot.isolate;
+  callback_info_impl.receiver = receiver;
+  callback_info_impl.args = args;
+  ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
+  slot.callback(callback_info);
+  return ToInternalObject(slot.isolate, callback_info_impl.return_value);
+}
+
+#define SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(SLOT)                        \
+  internal::MaybeHandle<internal::PyObject> EmbedderTrampoline##SLOT(  \
+      internal::Isolate* isolate,                                      \
+      internal::Handle<internal::PyObject> receiver,                   \
+      internal::Handle<internal::PyTuple> args,                        \
+      internal::Handle<internal::PyDict> kwargs) {                     \
+    return InvokeEmbedderCallbackAtSlot(SLOT, isolate, receiver, args, \
+                                        kwargs);                       \
+  }
+
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(0)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(1)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(2)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(3)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(4)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(5)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(6)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(7)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(8)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(9)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(10)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(11)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(12)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(13)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(14)
+SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE(15)
+
+#undef SAAUSO_DEFINE_EMBEDDER_TRAMPOLINE
+
+internal::NativeFuncPointer GetEmbedderTrampoline(int slot_index) {
+  switch (slot_index) {
+    case 0:
+      return &EmbedderTrampoline0;
+    case 1:
+      return &EmbedderTrampoline1;
+    case 2:
+      return &EmbedderTrampoline2;
+    case 3:
+      return &EmbedderTrampoline3;
+    case 4:
+      return &EmbedderTrampoline4;
+    case 5:
+      return &EmbedderTrampoline5;
+    case 6:
+      return &EmbedderTrampoline6;
+    case 7:
+      return &EmbedderTrampoline7;
+    case 8:
+      return &EmbedderTrampoline8;
+    case 9:
+      return &EmbedderTrampoline9;
+    case 10:
+      return &EmbedderTrampoline10;
+    case 11:
+      return &EmbedderTrampoline11;
+    case 12:
+      return &EmbedderTrampoline12;
+    case 13:
+      return &EmbedderTrampoline13;
+    case 14:
+      return &EmbedderTrampoline14;
+    case 15:
+      return &EmbedderTrampoline15;
+    default:
+      return nullptr;
+  }
 }
 
 }  // namespace
@@ -227,6 +414,7 @@ void Isolate::Dispose() {
     }
   }
   ApiAccess::DeleteRegisteredValues(this);
+  ReleaseCallbackSlotsForIsolate(this);
   internal::Isolate::Dispose(internal_isolate);
   internal_isolate_ = nullptr;
   delete this;
@@ -270,6 +458,69 @@ void Context::Exit() {
   if (internal_isolate != nullptr) {
     internal_isolate->Exit();
   }
+}
+
+bool Context::Set(Local<String> key, Local<Value> value) {
+  if (key.IsEmpty()) {
+    return false;
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  auto* context_impl =
+      reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(this));
+  if (internal_isolate == nullptr || context_impl == nullptr ||
+      context_impl->globals.is_null()) {
+    return false;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> globals =
+      internal::handle(context_impl->globals);
+  internal::Handle<internal::PyString> py_key = internal::PyString::NewInstance(
+      key->Value().data(), static_cast<int64_t>(key->Value().size()));
+  internal::Handle<internal::PyObject> py_value =
+      ToInternalObject(isolate, value);
+  auto maybe_set = internal::PyDict::Put(
+      globals,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*py_key)),
+      py_value);
+  if (maybe_set.IsNothing()) {
+    CapturePendingException(isolate);
+    return false;
+  }
+  return maybe_set.ToChecked();
+}
+
+MaybeLocal<Value> Context::Get(Local<String> key) {
+  if (key.IsEmpty()) {
+    return MaybeLocal<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  auto* context_impl =
+      reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(this));
+  if (internal_isolate == nullptr || context_impl == nullptr ||
+      context_impl->globals.is_null()) {
+    return MaybeLocal<Value>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> globals =
+      internal::handle(context_impl->globals);
+  internal::Handle<internal::PyString> py_key = internal::PyString::NewInstance(
+      key->Value().data(), static_cast<int64_t>(key->Value().size()));
+  internal::Handle<internal::PyObject> out;
+  auto maybe_found = globals->Get(
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*py_key)),
+      out);
+  if (maybe_found.IsNothing()) {
+    CapturePendingException(isolate);
+    return MaybeLocal<Value>();
+  }
+  if (!maybe_found.ToChecked()) {
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, out));
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {
@@ -471,20 +722,138 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     CapturePendingException(isolate);
     return MaybeLocal<Value>();
   }
-  if (internal::IsPyString(result)) {
-    internal::Tagged<internal::PyString> py_string =
-        internal::Tagged<internal::PyString>::cast(*result);
-    return MaybeLocal<Value>(Local<Value>::Cast(WrapHostString<String>(
-        isolate, std::string(py_string->buffer(),
-                             static_cast<size_t>(py_string->length())))));
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, result));
+}
+
+Local<Function> Function::New(Isolate* isolate,
+                              FunctionCallback callback,
+                              std::string_view name) {
+  if (isolate == nullptr || callback == nullptr) {
+    return Local<Function>();
   }
-  if (internal::IsPySmi(result)) {
-    return MaybeLocal<Value>(Local<Value>::Cast(WrapHostInteger<Integer>(
-        isolate, internal::PySmi::ToInt(
-                     internal::Tagged<internal::PySmi>::cast(*result)))));
+  int slot_index = AllocateCallbackSlot(isolate, callback);
+  if (slot_index < 0) {
+    internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+    internal::Isolate::Scope isolate_scope(internal_isolate);
+    internal::HandleScope handle_scope;
+    internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
+                                 "No free embedder callback slots");
+    CapturePendingException(isolate);
+    return Local<Function>();
   }
-  return MaybeLocal<Value>(
-      Local<Value>::Cast(WrapObject<RawValue>(isolate, result)));
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyString> py_name =
+      internal::PyString::NewInstance(name.data(),
+                                      static_cast<int64_t>(name.size()));
+  internal::NativeFuncPointer native_pointer =
+      GetEmbedderTrampoline(slot_index);
+  internal::FunctionTemplateInfo template_info(native_pointer, py_name);
+  internal::MaybeHandle<internal::PyFunction> maybe_function =
+      internal_isolate->factory()->NewPyFunctionWithTemplate(template_info);
+  internal::Handle<internal::PyFunction> function;
+  if (!maybe_function.ToHandle(&function)) {
+    CapturePendingException(isolate);
+    return Local<Function>();
+  }
+  return WrapObject<Function>(
+      isolate,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*function)));
+}
+
+MaybeLocal<Value> Function::Call(Local<Context> context,
+                                 Local<Value> receiver,
+                                 int argc,
+                                 Local<Value> argv[]) {
+  if (context.IsEmpty()) {
+    return MaybeLocal<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  auto* context_impl =
+      reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(&*context));
+  if (internal_isolate == nullptr || context_impl == nullptr) {
+    return MaybeLocal<Value>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyTuple> py_args =
+      internal_isolate->factory()->NewPyTuple(argc);
+  for (int i = 0; i < argc; ++i) {
+    Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
+    internal::Handle<internal::PyObject> py_arg =
+        ToInternalObject(isolate, arg);
+    py_args->SetInternal(i, *py_arg);
+  }
+  internal::Handle<internal::PyDict> py_kwargs =
+      internal_isolate->factory()->NewPyDict(
+          internal::PyDict::kMinimumCapacity);
+  internal::Tagged<internal::PyObject> function_object = GetObjectTagged(this);
+  if (function_object.is_null()) {
+    return MaybeLocal<Value>();
+  }
+  internal::Handle<internal::PyObject> py_receiver =
+      ToInternalObject(isolate, receiver);
+  internal::MaybeHandle<internal::PyObject> maybe_result =
+      internal::PyObject::Call(
+          internal_isolate, internal::handle(function_object), py_receiver,
+          internal::handle(
+              internal::Tagged<internal::PyObject>::cast(*py_args)),
+          internal::handle(
+              internal::Tagged<internal::PyObject>::cast(*py_kwargs)));
+  internal::Handle<internal::PyObject> result;
+  if (!maybe_result.ToHandle(&result)) {
+    CapturePendingException(isolate);
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, result));
+}
+
+int FunctionCallbackInfo::Length() const {
+  auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
+      ApiAccess::GetFunctionCallbackInfoImpl(this));
+  if (impl == nullptr || impl->args.is_null()) {
+    return 0;
+  }
+  return static_cast<int>(impl->args->length());
+}
+
+Local<Value> FunctionCallbackInfo::operator[](int index) const {
+  auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
+      ApiAccess::GetFunctionCallbackInfoImpl(this));
+  if (impl == nullptr || impl->args.is_null() || index < 0 ||
+      index >= impl->args->length()) {
+    return Local<Value>();
+  }
+  return WrapRuntimeResult(impl->isolate, impl->args->Get(index));
+}
+
+Local<Value> FunctionCallbackInfo::Receiver() const {
+  auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
+      ApiAccess::GetFunctionCallbackInfoImpl(this));
+  if (impl == nullptr) {
+    return Local<Value>();
+  }
+  return WrapRuntimeResult(impl->isolate, impl->receiver);
+}
+
+Isolate* FunctionCallbackInfo::GetIsolate() const {
+  auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
+      ApiAccess::GetFunctionCallbackInfoImpl(this));
+  if (impl == nullptr) {
+    return nullptr;
+  }
+  return impl->isolate;
+}
+
+void FunctionCallbackInfo::SetReturnValue(Local<Value> value) {
+  auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
+      ApiAccess::GetFunctionCallbackInfoImpl(this));
+  if (impl == nullptr) {
+    return;
+  }
+  impl->return_value = value;
 }
 
 TryCatch::TryCatch(Isolate* isolate) : isolate_(isolate) {
