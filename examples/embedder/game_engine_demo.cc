@@ -8,8 +8,33 @@
 #include "saauso-embedder.h"
 #include "saauso.h"
 
-namespace saauso {
+using namespace saauso;
+
 namespace {
+
+// 主路径：先把 Python 逻辑编译成 on_update() 函数，
+// 之后每帧直接通过 Function::Call 调用，模拟“游戏脚本回调”。
+constexpr std::string_view kAiScript =
+    "def on_update():\n"
+    "    hp = GetPlayerHealth()\n"
+    "    if hp <= 20:\n"
+    "        SetPlayerStatus('danger')\n"
+    "    elif hp <= 60:\n"
+    "        SetPlayerStatus('under_attack')\n"
+    "    else:\n"
+    "        SetPlayerStatus('normal')\n";
+
+// 兜底路径：当 on_update() 调用失败时，退化为“每帧直接执行脚本片段”。
+// 这段脚本与 kAiScript 的核心业务逻辑保持一致，用来展示
+// TryCatch + MaybeLocal 的可恢复降级能力。
+constexpr std::string_view kFallbackScript =
+    "hp = GetPlayerHealth()\n"
+    "if hp <= 20:\n"
+    "    SetPlayerStatus('danger')\n"
+    "elif hp <= 60:\n"
+    "    SetPlayerStatus('under_attack')\n"
+    "else:\n"
+    "    SetPlayerStatus('normal')\n";
 
 struct GameState {
   int64_t player_health{100};
@@ -18,11 +43,13 @@ struct GameState {
 
 GameState g_game_state;
 
+// 宿主 API：给脚本读当前玩家血量。
 void HostGetPlayerHealth(FunctionCallbackInfo& info) {
   info.SetReturnValue(Local<Value>::Cast(
       Integer::New(info.GetIsolate(), g_game_state.player_health)));
 }
 
+// 宿主 API：让脚本回写玩家状态。
 void HostSetPlayerStatus(FunctionCallbackInfo& info) {
   std::string status;
   if (!info.GetStringArg(0, &status)) {
@@ -35,120 +62,94 @@ void HostSetPlayerStatus(FunctionCallbackInfo& info) {
 }
 
 }  // namespace
-}  // namespace saauso
 
 int main() {
-  saauso::Saauso::Initialize();
-  saauso::Isolate* isolate = saauso::Isolate::New();
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
   if (isolate == nullptr) {
     return 1;
   }
-  int exit_code = 0;
 
   {
-    saauso::HandleScope scope(isolate);
-    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
+    HandleScope scope(isolate);
+    Local<Context> context = Context::New(isolate);
     if (context.IsEmpty()) {
-      exit_code = 1;
-    } else {
-      saauso::Local<saauso::Object> global = context->Global();
-      global->Set(
-          saauso::String::New(isolate, "GetPlayerHealth"),
-          saauso::Local<saauso::Value>::Cast(saauso::Function::New(
-              isolate, &saauso::HostGetPlayerHealth, "GetPlayerHealth")));
-      global->Set(
-          saauso::String::New(isolate, "SetPlayerStatus"),
-          saauso::Local<saauso::Value>::Cast(saauso::Function::New(
-              isolate, &saauso::HostSetPlayerStatus, "SetPlayerStatus")));
+      return 1;
+    }
+
+    Local<Object> global = context->Global();
+    global->Set(String::New(isolate, "GetPlayerHealth"),
+                Local<Value>::Cast(Function::New(isolate, &HostGetPlayerHealth,
+                                                 "GetPlayerHealth")));
+    global->Set(String::New(isolate, "SetPlayerStatus"),
+                Local<Value>::Cast(Function::New(isolate, &HostSetPlayerStatus,
+                                                 "SetPlayerStatus")));
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-      const std::string ai_script =
-          "def on_update():\n"
-          "    hp = GetPlayerHealth()\n"
-          "    if hp <= 20:\n"
-          "        SetPlayerStatus('danger')\n"
-          "    elif hp <= 60:\n"
-          "        SetPlayerStatus('under_attack')\n"
-          "    else:\n"
-          "        SetPlayerStatus('normal')\n";
 
-      saauso::TryCatch compile_try_catch(isolate);
-      saauso::MaybeLocal<saauso::Script> maybe_script = saauso::Script::Compile(
-          isolate, saauso::String::New(isolate, ai_script));
-      if (maybe_script.IsEmpty() || compile_try_catch.HasCaught()) {
-        std::cout << "compile failed" << std::endl;
-        exit_code = 1;
-      } else {
-        saauso::TryCatch run_try_catch(isolate);
-        saauso::MaybeLocal<saauso::Value> run_result =
-            maybe_script.ToLocalChecked()->Run(context);
-        if (run_result.IsEmpty() || run_try_catch.HasCaught()) {
-          std::cout << "script run failed" << std::endl;
-          exit_code = 1;
-        } else {
-          saauso::MaybeLocal<saauso::Value> maybe_on_update =
-              context->Get(saauso::String::New(isolate, "on_update"));
-          bool use_fallback_update = maybe_on_update.IsEmpty();
-          saauso::Local<saauso::Function> on_update;
-          if (!use_fallback_update) {
-            on_update = saauso::Local<saauso::Function>::Cast(
-                maybe_on_update.ToLocalChecked());
-          }
+    TryCatch compile_try_catch(isolate);
+    MaybeLocal<Script> maybe_script =
+        Script::Compile(isolate, String::New(isolate, kAiScript));
+    if (maybe_script.IsEmpty() || compile_try_catch.HasCaught()) {
+      std::cout << "compile failed" << std::endl;
+      return 1;
+    }
 
-          std::cout << "=== Game Loop Start ===" << std::endl;
-          for (int frame = 1; frame <= 6; ++frame) {
-            if (!use_fallback_update) {
-              saauso::TryCatch call_try_catch(isolate);
-              saauso::MaybeLocal<saauso::Value> call_result = on_update->Call(
-                  context, saauso::Local<saauso::Value>(), 0, nullptr);
-              if (call_result.IsEmpty() || call_try_catch.HasCaught()) {
-                std::cout
-                    << "on_update() call failed, switch to script fallback"
+    TryCatch run_try_catch(isolate);
+    MaybeLocal<Value> run_result = maybe_script.ToLocalChecked()->Run(context);
+    if (run_result.IsEmpty() || run_try_catch.HasCaught()) {
+      std::cout << "script run failed" << std::endl;
+      return 1;
+    }
+
+    MaybeLocal<Value> maybe_on_update =
+        context->Get(String::New(isolate, "on_update"));
+    // 若没有拿到 on_update，直接进入兜底脚本模式。
+    bool use_fallback_update = maybe_on_update.IsEmpty();
+    Local<Function> on_update;
+    if (!use_fallback_update) {
+      on_update = Local<Function>::Cast(maybe_on_update.ToLocalChecked());
+    }
+
+    std::cout << "=== Game Loop Start ===" << std::endl;
+    for (int frame = 1; frame <= 6; ++frame) {
+      if (!use_fallback_update) {
+        TryCatch call_try_catch(isolate);
+        MaybeLocal<Value> call_result =
+            on_update->Call(context, Local<Value>(), 0, nullptr);
+        if (call_result.IsEmpty() || call_try_catch.HasCaught()) {
+          std::cout << "on_update() call failed, switch to script fallback"
                     << std::endl;
-                use_fallback_update = true;
-              }
-            }
-            if (use_fallback_update) {
-              const std::string fallback_script =
-                  "hp = GetPlayerHealth()\n"
-                  "if hp <= 20:\n"
-                  "    SetPlayerStatus('danger')\n"
-                  "elif hp <= 60:\n"
-                  "    SetPlayerStatus('under_attack')\n"
-                  "else:\n"
-                  "    SetPlayerStatus('normal')\n";
-              saauso::TryCatch fallback_try_catch(isolate);
-              saauso::MaybeLocal<saauso::Script> fallback_compile =
-                  saauso::Script::Compile(
-                      isolate, saauso::String::New(isolate, fallback_script));
-              if (fallback_compile.IsEmpty() ||
-                  fallback_try_catch.HasCaught() ||
-                  fallback_compile.ToLocalChecked()->Run(context).IsEmpty()) {
-                std::cout << "fallback update failed at frame " << frame
-                          << std::endl;
-                exit_code = 1;
-                break;
-              }
-            }
-
-            saauso::g_game_state.player_health -= 15;
-            std::cout << "[frame " << frame
-                      << "] hp=" << saauso::g_game_state.player_health
-                      << ", status=" << saauso::g_game_state.player_status
-                      << std::endl;
-          }
-          std::cout << "=== Game Loop End ===" << std::endl;
+          use_fallback_update = true;
         }
       }
-#else
-      std::cout << "CPython frontend compiler is disabled; "
-                   "game_engine_demo only runs in frontend build."
-                << std::endl;
-#endif
+      if (use_fallback_update) {
+        // 兜底模式：每帧重新编译并执行最小脚本，保证演示流程可继续。
+        TryCatch fallback_try_catch(isolate);
+        MaybeLocal<Script> fallback_compile =
+            Script::Compile(isolate, String::New(isolate, kFallbackScript));
+        if (fallback_compile.IsEmpty() || fallback_try_catch.HasCaught() ||
+            fallback_compile.ToLocalChecked()->Run(context).IsEmpty()) {
+          std::cout << "fallback update failed at frame " << frame << std::endl;
+          return 1;
+        }
+      }
+
+      g_game_state.player_health -= 15;
+      std::cout << "[frame " << frame << "] hp=" << g_game_state.player_health
+                << ", status=" << g_game_state.player_status << std::endl;
     }
+    std::cout << "=== Game Loop End ===" << std::endl;
+
+#else
+    std::cout << "CPython frontend compiler is disabled; "
+                 "game_engine_demo only runs in frontend build."
+              << std::endl;
+#endif
   }
 
   isolate->Dispose();
-  saauso::Saauso::Dispose();
-  return exit_code;
+  Saauso::Dispose();
+
+  return 0;
 }
