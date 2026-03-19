@@ -334,10 +334,19 @@ source_set("saauso_cpython312_compiler") {
 #    否则可能出现链接期缺符号（如 EmbeddedPython312Compiler::*）。
 source_set("embedder_api") {
   sources = [
+    "//include/saauso-embedder-callbacks.h",
+    "//include/saauso-embedder-core.h",
     "//include/saauso-embedder.h",
+    "//include/saauso-embedder-objects.h",
+    "//include/saauso-embedder-values.h",
     "//include/saauso.h",
     "//src/api/api-inl.h",
-    "//src/api/api.cc",
+    "//src/api/api-callable.cc",
+    "//src/api/api-impl.h",
+    "//src/api/api-isolate.cc",
+    "//src/api/api-objects.cc",
+    "//src/api/api-support.cc",
+    "//src/api/api-value.cc",
   ]
   deps = [ ":saauso_core" ]
   if (saauso_enable_cpython_compiler) {
