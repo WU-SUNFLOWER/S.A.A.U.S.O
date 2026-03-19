@@ -30,6 +30,8 @@ enum class ValueKind {
   kVmObject,
 };
 
+// Embedder Value 的私有实现体。
+// 该结构用于在不暴露内部对象布局的前提下保存“值来源”和可选缓存数据。
 struct ValueImpl {
   ValueKind kind{ValueKind::kNone};
   std::string string_value;
@@ -38,6 +40,8 @@ struct ValueImpl {
       internal::Tagged<internal::PyObject>::null()};
 };
 
+// Context 的最小私有实现：当前只保存 globals 字典。
+// 后续若接入多上下文栈或安全策略，可在此结构体中扩展。
 struct ContextImpl {
   explicit ContextImpl(internal::Handle<internal::PyDict> globals)
       : globals(globals.is_null() ? internal::Tagged<internal::PyDict>::null()
@@ -134,6 +138,8 @@ bool CapturePendingException(Isolate* isolate) {
   if (try_catch == nullptr) {
     return true;
   }
+  // 约定：若存在 TryCatch，则在 API 边界消费 pending exception，
+  // 并将异常对象转交给最近一层 TryCatch。
   internal::Isolate::Scope isolate_scope(internal_isolate);
   internal::HandleScope handle_scope;
   internal::Handle<internal::PyObject> exception =
@@ -259,6 +265,57 @@ bool Value::IsInteger() const {
   return internal::IsPySmi(object);
 }
 
+bool Value::ToString(std::string* out) const {
+  if (out == nullptr) {
+    return false;
+  }
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostString ||
+      impl->kind == ValueKind::kScriptSource) {
+    *out = impl->string_value;
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null() || !internal::IsPyString(object)) {
+    return false;
+  }
+  internal::Tagged<internal::PyString> py_string =
+      internal::Tagged<internal::PyString>::cast(object);
+  *out = std::string(py_string->buffer(),
+                     static_cast<size_t>(py_string->length()));
+  return true;
+}
+
+bool Value::ToInteger(int64_t* out) const {
+  if (out == nullptr) {
+    return false;
+  }
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostInteger) {
+    *out = impl->int_value;
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null() || !internal::IsPySmi(object)) {
+    return false;
+  }
+  *out =
+      internal::PySmi::ToInt(internal::Tagged<internal::PySmi>::cast(object));
+  return true;
+}
+
 Local<String> String::New(Isolate* isolate, std::string_view value) {
   return WrapHostString<String>(isolate, std::string(value));
 }
@@ -347,6 +404,18 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
   if (!maybe_result.ToHandle(&result)) {
     CapturePendingException(isolate);
     return MaybeLocal<Value>();
+  }
+  if (internal::IsPyString(result)) {
+    internal::Tagged<internal::PyString> py_string =
+        internal::Tagged<internal::PyString>::cast(*result);
+    return MaybeLocal<Value>(Local<Value>::Cast(WrapHostString<String>(
+        isolate, std::string(py_string->buffer(),
+                             static_cast<size_t>(py_string->length())))));
+  }
+  if (internal::IsPySmi(result)) {
+    return MaybeLocal<Value>(Local<Value>::Cast(WrapHostInteger<Integer>(
+        isolate, internal::PySmi::ToInt(
+                     internal::Tagged<internal::PySmi>::cast(*result)))));
   }
   return MaybeLocal<Value>(
       Local<Value>::Cast(WrapObject<RawValue>(isolate, result)));

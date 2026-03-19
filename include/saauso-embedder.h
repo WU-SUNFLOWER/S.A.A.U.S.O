@@ -29,8 +29,14 @@ class Value {
  public:
   virtual ~Value() = default;
 
+  // 判断该值是否可按字符串语义读取。
   bool IsString() const;
+  // 判断该值是否可按整数语义读取。
   bool IsInteger() const;
+  // 尝试按字符串语义读取值；成功返回 true 并写入 out。
+  bool ToString(std::string* out) const;
+  // 尝试按整数语义读取值；成功返回 true 并写入 out。
+  bool ToInteger(int64_t* out) const;
 
  protected:
   Value() = default;
@@ -152,19 +158,25 @@ class ContextScope {
 
 class String final : public Value {
  public:
+  // 在当前 Isolate 中创建一个字符串值对象。
   static Local<String> New(Isolate* isolate, std::string_view value);
+  // 读取字符串内容；若值不可读为字符串则返回空串。
   std::string Value() const;
 };
 
 class Integer final : public Value {
  public:
+  // 在当前 Isolate 中创建一个整数值对象。
   static Local<Integer> New(Isolate* isolate, int64_t value);
+  // 读取整数内容；若值不可读为整数则返回 0。
   int64_t Value() const;
 };
 
 class Script final : public Value {
  public:
+  // 编译脚本文本并返回脚本对象；失败时返回空 MaybeLocal。
   static MaybeLocal<Script> Compile(Isolate* isolate, Local<String> source);
+  // 在给定上下文执行脚本；失败时返回空 MaybeLocal，并由 TryCatch 捕获异常。
   MaybeLocal<Value> Run(Local<Context> context);
 };
 
@@ -175,8 +187,11 @@ class TryCatch {
   TryCatch& operator=(const TryCatch&) = delete;
   ~TryCatch();
 
+  // 返回当前是否已捕获到异常。
   bool HasCaught() const;
+  // 清空当前捕获状态，不影响后续异常捕获能力。
   void Reset();
+  // 返回当前已捕获异常对象；若未捕获则返回空 Local。
   Local<Value> Exception() const;
 
  private:
