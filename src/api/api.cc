@@ -16,6 +16,7 @@
 #include "src/objects/object-checkers.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
+#include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -30,6 +31,9 @@ namespace saauso {
 namespace {
 
 class RawValue final : public Value {};
+class RawObject final : public Object {};
+class RawList final : public List {};
+class RawTuple final : public Tuple {};
 
 enum class ValueKind {
   kNone,
@@ -366,9 +370,7 @@ internal::MaybeHandle<internal::PyObject> InvokeEmbedderCallback(
   if (internal_isolate->HasPendingException()) {
     return internal::kNullMaybeHandle;
   }
-  Local<Value> escaped_return =
-      escapable_scope.Escape(callback_info_impl.return_value);
-  return ToInternalObject(binding.isolate, escaped_return);
+  return ToInternalObject(binding.isolate, callback_info_impl.return_value);
 }
 
 }  // namespace
@@ -817,6 +819,219 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
     return MaybeLocal<Value>();
   }
   return MaybeLocal<Value>(WrapRuntimeResult(isolate, result));
+}
+
+Local<Object> Object::New(Isolate* isolate) {
+  if (isolate == nullptr) {
+    return Local<Object>();
+  }
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> dict =
+      internal_isolate->factory()->NewPyDict(
+          internal::PyDict::kMinimumCapacity);
+  return Local<Object>::Cast(WrapObject<RawObject>(
+      isolate,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*dict))));
+}
+
+bool Object::Set(Local<String> key, Local<Value> value) {
+  if (key.IsEmpty()) {
+    return false;
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyDict(object_tagged)) {
+    return false;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> dict =
+      internal::handle(internal::Tagged<internal::PyDict>::cast(object_tagged));
+  std::string key_value = key->Value();
+  internal::Handle<internal::PyString> py_key = internal::PyString::NewInstance(
+      key_value.data(), static_cast<int64_t>(key_value.size()));
+  internal::Handle<internal::PyObject> py_value =
+      ToInternalObject(isolate, value);
+  auto maybe_put = internal::PyDict::Put(
+      dict,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*py_key)),
+      py_value);
+  if (maybe_put.IsNothing()) {
+    CapturePendingException(isolate);
+    return false;
+  }
+  return maybe_put.ToChecked();
+}
+
+MaybeLocal<Value> Object::Get(Local<String> key) {
+  if (key.IsEmpty()) {
+    return MaybeLocal<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return MaybeLocal<Value>();
+  }
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyDict(object_tagged)) {
+    return MaybeLocal<Value>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyDict> dict =
+      internal::handle(internal::Tagged<internal::PyDict>::cast(object_tagged));
+  std::string key_value = key->Value();
+  internal::Handle<internal::PyString> py_key = internal::PyString::NewInstance(
+      key_value.data(), static_cast<int64_t>(key_value.size()));
+  internal::Handle<internal::PyObject> out;
+  auto maybe_found = dict->Get(
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*py_key)),
+      out);
+  if (maybe_found.IsNothing()) {
+    CapturePendingException(isolate);
+    return MaybeLocal<Value>();
+  }
+  if (!maybe_found.ToChecked()) {
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, out));
+}
+
+Local<List> List::New(Isolate* isolate) {
+  if (isolate == nullptr) {
+    return Local<List>();
+  }
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyList> list =
+      internal_isolate->factory()->NewPyList(
+          internal::PyList::kMinimumCapacity);
+  return Local<List>::Cast(WrapObject<RawList>(
+      isolate,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*list))));
+}
+
+int64_t List::Length() const {
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyList(object_tagged)) {
+    return 0;
+  }
+  return internal::Tagged<internal::PyList>::cast(object_tagged)->length();
+}
+
+bool List::Push(Local<Value> value) {
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyList(object_tagged)) {
+    return false;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyList> list =
+      internal::handle(internal::Tagged<internal::PyList>::cast(object_tagged));
+  internal::PyList::Append(list, ToInternalObject(isolate, value));
+  return true;
+}
+
+bool List::Set(int64_t index, Local<Value> value) {
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyList(object_tagged)) {
+    return false;
+  }
+  internal::Tagged<internal::PyList> list_tagged =
+      internal::Tagged<internal::PyList>::cast(object_tagged);
+  if (index < 0 || index >= list_tagged->length()) {
+    return false;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyList> list = internal::handle(list_tagged);
+  list->Set(index, ToInternalObject(isolate, value));
+  return true;
+}
+
+MaybeLocal<Value> List::Get(int64_t index) const {
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return MaybeLocal<Value>();
+  }
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyList(object_tagged)) {
+    return MaybeLocal<Value>();
+  }
+  internal::Tagged<internal::PyList> list_tagged =
+      internal::Tagged<internal::PyList>::cast(object_tagged);
+  if (index < 0 || index >= list_tagged->length()) {
+    return MaybeLocal<Value>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyList> list = internal::handle(list_tagged);
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, list->Get(index)));
+}
+
+MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
+  if (isolate == nullptr || argc < 0) {
+    return MaybeLocal<Tuple>();
+  }
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyTuple> tuple =
+      internal_isolate->factory()->NewPyTuple(argc);
+  for (int i = 0; i < argc; ++i) {
+    Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
+    tuple->SetInternal(i, ToInternalObject(isolate, arg));
+  }
+  return MaybeLocal<Tuple>(Local<Tuple>::Cast(WrapObject<RawTuple>(
+      isolate,
+      internal::handle(internal::Tagged<internal::PyObject>::cast(*tuple)))));
+}
+
+int64_t Tuple::Length() const {
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyTuple(object_tagged)) {
+    return 0;
+  }
+  return internal::Tagged<internal::PyTuple>::cast(object_tagged)->length();
+}
+
+MaybeLocal<Value> Tuple::Get(int64_t index) const {
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return MaybeLocal<Value>();
+  }
+  internal::Tagged<internal::PyObject> object_tagged = GetObjectTagged(this);
+  if (object_tagged.is_null() || !internal::IsPyTuple(object_tagged)) {
+    return MaybeLocal<Value>();
+  }
+  internal::Tagged<internal::PyTuple> tuple_tagged =
+      internal::Tagged<internal::PyTuple>::cast(object_tagged);
+  if (index < 0 || index >= tuple_tagged->length()) {
+    return MaybeLocal<Value>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyTuple> tuple = internal::handle(tuple_tagged);
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, tuple->Get(index)));
 }
 
 int FunctionCallbackInfo::Length() const {

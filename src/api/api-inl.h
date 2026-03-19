@@ -111,6 +111,13 @@ struct ApiAccess {
     return value->isolate_;
   }
 
+  static Isolate* GetValueIsolate(const Value* value) {
+    if (value == nullptr) {
+      return nullptr;
+    }
+    return value->isolate_;
+  }
+
   static void SetValueIsolate(Value* value, Isolate* isolate) {
     if (value == nullptr) {
       return;
