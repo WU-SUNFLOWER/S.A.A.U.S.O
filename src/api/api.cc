@@ -305,6 +305,9 @@ internal::MaybeHandle<internal::PyObject> InvokeEmbedderCallbackAtSlot(
   callback_info_impl.args = args;
   ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
   slot.callback(callback_info);
+  if (internal_isolate->HasPendingException()) {
+    return internal::kNullMaybeHandle;
+  }
   return ToInternalObject(slot.isolate, callback_info_impl.return_value);
 }
 
@@ -829,6 +832,28 @@ Local<Value> FunctionCallbackInfo::operator[](int index) const {
   return WrapRuntimeResult(impl->isolate, impl->args->Get(index));
 }
 
+bool FunctionCallbackInfo::GetIntegerArg(int index, int64_t* out) const {
+  if (out == nullptr) {
+    return false;
+  }
+  Local<Value> value = operator[](index);
+  if (value.IsEmpty()) {
+    return false;
+  }
+  return value->ToInteger(out);
+}
+
+bool FunctionCallbackInfo::GetStringArg(int index, std::string* out) const {
+  if (out == nullptr) {
+    return false;
+  }
+  Local<Value> value = operator[](index);
+  if (value.IsEmpty()) {
+    return false;
+  }
+  return value->ToString(out);
+}
+
 Local<Value> FunctionCallbackInfo::Receiver() const {
   auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
       ApiAccess::GetFunctionCallbackInfoImpl(this));
@@ -845,6 +870,23 @@ Isolate* FunctionCallbackInfo::GetIsolate() const {
     return nullptr;
   }
   return impl->isolate;
+}
+
+void FunctionCallbackInfo::ThrowRuntimeError(std::string_view message) const {
+  auto* impl = reinterpret_cast<FunctionCallbackInfoImpl*>(
+      ApiAccess::GetFunctionCallbackInfoImpl(this));
+  if (impl == nullptr || impl->isolate == nullptr) {
+    return;
+  }
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(impl->isolate);
+  if (internal_isolate == nullptr) {
+    return;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  std::string error(message);
+  internal::Runtime_ThrowError(internal::ExceptionType::kRuntimeError,
+                               error.c_str());
 }
 
 void FunctionCallbackInfo::SetReturnValue(Local<Value> value) {

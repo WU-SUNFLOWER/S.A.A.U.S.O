@@ -201,8 +201,11 @@ class FunctionCallbackInfo {
 
   int Length() const;
   Local<Value> operator[](int index) const;
+  bool GetIntegerArg(int index, int64_t* out) const;
+  bool GetStringArg(int index, std::string* out) const;
   Local<Value> Receiver() const;
   Isolate* GetIsolate() const;
+  void ThrowRuntimeError(std::string_view message) const;
   void SetReturnValue(Local<Value> value);
 
  private:
