@@ -53,6 +53,44 @@ void HostAccumulateParallel(FunctionCallbackInfo& info) {
       Local<Value>::Cast(Integer::New(info.GetIsolate(), code)));
 }
 
+void HostInnerPlusOne(FunctionCallbackInfo& info) {
+  int64_t code = 0;
+  if (!info.GetIntegerArg(0, &code)) {
+    info.ThrowRuntimeError("Host_InnerPlusOne expects an integer argument");
+    return;
+  }
+  info.SetReturnValue(
+      Local<Value>::Cast(Integer::New(info.GetIsolate(), code + 1)));
+}
+
+void HostOuterReentrant(FunctionCallbackInfo& info) {
+  int64_t code = 0;
+  if (!info.GetIntegerArg(0, &code)) {
+    info.ThrowRuntimeError("Host_OuterReentrant expects an integer argument");
+    return;
+  }
+  Isolate* isolate = info.GetIsolate();
+  Local<Function> inner =
+      Function::New(isolate, &HostInnerPlusOne, "Host_InnerPlusOne");
+  if (inner.IsEmpty()) {
+    info.ThrowRuntimeError(
+        "Host_OuterReentrant failed to create inner callback");
+    return;
+  }
+  Local<Value> argv[1] = {Local<Value>::Cast(Integer::New(isolate, code))};
+  MaybeLocal<Value> result =
+      inner->Call(Context::New(isolate), Local<Value>(), 1, argv);
+  Local<Value> result_local;
+  int64_t inner_value = 0;
+  if (result.IsEmpty() || !result.ToLocal(&result_local) ||
+      !result_local->ToInteger(&inner_value)) {
+    info.ThrowRuntimeError("Host_OuterReentrant failed to call inner callback");
+    return;
+  }
+  info.SetReturnValue(
+      Local<Value>::Cast(Integer::New(isolate, inner_value + 1)));
+}
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 void HostGetConfig(FunctionCallbackInfo& info) {
   std::string key;
@@ -232,6 +270,72 @@ TEST(EmbedderPhase4Test, ObjectListTuple_RoundTrip) {
     std::string tuple_s;
     EXPECT_TRUE(tuple_item_local->ToString(&tuple_s));
     EXPECT_EQ(tuple_s, "x");
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(EmbedderPhase4Test, ListTuple_Get_OutOfRange_SafeReturn) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<List> list = List::New(isolate);
+    ASSERT_FALSE(list.IsEmpty());
+    EXPECT_TRUE(list->Push(Local<Value>::Cast(Integer::New(isolate, 1))));
+    MaybeLocal<Value> list_miss = list->Get(3);
+    EXPECT_TRUE(list_miss.IsEmpty());
+
+    Local<Value> tuple_args[1] = {Local<Value>::Cast(Integer::New(isolate, 9))};
+    MaybeLocal<Tuple> tuple = Tuple::New(isolate, 1, tuple_args);
+    ASSERT_FALSE(tuple.IsEmpty());
+    MaybeLocal<Value> tuple_miss = tuple.ToLocalChecked()->Get(2);
+    EXPECT_TRUE(tuple_miss.IsEmpty());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(EmbedderPhase4Test, FunctionCall_Reentrant_Safe) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Function> outer =
+        Function::New(isolate, &HostOuterReentrant, "Host_OuterReentrant");
+    ASSERT_FALSE(outer.IsEmpty());
+    Local<Value> argv[1] = {Local<Value>::Cast(Integer::New(isolate, 10))};
+    MaybeLocal<Value> result =
+        outer->Call(Context::New(isolate), Local<Value>(), 1, argv);
+    ASSERT_FALSE(result.IsEmpty());
+    Local<Value> value;
+    ASSERT_TRUE(result.ToLocal(&value));
+    int64_t out = 0;
+    EXPECT_TRUE(value->ToInteger(&out));
+    EXPECT_EQ(out, 12);
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    TryCatch try_catch(isolate);
+    isolate->ThrowException(Local<Value>::Cast(String::New(isolate, "boom")));
+    EXPECT_TRUE(try_catch.HasCaught());
+    EXPECT_FALSE(try_catch.Exception().IsEmpty());
   }
 
   isolate->Dispose();

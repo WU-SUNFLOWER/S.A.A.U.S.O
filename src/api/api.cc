@@ -417,6 +417,25 @@ void Isolate::Dispose() {
   delete this;
 }
 
+void Isolate::ThrowException(Local<Value> exception) {
+  if (exception.IsEmpty()) {
+    return;
+  }
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(this);
+  if (internal_isolate == nullptr) {
+    return;
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyObject> py_exception =
+      ToInternalObject(this, exception);
+  if (py_exception.is_null()) {
+    return;
+  }
+  internal_isolate->exception_state()->Throw(*py_exception);
+  CapturePendingException(this);
+}
+
 size_t Isolate::ValueRegistrySizeForTesting() const {
   const auto* registry = ApiAccess::ValueRegistry(this);
   if (registry == nullptr) {
@@ -941,6 +960,10 @@ bool List::Push(Local<Value> value) {
   internal::Handle<internal::PyList> list =
       internal::handle(internal::Tagged<internal::PyList>::cast(object_tagged));
   internal::PyList::Append(list, ToInternalObject(isolate, value));
+  if (internal_isolate->HasPendingException()) {
+    CapturePendingException(isolate);
+    return false;
+  }
   return true;
 }
 
@@ -963,6 +986,10 @@ bool List::Set(int64_t index, Local<Value> value) {
   internal::HandleScope handle_scope;
   internal::Handle<internal::PyList> list = internal::handle(list_tagged);
   list->Set(index, ToInternalObject(isolate, value));
+  if (internal_isolate->HasPendingException()) {
+    CapturePendingException(isolate);
+    return false;
+  }
   return true;
 }
 

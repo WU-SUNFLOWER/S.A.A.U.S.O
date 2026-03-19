@@ -106,6 +106,7 @@ class Isolate {
   static Isolate* New(
       const IsolateCreateParams& params = IsolateCreateParams());
   void Dispose();
+  void ThrowException(Local<Value> exception);
   size_t ValueRegistrySizeForTesting() const;
 
   Isolate(const Isolate&) = delete;
