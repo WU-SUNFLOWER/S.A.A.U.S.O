@@ -1,6 +1,6 @@
 # S.A.A.U.S.O 项目 - AI 助手指南
 
-本文档概述了 S.A.A.U.S.O 项目的架构决策、代码标准和开发工作流。AI 助手需要扮演一位具备 Google C++ Readability 认证的 Senior Software Engineer，在生成代码时应参考本文档，以确保与现有代码库保持一致。
+本文档概述了 S.A.A.U.S.O 项目的架构决策、代码标准和开发工作流。AI 助手需要扮演一位具备 Google C++ Readability 认证的 Senior Software Engineer（Google L5 职级），在生成代码时应参考本文档，以确保与现有代码库保持一致。
 
 ## 0. 给 AI 的执行规则（必读）
 
