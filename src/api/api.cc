@@ -65,6 +65,7 @@ Local<T> WrapObject(Isolate* isolate,
     return Local<T>();
   }
   auto* value = new T();
+  ApiAccess::RegisterValue(isolate, value);
   ApiAccess::SetValueIsolate(value, isolate);
   auto* impl = new ValueImpl();
   impl->kind = ValueKind::kVmObject;
@@ -79,6 +80,7 @@ Local<T> WrapHostString(Isolate* isolate, std::string value) {
     return Local<T>();
   }
   auto* obj = new T();
+  ApiAccess::RegisterValue(isolate, obj);
   ApiAccess::SetValueIsolate(obj, isolate);
   auto* impl = new ValueImpl();
   impl->kind = ValueKind::kHostString;
@@ -93,6 +95,7 @@ Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
     return Local<T>();
   }
   auto* obj = new T();
+  ApiAccess::RegisterValue(isolate, obj);
   ApiAccess::SetValueIsolate(obj, isolate);
   auto* impl = new ValueImpl();
   impl->kind = ValueKind::kHostInteger;
@@ -106,6 +109,7 @@ Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
     return Local<Script>();
   }
   auto* script = new Script();
+  ApiAccess::RegisterValue(isolate, script);
   ApiAccess::SetValueIsolate(script, isolate);
   auto* impl = new ValueImpl();
   impl->kind = ValueKind::kScriptSource;
@@ -116,6 +120,15 @@ Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
 
 ValueImpl* GetValueImpl(const Value* value) {
   return reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
+}
+
+void DestroyValue(Value* value) {
+  if (value == nullptr) {
+    return;
+  }
+  delete GetValueImpl(value);
+  ApiAccess::SetValueImpl(value, nullptr);
+  delete value;
 }
 
 internal::Tagged<internal::PyObject> GetObjectTagged(const Value* value) {
@@ -181,6 +194,11 @@ void Isolate::Dispose() {
   ApiAccess::SetContextImpl(default_context_, nullptr);
   delete default_context_;
   default_context_ = nullptr;
+  if (auto* registry = ApiAccess::ValueRegistry(this); registry != nullptr) {
+    for (Value* value : *registry) {
+      DestroyValue(value);
+    }
+  }
   ApiAccess::DeleteRegisteredValues(this);
   internal::Isolate::Dispose(internal_isolate);
   internal_isolate_ = nullptr;

@@ -313,8 +313,12 @@ source_set("saauso_cpython312_compiler") {
       "//src/code/cpython312-pyc-compiler.h",
     ]
 
-    public_deps = [ "//third_party/cpython312" ]
-    public_configs = [ ":saauso_includes" ]
+    deps = [ "//third_party/cpython312" ]
+    public_configs = [
+      ":saauso_includes",
+      "//third_party/cpython312:python312_config",
+    ]
+    all_dependent_configs = [ "//third_party/cpython312:python312_config" ]
   } else {
     sources = []
   }
