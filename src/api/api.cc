@@ -1033,7 +1033,8 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
     return MaybeLocal<Value>();
   }
   internal::Handle<internal::PyObject> py_receiver =
-      ToInternalObject(isolate, receiver);
+      receiver.IsEmpty() ? internal::Handle<internal::PyObject>::null()
+                         : ToInternalObject(isolate, receiver);
   internal::MaybeHandle<internal::PyObject> maybe_result =
       internal::PyObject::Call(
           internal_isolate, internal::handle(function_object), py_receiver,
