@@ -20,11 +20,14 @@ class Isolate;
 class Context;
 class String;
 class Integer;
+class Float;
+class Boolean;
 class Script;
 class Function;
 class Object;
 class List;
 class Tuple;
+class Exception;
 class TryCatch;
 class FunctionCallbackInfo;
 
@@ -39,10 +42,14 @@ class Value {
   bool IsString() const;
   // 判断该值是否可按整数语义读取。
   bool IsInteger() const;
+  bool IsFloat() const;
+  bool IsBoolean() const;
   // 尝试按字符串语义读取值；成功返回 true 并写入 out。
   bool ToString(std::string* out) const;
   // 尝试按整数语义读取值；成功返回 true 并写入 out。
   bool ToInteger(int64_t* out) const;
+  bool ToFloat(double* out) const;
+  bool ToBoolean(bool* out) const;
 
  protected:
   virtual ~Value() = default;
@@ -193,6 +200,18 @@ class Integer final : public Value {
   int64_t Value() const;
 };
 
+class Float final : public Value {
+ public:
+  static Local<Float> New(Isolate* isolate, double value);
+  double Value() const;
+};
+
+class Boolean final : public Value {
+ public:
+  static Local<Boolean> New(Isolate* isolate, bool value);
+  bool Value() const;
+};
+
 class Script final : public Value {
  public:
   // 编译脚本文本并返回脚本对象；失败时返回空 MaybeLocal。
@@ -217,6 +236,10 @@ class Object : public Value {
   static Local<Object> New(Isolate* isolate);
   bool Set(Local<String> key, Local<Value> value);
   MaybeLocal<Value> Get(Local<String> key);
+  MaybeLocal<Value> CallMethod(Local<Context> context,
+                               Local<String> name,
+                               int argc,
+                               Local<Value> argv[]);
 };
 
 class List : public Value {
@@ -233,6 +256,12 @@ class Tuple : public Value {
   static MaybeLocal<Tuple> New(Isolate* isolate, int argc, Local<Value> argv[]);
   int64_t Length() const;
   MaybeLocal<Value> Get(int64_t index) const;
+};
+
+class Exception {
+ public:
+  static Local<Value> TypeError(Local<String> msg);
+  static Local<Value> RuntimeError(Local<String> msg);
 };
 
 class FunctionCallbackInfo {

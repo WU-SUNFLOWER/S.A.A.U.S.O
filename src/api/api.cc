@@ -15,9 +15,11 @@
 #include "src/heap/factory.h"
 #include "src/objects/object-checkers.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-float.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
@@ -39,6 +41,8 @@ enum class ValueKind {
   kNone,
   kHostString,
   kHostInteger,
+  kHostFloat,
+  kHostBoolean,
   kScriptSource,
   kVmObject,
 };
@@ -49,6 +53,8 @@ struct ValueImpl {
   ValueKind kind{ValueKind::kNone};
   std::string string_value;
   int64_t int_value{0};
+  double float_value{0.0};
+  bool bool_value{false};
   internal::Tagged<internal::PyObject> object{
       internal::Tagged<internal::PyObject>::null()};
 };
@@ -235,6 +241,36 @@ Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
   return ApiAccess::MakeLocal(obj);
 }
 
+template <typename T>
+Local<T> WrapHostFloat(Isolate* isolate, double value) {
+  if (isolate == nullptr) {
+    return Local<T>();
+  }
+  auto* obj = new T();
+  ApiAccess::RegisterValue(isolate, obj);
+  ApiAccess::SetValueIsolate(obj, isolate);
+  auto* impl = new ValueImpl();
+  impl->kind = ValueKind::kHostFloat;
+  impl->float_value = value;
+  ApiAccess::SetValueImpl(obj, impl);
+  return ApiAccess::MakeLocal(obj);
+}
+
+template <typename T>
+Local<T> WrapHostBoolean(Isolate* isolate, bool value) {
+  if (isolate == nullptr) {
+    return Local<T>();
+  }
+  auto* obj = new T();
+  ApiAccess::RegisterValue(isolate, obj);
+  ApiAccess::SetValueIsolate(obj, isolate);
+  auto* impl = new ValueImpl();
+  impl->kind = ValueKind::kHostBoolean;
+  impl->bool_value = value;
+  ApiAccess::SetValueImpl(obj, impl);
+  return ApiAccess::MakeLocal(obj);
+}
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
   if (isolate == nullptr) {
@@ -288,6 +324,17 @@ internal::Handle<internal::PyObject> ToInternalObject(Isolate* isolate,
     return internal::handle(internal::Tagged<internal::PyObject>::cast(
         internal::PySmi::FromInt(impl->int_value)));
   }
+  if (impl->kind == ValueKind::kHostFloat) {
+    internal::Handle<internal::PyFloat> py_float =
+        internal_isolate->factory()->NewPyFloat(impl->float_value);
+    return internal::handle(
+        internal::Tagged<internal::PyObject>::cast(*py_float));
+  }
+  if (impl->kind == ValueKind::kHostBoolean) {
+    return internal::handle(internal::Tagged<internal::PyObject>::cast(
+        impl->bool_value ? internal_isolate->py_true_object()
+                         : internal_isolate->py_false_object()));
+  }
   if (impl->kind == ValueKind::kVmObject && !impl->object.is_null()) {
     return internal::handle(impl->object);
   }
@@ -311,6 +358,17 @@ Local<Value> WrapRuntimeResult(Isolate* isolate,
     return Local<Value>::Cast(WrapHostInteger<Integer>(
         isolate, internal::PySmi::ToInt(
                      internal::Tagged<internal::PySmi>::cast(*result))));
+  }
+  if (internal::IsPyFloat(result)) {
+    internal::Tagged<internal::PyFloat> py_float =
+        internal::Tagged<internal::PyFloat>::cast(*result);
+    return Local<Value>::Cast(WrapHostFloat<Float>(isolate, py_float->value()));
+  }
+  if (internal::IsPyTrue(result)) {
+    return Local<Value>::Cast(WrapHostBoolean<Boolean>(isolate, true));
+  }
+  if (internal::IsPyFalse(result)) {
+    return Local<Value>::Cast(WrapHostBoolean<Boolean>(isolate, false));
   }
   return Local<Value>::Cast(WrapObject<RawValue>(isolate, result));
 }
@@ -608,6 +666,42 @@ bool Value::IsInteger() const {
   return internal::IsPySmi(object);
 }
 
+bool Value::IsFloat() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostFloat) {
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null()) {
+    return false;
+  }
+  return internal::IsPyFloat(object);
+}
+
+bool Value::IsBoolean() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostBoolean) {
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null()) {
+    return false;
+  }
+  return internal::IsPyTrue(object) || internal::IsPyFalse(object);
+}
+
 bool Value::ToString(std::string* out) const {
   if (out == nullptr) {
     return false;
@@ -659,6 +753,59 @@ bool Value::ToInteger(int64_t* out) const {
   return true;
 }
 
+bool Value::ToFloat(double* out) const {
+  if (out == nullptr) {
+    return false;
+  }
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostFloat) {
+    *out = impl->float_value;
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null() || !internal::IsPyFloat(object)) {
+    return false;
+  }
+  *out = internal::Tagged<internal::PyFloat>::cast(object)->value();
+  return true;
+}
+
+bool Value::ToBoolean(bool* out) const {
+  if (out == nullptr) {
+    return false;
+  }
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostBoolean) {
+    *out = impl->bool_value;
+    return true;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null()) {
+    return false;
+  }
+  if (internal::IsPyTrue(object)) {
+    *out = true;
+    return true;
+  }
+  if (internal::IsPyFalse(object)) {
+    *out = false;
+    return true;
+  }
+  return false;
+}
+
 Local<String> String::New(Isolate* isolate, std::string_view value) {
   return WrapHostString<String>(isolate, std::string(value));
 }
@@ -706,6 +853,50 @@ int64_t Integer::Value() const {
   }
   return internal::PySmi::ToInt(
       internal::Tagged<internal::PySmi>::cast(object));
+}
+
+Local<Float> Float::New(Isolate* isolate, double value) {
+  return WrapHostFloat<Float>(isolate, value);
+}
+
+double Float::Value() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return 0.0;
+  }
+  if (impl->kind == ValueKind::kHostFloat) {
+    return impl->float_value;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return 0.0;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null() || !internal::IsPyFloat(object)) {
+    return 0.0;
+  }
+  return internal::Tagged<internal::PyFloat>::cast(object)->value();
+}
+
+Local<Boolean> Boolean::New(Isolate* isolate, bool value) {
+  return WrapHostBoolean<Boolean>(isolate, value);
+}
+
+bool Boolean::Value() const {
+  auto* impl = GetValueImpl(this);
+  if (impl == nullptr) {
+    return false;
+  }
+  if (impl->kind == ValueKind::kHostBoolean) {
+    return impl->bool_value;
+  }
+  if (impl->kind != ValueKind::kVmObject) {
+    return false;
+  }
+  internal::Tagged<internal::PyObject> object = GetObjectTagged(this);
+  if (object.is_null()) {
+    return false;
+  }
+  return internal::IsPyTrue(object);
 }
 
 MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
@@ -922,6 +1113,70 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   return MaybeLocal<Value>(WrapRuntimeResult(isolate, out));
 }
 
+MaybeLocal<Value> Object::CallMethod(Local<Context> context,
+                                     Local<String> name,
+                                     int argc,
+                                     Local<Value> argv[]) {
+  if (context.IsEmpty() || name.IsEmpty() || argc < 0) {
+    return MaybeLocal<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  internal::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return MaybeLocal<Value>();
+  }
+  internal::Tagged<internal::PyObject> self_tagged = GetObjectTagged(this);
+  if (self_tagged.is_null()) {
+    return MaybeLocal<Value>();
+  }
+  internal::Isolate::Scope isolate_scope(internal_isolate);
+  internal::HandleScope handle_scope;
+  internal::Handle<internal::PyObject> self = internal::handle(self_tagged);
+  std::string name_value = name->Value();
+  internal::Handle<internal::PyString> py_name =
+      internal::PyString::NewInstance(name_value.data(),
+                                      static_cast<int64_t>(name_value.size()));
+  internal::Handle<internal::PyObject> self_or_null;
+  internal::MaybeHandle<internal::PyObject> maybe_callee =
+      internal::PyObject::GetAttrForCall(
+          self,
+          internal::handle(
+              internal::Tagged<internal::PyObject>::cast(*py_name)),
+          self_or_null);
+  internal::Handle<internal::PyObject> callee;
+  if (!maybe_callee.ToHandle(&callee)) {
+    CapturePendingException(isolate);
+    return MaybeLocal<Value>();
+  }
+  internal::Handle<internal::PyTuple> py_args =
+      internal_isolate->factory()->NewPyTuple(argc);
+  for (int i = 0; i < argc; ++i) {
+    Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
+    py_args->SetInternal(i, ToInternalObject(isolate, arg));
+  }
+  internal::Handle<internal::PyDict> py_kwargs =
+      internal_isolate->factory()->NewPyDict(
+          internal::PyDict::kMinimumCapacity);
+  internal::Handle<internal::PyObject> py_receiver =
+      self_or_null.is_null()
+          ? internal::handle(internal::Tagged<internal::PyObject>::cast(
+                internal_isolate->py_none_object()))
+          : self_or_null;
+  internal::MaybeHandle<internal::PyObject> maybe_result =
+      internal::PyObject::Call(
+          internal_isolate, callee, py_receiver,
+          internal::handle(
+              internal::Tagged<internal::PyObject>::cast(*py_args)),
+          internal::handle(
+              internal::Tagged<internal::PyObject>::cast(*py_kwargs)));
+  internal::Handle<internal::PyObject> result;
+  if (!maybe_result.ToHandle(&result)) {
+    CapturePendingException(isolate);
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(WrapRuntimeResult(isolate, result));
+}
+
 Local<List> List::New(Isolate* isolate) {
   if (isolate == nullptr) {
     return Local<List>();
@@ -1059,6 +1314,30 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   internal::HandleScope handle_scope;
   internal::Handle<internal::PyTuple> tuple = internal::handle(tuple_tagged);
   return MaybeLocal<Value>(WrapRuntimeResult(isolate, tuple->Get(index)));
+}
+
+Local<Value> Exception::TypeError(Local<String> msg) {
+  if (msg.IsEmpty()) {
+    return Local<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(&*msg);
+  if (isolate == nullptr) {
+    return Local<Value>();
+  }
+  return Local<Value>::Cast(
+      String::New(isolate, "[TypeError] " + msg->Value()));
+}
+
+Local<Value> Exception::RuntimeError(Local<String> msg) {
+  if (msg.IsEmpty()) {
+    return Local<Value>();
+  }
+  Isolate* isolate = ApiAccess::GetValueIsolate(&*msg);
+  if (isolate == nullptr) {
+    return Local<Value>();
+  }
+  return Local<Value>::Cast(
+      String::New(isolate, "[RuntimeError] " + msg->Value()));
 }
 
 int FunctionCallbackInfo::Length() const {

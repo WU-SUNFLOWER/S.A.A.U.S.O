@@ -276,6 +276,85 @@ TEST(EmbedderPhase4Test, ObjectListTuple_RoundTrip) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, Object_CallMethod_Miss_Captured) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Object> obj = Object::New(isolate);
+    ASSERT_FALSE(obj.IsEmpty());
+    TryCatch try_catch(isolate);
+    MaybeLocal<Value> out =
+        obj->CallMethod(Context::New(isolate),
+                        String::New(isolate, "missing_method"), 0, nullptr);
+    EXPECT_TRUE(out.IsEmpty());
+    EXPECT_TRUE(try_catch.HasCaught());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
+TEST(EmbedderPhase4Test, Object_CallMethod_PythonInstanceMethod) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+    Local<Object> obj = Object::New(isolate);
+    ASSERT_FALSE(obj.IsEmpty());
+    EXPECT_TRUE(obj->Set(String::New(isolate, "k"),
+                         Local<Value>::Cast(Integer::New(isolate, 123))));
+    TryCatch call_try_catch(isolate);
+    Local<Value> get_argv[1] = {Local<Value>::Cast(String::New(isolate, "k"))};
+    MaybeLocal<Value> out =
+        obj->CallMethod(context, String::New(isolate, "get"), 1, get_argv);
+    ASSERT_FALSE(out.IsEmpty());
+    EXPECT_FALSE(call_try_catch.HasCaught());
+    Local<Value> value;
+    ASSERT_TRUE(out.ToLocal(&value));
+    int64_t got = 0;
+    EXPECT_TRUE(value->ToInteger(&got));
+    EXPECT_EQ(got, 123);
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+#endif
+
+TEST(EmbedderPhase4Test, FloatBoolean_RoundTrip) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Float> f = Float::New(isolate, 3.5);
+    ASSERT_FALSE(f.IsEmpty());
+    EXPECT_TRUE(Local<Value>::Cast(f)->IsFloat());
+    double fv = 0.0;
+    EXPECT_TRUE(Local<Value>::Cast(f)->ToFloat(&fv));
+    EXPECT_DOUBLE_EQ(fv, 3.5);
+
+    Local<Boolean> b = Boolean::New(isolate, true);
+    ASSERT_FALSE(b.IsEmpty());
+    EXPECT_TRUE(Local<Value>::Cast(b)->IsBoolean());
+    bool bv = false;
+    EXPECT_TRUE(Local<Value>::Cast(b)->ToBoolean(&bv));
+    EXPECT_TRUE(bv);
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 TEST(EmbedderPhase4Test, ListTuple_Get_OutOfRange_SafeReturn) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
@@ -333,9 +412,13 @@ TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
   {
     HandleScope scope(isolate);
     TryCatch try_catch(isolate);
-    isolate->ThrowException(Local<Value>::Cast(String::New(isolate, "boom")));
+    isolate->ThrowException(
+        Exception::RuntimeError(String::New(isolate, "boom")));
     EXPECT_TRUE(try_catch.HasCaught());
     EXPECT_FALSE(try_catch.Exception().IsEmpty());
+    std::string message;
+    EXPECT_TRUE(try_catch.Exception()->ToString(&message));
+    EXPECT_EQ(message, "[RuntimeError] boom");
   }
 
   isolate->Dispose();
