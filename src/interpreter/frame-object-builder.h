@@ -36,12 +36,14 @@ class FrameObjectBuilder {
   // - 遍历 actual_kw_args：若 key 命中形参则写入 localsplus，否则注入 **kwargs
   // 或报错。
   // - 支持默认参数回填、*args/**kwargs 的打包与注入。
-  static Maybe<FrameObject*> BuildSlowPath(Handle<PyFunction> func,
+  static Maybe<FrameObject*> BuildSlowPath(Isolate* isolate,
+                                           Handle<PyFunction> func,
                                            Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_pos_args,
                                            Handle<PyDict> actual_kw_args);
 
-  static Maybe<FrameObject*> BuildSlowPath(Handle<PyFunction> func,
+  static Maybe<FrameObject*> BuildSlowPath(Isolate* isolate,
+                                           Handle<PyFunction> func,
                                            Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_pos_args,
                                            Handle<PyDict> actual_kw_args,
@@ -51,12 +53,14 @@ class FrameObjectBuilder {
   // - 约定：所有 kw 值位于 actual_args 尾部，与 kwarg_keys 一一对应。
   // - 遍历 kwarg_keys（从尾部取 key/value），尽量用 tuple 索引完成处理。
   // - 同样支持默认参数回填、*args/**kwargs 的打包与注入。
-  static Maybe<FrameObject*> BuildFastPath(Handle<PyFunction> func,
+  static Maybe<FrameObject*> BuildFastPath(Isolate* isolate,
+                                           Handle<PyFunction> func,
                                            Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_args,
                                            Handle<PyTuple> kwarg_keys);
 
-  static Maybe<FrameObject*> BuildFastPath(Handle<PyFunction> func,
+  static Maybe<FrameObject*> BuildFastPath(Isolate* isolate,
+                                           Handle<PyFunction> func,
                                            Handle<PyObject> receiver,
                                            Handle<PyTuple> actual_args,
                                            Handle<PyTuple> kwarg_keys,

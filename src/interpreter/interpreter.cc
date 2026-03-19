@@ -84,9 +84,9 @@ Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
   FrameObject* frame;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, frame,
-      FrameObjectBuilder::BuildFastPath(boilerplate, Handle<PyObject>::null(),
-                                        Handle<PyTuple>::null(),
-                                        Handle<PyTuple>::null(), globals));
+      FrameObjectBuilder::BuildFastPath(
+          isolate_, boilerplate, Handle<PyObject>::null(),
+          Handle<PyTuple>::null(), Handle<PyTuple>::null(), globals));
 
   EnterFrame(frame);
   EvalCurrentFrame();
@@ -133,10 +133,11 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
     // 构建栈帧
-    ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
-                               FrameObjectBuilder::BuildSlowPath(
-                                   Handle<PyFunction>::cast(callable), receiver,
-                                   pos_args, kw_args, extend_args...));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate_, frame,
+        FrameObjectBuilder::BuildSlowPath(
+            isolate_, Handle<PyFunction>::cast(callable), receiver, pos_args,
+            kw_args, extend_args...));
 
     // 确保Python栈帧处理结束后能够退回到C++栈帧
     frame->set_is_entry_frame(true);

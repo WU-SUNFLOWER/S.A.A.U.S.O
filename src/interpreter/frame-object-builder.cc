@@ -349,15 +349,17 @@ ret:
 }  // namespace
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
+    Isolate* isolate,
     Handle<PyFunction> func,
     Handle<PyObject> receiver,
     Handle<PyTuple> actual_pos_args,
     Handle<PyDict> actual_kw_args) {
-  return BuildSlowPath(func, receiver, actual_pos_args, actual_kw_args,
+  return BuildSlowPath(isolate, func, receiver, actual_pos_args, actual_kw_args,
                        GetDefaultBoundLocals(func));
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
+    Isolate* isolate,
     Handle<PyFunction> func,
     Handle<PyObject> receiver,
     Handle<PyTuple> actual_pos_args,
@@ -366,8 +368,6 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   // 创建一般的 python 栈帧（慢速路径）。
   FrameBuildContext ctx = PrepareForFunction(func, receiver, bound_locals);
@@ -402,15 +402,17 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
+    Isolate* isolate,
     Handle<PyFunction> func,
     Handle<PyObject> receiver,
     Handle<PyTuple> actual_args,
     Handle<PyTuple> kwarg_keys) {
-  return BuildFastPath(func, receiver, actual_args, kwarg_keys,
+  return BuildFastPath(isolate, func, receiver, actual_args, kwarg_keys,
                        GetDefaultBoundLocals(func));
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
+    Isolate* isolate,
     Handle<PyFunction> func,
     Handle<PyObject> receiver,
     Handle<PyTuple> actual_args,
@@ -419,8 +421,6 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
   HandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   // 创建一般的 python 栈帧（快速路径）。
   FrameBuildContext ctx = PrepareForFunction(func, receiver, bound_locals);
