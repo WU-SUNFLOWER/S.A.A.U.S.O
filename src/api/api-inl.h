@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "include/saauso-embedder.h"
+#include "src/common/globals.h"
 #include "src/execution/isolate.h"
 
 namespace saauso {
@@ -18,20 +19,18 @@ struct ApiAccess {
     return Local<T>(ptr);
   }
 
-  static internal::Isolate* UnwrapIsolate(saauso::Isolate* isolate) {
+  static i::Isolate* UnwrapIsolate(saauso::Isolate* isolate) {
     if (isolate == nullptr) {
       return nullptr;
     }
-    return reinterpret_cast<internal::Isolate*>(isolate->internal_isolate_);
+    return reinterpret_cast<i::Isolate*>(isolate->internal_isolate_);
   }
 
-  static const internal::Isolate* UnwrapIsolate(
-      const saauso::Isolate* isolate) {
+  static const i::Isolate* UnwrapIsolate(const saauso::Isolate* isolate) {
     if (isolate == nullptr) {
       return nullptr;
     }
-    return reinterpret_cast<const internal::Isolate*>(
-        isolate->internal_isolate_);
+    return reinterpret_cast<const i::Isolate*>(isolate->internal_isolate_);
   }
 
   static std::vector<Value*>* ValueRegistry(saauso::Isolate* isolate) {

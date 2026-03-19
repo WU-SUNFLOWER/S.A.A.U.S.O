@@ -16,4 +16,6 @@ class AllStatic {
 
 }  // namespace saauso::internal
 
+namespace i = saauso::internal;
+
 #endif  // SAAUSO_COMMON_GLOBALS_H_
