@@ -30,6 +30,21 @@
             "environment": [],
             "console": "externalTerminal",
             "preLaunchTask": "Ninja Build Unittests"
+        },
+        {
+            "name": "(Windows) Embedder Demo Unittests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/out/embedder_demo/embedder_game_engine_demo.exe",
+            "args": [
+                "--gtest_break_on_failure",
+                "--gtest_catch_exceptions=0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/out/embedder_demo",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "Ninja Build EembedderDemo"
         }
     ]
 }

@@ -63,6 +63,36 @@
             },
             "dependsOn": "Gn Build Unittests",
             "problemMatcher": "$msCompile"
-        }
+        },
+        {
+            "label": "Gn Build EembedderDemo",
+            "type": "shell",
+            "command": "gn",
+            "args": [
+                "gen",
+                "${workspaceFolder}/out/embedder_demo",
+                "--args=is_debug=true"
+            ],
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Ninja Build EembedderDemo",
+            "type": "shell",
+            "command": "ninja",
+            "args": [
+                "-C",
+                "${workspaceFolder}/out/embedder_demo",
+                "embedder_game_engine_demo"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": "Gn Build EembedderDemo",
+            "problemMatcher": "$msCompile"
+        },
     ]
 }
