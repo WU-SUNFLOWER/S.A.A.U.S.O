@@ -11,16 +11,163 @@ S.A.A.U.S.O Embedder API 用于把脚本能力嵌入到 C++ 宿主程序中。
 4. 用 `TryCatch` 捕获错误
 5. 在 C++ 与脚本间交换 `String/Integer/Float/Boolean/Object/List/Tuple`
 
-## 2. 最小接入流程
+## 1.1 零基础先懂这些概念
 
-1. 初始化运行时：`Saauso::Initialize()`
-2. 创建隔离实例：`Isolate::New()`
-3. 进入作用域：`HandleScope`
-4. 创建上下文：`Context::New()`
-5. 通过 `Context::Set/Get` 或 `Context::Global()` 注入/读取全局变量
-6. 如开启前端编译能力，调用 `Script::Compile` + `Run`
-7. 用 `TryCatch` 观察失败路径
-8. 结束时 `isolate->Dispose()` + `Saauso::Dispose()`
+如果你把“脚本引擎”看成一个小型可编程系统，可以这样理解：
+
+1. `Isolate`：一个独立“脚本世界”
+   - 它是最外层运行容器，里面有自己的对象、异常状态和执行上下文。
+   - 一个 `Isolate` 崩溃或抛错，不会自动影响另一个 `Isolate`。
+   - 实践中通常是“每个业务沙箱/插件系统一个 Isolate”。
+
+2. `Context`：这个世界里的“当前工作环境”
+   - 你可以把它理解成一张全局变量表（globals）+ 当前执行语境。
+   - `Context::Set/Get` 是快捷读写；`Context::Global()` 返回 `Object` 让你做更丰富操作（如 `CallMethod`）。
+   - 脚本里写的全局函数/变量，本质都挂在这个环境上。
+
+3. `Script`：待执行的脚本文本
+   - `Script::Compile` 相当于“把字符串脚本编译成可执行对象”。
+   - `Run` 才是真正执行。
+   - 任何一步失败都可能返回空 `MaybeLocal`，并由 `TryCatch` 捕获错误。
+
+4. `Local<T>`：一个“受作用域管理”的安全引用
+   - 它不是裸指针，而是 API 层的句柄包装。
+   - `Local<T>` 的生命周期受 `HandleScope` 管理，离开作用域后不应继续使用。
+   - 这样做是为了防止内存泄漏和悬挂引用。
+
+5. `MaybeLocal<T>`：可能有值，也可能失败
+   - 成功时可 `ToLocal` 取出结果。
+   - 失败时是空值（`IsEmpty()==true`），必须配合 `TryCatch` 看具体异常。
+   - 这是 Embedder API 里最重要的防御式调用约定。
+
+6. `HandleScope`：一段“临时对象自动回收区间”
+   - 在这段区间创建的包装对象会被统一管理。
+   - 区间结束自动回收，避免长期累积导致内存膨胀。
+   - `EscapableHandleScope` 则允许你把一个返回值“逃逸”到外层继续使用。
+
+7. `TryCatch`：错误观察器
+   - 只要你要调用可能失败的 API（编译、运行、方法调用），就建议先创建 `TryCatch`。
+   - 调用后检查 `HasCaught()`，这是判定“脚本侧是否抛错”的标准方式。
+
+一句话串起来：  
+`Isolate` 提供运行沙箱，`Context` 提供全局环境，`Script` 提供可执行逻辑，`Local/MaybeLocal` 提供安全结果传递，`HandleScope/TryCatch` 提供内存与异常保障。
+
+## 2. 5 分钟上手（带代码片段）
+
+下面这段代码就是一个最小可运行模板：初始化引擎、创建上下文、注入一个全局值、执行脚本、读取结果、处理异常、最后释放资源。
+
+```cpp
+#include "saauso-embedder.h"
+#include "saauso.h"
+
+int main() {
+  saauso::Saauso::Initialize();
+  saauso::Isolate* isolate = saauso::Isolate::New();
+  if (isolate == nullptr) return 1;
+
+  {
+    saauso::HandleScope scope(isolate);
+    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
+    if (context.IsEmpty()) return 1;
+
+    context->Set(saauso::String::New(isolate, "hp"),
+                 saauso::Local<saauso::Value>::Cast(saauso::Integer::New(isolate, 100)));
+
+    saauso::TryCatch try_catch(isolate);
+    saauso::MaybeLocal<saauso::Script> maybe_script =
+        saauso::Script::Compile(isolate, saauso::String::New(isolate, "hp = hp - 10\n"));
+    if (maybe_script.IsEmpty() || try_catch.HasCaught()) return 1;
+
+    saauso::MaybeLocal<saauso::Value> run_result = maybe_script.ToLocalChecked()->Run(context);
+    if (run_result.IsEmpty() || try_catch.HasCaught()) return 1;
+
+    saauso::MaybeLocal<saauso::Value> hp_value = context->Get(saauso::String::New(isolate, "hp"));
+    if (!hp_value.IsEmpty()) {
+      int64_t hp = 0;
+      saauso::Local<saauso::Value> hp_local;
+      if (hp_value.ToLocal(&hp_local) && hp_local->ToInteger(&hp)) {
+      }
+    }
+  }
+
+  isolate->Dispose();
+  saauso::Saauso::Dispose();
+  return 0;
+}
+```
+
+你可以按这个顺序记忆：
+
+1. `Initialize`：启动运行时
+2. `Isolate::New`：创建脚本沙箱
+3. `HandleScope + Context::New`：进入受控作用域并拿到执行环境
+4. `Set/Get`：和脚本共享数据
+5. `Compile + Run`：执行脚本逻辑
+6. `TryCatch + MaybeLocal`：捕获失败，避免崩溃式调用
+7. `Dispose`：释放资源
+
+当你需要更复杂交互时，把第 4 步从 `Context::Set/Get` 升级为 `Context::Global()` + `Object::CallMethod`，即可实现“对象式 API 调用”。
+
+## 2.1 5 分钟上手（回调版）
+
+这一版演示最关键能力：用 `Function::New` 把 C++ 回调注入到脚本，然后由脚本反向调用宿主。
+
+```cpp
+#include "saauso-embedder.h"
+#include "saauso.h"
+
+namespace {
+int64_t g_last_damage = 0;
+
+void HostApplyDamage(saauso::FunctionCallbackInfo& info) {
+  int64_t damage = 0;
+  if (!info.GetIntegerArg(0, &damage)) {
+    info.ThrowRuntimeError("ApplyDamage expects integer");
+    return;
+  }
+  g_last_damage = damage;
+  info.SetReturnValue(
+      saauso::Local<saauso::Value>::Cast(saauso::Integer::New(info.GetIsolate(), damage)));
+}
+}  // namespace
+
+int main() {
+  saauso::Saauso::Initialize();
+  saauso::Isolate* isolate = saauso::Isolate::New();
+  if (isolate == nullptr) return 1;
+
+  {
+    saauso::HandleScope scope(isolate);
+    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
+    if (context.IsEmpty()) return 1;
+
+    saauso::Local<saauso::Function> apply_damage =
+        saauso::Function::New(isolate, &HostApplyDamage, "ApplyDamage");
+    context->Set(saauso::String::New(isolate, "ApplyDamage"),
+                 saauso::Local<saauso::Value>::Cast(apply_damage));
+
+    saauso::TryCatch try_catch(isolate);
+    saauso::MaybeLocal<saauso::Script> maybe_script = saauso::Script::Compile(
+        isolate, saauso::String::New(isolate, "ApplyDamage(25)\n"));
+    if (maybe_script.IsEmpty() || try_catch.HasCaught()) return 1;
+    if (maybe_script.ToLocalChecked()->Run(context).IsEmpty() ||
+        try_catch.HasCaught()) {
+      return 1;
+    }
+  }
+
+  isolate->Dispose();
+  saauso::Saauso::Dispose();
+  return g_last_damage == 25 ? 0 : 1;
+}
+```
+
+回调版你只要记住 4 步：
+
+1. 定义 C++ 回调函数（从 `FunctionCallbackInfo` 取参数、设返回值）
+2. 用 `Function::New` 生成函数对象
+3. `Context::Set` 注入到脚本全局
+4. 脚本里直接调用该函数，必要时用 `TryCatch` 观察异常
 
 ## 3. 常用 API 速览
 
