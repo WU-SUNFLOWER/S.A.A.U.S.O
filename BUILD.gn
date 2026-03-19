@@ -6,6 +6,10 @@ config("saauso_includes") {
   include_dirs = [ "//" ]
 }
 
+config("saauso_public_api_includes") {
+  include_dirs = [ "//include" ]
+}
+
 # 将核心代码定义为 source_set 或 static_library
 # source_set 在 Chromium 中更常用，因为它只是逻辑上的分组，不生成 .a/.lib
 source_set("saauso_core") {
@@ -288,6 +292,20 @@ source_set("saauso_cpython312_compiler") {
   }
 }
 
+source_set("embedder_api") {
+  sources = [
+    "//include/saauso-embedder.h",
+    "//include/saauso.h",
+    "//src/api/api-inl.h",
+    "//src/api/api.cc",
+  ]
+  deps = [ ":saauso_core" ]
+  if (saauso_enable_cpython_compiler) {
+    deps += [ ":saauso_cpython312_compiler" ]
+  }
+  public_configs = [ ":saauso_public_api_includes" ]
+}
+
 executable("vm") {
   sources = [ "//src/main.cc" ]
   deps = [ ":saauso_core" ]
@@ -296,7 +314,26 @@ executable("vm") {
   }
 }
 
+executable("embedder_hello_world") {
+  testonly = true
+  sources = [ "//examples/embedder/hello_world.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+action("embedder_header_boundary_check") {
+  testonly = true
+  script = "//build/check_embedder_includes.py"
+  sources = [ "//examples/embedder/hello_world.cc" ]
+  outputs = [ "$target_gen_dir/embedder_header_boundary_check.stamp" ]
+  args = [ rebase_path(outputs[0], root_build_dir) ] +
+         rebase_path(sources, root_build_dir)
+}
+
 group("ut") {
   testonly = true
-  deps = [ "//test/unittests:ut" ]
+  deps = [
+    ":embedder_header_boundary_check",
+    "//test/embedder:embedder_ut",
+    "//test/unittests:ut",
+  ]
 }
