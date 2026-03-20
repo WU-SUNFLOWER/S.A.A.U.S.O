@@ -233,7 +233,7 @@ int main() {
 
 ## 7. 接入建议
 
-1. 先用 `examples/embedder/hello_world.cc` 跑通生命周期。
-2. 再跑 `examples/embedder/game_engine_demo.cc` 验证互调能力。
+1. 先用 `samples/hello-world.cc` 跑通生命周期。
+2. 再跑 `samples/game_engine_demo.cc` 验证互调能力。
 3. 在业务代码里统一封装 `TryCatch` + `MaybeLocal` 判空模板，避免漏判。
 4. 对宿主回调参数做显式校验，错误统一走 `ThrowRuntimeError` 或 `Exception` 工厂。
