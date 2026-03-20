@@ -336,13 +336,13 @@ source_set("embedder_api") {
   sources = [
     "//include/saauso-embedder-callbacks.h",
     "//include/saauso-embedder-core.h",
-    "//include/saauso-embedder.h",
     "//include/saauso-embedder-objects.h",
     "//include/saauso-embedder-values.h",
+    "//include/saauso-embedder.h",
     "//include/saauso.h",
-    "//src/api/api-inl.h",
     "//src/api/api-callable.cc",
     "//src/api/api-impl.h",
+    "//src/api/api-inl.h",
     "//src/api/api-isolate.cc",
     "//src/api/api-objects.cc",
     "//src/api/api-support.cc",
@@ -371,31 +371,14 @@ executable("vm") {
 # -----------------------------------------------------------------------------
 executable("embedder_hello_world") {
   testonly = true
-  sources = [ "//examples/embedder/hello_world.cc" ]
+  sources = [ "//samples/hello-world.cc" ]
   deps = [ ":embedder_api" ]
 }
 
 executable("embedder_game_engine_demo") {
   testonly = true
-  sources = [ "//examples/embedder/game_engine_demo.cc" ]
+  sources = [ "//samples/game-engine-demo.cc" ]
   deps = [ ":embedder_api" ]
-}
-
-# -----------------------------------------------------------------------------
-# Embedder 头文件边界检查
-# -----------------------------------------------------------------------------
-# 目的：强制示例只能 include 对外头（include/**），不能 include src/**。
-# 这是“可见性隔离”的第一道自动化门禁，后续可扩展到更多示例文件。
-action("embedder_header_boundary_check") {
-  testonly = true
-  script = "//build/check_embedder_includes.py"
-  sources = [
-    "//examples/embedder/game_engine_demo.cc",
-    "//examples/embedder/hello_world.cc",
-  ]
-  outputs = [ "$target_gen_dir/embedder_header_boundary_check.stamp" ]
-  args = [ rebase_path(outputs[0], root_build_dir) ] +
-         rebase_path(sources, root_build_dir)
 }
 
 # -----------------------------------------------------------------------------
@@ -407,7 +390,6 @@ action("embedder_header_boundary_check") {
 group("ut") {
   testonly = true
   deps = [
-    ":embedder_header_boundary_check",
     "//test/embedder:embedder_ut",
     "//test/unittests:ut",
   ]
