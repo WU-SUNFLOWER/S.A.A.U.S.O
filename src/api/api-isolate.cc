@@ -1,3 +1,4 @@
+#include <cassert>
 #include <vector>
 
 #include "src/api/api-impl.h"
@@ -84,33 +85,21 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
   auto* isolate = new Isolate();
   isolate->internal_isolate_ = internal_isolate;
   isolate->values_ = new std::vector<Value*>();
-  isolate->default_context_ = new Context(isolate);
-  ApiAccess::SetValueIsolate(isolate->default_context_, isolate);
-  {
-    i::Isolate::Scope isolate_scope(internal_isolate);
-    i::HandleScope handle_scope;
-    i::Handle<i::PyDict> globals =
-        internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
-    ApiAccess::SetContextImpl(isolate->default_context_,
-                              new api::ContextImpl(globals));
-  }
+  isolate->contexts_ = new std::vector<Context*>();
+  isolate->entered_contexts_ = new std::vector<Context*>();
   return isolate;
 }
 
 void Isolate::Dispose() {
   auto* internal_isolate = ApiAccess::UnwrapIsolate(this);
-  auto* context_impl =
-      reinterpret_cast<api::ContextImpl*>(ApiAccess::GetContextImpl(default_context_));
-  delete context_impl;
-  ApiAccess::SetContextImpl(default_context_, nullptr);
-  delete default_context_;
-  default_context_ = nullptr;
+  ApiAccess::DeleteEnteredContextStack(this);
   if (auto* registry = ApiAccess::ValueRegistry(this); registry != nullptr) {
     for (Value* value : *registry) {
       api::DestroyValue(value);
     }
   }
   ApiAccess::DeleteRegisteredValues(this);
+  ApiAccess::DeleteRegisteredContexts(this);
   api::ReleaseCallbackBindingsForIsolate(this);
   i::Isolate::Dispose(internal_isolate);
   internal_isolate_ = nullptr;
@@ -177,22 +166,50 @@ Local<Context> Context::New(Isolate* isolate) {
   if (isolate == nullptr) {
     return Local<Context>();
   }
-  return Local<Context>(isolate->default_context_);
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return Local<Context>();
+  }
+  auto* context = new Context(isolate);
+  ApiAccess::RegisterValue(isolate, context);
+  ApiAccess::RegisterContext(isolate, context);
+  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::HandleScope handle_scope;
+  i::Handle<i::PyDict> globals =
+      internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
+  ApiAccess::SetContextImpl(context, new api::ContextImpl(globals));
+  return ApiAccess::MakeLocal(context);
 }
 
 void Context::Enter() {
-  auto* internal_isolate =
-      ApiAccess::UnwrapIsolate(ApiAccess::GetValueIsolate(this));
-  if (internal_isolate != nullptr) {
-    internal_isolate->Enter();
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  auto* entered_contexts = ApiAccess::EnteredContextStack(isolate);
+  if (internal_isolate != nullptr && entered_contexts != nullptr) {
+    if (entered_contexts->empty()) {
+      internal_isolate->Enter();
+    }
+    entered_contexts->push_back(this);
   }
 }
 
 void Context::Exit() {
-  auto* internal_isolate =
-      ApiAccess::UnwrapIsolate(ApiAccess::GetValueIsolate(this));
-  if (internal_isolate != nullptr) {
-    internal_isolate->Exit();
+  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  auto* entered_contexts = ApiAccess::EnteredContextStack(isolate);
+  if (internal_isolate != nullptr && entered_contexts != nullptr) {
+    if (entered_contexts->empty()) {
+      assert(false);
+      return;
+    }
+    if (entered_contexts->back() != this) {
+      assert(false);
+      return;
+    }
+    entered_contexts->pop_back();
+    if (entered_contexts->empty()) {
+      internal_isolate->Exit();
+    }
   }
 }
 

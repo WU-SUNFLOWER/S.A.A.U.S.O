@@ -32,4 +32,26 @@ TEST(EmbedderPhase1Test, CreateHandleScopeAndContext) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase1Test, ContextScope_NestedLifo) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context_a = Context::New(isolate);
+    Local<Context> context_b = Context::New(isolate);
+    ASSERT_FALSE(context_a.IsEmpty());
+    ASSERT_FALSE(context_b.IsEmpty());
+    {
+      ContextScope scope_a(context_a);
+      context_b->Enter();
+      context_b->Exit();
+    }
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 }  // namespace saauso

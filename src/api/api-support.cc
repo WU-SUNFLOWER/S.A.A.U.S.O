@@ -52,7 +52,37 @@ void DestroyValue(Value* value) {
   if (value == nullptr) {
     return;
   }
-  delete reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
+  Isolate* isolate = ApiAccess::GetValueIsolate(value);
+  Context* context = nullptr;
+  if (isolate != nullptr) {
+    if (auto* contexts = ApiAccess::ContextRegistry(isolate);
+        contexts != nullptr) {
+      for (Context* candidate : *contexts) {
+        if (static_cast<Value*>(candidate) == value) {
+          context = candidate;
+          break;
+        }
+      }
+    }
+  }
+  if (context != nullptr) {
+    delete reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(context));
+    if (isolate != nullptr) {
+      ApiAccess::UnregisterContext(isolate, context);
+      if (auto* entered = ApiAccess::EnteredContextStack(isolate);
+          entered != nullptr) {
+        for (auto it = entered->begin(); it != entered->end();) {
+          if (*it == context) {
+            it = entered->erase(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+    }
+  } else {
+    delete reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
+  }
   ApiAccess::SetValueImpl(value, nullptr);
   ApiAccess::DeleteValue(value);
 }
@@ -124,7 +154,8 @@ i::Handle<i::PyObject> ToInternalObject(Isolate* isolate, Local<Value> value) {
       i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
 }
 
-Local<Value> WrapRuntimeResult(Isolate* isolate, i::Handle<i::PyObject> result) {
+Local<Value> WrapRuntimeResult(Isolate* isolate,
+                               i::Handle<i::PyObject> result) {
   if (result.is_null()) {
     return Local<Value>();
   }

@@ -115,8 +115,9 @@ class Isolate {
   Isolate() = default;
 
   void* internal_isolate_{nullptr};
-  Context* default_context_{nullptr};
   void* values_{nullptr};
+  void* contexts_{nullptr};
+  void* entered_contexts_{nullptr};
   TryCatch* try_catch_top_{nullptr};
 
   friend class Context;

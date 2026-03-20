@@ -23,7 +23,8 @@ S.A.A.U.S.O Embedder API 用于把脚本能力嵌入到 C++ 宿主程序中。
 2. `Context`：这个世界里的“当前工作环境”
    - 你可以把它理解成一张全局变量表（globals）+ 当前执行语境。
    - `Context::Set/Get` 是快捷读写；`Context::Global()` 返回 `Object` 让你做更丰富操作（如 `CallMethod`）。
-   - 脚本里写的全局函数/变量，本质都挂在这个环境上。
+   - `Context::New` 每次都会创建一个独立 globals，不同 Context 之间默认隔离。
+   - 脚本里写的全局函数/变量，本质都挂在当前运行的这个环境上。
 
 3. `Script`：待执行的脚本文本
    - `Script::Compile` 相当于“把字符串脚本编译成可执行对象”。
@@ -178,14 +179,30 @@ int main() {
 3. `Context::New/Enter/Exit`
 4. `Context::Global`（返回全局字典对应的 `Object`）
 
-### 3.2 值类型
+### 3.2 Context 适用场景与语义
+
+1. `Context::New` 语义
+   - 每次调用都创建一个新的执行环境（独立 globals）。
+   - 适用于“同一 Isolate 下多业务域隔离”（如房间、插件、会话、脚本租户）。
+
+2. `Enter/Exit` 语义
+   - 每个 Isolate 内维护 Context 栈，`Enter` 入栈，`Exit` 只允许退出栈顶 Context（LIFO）。
+   - `ContextScope` 是 RAII 版本：构造时 `Enter`，析构时 `Exit`。
+   - 建议优先使用 `ContextScope`，避免手动配对错误。
+
+3. 隔离效果
+   - 变量隔离：`context_a` 的全局变量不会出现在 `context_b`。
+   - 回调绑定隔离：只注入到 `context_a` 的宿主函数不会自动出现在 `context_b`。
+   - 异常隔离：某个 Context 中的脚本失败不会污染另一个 Context 的后续执行路径。
+
+### 3.3 值类型
 
 1. `String` / `Integer` / `Float` / `Boolean`
 2. `Object`：`Set/Get/CallMethod`
 3. `List`：`Length/Push/Set/Get`
 4. `Tuple`：`New/Length/Get`
 
-### 3.3 回调与异常
+### 3.4 回调与异常
 
 1. `Function::New`（注册宿主回调）
 2. `Function::Call`
@@ -203,7 +220,7 @@ int main() {
 
 ## 5. 一个实战 Demo 在哪里
 
-1. 文件：`examples/embedder/game_engine_demo.cc`
+1. 文件：`samples/game_engine_demo.cc`
 2. 场景：宿主提供 `GetPlayerHealth/SetPlayerStatus`，Python 脚本实现怪物 AI 的 `on_update`。
 3. 重点：演示 C++ -> Python -> C++ 双向调用，以及错误捕获路径。
 
@@ -235,5 +252,7 @@ int main() {
 
 1. 先用 `samples/hello-world.cc` 跑通生命周期。
 2. 再跑 `samples/game_engine_demo.cc` 验证互调能力。
-3. 在业务代码里统一封装 `TryCatch` + `MaybeLocal` 判空模板，避免漏判。
-4. 对宿主回调参数做显式校验，错误统一走 `ThrowRuntimeError` 或 `Exception` 工厂。
+3. 一组隔离业务使用多个 `Context`，不要复用同一个 globals 承载不同租户状态。
+4. 统一使用 `ContextScope` 管理 Enter/Exit，避免手工错序退出。
+5. 在业务代码里统一封装 `TryCatch` + `MaybeLocal` 判空模板，避免漏判。
+6. 对宿主回调参数做显式校验，错误统一走 `ThrowRuntimeError` 或 `Exception` 工厂。

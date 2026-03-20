@@ -302,6 +302,125 @@ TEST(EmbedderPhase4Test, Context_Global_ObjectBridge) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, MultiContext_VariableIsolation) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context_a = Context::New(isolate);
+    Local<Context> context_b = Context::New(isolate);
+    ASSERT_FALSE(context_a.IsEmpty());
+    ASSERT_FALSE(context_b.IsEmpty());
+
+    EXPECT_TRUE(context_a->Set(String::New(isolate, "score"),
+                               Local<Value>::Cast(Integer::New(isolate, 7))));
+
+    MaybeLocal<Value> score_a = context_a->Get(String::New(isolate, "score"));
+    ASSERT_FALSE(score_a.IsEmpty());
+    Local<Value> score_a_local;
+    ASSERT_TRUE(score_a.ToLocal(&score_a_local));
+    int64_t score = 0;
+    EXPECT_TRUE(score_a_local->ToInteger(&score));
+    EXPECT_EQ(score, 7);
+
+    MaybeLocal<Value> score_b = context_b->Get(String::New(isolate, "score"));
+    EXPECT_TRUE(score_b.IsEmpty());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(EmbedderPhase4Test, MultiContext_CallbackBindingIsolation) {
+  g_last_status = -1;
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context_a = Context::New(isolate);
+    Local<Context> context_b = Context::New(isolate);
+    ASSERT_FALSE(context_a.IsEmpty());
+    ASSERT_FALSE(context_b.IsEmpty());
+
+    Local<Function> host_set_status =
+        Function::New(isolate, &HostSetStatus, "Host_SetStatus");
+    ASSERT_FALSE(host_set_status.IsEmpty());
+    EXPECT_TRUE(context_a->Set(String::New(isolate, "Host_SetStatus"),
+                               Local<Value>::Cast(host_set_status)));
+
+    MaybeLocal<Value> missing =
+        context_b->Get(String::New(isolate, "Host_SetStatus"));
+    EXPECT_TRUE(missing.IsEmpty());
+
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
+    Local<String> source = String::New(isolate, "Host_SetStatus(123)\n");
+    ASSERT_FALSE(source.IsEmpty());
+    MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
+    ASSERT_FALSE(maybe_script.IsEmpty());
+
+    TryCatch ok_try_catch(isolate);
+    MaybeLocal<Value> run_a = maybe_script.ToLocalChecked()->Run(context_a);
+    ASSERT_FALSE(run_a.IsEmpty());
+    EXPECT_FALSE(ok_try_catch.HasCaught());
+    EXPECT_EQ(g_last_status, 123);
+
+    TryCatch fail_try_catch(isolate);
+    MaybeLocal<Value> run_b = maybe_script.ToLocalChecked()->Run(context_b);
+    EXPECT_TRUE(run_b.IsEmpty());
+    EXPECT_TRUE(fail_try_catch.HasCaught());
+    EXPECT_EQ(g_last_status, 123);
+#endif
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
+TEST(EmbedderPhase4Test, MultiContext_ExceptionIsolation) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<Context> context_a = Context::New(isolate);
+    Local<Context> context_b = Context::New(isolate);
+    ASSERT_FALSE(context_a.IsEmpty());
+    ASSERT_FALSE(context_b.IsEmpty());
+
+    Local<String> bad_source = String::New(isolate, "not_defined_name\n");
+    Local<String> good_source = String::New(isolate, "ok = 1\n");
+    ASSERT_FALSE(bad_source.IsEmpty());
+    ASSERT_FALSE(good_source.IsEmpty());
+
+    MaybeLocal<Script> maybe_bad_script = Script::Compile(isolate, bad_source);
+    MaybeLocal<Script> maybe_good_script =
+        Script::Compile(isolate, good_source);
+    ASSERT_FALSE(maybe_bad_script.IsEmpty());
+    ASSERT_FALSE(maybe_good_script.IsEmpty());
+
+    TryCatch bad_try_catch(isolate);
+    MaybeLocal<Value> bad_run = maybe_bad_script.ToLocalChecked()->Run(context_a);
+    EXPECT_TRUE(bad_run.IsEmpty());
+    EXPECT_TRUE(bad_try_catch.HasCaught());
+
+    TryCatch good_try_catch(isolate);
+    MaybeLocal<Value> good_run =
+        maybe_good_script.ToLocalChecked()->Run(context_b);
+    EXPECT_FALSE(good_run.IsEmpty());
+    EXPECT_FALSE(good_try_catch.HasCaught());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+#endif
+
 TEST(EmbedderPhase4Test, Object_CallMethod_Miss_Captured) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();

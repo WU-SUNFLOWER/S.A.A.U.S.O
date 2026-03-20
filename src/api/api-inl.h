@@ -57,6 +57,28 @@ struct ApiAccess {
     value->isolate_ = isolate;
   }
 
+  static std::vector<Context*>* ContextRegistry(saauso::Isolate* isolate) {
+    if (isolate == nullptr) {
+      return nullptr;
+    }
+    return reinterpret_cast<std::vector<Context*>*>(isolate->contexts_);
+  }
+
+  static const std::vector<Context*>* ContextRegistry(
+      const saauso::Isolate* isolate) {
+    if (isolate == nullptr) {
+      return nullptr;
+    }
+    return reinterpret_cast<const std::vector<Context*>*>(isolate->contexts_);
+  }
+
+  static std::vector<Context*>* EnteredContextStack(saauso::Isolate* isolate) {
+    if (isolate == nullptr) {
+      return nullptr;
+    }
+    return reinterpret_cast<std::vector<Context*>*>(isolate->entered_contexts_);
+  }
+
   static void DeleteRegisteredValues(saauso::Isolate* isolate) {
     auto* registry = ValueRegistry(isolate);
     if (registry == nullptr) {
@@ -65,6 +87,47 @@ struct ApiAccess {
     registry->clear();
     delete registry;
     isolate->values_ = nullptr;
+  }
+
+  static void RegisterContext(saauso::Isolate* isolate, Context* context) {
+    auto* registry = ContextRegistry(isolate);
+    if (registry == nullptr || context == nullptr) {
+      return;
+    }
+    registry->push_back(context);
+  }
+
+  static void UnregisterContext(saauso::Isolate* isolate, Context* context) {
+    auto* registry = ContextRegistry(isolate);
+    if (registry == nullptr || context == nullptr) {
+      return;
+    }
+    for (auto it = registry->begin(); it != registry->end(); ++it) {
+      if (*it == context) {
+        registry->erase(it);
+        break;
+      }
+    }
+  }
+
+  static void DeleteRegisteredContexts(saauso::Isolate* isolate) {
+    auto* registry = ContextRegistry(isolate);
+    if (registry == nullptr) {
+      return;
+    }
+    registry->clear();
+    delete registry;
+    isolate->contexts_ = nullptr;
+  }
+
+  static void DeleteEnteredContextStack(saauso::Isolate* isolate) {
+    auto* entered_contexts = EnteredContextStack(isolate);
+    if (entered_contexts == nullptr) {
+      return;
+    }
+    entered_contexts->clear();
+    delete entered_contexts;
+    isolate->entered_contexts_ = nullptr;
   }
 
   static TryCatch* TryCatchTop(saauso::Isolate* isolate) {
