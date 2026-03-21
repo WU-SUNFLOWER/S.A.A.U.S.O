@@ -9,12 +9,14 @@ namespace saauso {
 Local<Function> Function::New(Isolate* isolate,
                               FunctionCallback callback,
                               std::string_view name) {
+  auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Isolate::Scope isolate_scope(internal_isolate);
+
   if (isolate == nullptr || callback == nullptr) {
     return Local<Function>();
   }
+
   int64_t binding_id = api::RegisterCallbackBinding(isolate, callback);
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyString> py_name =
       i::PyString::NewInstance(name.data(), static_cast<int64_t>(name.size()));
@@ -26,7 +28,7 @@ Local<Function> Function::New(Isolate* isolate,
       internal_isolate->factory()->NewPyFunctionWithTemplate(template_info);
   i::Handle<i::PyFunction> function;
   if (!maybe_function.ToHandle(&function)) {
-    api::CapturePendingException(isolate);
+    api::CapturePendingException(internal_isolate);
     return Local<Function>();
   }
   i::Handle<i::PyObject> escaped =
@@ -41,23 +43,24 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
   if (context.IsEmpty()) {
     return MaybeLocal<Value>();
   }
-  Isolate* isolate = api::CurrentPublicIsolate();
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+
+  i::Isolate* isolate = i::Isolate::Current();
+
   i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(context);
-  if (internal_isolate == nullptr || context_object.is_null() ||
+  if (isolate == nullptr || context_object.is_null() ||
       !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
-  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::Isolate::Scope isolate_scope(isolate);
   i::EscapableHandleScope handle_scope;
-  i::Handle<i::PyTuple> py_args = internal_isolate->factory()->NewPyTuple(argc);
+  i::Handle<i::PyTuple> py_args = isolate->factory()->NewPyTuple(argc);
   for (int i = 0; i < argc; ++i) {
     Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
     i::Handle<i::PyObject> py_arg = api::ToInternalObject(isolate, arg);
     py_args->SetInternal(i, *py_arg);
   }
   i::Handle<i::PyDict> py_kwargs =
-      internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
+      isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> function_object = internal::Utils::OpenHandle(this);
   if (function_object.is_null()) {
     return MaybeLocal<Value>();
@@ -66,7 +69,7 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
       receiver.IsEmpty() ? i::Handle<i::PyObject>::null()
                          : api::ToInternalObject(isolate, receiver);
   i::MaybeHandle<i::PyObject> maybe_result =
-      i::PyObject::Call(internal_isolate, function_object, py_receiver,
+      i::PyObject::Call(isolate, function_object, py_receiver,
                         i::handle(i::Tagged<i::PyObject>::cast(*py_args)),
                         i::handle(i::Tagged<i::PyObject>::cast(*py_kwargs)));
   i::Handle<i::PyObject> result;
@@ -82,24 +85,20 @@ Local<Value> Exception::TypeError(Local<String> msg) {
   if (msg.IsEmpty()) {
     return Local<Value>();
   }
-  Isolate* isolate = api::CurrentPublicIsolate();
-  if (isolate == nullptr) {
-    return Local<Value>();
-  }
-  return Local<Value>::Cast(
-      String::New(isolate, "[TypeError] " + msg->Value()));
+
+  i::Isolate* isolate = i::Isolate::Current();
+  return Local<Value>::Cast(String::New(reinterpret_cast<Isolate*>(isolate),
+                                        "[TypeError] " + msg->Value()));
 }
 
 Local<Value> Exception::RuntimeError(Local<String> msg) {
   if (msg.IsEmpty()) {
     return Local<Value>();
   }
-  Isolate* isolate = api::CurrentPublicIsolate();
-  if (isolate == nullptr) {
-    return Local<Value>();
-  }
-  return Local<Value>::Cast(
-      String::New(isolate, "[RuntimeError] " + msg->Value()));
+
+  i::Isolate* isolate = i::Isolate::Current();
+  return Local<Value>::Cast(String::New(reinterpret_cast<Isolate*>(isolate),
+                                        "[RuntimeError] " + msg->Value()));
 }
 
 int FunctionCallbackInfo::Length() const {

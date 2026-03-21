@@ -80,12 +80,11 @@ struct CallbackBinding {
 
 int64_t RegisterCallbackBinding(Isolate* isolate, FunctionCallback callback);
 void ReleaseCallbackBindingsForIsolate(Isolate* isolate);
-i::Handle<i::PyObject> ToInternalObject(Isolate* isolate, Local<Value> value);
+i::Handle<i::PyObject> ToInternalObject(i::Isolate* isolate,
+                                        Local<Value> value);
 Local<Value> WrapRuntimeResult(Isolate* isolate, i::Handle<i::PyObject> result);
-bool CapturePendingException(Isolate* isolate);
-void RegisterPublicIsolate(Isolate* isolate);
-void UnregisterPublicIsolate(Isolate* isolate);
-Isolate* CurrentPublicIsolate();
+bool CapturePendingException(i::Isolate* isolate);
+
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
     i::Isolate* internal_isolate,
     i::Handle<i::PyObject> receiver,
@@ -97,20 +96,16 @@ Local<Script> WrapScriptSource(Isolate* isolate, std::string source);
 #endif
 
 template <typename T>
-Local<T> WrapObject(Isolate* isolate, i::Handle<i::PyObject> object) {
-  if (isolate == nullptr || object.is_null()) {
-    return Local<T>();
-  }
+Local<T> WrapObject(i::Isolate* isolate, i::Handle<i::PyObject> object) {
   return internal::Utils::ToLocal<T>(object);
 }
 
 template <typename T>
-Local<T> WrapHostString(Isolate* isolate, std::string value) {
+Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::Isolate::Scope isolate_scope(isolate);
   i::EscapableHandleScope scope;
   i::Handle<i::PyString> py_string = i::PyString::NewInstance(
       value.data(), static_cast<int64_t>(value.size()));
@@ -120,12 +115,11 @@ Local<T> WrapHostString(Isolate* isolate, std::string value) {
 }
 
 template <typename T>
-Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
+Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::Isolate::Scope isolate_scope(isolate);
   i::EscapableHandleScope scope;
   i::Handle<i::PyObject> smi =
       i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)));
@@ -134,31 +128,27 @@ Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
 }
 
 template <typename T>
-Local<T> WrapHostFloat(Isolate* isolate, double value) {
+Local<T> WrapHostFloat(i::Isolate* isolate, double value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::Isolate::Scope isolate_scope(isolate);
   i::EscapableHandleScope scope;
-  i::Handle<i::PyFloat> py_float =
-      internal_isolate->factory()->NewPyFloat(value);
+  i::Handle<i::PyFloat> py_float = isolate->factory()->NewPyFloat(value);
   i::Handle<i::PyObject> escaped =
       scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_float)));
   return internal::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
-Local<T> WrapHostBoolean(Isolate* isolate, bool value) {
+Local<T> WrapHostBoolean(i::Isolate* isolate, bool value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::Isolate::Scope isolate_scope(isolate);
   i::EscapableHandleScope scope;
   i::Handle<i::PyObject> py_bool = i::handle(i::Tagged<i::PyObject>::cast(
-      value ? internal_isolate->py_true_object()
-            : internal_isolate->py_false_object()));
+      value ? isolate->py_true_object() : isolate->py_false_object()));
   i::Handle<i::PyObject> escaped = scope.Escape(py_bool);
   return internal::Utils::ToLocal<T>(escaped);
 }

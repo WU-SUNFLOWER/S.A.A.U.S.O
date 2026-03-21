@@ -27,45 +27,38 @@ struct ApiAccess {
     if (isolate == nullptr) {
       return nullptr;
     }
-    return reinterpret_cast<i::Isolate*>(isolate->internal_isolate_);
+    return reinterpret_cast<i::Isolate*>(isolate);
   }
 
   static const i::Isolate* UnwrapIsolate(const saauso::Isolate* isolate) {
     if (isolate == nullptr) {
       return nullptr;
     }
-    return reinterpret_cast<const i::Isolate*>(isolate->internal_isolate_);
+    return reinterpret_cast<const i::Isolate*>(isolate);
   }
 
   static std::vector<Context*>* EnteredContextStack(saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
+    i::Isolate* internal_isolate = UnwrapIsolate(isolate);
+    if (internal_isolate == nullptr) {
       return nullptr;
     }
-    return reinterpret_cast<std::vector<Context*>*>(isolate->entered_contexts_);
-  }
-
-  static void DeleteEnteredContextStack(saauso::Isolate* isolate) {
-    auto* entered_contexts = EnteredContextStack(isolate);
-    if (entered_contexts == nullptr) {
-      return;
-    }
-    entered_contexts->clear();
-    delete entered_contexts;
-    isolate->entered_contexts_ = nullptr;
+    return internal_isolate->entered_contexts();
   }
 
   static TryCatch* TryCatchTop(saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
+    i::Isolate* internal_isolate = UnwrapIsolate(isolate);
+    if (internal_isolate == nullptr) {
       return nullptr;
     }
-    return isolate->try_catch_top_;
+    return internal_isolate->try_catch_top();
   }
 
   static void SetTryCatchTop(saauso::Isolate* isolate, TryCatch* try_catch) {
-    if (isolate == nullptr) {
+    i::Isolate* internal_isolate = UnwrapIsolate(isolate);
+    if (internal_isolate == nullptr) {
       return;
     }
-    isolate->try_catch_top_ = try_catch;
+    internal_isolate->set_try_catch_top(try_catch);
   }
 
   static void SetTryCatchException(TryCatch* try_catch,

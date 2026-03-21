@@ -1,5 +1,4 @@
 #include <cassert>
-#include <vector>
 
 #include "include/saauso-primitive.h"
 #include "src/api/api-impl.h"
@@ -29,41 +28,34 @@ struct EscapableHandleScopeImpl {
 
 Isolate* Isolate::New(const IsolateCreateParams&) {
   i::Isolate* i_isolate = i::Isolate::New();
-  if (i_isolate == nullptr) {
-    return nullptr;
-  }
-  auto* isolate = new Isolate();
-  isolate->internal_isolate_ = i_isolate;
-  isolate->entered_contexts_ = new std::vector<Context*>();
-  api::RegisterPublicIsolate(isolate);
-  return isolate;
+  return reinterpret_cast<Isolate*>(i_isolate);
 }
 
 void Isolate::Dispose() {
-  auto* i_isolate = ApiAccess::UnwrapIsolate(this);
-  ApiAccess::DeleteEnteredContextStack(this);
-  api::UnregisterPublicIsolate(this);
   api::ReleaseCallbackBindingsForIsolate(this);
+  auto* i_isolate = ApiAccess::UnwrapIsolate(this);
   i::Isolate::Dispose(i_isolate);
-  internal_isolate_ = nullptr;
-  delete this;
 }
 
 void Isolate::ThrowException(Local<Value> exception) {
   if (exception.IsEmpty()) {
     return;
   }
+
   i::Isolate* i_isolate = ApiAccess::UnwrapIsolate(this);
+  i::Isolate::Scope isolate_scope(i_isolate);
+
   if (i_isolate == nullptr) {
     return;
   }
-  i::Isolate::Scope isolate_scope(i_isolate);
-  i::Handle<i::PyObject> py_exception = api::ToInternalObject(this, exception);
+
+  i::Handle<i::PyObject> py_exception =
+      api::ToInternalObject(i_isolate, exception);
   if (py_exception.is_null()) {
     return;
   }
   i_isolate->exception_state()->Throw(*py_exception);
-  api::CapturePendingException(this);
+  api::CapturePendingException(i_isolate);
 }
 
 size_t Isolate::ValueRegistrySizeForTesting() const {
@@ -118,9 +110,9 @@ Local<Context> Context::New(Isolate* isolate) {
 }
 
 void Context::Enter() {
-  Isolate* isolate = api::CurrentPublicIsolate();
-  auto* i_isolate = ApiAccess::UnwrapIsolate(isolate);
-  auto* entered_contexts = ApiAccess::EnteredContextStack(isolate);
+  auto* i_isolate = i::Isolate::Current();
+  auto* entered_contexts = i_isolate->entered_contexts();
+
   if (i_isolate != nullptr && entered_contexts != nullptr) {
     if (entered_contexts->empty()) {
       i_isolate->Enter();
@@ -130,9 +122,9 @@ void Context::Enter() {
 }
 
 void Context::Exit() {
-  Isolate* isolate = api::CurrentPublicIsolate();
-  auto* i_isolate = ApiAccess::UnwrapIsolate(isolate);
-  auto* entered_contexts = ApiAccess::EnteredContextStack(isolate);
+  auto* i_isolate = i::Isolate::Current();
+  auto* entered_contexts = i_isolate->entered_contexts();
+
   if (i_isolate != nullptr && entered_contexts != nullptr) {
     if (entered_contexts->empty()) {
       assert(false);
@@ -153,24 +145,25 @@ bool Context::Set(Local<String> key, Local<Value> value) {
   if (key.IsEmpty()) {
     return false;
   }
-  Isolate* isolate = api::CurrentPublicIsolate();
-  i::Isolate* i_isolate = ApiAccess::UnwrapIsolate(isolate);
+
+  i::Isolate* i_isolate = i::Isolate::Current();
+  i::Isolate::Scope isolate_scope(i_isolate);
+
   i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
   if (i_isolate == nullptr || context_object.is_null() ||
       !i::IsPyDict(context_object)) {
     return false;
   }
-  i::Isolate::Scope isolate_scope(i_isolate);
   i::HandleScope handle_scope;
   i::Handle<i::PyDict> globals =
       i::handle(i::Tagged<i::PyDict>::cast(*context_object));
   i::Handle<i::PyString> py_key = i::PyString::NewInstance(
       key->Value().data(), static_cast<int64_t>(key->Value().size()));
-  i::Handle<i::PyObject> py_value = api::ToInternalObject(isolate, value);
+  i::Handle<i::PyObject> py_value = api::ToInternalObject(i_isolate, value);
   auto maybe_set = i::PyDict::Put(
       globals, i::handle(i::Tagged<i::PyObject>::cast(*py_key)), py_value);
   if (maybe_set.IsNothing()) {
-    api::CapturePendingException(isolate);
+    api::CapturePendingException(i_isolate);
     return false;
   }
   return maybe_set.ToChecked();
@@ -180,14 +173,15 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   if (key.IsEmpty()) {
     return MaybeLocal<Value>();
   }
-  Isolate* isolate = api::CurrentPublicIsolate();
-  i::Isolate* i_isolate = ApiAccess::UnwrapIsolate(isolate);
+
+  i::Isolate* i_isolate = i::Isolate::Current();
+  i::Isolate::Scope isolate_scope(i_isolate);
+
   i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
   if (i_isolate == nullptr || context_object.is_null() ||
       !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
-  i::Isolate::Scope isolate_scope(i_isolate);
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
       i::handle(i::Tagged<i::PyDict>::cast(*context_object));
@@ -197,7 +191,7 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   auto maybe_found =
       globals->Get(i::handle(i::Tagged<i::PyObject>::cast(*py_key)), out);
   if (maybe_found.IsNothing()) {
-    api::CapturePendingException(isolate);
+    api::CapturePendingException(i_isolate);
     return MaybeLocal<Value>();
   }
   if (!maybe_found.ToChecked()) {

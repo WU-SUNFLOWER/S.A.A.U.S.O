@@ -20,19 +20,15 @@ class Isolate {
   void ThrowException(Local<Value> exception);
   size_t ValueRegistrySizeForTesting() const;
 
+  Isolate() = delete;
+  ~Isolate() = delete;
   Isolate(const Isolate&) = delete;
   Isolate& operator=(const Isolate&) = delete;
 
- private:
-  Isolate() = default;
-
-  void* internal_isolate_{nullptr};
-  void* entered_contexts_{nullptr};
-  TryCatch* try_catch_top_{nullptr};
-
-  friend class Context;
-  friend class TryCatch;
-  friend struct ApiAccess;
+  void* operator new(size_t size) = delete;
+  void* operator new[](size_t size) = delete;
+  void operator delete(void*, size_t) = delete;
+  void operator delete[](void*, size_t) = delete;
 };
 
 }  // namespace saauso

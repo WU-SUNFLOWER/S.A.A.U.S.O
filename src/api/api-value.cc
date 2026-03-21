@@ -91,7 +91,8 @@ bool Value::ToBoolean(bool* out) const {
 }
 
 Local<String> String::New(Isolate* isolate, std::string_view value) {
-  return api::WrapHostString<String>(isolate, std::string(value));
+  return api::WrapHostString<String>(reinterpret_cast<i::Isolate*>(isolate),
+                                     std::string(value));
 }
 
 std::string String::Value() const {
@@ -105,7 +106,8 @@ std::string String::Value() const {
 }
 
 Local<Integer> Integer::New(Isolate* isolate, int64_t value) {
-  return api::WrapHostInteger<Integer>(isolate, value);
+  return api::WrapHostInteger<Integer>(reinterpret_cast<i::Isolate*>(isolate),
+                                       value);
 }
 
 int64_t Integer::Value() const {
@@ -117,7 +119,8 @@ int64_t Integer::Value() const {
 }
 
 Local<Float> Float::New(Isolate* isolate, double value) {
-  return api::WrapHostFloat<Float>(isolate, value);
+  return api::WrapHostFloat<Float>(reinterpret_cast<i::Isolate*>(isolate),
+                                   value);
 }
 
 double Float::Value() const {
@@ -129,7 +132,8 @@ double Float::Value() const {
 }
 
 Local<Boolean> Boolean::New(Isolate* isolate, bool value) {
-  return api::WrapHostBoolean<Boolean>(isolate, value);
+  return api::WrapHostBoolean<Boolean>(reinterpret_cast<i::Isolate*>(isolate),
+                                       value);
 }
 
 bool Boolean::Value() const {
@@ -162,25 +166,29 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
 }
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
+  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate::Scope isolate_scope(internal_isolate);
+
+  if (internal_isolate == nullptr) {
+    return MaybeLocal<Value>();
+  }
+
   if (context.IsEmpty()) {
     return MaybeLocal<Value>();
   }
+
   i::Handle<i::PyObject> script_object = internal::Utils::OpenHandle(this);
   if (script_object.is_null() || !i::IsPyString(script_object)) {
     return MaybeLocal<Value>();
   }
+
   i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(context);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
-  Isolate* isolate = api::CurrentPublicIsolate();
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  if (internal_isolate == nullptr) {
-    return MaybeLocal<Value>();
-  }
+
   i::Tagged<i::PyString> source_string =
       i::Tagged<i::PyString>::cast(*script_object);
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
       i::handle(i::Tagged<i::PyDict>::cast(*context_object));
@@ -191,7 +199,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
       globals, globals);
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(isolate);
+    api::CapturePendingException(internal_isolate);
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);

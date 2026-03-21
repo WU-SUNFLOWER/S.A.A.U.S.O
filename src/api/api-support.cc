@@ -13,8 +13,6 @@ namespace {
 std::mutex g_embedder_callback_mutex;
 std::unordered_map<int64_t, CallbackBinding> g_embedder_callback_bindings;
 std::atomic<int64_t> g_next_callback_binding_id{1};
-std::mutex g_public_isolate_mutex;
-std::unordered_map<i::Isolate*, Isolate*> g_public_isolate_by_internal;
 
 }  // namespace
 
@@ -50,45 +48,15 @@ void ReleaseCallbackBindingsForIsolate(Isolate* isolate) {
   }
 }
 
-void RegisterPublicIsolate(Isolate* isolate) {
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  if (internal_isolate == nullptr) {
-    return;
-  }
-  std::lock_guard<std::mutex> guard(g_public_isolate_mutex);
-  g_public_isolate_by_internal[internal_isolate] = isolate;
-}
-
-void UnregisterPublicIsolate(Isolate* isolate) {
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  if (internal_isolate == nullptr) {
-    return;
-  }
-  std::lock_guard<std::mutex> guard(g_public_isolate_mutex);
-  g_public_isolate_by_internal.erase(internal_isolate);
-}
-
-Isolate* CurrentPublicIsolate() {
-  i::Isolate* internal_isolate = i::Isolate::Current();
-  if (internal_isolate == nullptr) {
-    return nullptr;
-  }
-  std::lock_guard<std::mutex> guard(g_public_isolate_mutex);
-  auto it = g_public_isolate_by_internal.find(internal_isolate);
-  if (it == g_public_isolate_by_internal.end()) {
-    return nullptr;
-  }
-  return it->second;
-}
-
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
-  return WrapHostString<Script>(isolate, std::move(source));
+  return WrapHostString<Script>(reinterpret_cast<i::Isolate*>(isolate),
+                                std::move(source));
 }
 #endif
 
-i::Handle<i::PyObject> ToInternalObject(Isolate* isolate, Local<Value> value) {
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+i::Handle<i::PyObject> ToInternalObject(i::Isolate* internal_isolate,
+                                        Local<Value> value) {
   if (value.IsEmpty()) {
     return i::handle(
         i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
@@ -106,27 +74,26 @@ Local<Value> WrapRuntimeResult(Isolate* isolate,
   if (result.is_null()) {
     return Local<Value>();
   }
-  return Local<Value>::Cast(WrapObject<RawValue>(isolate, result));
+  return Local<Value>::Cast(
+      WrapObject<RawValue>(reinterpret_cast<i::Isolate*>(isolate), result));
 }
 
-bool CapturePendingException(Isolate* isolate) {
-  if (isolate == nullptr) {
+bool CapturePendingException(i::Isolate* isolate) {
+  if (!isolate->HasPendingException()) {
     return false;
   }
-  auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  if (internal_isolate == nullptr || !internal_isolate->HasPendingException()) {
-    return false;
-  }
-  TryCatch* try_catch = ApiAccess::TryCatchTop(isolate);
+
+  TryCatch* try_catch = isolate->try_catch_top();
   if (try_catch == nullptr) {
     return true;
   }
-  i::Isolate::Scope isolate_scope(internal_isolate);
+
+  i::Isolate::Scope isolate_scope(isolate);
   i::Handle<i::PyObject> exception =
-      internal_isolate->exception_state()->pending_exception();
+      isolate->exception_state()->pending_exception();
   ApiAccess::SetTryCatchException(
       try_catch, Local<Value>::Cast(WrapObject<RawValue>(isolate, exception)));
-  internal_isolate->exception_state()->Clear();
+  isolate->exception_state()->Clear();
   return true;
 }
 
@@ -163,7 +130,8 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   }
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
-  return ToInternalObject(binding.isolate, escaped_ret);
+  return ToInternalObject(reinterpret_cast<i::Isolate*>(binding.isolate),
+                          escaped_ret);
 }
 
 }  // namespace api
