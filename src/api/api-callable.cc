@@ -166,10 +166,12 @@ void FunctionCallbackInfo::ThrowRuntimeError(std::string_view message) const {
   if (impl == nullptr || impl->isolate == nullptr) {
     return;
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(impl->isolate);
+
+  auto* internal_isolate = reinterpret_cast<i::Isolate*>(impl->isolate);
   if (internal_isolate == nullptr) {
     return;
   }
+
   i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   std::string error(message);
@@ -186,13 +188,16 @@ void FunctionCallbackInfo::SetReturnValue(Local<Value> value) {
 }
 
 TryCatch::TryCatch(Isolate* isolate) : isolate_(isolate) {
-  previous_ = ApiAccess::TryCatchTop(isolate_);
-  ApiAccess::SetTryCatchTop(isolate_, this);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  previous_ = i_isolate->try_catch_top();
+  i_isolate->set_try_catch_top(this);
 }
 
 TryCatch::~TryCatch() {
   Reset();
-  ApiAccess::SetTryCatchTop(isolate_, previous_);
+
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  i_isolate->set_try_catch_top(previous_);
 }
 
 bool TryCatch::HasCaught() const {
@@ -200,7 +205,7 @@ bool TryCatch::HasCaught() const {
 }
 
 void TryCatch::Reset() {
-  exception_ = ApiAccess::MakeLocal<Value>(nullptr);
+  exception_ = Local<Value>();
 }
 
 Local<Value> TryCatch::Exception() const {

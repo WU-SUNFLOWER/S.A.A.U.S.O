@@ -33,7 +33,7 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
 
 void Isolate::Dispose() {
   api::ReleaseCallbackBindingsForIsolate(this);
-  auto* i_isolate = ApiAccess::UnwrapIsolate(this);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(this);
   i::Isolate::Dispose(i_isolate);
 }
 
@@ -42,7 +42,7 @@ void Isolate::ThrowException(Local<Value> exception) {
     return;
   }
 
-  i::Isolate* i_isolate = ApiAccess::UnwrapIsolate(this);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(this);
   i::Isolate::Scope isolate_scope(i_isolate);
 
   if (i_isolate == nullptr) {
@@ -97,14 +97,14 @@ Local<Context> Context::New(Isolate* isolate) {
   if (isolate == nullptr) {
     return Local<Context>();
   }
-  i::Isolate* i_isolate = ApiAccess::UnwrapIsolate(isolate);
-  if (i_isolate == nullptr) {
-    return Local<Context>();
-  }
+
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::Isolate::Scope isolate_scope(i_isolate);
+
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
+
   i::Handle<i::PyObject> escaped = handle_scope.Escape(globals);
   return i::Utils::ToLocal<Context>(escaped);
 }

@@ -18,10 +18,6 @@
 namespace saauso {
 
 struct ApiAccess {
-  template <typename T>
-  static Local<T> MakeLocal(T* ptr) {
-    return Local<T>(ptr);
-  }
 
   static i::Isolate* UnwrapIsolate(saauso::Isolate* isolate) {
     if (isolate == nullptr) {
@@ -37,29 +33,7 @@ struct ApiAccess {
     return reinterpret_cast<const i::Isolate*>(isolate);
   }
 
-  static std::vector<Context*>* EnteredContextStack(saauso::Isolate* isolate) {
-    i::Isolate* internal_isolate = UnwrapIsolate(isolate);
-    if (internal_isolate == nullptr) {
-      return nullptr;
-    }
-    return internal_isolate->entered_contexts();
-  }
 
-  static TryCatch* TryCatchTop(saauso::Isolate* isolate) {
-    i::Isolate* internal_isolate = UnwrapIsolate(isolate);
-    if (internal_isolate == nullptr) {
-      return nullptr;
-    }
-    return internal_isolate->try_catch_top();
-  }
-
-  static void SetTryCatchTop(saauso::Isolate* isolate, TryCatch* try_catch) {
-    i::Isolate* internal_isolate = UnwrapIsolate(isolate);
-    if (internal_isolate == nullptr) {
-      return;
-    }
-    internal_isolate->set_try_catch_top(try_catch);
-  }
 
   static void SetTryCatchException(TryCatch* try_catch,
                                    Local<Value> exception) {

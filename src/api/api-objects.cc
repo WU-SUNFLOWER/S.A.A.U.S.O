@@ -9,8 +9,10 @@ Local<Object> Object::New(Isolate* isolate) {
   if (isolate == nullptr) {
     return Local<Object>();
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+
+  auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::Isolate::Scope isolate_scope(internal_isolate);
+
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> dict =
       internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
@@ -141,8 +143,10 @@ Local<List> List::New(Isolate* isolate) {
   if (isolate == nullptr) {
     return Local<List>();
   }
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+
+  auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::Isolate::Scope isolate_scope(internal_isolate);
+
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyList> list =
       internal_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);

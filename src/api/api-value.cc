@@ -154,13 +154,13 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
   return MaybeLocal<Script>(api::WrapScriptSource(isolate, source->Value()));
 #else
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
       "Script::Compile requires CPython frontend compiler support");
-  api::CapturePendingException(isolate);
+  api::CapturePendingException(internal_isolate);
   return MaybeLocal<Script>();
 #endif
 }
