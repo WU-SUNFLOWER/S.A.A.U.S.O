@@ -13,7 +13,7 @@ Local<Function> Function::New(Isolate* isolate,
   int64_t binding_id = api::RegisterCallbackBinding(isolate, callback);
   i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
   i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
+  i::EscapableHandleScope handle_scope;
   i::Handle<i::PyString> py_name =
       i::PyString::NewInstance(name.data(), static_cast<int64_t>(name.size()));
   i::Handle<i::PyObject> closure_data =
@@ -27,8 +27,9 @@ Local<Function> Function::New(Isolate* isolate,
     api::CapturePendingException(isolate);
     return Local<Function>();
   }
-  return api::WrapObject<Function>(
-      isolate, i::handle(i::Tagged<i::PyObject>::cast(*function)));
+  i::Handle<i::PyObject> escaped =
+      handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*function)));
+  return internal::Utils::ToLocal<Function>(escaped);
 }
 
 MaybeLocal<Value> Function::Call(Local<Context> context,
@@ -38,15 +39,15 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
   if (context.IsEmpty()) {
     return MaybeLocal<Value>();
   }
-  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  Isolate* isolate = api::CurrentPublicIsolate();
   i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  auto* context_impl =
-      reinterpret_cast<api::ContextImpl*>(ApiAccess::GetContextImpl(&*context));
-  if (internal_isolate == nullptr || context_impl == nullptr) {
+  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(context);
+  if (internal_isolate == nullptr || context_object.is_null() ||
+      !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
   i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
+  i::EscapableHandleScope handle_scope;
   i::Handle<i::PyTuple> py_args = internal_isolate->factory()->NewPyTuple(argc);
   for (int i = 0; i < argc; ++i) {
     Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
@@ -55,30 +56,31 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
   }
   i::Handle<i::PyDict> py_kwargs =
       internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
-  i::Tagged<i::PyObject> function_object = api::GetObjectTagged(this);
+  i::Handle<i::PyObject> function_object = internal::Utils::OpenHandle(this);
   if (function_object.is_null()) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> py_receiver =
       receiver.IsEmpty() ? i::Handle<i::PyObject>::null()
                          : api::ToInternalObject(isolate, receiver);
-  i::MaybeHandle<i::PyObject> maybe_result = i::PyObject::Call(
-      internal_isolate, i::handle(function_object), py_receiver,
-      i::handle(i::Tagged<i::PyObject>::cast(*py_args)),
-      i::handle(i::Tagged<i::PyObject>::cast(*py_kwargs)));
+  i::MaybeHandle<i::PyObject> maybe_result =
+      i::PyObject::Call(internal_isolate, function_object, py_receiver,
+                        i::handle(i::Tagged<i::PyObject>::cast(*py_args)),
+                        i::handle(i::Tagged<i::PyObject>::cast(*py_kwargs)));
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
     api::CapturePendingException(isolate);
     return MaybeLocal<Value>();
   }
-  return MaybeLocal<Value>(api::WrapRuntimeResult(isolate, result));
+  i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
+  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
 }
 
 Local<Value> Exception::TypeError(Local<String> msg) {
   if (msg.IsEmpty()) {
     return Local<Value>();
   }
-  Isolate* isolate = ApiAccess::GetValueIsolate(&*msg);
+  Isolate* isolate = api::CurrentPublicIsolate();
   if (isolate == nullptr) {
     return Local<Value>();
   }
@@ -90,7 +92,7 @@ Local<Value> Exception::RuntimeError(Local<String> msg) {
   if (msg.IsEmpty()) {
     return Local<Value>();
   }
-  Isolate* isolate = ApiAccess::GetValueIsolate(&*msg);
+  Isolate* isolate = api::CurrentPublicIsolate();
   if (isolate == nullptr) {
     return Local<Value>();
   }

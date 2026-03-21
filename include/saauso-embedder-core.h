@@ -8,6 +8,10 @@
 
 namespace saauso {
 
+namespace internal {
+class Utils;
+}
+
 struct ApiAccess;
 
 struct IsolateCreateParams {};
@@ -43,41 +47,35 @@ class Value {
   bool ToFloat(double* out) const;
   bool ToBoolean(bool* out) const;
 
- protected:
-  virtual ~Value() = default;
-  Value() = default;
-
  private:
-  void* impl_{nullptr};
-  Isolate* isolate_{nullptr};
-
-  friend struct ApiAccess;
+  Value() = delete;
+  ~Value() = delete;
+  Value(const Value&) = delete;
+  Value& operator=(const Value&) = delete;
 };
 
 template <typename T>
 class Local {
  public:
-  Local() = default;
+  Local() : val_(nullptr) {}
 
-  bool IsEmpty() const { return ptr_ == nullptr; }
-  T* operator->() const { return ptr_; }
-  T& operator*() const { return *ptr_; }
+  bool IsEmpty() const { return val_ == nullptr; }
+  T* operator->() const { return val_; }
+  T& operator*() const { return *val_; }
 
   template <typename S>
   static Local<T> Cast(Local<S> that) {
-    return Local<T>(static_cast<T*>(that.ptr_));
+    return Local<T>(reinterpret_cast<T*>(that.val_));
   }
 
  private:
-  explicit Local(T* ptr) : ptr_(ptr) {}
+  explicit Local(T* val) : val_(val) {}
 
   template <typename>
   friend class Local;
-  friend class Context;
-  friend class Isolate;
+  friend class internal::Utils;
   friend struct ApiAccess;
-
-  T* ptr_{nullptr};
+  T* val_;
 };
 
 template <typename T>
@@ -115,8 +113,6 @@ class Isolate {
   Isolate() = default;
 
   void* internal_isolate_{nullptr};
-  void* values_{nullptr};
-  void* contexts_{nullptr};
   void* entered_contexts_{nullptr};
   TryCatch* try_catch_top_{nullptr};
 
@@ -160,8 +156,6 @@ class Context final : public Value {
   Local<Object> Global();
 
  private:
-  explicit Context(Isolate* isolate) { (void)isolate; }
-
   friend class Isolate;
   friend class Script;
   friend struct ApiAccess;

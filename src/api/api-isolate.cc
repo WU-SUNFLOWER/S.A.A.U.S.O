@@ -8,71 +8,20 @@ namespace api {
 
 struct HandleScopeImpl {
   explicit HandleScopeImpl(Isolate* isolate)
-      : isolate(isolate),
-        isolate_scope(ApiAccess::UnwrapIsolate(isolate)),
-        begin_value_size(CurrentValueSize(isolate)) {}
-
-  ~HandleScopeImpl() {
-    auto* registry = ApiAccess::ValueRegistry(isolate);
-    if (registry == nullptr) {
-      return;
-    }
-    while (registry->size() > begin_value_size) {
-      DestroyValue(registry->back());
-      registry->pop_back();
-    }
-  }
-
-  static size_t CurrentValueSize(Isolate* isolate) {
-    auto* registry = ApiAccess::ValueRegistry(isolate);
-    if (registry == nullptr) {
-      return 0;
-    }
-    return registry->size();
-  }
+      : isolate(isolate), isolate_scope(ApiAccess::UnwrapIsolate(isolate)) {}
 
   Isolate* isolate{nullptr};
   i::Isolate::Scope isolate_scope;
   i::HandleScope handle_scope;
-  size_t begin_value_size{0};
 };
 
 struct EscapableHandleScopeImpl {
   explicit EscapableHandleScopeImpl(Isolate* isolate)
-      : isolate(isolate),
-        begin_value_size(HandleScopeImpl::CurrentValueSize(isolate)) {}
-
-  ~EscapableHandleScopeImpl() {
-    auto* registry = ApiAccess::ValueRegistry(isolate);
-    if (registry == nullptr) {
-      return;
-    }
-    std::vector<Value*> escaped_tail;
-    while (registry->size() > begin_value_size) {
-      Value* value = registry->back();
-      bool should_keep = false;
-      for (Value* escaped_value : escaped_values) {
-        if (escaped_value == value) {
-          should_keep = true;
-          break;
-        }
-      }
-      if (should_keep) {
-        escaped_tail.push_back(value);
-        registry->pop_back();
-        continue;
-      }
-      DestroyValue(value);
-      registry->pop_back();
-    }
-    for (auto it = escaped_tail.rbegin(); it != escaped_tail.rend(); ++it) {
-      registry->push_back(*it);
-    }
-  }
+      : isolate(isolate), isolate_scope(ApiAccess::UnwrapIsolate(isolate)) {}
 
   Isolate* isolate{nullptr};
-  size_t begin_value_size{0};
-  std::vector<Value*> escaped_values;
+  i::Isolate::Scope isolate_scope;
+  i::EscapableHandleScope handle_scope;
 };
 
 }  // namespace api
@@ -84,22 +33,15 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
   }
   auto* isolate = new Isolate();
   isolate->internal_isolate_ = internal_isolate;
-  isolate->values_ = new std::vector<Value*>();
-  isolate->contexts_ = new std::vector<Context*>();
   isolate->entered_contexts_ = new std::vector<Context*>();
+  api::RegisterPublicIsolate(isolate);
   return isolate;
 }
 
 void Isolate::Dispose() {
   auto* internal_isolate = ApiAccess::UnwrapIsolate(this);
   ApiAccess::DeleteEnteredContextStack(this);
-  if (auto* registry = ApiAccess::ValueRegistry(this); registry != nullptr) {
-    for (Value* value : *registry) {
-      api::DestroyValue(value);
-    }
-  }
-  ApiAccess::DeleteRegisteredValues(this);
-  ApiAccess::DeleteRegisteredContexts(this);
+  api::UnregisterPublicIsolate(this);
   api::ReleaseCallbackBindingsForIsolate(this);
   i::Isolate::Dispose(internal_isolate);
   internal_isolate_ = nullptr;
@@ -125,11 +67,7 @@ void Isolate::ThrowException(Local<Value> exception) {
 }
 
 size_t Isolate::ValueRegistrySizeForTesting() const {
-  const auto* registry = ApiAccess::ValueRegistry(this);
-  if (registry == nullptr) {
-    return 0;
-  }
-  return registry->size();
+  return 0;
 }
 
 HandleScope::HandleScope(Isolate* isolate) {
@@ -156,10 +94,11 @@ Local<Value> EscapableHandleScope::Escape(Local<Value> value) {
   }
   auto* impl = reinterpret_cast<api::EscapableHandleScopeImpl*>(impl_);
   if (impl == nullptr) {
-    return value;
+    return Local<Value>();
   }
-  impl->escaped_values.push_back(&*value);
-  return value;
+  i::Handle<i::PyObject> escaped =
+      impl->handle_scope.Escape(internal::Utils::OpenHandle(value));
+  return internal::Utils::ToLocal<Value>(escaped);
 }
 
 Local<Context> Context::New(Isolate* isolate) {
@@ -170,19 +109,17 @@ Local<Context> Context::New(Isolate* isolate) {
   if (internal_isolate == nullptr) {
     return Local<Context>();
   }
-  auto* context = new Context(isolate);
-  ApiAccess::RegisterValue(isolate, context);
-  ApiAccess::RegisterContext(isolate, context);
   i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
+  i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
       internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
-  ApiAccess::SetContextImpl(context, new api::ContextImpl(globals));
-  return ApiAccess::MakeLocal(context);
+  i::Handle<i::PyObject> escaped =
+      handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*globals)));
+  return internal::Utils::ToLocal<Context>(escaped);
 }
 
 void Context::Enter() {
-  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  Isolate* isolate = api::CurrentPublicIsolate();
   auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
   auto* entered_contexts = ApiAccess::EnteredContextStack(isolate);
   if (internal_isolate != nullptr && entered_contexts != nullptr) {
@@ -194,7 +131,7 @@ void Context::Enter() {
 }
 
 void Context::Exit() {
-  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  Isolate* isolate = api::CurrentPublicIsolate();
   auto* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
   auto* entered_contexts = ApiAccess::EnteredContextStack(isolate);
   if (internal_isolate != nullptr && entered_contexts != nullptr) {
@@ -217,17 +154,17 @@ bool Context::Set(Local<String> key, Local<Value> value) {
   if (key.IsEmpty()) {
     return false;
   }
-  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  Isolate* isolate = api::CurrentPublicIsolate();
   i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  auto* context_impl =
-      reinterpret_cast<api::ContextImpl*>(ApiAccess::GetContextImpl(this));
-  if (internal_isolate == nullptr || context_impl == nullptr ||
-      context_impl->globals.is_null()) {
+  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(this);
+  if (internal_isolate == nullptr || context_object.is_null() ||
+      !i::IsPyDict(context_object)) {
     return false;
   }
   i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
-  i::Handle<i::PyDict> globals = i::handle(context_impl->globals);
+  i::Handle<i::PyDict> globals =
+      i::handle(i::Tagged<i::PyDict>::cast(*context_object));
   i::Handle<i::PyString> py_key = i::PyString::NewInstance(
       key->Value().data(), static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> py_value = api::ToInternalObject(isolate, value);
@@ -244,17 +181,17 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   if (key.IsEmpty()) {
     return MaybeLocal<Value>();
   }
-  Isolate* isolate = ApiAccess::GetValueIsolate(this);
+  Isolate* isolate = api::CurrentPublicIsolate();
   i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  auto* context_impl =
-      reinterpret_cast<api::ContextImpl*>(ApiAccess::GetContextImpl(this));
-  if (internal_isolate == nullptr || context_impl == nullptr ||
-      context_impl->globals.is_null()) {
+  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(this);
+  if (internal_isolate == nullptr || context_object.is_null() ||
+      !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
   i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
-  i::Handle<i::PyDict> globals = i::handle(context_impl->globals);
+  i::EscapableHandleScope handle_scope;
+  i::Handle<i::PyDict> globals =
+      i::handle(i::Tagged<i::PyDict>::cast(*context_object));
   i::Handle<i::PyString> py_key = i::PyString::NewInstance(
       key->Value().data(), static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> out;
@@ -267,23 +204,17 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   if (!maybe_found.ToChecked()) {
     return MaybeLocal<Value>();
   }
-  return MaybeLocal<Value>(api::WrapRuntimeResult(isolate, out));
+  i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
+  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
 }
 
 Local<Object> Context::Global() {
-  Isolate* isolate = ApiAccess::GetValueIsolate(this);
-  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
-  auto* context_impl =
-      reinterpret_cast<api::ContextImpl*>(ApiAccess::GetContextImpl(this));
-  if (internal_isolate == nullptr || context_impl == nullptr ||
-      context_impl->globals.is_null()) {
+  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(this);
+  if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return Local<Object>();
   }
-  i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
-  i::Handle<i::PyDict> globals = i::handle(context_impl->globals);
-  return Local<Object>::Cast(api::WrapObject<api::RawObject>(
-      isolate, i::handle(i::Tagged<i::PyObject>::cast(*globals))));
+  return Local<Object>::Cast(
+      internal::Utils::ToLocal<api::RawObject>(context_object));
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {

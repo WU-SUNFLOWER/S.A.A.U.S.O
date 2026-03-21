@@ -27,38 +27,43 @@
 #include "src/runtime/runtime-py-function.h"
 
 namespace saauso {
+
+namespace internal {
+class Utils {
+ public:
+  template <typename T>
+  static inline i::Handle<i::PyObject> OpenHandle(Local<T> local) {
+    if (local.IsEmpty()) {
+      return i::Handle<i::PyObject>::null();
+    }
+    return i::Handle<i::PyObject>(reinterpret_cast<i::Address*>(local.val_));
+  }
+
+  template <typename T>
+  static inline i::Handle<i::PyObject> OpenHandle(const T* value) {
+    if (value == nullptr) {
+      return i::Handle<i::PyObject>::null();
+    }
+    return i::Handle<i::PyObject>(
+        reinterpret_cast<i::Address*>(const_cast<T*>(value)));
+  }
+
+  template <typename T>
+  static inline Local<T> ToLocal(i::Handle<i::PyObject> handle) {
+    if (handle.is_null()) {
+      return Local<T>();
+    }
+    return Local<T>(reinterpret_cast<T*>(handle.location()));
+  }
+};
+}  // namespace internal
+
 namespace api {
 
 class RawValue final : public Value {};
 class RawObject final : public Object {};
 class RawList final : public List {};
 class RawTuple final : public Tuple {};
-
-enum class ValueKind {
-  kNone,
-  kHostString,
-  kHostInteger,
-  kHostFloat,
-  kHostBoolean,
-  kScriptSource,
-  kVmObject,
-};
-
-struct ValueImpl {
-  ValueKind kind{ValueKind::kNone};
-  std::string string_value;
-  int64_t int_value{0};
-  double float_value{0.0};
-  bool bool_value{false};
-  i::Tagged<i::PyObject> object{i::Tagged<i::PyObject>::null()};
-};
-
-struct ContextImpl {
-  explicit ContextImpl(i::Handle<i::PyDict> globals)
-      : globals(globals.is_null() ? i::Tagged<i::PyDict>::null() : *globals) {}
-
-  i::Tagged<i::PyDict> globals;
-};
 
 struct FunctionCallbackInfoImpl {
   Isolate* isolate{nullptr};
@@ -74,12 +79,12 @@ struct CallbackBinding {
 
 int64_t RegisterCallbackBinding(Isolate* isolate, FunctionCallback callback);
 void ReleaseCallbackBindingsForIsolate(Isolate* isolate);
-void DestroyValue(Value* value);
-ValueImpl* GetValueImpl(const Value* value);
-i::Tagged<i::PyObject> GetObjectTagged(const Value* value);
 i::Handle<i::PyObject> ToInternalObject(Isolate* isolate, Local<Value> value);
 Local<Value> WrapRuntimeResult(Isolate* isolate, i::Handle<i::PyObject> result);
 bool CapturePendingException(Isolate* isolate);
+void RegisterPublicIsolate(Isolate* isolate);
+void UnregisterPublicIsolate(Isolate* isolate);
+Isolate* CurrentPublicIsolate();
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
     i::Isolate* internal_isolate,
     i::Handle<i::PyObject> receiver,
@@ -95,14 +100,7 @@ Local<T> WrapObject(Isolate* isolate, i::Handle<i::PyObject> object) {
   if (isolate == nullptr || object.is_null()) {
     return Local<T>();
   }
-  auto* value = new T();
-  ApiAccess::RegisterValue(isolate, value);
-  ApiAccess::SetValueIsolate(value, isolate);
-  auto* impl = new ValueImpl();
-  impl->kind = ValueKind::kVmObject;
-  impl->object = *object;
-  ApiAccess::SetValueImpl(value, impl);
-  return ApiAccess::MakeLocal(value);
+  return internal::Utils::ToLocal<T>(object);
 }
 
 template <typename T>
@@ -110,14 +108,14 @@ Local<T> WrapHostString(Isolate* isolate, std::string value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  auto* obj = new T();
-  ApiAccess::RegisterValue(isolate, obj);
-  ApiAccess::SetValueIsolate(obj, isolate);
-  auto* impl = new ValueImpl();
-  impl->kind = ValueKind::kHostString;
-  impl->string_value = std::move(value);
-  ApiAccess::SetValueImpl(obj, impl);
-  return ApiAccess::MakeLocal(obj);
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::EscapableHandleScope scope;
+  i::Handle<i::PyString> py_string = i::PyString::NewInstance(
+      value.data(), static_cast<int64_t>(value.size()));
+  i::Handle<i::PyObject> escaped =
+      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_string)));
+  return internal::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
@@ -125,14 +123,13 @@ Local<T> WrapHostInteger(Isolate* isolate, int64_t value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  auto* obj = new T();
-  ApiAccess::RegisterValue(isolate, obj);
-  ApiAccess::SetValueIsolate(obj, isolate);
-  auto* impl = new ValueImpl();
-  impl->kind = ValueKind::kHostInteger;
-  impl->int_value = value;
-  ApiAccess::SetValueImpl(obj, impl);
-  return ApiAccess::MakeLocal(obj);
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::EscapableHandleScope scope;
+  i::Handle<i::PyObject> smi =
+      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)));
+  i::Handle<i::PyObject> escaped = scope.Escape(smi);
+  return internal::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
@@ -140,14 +137,14 @@ Local<T> WrapHostFloat(Isolate* isolate, double value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  auto* obj = new T();
-  ApiAccess::RegisterValue(isolate, obj);
-  ApiAccess::SetValueIsolate(obj, isolate);
-  auto* impl = new ValueImpl();
-  impl->kind = ValueKind::kHostFloat;
-  impl->float_value = value;
-  ApiAccess::SetValueImpl(obj, impl);
-  return ApiAccess::MakeLocal(obj);
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::EscapableHandleScope scope;
+  i::Handle<i::PyFloat> py_float =
+      internal_isolate->factory()->NewPyFloat(value);
+  i::Handle<i::PyObject> escaped =
+      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_float)));
+  return internal::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
@@ -155,14 +152,14 @@ Local<T> WrapHostBoolean(Isolate* isolate, bool value) {
   if (isolate == nullptr) {
     return Local<T>();
   }
-  auto* obj = new T();
-  ApiAccess::RegisterValue(isolate, obj);
-  ApiAccess::SetValueIsolate(obj, isolate);
-  auto* impl = new ValueImpl();
-  impl->kind = ValueKind::kHostBoolean;
-  impl->bool_value = value;
-  ApiAccess::SetValueImpl(obj, impl);
-  return ApiAccess::MakeLocal(obj);
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  i::Isolate::Scope isolate_scope(internal_isolate);
+  i::EscapableHandleScope scope;
+  i::Handle<i::PyObject> py_bool = i::handle(i::Tagged<i::PyObject>::cast(
+      value ? internal_isolate->py_true_object()
+            : internal_isolate->py_false_object()));
+  i::Handle<i::PyObject> escaped = scope.Escape(py_bool);
+  return internal::Utils::ToLocal<T>(escaped);
 }
 
 }  // namespace api

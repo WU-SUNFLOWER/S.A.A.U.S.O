@@ -13,6 +13,8 @@ namespace {
 std::mutex g_embedder_callback_mutex;
 std::unordered_map<int64_t, CallbackBinding> g_embedder_callback_bindings;
 std::atomic<int64_t> g_next_callback_binding_id{1};
+std::mutex g_public_isolate_mutex;
+std::unordered_map<i::Isolate*, Isolate*> g_public_isolate_by_internal;
 
 }  // namespace
 
@@ -48,72 +50,42 @@ void ReleaseCallbackBindingsForIsolate(Isolate* isolate) {
   }
 }
 
-void DestroyValue(Value* value) {
-  if (value == nullptr) {
+void RegisterPublicIsolate(Isolate* isolate) {
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
     return;
   }
-  Isolate* isolate = ApiAccess::GetValueIsolate(value);
-  Context* context = nullptr;
-  if (isolate != nullptr) {
-    if (auto* contexts = ApiAccess::ContextRegistry(isolate);
-        contexts != nullptr) {
-      for (Context* candidate : *contexts) {
-        if (static_cast<Value*>(candidate) == value) {
-          context = candidate;
-          break;
-        }
-      }
-    }
+  std::lock_guard<std::mutex> guard(g_public_isolate_mutex);
+  g_public_isolate_by_internal[internal_isolate] = isolate;
+}
+
+void UnregisterPublicIsolate(Isolate* isolate) {
+  i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
+  if (internal_isolate == nullptr) {
+    return;
   }
-  if (context != nullptr) {
-    delete reinterpret_cast<ContextImpl*>(ApiAccess::GetContextImpl(context));
-    if (isolate != nullptr) {
-      ApiAccess::UnregisterContext(isolate, context);
-      if (auto* entered = ApiAccess::EnteredContextStack(isolate);
-          entered != nullptr) {
-        for (auto it = entered->begin(); it != entered->end();) {
-          if (*it == context) {
-            it = entered->erase(it);
-          } else {
-            ++it;
-          }
-        }
-      }
-    }
-  } else {
-    delete reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
+  std::lock_guard<std::mutex> guard(g_public_isolate_mutex);
+  g_public_isolate_by_internal.erase(internal_isolate);
+}
+
+Isolate* CurrentPublicIsolate() {
+  i::Isolate* internal_isolate = i::Isolate::Current();
+  if (internal_isolate == nullptr) {
+    return nullptr;
   }
-  ApiAccess::SetValueImpl(value, nullptr);
-  ApiAccess::DeleteValue(value);
+  std::lock_guard<std::mutex> guard(g_public_isolate_mutex);
+  auto it = g_public_isolate_by_internal.find(internal_isolate);
+  if (it == g_public_isolate_by_internal.end()) {
+    return nullptr;
+  }
+  return it->second;
 }
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 Local<Script> WrapScriptSource(Isolate* isolate, std::string source) {
-  if (isolate == nullptr) {
-    return Local<Script>();
-  }
-  auto* script = new Script();
-  ApiAccess::RegisterValue(isolate, script);
-  ApiAccess::SetValueIsolate(script, isolate);
-  auto* impl = new ValueImpl();
-  impl->kind = ValueKind::kScriptSource;
-  impl->string_value = std::move(source);
-  ApiAccess::SetValueImpl(script, impl);
-  return ApiAccess::MakeLocal(script);
+  return WrapHostString<Script>(isolate, std::move(source));
 }
 #endif
-
-ValueImpl* GetValueImpl(const Value* value) {
-  return reinterpret_cast<ValueImpl*>(ApiAccess::GetValueImpl(value));
-}
-
-i::Tagged<i::PyObject> GetObjectTagged(const Value* value) {
-  auto* impl = GetValueImpl(value);
-  if (impl == nullptr || impl->kind != ValueKind::kVmObject) {
-    return i::Tagged<i::PyObject>::null();
-  }
-  return impl->object;
-}
 
 i::Handle<i::PyObject> ToInternalObject(Isolate* isolate, Local<Value> value) {
   i::Isolate* internal_isolate = ApiAccess::UnwrapIsolate(isolate);
@@ -121,63 +93,18 @@ i::Handle<i::PyObject> ToInternalObject(Isolate* isolate, Local<Value> value) {
     return i::handle(
         i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
   }
-  ValueImpl* impl = GetValueImpl(&*value);
-  if (impl == nullptr) {
+  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(value);
+  if (object.is_null()) {
     return i::handle(
         i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
   }
-  if (impl->kind == ValueKind::kHostString ||
-      impl->kind == ValueKind::kScriptSource) {
-    i::Handle<i::PyString> py_string = i::PyString::NewInstance(
-        impl->string_value.data(),
-        static_cast<int64_t>(impl->string_value.size()));
-    return i::handle(i::Tagged<i::PyObject>::cast(*py_string));
-  }
-  if (impl->kind == ValueKind::kHostInteger) {
-    return i::handle(
-        i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(impl->int_value)));
-  }
-  if (impl->kind == ValueKind::kHostFloat) {
-    i::Handle<i::PyFloat> py_float =
-        internal_isolate->factory()->NewPyFloat(impl->float_value);
-    return i::handle(i::Tagged<i::PyObject>::cast(*py_float));
-  }
-  if (impl->kind == ValueKind::kHostBoolean) {
-    return i::handle(i::Tagged<i::PyObject>::cast(
-        impl->bool_value ? internal_isolate->py_true_object()
-                         : internal_isolate->py_false_object()));
-  }
-  if (impl->kind == ValueKind::kVmObject && !impl->object.is_null()) {
-    return i::handle(impl->object);
-  }
-  return i::handle(
-      i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
+  return object;
 }
 
 Local<Value> WrapRuntimeResult(Isolate* isolate,
                                i::Handle<i::PyObject> result) {
   if (result.is_null()) {
     return Local<Value>();
-  }
-  if (i::IsPyString(result)) {
-    i::Tagged<i::PyString> py_string = i::Tagged<i::PyString>::cast(*result);
-    return Local<Value>::Cast(WrapHostString<String>(
-        isolate, std::string(py_string->buffer(),
-                             static_cast<size_t>(py_string->length()))));
-  }
-  if (i::IsPySmi(result)) {
-    return Local<Value>::Cast(WrapHostInteger<Integer>(
-        isolate, i::PySmi::ToInt(i::Tagged<i::PySmi>::cast(*result))));
-  }
-  if (i::IsPyFloat(result)) {
-    i::Tagged<i::PyFloat> py_float = i::Tagged<i::PyFloat>::cast(*result);
-    return Local<Value>::Cast(WrapHostFloat<Float>(isolate, py_float->value()));
-  }
-  if (i::IsPyTrue(result)) {
-    return Local<Value>::Cast(WrapHostBoolean<Boolean>(isolate, true));
-  }
-  if (i::IsPyFalse(result)) {
-    return Local<Value>::Cast(WrapHostBoolean<Boolean>(isolate, false));
   }
   return Local<Value>::Cast(WrapObject<RawValue>(isolate, result));
 }
@@ -195,7 +122,6 @@ bool CapturePendingException(Isolate* isolate) {
     return true;
   }
   i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
   i::Handle<i::PyObject> exception =
       internal_isolate->exception_state()->pending_exception();
   ApiAccess::SetTryCatchException(
@@ -235,7 +161,9 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   if (internal_isolate->HasPendingException()) {
     return i::kNullMaybeHandle;
   }
-  return ToInternalObject(binding.isolate, callback_info_impl.return_value);
+  Local<Value> escaped_ret =
+      escapable_scope.Escape(callback_info_impl.return_value);
+  return ToInternalObject(binding.isolate, escaped_ret);
 }
 
 }  // namespace api

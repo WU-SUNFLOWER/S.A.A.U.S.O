@@ -67,6 +67,30 @@ TEST(EmbedderPhase2Test, HandleScope_Prevents_Memory_Leak) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    HandleScope scope(isolate);
+    Local<String> source = String::New(isolate, "gc-safe");
+    ASSERT_FALSE(source.IsEmpty());
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+    MaybeLocal<Script> maybe_gc_script =
+        Script::Compile(isolate, String::New(isolate, "sysgc()\n"));
+    ASSERT_FALSE(maybe_gc_script.IsEmpty());
+    ASSERT_FALSE(maybe_gc_script.ToLocalChecked()->Run(context).IsEmpty());
+    std::string result;
+    ASSERT_TRUE(Local<Value>::Cast(source)->ToString(&result));
+    EXPECT_EQ(result, "gc-safe");
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 TEST(EmbedderPhase2Test, TryCatch_Nested_Capture) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();

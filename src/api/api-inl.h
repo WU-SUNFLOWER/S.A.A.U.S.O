@@ -33,91 +33,11 @@ struct ApiAccess {
     return reinterpret_cast<const i::Isolate*>(isolate->internal_isolate_);
   }
 
-  static std::vector<Value*>* ValueRegistry(saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<std::vector<Value*>*>(isolate->values_);
-  }
-
-  static const std::vector<Value*>* ValueRegistry(
-      const saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<const std::vector<Value*>*>(isolate->values_);
-  }
-
-  static void RegisterValue(saauso::Isolate* isolate, Value* value) {
-    auto* registry = ValueRegistry(isolate);
-    if (registry == nullptr || value == nullptr) {
-      return;
-    }
-    registry->push_back(value);
-    value->isolate_ = isolate;
-  }
-
-  static std::vector<Context*>* ContextRegistry(saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<std::vector<Context*>*>(isolate->contexts_);
-  }
-
-  static const std::vector<Context*>* ContextRegistry(
-      const saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<const std::vector<Context*>*>(isolate->contexts_);
-  }
-
   static std::vector<Context*>* EnteredContextStack(saauso::Isolate* isolate) {
     if (isolate == nullptr) {
       return nullptr;
     }
     return reinterpret_cast<std::vector<Context*>*>(isolate->entered_contexts_);
-  }
-
-  static void DeleteRegisteredValues(saauso::Isolate* isolate) {
-    auto* registry = ValueRegistry(isolate);
-    if (registry == nullptr) {
-      return;
-    }
-    registry->clear();
-    delete registry;
-    isolate->values_ = nullptr;
-  }
-
-  static void RegisterContext(saauso::Isolate* isolate, Context* context) {
-    auto* registry = ContextRegistry(isolate);
-    if (registry == nullptr || context == nullptr) {
-      return;
-    }
-    registry->push_back(context);
-  }
-
-  static void UnregisterContext(saauso::Isolate* isolate, Context* context) {
-    auto* registry = ContextRegistry(isolate);
-    if (registry == nullptr || context == nullptr) {
-      return;
-    }
-    for (auto it = registry->begin(); it != registry->end(); ++it) {
-      if (*it == context) {
-        registry->erase(it);
-        break;
-      }
-    }
-  }
-
-  static void DeleteRegisteredContexts(saauso::Isolate* isolate) {
-    auto* registry = ContextRegistry(isolate);
-    if (registry == nullptr) {
-      return;
-    }
-    registry->clear();
-    delete registry;
-    isolate->contexts_ = nullptr;
   }
 
   static void DeleteEnteredContextStack(saauso::Isolate* isolate) {
@@ -151,57 +71,6 @@ struct ApiAccess {
     }
     try_catch->exception_ = exception;
   }
-
-  static void* GetValueImpl(const Value* value) {
-    if (value == nullptr) {
-      return nullptr;
-    }
-    return value->impl_;
-  }
-
-  static void SetValueImpl(Value* value, void* impl) {
-    if (value == nullptr) {
-      return;
-    }
-    value->impl_ = impl;
-  }
-
-  static Isolate* GetValueIsolate(Value* value) {
-    if (value == nullptr) {
-      return nullptr;
-    }
-    return value->isolate_;
-  }
-
-  static Isolate* GetValueIsolate(const Value* value) {
-    if (value == nullptr) {
-      return nullptr;
-    }
-    return value->isolate_;
-  }
-
-  static void SetValueIsolate(Value* value, Isolate* isolate) {
-    if (value == nullptr) {
-      return;
-    }
-    value->isolate_ = isolate;
-  }
-
-  static void SetContextImpl(Context* context, void* impl) {
-    if (context == nullptr) {
-      return;
-    }
-    SetValueImpl(static_cast<Value*>(context), impl);
-  }
-
-  static void* GetContextImpl(const Context* context) {
-    if (context == nullptr) {
-      return nullptr;
-    }
-    return GetValueImpl(static_cast<const Value*>(context));
-  }
-
-  static void DeleteValue(Value* value) { delete value; }
 
   static void SetFunctionCallbackInfoImpl(FunctionCallbackInfo* info,
                                           void* impl) {
