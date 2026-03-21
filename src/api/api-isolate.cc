@@ -32,7 +32,6 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
 }
 
 void Isolate::Dispose() {
-  api::ReleaseCallbackBindingsForIsolate(this);
   auto* i_isolate = reinterpret_cast<i::Isolate*>(this);
   i::Isolate::Dispose(i_isolate);
 }

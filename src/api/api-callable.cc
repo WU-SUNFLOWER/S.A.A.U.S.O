@@ -16,12 +16,13 @@ Local<Function> Function::New(Isolate* isolate,
     return Local<Function>();
   }
 
-  int64_t binding_id = api::RegisterCallbackBinding(isolate, callback);
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyString> py_name =
       i::PyString::NewInstance(name.data(), static_cast<int64_t>(name.size()));
+  int64_t callback_addr =
+      static_cast<int64_t>(reinterpret_cast<intptr_t>(callback));
   i::Handle<i::PyObject> closure_data =
-      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(binding_id)));
+      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(callback_addr)));
   i::FunctionTemplateInfo template_info(&api::InvokeEmbedderCallback, py_name,
                                         closure_data);
   i::MaybeHandle<i::PyFunction> maybe_function =
@@ -157,7 +158,7 @@ Isolate* FunctionCallbackInfo::GetIsolate() const {
   if (impl == nullptr) {
     return nullptr;
   }
-  return impl->isolate;
+  return reinterpret_cast<Isolate*>(impl->isolate);
 }
 
 void FunctionCallbackInfo::ThrowRuntimeError(std::string_view message) const {

@@ -145,16 +145,19 @@ bool Boolean::Value() const {
 }
 
 MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
+  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+
   if (isolate == nullptr || source.IsEmpty()) {
     return MaybeLocal<Script>();
   }
   if (!Local<Value>::Cast(source)->IsString()) {
     return MaybeLocal<Script>();
   }
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-  return MaybeLocal<Script>(api::WrapScriptSource(isolate, source->Value()));
+  return MaybeLocal<Script>(
+      api::WrapScriptSource(internal_isolate, source->Value()));
 #else
-  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   i::Runtime_ThrowError(

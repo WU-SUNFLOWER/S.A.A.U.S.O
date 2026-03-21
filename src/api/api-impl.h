@@ -67,22 +67,16 @@ class RawList final : public List {};
 class RawTuple final : public Tuple {};
 
 struct FunctionCallbackInfoImpl {
-  Isolate* isolate{nullptr};
+  i::Isolate* isolate{nullptr};
   i::Handle<i::PyObject> receiver;
   i::Handle<i::PyTuple> args;
   Local<Value> return_value;
 };
 
-struct CallbackBinding {
-  FunctionCallback callback{nullptr};
-  Isolate* isolate{nullptr};
-};
-
-int64_t RegisterCallbackBinding(Isolate* isolate, FunctionCallback callback);
-void ReleaseCallbackBindingsForIsolate(Isolate* isolate);
 i::Handle<i::PyObject> ToInternalObject(i::Isolate* isolate,
                                         Local<Value> value);
-Local<Value> WrapRuntimeResult(Isolate* isolate, i::Handle<i::PyObject> result);
+Local<Value> WrapRuntimeResult(i::Isolate* isolate,
+                               i::Handle<i::PyObject> result);
 bool CapturePendingException(i::Isolate* isolate);
 
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
@@ -92,7 +86,7 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
     i::Handle<i::PyDict> kwargs,
     i::Handle<i::PyObject> closure_data);
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-Local<Script> WrapScriptSource(Isolate* isolate, std::string source);
+Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source);
 #endif
 
 template <typename T>
