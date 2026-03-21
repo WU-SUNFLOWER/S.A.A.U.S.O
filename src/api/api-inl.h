@@ -7,7 +7,11 @@
 
 #include <vector>
 
-#include "include/saauso-embedder.h"
+#include "include/saauso-context.h"
+#include "include/saauso-exception.h"
+#include "include/saauso-function-callback.h"
+#include "include/saauso-isolate.h"
+#include "include/saauso-local-handle.h"
 #include "src/common/globals.h"
 #include "src/execution/isolate.h"
 

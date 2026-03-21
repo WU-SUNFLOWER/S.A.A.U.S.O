@@ -1,5 +1,7 @@
 #include <string>
 
+#include "include/saauso-function.h"
+#include "include/saauso-primitive.h"
 #include "src/api/api-impl.h"
 
 namespace saauso {

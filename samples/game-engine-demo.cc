@@ -5,7 +5,6 @@
 #include <iostream>
 #include <string>
 
-#include "saauso-embedder.h"
 #include "saauso.h"
 
 using namespace saauso;

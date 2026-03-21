@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-#include "include/saauso.h"
+#include "include/saauso-initialization.h"
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"

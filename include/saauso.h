@@ -5,15 +5,18 @@
 #ifndef INCLUDE_SAAUSO_H_
 #define INCLUDE_SAAUSO_H_
 
-namespace saauso {
-
-class Saauso {
- public:
-  static void Initialize();
-  static void Dispose();
-  static bool IsInitialized();
-};
-
-}  // namespace saauso
+#include "saauso-container.h"
+#include "saauso-context.h"
+#include "saauso-exception.h"
+#include "saauso-function-callback.h"
+#include "saauso-function.h"
+#include "saauso-initialization.h"
+#include "saauso-internal.h"
+#include "saauso-isolate.h"
+#include "saauso-local-handle.h"
+#include "saauso-object.h"
+#include "saauso-primitive.h"
+#include "saauso-script.h"
+#include "saauso-value.h"
 
 #endif  // INCLUDE_SAAUSO_H_

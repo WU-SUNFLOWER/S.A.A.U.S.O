@@ -1,5 +1,6 @@
 #include <string>
 
+#include "include/saauso-primitive.h"
 #include "src/api/api-impl.h"
 
 namespace saauso {
@@ -234,8 +235,8 @@ MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
   }
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*tuple)));
-  return MaybeLocal<Tuple>(Local<Tuple>::Cast(
-      internal::Utils::ToLocal<api::RawTuple>(escaped)));
+  return MaybeLocal<Tuple>(
+      Local<Tuple>::Cast(internal::Utils::ToLocal<api::RawTuple>(escaped)));
 }
 
 int64_t Tuple::Length() const {

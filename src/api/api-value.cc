@@ -1,5 +1,11 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
 #include <string>
 
+#include "include/saauso-primitive.h"
+#include "include/saauso-script.h"
 #include "src/api/api-impl.h"
 
 namespace saauso {

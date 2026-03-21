@@ -7,9 +7,8 @@
 #include <thread>
 #include <vector>
 
-#include "gtest/gtest.h"
-#include "saauso-embedder.h"
 #include "saauso.h"
+#include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso {
 namespace {
@@ -405,7 +404,8 @@ TEST(EmbedderPhase4Test, MultiContext_ExceptionIsolation) {
     ASSERT_FALSE(maybe_good_script.IsEmpty());
 
     TryCatch bad_try_catch(isolate);
-    MaybeLocal<Value> bad_run = maybe_bad_script.ToLocalChecked()->Run(context_a);
+    MaybeLocal<Value> bad_run =
+        maybe_bad_script.ToLocalChecked()->Run(context_a);
     EXPECT_TRUE(bad_run.IsEmpty());
     EXPECT_TRUE(bad_try_catch.HasCaught());
 

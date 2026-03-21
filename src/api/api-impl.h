@@ -5,7 +5,11 @@
 #include <string>
 #include <unordered_map>
 
-#include "include/saauso-embedder.h"
+#include "include/saauso-container.h"
+#include "include/saauso-exception.h"
+#include "include/saauso-local-handle.h"
+#include "include/saauso-object.h"
+#include "include/saauso-value.h"
 #include "src/api/api-inl.h"
 #include "src/common/globals.h"
 #include "src/execution/exception-types.h"
@@ -33,10 +37,7 @@ class Utils {
  public:
   template <typename T>
   static inline i::Handle<i::PyObject> OpenHandle(Local<T> local) {
-    if (local.IsEmpty()) {
-      return i::Handle<i::PyObject>::null();
-    }
-    return i::Handle<i::PyObject>(reinterpret_cast<i::Address*>(local.val_));
+    return OpenHandle(*local);
   }
 
   template <typename T>

@@ -9,4 +9,5 @@ executable("embedder_ut") {
     "//:embedder_api",
     "//testing/gtest",
   ]
+  configs += [ "//:saauso_includes" ]
 }

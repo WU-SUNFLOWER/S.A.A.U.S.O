@@ -1,12 +1,16 @@
-#ifndef INCLUDE_SAAUSO_EMBEDDER_VALUES_H_
-#define INCLUDE_SAAUSO_EMBEDDER_VALUES_H_
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
 
-#include <string>
-#include <string_view>
+#ifndef INCLUDE_SAAUSO_PRIMITIVE_H_
+#define INCLUDE_SAAUSO_PRIMITIVE_H_
 
-#include "saauso-embedder-core.h"
+#include "saauso-local-handle.h"
+#include "saauso-value.h"
 
 namespace saauso {
+
+class Isolate;
 
 class String final : public Value {
  public:
@@ -32,12 +36,6 @@ class Boolean final : public Value {
   bool Value() const;
 };
 
-class Script final : public Value {
- public:
-  static MaybeLocal<Script> Compile(Isolate* isolate, Local<String> source);
-  MaybeLocal<Value> Run(Local<Context> context);
-};
-
 }  // namespace saauso
 
-#endif  // INCLUDE_SAAUSO_EMBEDDER_VALUES_H_
+#endif  // INCLUDE_SAAUSO_PRIMITIVE_H_
