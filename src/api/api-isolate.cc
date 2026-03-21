@@ -57,7 +57,6 @@ void Isolate::ThrowException(Local<Value> exception) {
     return;
   }
   i::Isolate::Scope isolate_scope(internal_isolate);
-  i::HandleScope handle_scope;
   i::Handle<i::PyObject> py_exception = api::ToInternalObject(this, exception);
   if (py_exception.is_null()) {
     return;
