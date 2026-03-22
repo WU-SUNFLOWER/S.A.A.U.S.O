@@ -1,3 +1,7 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
 #include <string>
 
 #include "src/api/api-impl.h"
@@ -73,16 +77,21 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   }
   EscapableHandleScope escapable_scope(
       reinterpret_cast<Isolate*>(internal_isolate));
-  FunctionCallbackInfo callback_info;
+
   FunctionCallbackInfoImpl callback_info_impl;
   callback_info_impl.isolate = internal_isolate;
   callback_info_impl.receiver = receiver;
   callback_info_impl.args = args;
+
+  FunctionCallbackInfo callback_info;
   ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
+
   callback(callback_info);
+  
   if (internal_isolate->HasPendingException()) {
     return i::kNullMaybeHandle;
   }
+  
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
   return ToInternalObject(internal_isolate, escaped_ret);

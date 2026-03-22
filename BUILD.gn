@@ -334,6 +334,7 @@ source_set("saauso_cpython312_compiler") {
 #    否则可能出现链接期缺符号（如 EmbeddedPython312Compiler::*）。
 source_set("embedder_api") {
   sources = [
+    # 暴露给嵌入方的头文件
     "//include/saauso-container.h",
     "//include/saauso-context.h",
     "//include/saauso-exception.h",
@@ -348,11 +349,20 @@ source_set("embedder_api") {
     "//include/saauso-script.h",
     "//include/saauso-value.h",
     "//include/saauso.h",
-    "//src/api/api-callable.cc",
+
+    # API 内部实现
+    "//src/api/api-container.cc",
+    "//src/api/api-context.cc",
+    "//src/api/api-exception.cc",
+    "//src/api/api-function-callback.cc",
+    "//src/api/api-function.cc",
     "//src/api/api-impl.h",
     "//src/api/api-inl.h",
     "//src/api/api-isolate.cc",
+    "//src/api/api-local-handle.cc",
     "//src/api/api-objects.cc",
+    "//src/api/api-primitive.cc",
+    "//src/api/api-script.cc",
     "//src/api/api-support.cc",
     "//src/api/api-value.cc",
   ]

@@ -18,7 +18,6 @@
 namespace saauso {
 
 struct ApiAccess {
-
   static i::Isolate* UnwrapIsolate(saauso::Isolate* isolate) {
     if (isolate == nullptr) {
       return nullptr;
@@ -33,16 +32,6 @@ struct ApiAccess {
     return reinterpret_cast<const i::Isolate*>(isolate);
   }
 
-
-
-  static void SetTryCatchException(TryCatch* try_catch,
-                                   Local<Value> exception) {
-    if (try_catch == nullptr) {
-      return;
-    }
-    try_catch->exception_ = exception;
-  }
-
   static void SetFunctionCallbackInfoImpl(FunctionCallbackInfo* info,
                                           void* impl) {
     if (info == nullptr) {
@@ -51,11 +40,12 @@ struct ApiAccess {
     info->impl_ = impl;
   }
 
-  static void* GetFunctionCallbackInfoImpl(const FunctionCallbackInfo* info) {
-    if (info == nullptr) {
-      return nullptr;
+  static void SetTryCatchException(TryCatch* try_catch,
+                                   Local<Value> exception) {
+    if (try_catch == nullptr) {
+      return;
     }
-    return info->impl_;
+    try_catch->exception_ = exception;
   }
 };
 

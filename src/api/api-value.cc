@@ -4,8 +4,6 @@
 
 #include <string>
 
-#include "include/saauso-primitive.h"
-#include "include/saauso-script.h"
 #include "src/api/api-impl.h"
 
 namespace saauso {
@@ -88,130 +86,6 @@ bool Value::ToBoolean(bool* out) const {
     return true;
   }
   return false;
-}
-
-Local<String> String::New(Isolate* isolate, std::string_view value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
-
-  return api::WrapHostString<String>(i_isolate, std::string(value));
-}
-
-std::string String::Value() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
-  if (object.is_null() || !i::IsPyString(object)) {
-    return "";
-  }
-  i::Tagged<i::PyString> py_string = i::Tagged<i::PyString>::cast(*object);
-  return std::string(py_string->buffer(),
-                     static_cast<size_t>(py_string->length()));
-}
-
-Local<Integer> Integer::New(Isolate* isolate, int64_t value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
-
-  return api::WrapHostInteger<Integer>(i_isolate, value);
-}
-
-int64_t Integer::Value() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
-  if (object.is_null() || !i::IsPySmi(object)) {
-    return 0;
-  }
-  return i::PySmi::ToInt(i::Tagged<i::PySmi>::cast(*object));
-}
-
-Local<Float> Float::New(Isolate* isolate, double value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
-
-  return api::WrapHostFloat<Float>(reinterpret_cast<i::Isolate*>(isolate),
-                                   value);
-}
-
-double Float::Value() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
-  if (object.is_null() || !i::IsPyFloat(object)) {
-    return 0.0;
-  }
-  return i::Tagged<i::PyFloat>::cast(*object)->value();
-}
-
-Local<Boolean> Boolean::New(Isolate* isolate, bool value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
-
-  return api::WrapHostBoolean<Boolean>(reinterpret_cast<i::Isolate*>(isolate),
-                                       value);
-}
-
-bool Boolean::Value() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
-  if (object.is_null()) {
-    return false;
-  }
-  return i::IsPyTrue(object);
-}
-
-MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
-
-  if (source.IsEmpty() || !Local<Value>::Cast(source)->IsString()) {
-    return MaybeLocal<Script>();
-  }
-
-#if SAAUSO_ENABLE_CPYTHON_COMPILER
-  return MaybeLocal<Script>(api::WrapScriptSource(i_isolate, source->Value()));
-#else
-  i::HandleScope handle_scope;
-  i::Runtime_ThrowError(
-      i::ExceptionType::kRuntimeError,
-      "Script::Compile requires CPython frontend compiler support");
-  api::CapturePendingException(i_isolate);
-  return MaybeLocal<Script>();
-#endif
-}
-
-MaybeLocal<Value> Script::Run(Local<Context> context) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
-
-  if (internal_isolate == nullptr) {
-    return MaybeLocal<Value>();
-  }
-
-  if (context.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
-
-  i::Handle<i::PyObject> script_object = internal::Utils::OpenHandle(this);
-  if (script_object.is_null() || !i::IsPyString(script_object)) {
-    return MaybeLocal<Value>();
-  }
-
-  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(context);
-  if (context_object.is_null() || !i::IsPyDict(context_object)) {
-    return MaybeLocal<Value>();
-  }
-
-  i::Tagged<i::PyString> source_string =
-      i::Tagged<i::PyString>::cast(*script_object);
-  i::EscapableHandleScope handle_scope;
-  i::Handle<i::PyDict> globals =
-      i::handle(i::Tagged<i::PyDict>::cast(*context_object));
-  i::MaybeHandle<i::PyObject> maybe_result = i::Runtime_ExecutePythonSourceCode(
-      internal_isolate,
-      std::string_view(source_string->buffer(),
-                       static_cast<size_t>(source_string->length())),
-      globals, globals);
-  i::Handle<i::PyObject> result;
-  if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(internal_isolate);
-    return MaybeLocal<Value>();
-  }
-  i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
 }
 
 }  // namespace saauso
