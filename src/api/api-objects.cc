@@ -6,15 +6,12 @@
 namespace saauso {
 
 Local<Object> Object::New(Isolate* isolate) {
-  if (isolate == nullptr) {
-    return Local<Object>();
-  }
-
-  auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
 
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> dict =
-      internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
+      i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*dict)));
   return Local<Object>::Cast(internal::Utils::ToLocal<api::RawObject>(escaped));
@@ -136,15 +133,12 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
 }
 
 Local<List> List::New(Isolate* isolate) {
-  if (isolate == nullptr) {
-    return Local<List>();
-  }
-
-  auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
 
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyList> list =
-      internal_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);
+      i_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*list)));
   return Local<List>::Cast(internal::Utils::ToLocal<api::RawList>(escaped));
@@ -159,8 +153,8 @@ int64_t List::Length() const {
 }
 
 bool List::Push(Local<Value> value) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
-  if (internal_isolate == nullptr) {
+  i::Isolate* i_isolate = i::Isolate::Current();
+  if (i_isolate == nullptr) {
     return false;
   }
 
@@ -170,18 +164,18 @@ bool List::Push(Local<Value> value) {
   }
   i::HandleScope handle_scope;
   i::Handle<i::PyList> list = i::handle(i::Tagged<i::PyList>::cast(*object));
-  i::PyList::Append(list, api::ToInternalObject(internal_isolate, value));
-  if (internal_isolate->HasPendingException()) {
-    api::CapturePendingException(internal_isolate);
+  i::PyList::Append(list, api::ToInternalObject(i_isolate, value));
+  if (i_isolate->HasPendingException()) {
+    api::CapturePendingException(i_isolate);
     return false;
   }
   return true;
 }
 
 bool List::Set(int64_t index, Local<Value> value) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = i::Isolate::Current();
 
-  if (internal_isolate == nullptr) {
+  if (i_isolate == nullptr) {
     return false;
   }
   i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
@@ -194,18 +188,18 @@ bool List::Set(int64_t index, Local<Value> value) {
   }
   i::HandleScope handle_scope;
   i::Handle<i::PyList> list = i::handle(list_tagged);
-  list->Set(index, api::ToInternalObject(internal_isolate, value));
-  if (internal_isolate->HasPendingException()) {
-    api::CapturePendingException(internal_isolate);
+  list->Set(index, api::ToInternalObject(i_isolate, value));
+  if (i_isolate->HasPendingException()) {
+    api::CapturePendingException(i_isolate);
     return false;
   }
   return true;
 }
 
 MaybeLocal<Value> List::Get(int64_t index) const {
-  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = i::Isolate::Current();
 
-  if (internal_isolate == nullptr) {
+  if (i_isolate == nullptr) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);

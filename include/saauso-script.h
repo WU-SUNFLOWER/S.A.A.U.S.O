@@ -16,6 +16,7 @@ class Context;
 class Script final : public Value {
  public:
   static MaybeLocal<Script> Compile(Isolate* isolate, Local<String> source);
+
   MaybeLocal<Value> Run(Local<Context> context);
 };
 

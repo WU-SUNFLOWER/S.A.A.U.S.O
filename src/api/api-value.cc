@@ -91,8 +91,10 @@ bool Value::ToBoolean(bool* out) const {
 }
 
 Local<String> String::New(Isolate* isolate, std::string_view value) {
-  return api::WrapHostString<String>(reinterpret_cast<i::Isolate*>(isolate),
-                                     std::string(value));
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
+
+  return api::WrapHostString<String>(i_isolate, std::string(value));
 }
 
 std::string String::Value() const {
@@ -106,8 +108,10 @@ std::string String::Value() const {
 }
 
 Local<Integer> Integer::New(Isolate* isolate, int64_t value) {
-  return api::WrapHostInteger<Integer>(reinterpret_cast<i::Isolate*>(isolate),
-                                       value);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
+
+  return api::WrapHostInteger<Integer>(i_isolate, value);
 }
 
 int64_t Integer::Value() const {
@@ -119,6 +123,9 @@ int64_t Integer::Value() const {
 }
 
 Local<Float> Float::New(Isolate* isolate, double value) {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
+
   return api::WrapHostFloat<Float>(reinterpret_cast<i::Isolate*>(isolate),
                                    value);
 }
@@ -132,6 +139,9 @@ double Float::Value() const {
 }
 
 Local<Boolean> Boolean::New(Isolate* isolate, bool value) {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
+
   return api::WrapHostBoolean<Boolean>(reinterpret_cast<i::Isolate*>(isolate),
                                        value);
 }
@@ -145,24 +155,21 @@ bool Boolean::Value() const {
 }
 
 MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
-  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
 
-  if (isolate == nullptr || source.IsEmpty()) {
-    return MaybeLocal<Script>();
-  }
-  if (!Local<Value>::Cast(source)->IsString()) {
+  if (source.IsEmpty() || !Local<Value>::Cast(source)->IsString()) {
     return MaybeLocal<Script>();
   }
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-  return MaybeLocal<Script>(
-      api::WrapScriptSource(internal_isolate, source->Value()));
+  return MaybeLocal<Script>(api::WrapScriptSource(i_isolate, source->Value()));
 #else
   i::HandleScope handle_scope;
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
       "Script::Compile requires CPython frontend compiler support");
-  api::CapturePendingException(internal_isolate);
+  api::CapturePendingException(i_isolate);
   return MaybeLocal<Script>();
 #endif
 }

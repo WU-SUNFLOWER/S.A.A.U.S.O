@@ -96,9 +96,6 @@ Local<T> WrapObject(i::Isolate* isolate, i::Handle<i::PyObject> object) {
 
 template <typename T>
 Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
-  if (isolate == nullptr) {
-    return Local<T>();
-  }
   i::EscapableHandleScope scope;
   i::Handle<i::PyString> py_string = i::PyString::NewInstance(
       value.data(), static_cast<int64_t>(value.size()));
@@ -109,9 +106,6 @@ Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
 
 template <typename T>
 Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
-  if (isolate == nullptr) {
-    return Local<T>();
-  }
   i::EscapableHandleScope scope;
   i::Handle<i::PyObject> smi =
       i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)));
@@ -121,9 +115,6 @@ Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
 
 template <typename T>
 Local<T> WrapHostFloat(i::Isolate* isolate, double value) {
-  if (isolate == nullptr) {
-    return Local<T>();
-  }
   i::EscapableHandleScope scope;
   i::Handle<i::PyFloat> py_float = isolate->factory()->NewPyFloat(value);
   i::Handle<i::PyObject> escaped =
@@ -133,9 +124,6 @@ Local<T> WrapHostFloat(i::Isolate* isolate, double value) {
 
 template <typename T>
 Local<T> WrapHostBoolean(i::Isolate* isolate, bool value) {
-  if (isolate == nullptr) {
-    return Local<T>();
-  }
   i::EscapableHandleScope scope;
   i::Handle<i::PyObject> py_bool = i::handle(i::Tagged<i::PyObject>::cast(
       value ? isolate->py_true_object() : isolate->py_false_object()));

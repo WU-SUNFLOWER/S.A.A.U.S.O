@@ -92,11 +92,8 @@ Local<Value> EscapableHandleScope::Escape(Local<Value> value) {
 }
 
 Local<Context> Context::New(Isolate* isolate) {
-  if (isolate == nullptr) {
-    return Local<Context>();
-  }
-
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(i_isolate == i::Isolate::Current());
 
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
@@ -108,9 +105,10 @@ Local<Context> Context::New(Isolate* isolate) {
 
 void Context::Enter() {
   auto* i_isolate = i::Isolate::Current();
+
   auto* entered_contexts = i_isolate->entered_contexts();
 
-  if (i_isolate != nullptr && entered_contexts != nullptr) {
+  if (entered_contexts != nullptr) {
     if (entered_contexts->empty()) {
       i_isolate->Enter();
     }
