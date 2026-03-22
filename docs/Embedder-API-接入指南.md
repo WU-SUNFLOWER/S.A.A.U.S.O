@@ -218,6 +218,13 @@ int main() {
 3. `MaybeLocal` 失败 + `TryCatch.HasCaught()==true` 才是完整错误闭环。
 4. 不要忽略空句柄；必须先判空再 `ToLocalChecked`。
 
+## 4.1 Isolate 契约（严格模式）
+
+1. 所有带 `Isolate*` 入参的 API 要求“当前线程已绑定同一个 Isolate”。
+2. 违反契约（如 `Current != explicit isolate`、`Current == null`）会直接终止进程。
+3. `HandleScope` 是进入 API 调用窗口的前置条件，`Local<T>` 创建前必须先建立 `HandleScope`。
+4. 不允许跨线程直接复用同一 `Isolate` 执行 Embedder API。
+
 ## 5. 一个实战 Demo 在哪里
 
 1. 文件：`samples/game_engine_demo.cc`
