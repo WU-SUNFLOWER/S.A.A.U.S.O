@@ -1,0 +1,101 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#include <string>
+
+#include "src/api/api-impl.h"
+
+namespace saauso {
+namespace api {
+
+#if SAAUSO_ENABLE_CPYTHON_COMPILER
+Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source) {
+  return WrapHostString<Script>(isolate, std::move(source));
+}
+#endif
+
+i::Handle<i::PyObject> ToInternalObject(i::Isolate* internal_isolate,
+                                        Local<Value> value) {
+  if (value.IsEmpty()) {
+    return i::handle(
+        i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
+  }
+  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(value);
+  if (object.is_null()) {
+    return i::handle(
+        i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()));
+  }
+  return object;
+}
+
+Local<Value> WrapRuntimeResult(i::Isolate* isolate,
+                               i::Handle<i::PyObject> result) {
+  if (result.is_null()) {
+    return Local<Value>();
+  }
+  return Local<Value>::Cast(WrapObject<RawValue>(isolate, result));
+}
+
+bool CapturePendingException(i::Isolate* isolate) {
+  if (!isolate->HasPendingException()) {
+    return false;
+  }
+
+  TryCatch* try_catch = isolate->try_catch_top();
+  if (try_catch == nullptr) {
+    return true;
+  }
+
+  i::Handle<i::PyObject> exception =
+      isolate->exception_state()->pending_exception();
+  ApiAccess::SetTryCatchException(
+      try_catch, Local<Value>::Cast(WrapObject<RawValue>(isolate, exception)));
+  isolate->exception_state()->Clear();
+  return true;
+}
+
+i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
+    i::Isolate* internal_isolate,
+    i::Handle<i::PyObject> receiver,
+    i::Handle<i::PyTuple> args,
+    i::Handle<i::PyDict>,
+    i::Handle<i::PyObject> closure_data) {
+  if (closure_data.is_null() || !i::IsPySmi(closure_data)) {
+    i::Runtime_ThrowError(i::ExceptionType::kRuntimeError,
+                          "Embedder callback closure_data is invalid");
+    return i::kNullMaybeHandle;
+  }
+  int64_t callback_addr =
+      i::PySmi::ToInt(i::Tagged<i::PySmi>::cast(*closure_data));
+  FunctionCallback callback =
+      reinterpret_cast<FunctionCallback>(static_cast<intptr_t>(callback_addr));
+  if (callback == nullptr) {
+    i::Runtime_ThrowError(i::ExceptionType::kRuntimeError,
+                          "Embedder callback binding is missing");
+    return i::kNullMaybeHandle;
+  }
+  EscapableHandleScope escapable_scope(
+      reinterpret_cast<Isolate*>(internal_isolate));
+
+  FunctionCallbackInfoImpl callback_info_impl;
+  callback_info_impl.isolate = internal_isolate;
+  callback_info_impl.receiver = receiver;
+  callback_info_impl.args = args;
+
+  FunctionCallbackInfo callback_info;
+  ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
+
+  callback(callback_info);
+  
+  if (internal_isolate->HasPendingException()) {
+    return i::kNullMaybeHandle;
+  }
+  
+  Local<Value> escaped_ret =
+      escapable_scope.Escape(callback_info_impl.return_value);
+  return ToInternalObject(internal_isolate, escaped_ret);
+}
+
+}  // namespace api
+}  // namespace saauso

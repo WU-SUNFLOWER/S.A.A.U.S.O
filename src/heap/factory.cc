@@ -379,6 +379,8 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
     object->default_args_ = Tagged<PyObject>::null();
     object->closures_ = Tagged<PyObject>::null();
     object->native_func_ = nullptr;
+    object->native_func_with_closure_ = nullptr;
+    object->native_closure_data_ = Tagged<PyObject>::null();
     object->native_access_flag_ = NativeFuncAccessFlag::kStatic;
     object->native_owner_type_ = Tagged<PyObject>::null();
     PyObject::SetKlass(object, klass);
@@ -414,8 +416,11 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
   Handle<PyFunction> object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
 
-  assert(func_template.function() != nullptr);
+  assert(func_template.function() != nullptr ||
+         func_template.function_with_closure() != nullptr);
   object->native_func_ = func_template.function();
+  object->native_func_with_closure_ = func_template.function_with_closure();
+  object->native_closure_data_ = *func_template.closure_data();
   object->native_access_flag_ = func_template.native_access_flag();
   object->native_owner_type_ = *func_template.native_owner_type();
 

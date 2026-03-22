@@ -14,7 +14,11 @@
 #include "src/utils/maybe.h"
 #include "src/utils/vector.h"
 
-namespace saauso::internal {
+namespace saauso {
+class Context;
+class TryCatch;
+
+namespace internal {
 
 using ThreadId = std::thread::id;
 
@@ -143,6 +147,13 @@ class Isolate {
 
   bool initialized() const { return initialized_; }
 
+  Vector<saauso::Context*>& entered_contexts() { return entered_contexts_; }
+
+  saauso::TryCatch* try_catch_top() const { return try_catch_top_; }
+  void set_try_catch_top(saauso::TryCatch* try_catch) {
+    try_catch_top_ = try_catch;
+  }
+
  private:
   Isolate() = default;
 
@@ -179,6 +190,9 @@ class Isolate {
   ThreadId owner_thread_;
   int entry_count_{0};
 
+  Vector<saauso::Context*> entered_contexts_;
+  saauso::TryCatch* try_catch_top_{nullptr};
+
   void* mutex_{nullptr};
   ThreadId locker_thread_;
   int locker_count_{0};
@@ -186,6 +200,7 @@ class Isolate {
   bool initialized_{false};
 };
 
-}  // namespace saauso::internal
+}  // namespace internal
+}  // namespace saauso
 
 #endif  // SAAUSO_RUNTIME_ISOLATE_H_

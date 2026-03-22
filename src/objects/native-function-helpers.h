@@ -24,6 +24,13 @@ using NativeFuncPointer = MaybeHandle<PyObject> (*)(Isolate* isolate,
                                                     Handle<PyTuple> args,
                                                     Handle<PyDict> kwargs);
 
+using NativeFuncPointerWithClosure =
+    MaybeHandle<PyObject> (*)(Isolate* isolate,
+                              Handle<PyObject> receiver,
+                              Handle<PyTuple> args,
+                              Handle<PyDict> kwargs,
+                              Handle<PyObject> closure_data);
+
 }  // namespace saauso::internal
 
 #endif  // INCLUDE_SAAUSO_NATIVE_FUNCTION_H_

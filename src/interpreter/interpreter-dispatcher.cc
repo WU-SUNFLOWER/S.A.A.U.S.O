@@ -1150,10 +1150,10 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate_, frame,
-        FrameObjectBuilder::BuildFastPath(Handle<PyFunction>::cast(callable),
-                                          receiver, actual_args, kwarg_keys));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
+                               FrameObjectBuilder::BuildFastPath(
+                                   isolate_, Handle<PyFunction>::cast(callable),
+                                   receiver, actual_args, kwarg_keys));
 
     EnterFrame(frame);
     return JustVoid();
@@ -1184,10 +1184,10 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
   if (IsNormalPyFunction(callable)) {
     FrameObject* frame;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate_, frame,
-        FrameObjectBuilder::BuildSlowPath(Handle<PyFunction>::cast(callable),
-                                          receiver, pos_args, kw_args));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
+                               FrameObjectBuilder::BuildSlowPath(
+                                   isolate_, Handle<PyFunction>::cast(callable),
+                                   receiver, pos_args, kw_args));
 
     EnterFrame(frame);
     return JustVoid();

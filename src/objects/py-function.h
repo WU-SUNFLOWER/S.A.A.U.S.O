@@ -32,9 +32,18 @@ class PyFunction : public PyObject {
   Handle<PyTuple> closures() const;
   Tagged<PyTuple> closures_tagged() const;
 
-  NativeFuncPointer native_func() const {
-    assert(native_func_ != nullptr);
-    return native_func_;
+  NativeFuncPointer native_func() const { return native_func_; }
+  NativeFuncPointerWithClosure native_func_with_closure() const {
+    return native_func_with_closure_;
+  }
+  bool has_closure_native_func() const {
+    return native_func_with_closure_ != nullptr;
+  }
+  Handle<PyObject> native_closure_data() const {
+    return handle(native_closure_data_);
+  }
+  void set_native_closure_data(Handle<PyObject> closure_data) {
+    native_closure_data_ = *closure_data;
   }
 
   NativeFuncAccessFlag native_access_flag() const {
@@ -76,6 +85,8 @@ class PyFunction : public PyObject {
   Tagged<PyObject> closures_{kNullAddress};
 
   NativeFuncPointer native_func_{nullptr};
+  NativeFuncPointerWithClosure native_func_with_closure_{nullptr};
+  Tagged<PyObject> native_closure_data_{kNullAddress};
   NativeFuncAccessFlag native_access_flag_{NativeFuncAccessFlag::kStatic};
   // PyTypeObject* native_owner_type_
   Tagged<PyObject> native_owner_type_{kNullAddress};
