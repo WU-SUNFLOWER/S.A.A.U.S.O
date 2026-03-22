@@ -29,33 +29,31 @@ Local<Context> Context::New(Isolate* isolate) {
 void Context::Enter() {
   auto* i_isolate = i::Isolate::Current();
 
-  auto* entered_contexts = i_isolate->entered_contexts();
+  auto& entered_contexts = i_isolate->entered_contexts();
 
-  if (entered_contexts != nullptr) {
-    if (entered_contexts->empty()) {
-      i_isolate->Enter();
-    }
-    entered_contexts->push_back(this);
+  if (entered_contexts.IsEmpty()) {
+    i_isolate->Enter();
   }
+  entered_contexts.PushBack(this);
 }
 
 void Context::Exit() {
   auto* i_isolate = i::Isolate::Current();
-  auto* entered_contexts = i_isolate->entered_contexts();
+  auto& entered_contexts = i_isolate->entered_contexts();
 
-  if (i_isolate != nullptr && entered_contexts != nullptr) {
-    if (entered_contexts->empty()) {
-      assert(false);
-      return;
-    }
-    if (entered_contexts->back() != this) {
-      assert(false);
-      return;
-    }
-    entered_contexts->pop_back();
-    if (entered_contexts->empty()) {
-      i_isolate->Exit();
-    }
+  if (entered_contexts.IsEmpty()) {
+    assert(false);
+    return;
+  }
+
+  if (entered_contexts.GetBack() != this) {
+    assert(false);
+    return;
+  }
+
+  entered_contexts.PopBack();
+  if (entered_contexts.IsEmpty()) {
+    i_isolate->Exit();
   }
 }
 

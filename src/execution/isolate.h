@@ -6,7 +6,6 @@
 #define SAAUSO_RUNTIME_ISOLATE_H_
 
 #include <thread>
-#include <vector>
 
 #include "src/execution/exception-state.h"
 #include "src/execution/isolate-klass-list.h"
@@ -148,12 +147,7 @@ class Isolate {
 
   bool initialized() const { return initialized_; }
 
-  std::vector<saauso::Context*>* entered_contexts() {
-    return &entered_contexts_;
-  }
-  const std::vector<saauso::Context*>* entered_contexts() const {
-    return &entered_contexts_;
-  }
+  Vector<saauso::Context*>& entered_contexts() { return entered_contexts_; }
 
   saauso::TryCatch* try_catch_top() const { return try_catch_top_; }
   void set_try_catch_top(saauso::TryCatch* try_catch) {
@@ -196,7 +190,7 @@ class Isolate {
   ThreadId owner_thread_;
   int entry_count_{0};
 
-  std::vector<saauso::Context*> entered_contexts_;
+  Vector<saauso::Context*> entered_contexts_;
   saauso::TryCatch* try_catch_top_{nullptr};
 
   void* mutex_{nullptr};
