@@ -53,4 +53,16 @@ TEST(EmbedderPhase1Test, ContextScope_NestedLifo) {
   Saauso::Dispose();
 }
 
+// TODO: Isolate模型完善后开放
+// TEST(EmbedderContractDeathTest, ExplicitApiWithoutCurrentIsolateShouldDie) {
+//   ASSERT_DEATH_IF_SUPPORTED(
+//       {
+//         Saauso::Initialize();
+//         Isolate* isolate = Isolate::New();
+//         Local<String> value = String::New(isolate, "contract");
+//         (void)value;
+//       },
+//       "");
+// }
+
 }  // namespace saauso

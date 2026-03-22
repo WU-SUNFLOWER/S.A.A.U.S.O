@@ -130,6 +130,21 @@ TEST(EmbedderPhase2Test, TryCatch_Nested_Capture) {
   Saauso::Dispose();
 }
 
+// TODO: Isolate模型完善后开放
+// TEST(EmbedderContractDeathTest, ExplicitIsolateMismatchShouldDie) {
+//   ASSERT_DEATH_IF_SUPPORTED(
+//       {
+//         Saauso::Initialize();
+//         Isolate* isolate_a = Isolate::New();
+//         Isolate* isolate_b = Isolate::New();
+//         HandleScope scope(isolate_a);
+//         Local<String> source = String::New(isolate_a, "x=1");
+//         MaybeLocal<Script> script = Script::Compile(isolate_b, source);
+//         (void)script;
+//       },
+//       "");
+// }
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 TEST(EmbedderPhase2Test, ScriptRunSucceedsWithFrontendCompiler) {
   Saauso::Initialize();

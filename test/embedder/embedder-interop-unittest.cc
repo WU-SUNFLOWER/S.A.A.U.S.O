@@ -681,6 +681,26 @@ TEST(EmbedderPhase3Test, Callback_EscapeScope_NoGrowth) {
   isolate->Dispose();
   Saauso::Dispose();
 }
+
+// TODO: Isolate模型完善后开放
+// TEST(EmbedderContractDeathTest, WrongThreadInvocationShouldDie) {
+//   ASSERT_DEATH_IF_SUPPORTED(
+//       {
+//         Saauso::Initialize();
+//         Isolate* isolate = Isolate::New();
+//         {
+//           HandleScope scope(isolate);
+//           std::thread worker([&]() {
+//             Local<String> value = String::New(isolate, "cross-thread");
+//             (void)value;
+//           });
+//           worker.join();
+//         }
+//         isolate->Dispose();
+//         Saauso::Dispose();
+//       },
+//       "");
+// }
 #endif
 
 }  // namespace saauso
