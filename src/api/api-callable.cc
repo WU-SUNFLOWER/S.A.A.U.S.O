@@ -10,7 +10,6 @@ Local<Function> Function::New(Isolate* isolate,
                               FunctionCallback callback,
                               std::string_view name) {
   auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   if (isolate == nullptr || callback == nullptr) {
     return Local<Function>();
@@ -52,7 +51,6 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
       !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
-  i::Isolate::Scope isolate_scope(isolate);
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyTuple> py_args = isolate->factory()->NewPyTuple(argc);
   for (int i = 0; i < argc; ++i) {
@@ -173,7 +171,6 @@ void FunctionCallbackInfo::ThrowRuntimeError(std::string_view message) const {
     return;
   }
 
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   std::string error(message);
   i::Runtime_ThrowError(i::ExceptionType::kRuntimeError, error.c_str());

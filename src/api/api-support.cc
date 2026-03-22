@@ -43,7 +43,6 @@ bool CapturePendingException(i::Isolate* isolate) {
     return true;
   }
 
-  i::Isolate::Scope isolate_scope(isolate);
   i::Handle<i::PyObject> exception =
       isolate->exception_state()->pending_exception();
   ApiAccess::SetTryCatchException(

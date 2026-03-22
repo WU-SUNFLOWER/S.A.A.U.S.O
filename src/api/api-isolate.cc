@@ -42,7 +42,6 @@ void Isolate::ThrowException(Local<Value> exception) {
   }
 
   auto* i_isolate = reinterpret_cast<i::Isolate*>(this);
-  i::Isolate::Scope isolate_scope(i_isolate);
 
   if (i_isolate == nullptr) {
     return;
@@ -98,7 +97,6 @@ Local<Context> Context::New(Isolate* isolate) {
   }
 
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::Isolate::Scope isolate_scope(i_isolate);
 
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
@@ -146,7 +144,6 @@ bool Context::Set(Local<String> key, Local<Value> value) {
   }
 
   i::Isolate* i_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(i_isolate);
 
   i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
   if (i_isolate == nullptr || context_object.is_null() ||
@@ -174,7 +171,6 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   }
 
   i::Isolate* i_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(i_isolate);
 
   i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
   if (i_isolate == nullptr || context_object.is_null() ||

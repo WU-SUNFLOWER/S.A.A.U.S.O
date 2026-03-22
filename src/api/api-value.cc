@@ -158,7 +158,6 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   return MaybeLocal<Script>(
       api::WrapScriptSource(internal_isolate, source->Value()));
 #else
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
@@ -170,7 +169,6 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
   i::Isolate* internal_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();

@@ -11,7 +11,6 @@ Local<Object> Object::New(Isolate* isolate) {
   }
 
   auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> dict =
@@ -37,7 +36,6 @@ bool Object::Set(Local<String> key, Local<Value> value) {
     return false;
   }
 
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   i::Handle<i::PyDict> dict = i::handle(i::Tagged<i::PyDict>::cast(*object));
   std::string key_value = key->Value();
@@ -56,7 +54,6 @@ bool Object::Set(Local<String> key, Local<Value> value) {
 
 MaybeLocal<Value> Object::Get(Local<String> key) {
   i::Isolate* internal_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   i::EscapableHandleScope handle_scope;
 
@@ -104,7 +101,6 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   if (self.is_null()) {
     return MaybeLocal<Value>();
   }
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::EscapableHandleScope handle_scope;
   std::string name_value = name->Value();
   i::Handle<i::PyString> py_name = i::PyString::NewInstance(
@@ -145,7 +141,6 @@ Local<List> List::New(Isolate* isolate) {
   }
 
   auto* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyList> list =
@@ -173,7 +168,6 @@ bool List::Push(Local<Value> value) {
   if (object.is_null() || !i::IsPyList(object)) {
     return false;
   }
-  i::Isolate::Scope isolate_scope(internal_isolate);
   i::HandleScope handle_scope;
   i::Handle<i::PyList> list = i::handle(i::Tagged<i::PyList>::cast(*object));
   i::PyList::Append(list, api::ToInternalObject(internal_isolate, value));
@@ -186,7 +180,6 @@ bool List::Push(Local<Value> value) {
 
 bool List::Set(int64_t index, Local<Value> value) {
   i::Isolate* internal_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   if (internal_isolate == nullptr) {
     return false;
@@ -211,7 +204,6 @@ bool List::Set(int64_t index, Local<Value> value) {
 
 MaybeLocal<Value> List::Get(int64_t index) const {
   i::Isolate* internal_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
@@ -232,7 +224,6 @@ MaybeLocal<Value> List::Get(int64_t index) const {
 
 MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
   i::Isolate* internal_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   if (isolate == nullptr || argc < 0) {
     return MaybeLocal<Tuple>();
@@ -259,7 +250,6 @@ int64_t Tuple::Length() const {
 
 MaybeLocal<Value> Tuple::Get(int64_t index) const {
   i::Isolate* internal_isolate = i::Isolate::Current();
-  i::Isolate::Scope isolate_scope(internal_isolate);
 
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
