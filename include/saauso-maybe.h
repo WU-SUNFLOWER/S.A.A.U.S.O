@@ -2,24 +2,26 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_UTILS_MAYBE_H_
-#define SAAUSO_UTILS_MAYBE_H_
+#ifndef INCLUDE_SAAUSO_MAYBE_H_
+#define INCLUDE_SAAUSO_MAYBE_H_
 
 #include <cassert>
 #include <utility>
 
-namespace saauso::internal {
+namespace saauso {
 
+namespace internal {
 struct NullMaybeType {};
 
 inline constexpr NullMaybeType kNullMaybe;
+}  // namespace internal
 
 template <typename T>
 class [[nodiscard]] Maybe {
  public:
   Maybe() = default;
   explicit Maybe(T value) : has_value_(true), value_(value) {}
-  Maybe(NullMaybeType) : Maybe() {}
+  Maybe(internal::NullMaybeType) : Maybe() {}
 
   static Maybe<T> Nothing() { return Maybe<T>(); }
 
@@ -60,7 +62,7 @@ template <>
 class [[nodiscard]] Maybe<void> {
  public:
   constexpr Maybe() = default;
-  constexpr Maybe(NullMaybeType) {}
+  constexpr Maybe(internal::NullMaybeType) {}
 
   bool IsNothing() const { return !is_valid_; }
   bool IsEmpty() const { return IsNothing(); }
@@ -86,6 +88,6 @@ inline Maybe<void> JustVoid() {
   return Maybe<void>(Maybe<void>::JustTag());
 }
 
-}  // namespace saauso::internal
+}  // namespace saauso
 
-#endif  // SAAUSO_UTILS_MAYBE_H_
+#endif  // INCLUDE_SAAUSO_MAYBE_H_
