@@ -51,10 +51,7 @@ class Utils {
 
   template <typename T>
   static inline Local<T> ToLocal(i::Handle<i::PyObject> handle) {
-    if (handle.is_null()) {
-      return Local<T>();
-    }
-    return Local<T>(reinterpret_cast<T*>(handle.location()));
+    return Local<T>::FromSlot(handle.location());
   }
 };
 }  // namespace internal
@@ -91,7 +88,7 @@ Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source);
 
 template <typename T>
 Local<T> WrapObject(i::Isolate* isolate, i::Handle<i::PyObject> object) {
-  return internal::Utils::ToLocal<T>(object);
+  return i::Utils::ToLocal<T>(object);
 }
 
 template <typename T>
@@ -101,7 +98,7 @@ Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
       value.data(), static_cast<int64_t>(value.size()));
   i::Handle<i::PyObject> escaped =
       scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_string)));
-  return internal::Utils::ToLocal<T>(escaped);
+  return i::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
@@ -110,7 +107,7 @@ Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
   i::Handle<i::PyObject> smi =
       i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)));
   i::Handle<i::PyObject> escaped = scope.Escape(smi);
-  return internal::Utils::ToLocal<T>(escaped);
+  return i::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
@@ -119,7 +116,7 @@ Local<T> WrapHostFloat(i::Isolate* isolate, double value) {
   i::Handle<i::PyFloat> py_float = isolate->factory()->NewPyFloat(value);
   i::Handle<i::PyObject> escaped =
       scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_float)));
-  return internal::Utils::ToLocal<T>(escaped);
+  return i::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
@@ -128,7 +125,7 @@ Local<T> WrapHostBoolean(i::Isolate* isolate, bool value) {
   i::Handle<i::PyObject> py_bool = i::handle(i::Tagged<i::PyObject>::cast(
       value ? isolate->py_true_object() : isolate->py_false_object()));
   i::Handle<i::PyObject> escaped = scope.Escape(py_bool);
-  return internal::Utils::ToLocal<T>(escaped);
+  return i::Utils::ToLocal<T>(escaped);
 }
 
 }  // namespace api

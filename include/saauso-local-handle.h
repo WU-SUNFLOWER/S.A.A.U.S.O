@@ -8,6 +8,8 @@
 #include <cassert>
 #include <type_traits>
 
+#include "include/saauso-internal.h"
+
 namespace saauso {
 
 class Isolate;
@@ -26,11 +28,11 @@ class Local {
   // 支持将指向派生类型 S 的 Local 隐式转换为代表基类 T 的 Local
   template <class S>
     requires std::is_base_of_v<T, S>
-  Local(Local<S> that) : val_(that.val_) {}
+  Local(Local<S> that) : location_(that.location_) {}
 
-  bool IsEmpty() const { return val_ == nullptr; }
+  bool IsEmpty() const { return location_ == nullptr; }
 
-  T* operator->() const { return val_; }
+  T* operator->() const { return reinterpret_cast<T*>(location_); }
   T* operator*() const { return this->operator->(); }
 
   // 检查两个 Local 是否相等或不相等。
@@ -43,7 +45,7 @@ class Local {
     if (that.IsEmpty()) {
       return false;
     }
-    return val_ == that.val_;
+    return location_ == that.location_;
   }
 
   template <class S>
@@ -59,7 +61,7 @@ class Local {
     if (that.IsEmpty()) {
       return Local<T>();
     }
-    return Local<T>(reinterpret_cast<T*>(that.val_));
+    return Local<T>(that.location_);
   }
 
   // 等价于Local<S>::Cast()
@@ -70,15 +72,19 @@ class Local {
     return Local<S>::Cast(*this);
   }
 
+ protected:
+  explicit Local(internal::Address* location) : location_(location) {}
+
  private:
   template <typename>
   friend class Local;
   friend class internal::Utils;
-  friend struct ApiAccess;
 
-  explicit Local(T* val) : val_(val) {}
+  static Local<T> FromSlot(internal::Address* location) {
+    return Local<T>(location);
+  }
 
-  T* val_{nullptr};
+  internal::Address* location_{nullptr};
 };
 
 template <typename T>
