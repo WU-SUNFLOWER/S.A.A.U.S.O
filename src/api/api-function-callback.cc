@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "include/saauso-function-callback.h"
+#include "include/saauso-maybe.h"
 #include "src/api/api-impl.h"
 
 namespace saauso {
@@ -15,43 +16,41 @@ int FunctionCallbackInfo::Length() const {
   return static_cast<int>(impl->args->length());
 }
 
-Local<Value> FunctionCallbackInfo::operator[](int index) const {
+MaybeLocal<Value> FunctionCallbackInfo::operator[](int index) const {
   auto* impl = reinterpret_cast<api::FunctionCallbackInfoImpl*>(impl_);
   if (impl == nullptr || impl->args.is_null() || index < 0 ||
       index >= impl->args->length()) {
-    return Local<Value>();
+    return MaybeLocal<Value>();
   }
-  return api::WrapRuntimeResult(impl->isolate, impl->args->Get(index));
+  return MaybeLocal<Value>(
+      api::WrapRuntimeResult(impl->isolate, impl->args->Get(index)));
 }
 
-bool FunctionCallbackInfo::GetIntegerArg(int index, int64_t* out) const {
-  if (out == nullptr) {
-    return false;
+Maybe<int64_t> FunctionCallbackInfo::GetIntegerArg(int index) const {
+  MaybeLocal<Value> maybe_value = operator[](index);
+  Local<Value> value;
+  if (!maybe_value.ToLocal(&value)) {
+    return i::kNullMaybe;
   }
-  Local<Value> value = operator[](index);
-  if (value.IsEmpty()) {
-    return false;
-  }
-  return value->ToInteger(out);
+  return value->ToInteger();
 }
 
-bool FunctionCallbackInfo::GetStringArg(int index, std::string* out) const {
-  if (out == nullptr) {
-    return false;
+Maybe<std::string> FunctionCallbackInfo::GetStringArg(int index) const {
+  MaybeLocal<Value> maybe_value = operator[](index);
+  Local<Value> value;
+  if (!maybe_value.ToLocal(&value)) {
+    return i::kNullMaybe;
   }
-  Local<Value> value = operator[](index);
-  if (value.IsEmpty()) {
-    return false;
-  }
-  return value->ToString(out);
+  return value->ToString();
 }
 
-Local<Value> FunctionCallbackInfo::Receiver() const {
+MaybeLocal<Value> FunctionCallbackInfo::Receiver() const {
   auto* impl = reinterpret_cast<api::FunctionCallbackInfoImpl*>(impl_);
   if (impl == nullptr) {
-    return Local<Value>();
+    return MaybeLocal<Value>();
   }
-  return api::WrapRuntimeResult(impl->isolate, impl->receiver);
+  return MaybeLocal<Value>(
+      api::WrapRuntimeResult(impl->isolate, impl->receiver));
 }
 
 Isolate* FunctionCallbackInfo::GetIsolate() const {

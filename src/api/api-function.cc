@@ -6,9 +6,9 @@
 
 namespace saauso {
 
-Local<Function> Function::New(Isolate* isolate,
-                              FunctionCallback callback,
-                              std::string_view name) {
+MaybeLocal<Function> Function::New(Isolate* isolate,
+                                   FunctionCallback callback,
+                                   std::string_view name) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
@@ -26,11 +26,11 @@ Local<Function> Function::New(Isolate* isolate,
   i::Handle<i::PyFunction> function;
   if (!maybe_function.ToHandle(&function)) {
     api::CapturePendingException(i_isolate);
-    return Local<Function>();
+    return MaybeLocal<Function>();
   }
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*function)));
-  return internal::Utils::ToLocal<Function>(escaped);
+  return MaybeLocal<Function>(internal::Utils::ToLocal<Function>(escaped));
 }
 
 MaybeLocal<Value> Function::Call(Local<Context> context,

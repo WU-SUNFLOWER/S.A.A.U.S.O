@@ -9,6 +9,7 @@
 #include <cstdlib>
 
 #include "include/saauso-internal.h"
+#include "include/saauso-maybe.h"
 #include "src/builtins/builtins-py-dict-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -34,7 +35,6 @@
 #include "src/runtime/runtime-py-dict.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
@@ -118,9 +118,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Isolate* isolate,
                                                 Handle<PyObject> self) {
   Handle<PyString> repr;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
-                             Runtime_NewDictRepr(isolate,
-                                                 Handle<PyDict>::cast(self)));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr, Runtime_NewDictRepr(isolate, Handle<PyDict>::cast(self)));
   return repr;
 }
 

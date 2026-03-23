@@ -12,17 +12,23 @@ namespace saauso {
 
 class List : public Value {
  public:
-  static Local<List> New(Isolate* isolate);
+  // 创建列表；创建失败返回 Nothing。
+  static MaybeLocal<List> New(Isolate* isolate);
   int64_t Length() const;
-  bool Push(Local<Value> value);
-  bool Set(int64_t index, Local<Value> value);
+  // 追加元素；成功返回 JustVoid，失败返回 Nothing。
+  Maybe<void> Push(Local<Value> value);
+  // 按下标写入；成功返回 JustVoid，失败返回 Nothing。
+  Maybe<void> Set(int64_t index, Local<Value> value);
+  // 按下标读取；命中返回 Just(value)，越界或失败返回 Nothing。
   MaybeLocal<Value> Get(int64_t index) const;
 };
 
 class Tuple : public Value {
  public:
+  // 创建元组；创建失败返回 Nothing。
   static MaybeLocal<Tuple> New(Isolate* isolate, int argc, Local<Value> argv[]);
   int64_t Length() const;
+  // 按下标读取；命中返回 Just(value)，越界或失败返回 Nothing。
   MaybeLocal<Value> Get(int64_t index) const;
 };
 

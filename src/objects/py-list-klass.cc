@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <vector>
 
+#include "include/saauso-maybe.h"
 #include "src/builtins/builtins-py-list-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -35,7 +36,6 @@
 #include "src/runtime/runtime-py-list.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 #include "src/utils/stable-merge-sort.h"
 #include "src/utils/utils.h"
 
@@ -182,9 +182,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Isolate* isolate,
                                                 Handle<PyObject> self) {
   Handle<PyString> repr;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, repr,
-                             Runtime_NewListRepr(isolate,
-                                                 Handle<PyList>::cast(self)));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, repr, Runtime_NewListRepr(isolate, Handle<PyList>::cast(self)));
   return repr;
 }
 

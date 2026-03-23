@@ -22,9 +22,9 @@ TEST(EmbedderPhase1Test, CreateHandleScopeAndContext) {
 
   for (int i = 0; i < 1000; ++i) {
     HandleScope scope(isolate);
-    Local<Context> context = Context::New(isolate);
-    ASSERT_FALSE(context.IsEmpty());
-    ContextScope context_scope(context);
+    MaybeLocal<Context> maybe_context = Context::New(isolate);
+    ASSERT_FALSE(maybe_context.IsEmpty());
+    ContextScope context_scope(maybe_context.ToLocalChecked());
   }
 
   isolate->Dispose();
@@ -38,10 +38,12 @@ TEST(EmbedderPhase1Test, ContextScope_NestedLifo) {
 
   {
     HandleScope scope(isolate);
-    Local<Context> context_a = Context::New(isolate);
-    Local<Context> context_b = Context::New(isolate);
-    ASSERT_FALSE(context_a.IsEmpty());
-    ASSERT_FALSE(context_b.IsEmpty());
+    MaybeLocal<Context> maybe_context_a = Context::New(isolate);
+    MaybeLocal<Context> maybe_context_b = Context::New(isolate);
+    ASSERT_FALSE(maybe_context_a.IsEmpty());
+    ASSERT_FALSE(maybe_context_b.IsEmpty());
+    Local<Context> context_a = maybe_context_a.ToLocalChecked();
+    Local<Context> context_b = maybe_context_b.ToLocalChecked();
     {
       ContextScope scope_a(context_a);
       context_b->Enter();

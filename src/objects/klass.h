@@ -8,11 +8,11 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "include/saauso-maybe.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/objects/klass-vtable.h"
 #include "src/objects/objects.h"
-#include "src/utils/maybe.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {

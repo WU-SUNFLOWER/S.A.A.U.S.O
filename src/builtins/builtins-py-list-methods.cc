@@ -8,6 +8,7 @@
 #include <cinttypes>
 #include <vector>
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
@@ -30,7 +31,6 @@
 #include "src/runtime/runtime-py-string.h"
 #include "src/runtime/runtime-py-tuple.h"
 #include "src/runtime/runtime-truthiness.h"
-#include "src/utils/maybe.h"
 #include "src/utils/stable-merge-sort.h"
 
 namespace saauso::internal {

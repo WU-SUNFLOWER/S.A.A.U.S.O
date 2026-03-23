@@ -43,8 +43,7 @@ Local<Float> Float::New(Isolate* isolate, double value) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  return api::WrapHostFloat<Float>(reinterpret_cast<i::Isolate*>(isolate),
-                                   value);
+  return api::WrapHostFloat<Float>(i_isolate, value);
 }
 
 double Float::Value() const {
@@ -59,8 +58,7 @@ Local<Boolean> Boolean::New(Isolate* isolate, bool value) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  return api::WrapHostBoolean<Boolean>(reinterpret_cast<i::Isolate*>(isolate),
-                                       value);
+  return api::WrapHostBoolean<Boolean>(i_isolate, value);
 }
 
 bool Boolean::Value() const {

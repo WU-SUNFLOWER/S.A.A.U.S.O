@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <string>
 
+#include "saauso-maybe.h"
+
 namespace saauso {
 
 class Value {
@@ -16,10 +18,14 @@ class Value {
   bool IsInteger() const;
   bool IsFloat() const;
   bool IsBoolean() const;
-  bool ToString(std::string* out) const;
-  bool ToInteger(int64_t* out) const;
-  bool ToFloat(double* out) const;
-  bool ToBoolean(bool* out) const;
+  // 若当前值为字符串，返回字符串值；否则返回 Nothing。
+  Maybe<std::string> ToString() const;
+  // 若当前值为整数，返回整数值；否则返回 Nothing。
+  Maybe<int64_t> ToInteger() const;
+  // 若当前值为浮点数，返回浮点值；否则返回 Nothing。
+  Maybe<double> ToFloat() const;
+  // 若当前值为布尔值，返回布尔值；否则返回 Nothing。
+  Maybe<bool> ToBoolean() const;
 
  private:
   Value() = delete;

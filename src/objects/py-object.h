@@ -7,12 +7,12 @@
 
 #include <cstddef>
 
+#include "include/saauso-maybe.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/object-checkers.h"
 #include "src/objects/objects.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 

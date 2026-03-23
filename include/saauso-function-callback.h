@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "saauso-local-handle.h"
+#include "saauso-maybe.h"
 
 namespace saauso {
 
@@ -21,12 +22,17 @@ class FunctionCallbackInfo {
   FunctionCallbackInfo() = default;
 
   int Length() const;
-  Local<Value> operator[](int index) const;
-  bool GetIntegerArg(int index, int64_t* out) const;
-  bool GetStringArg(int index, std::string* out) const;
-  Local<Value> Receiver() const;
+  // 获取第 index 个参数；越界或不可用时返回 Nothing。
+  MaybeLocal<Value> operator[](int index) const;
+  // 获取第 index 个参数并转换为整数；越界或类型不匹配时返回 Nothing。
+  Maybe<int64_t> GetIntegerArg(int index) const;
+  // 获取第 index 个参数并转换为字符串；越界或类型不匹配时返回 Nothing。
+  Maybe<std::string> GetStringArg(int index) const;
+  // 获取接收者对象；不可用时返回 Nothing。
+  MaybeLocal<Value> Receiver() const;
   Isolate* GetIsolate() const;
   void ThrowRuntimeError(std::string_view message) const;
+  // 设置回调返回值。未设置时回调返回 None。
   void SetReturnValue(Local<Value> value);
 
  private:

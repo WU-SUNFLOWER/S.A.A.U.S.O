@@ -12,24 +12,29 @@ namespace saauso {
 //////////////////////////////////////////////////////////////////////////////////
 // Exception
 
-Local<Value> Exception::TypeError(Local<String> msg) {
+MaybeLocal<Value> Exception::TypeError(Local<String> msg) {
   if (msg.IsEmpty()) {
-    return Local<Value>();
+    return MaybeLocal<Value>();
   }
 
   i::Isolate* isolate = i::Isolate::Current();
-  return Local<Value>::Cast(String::New(reinterpret_cast<Isolate*>(isolate),
-                                        "[TypeError] " + msg->Value()));
+  Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
+                                  "[TypeError] " + msg->Value());
+  return MaybeLocal<Value>(Local<Value>::Cast(out));
 }
 
-Local<Value> Exception::RuntimeError(Local<String> msg) {
+MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
   if (msg.IsEmpty()) {
-    return Local<Value>();
+    return MaybeLocal<Value>();
   }
 
   i::Isolate* isolate = i::Isolate::Current();
-  return Local<Value>::Cast(String::New(reinterpret_cast<Isolate*>(isolate),
-                                        "[RuntimeError] " + msg->Value()));
+  Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
+                                  "[RuntimeError] " + msg->Value());
+  if (out.IsEmpty()) {
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(Local<Value>::Cast(out));
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -58,8 +63,11 @@ void TryCatch::Reset() {
   exception_ = Local<Value>();
 }
 
-Local<Value> TryCatch::Exception() const {
-  return exception_;
+MaybeLocal<Value> TryCatch::Exception() const {
+  if (exception_.IsEmpty()) {
+    return MaybeLocal<Value>();
+  }
+  return MaybeLocal<Value>(exception_);
 }
 
 }  // namespace saauso

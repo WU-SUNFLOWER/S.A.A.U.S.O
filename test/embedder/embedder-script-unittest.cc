@@ -17,15 +17,15 @@ TEST(EmbedderPhase2Test, StringAndIntegerRoundTrip) {
 
     Local<String> text = String::New(isolate, "phase2");
     ASSERT_FALSE(text.IsEmpty());
-    std::string text_value;
-    EXPECT_TRUE(Local<Value>::Cast(text)->ToString(&text_value));
-    EXPECT_EQ(text_value, "phase2");
+    Maybe<std::string> text_value = Local<Value>::Cast(text)->ToString();
+    ASSERT_FALSE(text_value.IsNothing());
+    EXPECT_EQ(text_value.ToChecked(), "phase2");
 
     Local<Integer> number = Integer::New(isolate, 42);
     ASSERT_FALSE(number.IsEmpty());
-    int64_t number_value = 0;
-    EXPECT_TRUE(Local<Value>::Cast(number)->ToInteger(&number_value));
-    EXPECT_EQ(number_value, 42);
+    Maybe<int64_t> number_value = Local<Value>::Cast(number)->ToInteger();
+    ASSERT_FALSE(number_value.IsNothing());
+    EXPECT_EQ(number_value.ToChecked(), 42);
   }
 
   isolate->Dispose();
@@ -39,8 +39,9 @@ TEST(EmbedderPhase2Test, Context_Is_Valid_Value) {
 
   {
     HandleScope scope(isolate);
-    Local<Context> context = Context::New(isolate);
-    ASSERT_FALSE(context.IsEmpty());
+    MaybeLocal<Context> maybe_context = Context::New(isolate);
+    ASSERT_FALSE(maybe_context.IsEmpty());
+    Local<Context> context = maybe_context.ToLocalChecked();
     Local<Value> value = Local<Value>::Cast(context);
     EXPECT_FALSE(value->IsString());
   }
@@ -75,15 +76,16 @@ TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
     HandleScope scope(isolate);
     Local<String> source = String::New(isolate, "gc-safe");
     ASSERT_FALSE(source.IsEmpty());
-    Local<Context> context = Context::New(isolate);
-    ASSERT_FALSE(context.IsEmpty());
+    MaybeLocal<Context> maybe_context = Context::New(isolate);
+    ASSERT_FALSE(maybe_context.IsEmpty());
+    Local<Context> context = maybe_context.ToLocalChecked();
     MaybeLocal<Script> maybe_gc_script =
         Script::Compile(isolate, String::New(isolate, "sysgc()\n"));
     ASSERT_FALSE(maybe_gc_script.IsEmpty());
     ASSERT_FALSE(maybe_gc_script.ToLocalChecked()->Run(context).IsEmpty());
-    std::string result;
-    ASSERT_TRUE(Local<Value>::Cast(source)->ToString(&result));
-    EXPECT_EQ(result, "gc-safe");
+    Maybe<std::string> result = Local<Value>::Cast(source)->ToString();
+    ASSERT_FALSE(result.IsNothing());
+    EXPECT_EQ(result.ToChecked(), "gc-safe");
   }
 
   isolate->Dispose();
@@ -105,8 +107,10 @@ TEST(EmbedderPhase2Test, TryCatch_Nested_Capture) {
     ASSERT_FALSE(maybe_script.IsEmpty());
     {
       TryCatch inner_try_catch(isolate);
+      MaybeLocal<Context> maybe_context = Context::New(isolate);
+      ASSERT_FALSE(maybe_context.IsEmpty());
       MaybeLocal<Value> run_result =
-          maybe_script.ToLocalChecked()->Run(Context::New(isolate));
+          maybe_script.ToLocalChecked()->Run(maybe_context.ToLocalChecked());
       EXPECT_TRUE(run_result.IsEmpty());
       EXPECT_TRUE(inner_try_catch.HasCaught());
       EXPECT_FALSE(inner_try_catch.Exception().IsEmpty());
@@ -161,16 +165,14 @@ TEST(EmbedderPhase2Test, ScriptRunSucceedsWithFrontendCompiler) {
     ASSERT_FALSE(maybe_script.IsEmpty());
 
     MaybeLocal<Value> run_result =
-        maybe_script.ToLocalChecked()->Run(Context::New(isolate));
+        maybe_script.ToLocalChecked()->Run(Context::New(isolate).ToLocalChecked());
     EXPECT_FALSE(run_result.IsEmpty());
     EXPECT_FALSE(try_catch.HasCaught());
 
     Local<Value> result;
     ASSERT_TRUE(run_result.ToLocal(&result));
-    int64_t int_value = 0;
-    std::string str_value;
-    EXPECT_FALSE(result->ToInteger(&int_value));
-    EXPECT_FALSE(result->ToString(&str_value));
+    EXPECT_TRUE(result->ToInteger().IsNothing());
+    EXPECT_TRUE(result->ToString().IsNothing());
   }
 
   isolate->Dispose();

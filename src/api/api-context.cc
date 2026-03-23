@@ -14,7 +14,7 @@
 
 namespace saauso {
 
-Local<Context> Context::New(Isolate* isolate) {
+MaybeLocal<Context> Context::New(Isolate* isolate) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
@@ -23,7 +23,7 @@ Local<Context> Context::New(Isolate* isolate) {
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(globals);
-  return i::Utils::ToLocal<Context>(escaped);
+  return MaybeLocal<Context>(i::Utils::ToLocal<Context>(escaped));
 }
 
 void Context::Enter() {
@@ -57,9 +57,9 @@ void Context::Exit() {
   }
 }
 
-bool Context::Set(Local<String> key, Local<Value> value) {
+Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
   if (key.IsEmpty()) {
-    return false;
+    return i::kNullMaybe;
   }
 
   i::Isolate* i_isolate = i::Isolate::Current();
@@ -67,7 +67,7 @@ bool Context::Set(Local<String> key, Local<Value> value) {
   i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
   if (i_isolate == nullptr || context_object.is_null() ||
       !i::IsPyDict(context_object)) {
-    return false;
+    return i::kNullMaybe;
   }
   i::HandleScope handle_scope;
   i::Handle<i::PyDict> globals =
@@ -79,9 +79,10 @@ bool Context::Set(Local<String> key, Local<Value> value) {
       globals, i::handle(i::Tagged<i::PyObject>::cast(*py_key)), py_value);
   if (maybe_set.IsNothing()) {
     api::CapturePendingException(i_isolate);
-    return false;
+    return i::kNullMaybe;
   }
-  return maybe_set.ToChecked();
+  
+  return JustVoid();
 }
 
 MaybeLocal<Value> Context::Get(Local<String> key) {
@@ -115,12 +116,13 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
 }
 
-Local<Object> Context::Global() {
+MaybeLocal<Object> Context::Global() {
   i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
-    return Local<Object>();
+    return MaybeLocal<Object>();
   }
-  return Local<Object>::Cast(i::Utils::ToLocal<api::RawObject>(context_object));
+  return MaybeLocal<Object>(
+      Local<Object>::Cast(i::Utils::ToLocal<api::RawObject>(context_object)));
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {

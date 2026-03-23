@@ -9,83 +9,66 @@
 namespace saauso {
 
 bool Value::IsString() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPyString(object);
 }
 
 bool Value::IsInteger() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPySmi(object);
 }
 
 bool Value::IsFloat() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPyFloat(object);
 }
 
 bool Value::IsBoolean() const {
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null()) {
     return false;
   }
   return i::IsPyTrue(object) || i::IsPyFalse(object);
 }
 
-bool Value::ToString(std::string* out) const {
-  if (out == nullptr) {
-    return false;
-  }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+Maybe<std::string> Value::ToString() const {
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyString(object)) {
-    return false;
+    return i::kNullMaybe;
   }
   i::Tagged<i::PyString> py_string = i::Tagged<i::PyString>::cast(*object);
-  *out = std::string(py_string->buffer(),
-                     static_cast<size_t>(py_string->length()));
-  return true;
+  return Maybe<std::string>(
+      std::string(py_string->buffer(), static_cast<size_t>(py_string->length())));
 }
 
-bool Value::ToInteger(int64_t* out) const {
-  if (out == nullptr) {
-    return false;
-  }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+Maybe<int64_t> Value::ToInteger() const {
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPySmi(object)) {
-    return false;
+    return i::kNullMaybe;
   }
-  *out = i::PySmi::ToInt(i::Tagged<i::PySmi>::cast(*object));
-  return true;
+  return Maybe<int64_t>(i::PySmi::ToInt(i::Tagged<i::PySmi>::cast(*object)));
 }
 
-bool Value::ToFloat(double* out) const {
-  if (out == nullptr) {
-    return false;
-  }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+Maybe<double> Value::ToFloat() const {
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyFloat(object)) {
-    return false;
+    return i::kNullMaybe;
   }
-  *out = i::Tagged<i::PyFloat>::cast(*object)->value();
-  return true;
+  return Maybe<double>(i::Tagged<i::PyFloat>::cast(*object)->value());
 }
 
-bool Value::ToBoolean(bool* out) const {
-  if (out == nullptr) {
-    return false;
-  }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+Maybe<bool> Value::ToBoolean() const {
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null()) {
-    return false;
+    return i::kNullMaybe;
   }
   if (i::IsPyTrue(object)) {
-    *out = true;
-    return true;
+    return Maybe<bool>(true);
   }
   if (i::IsPyFalse(object)) {
-    *out = false;
-    return true;
+    return Maybe<bool>(false);
   }
-  return false;
+  return i::kNullMaybe;
 }
 
 }  // namespace saauso

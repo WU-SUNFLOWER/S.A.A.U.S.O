@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "include/saauso-maybe.h"
 #include "src/builtins/builtins-py-tuple-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -32,7 +33,6 @@
 #include "src/runtime/runtime-py-tuple.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {

@@ -5,9 +5,9 @@
 #ifndef SAAUSO_BUILTINS_ACCESSOR_PROXY_H_
 #define SAAUSO_BUILTINS_ACCESSOR_PROXY_H_
 
+#include "include/saauso-maybe.h"
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 

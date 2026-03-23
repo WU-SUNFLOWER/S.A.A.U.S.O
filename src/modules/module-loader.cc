@@ -4,6 +4,7 @@
 
 #include "src/modules/module-loader.h"
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
@@ -24,7 +25,6 @@
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-exec.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
