@@ -19,7 +19,7 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   }
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-  return MaybeLocal<Script>(api::WrapScriptSource(i_isolate, source->Value()));
+  return api::WrapScriptSource(i_isolate, source->Value());
 #else
   i::HandleScope handle_scope;
   i::Runtime_ThrowError(
@@ -67,7 +67,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

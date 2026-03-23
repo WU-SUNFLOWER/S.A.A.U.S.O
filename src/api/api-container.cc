@@ -20,8 +20,7 @@ MaybeLocal<List> List::New(Isolate* isolate) {
       i_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*list)));
-  return MaybeLocal<List>(
-      Local<List>::Cast(i::Utils::ToLocal<api::RawList>(escaped)));
+  return i::Utils::ToLocal<api::RawList>(escaped);
 }
 
 int64_t List::Length() const {
@@ -93,7 +92,7 @@ MaybeLocal<Value> List::Get(int64_t index) const {
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyList> list = i::handle(list_tagged);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(list->Get(index));
-  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
@@ -110,8 +109,7 @@ MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
   }
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*tuple)));
-  return MaybeLocal<Tuple>(
-      Local<Tuple>::Cast(i::Utils::ToLocal<api::RawTuple>(escaped)));
+  return i::Utils::ToLocal<api::RawTuple>(escaped);
 }
 
 int64_t Tuple::Length() const {
@@ -139,7 +137,7 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyTuple> tuple = i::handle(tuple_tagged);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(tuple->Get(index));
-  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso
