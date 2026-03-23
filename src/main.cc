@@ -73,8 +73,8 @@ int main(int argc, char** argv) {
   saauso::Saauso::Initialize();
   Isolate* isolate = Isolate::New();
 
+  isolate->Enter();
   {
-    Isolate::Scope isolate_scope(isolate);
     HandleScope scope;
 
     if (isolate->initialized()) {
@@ -92,6 +92,7 @@ int main(int argc, char** argv) {
       exit_code = 1;
     }
   }
+  isolate->Exit();
 
   Isolate::Dispose(isolate);
   saauso::Saauso::Dispose();

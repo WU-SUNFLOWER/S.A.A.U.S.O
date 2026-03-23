@@ -25,8 +25,9 @@ TEST_F(HandleThreadTest, HandleScopeStateIsThreadLocalAndCleansUpAfterThread) {
     Isolate* isolate = isolate_;
     std::thread t([isolate] {
       Isolate::Locker locker(isolate);
+
+      isolate->Enter();
       {
-        Isolate::Scope iso_scope(isolate);
         HandleScope inner;
         constexpr int kCount =
             HandleScopeImplementer::kHandleBlockSize * 2 + 123;
@@ -35,6 +36,7 @@ TEST_F(HandleThreadTest, HandleScopeStateIsThreadLocalAndCleansUpAfterThread) {
           (void)smi;
         }
       }
+      isolate->Exit();
       // 离开 Scope 后，Locker 析构要求 entry_count_ == 0
     });
     t.join();
