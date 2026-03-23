@@ -20,7 +20,7 @@ MaybeLocal<Value> Exception::TypeError(Local<String> msg) {
   i::Isolate* isolate = i::Isolate::Current();
   Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
                                   "[TypeError] " + msg->Value());
-  return MaybeLocal<Value>(Local<Value>::Cast(out));
+  return out;
 }
 
 MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
@@ -34,7 +34,7 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
   if (out.IsEmpty()) {
     return MaybeLocal<Value>();
   }
-  return MaybeLocal<Value>(Local<Value>::Cast(out));
+  return out;
 }
 
 //////////////////////////////////////////////////////////////////////////////////

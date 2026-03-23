@@ -23,7 +23,7 @@ MaybeLocal<Context> Context::New(Isolate* isolate) {
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(globals);
-  return MaybeLocal<Context>(i::Utils::ToLocal<Context>(escaped));
+  return i::Utils::ToLocal<Context>(escaped);
 }
 
 void Context::Enter() {
@@ -81,7 +81,7 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
     api::CapturePendingException(i_isolate);
     return i::kNullMaybe;
   }
-  
+
   return JustVoid();
 }
 
@@ -113,7 +113,7 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
-  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Object> Context::Global() {
@@ -121,8 +121,7 @@ MaybeLocal<Object> Context::Global() {
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Object>();
   }
-  return MaybeLocal<Object>(
-      Local<Object>::Cast(i::Utils::ToLocal<api::RawObject>(context_object)));
+  return i::Utils::ToLocal<api::RawObject>(context_object);
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {

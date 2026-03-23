@@ -30,7 +30,7 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
   }
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*function)));
-  return MaybeLocal<Function>(internal::Utils::ToLocal<Function>(escaped));
+  return i::Utils::ToLocal<Function>(escaped);
 }
 
 MaybeLocal<Value> Function::Call(Local<Context> context,
@@ -74,7 +74,7 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

@@ -14,8 +14,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*dict)));
-  return MaybeLocal<Object>(
-      Local<Object>::Cast(i::Utils::ToLocal<api::RawObject>(escaped)));
+  return i::Utils::ToLocal<api::RawObject>(escaped);
 }
 
 Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
@@ -83,7 +82,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
-  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Value> Object::CallMethod(Local<Context> context,
@@ -133,7 +132,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
+  return i::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso
