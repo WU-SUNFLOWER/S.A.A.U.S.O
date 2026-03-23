@@ -18,20 +18,6 @@
 namespace saauso {
 
 struct ApiAccess {
-  static i::Isolate* UnwrapIsolate(saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<i::Isolate*>(isolate);
-  }
-
-  static const i::Isolate* UnwrapIsolate(const saauso::Isolate* isolate) {
-    if (isolate == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<const i::Isolate*>(isolate);
-  }
-
   static void SetFunctionCallbackInfoImpl(FunctionCallbackInfo* info,
                                           void* impl) {
     if (info == nullptr) {
