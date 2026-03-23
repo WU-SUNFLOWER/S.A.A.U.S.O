@@ -17,6 +17,7 @@ class Isolate {
   // Isolate::Scope 是一个 RAII 辅助类，用于在当前线程中进入/退出指定的
   // Isolate。 在构造时调用 Enter()，析构时调用 Exit()。
   class Scope {
+   public:
     explicit Scope(Isolate* isolate) : isolate_(isolate) { isolate_->Enter(); }
 
     ~Scope() { isolate_->Exit(); }
