@@ -31,9 +31,6 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
   i::Isolate* isolate = i::Isolate::Current();
   Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
                                   "[RuntimeError] " + msg->Value());
-  if (out.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
   return out;
 }
 
@@ -64,10 +61,7 @@ void TryCatch::Reset() {
 }
 
 MaybeLocal<Value> TryCatch::Exception() const {
-  if (exception_.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
-  return MaybeLocal<Value>(exception_);
+  return exception_;
 }
 
 }  // namespace saauso
