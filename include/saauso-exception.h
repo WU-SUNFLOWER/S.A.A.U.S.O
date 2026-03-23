@@ -13,8 +13,10 @@ class String;
 
 class Exception {
  public:
-  static Local<Value> TypeError(Local<String> msg);
-  static Local<Value> RuntimeError(Local<String> msg);
+  // 构造 TypeError 对象；失败返回 Nothing。
+  static MaybeLocal<Value> TypeError(Local<String> msg);
+  // 构造 RuntimeError 对象；失败返回 Nothing。
+  static MaybeLocal<Value> RuntimeError(Local<String> msg);
 };
 
 class TryCatch {
@@ -26,7 +28,8 @@ class TryCatch {
 
   bool HasCaught() const;
   void Reset();
-  Local<Value> Exception() const;
+  // 返回当前捕获的异常；未捕获时返回 Nothing。
+  MaybeLocal<Value> Exception() const;
 
  private:
   Isolate* isolate_{nullptr};

@@ -14,6 +14,7 @@
 #include "saauso-internal.h"
 #include "saauso-isolate.h"
 #include "saauso-local-handle.h"
+#include "saauso-maybe.h"
 #include "saauso-object.h"
 #include "saauso-primitive.h"
 #include "saauso-script.h"

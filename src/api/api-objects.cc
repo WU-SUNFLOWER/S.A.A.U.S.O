@@ -5,7 +5,7 @@
 
 namespace saauso {
 
-Local<Object> Object::New(Isolate* isolate) {
+MaybeLocal<Object> Object::New(Isolate* isolate) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
@@ -14,23 +14,24 @@ Local<Object> Object::New(Isolate* isolate) {
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*dict)));
-  return Local<Object>::Cast(internal::Utils::ToLocal<api::RawObject>(escaped));
+  return MaybeLocal<Object>(
+      Local<Object>::Cast(i::Utils::ToLocal<api::RawObject>(escaped)));
 }
 
-bool Object::Set(Local<String> key, Local<Value> value) {
+Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
   i::Isolate* internal_isolate = i::Isolate::Current();
 
   if (key.IsEmpty()) {
-    return false;
+    return i::kNullMaybe;
   }
 
   if (internal_isolate == nullptr) {
-    return false;
+    return i::kNullMaybe;
   }
 
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyDict(object)) {
-    return false;
+    return i::kNullMaybe;
   }
 
   i::HandleScope handle_scope;
@@ -44,9 +45,12 @@ bool Object::Set(Local<String> key, Local<Value> value) {
       dict, i::handle(i::Tagged<i::PyObject>::cast(*py_key)), py_value);
   if (maybe_put.IsNothing()) {
     api::CapturePendingException(internal_isolate);
-    return false;
+    return i::kNullMaybe;
   }
-  return maybe_put.ToChecked();
+  if (!maybe_put.ToChecked()) {
+    return i::kNullMaybe;
+  }
+  return JustVoid();
 }
 
 MaybeLocal<Value> Object::Get(Local<String> key) {
@@ -60,7 +64,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
   }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyDict(object)) {
     return MaybeLocal<Value>();
   }
@@ -79,7 +83,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
-  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
+  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
 }
 
 MaybeLocal<Value> Object::CallMethod(Local<Context> context,
@@ -94,7 +98,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
   }
-  i::Handle<i::PyObject> self = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> self = i::Utils::OpenHandle(this);
   if (self.is_null()) {
     return MaybeLocal<Value>();
   }
@@ -129,7 +133,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return MaybeLocal<Value>(internal::Utils::ToLocal<Value>(escaped));
+  return MaybeLocal<Value>(i::Utils::ToLocal<Value>(escaped));
 }
 
 }  // namespace saauso

@@ -15,9 +15,13 @@ class Context;
 
 class Object : public Value {
  public:
-  static Local<Object> New(Isolate* isolate);
-  bool Set(Local<String> key, Local<Value> value);
+  // 创建对象；创建失败返回 Nothing。
+  static MaybeLocal<Object> New(Isolate* isolate);
+  // 写入属性；成功返回 JustVoid，失败返回 Nothing。
+  Maybe<void> Set(Local<String> key, Local<Value> value);
+  // 读取属性；命中返回 Just(value)，未命中或失败返回 Nothing。
   MaybeLocal<Value> Get(Local<String> key);
+  // 调用对象方法；调用成功返回 Just(value)，失败返回 Nothing。
   MaybeLocal<Value> CallMethod(Local<Context> context,
                                Local<String> name,
                                int argc,

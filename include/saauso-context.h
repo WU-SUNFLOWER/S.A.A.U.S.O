@@ -15,13 +15,19 @@ class String;
 
 class Context final : public Value {
  public:
-  static Local<Context> New(Isolate* isolate);
+  // 创建上下文；创建失败返回 Nothing。
+  static MaybeLocal<Context> New(Isolate* isolate);
 
+  // 进入当前上下文。
   void Enter();
+  // 退出当前上下文。
   void Exit();
-  bool Set(Local<String> key, Local<Value> value);
+  // 写入变量；写入成功返回 JustVoid，失败返回 Nothing。
+  Maybe<void> Set(Local<String> key, Local<Value> value);
+  // 读取变量；命中返回 Just(value)，未命中或失败返回 Nothing。
   MaybeLocal<Value> Get(Local<String> key);
-  Local<Object> Global();
+  // 获取全局对象；失败返回 Nothing。
+  MaybeLocal<Object> Global();
 
  private:
   friend class Isolate;

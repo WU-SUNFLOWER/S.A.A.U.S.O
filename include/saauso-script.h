@@ -15,8 +15,10 @@ class Context;
 
 class Script final : public Value {
  public:
+  // 编译脚本；编译成功返回 Just(script)，失败返回 Nothing。
   static MaybeLocal<Script> Compile(Isolate* isolate, Local<String> source);
 
+  // 执行脚本；执行成功返回 Just(value)，失败返回 Nothing。
   MaybeLocal<Value> Run(Local<Context> context);
 };
 
