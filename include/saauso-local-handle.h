@@ -20,7 +20,12 @@ class Utils;
 template <typename T>
 class Local {
  public:
-  Local() : val_(nullptr) {}
+  Local() = default;
+
+  // 支持将指向派生类型 S 的 Local 隐式转换为代表基类 T 的 Local
+  template <class S>
+    requires std::is_base_of_v<T, S>
+  Local(Local<S> that) : val_(that.val_) {}
 
   bool IsEmpty() const { return val_ == nullptr; }
   T* operator->() const { return val_; }
@@ -38,7 +43,7 @@ class Local {
   friend class Local;
   friend class internal::Utils;
   friend struct ApiAccess;
-  T* val_;
+  T* val_{nullptr};
 };
 
 template <typename T>
@@ -47,7 +52,8 @@ class MaybeLocal {
   // 默认构造函数：生成一个空的 handle
   MaybeLocal() = default;
 
-  // 支持隐式地将 Local 转化为 MaybeLocal
+  // 支持隐式地将 Local 转化为 MaybeLocal。
+  // 要求目标类型 T 是 S 的基类。
   template <class S>
     requires std::is_base_of_v<T, S>
   MaybeLocal(Local<S> that) : local_(that) {}
