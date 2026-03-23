@@ -34,7 +34,7 @@ Local<Value> WrapRuntimeResult(i::Isolate* isolate,
   if (result.is_null()) {
     return Local<Value>();
   }
-  return Local<Value>::Cast(WrapObject<RawValue>(isolate, result));
+  return WrapObject<RawValue>(isolate, result);
 }
 
 bool CapturePendingException(i::Isolate* isolate) {
@@ -49,8 +49,8 @@ bool CapturePendingException(i::Isolate* isolate) {
 
   i::Handle<i::PyObject> exception =
       isolate->exception_state()->pending_exception();
-  ApiAccess::SetTryCatchException(
-      try_catch, Local<Value>::Cast(WrapObject<RawValue>(isolate, exception)));
+  ApiAccess::SetTryCatchException(try_catch,
+                                  WrapObject<RawValue>(isolate, exception));
   isolate->exception_state()->Clear();
   return true;
 }
@@ -87,11 +87,11 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
 
   callback(callback_info);
-  
+
   if (internal_isolate->HasPendingException()) {
     return i::kNullMaybeHandle;
   }
-  
+
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
   return ToInternalObject(internal_isolate, escaped_ret);

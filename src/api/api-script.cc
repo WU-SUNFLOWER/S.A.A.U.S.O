@@ -14,7 +14,7 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  if (source.IsEmpty() || !Local<Value>::Cast(source)->IsString()) {
+  if (source.IsEmpty()) {
     return MaybeLocal<Script>();
   }
 
