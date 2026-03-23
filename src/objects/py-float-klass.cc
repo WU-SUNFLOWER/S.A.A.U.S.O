@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
@@ -24,7 +25,6 @@
 #include "src/objects/py-type-object.h"
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
-#include "src/utils/maybe.h"
 #include "src/utils/number-conversion.h"
 #include "src/utils/utils.h"
 

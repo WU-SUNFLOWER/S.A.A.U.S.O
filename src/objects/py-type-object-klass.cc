@@ -5,6 +5,7 @@
 #include "src/objects/py-type-object-klass.h"
 
 #include "include/saauso-internal.h"
+#include "include/saauso-maybe.h"
 #include "src/builtins/builtins-py-type-object-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
@@ -27,7 +28,6 @@
 #include "src/runtime/runtime-py-type-object.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 

@@ -6,6 +6,7 @@
 
 #include <cinttypes>
 
+#include "include/saauso-maybe.h"
 #include "src/builtins/builtins-py-string-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
@@ -30,7 +31,6 @@
 #include "src/runtime/runtime-py-string.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {

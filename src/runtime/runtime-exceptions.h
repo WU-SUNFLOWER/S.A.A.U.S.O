@@ -5,10 +5,10 @@
 #ifndef SAAUSO_RUNTIME_RUNTIME_EXCEPTIONS_H_
 #define SAAUSO_RUNTIME_RUNTIME_EXCEPTIONS_H_
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-types.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 

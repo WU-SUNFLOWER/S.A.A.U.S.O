@@ -7,11 +7,11 @@
 
 #include <thread>
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-state.h"
 #include "src/execution/isolate-klass-list.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
-#include "src/utils/maybe.h"
 #include "src/utils/vector.h"
 
 namespace saauso {

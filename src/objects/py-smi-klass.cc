@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
@@ -23,7 +24,6 @@
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-smi.h"
-#include "src/utils/maybe.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {

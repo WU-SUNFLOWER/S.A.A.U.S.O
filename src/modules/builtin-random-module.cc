@@ -5,6 +5,7 @@
 #include <cinttypes>
 #include <cstdint>
 
+#include "include/saauso-maybe.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -23,7 +24,6 @@
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/string-table.h"
-#include "src/utils/maybe.h"
 #include "src/utils/random-number-generator.h"
 
 namespace saauso::internal {

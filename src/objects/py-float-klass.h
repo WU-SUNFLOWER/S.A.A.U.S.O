@@ -5,10 +5,10 @@
 #ifndef SAAUSO_OBJECTS_PY_FLOAT_KLASS_H_
 #define SAAUSO_OBJECTS_PY_FLOAT_KLASS_H_
 
+#include "include/saauso-maybe.h"
 #include "src/handles/maybe-handles.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-object.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 

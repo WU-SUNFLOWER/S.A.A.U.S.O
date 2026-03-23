@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "include/saauso-internal.h"
+#include "include/saauso-maybe.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -16,7 +17,6 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
-#include "src/utils/maybe.h"
 
 namespace saauso::internal {
 
