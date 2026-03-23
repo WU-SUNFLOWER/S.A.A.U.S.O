@@ -20,6 +20,7 @@ class Utils;
 template <typename T>
 class Local {
  public:
+  // 默认构造函数：生成一个空的 handle
   Local() = default;
 
   // 支持将指向派生类型 S 的 Local 隐式转换为代表基类 T 的 Local
@@ -28,21 +29,55 @@ class Local {
   Local(Local<S> that) : val_(that.val_) {}
 
   bool IsEmpty() const { return val_ == nullptr; }
+
   T* operator->() const { return val_; }
   T* operator*() const { return this->operator->(); }
 
+  // 检查两个 Local 是否相等或不相等。
+  // 我们定义两个句柄相等，当且仅当它们都为空，或它们代表的是同一个内存地址。
+  template <class S>
+  bool operator==(const Local<S>& that) const {
+    if (IsEmpty()) {
+      return that.IsEmpty();
+    }
+    if (that.IsEmpty()) {
+      return false;
+    }
+    return val_ == that.val_;
+  }
+
+  template <class S>
+  bool operator!=(const Local<S>& that) const {
+    return !operator==(that);
+  }
+
+  // 将一个指向基类 S 的 Local 强转为指向派生类 T 的 Local。
+  // 使用此方法时，嵌入方应自行保证 that 指向的的确是一个
+  // 有效的派生类 T 的实例，或者 that 为空。
   template <typename S>
   static Local<T> Cast(Local<S> that) {
+    if (that.IsEmpty()) {
+      return Local<T>();
+    }
     return Local<T>(reinterpret_cast<T*>(that.val_));
   }
 
- private:
-  explicit Local(T* val) : val_(val) {}
+  // 等价于Local<S>::Cast()
+  // 使用此方法时，嵌入方应自行保证该 Local 指向的的确是一个
+  // 有效的派生类 T 的实例，或者该 Local 为空。
+  template <class S>
+  Local<S> As() const {
+    return Local<S>::Cast(*this);
+  }
 
+ private:
   template <typename>
   friend class Local;
   friend class internal::Utils;
   friend struct ApiAccess;
+
+  explicit Local(T* val) : val_(val) {}
+
   T* val_{nullptr};
 };
 
@@ -88,14 +123,14 @@ class MaybeLocal {
   }
 
   // 将指向基类 S 的 MaybeLocal 强转为指向派生类 T 的 MaybeLocal。
-  // 使用此方法时，嵌入方应自行保证该 MaybeLocal 指向的的确是一个
-  // 有效的派生类 T 的实例。
+  // 使用此方法时，嵌入方应自行保证 that 指向的的确是一个
+  // 有效的派生类 T 的实例，或者 that 为空。
   template <class S>
   static MaybeLocal<T> Cast(MaybeLocal<S> that) {
     return MaybeLocal<T>{Local<T>::Cast(that.local_)};
   }
 
-  // 效果等价于 MaybeLocal<T>::Cast。
+  // 效果等价于 MaybeLocal<S>::Cast。
   // 使用此方法时，嵌入方应自行保证该 MaybeLocal 指向的的确是一个
   // 有效的派生类 T 的实例。
   template <class S>
