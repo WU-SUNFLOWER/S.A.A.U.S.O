@@ -13,20 +13,16 @@ namespace saauso {
 namespace api {
 
 struct HandleScopeImpl {
-  explicit HandleScopeImpl(Isolate* isolate)
-      : isolate(isolate), isolate_scope(ApiAccess::UnwrapIsolate(isolate)) {}
+  explicit HandleScopeImpl(Isolate* isolate) : isolate(isolate) {}
 
   Isolate* isolate{nullptr};
-  i::Isolate::Scope isolate_scope;
   i::HandleScope handle_scope;
 };
 
 struct EscapableHandleScopeImpl {
-  explicit EscapableHandleScopeImpl(Isolate* isolate)
-      : isolate(isolate), isolate_scope(ApiAccess::UnwrapIsolate(isolate)) {}
+  explicit EscapableHandleScopeImpl(Isolate* isolate) : isolate(isolate) {}
 
   Isolate* isolate{nullptr};
-  i::Isolate::Scope isolate_scope;
   i::EscapableHandleScope handle_scope;
 };
 
