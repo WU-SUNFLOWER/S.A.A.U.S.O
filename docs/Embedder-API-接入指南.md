@@ -41,17 +41,23 @@ S.A.A.U.S.O Embedder API 用于把脚本能力嵌入到 C++ 宿主程序中。
    - 失败时是空值（`IsEmpty()==true`），必须配合 `TryCatch` 看具体异常。
    - 这是 Embedder API 里最重要的防御式调用约定。
 
-6. `HandleScope`：一段“临时对象自动回收区间”
+6. `Isolate::Scope`：Isolate 绑定的 RAII 守卫
+   - 构造时调用 `Enter()`，析构时调用 `Exit()`。
+   - 它负责把“当前线程”与目标 `Isolate` 绑定。
+   - 所有带 `Isolate*` 的 Embedder API 调用都应在该作用域内进行。
+
+7. `HandleScope`：一段“临时对象自动回收区间”
    - 在这段区间创建的包装对象会被统一管理。
    - 区间结束自动回收，避免长期累积导致内存膨胀。
+   - `HandleScope` 只负责句柄生命周期，不包含其他隐式的语义。
    - `EscapableHandleScope` 则允许你把一个返回值“逃逸”到外层继续使用。
 
-7. `TryCatch`：错误观察器
+8. `TryCatch`：错误观察器
    - 只要你要调用可能失败的 API（编译、运行、方法调用），就建议先创建 `TryCatch`。
    - 调用后检查 `HasCaught()`，这是判定“脚本侧是否抛错”的标准方式。
 
 一句话串起来：  
-`Isolate` 提供运行沙箱，`Context` 提供全局环境，`Script` 提供可执行逻辑，`Local/MaybeLocal` 提供安全结果传递，`HandleScope/TryCatch` 提供内存与异常保障。
+`Isolate` 提供运行沙箱，`Isolate::Scope` 绑定线程上下文，`Context` 提供全局环境，`Script` 提供可执行逻辑，`Local/MaybeLocal` 提供安全结果传递，`HandleScope/TryCatch` 提供内存与异常保障。
 
 ## 2. 5 分钟上手（带代码片段）
 
@@ -67,6 +73,7 @@ int main() {
   if (isolate == nullptr) return 1;
 
   {
+    saauso::Isolate::Scope isolate_scope(isolate);
     saauso::HandleScope scope(isolate);
     saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
     if (context.IsEmpty()) return 1;
@@ -101,7 +108,7 @@ int main() {
 
 1. `Initialize`：启动运行时
 2. `Isolate::New`：创建脚本沙箱
-3. `HandleScope + Context::New`：进入受控作用域并拿到执行环境
+3. `Isolate::Scope + HandleScope + Context::New`：先绑定 Isolate，再进入句柄作用域并拿到执行环境
 4. `Set/Get`：和脚本共享数据
 5. `Compile + Run`：执行脚本逻辑
 6. `TryCatch + MaybeLocal`：捕获失败，避免崩溃式调用
@@ -138,6 +145,7 @@ int main() {
   if (isolate == nullptr) return 1;
 
   {
+    saauso::Isolate::Scope isolate_scope(isolate);
     saauso::HandleScope scope(isolate);
     saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
     if (context.IsEmpty()) return 1;
@@ -175,9 +183,10 @@ int main() {
 ### 3.1 基础生命周期
 
 1. `Isolate::New/Dispose`
-2. `HandleScope`
-3. `Context::New/Enter/Exit`
-4. `Context::Global`（返回全局字典对应的 `Object`）
+2. `Isolate::Scope`（推荐优先使用 RAII 管理 `Enter/Exit`）
+3. `HandleScope`
+4. `Context::New/Enter/Exit`
+5. `Context::Global`（返回全局字典对应的 `Object`）
 
 ### 3.2 Context 适用场景与语义
 
@@ -222,12 +231,13 @@ int main() {
 
 1. 所有带 `Isolate*` 入参的 API 要求“当前线程已绑定同一个 Isolate”。
 2. 违反契约（如 `Current != explicit isolate`、`Current == null`）会直接终止进程。
-3. `HandleScope` 是进入 API 调用窗口的前置条件，`Local<T>` 创建前必须先建立 `HandleScope`。
-4. 不允许跨线程直接复用同一 `Isolate` 执行 Embedder API。
+3. 调用带 `Isolate*` 的 Embedder API 前，必须先建立 `Isolate::Scope`。
+4. `HandleScope` 是 `Local<T>` 创建窗口的前置条件，但不负责 Isolate 绑定。
+5. 不允许跨线程直接复用同一 `Isolate` 执行 Embedder API。
 
 ## 5. 一个实战 Demo 在哪里
 
-1. 文件：`samples/game_engine_demo.cc`
+1. 文件：`samples/game-engine-demo.cc`
 2. 场景：宿主提供 `GetPlayerHealth/SetPlayerStatus`，Python 脚本实现怪物 AI 的 `on_update`。
 3. 重点：演示 C++ -> Python -> C++ 双向调用，以及错误捕获路径。
 
@@ -257,8 +267,8 @@ int main() {
 
 ## 7. 接入建议
 
-1. 先用 `samples/hello-world.cc` 跑通生命周期。
-2. 再跑 `samples/game_engine_demo.cc` 验证互调能力。
+1. 先用 `samples/hello-world.cc` 跑通 `Isolate::Scope + HandleScope` 生命周期。
+2. 再跑 `samples/game-engine-demo.cc` 验证互调能力。
 3. 一组隔离业务使用多个 `Context`，不要复用同一个 globals 承载不同租户状态。
 4. 统一使用 `ContextScope` 管理 Enter/Exit，避免手工错序退出。
 5. 在业务代码里统一封装 `TryCatch` + `MaybeLocal` 判空模板，避免漏判。
