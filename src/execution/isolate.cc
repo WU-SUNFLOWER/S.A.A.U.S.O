@@ -206,12 +206,12 @@ void Isolate::Init() {
   // TODO: VM内部所有链路都消除显式的 Isolate::Current() 之后，移除这里的
   // Enter / Exit 操作。
   Enter();
-  {
+  do {
     HandleScope scope;
 
     // 初始化元数据区域（Klasses, Singletons 等）
     if (InitMetaArea().IsNothing()) {
-      return;
+      break;
     }
 
     // 初始化解释器
@@ -226,13 +226,13 @@ void Isolate::Init() {
     // 初始化内建对象字典
     Handle<PyDict> builtins;
     if (!BuiltinBootstrapper(this).CreateBuiltins().ToHandle(&builtins)) {
-      return;
+      break;
     }
     builtins_ = *builtins;
 
     // 标记为已经初始化完毕
     initialized_ = true;
-  }
+  } while (0);
   Exit();
 }
 
@@ -284,7 +284,7 @@ void Isolate::TearDown() {
   // TODO: VM内部所有链路都消除显式的 Isolate::Current() 之后，移除这里的
   // Enter / Exit 操作。
   Enter();
-  {
+  do {
     // 反向操作：先销毁 Klass
 #define FINALIZE_PY_KLASS(_, Klass, __) Klass::GetInstance()->Finalize(this);
     ISOLATE_KLASS_LIST(FINALIZE_PY_KLASS)
@@ -329,7 +329,7 @@ void Isolate::TearDown() {
     // 销毁互斥锁
     delete reinterpret_cast<std::recursive_mutex*>(mutex_);
     mutex_ = nullptr;
-  }
+  } while (0);
   Exit();
 }
 
