@@ -46,26 +46,6 @@ ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_TYPES)
 // 这一设计借鉴了 V8 的 Isolate 概念。
 class Isolate {
  public:
-  // Isolate::Scope 是一个 RAII 辅助类，用于在当前线程中进入/退出指定的
-  // Isolate。 在构造时调用 Enter()，析构时调用 Exit()。
-  //
-  // 用法示例：
-  // void RunCode(Isolate* isolate) {
-  //   Isolate::Scope scope(isolate); // 进入 Isolate，设置 Current()
-  //   // 现在可以使用 Isolate::Current() 获取当前 isolate
-  //   isolate->interpreter()->Run();
-  // } // 自动退出 Isolate
-  class Scope {
-   public:
-    explicit Scope(Isolate* isolate);
-    Scope(const Scope&) = delete;
-    Scope& operator=(const Scope&) = delete;
-    ~Scope();
-
-   private:
-    Isolate* isolate_{nullptr};
-  };
-
   // Isolate::Locker 用于多线程环境下的同步。
   // 它确保在同一时刻只有一个线程可以访问该 Isolate（类似于 GIL 的作用范围，但在
   // Isolate 级别）。

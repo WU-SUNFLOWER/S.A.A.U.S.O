@@ -14,6 +14,16 @@ Isolate* Isolate::New(const IsolateCreateParams&) {
   return reinterpret_cast<Isolate*>(i_isolate);
 }
 
+void Isolate::Enter() {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(this);
+  i_isolate->Enter();
+}
+
+void Isolate::Exit() {
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(this);
+  i_isolate->Exit();
+}
+
 void Isolate::Dispose() {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(this);
   i::Isolate::Dispose(i_isolate);

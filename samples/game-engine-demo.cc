@@ -57,19 +57,22 @@ int main() {
   }
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
-    Local<Context> context = Context::New(isolate);
+    Local<Context> context = Context::New(isolate).ToLocalChecked();
     if (context.IsEmpty()) {
       return 1;
     }
 
-    Local<Object> global = context->Global();
-    global->Set(String::New(isolate, "GetPlayerHealth"),
-                Local<Value>::Cast(Function::New(isolate, &HostGetPlayerHealth,
-                                                 "GetPlayerHealth")));
-    global->Set(String::New(isolate, "SetPlayerStatus"),
-                Local<Value>::Cast(Function::New(isolate, &HostSetPlayerStatus,
-                                                 "SetPlayerStatus")));
+    Local<Object> global = context->Global().ToLocalChecked();
+    (void)global->Set(
+        String::New(isolate, "GetPlayerHealth"),
+        Function::New(isolate, &HostGetPlayerHealth, "GetPlayerHealth")
+            .ToLocalChecked());
+    (void)global->Set(
+        String::New(isolate, "SetPlayerStatus"),
+        Function::New(isolate, &HostSetPlayerStatus, "SetPlayerStatus")
+            .ToLocalChecked());
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
     TryCatch compile_try_catch(isolate);

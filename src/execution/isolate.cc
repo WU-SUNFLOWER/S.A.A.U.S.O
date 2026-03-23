@@ -46,18 +46,6 @@ namespace saauso::internal {
 thread_local Isolate* Isolate::current_ = nullptr;
 thread_local std::vector<Isolate*> g_entered_isolates;
 
-Isolate::Scope::Scope(Isolate* isolate) : isolate_(isolate) {
-  if (isolate_ != nullptr) {
-    isolate_->Enter();
-  }
-}
-
-Isolate::Scope::~Scope() {
-  if (isolate_ != nullptr) {
-    isolate_->Exit();
-  }
-}
-
 Isolate* Isolate::New() {
   if (!saauso::Saauso::IsInitialized()) {
     // 错误：S.A.A.U.S.O 虚拟机全局环境未初始化。
@@ -213,34 +201,39 @@ void Isolate::Init() {
   // 初始化句柄作用域实现
   handle_scope_implementer_ = new HandleScopeImplementer(this);
 
-  // 进入当前 Isolate 作用域，以便后续的初始化操作（如分配对象）能找到正确的
-  // Isolate
-  Scope isolate_scope(this);
-  HandleScope scope;
+  // 进入当前 Isolate 作用域，以便后续的初始化操作（如分配对象）
+  // 能找到正确的 Isolate
+  // TODO: VM内部所有链路都消除显式的 Isolate::Current() 之后，移除这里的
+  // Enter / Exit 操作。
+  Enter();
+  do {
+    HandleScope scope;
 
-  // 初始化元数据区域（Klasses, Singletons 等）
-  if (InitMetaArea().IsNothing()) {
-    return;
-  }
+    // 初始化元数据区域（Klasses, Singletons 等）
+    if (InitMetaArea().IsNothing()) {
+      break;
+    }
 
-  // 初始化解释器
-  interpreter_ = new Interpreter(this);
+    // 初始化解释器
+    interpreter_ = new Interpreter(this);
 
-  // 初始化模块管理器（sys.modules/sys.path 等）。
-  module_manager_ = new ModuleManager(this);
+    // 初始化模块管理器（sys.modules/sys.path 等）。
+    module_manager_ = new ModuleManager(this);
 
-  // 初始化每个 Isolate 独立持有的随机数状态。
-  random_number_generator_ = new RandomNumberGenerator();
+    // 初始化每个 Isolate 独立持有的随机数状态。
+    random_number_generator_ = new RandomNumberGenerator();
 
-  // 初始化内建对象字典
-  Handle<PyDict> builtins;
-  if (!BuiltinBootstrapper(this).CreateBuiltins().ToHandle(&builtins)) {
-    return;
-  }
-  builtins_ = *builtins;
+    // 初始化内建对象字典
+    Handle<PyDict> builtins;
+    if (!BuiltinBootstrapper(this).CreateBuiltins().ToHandle(&builtins)) {
+      break;
+    }
+    builtins_ = *builtins;
 
-  // 标记为已经初始化完毕
-  initialized_ = true;
+    // 标记为已经初始化完毕
+    initialized_ = true;
+  } while (0);
+  Exit();
 }
 
 Maybe<void> Isolate::InitMetaArea() {
@@ -288,52 +281,56 @@ void Isolate::Iterate(ObjectVisitor* v) {
 }
 
 void Isolate::TearDown() {
-  Scope isolate_scope(this);
-
-  // 反向操作：先销毁 Klass
+  // TODO: VM内部所有链路都消除显式的 Isolate::Current() 之后，移除这里的
+  // Enter / Exit 操作。
+  Enter();
+  do {
+    // 反向操作：先销毁 Klass
 #define FINALIZE_PY_KLASS(_, Klass, __) Klass::GetInstance()->Finalize(this);
-  ISOLATE_KLASS_LIST(FINALIZE_PY_KLASS)
+    ISOLATE_KLASS_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 
-  // 销毁字符串表
-  delete string_table_;
-  string_table_ = nullptr;
+    // 销毁字符串表
+    delete string_table_;
+    string_table_ = nullptr;
 
-  // 销毁解释器
-  delete interpreter_;
-  interpreter_ = nullptr;
+    // 销毁解释器
+    delete interpreter_;
+    interpreter_ = nullptr;
 
-  // 销毁模块管理器
-  delete module_manager_;
-  module_manager_ = nullptr;
+    // 销毁模块管理器
+    delete module_manager_;
+    module_manager_ = nullptr;
 
-  // 销毁 Isolate 独立随机数状态。
-  delete random_number_generator_;
-  random_number_generator_ = nullptr;
+    // 销毁 Isolate 独立随机数状态。
+    delete random_number_generator_;
+    random_number_generator_ = nullptr;
 
-  // 销毁句柄作用域实现
-  delete handle_scope_implementer_;
-  handle_scope_implementer_ = nullptr;
+    // 销毁句柄作用域实现
+    delete handle_scope_implementer_;
+    handle_scope_implementer_ = nullptr;
 
-  delete factory_;
-  factory_ = nullptr;
+    delete factory_;
+    factory_ = nullptr;
 
-  klass_list_.Resize(0);
+    klass_list_.Resize(0);
 
-  // 清空单例引用
-  py_none_object_ = Tagged<PyNone>::null();
-  py_true_object_ = Tagged<PyBoolean>::null();
-  py_false_object_ = Tagged<PyBoolean>::null();
-  builtins_ = Tagged<PyObject>::null();
+    // 清空单例引用
+    py_none_object_ = Tagged<PyNone>::null();
+    py_true_object_ = Tagged<PyBoolean>::null();
+    py_false_object_ = Tagged<PyBoolean>::null();
+    builtins_ = Tagged<PyObject>::null();
 
-  // 销毁堆
-  heap_->TearDown();
-  delete heap_;
-  heap_ = nullptr;
+    // 销毁堆
+    heap_->TearDown();
+    delete heap_;
+    heap_ = nullptr;
 
-  // 销毁互斥锁
-  delete reinterpret_cast<std::recursive_mutex*>(mutex_);
-  mutex_ = nullptr;
+    // 销毁互斥锁
+    delete reinterpret_cast<std::recursive_mutex*>(mutex_);
+    mutex_ = nullptr;
+  } while (0);
+  Exit();
 }
 
 }  // namespace saauso::internal
