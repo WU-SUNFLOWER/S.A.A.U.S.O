@@ -15,12 +15,11 @@ int main() {
   }
 
   {
+    saauso::Isolate::Scope isolate_scope(isolate);
     saauso::HandleScope scope(isolate);
 
-    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
-    if (context.IsEmpty()) {
-      return 1;
-    }
+    saauso::Local<saauso::Context> context =
+        saauso::Context::New(isolate).ToLocalChecked();
 
     saauso::ContextScope context_scope(context);
 

@@ -129,7 +129,10 @@ TEST(EmbedderPhase3Test, FunctionCall_DirectRoundTrip) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
+
     HandleScope scope(isolate);
+
     MaybeLocal<Function> maybe_func =
         Function::New(isolate, &HostSetStatus, "Host_SetStatus");
     ASSERT_FALSE(maybe_func.IsEmpty());
@@ -159,7 +162,10 @@ TEST(EmbedderPhase3Test, FunctionCallbackInfo_ArgumentValidation) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
+
     HandleScope scope(isolate);
+
     MaybeLocal<Function> maybe_getter =
         Function::New(isolate, &HostGetStatusWithValidation, "Host_GetStatus");
     ASSERT_FALSE(maybe_getter.IsEmpty());
@@ -198,7 +204,10 @@ TEST(EmbedderPhase3Test, Context_Get_Miss_Test) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
+
     HandleScope scope(isolate);
+    
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
     Local<Context> context = maybe_context.ToLocalChecked();
@@ -227,6 +236,7 @@ TEST(EmbedderPhase3Test, MultiIsolate_ParallelCallbackRegression) {
         return;
       }
       {
+        Isolate::Scope isolate_scope(isolate);
         HandleScope scope(isolate);
         MaybeLocal<Function> maybe_func =
             Function::New(isolate, &HostAccumulateParallel, "Host_Acc");
@@ -257,6 +267,7 @@ TEST(EmbedderPhase4Test, ObjectListTuple_RoundTrip) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Object> maybe_obj = Object::New(isolate);
     ASSERT_FALSE(maybe_obj.IsEmpty());
@@ -315,6 +326,7 @@ TEST(EmbedderPhase4Test, Context_Global_ObjectBridge) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
@@ -345,6 +357,7 @@ TEST(EmbedderPhase4Test, MultiContext_VariableIsolation) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context_a = Context::New(isolate);
     MaybeLocal<Context> maybe_context_b = Context::New(isolate);
@@ -381,6 +394,7 @@ TEST(EmbedderPhase4Test, MultiContext_CallbackBindingIsolation) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context_a = Context::New(isolate);
     MaybeLocal<Context> maybe_context_b = Context::New(isolate);
@@ -433,6 +447,7 @@ TEST(EmbedderPhase4Test, MultiContext_ExceptionIsolation) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context_a = Context::New(isolate);
     MaybeLocal<Context> maybe_context_b = Context::New(isolate);
@@ -476,6 +491,7 @@ TEST(EmbedderPhase4Test, Object_CallMethod_Miss_Captured) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Object> maybe_obj = Object::New(isolate);
     ASSERT_FALSE(maybe_obj.IsEmpty());
@@ -501,6 +517,7 @@ TEST(EmbedderPhase4Test, Object_CallMethod_PythonInstanceMethod) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
@@ -535,6 +552,7 @@ TEST(EmbedderPhase4Test, FloatBoolean_RoundTrip) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     Local<Float> f = Float::New(isolate, 3.5);
     ASSERT_FALSE(f.IsEmpty());
@@ -561,6 +579,7 @@ TEST(EmbedderPhase4Test, ListTuple_Get_OutOfRange_SafeReturn) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<List> maybe_list = List::New(isolate);
     ASSERT_FALSE(maybe_list.IsEmpty());
@@ -587,6 +606,7 @@ TEST(EmbedderPhase4Test, FunctionCall_Reentrant_Safe) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Function> maybe_outer =
         Function::New(isolate, &HostOuterReentrant, "Host_OuterReentrant");
@@ -615,6 +635,7 @@ TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     TryCatch try_catch(isolate);
     MaybeLocal<Value> error =
@@ -642,6 +663,7 @@ TEST(EmbedderPhase3Test, HostMock_PythonToCppRoundTrip) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
@@ -692,6 +714,7 @@ TEST(EmbedderPhase3Test, CallbackThrow_PythonToTryCatch) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
@@ -728,6 +751,7 @@ TEST(EmbedderPhase3Test, Callback_EscapeScope_NoGrowth) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());

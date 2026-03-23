@@ -13,6 +13,7 @@ TEST(EmbedderPhase2Test, StringAndIntegerRoundTrip) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
 
     Local<String> text = String::New(isolate, "phase2");
@@ -38,6 +39,7 @@ TEST(EmbedderPhase2Test, Context_Is_Valid_Value) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
@@ -54,14 +56,16 @@ TEST(EmbedderPhase2Test, HandleScope_Prevents_Memory_Leak) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
   ASSERT_NE(isolate, nullptr);
-
-  const size_t baseline = isolate->ValueRegistrySizeForTesting();
-  for (int i = 0; i < 10000; ++i) {
-    HandleScope scope(isolate);
-    Local<String> text = String::New(isolate, "leak-check");
-    ASSERT_FALSE(text.IsEmpty());
+  {
+    Isolate::Scope isolate_scope(isolate);
+    const size_t baseline = isolate->ValueRegistrySizeForTesting();
+    for (int i = 0; i < 10000; ++i) {
+      HandleScope scope(isolate);
+      Local<String> text = String::New(isolate, "leak-check");
+      ASSERT_FALSE(text.IsEmpty());
+    }
+    EXPECT_EQ(isolate->ValueRegistrySizeForTesting(), baseline);
   }
-  EXPECT_EQ(isolate->ValueRegistrySizeForTesting(), baseline);
 
   isolate->Dispose();
   Saauso::Dispose();
@@ -73,6 +77,7 @@ TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     Local<String> source = String::New(isolate, "gc-safe");
     ASSERT_FALSE(source.IsEmpty());
@@ -98,6 +103,7 @@ TEST(EmbedderPhase2Test, TryCatch_Nested_Capture) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     TryCatch outer_try_catch(isolate);
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
@@ -156,6 +162,7 @@ TEST(EmbedderPhase2Test, ScriptRunSucceedsWithFrontendCompiler) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     Local<String> source = String::New(isolate, "x = 21\nx = x * 2");
     ASSERT_FALSE(source.IsEmpty());
@@ -164,8 +171,8 @@ TEST(EmbedderPhase2Test, ScriptRunSucceedsWithFrontendCompiler) {
     MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
     ASSERT_FALSE(maybe_script.IsEmpty());
 
-    MaybeLocal<Value> run_result =
-        maybe_script.ToLocalChecked()->Run(Context::New(isolate).ToLocalChecked());
+    MaybeLocal<Value> run_result = maybe_script.ToLocalChecked()->Run(
+        Context::New(isolate).ToLocalChecked());
     EXPECT_FALSE(run_result.IsEmpty());
     EXPECT_FALSE(try_catch.HasCaught());
 
@@ -186,6 +193,7 @@ TEST(EmbedderPhase2Test,
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     Local<String> source = String::New(isolate, "print('phase2')");
     ASSERT_FALSE(source.IsEmpty());

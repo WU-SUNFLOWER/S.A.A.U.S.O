@@ -19,12 +19,14 @@ TEST(EmbedderPhase1Test, CreateHandleScopeAndContext) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
   ASSERT_NE(isolate, nullptr);
-
-  for (int i = 0; i < 1000; ++i) {
-    HandleScope scope(isolate);
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    ContextScope context_scope(maybe_context.ToLocalChecked());
+  {
+    Isolate::Scope isolate_scope(isolate);
+    for (int i = 0; i < 1000; ++i) {
+      HandleScope scope(isolate);
+      MaybeLocal<Context> maybe_context = Context::New(isolate);
+      ASSERT_FALSE(maybe_context.IsEmpty());
+      ContextScope context_scope(maybe_context.ToLocalChecked());
+    }
   }
 
   isolate->Dispose();
@@ -37,6 +39,7 @@ TEST(EmbedderPhase1Test, ContextScope_NestedLifo) {
   ASSERT_NE(isolate, nullptr);
 
   {
+    Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     MaybeLocal<Context> maybe_context_a = Context::New(isolate);
     MaybeLocal<Context> maybe_context_b = Context::New(isolate);
