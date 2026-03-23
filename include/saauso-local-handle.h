@@ -8,6 +8,8 @@
 #include <cassert>
 #include <type_traits>
 
+#include "include/saauso-internal.h"
+
 namespace saauso {
 
 class Isolate;
@@ -20,30 +22,69 @@ class Utils;
 template <typename T>
 class Local {
  public:
+  // 默认构造函数：生成一个空的 handle
   Local() = default;
 
   // 支持将指向派生类型 S 的 Local 隐式转换为代表基类 T 的 Local
   template <class S>
     requires std::is_base_of_v<T, S>
-  Local(Local<S> that) : val_(that.val_) {}
+  Local(Local<S> that) : location_(that.location_) {}
 
-  bool IsEmpty() const { return val_ == nullptr; }
-  T* operator->() const { return val_; }
+  bool IsEmpty() const { return location_ == nullptr; }
+
+  T* operator->() const { return reinterpret_cast<T*>(location_); }
   T* operator*() const { return this->operator->(); }
 
-  template <typename S>
-  static Local<T> Cast(Local<S> that) {
-    return Local<T>(reinterpret_cast<T*>(that.val_));
+  // 检查两个 Local 是否相等或不相等。
+  // 我们定义两个句柄相等，当且仅当它们都为空，或它们代表的是同一个内存地址。
+  template <class S>
+  bool operator==(const Local<S>& that) const {
+    if (IsEmpty()) {
+      return that.IsEmpty();
+    }
+    if (that.IsEmpty()) {
+      return false;
+    }
+    return location_ == that.location_;
   }
 
- private:
-  explicit Local(T* val) : val_(val) {}
+  template <class S>
+  bool operator!=(const Local<S>& that) const {
+    return !operator==(that);
+  }
 
+  // 将一个指向基类 S 的 Local 强转为指向派生类 T 的 Local。
+  // 使用此方法时，嵌入方应自行保证 that 指向的的确是一个
+  // 有效的派生类 T 的实例，或者 that 为空。
+  template <typename S>
+  static Local<T> Cast(Local<S> that) {
+    if (that.IsEmpty()) {
+      return Local<T>();
+    }
+    return Local<T>(that.location_);
+  }
+
+  // 等价于Local<S>::Cast()
+  // 使用此方法时，嵌入方应自行保证该 Local 指向的的确是一个
+  // 有效的派生类 T 的实例，或者该 Local 为空。
+  template <class S>
+  Local<S> As() const {
+    return Local<S>::Cast(*this);
+  }
+
+ protected:
+  explicit Local(internal::Address* location) : location_(location) {}
+
+ private:
   template <typename>
   friend class Local;
   friend class internal::Utils;
-  friend struct ApiAccess;
-  T* val_{nullptr};
+
+  static Local<T> FromSlot(internal::Address* location) {
+    return Local<T>(location);
+  }
+
+  internal::Address* location_{nullptr};
 };
 
 template <typename T>
@@ -88,14 +129,14 @@ class MaybeLocal {
   }
 
   // 将指向基类 S 的 MaybeLocal 强转为指向派生类 T 的 MaybeLocal。
-  // 使用此方法时，嵌入方应自行保证该 MaybeLocal 指向的的确是一个
-  // 有效的派生类 T 的实例。
+  // 使用此方法时，嵌入方应自行保证 that 指向的的确是一个
+  // 有效的派生类 T 的实例，或者 that 为空。
   template <class S>
   static MaybeLocal<T> Cast(MaybeLocal<S> that) {
     return MaybeLocal<T>{Local<T>::Cast(that.local_)};
   }
 
-  // 效果等价于 MaybeLocal<T>::Cast。
+  // 效果等价于 MaybeLocal<S>::Cast。
   // 使用此方法时，嵌入方应自行保证该 MaybeLocal 指向的的确是一个
   // 有效的派生类 T 的实例。
   template <class S>
