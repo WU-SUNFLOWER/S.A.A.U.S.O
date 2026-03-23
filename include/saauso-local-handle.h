@@ -5,6 +5,9 @@
 #ifndef SAAUSO_SAAUSO_LOCAL_HANDLE_H_
 #define SAAUSO_SAAUSO_LOCAL_HANDLE_H_
 
+#include <cassert>
+#include <type_traits>
+
 namespace saauso {
 
 class Isolate;
@@ -41,21 +44,64 @@ class Local {
 template <typename T>
 class MaybeLocal {
  public:
+  // 默认构造函数：生成一个空的 handle
   MaybeLocal() = default;
-  MaybeLocal(Local<T> local) : local_(local) {}
+
+  // 支持隐式地将 Local 转化为 MaybeLocal
+  template <class S>
+    requires std::is_base_of_v<T, S>
+  MaybeLocal(Local<S> that) : local_(that) {}
+
+  // 支持隐式地将指向派生类型 S 的 MaybeLocal 转换为指向基类 T 的 MaybeLocal
+  template <class S>
+    requires std::is_base_of_v<T, S>
+  MaybeLocal(MaybeLocal<S> that) : local_(that.local_) {}
 
   bool IsEmpty() const { return local_.IsEmpty(); }
-  bool ToLocal(Local<T>* out) const {
-    if (out == nullptr || IsEmpty()) {
-      return false;
-    }
+
+  // 将 MaybeLocal 解包为可以直接使用的 Local。
+  // 如果 MaybeLocal 为空，本方法将返回 false，同时 out 将会被赋值为空 Local。
+  template <class S>
+  bool ToLocal(Local<S>* out) const {
     *out = local_;
-    return true;
+    return !IsEmpty();
   }
-  Local<T> ToLocalChecked() const { return local_; }
+
+  // 将 MaybeLocal 解包为可以直接使用的 Local。
+  // 如果 MaybeLocal 为空，在 debug 模式下程序将直接崩溃。
+  Local<T> ToLocalChecked() {
+    assert(!IsEmpty() && "Empty MaybeLocal");
+    return local_;
+  }
+
+  // 将 MaybeLocal 解包为可以直接使用的 Local。
+  // 如果 MaybeLocal 为空，本方法将返回默认值 default_value。
+  template <class S>
+  Local<S> FromMaybe(Local<S> default_value) const {
+    return IsEmpty() ? default_value : Local<S>(local_);
+  }
+
+  // 将指向基类 S 的 MaybeLocal 强转为指向派生类 T 的 MaybeLocal。
+  // 使用此方法时，嵌入方应自行保证该 MaybeLocal 指向的的确是一个
+  // 有效的派生类 T 的实例。
+  template <class S>
+  static MaybeLocal<T> Cast(MaybeLocal<S> that) {
+    return MaybeLocal<T>{Local<T>::Cast(that.local_)};
+  }
+
+  // 效果等价于 MaybeLocal<T>::Cast。
+  // 使用此方法时，嵌入方应自行保证该 MaybeLocal 指向的的确是一个
+  // 有效的派生类 T 的实例。
+  template <class S>
+  MaybeLocal<S> As() const {
+    return MaybeLocal<S>::Cast(*this);
+  }
 
  private:
   Local<T> local_;
+
+  template <typename S>
+  friend class MaybeLocal;
 };
 
 class HandleScope {
