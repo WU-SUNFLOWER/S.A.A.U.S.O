@@ -4,11 +4,11 @@
 
 #include "src/execution/isolate.h"
 
-#include <mutex>
 #include <thread>
 #include <vector>
 
 #include "include/saauso.h"
+#include "src/execution/thread-state-infras.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/heap/factory.h"
 #include "src/heap/heap.h"
@@ -78,49 +78,16 @@ Isolate* Isolate::Current() {
   return current_;
 }
 
-ThreadId Isolate::GetCurrentThreadId() {
-  return std::this_thread::get_id();
-}
-
 Isolate::Locker::Locker(Isolate* isolate) : isolate_(isolate) {
-  // 因为下面要对 Isolate 内部的字段进行操作，这里首先加锁
-  reinterpret_cast<std::recursive_mutex*>(isolate_->mutex_)->lock();
-
-  ThreadId tid = GetCurrentThreadId();
-  // 合法的对 Isolate 实例进行加锁的情况：
-  // - 该 Isolate 没有被任何线程占用
-  // - 当前线程重入对该 Isolate 进行上锁
-  assert(isolate_->locker_thread_ == ThreadId{} ||
-         isolate_->locker_thread_ == tid);
-
-  // 标记该 Isolate 被当前线程占用
-  isolate_->locker_thread_ = tid;
-
-  // 该 Isolate 的加锁次数（含重入）自增 1
-  ++isolate_->locker_count_;
+  isolate_->thread_manager_->Lock();
 }
 
 Isolate::Locker::~Locker() {
-  // 加锁和解锁该 Isolate 的必须是同一个线程
-  assert(isolate_->locker_thread_ == GetCurrentThreadId());
-  // 该 Isolate 的加锁次数（含重入）不能已经清零
-  assert(isolate_->locker_count_ > 0);
-
-  --isolate_->locker_count_;
-
-  // 当加锁次数清空时，说明当前线程已经彻底释放对该 Isolate 的占用。
-  // 此时清除 locker_thread_ 标记。
-  if (isolate_->locker_count_ == 0) {
-    // 在释放锁之前，当前线程必须已经完全退出该 Isolate
-    assert(isolate_->entry_count_ == 0);
-    isolate_->locker_thread_ = ThreadId{};
-  }
-
-  reinterpret_cast<std::recursive_mutex*>(isolate_->mutex_)->unlock();
+  isolate_->thread_manager_->Unlock();
 }
 
 void Isolate::Enter() {
-  ThreadId tid = GetCurrentThreadId();
+  ThreadId tid = ThreadId::Current();
   // 合法进入该 Isolate 的情况：
   // - 该 Isolate 没有被任何线程进入过
   // - 该 Isolate 重复被当前线程进入
@@ -148,7 +115,7 @@ void Isolate::Enter() {
 }
 
 void Isolate::Exit() {
-  ThreadId tid = GetCurrentThreadId();
+  ThreadId tid = ThreadId::Current();
 
   // 退出该 Isolate 的线程，和进入该 Isolate 的必须是同一个
   assert(owner_thread_ == tid);
@@ -176,8 +143,8 @@ Tagged<PyBoolean> Isolate::ToPyBoolean(bool condition) {
 }
 
 void Isolate::Init() {
-  // 初始化互斥锁
-  mutex_ = new std::recursive_mutex();
+  // 初始化线程管理器
+  thread_manager_ = new ThreadManager(this);
 
   // 初始化堆（Heap）
   heap_ = new Heap(this);
@@ -313,9 +280,9 @@ void Isolate::TearDown() {
     delete heap_;
     heap_ = nullptr;
 
-    // 销毁互斥锁
-    delete reinterpret_cast<std::recursive_mutex*>(mutex_);
-    mutex_ = nullptr;
+    // 销毁线程管理器
+    delete thread_manager_;
+    thread_manager_ = nullptr;
   } while (0);
   Exit();
 }

@@ -2,14 +2,15 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_RUNTIME_ISOLATE_H_
-#define SAAUSO_RUNTIME_ISOLATE_H_
+#ifndef SAAUSO_EXECUTION_ISOLATE_H_
+#define SAAUSO_EXECUTION_ISOLATE_H_
 
 #include <thread>
 
 #include "include/saauso-maybe.h"
 #include "src/execution/exception-state.h"
 #include "src/execution/isolate-klass-list.h"
+#include "src/execution/thread-id.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/utils/vector.h"
@@ -20,17 +21,17 @@ class TryCatch;
 
 namespace internal {
 
-using ThreadId = std::thread::id;
-
-class Heap;
-class Klass;
-class Factory;
+class ThreadManager;
 class HandleScopeImplementer;
 class Interpreter;
 class ModuleManager;
 class StringTable;
+class Factory;
 class RandomNumberGenerator;
 class ObjectVisitor;
+
+class Heap;
+class Klass;
 class PyDict;
 class PyObject;
 
@@ -134,14 +135,16 @@ class Isolate {
     try_catch_top_ = try_catch;
   }
 
+  // 线程相关
+  ThreadId owner_thread() const { return owner_thread_; }
+  int entry_count() const { return entry_count_; }
+
  private:
   Isolate() = default;
 
   void Init();
   void TearDown();
   Maybe<void> InitMetaArea();
-
-  static ThreadId GetCurrentThreadId();
 
   static thread_local Isolate* current_;
 
@@ -166,15 +169,13 @@ class Isolate {
   ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_FIELDS)
 #undef DECLARE_ISOLATE_KLASS_FIELDS
 
+  ThreadManager* thread_manager_{nullptr};
+
   ThreadId owner_thread_;
   int entry_count_{0};
 
   Vector<saauso::Context*> entered_contexts_;
   saauso::TryCatch* try_catch_top_{nullptr};
-
-  void* mutex_{nullptr};
-  ThreadId locker_thread_;
-  int locker_count_{0};
 
   bool initialized_{false};
 };
@@ -182,4 +183,4 @@ class Isolate {
 }  // namespace internal
 }  // namespace saauso
 
-#endif  // SAAUSO_RUNTIME_ISOLATE_H_
+#endif  // SAAUSO_EXECUTION_ISOLATE_H_
