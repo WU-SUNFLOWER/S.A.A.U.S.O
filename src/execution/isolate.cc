@@ -123,19 +123,6 @@ Isolate::Locker::~Locker() {
   reinterpret_cast<std::recursive_mutex*>(isolate_->mutex_)->unlock();
 }
 
-void Isolate::CheckThreadAccess() const {
-  ThreadId tid = GetCurrentThreadId();
-  if (owner_thread_ == ThreadId{}) {
-    return;
-  }
-  if (owner_thread_ != tid) {
-    // 错误：线程访问违规。
-    // 当前线程试图访问一个已被其他线程拥有的 Isolate，且未通过 Locker/Enter
-    // 机制获得授权。
-    assert(0);
-  }
-}
-
 void Isolate::Enter() {
   ThreadId tid = GetCurrentThreadId();
   // 如果当前 Isolate 没有所有者，则将其分配给当前线程

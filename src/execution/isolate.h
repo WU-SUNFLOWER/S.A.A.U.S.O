@@ -142,7 +142,6 @@ class Isolate {
   Maybe<void> InitMetaArea();
 
   static ThreadId GetCurrentThreadId();
-  void CheckThreadAccess() const;
 
   static thread_local Isolate* current_;
 
