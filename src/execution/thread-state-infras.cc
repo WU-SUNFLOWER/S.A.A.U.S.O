@@ -7,9 +7,27 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "include/saauso-locker.h"
+#include "src/common/globals.h"
 #include "src/execution/isolate.h"
 
 namespace saauso {
+
+Locker::Locker(Isolate* isolate) : isolate_(isolate) {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  i_isolate->thread_manager()->Lock();
+}
+
+Locker::~Locker() {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  i_isolate->thread_manager()->Unlock();
+}
+
+bool Locker::IsLocked(Isolate* isolate) {
+  assert(isolate != nullptr);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  return i_isolate->thread_manager()->IsLockedByCurrentThread();
+}
 
 namespace internal {
 
@@ -36,11 +54,13 @@ void ThreadManager::Lock() {
 
   // 该 Isolate 的加锁次数（含重入）自增 1
   ++mutex_count_;
+
+  assert(IsLockedByCurrentThread());
 }
 
 void ThreadManager::Unlock() {
   // 加锁和解锁该 Isolate 的必须是同一个线程
-  if (mutex_owner_.load() != ThreadId::Current()) {
+  if (!IsLockedByCurrentThread()) {
     std::printf(
         "Illegally unlocking isolate, since you should unlock the isolate in "
         "the thread which locked it.");
@@ -60,6 +80,13 @@ void ThreadManager::Unlock() {
   }
 
   mutex_.unlock();
+}
+
+bool ThreadManager::IsLockedByCurrentThread() const {
+  return mutex_owner_.load() == ThreadId::Current();
+}
+bool ThreadManager::IsLockedByThread(ThreadId id) const {
+  return mutex_owner_.load() == id;
 }
 
 }  // namespace internal

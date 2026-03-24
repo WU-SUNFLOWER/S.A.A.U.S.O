@@ -19,6 +19,9 @@ class ThreadManager {
   void Lock();
   void Unlock();
 
+  bool IsLockedByCurrentThread() const;
+  bool IsLockedByThread(ThreadId id) const;
+
  private:
   Isolate* isolate_{nullptr};
 

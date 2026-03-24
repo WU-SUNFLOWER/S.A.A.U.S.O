@@ -348,6 +348,7 @@ source_set("embedder_api") {
     "//include/saauso-internal.h",
     "//include/saauso-isolate.h",
     "//include/saauso-local-handle.h",
+    "//include/saauso-locker.h",
     "//include/saauso-object.h",
     "//include/saauso-primitive.h",
     "//include/saauso-script.h",
