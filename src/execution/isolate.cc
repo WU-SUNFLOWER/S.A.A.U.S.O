@@ -74,16 +74,9 @@ void Isolate::Dispose(Isolate* isolate) {
   delete isolate;
 }
 
+// static
 Isolate* Isolate::Current() {
   return current_;
-}
-
-Isolate::Locker::Locker(Isolate* isolate) : isolate_(isolate) {
-  isolate_->thread_manager_->Lock();
-}
-
-Isolate::Locker::~Locker() {
-  isolate_->thread_manager_->Unlock();
 }
 
 void Isolate::Enter() {
@@ -137,6 +130,7 @@ void Isolate::Exit() {
   }
 }
 
+// static
 Tagged<PyBoolean> Isolate::ToPyBoolean(bool condition) {
   Isolate* isolate = Isolate::Current();
   return condition ? isolate->py_true_object_ : isolate->py_false_object_;

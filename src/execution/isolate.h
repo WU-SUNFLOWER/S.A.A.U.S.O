@@ -47,27 +47,6 @@ ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_TYPES)
 // 这一设计借鉴了 V8 的 Isolate 概念。
 class Isolate {
  public:
-  // Isolate::Locker 用于多线程环境下的同步。
-  // 它确保在同一时刻只有一个线程可以访问该 Isolate（类似于 GIL 的作用范围，但在
-  // Isolate 级别）。
-  //
-  // 用法示例：
-  // void RunThreadSafe(Isolate* isolate) {
-  //   Isolate::Locker lock(isolate); // 获取锁，如果被占用则阻塞
-  //   Isolate::Scope scope(isolate); // 进入作用域
-  //   // 安全地使用 isolate...
-  // }
-  class Locker {
-   public:
-    explicit Locker(Isolate* isolate);
-    Locker(const Locker&) = delete;
-    Locker& operator=(const Locker&) = delete;
-    ~Locker();
-
-   private:
-    Isolate* isolate_{nullptr};
-  };
-
   Isolate(const Isolate&) = delete;
   Isolate& operator=(const Isolate&) = delete;
 
@@ -88,6 +67,7 @@ class Isolate {
   void Exit();
 
   // 获取虚拟机的核心组件
+  ThreadManager* thread_manager() const { return thread_manager_; }
   Heap* heap() const { return heap_; }
   Factory* factory() const { return factory_; }
   HandleScopeImplementer* handle_scope_implementer() const {
