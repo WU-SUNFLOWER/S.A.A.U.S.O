@@ -29,7 +29,7 @@ Maybe<void> PyTupleIteratorBuiltinMethods::Install(
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyTupleIteratorBuiltinMethods, Next) {
-  return PyObject::Next(self);
+  return PyObject::Next(isolate, self);
 }
 
 }  // namespace saauso::internal

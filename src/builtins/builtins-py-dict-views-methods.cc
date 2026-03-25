@@ -59,15 +59,15 @@ Maybe<void> PyDictValueIteratorBuiltinMethods::Install(
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyDictKeyIteratorBuiltinMethods, Next) {
-  return PyObject::Next(self);
+  return PyObject::Next(isolate, self);
 }
 
 BUILTIN_METHOD(PyDictItemIteratorBuiltinMethods, Next) {
-  return PyObject::Next(self);
+  return PyObject::Next(isolate, self);
 }
 
 BUILTIN_METHOD(PyDictValueIteratorBuiltinMethods, Next) {
-  return PyObject::Next(self);
+  return PyObject::Next(isolate, self);
 }
 
 }  // namespace saauso::internal
