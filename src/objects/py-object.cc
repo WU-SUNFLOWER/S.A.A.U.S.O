@@ -406,18 +406,27 @@ MaybeHandle<PyObject> PyObject::SetAttr(Isolate* isolate,
                                             attr_value);
 }
 
-MaybeHandle<PyObject> PyObject::Subscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Subscr(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> subscr_name) {
   assert(GetKlass(*self)->vtable().subscr_);
-  return GetKlass(*self)->vtable().subscr_(self, subscr_name);
+  return GetKlass(*self)->vtable().subscr_(isolate, self, subscr_name);
 }
 
-MaybeHandle<PyObject> PyObject::StoreSubscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::StoreSubscr(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> subscr_name,
                                             Handle<PyObject> subscr_value) {
   assert(GetKlass(*self)->vtable().store_subscr_);
-  return GetKlass(*self)->vtable().store_subscr_(self, subscr_name,
+  return GetKlass(*self)->vtable().store_subscr_(isolate, self, subscr_name,
                                                  subscr_value);
+}
+
+MaybeHandle<PyObject> PyObject::DeletSubscr(Isolate* isolate,
+                                            Handle<PyObject> self,
+                                            Handle<PyObject> subscr_name) {
+  assert(GetKlass(*self)->vtable().del_subscr_);
+  return GetKlass(*self)->vtable().del_subscr_(isolate, self, subscr_name);
 }
 
 MaybeHandle<PyBoolean> PyObject::Contains(Isolate* isolate,
@@ -445,12 +454,6 @@ MaybeHandle<PyObject> PyObject::Iter(Handle<PyObject> self) {
 MaybeHandle<PyObject> PyObject::Next(Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().next_);
   return GetKlass(*self)->vtable().next_(self);
-}
-
-MaybeHandle<PyObject> PyObject::DeletSubscr(Handle<PyObject> self,
-                                            Handle<PyObject> subscr_name) {
-  assert(GetKlass(*self)->vtable().del_subscr_);
-  return GetKlass(*self)->vtable().del_subscr_(self, subscr_name);
 }
 
 Maybe<uint64_t> PyObject::Hash(Isolate* isolate, Handle<PyObject> self) {

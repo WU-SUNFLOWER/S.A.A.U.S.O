@@ -84,6 +84,8 @@ using VirtualFuncType_MaybeSetAttrWithIsolate = MaybeOopHandle (*)(Isolate*,
                                                                    OopHandle,
                                                                    OopHandle,
                                                                    OopHandle);
+using VirtualFuncType_MaybeStoreSubscrWithIsolate =
+    MaybeOopHandle (*)(Isolate*, OopHandle, OopHandle, OopHandle);
 // Fallible slot：返回 Maybe<uint64_t>
 using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
 using VirtualFuncType_MaybeHashWithIsolate = Maybe<uint64_t> (*)(Isolate*,
@@ -110,9 +112,10 @@ using VirtualFuncType_Maybe_Str = MaybeOopHandle (*)(Isolate*, OopHandle);
   /* setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle */ \
   V(VirtualFuncType_MaybeGetAttrWithIsolate, getattr, "__getattr__", GetAttr)  \
   V(VirtualFuncType_MaybeSetAttrWithIsolate, setattr, "__setattr__", SetAttr)  \
-  V(VirtualFuncType_Maybe_1_2, subscr, "__getitem__", Subscr)                  \
-  V(VirtualFuncType_Maybe_0_3, store_subscr, "__setitem__", StoreSubscr)       \
-  V(VirtualFuncType_Maybe_1_2, del_subscr, "__delitem__", DeleteSubscr)        \
+  V(VirtualFuncType_Maybe_2_2, subscr, "__getitem__", Subscr)                  \
+  V(VirtualFuncType_MaybeStoreSubscrWithIsolate, store_subscr, "__setitem__",  \
+    StoreSubscr)                                                               \
+  V(VirtualFuncType_Maybe_2_2, del_subscr, "__delitem__", DeleteSubscr)        \
                                                                                \
   /* 比较/contains：返回 Maybe<bool>，失败时设置 pending exception */          \
   V(VirtualFuncType_MaybeBool_2_2, greater, "__gt__", Greater)                 \

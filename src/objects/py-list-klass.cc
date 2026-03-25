@@ -239,7 +239,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
   return result;
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> subscr) {
   if (!IsPySmi(subscr)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,
@@ -252,7 +253,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Handle<PyObject> self,
   return Handle<PyList>::cast(self)->Get(decoded_subscr);
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Isolate* isolate,
+                                                       Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
   auto list = Handle<PyList>::cast(self);
@@ -266,10 +268,11 @@ MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Handle<PyObject> self,
   }
 
   list->Set(decoded_subscr, value);
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Isolate* isolate,
+                                                     Handle<PyObject> self,
                                                      Handle<PyObject> subscr) {
   auto list = Handle<PyList>::cast(self);
 
@@ -282,7 +285,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   }
 
   list->RemoveByIndex(decoded_subscr);
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 Maybe<bool> PyListKlass::Virtual_Less(Isolate* isolate,

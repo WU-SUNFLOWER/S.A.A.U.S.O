@@ -136,12 +136,18 @@ class PyObject : public Object {
                                        Handle<PyObject> self,
                                        Handle<PyObject> attr_name,
                                        Handle<PyObject> attr_value);
-  static MaybeHandle<PyObject> Subscr(Handle<PyObject> self,
-                                      Handle<PyObject> subscr_name);
 
-  static MaybeHandle<PyObject> StoreSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Subscr(Isolate* isolate,
+                                      Handle<PyObject> self,
+                                      Handle<PyObject> subscr_name);
+  static MaybeHandle<PyObject> StoreSubscr(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> subscr_name,
                                            Handle<PyObject> subscr_value);
+  static MaybeHandle<PyObject> DeletSubscr(Isolate* isolate,
+                                           Handle<PyObject> self,
+                                           Handle<PyObject> subscr_name);
+
   static MaybeHandle<PyBoolean> Contains(Isolate* isolate,
                                          Handle<PyObject> self,
                                          Handle<PyObject> target);
@@ -152,8 +158,6 @@ class PyObject : public Object {
   // 返回空 MaybeHandle 表示迭代结束或异常；调用方需用
   // Runtime_ConsumePendingStopIterationIfSet 区分。
   static MaybeHandle<PyObject> Next(Handle<PyObject> self);
-  static MaybeHandle<PyObject> DeletSubscr(Handle<PyObject> self,
-                                           Handle<PyObject> subscr_name);
 
   static Maybe<uint64_t> Hash(Isolate* isolate, Handle<PyObject> self);
 

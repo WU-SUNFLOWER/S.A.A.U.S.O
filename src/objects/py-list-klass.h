@@ -49,12 +49,15 @@ class PyListKlass : public Klass {
                                            Handle<PyObject> self,
                                            Handle<PyObject> coeff);
 
-  static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Subscr(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> subscr);
-  static MaybeHandle<PyObject> Virtual_StoreSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_StoreSubscr(Isolate* isolate,
+                                                   Handle<PyObject> self,
                                                    Handle<PyObject> subscr,
                                                    Handle<PyObject> value);
-  static MaybeHandle<PyObject> Virtual_DelSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_DelSubscr(Isolate* isolate,
+                                                 Handle<PyObject> self,
                                                  Handle<PyObject> subscr);
   static Maybe<bool> Virtual_Less(Isolate* isolate,
                                   Handle<PyObject> self,

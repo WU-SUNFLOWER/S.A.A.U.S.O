@@ -61,7 +61,8 @@ class PyStringKlass : public Klass {
                                       Handle<PyObject> self,
                                       Handle<PyObject> target);
 
-  static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Subscr(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> subscr);
   static MaybeHandle<PyObject> Virtual_Add(Isolate* isolate,
                                            Handle<PyObject> self,

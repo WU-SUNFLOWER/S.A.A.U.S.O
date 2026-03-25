@@ -174,13 +174,14 @@ MaybeHandle<PyObject> KlassVtableTrampolines::SetAttr(
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Subscr(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::Subscr(Isolate* isolate,
+                                                     Handle<PyObject> self,
                                                      Handle<PyObject> subscr) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
                                           Handle<PyDict>::null(), ST(subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -189,18 +190,17 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Subscr(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> KlassVtableTrampolines::StoreSubscr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> subscr,
     Handle<PyObject> value) {
-  auto* isolate = Isolate::Current();
   Handle<PyTuple> args = PyTuple::NewInstance(2);
   args->SetInternal(0, subscr);
   args->SetInternal(1, value);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
-                                          Handle<PyDict>::null(),
-                                          ST(store_subscr))
+  if (!Runtime_InvokeMagicOperationMethod(
+           isolate, self, args, Handle<PyDict>::null(), ST(store_subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -208,16 +208,15 @@ MaybeHandle<PyObject> KlassVtableTrampolines::StoreSubscr(
 }
 
 MaybeHandle<PyObject> KlassVtableTrampolines::DeleteSubscr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> subscr) {
-  auto* isolate = Isolate::Current();
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, subscr);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
-                                          Handle<PyDict>::null(),
-                                          ST(del_subscr))
+  if (!Runtime_InvokeMagicOperationMethod(
+           isolate, self, args, Handle<PyDict>::null(), ST(del_subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
