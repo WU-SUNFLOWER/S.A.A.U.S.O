@@ -27,7 +27,8 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 // - iterable 必须为非空且可被展开。
 // - iterable 的每个元素必须为 str。
 // - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
+MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
+                                           Handle<PyString> str,
                                            Handle<PyObject> iterable);
 
 MaybeHandle<PyString> Runtime_NewPyStringRepr(Isolate* isolate,

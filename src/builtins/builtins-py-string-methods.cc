@@ -390,8 +390,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
 
   Handle<PyObject> iterable = args->Get(0);
   Handle<PyString> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             Runtime_PyStringJoin(str_object, iterable));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result, Runtime_PyStringJoin(isolate, str_object, iterable));
 
   return scope.Escape(result);
 }
