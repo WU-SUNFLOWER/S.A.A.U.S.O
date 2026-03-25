@@ -128,7 +128,8 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
   Handle<PyObject> left(PyString::NewInstance("Hello"));
   Handle<PyObject> right(PyString::NewInstance(" World"));
   Handle<PyObject> result;
-  ASSERT_TRUE(PyObject::Add(left, right).ToHandle(&result));
+  ASSERT_TRUE(
+      PyObject::Add(isolate_, left, right).ToHandle(&result));
   ASSERT_TRUE(IsPyString(result));
   EXPECT_TRUE(IsPyStringEqual(Handle<PyString>::cast(result), "Hello World"));
 }

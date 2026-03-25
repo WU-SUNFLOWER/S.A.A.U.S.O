@@ -45,10 +45,10 @@ TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
   Handle<PyObject> a(PySmi::FromInt(7));
   Handle<PyObject> b(PySmi::FromInt(3));
 
-  auto add = PyObject::Add(a, b);
-  auto sub = PyObject::Sub(a, b);
-  auto mul = PyObject::Mul(a, b);
-  auto mod = PyObject::Mod(a, b);
+  auto add = PyObject::Add(isolate_, a, b);
+  auto sub = PyObject::Sub(isolate_, a, b);
+  auto mul = PyObject::Mul(isolate_, a, b);
+  auto mod = PyObject::Mod(isolate_, a, b);
 
   Handle<PyObject> add_obj;
   Handle<PyObject> sub_obj;
@@ -75,7 +75,7 @@ TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
 
   Handle<PyObject> a(PySmi::FromInt(-7));
   Handle<PyObject> b(PySmi::FromInt(3));
-  auto mod = PyObject::Mod(a, b);
+  auto mod = PyObject::Mod(isolate_, a, b);
 
   Handle<PyObject> mod_obj;
   ASSERT_TRUE(mod.ToHandle(&mod_obj));
@@ -112,11 +112,11 @@ TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
   Handle<PyObject> f(PyFloat::NewInstance(0.25));
 
   Handle<PyObject> r1, r2, r3, r4, r5;
-  ASSERT_TRUE(PyObject::Add(i, f).ToHandle(&r1));
-  ASSERT_TRUE(PyObject::Sub(i, f).ToHandle(&r2));
-  ASSERT_TRUE(PyObject::Mul(i, f).ToHandle(&r3));
-  ASSERT_TRUE(PyObject::Div(i, f).ToHandle(&r4));
-  ASSERT_TRUE(PyObject::Mod(i, f).ToHandle(&r5));
+  ASSERT_TRUE(PyObject::Add(isolate_, i, f).ToHandle(&r1));
+  ASSERT_TRUE(PyObject::Sub(isolate_, i, f).ToHandle(&r2));
+  ASSERT_TRUE(PyObject::Mul(isolate_, i, f).ToHandle(&r3));
+  ASSERT_TRUE(PyObject::Div(isolate_, i, f).ToHandle(&r4));
+  ASSERT_TRUE(PyObject::Mod(isolate_, i, f).ToHandle(&r5));
 
   ASSERT_TRUE(IsPyFloat(r1));
   ASSERT_TRUE(IsPyFloat(r2));
