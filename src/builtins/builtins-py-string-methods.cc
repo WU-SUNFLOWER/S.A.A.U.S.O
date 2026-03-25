@@ -296,13 +296,13 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       bool eq = false;
-      if (!PyObject::EqualBool(key, sep_key).To(&eq)) {
+      if (!PyObject::EqualBool(isolate, key, sep_key).To(&eq)) {
         return kNullMaybeHandle;
       }
       if (eq) {
         continue;
       }
-      if (!PyObject::EqualBool(key, maxsplit_key).To(&eq)) {
+      if (!PyObject::EqualBool(isolate, key, maxsplit_key).To(&eq)) {
         return kNullMaybeHandle;
       }
       if (eq) {

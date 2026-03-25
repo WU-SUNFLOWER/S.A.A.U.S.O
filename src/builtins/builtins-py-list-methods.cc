@@ -323,12 +323,13 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   }
 
   struct CompareContext {
+    Isolate* isolate;
     Handle<PyList> list;
     Handle<FixedArray> keys;
     int64_t expected_length;
   };
 
-  CompareContext context{list, keys, expected_length};
+  CompareContext context{isolate, list, keys, expected_length};
 
   // 排序比较回调。若排序期间检测到 list 长度被修改，则抛出 ValueError 并
   // 返回 false。排序完成后由外层检查 pending exception 进行 unwind。
@@ -342,7 +343,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     HandleScope scope;
     Handle<PyObject> ka = handle(c->keys->Get(a));
     Handle<PyObject> kb = handle(c->keys->Get(b));
-    Maybe<bool> mb = PyObject::LessBool(ka, kb);
+    Maybe<bool> mb = PyObject::LessBool(c->isolate, ka, kb);
     if (mb.IsNothing()) {
       return false;
     }

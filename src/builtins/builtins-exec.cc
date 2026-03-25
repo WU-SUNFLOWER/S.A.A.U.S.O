@@ -59,13 +59,13 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
 
     bool eq = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
-                               PyObject::EqualBool(key, globals_key));
+                               PyObject::EqualBool(isolate, key, globals_key));
     if (eq) {
       continue;
     }
 
     ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
-                               PyObject::EqualBool(key, locals_key));
+                               PyObject::EqualBool(isolate, key, locals_key));
     if (eq) {
       continue;
     }
