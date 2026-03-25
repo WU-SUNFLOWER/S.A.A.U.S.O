@@ -53,8 +53,7 @@ double ExtractValue(Handle<PyObject> object) {
 ////////////////////////////////////////////////////////////////////
 
 // static
-Tagged<PyFloatKlass> PyFloatKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyFloatKlass> PyFloatKlass::GetInstance(Isolate* isolate) {
   Tagged<PyFloatKlass> instance = isolate->py_float_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyFloatKlass>(
@@ -103,7 +102,7 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -127,7 +126,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(receiver_type->own_klass() == PyFloatKlass::GetInstance());
+  assert(receiver_type->own_klass() == PyFloatKlass::GetInstance(isolate));
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(ExceptionType::kTypeError,

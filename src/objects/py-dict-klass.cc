@@ -41,8 +41,7 @@ namespace saauso::internal {
 ////////////////////////////////////////////////////////////////////
 
 // static
-Tagged<PyDictKlass> PyDictKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictKlass> PyDictKlass::GetInstance(Isolate* isolate) {
   Tagged<PyDictKlass> instance = isolate->py_dict_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictKlass>(
@@ -60,7 +59,7 @@ void PyDictKlass::PreInitialize(Isolate* isolate) {
   set_instance_has_properties_dict(false);
 
   set_native_layout_kind(NativeLayoutKind::kDict);
-  set_native_layout_base(PyObjectKlass::GetInstance());
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -89,7 +88,7 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -225,7 +224,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass, PyDictKlass::GetInstance()));
+      Runtime_IsSubtype(instance_klass, PyDictKlass::GetInstance(isolate)));
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(

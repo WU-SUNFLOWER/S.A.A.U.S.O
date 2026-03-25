@@ -17,7 +17,7 @@ class PyBoolean;
 
 class PyStringKlass : public Klass {
  public:
-  static Tagged<PyStringKlass> GetInstance();
+  static Tagged<PyStringKlass> GetInstance(Isolate* isolate);
 
   PyStringKlass() = delete;
 

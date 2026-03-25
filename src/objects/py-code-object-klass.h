@@ -10,9 +10,11 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyCodeObjectKlass : public Klass {
  public:
-  static Tagged<PyCodeObjectKlass> GetInstance();
+  static Tagged<PyCodeObjectKlass> GetInstance(Isolate* isolate);
 
   PyCodeObjectKlass() = delete;
 

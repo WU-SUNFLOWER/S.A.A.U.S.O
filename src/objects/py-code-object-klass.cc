@@ -23,8 +23,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance(Isolate* isolate) {
   Tagged<PyCodeObjectKlass> instance = isolate->py_code_object_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyCodeObjectKlass>(
@@ -37,7 +36,7 @@ Tagged<PyCodeObjectKlass> PyCodeObjectKlass::GetInstance() {
 void PyCodeObjectKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
-  
+
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
 
@@ -58,7 +57,7 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表

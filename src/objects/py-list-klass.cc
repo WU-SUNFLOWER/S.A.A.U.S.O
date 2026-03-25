@@ -44,8 +44,7 @@ namespace saauso::internal {
 ////////////////////////////////////////////////////////////////////
 
 // static
-Tagged<PyListKlass> PyListKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyListKlass> PyListKlass::GetInstance(Isolate* isolate) {
   Tagged<PyListKlass> instance = isolate->py_list_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyListKlass>(
@@ -66,7 +65,7 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
 
   // 设置内建布局字段
   set_native_layout_kind(NativeLayoutKind::kList);
-  set_native_layout_base(PyObjectKlass::GetInstance());
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -97,7 +96,7 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -143,7 +142,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass, PyListKlass::GetInstance()));
+      Runtime_IsSubtype(instance_klass, PyListKlass::GetInstance(isolate)));
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(

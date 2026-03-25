@@ -4,6 +4,7 @@
 
 #include "src/objects/py-base-exception.h"
 
+#include "src/execution/isolate.h"
 #include "src/objects/py-base-exception-klass.h"
 #include "src/objects/py-object.h"
 
@@ -11,7 +12,8 @@ namespace saauso::internal {
 
 // static
 Tagged<PyBaseException> PyBaseException::cast(Tagged<PyObject> object) {
-  assert(PyObject::GetKlass(object) == PyBaseExceptionKlass::GetInstance());
+  assert(PyObject::GetKlass(object) ==
+         PyBaseExceptionKlass::GetInstance(Isolate::Current()));
   return Tagged<PyBaseException>::cast(object);
 }
 

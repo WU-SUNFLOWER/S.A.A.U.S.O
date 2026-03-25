@@ -15,7 +15,7 @@ class ObjectVisitor;
 
 class PyTupleKlass : public Klass {
  public:
-  static Tagged<PyTupleKlass> GetInstance();
+  static Tagged<PyTupleKlass> GetInstance(Isolate* isolate);
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize(Isolate* isolate);

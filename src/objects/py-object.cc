@@ -63,7 +63,7 @@ void PyObject::SetMapWordForwarded(Tagged<PyObject> object,
 Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
   if (IsPySmi(object)) {
-    return PySmiKlass::GetInstance();
+    return PySmiKlass::GetInstance(Isolate::Current());
   }
 
   assert(IsHeapObject(object));

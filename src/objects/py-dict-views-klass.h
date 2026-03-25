@@ -15,7 +15,7 @@ class PyTuple;
 
 class PyDictKeysKlass : public Klass {
  public:
-  static Tagged<PyDictKeysKlass> GetInstance();
+  static Tagged<PyDictKeysKlass> GetInstance(Isolate* isolate);
 
   PyDictKeysKlass() = delete;
 
@@ -35,7 +35,7 @@ class PyDictKeysKlass : public Klass {
 
 class PyDictValuesKlass : public Klass {
  public:
-  static Tagged<PyDictValuesKlass> GetInstance();
+  static Tagged<PyDictValuesKlass> GetInstance(Isolate* isolate);
 
   PyDictValuesKlass() = delete;
 
@@ -55,7 +55,7 @@ class PyDictValuesKlass : public Klass {
 
 class PyDictItemsKlass : public Klass {
  public:
-  static Tagged<PyDictItemsKlass> GetInstance();
+  static Tagged<PyDictItemsKlass> GetInstance(Isolate* isolate);
 
   PyDictItemsKlass() = delete;
 
@@ -75,7 +75,7 @@ class PyDictItemsKlass : public Klass {
 
 class PyDictKeyIteratorKlass : public Klass {
  public:
-  static Tagged<PyDictKeyIteratorKlass> GetInstance();
+  static Tagged<PyDictKeyIteratorKlass> GetInstance(Isolate* isolate);
 
   PyDictKeyIteratorKlass() = delete;
 
@@ -93,7 +93,7 @@ class PyDictKeyIteratorKlass : public Klass {
 
 class PyDictItemIteratorKlass : public Klass {
  public:
-  static Tagged<PyDictItemIteratorKlass> GetInstance();
+  static Tagged<PyDictItemIteratorKlass> GetInstance(Isolate* isolate);
 
   PyDictItemIteratorKlass() = delete;
 
@@ -111,7 +111,7 @@ class PyDictItemIteratorKlass : public Klass {
 
 class PyDictValueIteratorKlass : public Klass {
  public:
-  static Tagged<PyDictValueIteratorKlass> GetInstance();
+  static Tagged<PyDictValueIteratorKlass> GetInstance(Isolate* isolate);
 
   PyDictValueIteratorKlass() = delete;
 

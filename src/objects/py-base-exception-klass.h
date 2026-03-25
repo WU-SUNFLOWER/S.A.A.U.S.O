@@ -9,11 +9,13 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyBaseExceptionKlass : public Klass {
  public:
   PyBaseExceptionKlass() = delete;
 
-  static Tagged<PyBaseExceptionKlass> GetInstance();
+  static Tagged<PyBaseExceptionKlass> GetInstance(Isolate* isolate);
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);

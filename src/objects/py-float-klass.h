@@ -14,7 +14,7 @@ namespace saauso::internal {
 
 class PyFloatKlass : public Klass {
  public:
-  static Tagged<PyFloatKlass> GetInstance();
+  static Tagged<PyFloatKlass> GetInstance(Isolate* isolate);
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);

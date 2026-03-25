@@ -13,8 +13,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance(Isolate* isolate) {
   Tagged<FixedArrayKlass> instance = isolate->fixed_array_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<FixedArrayKlass>(

@@ -9,11 +9,12 @@
 
 namespace saauso::internal {
 
+class Isolate;
 class ObjectVisitor;
 
 class FixedArrayKlass : public Klass {
  public:
-  static Tagged<FixedArrayKlass> GetInstance();
+  static Tagged<FixedArrayKlass> GetInstance(Isolate* isolate);
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize(Isolate* isolate);

@@ -32,8 +32,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyTypeObjectKlass> PyTypeObjectKlass::GetInstance(Isolate* isolate) {
   Tagged<PyTypeObjectKlass> instance = isolate->py_type_object_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyTypeObjectKlass>(
@@ -74,7 +73,7 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -178,7 +177,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_NewInstance(
     Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(receiver_type->own_klass() == PyTypeObjectKlass::GetInstance());
+  assert(receiver_type->own_klass() == PyTypeObjectKlass::GetInstance(isolate));
   return Runtime_NewType(isolate, args, kwargs);
 }
 

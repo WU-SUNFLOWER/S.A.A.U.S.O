@@ -20,7 +20,7 @@ class PyListKlass : public Klass {
  public:
   PyListKlass() = delete;
 
-  static Tagged<PyListKlass> GetInstance();
+  static Tagged<PyListKlass> GetInstance(Isolate* isolate);
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);

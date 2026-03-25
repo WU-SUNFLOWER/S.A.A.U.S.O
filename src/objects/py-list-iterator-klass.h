@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 class PyListIteratorKlass : public Klass {
  public:
-  static Tagged<PyListIteratorKlass> GetInstance();
+  static Tagged<PyListIteratorKlass> GetInstance(Isolate* isolate);
 
   PyListIteratorKlass() = delete;
 

@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 class PyObjectKlass : public Klass {
  public:
-  static Tagged<PyObjectKlass> GetInstance();
+  static Tagged<PyObjectKlass> GetInstance(Isolate* isolate);
 
   PyObjectKlass() = delete;
 

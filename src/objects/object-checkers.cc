@@ -40,9 +40,11 @@ bool IsNativeLayoutKind(Tagged<PyObject> object,
 /////////////////////////////////////////////////////////////////////////
 // 普通的对象类型 checker，直接基于 Klass 指针进行判断
 
-#define IMPL_PY_CHECKER_BY_KLASS(name)                               \
-  bool Is##name(Tagged<PyObject> object) {                           \
-    return PyObject::GetKlass(object) == name##Klass::GetInstance(); \
+// TODO: VM内部IsXxxx系列API，要求显式传入Isolate
+#define IMPL_PY_CHECKER_BY_KLASS(name)                   \
+  bool Is##name(Tagged<PyObject> object) {               \
+    return PyObject::GetKlass(object) ==                 \
+           name##Klass::GetInstance(Isolate::Current()); \
   }
 
 IMPL_PY_CHECKER_BY_KLASS(PyTypeObject)
@@ -88,16 +90,21 @@ bool IsPyDict(Tagged<PyObject> object) {
 // 其他特化 checker API
 
 bool IsPyFunction(Tagged<PyObject> object) {
-  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance() ||
-         PyObject::GetKlass(object) == NativeFunctionKlass::GetInstance();
+  Isolate* isolate = Isolate::Current();
+  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance(isolate) ||
+         PyObject::GetKlass(object) ==
+             NativeFunctionKlass::GetInstance(isolate);
 }
 
 bool IsNormalPyFunction(Tagged<PyObject> object) {
-  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance();
+  Isolate* isolate = Isolate::Current();
+  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance(isolate);
 }
 
 bool IsNativePyFunction(Tagged<PyObject> object) {
-  return PyObject::GetKlass(object) == NativeFunctionKlass::GetInstance();
+  Isolate* isolate = Isolate::Current();
+  return PyObject::GetKlass(object) ==
+         NativeFunctionKlass::GetInstance(isolate);
 }
 
 bool IsPySmi(Tagged<PyObject> object) {
@@ -105,11 +112,13 @@ bool IsPySmi(Tagged<PyObject> object) {
 }
 
 bool IsPyTrue(Tagged<PyObject> object) {
-  return object == Tagged<PyObject>(Isolate::Current()->py_true_object());
+  Isolate* isolate = Isolate::Current();
+  return object == Tagged<PyObject>(isolate->py_true_object());
 }
 
 bool IsPyFalse(Tagged<PyObject> object) {
-  return object == Tagged<PyObject>(Isolate::Current()->py_false_object());
+  Isolate* isolate = Isolate::Current();
+  return object == Tagged<PyObject>(isolate->py_false_object());
 }
 
 bool IsHeapObject(Tagged<PyObject> object) {
@@ -147,12 +156,14 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 // 针对支持被用户Python代码继承的类型，提供显式的 exact 语义 API。
 // 基于 Klass 头指针进行精确判断。
 
-#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)                         \
-  bool Is##name##Exact(Tagged<PyObject> object) {                    \
-    return PyObject::GetKlass(object) == name##Klass::GetInstance(); \
-  }                                                                  \
-  bool Is##name##Exact(Handle<PyObject> object) {                    \
-    return Is##name##Exact(*object);                                 \
+// TODO: VM内部IsXxxx系列API，要求显式传入Isolate
+#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)             \
+  bool Is##name##Exact(Tagged<PyObject> object) {        \
+    return PyObject::GetKlass(object) ==                 \
+           name##Klass::GetInstance(Isolate::Current()); \
+  }                                                      \
+  bool Is##name##Exact(Handle<PyObject> object) {        \
+    return Is##name##Exact(*object);                     \
   }
 
 PY_INHERITABLE_TYPE_IN_HEAP_LIST(IMPL_PY_EXACT_CHECKER_BY_KLASS)

@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 class PyFunctionKlass : public Klass {
  public:
-  static Tagged<PyFunctionKlass> GetInstance();
+  static Tagged<PyFunctionKlass> GetInstance(Isolate* isolate);
 
   PyFunctionKlass() = delete;
 
@@ -38,7 +38,7 @@ class PyFunctionKlass : public Klass {
 
 class NativeFunctionKlass : public Klass {
  public:
-  static Tagged<NativeFunctionKlass> GetInstance();
+  static Tagged<NativeFunctionKlass> GetInstance(Isolate* isolate);
 
   NativeFunctionKlass() = delete;
 
@@ -63,7 +63,7 @@ class NativeFunctionKlass : public Klass {
 
 class MethodObjectKlass : public Klass {
  public:
-  static Tagged<MethodObjectKlass> GetInstance();
+  static Tagged<MethodObjectKlass> GetInstance(Isolate* isolate);
 
   MethodObjectKlass() = delete;
 
