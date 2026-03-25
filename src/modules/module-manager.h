@@ -25,10 +25,12 @@ class PyModule;
 class PyObject;
 class PyString;
 class PyTuple;
+
 class BuiltinModuleRegistry;
 class ModuleLoader;
 class ModuleFinder;
 class ModuleImporter;
+class ModuleNameResolver;
 
 // ModuleManager 是虚拟机模块系统的门面：
 // - 对解释器提供 ImportModule 接口（导入语义编排）。
@@ -52,6 +54,7 @@ class ModuleManager final {
   Isolate* isolate() const { return isolate_; }
   ModuleFinder* finder() const { return finder_.get(); }
   ModuleLoader* loader() const { return loader_.get(); }
+  ModuleNameResolver* name_resolver() const { return name_resolver_.get(); }
 
   // 导入模块的统一入口（IMPORT_NAME 会调用此接口）。
   // 失败时设置 pending exception 并返回空 MaybeHandle。
@@ -77,10 +80,12 @@ class ModuleManager final {
   void InitializeSysState();
 
   Isolate* isolate_{nullptr};
+
   std::unique_ptr<BuiltinModuleRegistry> builtin_registry_;
   std::unique_ptr<ModuleFinder> finder_;
   std::unique_ptr<ModuleLoader> loader_;
   std::unique_ptr<ModuleImporter> importer_;
+  std::unique_ptr<ModuleNameResolver> name_resolver_;
 
   Tagged<PyDict> modules_{kNullAddress};
   Tagged<PyList> path_{kNullAddress};

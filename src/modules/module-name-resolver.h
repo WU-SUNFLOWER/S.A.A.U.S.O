@@ -7,7 +7,6 @@
 
 #include <cstdint>
 
-#include "src/common/globals.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 
@@ -16,23 +15,28 @@ namespace saauso::internal {
 class PyDict;
 class PyString;
 
-class ModuleNameResolver : public AllStatic {
+class ModuleNameResolver {
  public:
+  ModuleNameResolver(Isolate* isolate) : isolate_(isolate) {}
+
+  ModuleNameResolver(ModuleNameResolver&) = delete;
+  ModuleNameResolver& operator=(ModuleNameResolver&) = delete;
+
   // 解析并返回最终导入的模块全名。
   // - name 允许为空字符串：仅当 level > 0（相对导入）时成立。
   // 失败时设置 pending exception 并返回空 MaybeHandle。
-  static MaybeHandle<PyString> ResolveFullName(Handle<PyString> name,
-                                               int64_t level,
-                                               Handle<PyDict> globals);
+  MaybeHandle<PyString> ResolveFullName(Handle<PyString> name,
+                                        int64_t level,
+                                        Handle<PyDict> globals);
 
  private:
-  static Handle<PyString> ParentModuleNameOrEmpty(Handle<PyString> name);
-  static MaybeHandle<PyString> ResolvePackageFromGlobals(
-      Handle<PyDict> globals);
-  static MaybeHandle<PyString> ResolveRelativeImportName(
-      Handle<PyString> name,
-      int64_t level,
-      Handle<PyDict> globals);
+  Handle<PyString> ParentModuleNameOrEmpty(Handle<PyString> name);
+  MaybeHandle<PyString> ResolvePackageFromGlobals(Handle<PyDict> globals);
+  MaybeHandle<PyString> ResolveRelativeImportName(Handle<PyString> name,
+                                                  int64_t level,
+                                                  Handle<PyDict> globals);
+
+  Isolate* isolate_{nullptr};
 };
 
 }  // namespace saauso::internal
