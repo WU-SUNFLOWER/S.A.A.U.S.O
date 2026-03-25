@@ -2,6 +2,9 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#ifndef SAAUSO_EXECUTION_THREAD_STATE_INFRAS_H_
+#define SAAUSO_EXECUTION_THREAD_STATE_INFRAS_H_
+
 #include <atomic>
 #include <mutex>
 
@@ -33,3 +36,5 @@ class ThreadManager {
 }  // namespace internal
 
 }  // namespace saauso
+
+#endif  // SAAUSO_EXECUTION_THREAD_STATE_INFRAS_H_

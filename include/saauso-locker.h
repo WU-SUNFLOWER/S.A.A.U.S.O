@@ -2,6 +2,9 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#ifndef INCLUDE_SAAUSO_LOCKER_H_
+#define INCLUDE_SAAUSO_LOCKER_H_
+
 namespace saauso {
 
 class Isolate;
@@ -43,3 +46,5 @@ class Locker {
 };
 
 }  // namespace saauso
+
+#endif  // INCLUDE_SAAUSO_LOCKER_H_
