@@ -34,7 +34,7 @@ class Locker {
   // Locker 被析构后，会自动给当前 Isolate 解锁。
   ~Locker();
 
-  // 检测指定 Isolate 是否被指定线程锁住
+  // 检测指定 Isolate 是否被当前线程锁住
   static bool IsLocked(Isolate* isolate);
 
   // Disallow copying and assigning.
