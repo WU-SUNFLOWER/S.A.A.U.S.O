@@ -182,7 +182,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
   return result;
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Isolate* isolate,
+                                                Handle<PyObject> self) {
   return Handle<PyObject>(
       PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
 }
@@ -280,9 +281,9 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Isolate* isolate,
   return Maybe<bool>(true);
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Handle<PyObject> self) {
-  return Isolate::Current()->factory()->NewPyTupleIterator(
-      Handle<PyTuple>::cast(self));
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Iter(Isolate* isolate,
+                                                 Handle<PyObject> self) {
+  return isolate->factory()->NewPyTupleIterator(Handle<PyTuple>::cast(self));
 }
 
 size_t PyTupleKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

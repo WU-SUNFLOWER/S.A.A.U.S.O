@@ -245,7 +245,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
   iter = isolate->factory()->NewPyDictItemIterator(actual_kw_args);
   while (true) {
     Handle<PyObject> item_handle;
-    if (!PyObject::Next(iter).ToHandle(&item_handle)) {
+    if (!PyObject::Next(isolate, iter).ToHandle(&item_handle)) {
       if (Runtime_ConsumePendingStopIterationIfSet(isolate).ToChecked()) {
         break;
       }

@@ -72,7 +72,7 @@ class PyObject : public Object {
                                    Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Len(Isolate* isolate, Handle<PyObject> self);
 
   // 比较：失败时返回空 MaybeHandle 并已设置 pending exception。
   static MaybeHandle<PyBoolean> Greater(Isolate* isolate,
@@ -154,10 +154,10 @@ class PyObject : public Object {
   static Maybe<bool> ContainsBool(Isolate* isolate,
                                   Handle<PyObject> self,
                                   Handle<PyObject> target);
-  static MaybeHandle<PyObject> Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Iter(Isolate* isolate, Handle<PyObject> self);
   // 返回空 MaybeHandle 表示迭代结束或异常；调用方需用
   // Runtime_ConsumePendingStopIterationIfSet 区分。
-  static MaybeHandle<PyObject> Next(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Next(Isolate* isolate, Handle<PyObject> self);
 
   static Maybe<uint64_t> Hash(Isolate* isolate, Handle<PyObject> self);
 

@@ -183,7 +183,8 @@ default_return_result:
   return result;
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Isolate* isolate,
+                                                 Handle<PyObject> self) {
   return Handle<PyObject>(
       PySmi::FromInt(Handle<PyString>::cast(self)->length()));
 }

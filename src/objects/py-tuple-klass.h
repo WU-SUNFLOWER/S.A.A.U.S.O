@@ -29,7 +29,8 @@ class PyTupleKlass : public Klass {
       Handle<PyObject> args,
       Handle<PyObject> kwargs);
 
-  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Isolate* isolate,
+                                           Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Repr(Isolate* isolate,
                                             Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
@@ -51,7 +52,8 @@ class PyTupleKlass : public Klass {
                                    Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Isolate* isolate,
+                                            Handle<PyObject> self);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

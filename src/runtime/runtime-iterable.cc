@@ -40,11 +40,12 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
 
   // Slow Path: 走一般的迭代器调用流程
   Handle<PyObject> iterator;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, iterator, PyObject::Iter(iteratable));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, iterator,
+                             PyObject::Iter(isolate, iteratable));
 
   while (true) {
     Handle<PyObject> elem;
-    MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
+    MaybeHandle<PyObject> next_maybe = PyObject::Next(isolate, iterator);
     if (!next_maybe.ToHandle(&elem)) {
       // 迭代结束或出现异常：
       // - 如果是 StopIteration，那么直接就地消费并终止迭代。

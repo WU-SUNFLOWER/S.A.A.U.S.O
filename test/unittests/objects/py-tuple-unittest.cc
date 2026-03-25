@@ -50,7 +50,7 @@ TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
   Handle<PyObject> obj(tuple);
 
   Handle<PyObject> len;
-  ASSERT_TRUE(PyObject::Len(obj).ToHandle(&len));
+  ASSERT_TRUE(PyObject::Len(isolate_, obj).ToHandle(&len));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(len)), 2);
 
   Handle<PyObject> v0;
@@ -105,22 +105,23 @@ TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
   auto tuple = isolate_->factory()->NewPyTupleWithElements(list);
 
   Handle<PyObject> iterator;
-  ASSERT_TRUE(PyObject::Iter(Handle<PyObject>(tuple)).ToHandle(&iterator));
+  ASSERT_TRUE(
+      PyObject::Iter(isolate_, Handle<PyObject>(tuple)).ToHandle(&iterator));
   ASSERT_TRUE(IsPyTupleIterator(*iterator));
 
   Handle<PyObject> v0;
-  ASSERT_TRUE(PyObject::Next(iterator).ToHandle(&v0));
+  ASSERT_TRUE(PyObject::Next(isolate_, iterator).ToHandle(&v0));
   ASSERT_TRUE(IsPySmi(*v0));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
 
   Handle<PyObject> v1;
-  ASSERT_TRUE(PyObject::Next(iterator).ToHandle(&v1));
+  ASSERT_TRUE(PyObject::Next(isolate_, iterator).ToHandle(&v1));
   ASSERT_TRUE(IsPySmi(*v1));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 2);
 
   // 迭代器耗尽时 Next 返回空 MaybeHandle，ToHandle 为 false。
   Handle<PyObject> end;
-  EXPECT_FALSE(PyObject::Next(iterator).ToHandle(&end));
+  EXPECT_FALSE(PyObject::Next(isolate_, iterator).ToHandle(&end));
   EXPECT_TRUE(end.is_null());
 }
 

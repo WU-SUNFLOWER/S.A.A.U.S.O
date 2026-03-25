@@ -29,7 +29,7 @@ Maybe<void> PyListIteratorBuiltinMethods::Install(
 ////////////////////////////////////////////////////////////////////////
 
 BUILTIN_METHOD(PyListIteratorBuiltinMethods, Next) {
-  return PyObject::Next(self);
+  return PyObject::Next(isolate, self);
 }
 
 }  // namespace saauso::internal

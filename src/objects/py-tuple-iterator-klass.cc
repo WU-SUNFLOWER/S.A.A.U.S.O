@@ -100,11 +100,13 @@ void PyTupleIteratorKlass::Finalize(Isolate* isolate) {
 }
 
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Iter(
+    Isolate* isolate,
     Handle<PyObject> self) {
   return self;
 }
 
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Next(
+    Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextImpl(self);
   if (result.is_null()) {

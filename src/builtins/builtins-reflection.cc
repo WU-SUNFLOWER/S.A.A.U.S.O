@@ -22,7 +22,7 @@
 namespace saauso::internal {
 
 BUILTIN(Len) {
-  return PyObject::Len(args->Get(0));
+  return PyObject::Len(isolate, args->Get(0));
 }
 
 BUILTIN(Repr) {
