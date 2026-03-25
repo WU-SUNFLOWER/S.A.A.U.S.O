@@ -75,28 +75,43 @@ class PyObject : public Object {
   static MaybeHandle<PyObject> Len(Handle<PyObject> self);
 
   // 比较：失败时返回空 MaybeHandle 并已设置 pending exception。
-  static MaybeHandle<PyBoolean> Greater(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> Greater(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other);
-  static MaybeHandle<PyBoolean> Less(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> Less(Isolate* isolate,
+                                     Handle<PyObject> self,
                                      Handle<PyObject> other);
-  static MaybeHandle<PyBoolean> Equal(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> Equal(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static MaybeHandle<PyBoolean> NotEqual(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> NotEqual(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> other);
-  static MaybeHandle<PyBoolean> GreaterEqual(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> GreaterEqual(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other);
-  static MaybeHandle<PyBoolean> LessEqual(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> LessEqual(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other);
 
   // Bool 版比较：返回 Maybe<bool>，避免 false 与异常二义性。
-  static Maybe<bool> GreaterBool(Handle<PyObject> self, Handle<PyObject> other);
-  static Maybe<bool> LessBool(Handle<PyObject> self, Handle<PyObject> other);
-  static Maybe<bool> EqualBool(Handle<PyObject> self, Handle<PyObject> other);
-  static Maybe<bool> NotEqualBool(Handle<PyObject> self,
+  static Maybe<bool> GreaterBool(Isolate* isolate,
+                                 Handle<PyObject> self,
+                                 Handle<PyObject> other);
+  static Maybe<bool> LessBool(Isolate* isolate,
+                              Handle<PyObject> self,
+                              Handle<PyObject> other);
+  static Maybe<bool> EqualBool(Isolate* isolate,
+                               Handle<PyObject> self,
+                               Handle<PyObject> other);
+  static Maybe<bool> NotEqualBool(Isolate* isolate,
+                                  Handle<PyObject> self,
                                   Handle<PyObject> other);
-  static Maybe<bool> GreaterEqualBool(Handle<PyObject> self,
+  static Maybe<bool> GreaterEqualBool(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static Maybe<bool> LessEqualBool(Handle<PyObject> self,
+  static Maybe<bool> LessEqualBool(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
   // Lookup：
@@ -123,9 +138,11 @@ class PyObject : public Object {
   static MaybeHandle<PyObject> StoreSubscr(Handle<PyObject> self,
                                            Handle<PyObject> subscr_name,
                                            Handle<PyObject> subscr_value);
-  static MaybeHandle<PyBoolean> Contains(Handle<PyObject> self,
+  static MaybeHandle<PyBoolean> Contains(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> target);
-  static Maybe<bool> ContainsBool(Handle<PyObject> self,
+  static Maybe<bool> ContainsBool(Isolate* isolate,
+                                  Handle<PyObject> self,
                                   Handle<PyObject> target);
   static MaybeHandle<PyObject> Iter(Handle<PyObject> self);
   // 返回空 MaybeHandle 表示迭代结束或异常；调用方需用

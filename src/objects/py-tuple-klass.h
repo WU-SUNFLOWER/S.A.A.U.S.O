@@ -41,9 +41,11 @@ class PyTupleKlass : public Klass {
                                                    Handle<PyObject> value);
   static MaybeHandle<PyObject> Virtual_DelSubscr(Handle<PyObject> self,
                                                  Handle<PyObject> subscr);
-  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Contains(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> target);
-  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Equal(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);

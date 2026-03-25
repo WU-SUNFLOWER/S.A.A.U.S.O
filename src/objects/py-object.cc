@@ -209,16 +209,18 @@ MaybeHandle<PyObject> PyObject::Len(Handle<PyObject> self) {
   return GetKlass(*self)->vtable().len_(self);
 }
 
-MaybeHandle<PyBoolean> PyObject::Greater(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::Greater(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> other) {
   bool result;
-  if (!GreaterBool(self, other).To(&result)) {
+  if (!GreaterBool(isolate, self, other).To(&result)) {
     return kNullMaybeHandle;
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(result));
 }
 
-Maybe<bool> PyObject::GreaterBool(Handle<PyObject> self,
+Maybe<bool> PyObject::GreaterBool(Isolate* isolate,
+                                  Handle<PyObject> self,
                                   Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -227,19 +229,22 @@ Maybe<bool> PyObject::GreaterBool(Handle<PyObject> self,
   }
 
   assert(GetKlass(*self)->vtable().greater_);
-  return GetKlass(*self)->vtable().greater_(self, other);
+  return GetKlass(*self)->vtable().greater_(isolate, self, other);
 }
 
-MaybeHandle<PyBoolean> PyObject::Less(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::Less(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> other) {
-  Maybe<bool> mb = LessBool(self, other);
+  Maybe<bool> mb = LessBool(isolate, self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::LessBool(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PyObject::LessBool(Isolate* isolate,
+                               Handle<PyObject> self,
+                               Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() <
@@ -247,81 +252,90 @@ Maybe<bool> PyObject::LessBool(Handle<PyObject> self, Handle<PyObject> other) {
   }
 
   assert(GetKlass(*self)->vtable().less_);
-  return GetKlass(*self)->vtable().less_(self, other);
+  return GetKlass(*self)->vtable().less_(isolate, self, other);
 }
 
-MaybeHandle<PyBoolean> PyObject::Equal(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::Equal(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> other) {
-  Maybe<bool> mb = EqualBool(self, other);
+  Maybe<bool> mb = EqualBool(isolate, self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::EqualBool(Handle<PyObject> self, Handle<PyObject> other) {
+Maybe<bool> PyObject::EqualBool(Isolate* isolate,
+                                Handle<PyObject> self,
+                                Handle<PyObject> other) {
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
   assert(GetKlass(*self)->vtable().equal_);
-  return GetKlass(*self)->vtable().equal_(self, other);
+  return GetKlass(*self)->vtable().equal_(isolate, self, other);
 }
 
-MaybeHandle<PyBoolean> PyObject::NotEqual(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::NotEqual(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
-  Maybe<bool> mb = NotEqualBool(self, other);
+  Maybe<bool> mb = NotEqualBool(isolate, self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::NotEqualBool(Handle<PyObject> self,
+Maybe<bool> PyObject::NotEqualBool(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() !=
                        PySmi::cast(*other).value());
   }
   assert(GetKlass(*self)->vtable().not_equal_);
-  return GetKlass(*self)->vtable().not_equal_(self, other);
+  return GetKlass(*self)->vtable().not_equal_(isolate, self, other);
 }
 
-MaybeHandle<PyBoolean> PyObject::GreaterEqual(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::GreaterEqual(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
-  Maybe<bool> mb = GreaterEqualBool(self, other);
+  Maybe<bool> mb = GreaterEqualBool(isolate, self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::GreaterEqualBool(Handle<PyObject> self,
+Maybe<bool> PyObject::GreaterEqualBool(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() >=
                        PySmi::cast(*other).value());
   }
   assert(GetKlass(*self)->vtable().ge_);
-  return GetKlass(*self)->vtable().ge_(self, other);
+  return GetKlass(*self)->vtable().ge_(isolate, self, other);
 }
 
-MaybeHandle<PyBoolean> PyObject::LessEqual(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::LessEqual(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> other) {
-  Maybe<bool> mb = LessEqualBool(self, other);
+  Maybe<bool> mb = LessEqualBool(isolate, self, other);
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
 }
 
-Maybe<bool> PyObject::LessEqualBool(Handle<PyObject> self,
+Maybe<bool> PyObject::LessEqualBool(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> other) {
   if (IsPySmi(*self) && IsPySmi(*other)) {
     return Maybe<bool>(PySmi::cast(*self).value() <=
                        PySmi::cast(*other).value());
   }
   assert(GetKlass(*self)->vtable().le_);
-  return GetKlass(*self)->vtable().le_(self, other);
+  return GetKlass(*self)->vtable().le_(isolate, self, other);
 }
 
 Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
@@ -402,19 +416,21 @@ MaybeHandle<PyObject> PyObject::StoreSubscr(Handle<PyObject> self,
                                                  subscr_value);
 }
 
-MaybeHandle<PyBoolean> PyObject::Contains(Handle<PyObject> self,
+MaybeHandle<PyBoolean> PyObject::Contains(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> target) {
   bool result;
-  if (!ContainsBool(self, target).To(&result)) {
+  if (!ContainsBool(isolate, self, target).To(&result)) {
     return kNullMaybeHandle;
   }
   return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(result));
 }
 
-Maybe<bool> PyObject::ContainsBool(Handle<PyObject> self,
+Maybe<bool> PyObject::ContainsBool(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> target) {
   assert(GetKlass(*self)->vtable().contains_);
-  return GetKlass(*self)->vtable().contains_(self, target);
+  return GetKlass(*self)->vtable().contains_(isolate, self, target);
 }
 
 MaybeHandle<PyObject> PyObject::Iter(Handle<PyObject> self) {

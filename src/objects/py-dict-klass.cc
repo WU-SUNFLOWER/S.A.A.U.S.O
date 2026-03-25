@@ -127,10 +127,9 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Str(Isolate* isolate,
   return Virtual_Repr(isolate, self);
 }
 
-Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyDictKlass::Virtual_Equal(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> other) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
@@ -159,7 +158,7 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
       bool eq;
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, eq,
-          PyObject::EqualBool(Handle<PyObject>(v1),
+          PyObject::EqualBool(isolate, Handle<PyObject>(v1),
                               Handle<PyObject>(v2_tagged)));
 
       if (!eq) {
@@ -170,11 +169,11 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(true);
 }
 
-Maybe<bool> PyDictKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PyDictKlass::Virtual_NotEqual(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
   bool eq;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), eq,
-                             Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(isolate, self, other));
   return Maybe<bool>(!eq);
 }
 
@@ -195,7 +194,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
   return Runtime_DictDelItem(Handle<PyDict>::cast(self), subscr);
 }
 
-Maybe<bool> PyDictKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyDictKlass::Virtual_Contains(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
   return Handle<PyDict>::cast(self)->ContainsKey(subscr);
 }

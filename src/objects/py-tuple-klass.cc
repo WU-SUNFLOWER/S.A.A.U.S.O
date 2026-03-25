@@ -235,14 +235,15 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyTupleKlass::Virtual_Contains(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> target) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
     bool eq;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
-                               PyObject::EqualBool(tuple->Get(i), target));
+                               PyObject::EqualBool(isolate, tuple->Get(i),
+                                                   target));
     if (eq) {
       return Maybe<bool>(true);
     }
@@ -250,13 +251,12 @@ Maybe<bool> PyTupleKlass::Virtual_Contains(Handle<PyObject> self,
   return Maybe<bool>(false);
 }
 
-Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyTupleKlass::Virtual_Equal(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other) {
   if (!IsPyTuple(other)) {
     return Maybe<bool>(false);
   }
-
-  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   auto tuple1 = Handle<PyTuple>::cast(self);
   auto tuple2 = Handle<PyTuple>::cast(other);
@@ -268,7 +268,8 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Handle<PyObject> self,
   for (auto i = 0; i < tuple1->length(); ++i) {
     bool eq;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, eq, PyObject::EqualBool(tuple1->Get(i), tuple2->Get(i)));
+        isolate, eq,
+        PyObject::EqualBool(isolate, tuple1->Get(i), tuple2->Get(i)));
     if (!eq) {
       return Maybe<bool>(false);
     }

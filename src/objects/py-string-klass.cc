@@ -202,7 +202,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Str(Isolate* isolate,
   return self;
 }
 
-Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_Equal(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> other) {
   if (!IsPyString(other)) {
     return Maybe<bool>(false);
@@ -212,7 +213,8 @@ Maybe<bool> PyStringKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(s1->IsEqualTo(*s2));
 }
 
-Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_NotEqual(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> other) {
   if (!IsPyString(other)) {
     return Maybe<bool>(true);
@@ -222,7 +224,8 @@ Maybe<bool> PyStringKlass::Virtual_NotEqual(Handle<PyObject> self,
   return Maybe<bool>(!s1->IsEqualTo(*s2));
 }
 
-Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_Less(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
@@ -237,7 +240,8 @@ Maybe<bool> PyStringKlass::Virtual_Less(Handle<PyObject> self,
   return Maybe<bool>(s1->IsLessThan(*s2));
 }
 
-Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_Greater(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
@@ -252,7 +256,8 @@ Maybe<bool> PyStringKlass::Virtual_Greater(Handle<PyObject> self,
   return Maybe<bool>(s1->IsGreaterThan(*s2));
 }
 
-Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_LessEqual(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
@@ -267,7 +272,8 @@ Maybe<bool> PyStringKlass::Virtual_LessEqual(Handle<PyObject> self,
   return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsLessThan(*s2));
 }
 
-Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
@@ -282,7 +288,8 @@ Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Handle<PyObject> self,
   return Maybe<bool>(s1->IsEqualTo(*s2) || s1->IsGreaterThan(*s2));
 }
 
-Maybe<bool> PyStringKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyStringKlass::Virtual_Contains(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> target) {
   if (!IsPyString(target)) {
     return Maybe<bool>(false);

@@ -12,7 +12,6 @@
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-
 namespace saauso::internal {
 
 class PySmiTest : public VmTestBase {};
@@ -91,17 +90,17 @@ TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
   Handle<PyObject> c(PySmi::FromInt(7));
 
   Handle<PyObject> gt;
-  ASSERT_TRUE(PyObject::Greater(a, b).ToHandle(&gt));
+  ASSERT_TRUE(PyObject::Greater(isolate_, a, b).ToHandle(&gt));
   EXPECT_TRUE(Handle<PyBoolean>::cast(gt)->value());
-  ASSERT_TRUE(PyObject::GreaterEqual(a, b).ToHandle(&gt));
+  ASSERT_TRUE(PyObject::GreaterEqual(isolate_, a, b).ToHandle(&gt));
   EXPECT_TRUE(Handle<PyBoolean>::cast(gt)->value());
-  ASSERT_TRUE(PyObject::Less(b, a).ToHandle(&gt));
+  ASSERT_TRUE(PyObject::Less(isolate_, b, a).ToHandle(&gt));
   EXPECT_TRUE(Handle<PyBoolean>::cast(gt)->value());
-  ASSERT_TRUE(PyObject::LessEqual(a, c).ToHandle(&gt));
+  ASSERT_TRUE(PyObject::LessEqual(isolate_, a, c).ToHandle(&gt));
   EXPECT_TRUE(Handle<PyBoolean>::cast(gt)->value());
-  ASSERT_TRUE(PyObject::Equal(a, c).ToHandle(&gt));
+  ASSERT_TRUE(PyObject::Equal(isolate_, a, c).ToHandle(&gt));
   EXPECT_TRUE(Handle<PyBoolean>::cast(gt)->value());
-  ASSERT_TRUE(PyObject::NotEqual(a, b).ToHandle(&gt));
+  ASSERT_TRUE(PyObject::NotEqual(isolate_, a, b).ToHandle(&gt));
   EXPECT_TRUE(Handle<PyBoolean>::cast(gt)->value());
 }
 
@@ -139,13 +138,13 @@ TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
   Handle<PyObject> f2(PyFloat::NewInstance(11.0));
 
   Handle<PyObject> res;
-  ASSERT_TRUE(PyObject::Equal(i, f1).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, i, f1).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Less(i, f2).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Less(isolate_, i, f2).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::LessEqual(i, f2).ToHandle(&res));
+  ASSERT_TRUE(PyObject::LessEqual(isolate_, i, f2).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Greater(f2, i).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Greater(isolate_, f2, i).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
 }
 
@@ -158,18 +157,18 @@ TEST_F(PySmiTest, MixedEqualitySmiWithBool) {
   Handle<PyObject> f = handle(Isolate::Current()->py_false_object());
 
   Handle<PyObject> res;
-  ASSERT_TRUE(PyObject::Equal(one, t).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, one, t).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Equal(zero, f).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, zero, f).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Equal(one, f).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, one, f).ToHandle(&res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Equal(zero, t).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, zero, t).ToHandle(&res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(res)->value());
 
-  ASSERT_TRUE(PyObject::Equal(t, one).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, t, one).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Equal(f, zero).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, f, zero).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
 }
 

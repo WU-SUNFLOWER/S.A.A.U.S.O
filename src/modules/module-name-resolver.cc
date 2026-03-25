@@ -31,7 +31,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveFullName(
   }
 
   Handle<PyString> fullname;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), fullname,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, fullname,
                              ResolveRelativeImportName(name, level, globals));
 
   return scope.Escape(fullname);
@@ -52,7 +52,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
   }
 
   Handle<PyString> base;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), base,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, base,
                              ResolvePackageFromGlobals(globals));
 
   if (base->length() == 0) {

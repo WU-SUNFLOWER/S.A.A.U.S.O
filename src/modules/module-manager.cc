@@ -15,6 +15,7 @@
 #include "src/modules/module-finder.h"
 #include "src/modules/module-importer.h"
 #include "src/modules/module-loader.h"
+#include "src/modules/module-name-resolver.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-module.h"
@@ -34,6 +35,8 @@ ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
   loader_ = std::make_unique<ModuleLoader>(isolate_, finder_.get(), this,
                                            builtin_registry_.get());
   importer_ = std::make_unique<ModuleImporter>(this, isolate_);
+  name_resolver_ = std::make_unique<ModuleNameResolver>(isolate_);
+
   InitializeSysState();
   builtin_registry_->BootstrapAllBuiltinModules();
 }

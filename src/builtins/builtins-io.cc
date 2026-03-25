@@ -52,19 +52,19 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
 
     bool accepted = false;
     bool equal = false;
-    if (!PyObject::EqualBool(key, sep_key).To(&equal)) {
+    if (!PyObject::EqualBool(isolate, key, sep_key).To(&equal)) {
       return kNullMaybeHandle;
     }
     accepted |= equal;
-    if (!PyObject::EqualBool(key, end_key).To(&equal)) {
+    if (!PyObject::EqualBool(isolate, key, end_key).To(&equal)) {
       return kNullMaybeHandle;
     }
     accepted |= equal;
-    if (!PyObject::EqualBool(key, file_key).To(&equal)) {
+    if (!PyObject::EqualBool(isolate, key, file_key).To(&equal)) {
       return kNullMaybeHandle;
     }
     accepted |= equal;
-    if (!PyObject::EqualBool(key, flush_key).To(&equal)) {
+    if (!PyObject::EqualBool(isolate, key, flush_key).To(&equal)) {
       return kNullMaybeHandle;
     }
     accepted |= equal;

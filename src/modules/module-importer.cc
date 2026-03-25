@@ -60,7 +60,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
   Handle<PyString> fullname;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, fullname,
-      ModuleNameResolver::ResolveFullName(name, level, globals));
+      manager_->name_resolver()->ResolveFullName(name, level, globals));
 
   if (!ModuleUtils::IsValidModuleName(fullname)) {
     Runtime_ThrowErrorf(ExceptionType::kModuleNotFoundError,

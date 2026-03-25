@@ -121,7 +121,8 @@ MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictKeys>(self);
 }
 
-Maybe<bool> PyDictKeysKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyDictKeysKlass::Virtual_Contains(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner();
   return dict->ContainsKey(subscr);
@@ -195,7 +196,8 @@ MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictValues>(self);
 }
 
-Maybe<bool> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyDictValuesKlass::Virtual_Contains(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> subscr) {
   HandleScope scope;
 
@@ -207,8 +209,8 @@ Maybe<bool> PyDictValuesKlass::Virtual_Contains(Handle<PyObject> self,
     }
 
     bool equal;
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), equal,
-                               PyObject::EqualBool(value, subscr));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, equal, PyObject::EqualBool(isolate, value, subscr));
 
     if (equal) {
       return Maybe<bool>(true);
@@ -286,10 +288,10 @@ MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
   return DictViewLen<PyDictItems>(self);
 }
 
-Maybe<bool> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
   HandleScope scope;
-  auto* isolate [[maybe_unused]] = Isolate::Current();
 
   if (!IsPyTuple(subscr)) {
     return Maybe<bool>(false);
@@ -314,7 +316,7 @@ Maybe<bool> PyDictItemsKlass::Virtual_Contains(Handle<PyObject> self,
 
   bool is_equal = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
-                             PyObject::EqualBool(found_value, value));
+                             PyObject::EqualBool(isolate, found_value, value));
   return Maybe<bool>(is_equal);
 }
 

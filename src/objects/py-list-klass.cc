@@ -285,7 +285,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Handle<PyObject> self,
   return handle(Isolate::Current()->py_none_object());
 }
 
-Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
+Maybe<bool> PyListKlass::Virtual_Less(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> other) {
   auto list_l = Handle<PyList>::cast(self);
   if (!IsPyList(other)) {
@@ -302,7 +303,7 @@ Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
     auto l = list_l->Get(i);
     auto r = list_r->Get(i);
 
-    Maybe<bool> less_mb = PyObject::LessBool(l, r);
+    Maybe<bool> less_mb = PyObject::LessBool(isolate, l, r);
     if (less_mb.IsNothing()) {
       return kNullMaybe;
     }
@@ -310,7 +311,7 @@ Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
       return Maybe<bool>(true);
     }
 
-    Maybe<bool> greater_mb = PyObject::GreaterBool(l, r);
+    Maybe<bool> greater_mb = PyObject::GreaterBool(isolate, l, r);
     if (greater_mb.IsNothing()) {
       return kNullMaybe;
     }
@@ -322,11 +323,12 @@ Maybe<bool> PyListKlass::Virtual_Less(Handle<PyObject> self,
   return Maybe<bool>(list_l->length() < list_r->length());
 }
 
-Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
+Maybe<bool> PyListKlass::Virtual_Contains(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> target) {
   auto list = Handle<PyList>::cast(self);
   for (auto i = 0; i < list->length(); ++i) {
-    Maybe<bool> eq = PyObject::EqualBool(list->Get(i), target);
+    Maybe<bool> eq = PyObject::EqualBool(isolate, list->Get(i), target);
     if (eq.IsNothing()) {
       return kNullMaybe;
     }
@@ -338,7 +340,8 @@ Maybe<bool> PyListKlass::Virtual_Contains(Handle<PyObject> self,
   return Maybe<bool>(false);
 }
 
-Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyListKlass::Virtual_Equal(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> target) {
   auto list1 = Handle<PyList>::cast(self);
   if (!IsPyList(target)) {
@@ -351,7 +354,7 @@ Maybe<bool> PyListKlass::Virtual_Equal(Handle<PyObject> self,
   }
 
   for (auto i = 0; i < list1->length(); ++i) {
-    Maybe<bool> eq = PyObject::EqualBool(list1->Get(i), list2->Get(i));
+    Maybe<bool> eq = PyObject::EqualBool(isolate, list1->Get(i), list2->Get(i));
     if (eq.IsNothing()) {
       return kNullMaybe;
     }

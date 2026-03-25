@@ -75,7 +75,8 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
 
 }  // namespace
 
-MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
+MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Isolate* isolate,
+                                                  Handle<PyObject> object) {
   EscapableHandleScope scope;
 
   if (!IsPyList(object)) {
@@ -92,10 +93,9 @@ MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> object) {
   return scope.Escape(tuple);
 }
 
-MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Handle<PyObject> module,
+MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
+                                                  Handle<PyObject> module,
                                                   Handle<PyDict> locals) {
-  auto* isolate = Isolate::Current();
-
   if (locals.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kRuntimeError, "no locals for import *");
     return kNullMaybeHandle;

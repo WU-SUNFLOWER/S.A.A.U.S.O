@@ -57,12 +57,22 @@ class PySmiKlass : public Klass {
 
   static Maybe<uint64_t> Virtual_Hash(Isolate* isolate, Handle<PyObject> self);
 
-  static Maybe<bool> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_Less(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Greater(Isolate*,
+                                     Handle<PyObject>,
+                                     Handle<PyObject>);
+  static Maybe<bool> Virtual_Less(Isolate*, Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Equal(Isolate*,
+                                   Handle<PyObject>,
+                                   Handle<PyObject>);
+  static Maybe<bool> Virtual_NotEqual(Isolate*,
+                                      Handle<PyObject>,
+                                      Handle<PyObject>);
+  static Maybe<bool> Virtual_GreaterEqual(Isolate*,
+                                          Handle<PyObject>,
+                                          Handle<PyObject>);
+  static Maybe<bool> Virtual_LessEqual(Isolate*,
+                                       Handle<PyObject>,
+                                       Handle<PyObject>);
 };
 
 }  // namespace saauso::internal

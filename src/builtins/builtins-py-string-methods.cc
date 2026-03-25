@@ -296,13 +296,13 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       bool eq = false;
-      if (!PyObject::EqualBool(key, sep_key).To(&eq)) {
+      if (!PyObject::EqualBool(isolate, key, sep_key).To(&eq)) {
         return kNullMaybeHandle;
       }
       if (eq) {
         continue;
       }
-      if (!PyObject::EqualBool(key, maxsplit_key).To(&eq)) {
+      if (!PyObject::EqualBool(isolate, key, maxsplit_key).To(&eq)) {
         return kNullMaybeHandle;
       }
       if (eq) {
@@ -390,8 +390,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
 
   Handle<PyObject> iterable = args->Get(0);
   Handle<PyString> result;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                             Runtime_PyStringJoin(str_object, iterable));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result, Runtime_PyStringJoin(isolate, str_object, iterable));
 
   return scope.Escape(result);
 }

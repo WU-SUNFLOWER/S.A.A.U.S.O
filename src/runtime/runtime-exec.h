@@ -24,7 +24,8 @@ inline constexpr std::string_view kDefaultSourceFilename = "<string>";
 // - 若 globals 中缺少 __builtins__，则自动注入 builtins
 // dict，保证内建符号可用。
 // - 返回值为 code object 执行完成后的返回值（对 exec 来说通常会被上层忽略）。
-MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
+MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
+                                                  Handle<PyCodeObject> code,
                                                   Handle<PyDict> locals,
                                                   Handle<PyDict> globals);
 
@@ -48,7 +49,8 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
     Handle<PyDict> globals,
     std::string_view filename = kDefaultSourceFilename);
 
-MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
+MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
+                                                   std::string_view filename,
                                                    Handle<PyDict> locals,
                                                    Handle<PyDict> globals);
 

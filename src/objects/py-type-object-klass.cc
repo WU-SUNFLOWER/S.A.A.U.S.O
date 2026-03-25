@@ -156,7 +156,8 @@ Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Isolate* isolate,
   return Maybe<uint64_t>(static_cast<uint64_t>((*self).ptr()));
 }
 
-Maybe<bool> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyTypeObjectKlass::Virtual_Equal(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other) {
   if (!IsPyTypeObject(other)) {
     return Maybe<bool>(false);
@@ -164,11 +165,12 @@ Maybe<bool> PyTypeObjectKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(self.is_identical_to(other));
 }
 
-Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PyTypeObjectKlass::Virtual_NotEqual(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   bool is_equal;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
-                             Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                             Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(!is_equal);
 }

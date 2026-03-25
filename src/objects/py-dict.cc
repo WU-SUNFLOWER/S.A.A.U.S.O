@@ -51,7 +51,8 @@ Maybe<int64_t> FindSlot(DictT dict, Tagged<PyObject> key, bool* found) {
   Tagged<PyObject> curr_key = GET_DICT_KEY(dict, index);
   while (!curr_key.is_null()) {
     bool is_equal = false;
-    if (!PyObject::EqualBool(handle(curr_key), key_handle).To(&is_equal)) {
+    if (!PyObject::EqualBool(Isolate::Current(), handle(curr_key), key_handle)
+             .To(&is_equal)) {
       return kNullMaybe;
     }
     if (is_equal) {

@@ -181,7 +181,8 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
   return scope.Escape(result);
 }
 
-MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
+MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
+                                           Handle<PyString> str,
                                            Handle<PyObject> iterable) {
   EscapableHandleScope scope;
 
@@ -191,7 +192,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Handle<PyString> str,
   }
 
   Handle<PyTuple> parts;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), parts,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, parts,
                              Runtime_UnpackIterableObjectToTuple(iterable));
 
   const int64_t num_parts = parts->length();

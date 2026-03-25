@@ -39,7 +39,7 @@ TEST_F(PyDictTest, GetApiTriState) {
   EXPECT_TRUE(found);
   EXPECT_FALSE(out_tagged.is_null());
   bool eq = false;
-  ASSERT_TRUE(PyObject::EqualBool(handle(out_tagged), value).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, handle(out_tagged), value).To(&eq));
   EXPECT_TRUE(eq);
 
   Handle<PyObject> out_handle;
@@ -76,7 +76,7 @@ TEST_F(PyDictTest, BasicOperations) {
   Handle<PyObject> res1 = handle(res1_tagged);
   EXPECT_FALSE(res1.is_null());
   Handle<PyObject> eq_res;
-  ASSERT_TRUE(PyObject::Equal(res1, val1).ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, res1, val1).ToHandle(&eq_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq_res)->value());
 
   // Contains
@@ -95,7 +95,7 @@ TEST_F(PyDictTest, BasicOperations) {
   ASSERT_TRUE(found);
   res1 = handle(res1_tagged);
   bool eq = false;
-  ASSERT_TRUE(PyObject::EqualBool(res1, val2).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, res1, val2).To(&eq));
   EXPECT_TRUE(eq);
 
   // Remove
@@ -178,19 +178,19 @@ TEST_F(PyDictTest, Equality) {
   ASSERT_FALSE(PyDict::Put(d2, k1, v1).IsNothing());
 
   bool eq = false;
-  ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_TRUE(eq);
 
   // d2 = {"b": 2, "a": 3} (Different value)
   Handle<PyObject> v3(PySmi::FromInt(3));
   ASSERT_FALSE(PyDict::Put(d2, k1, v3).IsNothing());
-  ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 
   // d2 = {"b": 2} (Different size)
   bool removed = false;
   ASSERT_TRUE(d2->Remove(k1).To(&removed));
-  ASSERT_TRUE(PyObject::EqualBool(d1, d2).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 }
 
@@ -200,7 +200,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   auto TupleContains = [](Handle<PyTuple> tuple, Handle<PyObject> key) -> bool {
     for (auto i = 0; i < tuple->length(); ++i) {
       Handle<PyObject> eq_res;
-      if (PyObject::Equal(tuple->Get(i), key).ToHandle(&eq_res) &&
+      if (PyObject::Equal(isolate_, tuple->Get(i), key).ToHandle(&eq_res) &&
           Handle<PyBoolean>::cast(eq_res)->value()) {
         return true;
       }
@@ -234,7 +234,8 @@ TEST_F(PyDictTest, GetKeyTuple) {
     for (auto j = i + 1; j < keys->length(); ++j) {
       Handle<PyObject> eq_res;
       ASSERT_TRUE(
-          PyObject::Equal(keys->Get(i), keys->Get(j)).ToHandle(&eq_res));
+          PyObject::Equal(isolate_, keys->Get(i), keys->Get(j))
+              .ToHandle(&eq_res));
       EXPECT_FALSE(Handle<PyBoolean>::cast(eq_res)->value());
     }
   }
