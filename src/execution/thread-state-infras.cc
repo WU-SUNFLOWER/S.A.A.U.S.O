@@ -64,6 +64,7 @@ void ThreadManager::Unlock() {
     std::printf(
         "Illegally unlocking isolate, since you should unlock the isolate in "
         "the thread which locked it.");
+    std::exit(1);
   }
 
   // 该 Isolate 的加锁次数（含重入）不能已经清零
