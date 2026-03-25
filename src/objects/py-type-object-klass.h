@@ -15,7 +15,7 @@ class ObjectVisitor;
 
 class PyTypeObjectKlass : public Klass {
  public:
-  static Tagged<PyTypeObjectKlass> GetInstance();
+  static Tagged<PyTypeObjectKlass> GetInstance(Isolate* isolate);
 
   PyTypeObjectKlass() = delete;
 

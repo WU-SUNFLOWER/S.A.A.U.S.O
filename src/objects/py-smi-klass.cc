@@ -29,8 +29,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<PySmiKlass> PySmiKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PySmiKlass> PySmiKlass::GetInstance(Isolate* isolate) {
   Tagged<PySmiKlass> instance = isolate->py_smi_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PySmiKlass>(
@@ -77,7 +76,7 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -100,7 +99,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
     Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  assert(receiver_type->own_klass() == PySmiKlass::GetInstance());
+  assert(receiver_type->own_klass() == PySmiKlass::GetInstance(isolate));
   return Runtime_NewSmi(args, kwargs);
 }
 

@@ -26,8 +26,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<PyObjectKlass> PyObjectKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyObjectKlass> PyObjectKlass::GetInstance(Isolate* isolate) {
   Tagged<PyObjectKlass> instance = isolate->py_object_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyObjectKlass>(

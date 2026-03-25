@@ -45,8 +45,7 @@ Handle<PyObject> NextImpl(Handle<PyObject> self) {
 }
 }  // namespace
 
-Tagged<PyListIteratorKlass> PyListIteratorKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyListIteratorKlass> PyListIteratorKlass::GetInstance(Isolate* isolate) {
   Tagged<PyListIteratorKlass> instance = isolate->py_list_iterator_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyListIteratorKlass>(
@@ -79,7 +78,7 @@ Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表

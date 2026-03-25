@@ -44,7 +44,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   // 如果没有有效的supers列表，那么显式创建一个列表，并将object作为基类添加进去
   if (supers.is_null() || supers->IsEmpty()) {
     supers = PyList::NewInstance(1);
-    PyList::Append(supers, PyObjectKlass::GetInstance()->type_object());
+    PyList::Append(supers, PyObjectKlass::GetInstance(isolate)->type_object());
   }
   klass->set_supers(supers);
 
@@ -85,7 +85,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
   klass->set_native_layout_kind(native_layout_kind);
   klass->set_native_layout_base(native_layout_base.is_null()
-                                    ? PyObjectKlass::GetInstance()
+                                    ? PyObjectKlass::GetInstance(isolate)
                                     : native_layout_base);
   // Python中一种类型的实例对象，默认有__dict__字典
   klass->set_instance_has_properties_dict(true);

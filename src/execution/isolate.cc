@@ -186,10 +186,10 @@ void Isolate::Init() {
 
 Maybe<void> Isolate::InitMetaArea() {
   // 1. 预初始化所有 Klass（设置 vtable，调用 PreInitialize）
-#define PREINIT_PY_KLASS(_, Klass, __) \
-  do {                                 \
-    auto klass = Klass::GetInstance(); \
-    klass->PreInitialize(this);        \
+#define PREINIT_PY_KLASS(_, Klass, __)     \
+  do {                                     \
+    auto klass = Klass::GetInstance(this); \
+    klass->PreInitialize(this);            \
   } while (false);
   ISOLATE_KLASS_LIST(PREINIT_PY_KLASS)
 #undef PREINIT_PY_KLASS
@@ -204,9 +204,9 @@ Maybe<void> Isolate::InitMetaArea() {
   py_false_object_ = factory()->NewPyBoolean(false);
 
   // 4. 正式初始化所有 Klass（调用 Initialize）
-#define INIT_PY_KLASS(ignore1, klass, ignore2)              \
-  if (klass::GetInstance()->Initialize(this).IsNothing()) { \
-    return kNullMaybe;                                      \
+#define INIT_PY_KLASS(ignore1, klass, ignore2)                  \
+  if (klass::GetInstance(this)->Initialize(this).IsNothing()) { \
+    return kNullMaybe;                                          \
   }
 
   ISOLATE_KLASS_LIST(INIT_PY_KLASS)
@@ -234,7 +234,8 @@ void Isolate::TearDown() {
   Enter();
   do {
     // 反向操作：先销毁 Klass
-#define FINALIZE_PY_KLASS(_, Klass, __) Klass::GetInstance()->Finalize(this);
+#define FINALIZE_PY_KLASS(_, Klass, __) \
+  Klass::GetInstance(this)->Finalize(this);
     ISOLATE_KLASS_LIST(FINALIZE_PY_KLASS)
 #undef FINALIZE_PY_KLASS
 

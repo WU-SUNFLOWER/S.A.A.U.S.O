@@ -61,7 +61,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
 
-  return PyDictKlass::GetInstance()->NewInstance(
+  return PyDictKlass::GetInstance(isolate)->NewInstance(
       isolate, Handle<PyTypeObject>::cast(type_object), args, kwargs);
 }
 
@@ -83,7 +83,8 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Init) {
-  return PyDictKlass::GetInstance()->InitInstance(isolate, self, args, kwargs);
+  return PyDictKlass::GetInstance(isolate)->InitInstance(isolate, self, args,
+                                                         kwargs);
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Repr) {

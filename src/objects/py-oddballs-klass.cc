@@ -31,8 +31,7 @@ namespace saauso::internal {
 // PyBooleanKlass
 
 // static
-Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyBooleanKlass> PyBooleanKlass::GetInstance(Isolate* isolate) {
   Tagged<PyBooleanKlass> instance = isolate->py_boolean_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyBooleanKlass>(
@@ -66,7 +65,7 @@ Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PySmiKlass::GetInstance());
+  AddSuper(PySmiKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -132,8 +131,7 @@ Maybe<uint64_t> PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
 // PyNoneKlass
 
 // static
-Tagged<PyNoneKlass> PyNoneKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyNoneKlass> PyNoneKlass::GetInstance(Isolate* isolate) {
   Tagged<PyNoneKlass> instance = isolate->py_none_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyNoneKlass>(
@@ -167,7 +165,7 @@ Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表

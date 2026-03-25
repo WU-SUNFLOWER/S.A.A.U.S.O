@@ -9,11 +9,12 @@
 
 namespace saauso::internal {
 
+class Isolate;
 class ObjectVisitor;
 
 class CellKlass : public Klass {
  public:
-  static Tagged<CellKlass> GetInstance();
+  static Tagged<CellKlass> GetInstance(Isolate* isolate);
 
   CellKlass() = delete;
 

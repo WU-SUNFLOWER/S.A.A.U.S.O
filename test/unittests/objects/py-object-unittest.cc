@@ -65,7 +65,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyDict> list_like_props = PyDict::NewInstance();
   Handle<PyList> list_like_supers = PyList::NewInstance(1);
   list_like_supers->SetAndExtendLength(
-      0, PyListKlass::GetInstance()->type_object());
+      0, PyListKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> list_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, list_like_name,
                                         list_like_props, list_like_supers)
@@ -83,7 +83,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyDict> dict_like_props = PyDict::NewInstance();
   Handle<PyList> dict_like_supers = PyList::NewInstance(1);
   dict_like_supers->SetAndExtendLength(
-      0, PyDictKlass::GetInstance()->type_object());
+      0, PyDictKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> dict_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, dict_like_name,
                                         dict_like_props, dict_like_supers)
@@ -101,7 +101,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyDict> tuple_like_props = PyDict::NewInstance();
   Handle<PyList> tuple_like_supers = PyList::NewInstance(1);
   tuple_like_supers->SetAndExtendLength(
-      0, PyTupleKlass::GetInstance()->type_object());
+      0, PyTupleKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> tuple_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, tuple_like_name,
                                         tuple_like_props, tuple_like_supers)
@@ -119,7 +119,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyDict> string_like_props = PyDict::NewInstance();
   Handle<PyList> string_like_supers = PyList::NewInstance(1);
   string_like_supers->SetAndExtendLength(
-      0, PyStringKlass::GetInstance()->type_object());
+      0, PyStringKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> string_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, string_like_name,
                                         string_like_props, string_like_supers)

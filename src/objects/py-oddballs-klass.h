@@ -15,7 +15,7 @@ class PyBoolean;
 
 class PyBooleanKlass : public Klass {
  public:
-  static Tagged<PyBooleanKlass> GetInstance();
+  static Tagged<PyBooleanKlass> GetInstance(Isolate* isolate);
 
   PyBooleanKlass() = delete;
 
@@ -37,7 +37,7 @@ class PyBooleanKlass : public Klass {
 
 class PyNoneKlass : public Klass {
  public:
-  static Tagged<PyNoneKlass> GetInstance();
+  static Tagged<PyNoneKlass> GetInstance(Isolate* isolate);
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize(Isolate* isolate);

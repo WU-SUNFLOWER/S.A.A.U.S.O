@@ -14,8 +14,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<CellKlass> CellKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<CellKlass> CellKlass::GetInstance(Isolate* isolate) {
   Tagged<CellKlass> instance = isolate->cell_klass();
   if (instance.is_null()) [[unlikely]] {
     instance =

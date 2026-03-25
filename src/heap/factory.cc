@@ -66,7 +66,7 @@ Tagged<Klass> Factory::NewPythonKlass() {
 }
 
 Handle<PyDict> Factory::NewPyDict(int64_t init_capacity) {
-  return NewDictLike(PyDictKlass::GetInstance(), init_capacity);
+  return NewDictLike(PyDictKlass::GetInstance(isolate_), init_capacity);
 }
 
 Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
@@ -95,7 +95,7 @@ Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
 }
 
 Handle<PyDict> Factory::NewPyDictWithoutAllocateData() {
-  auto klass = PyDictKlass::GetInstance();
+  auto klass = PyDictKlass::GetInstance(isolate_);
   Handle<PyDict> object(Allocate<PyDict>(Heap::AllocationSpace::kNewSpace));
   {
     DisallowHeapAllocation disallow(isolate_);
@@ -123,7 +123,7 @@ Handle<FixedArray> Factory::NewFixedArray(int64_t capacity) {
   EscapableHandleScope scope;
 
   size_t object_size = FixedArray::ComputeObjectSize(capacity);
-  auto klass = FixedArrayKlass::GetInstance();
+  auto klass = FixedArrayKlass::GetInstance(isolate_);
   Tagged<FixedArray> object(
       AllocateRaw(object_size, Heap::AllocationSpace::kNewSpace));
 
@@ -169,7 +169,7 @@ Handle<Cell> Factory::NewCell() {
     DisallowHeapAllocation disallow(isolate_);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
     object->value_ = Tagged<PyObject>(kNullAddress);
-    PyObject::SetKlass(object, CellKlass::GetInstance());
+    PyObject::SetKlass(object, CellKlass::GetInstance(isolate_));
   }
   return object;
 }
@@ -177,7 +177,7 @@ Handle<Cell> Factory::NewCell() {
 Handle<PyFloat> Factory::NewPyFloat(double value) {
   EscapableHandleScope scope;
 
-  auto klass = PyFloatKlass::GetInstance();
+  auto klass = PyFloatKlass::GetInstance(isolate_);
   Handle<PyFloat> object(Allocate<PyFloat>(Heap::AllocationSpace::kNewSpace));
   {
     DisallowHeapAllocation disallow(isolate_);
@@ -215,7 +215,8 @@ Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
 
 Handle<PyList> Factory::NewPyList(int64_t init_capacity) {
   EscapableHandleScope scope;
-  return scope.Escape(NewPyListLike(PyListKlass::GetInstance(), init_capacity));
+  return scope.Escape(
+      NewPyListLike(PyListKlass::GetInstance(isolate_), init_capacity));
 }
 
 Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
@@ -246,7 +247,7 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
 }
 
 Handle<PyTuple> Factory::NewPyTuple(int64_t length) {
-  return NewPyTupleLike(PyTupleKlass::GetInstance(), length);
+  return NewPyTupleLike(PyTupleKlass::GetInstance(isolate_), length);
 }
 
 Handle<PyTuple> Factory::NewPyTupleWithElements(Handle<PyList> elements) {
@@ -288,8 +289,8 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
 
 Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
   EscapableHandleScope scope;
-  return scope.Escape(NewRawStringLike(PyStringKlass::GetInstance(), str_length,
-                                       in_meta_space));
+  return scope.Escape(NewRawStringLike(PyStringKlass::GetInstance(isolate_),
+                                       str_length, in_meta_space));
 }
 
 Handle<PyString> Factory::NewString(const char* source,
@@ -316,7 +317,7 @@ Handle<PyString> Factory::NewConsString(Handle<PyString> left,
 
   auto new_length = left->length() + right->length();
   Handle<PyString> new_object =
-      NewRawStringLike(PyStringKlass::GetInstance(), new_length, false);
+      NewRawStringLike(PyStringKlass::GetInstance(isolate_), new_length, false);
 
   std::memcpy(new_object->writable_buffer(), left->buffer(), left->length());
   std::memcpy(new_object->writable_buffer() + left->length(), right->buffer(),
@@ -328,7 +329,7 @@ Handle<PyString> Factory::NewConsString(Handle<PyString> left,
 Handle<PyCodeObject> Factory::NewPyCodeObject() {
   EscapableHandleScope scope;
 
-  auto klass = PyCodeObjectKlass::GetInstance();
+  auto klass = PyCodeObjectKlass::GetInstance(isolate_);
   Handle<PyCodeObject> object(
       Allocate<PyCodeObject>(Heap::AllocationSpace::kNewSpace));
   {
@@ -367,7 +368,7 @@ Handle<PyCodeObject> Factory::NewPyCodeObject() {
 MaybeHandle<PyFunction> Factory::NewPyFunction() {
   EscapableHandleScope scope;
 
-  auto klass = PyFunctionKlass::GetInstance();
+  auto klass = PyFunctionKlass::GetInstance(isolate_);
   Handle<PyFunction> object(
       Allocate<PyFunction>(Heap::AllocationSpace::kNewSpace));
 
@@ -404,7 +405,7 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
   object->func_name_ = *code_object->co_name();
 
   // 绑定klass
-  PyObject::SetKlass(object, PyFunctionKlass::GetInstance());
+  PyObject::SetKlass(object, PyFunctionKlass::GetInstance(isolate_));
 
   return scope.Escape(object);
 }
@@ -428,14 +429,14 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
   object->func_name_ = *func_template.name();
 
   // 绑定klass
-  PyObject::SetKlass(object, NativeFunctionKlass::GetInstance());
+  PyObject::SetKlass(object, NativeFunctionKlass::GetInstance(isolate_));
 
   return scope.Escape(object);
 }
 
 Handle<MethodObject> Factory::NewMethodObject(Handle<PyObject> func,
                                               Handle<PyObject> owner) {
-  auto klass = MethodObjectKlass::GetInstance();
+  auto klass = MethodObjectKlass::GetInstance(isolate_);
   Handle<MethodObject> object(
       Allocate<MethodObject>(Heap::AllocationSpace::kNewSpace));
   {
@@ -453,7 +454,7 @@ Handle<MethodObject> Factory::NewMethodObject(Handle<PyObject> func,
 MaybeHandle<PyModule> Factory::NewPyModule() {
   EscapableHandleScope scope;
 
-  auto klass = PyModuleKlass::GetInstance();
+  auto klass = PyModuleKlass::GetInstance(isolate_);
   Handle<PyModule> object(Allocate<PyModule>(Heap::AllocationSpace::kNewSpace));
 
   {
@@ -473,7 +474,7 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
 MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   EscapableHandleScope scope;
 
-  auto klass = PyTypeObjectKlass::GetInstance();
+  auto klass = PyTypeObjectKlass::GetInstance(isolate_);
   Handle<PyTypeObject> object(
       Allocate<PyTypeObject>(Heap::AllocationSpace::kNewSpace));
 
@@ -494,7 +495,7 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
     Handle<PyTypeObject> type_object) {
   EscapableHandleScope scope;
 
-  auto klass = PyObjectKlass::GetInstance();
+  auto klass = PyObjectKlass::GetInstance(isolate_);
   Handle<PyObject> object(Allocate<PyObject>(Heap::AllocationSpace::kNewSpace));
   {
     DisallowHeapAllocation disallow(isolate_);
@@ -516,7 +517,7 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
 Handle<PyListIterator> Factory::NewPyListIterator(Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyListIteratorKlass::GetInstance();
+  auto klass = PyListIteratorKlass::GetInstance(isolate_);
   Handle<PyListIterator> iterator(
       Allocate<PyListIterator>(Heap::AllocationSpace::kNewSpace));
   {
@@ -532,7 +533,7 @@ Handle<PyListIterator> Factory::NewPyListIterator(Handle<PyObject> owner) {
 Handle<PyTupleIterator> Factory::NewPyTupleIterator(Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyTupleIteratorKlass::GetInstance();
+  auto klass = PyTupleIteratorKlass::GetInstance(isolate_);
   Handle<PyTupleIterator> iterator(
       Allocate<PyTupleIterator>(Heap::AllocationSpace::kNewSpace));
   {
@@ -548,7 +549,7 @@ Handle<PyTupleIterator> Factory::NewPyTupleIterator(Handle<PyObject> owner) {
 Handle<PyDictKeys> Factory::NewPyDictKeys(Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyDictKeysKlass::GetInstance();
+  auto klass = PyDictKeysKlass::GetInstance(isolate_);
   Handle<PyDictKeys> view(
       Allocate<PyDictKeys>(Heap::AllocationSpace::kNewSpace));
   {
@@ -563,7 +564,7 @@ Handle<PyDictKeys> Factory::NewPyDictKeys(Handle<PyObject> owner) {
 Handle<PyDictValues> Factory::NewPyDictValues(Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyDictValuesKlass::GetInstance();
+  auto klass = PyDictValuesKlass::GetInstance(isolate_);
   Handle<PyDictValues> view(
       Allocate<PyDictValues>(Heap::AllocationSpace::kNewSpace));
   {
@@ -578,7 +579,7 @@ Handle<PyDictValues> Factory::NewPyDictValues(Handle<PyObject> owner) {
 Handle<PyDictItems> Factory::NewPyDictItems(Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyDictItemsKlass::GetInstance();
+  auto klass = PyDictItemsKlass::GetInstance(isolate_);
   Handle<PyDictItems> view(
       Allocate<PyDictItems>(Heap::AllocationSpace::kNewSpace));
   {
@@ -594,7 +595,7 @@ Handle<PyDictKeyIterator> Factory::NewPyDictKeyIterator(
     Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyDictKeyIteratorKlass::GetInstance();
+  auto klass = PyDictKeyIteratorKlass::GetInstance(isolate_);
   Handle<PyDictKeyIterator> iterator(
       Allocate<PyDictKeyIterator>(Heap::AllocationSpace::kNewSpace));
   {
@@ -611,7 +612,7 @@ Handle<PyDictValueIterator> Factory::NewPyDictValueIterator(
     Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyDictValueIteratorKlass::GetInstance();
+  auto klass = PyDictValueIteratorKlass::GetInstance(isolate_);
   Handle<PyDictValueIterator> iterator(
       Allocate<PyDictValueIterator>(Heap::AllocationSpace::kNewSpace));
   {
@@ -628,7 +629,7 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
     Handle<PyObject> owner) {
   EscapableHandleScope scope;
 
-  auto klass = PyDictItemIteratorKlass::GetInstance();
+  auto klass = PyDictItemIteratorKlass::GetInstance(isolate_);
   Handle<PyDictItemIterator> iterator(
       Allocate<PyDictItemIterator>(Heap::AllocationSpace::kNewSpace));
   {
@@ -642,7 +643,7 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
 }
 
 Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {
-  auto klass = PyBooleanKlass::GetInstance();
+  auto klass = PyBooleanKlass::GetInstance(isolate_);
   auto object = Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);
   {
     DisallowHeapAllocation disallow(isolate_);
@@ -654,7 +655,7 @@ Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {
 }
 
 Tagged<PyNone> Factory::NewPyNone() {
-  auto klass = PyNoneKlass::GetInstance();
+  auto klass = PyNoneKlass::GetInstance(isolate_);
   auto object = Allocate<PyNone>(Heap::AllocationSpace::kMetaSpace);
   {
     DisallowHeapAllocation disallow(isolate_);

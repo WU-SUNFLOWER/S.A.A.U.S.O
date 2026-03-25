@@ -11,13 +11,15 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyBoolean;
 class PyTuple;
 class ObjectVisitor;
 
 class PyDictKlass : public Klass {
  public:
-  static Tagged<PyDictKlass> GetInstance();
+  static Tagged<PyDictKlass> GetInstance(Isolate* isolate);
 
   PyDictKlass() = delete;
 

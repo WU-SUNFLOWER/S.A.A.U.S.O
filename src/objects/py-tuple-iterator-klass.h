@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 class PyTupleIteratorKlass : public Klass {
  public:
-  static Tagged<PyTupleIteratorKlass> GetInstance();
+  static Tagged<PyTupleIteratorKlass> GetInstance(Isolate* isolate);
 
   PyTupleIteratorKlass() = delete;
 

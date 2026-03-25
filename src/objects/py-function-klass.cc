@@ -28,8 +28,7 @@ namespace saauso::internal {
 //////////////////////////////////////////////////////////////////////////
 // PyFunctionKlass实现
 
-Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyFunctionKlass> PyFunctionKlass::GetInstance(Isolate* isolate) {
   Tagged<PyFunctionKlass> instance = isolate->py_function_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyFunctionKlass>(
@@ -63,7 +62,7 @@ Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -124,8 +123,7 @@ void PyFunctionKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
 ///////////////////////////////////////////////////////////////
 // NativeFunctionKlass
 
-Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<NativeFunctionKlass> NativeFunctionKlass::GetInstance(Isolate* isolate) {
   Tagged<NativeFunctionKlass> instance = isolate->native_function_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<NativeFunctionKlass>(
@@ -156,7 +154,7 @@ Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
 
   set_klass_properties(PyDict::NewInstance());
 
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   RETURN_ON_EXCEPTION(isolate,
@@ -215,8 +213,7 @@ void NativeFunctionKlass::Virtual_Iterate(Tagged<PyObject> self,
 ///////////////////////////////////////////////////////////////
 // MethodKlass
 
-Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<MethodObjectKlass> MethodObjectKlass::GetInstance(Isolate* isolate) {
   Tagged<MethodObjectKlass> instance = isolate->method_object_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<MethodObjectKlass>(
@@ -249,7 +246,7 @@ Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表

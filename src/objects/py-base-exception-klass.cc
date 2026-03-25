@@ -54,8 +54,8 @@ MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
 }  // namespace
 
 // static
-Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
+    Isolate* isolate) {
   Tagged<PyBaseExceptionKlass> instance = isolate->py_base_exception_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyBaseExceptionKlass>(
@@ -71,7 +71,7 @@ void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
   // BaseException 实例目前仍采用 __dict__ 存储语义字段（args/message 等）。
   set_instance_has_properties_dict(true);
   set_native_layout_kind(NativeLayoutKind::kPyObject);
-  set_native_layout_base(PyObjectKlass::GetInstance());
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   vtable_.Clear();
   vtable_.init_instance_ = &Virtual_InitInstance;
@@ -88,7 +88,7 @@ Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -119,7 +119,8 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass, PyBaseExceptionKlass::GetInstance()));
+      Runtime_IsSubtype(instance_klass,
+                        PyBaseExceptionKlass::GetInstance(isolate)));
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
         ExceptionType::kTypeError,

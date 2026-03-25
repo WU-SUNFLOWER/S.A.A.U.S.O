@@ -18,8 +18,7 @@
 namespace saauso::internal {
 
 // static
-Tagged<PyModuleKlass> PyModuleKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyModuleKlass> PyModuleKlass::GetInstance(Isolate* isolate) {
   Tagged<PyModuleKlass> instance = isolate->py_module_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyModuleKlass>(
@@ -50,7 +49,7 @@ Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表

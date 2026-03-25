@@ -9,11 +9,13 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyModuleKlass : public Klass {
  public:
   PyModuleKlass() = delete;
 
-  static Tagged<PyModuleKlass> GetInstance();
+  static Tagged<PyModuleKlass> GetInstance(Isolate* isolate);
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);

@@ -17,7 +17,7 @@ class PyBoolean;
 
 class PySmiKlass : public Klass {
  public:
-  static Tagged<PySmiKlass> GetInstance();
+  static Tagged<PySmiKlass> GetInstance(Isolate* isolate);
 
   void PreInitialize(Isolate* isolate);
   Maybe<void> Initialize(Isolate* isolate);

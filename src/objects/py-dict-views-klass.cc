@@ -63,8 +63,7 @@ Handle<PyObject> DictViewLen(Handle<PyObject> self) {
 
 }  // namespace
 
-Tagged<PyDictKeysKlass> PyDictKeysKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictKeysKlass> PyDictKeysKlass::GetInstance(Isolate* isolate) {
   Tagged<PyDictKeysKlass> instance = isolate->py_dict_keys_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictKeysKlass>(
@@ -97,7 +96,7 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -138,8 +137,7 @@ void PyDictKeysKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
   v->VisitPointer(&view->owner_);
 }
 
-Tagged<PyDictValuesKlass> PyDictValuesKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictValuesKlass> PyDictValuesKlass::GetInstance(Isolate* isolate) {
   Tagged<PyDictValuesKlass> instance = isolate->py_dict_values_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictValuesKlass>(
@@ -172,7 +170,7 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -230,8 +228,7 @@ void PyDictValuesKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&view->owner_);
 }
 
-Tagged<PyDictItemsKlass> PyDictItemsKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictItemsKlass> PyDictItemsKlass::GetInstance(Isolate* isolate) {
   Tagged<PyDictItemsKlass> instance = isolate->py_dict_items_klass();
   if (instance.is_null()) [[unlikely]] {
     instance = isolate->heap()->Allocate<PyDictItemsKlass>(
@@ -264,7 +261,7 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -332,8 +329,8 @@ void PyDictItemsKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&view->owner_);
 }
 
-Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictKeyIteratorKlass> PyDictKeyIteratorKlass::GetInstance(
+    Isolate* isolate) {
   Tagged<PyDictKeyIteratorKlass> instance =
       isolate->py_dict_keyiterator_klass();
   if (instance.is_null()) [[unlikely]] {
@@ -367,7 +364,7 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -416,8 +413,8 @@ void PyDictKeyIteratorKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&iterator->owner_);
 }
 
-Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictItemIteratorKlass> PyDictItemIteratorKlass::GetInstance(
+    Isolate* isolate) {
   Tagged<PyDictItemIteratorKlass> instance =
       isolate->py_dict_itemiterator_klass();
   if (instance.is_null()) [[unlikely]] {
@@ -451,7 +448,7 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -500,8 +497,8 @@ void PyDictItemIteratorKlass::Virtual_Iterate(Tagged<PyObject> self,
   v->VisitPointer(&iterator->owner_);
 }
 
-Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance() {
-  Isolate* isolate = Isolate::Current();
+Tagged<PyDictValueIteratorKlass> PyDictValueIteratorKlass::GetInstance(
+    Isolate* isolate) {
   Tagged<PyDictValueIteratorKlass> instance =
       isolate->py_dict_valueiterator_klass();
   if (instance.is_null()) [[unlikely]] {
@@ -535,7 +532,7 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance());
+  AddSuper(PyObjectKlass::GetInstance(isolate));
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
