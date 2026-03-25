@@ -113,7 +113,7 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
     bool is_equal;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, is_equal,
-        PyObject::EqualBool(curr_type_object, type_or_tuple));
+        PyObject::EqualBool(isolate, curr_type_object, type_or_tuple));
 
     if (is_equal) {
       return Maybe<bool>(true);
