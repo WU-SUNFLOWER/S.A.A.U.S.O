@@ -177,18 +177,21 @@ Maybe<bool> PyDictKlass::Virtual_NotEqual(Isolate* isolate,
   return Maybe<bool>(!eq);
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_Subscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyDictKlass::Virtual_Subscr(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> subscr) {
   return Runtime_DictGetItem(Handle<PyDict>::cast(self), subscr);
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_StoreSubscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyDictKlass::Virtual_StoreSubscr(Isolate* isolate,
+                                                       Handle<PyObject> self,
                                                        Handle<PyObject> subscr,
                                                        Handle<PyObject> value) {
   return Runtime_DictSetItem(Handle<PyDict>::cast(self), subscr, value);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> subscr) {
   return Runtime_DictDelItem(Handle<PyDict>::cast(self), subscr);

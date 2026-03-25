@@ -40,12 +40,15 @@ class PyDictKlass : public Klass {
   static Maybe<bool> Virtual_NotEqual(Isolate* isolate,
                                       Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Subscr(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> subscr);
-  static MaybeHandle<PyObject> Virtual_StoreSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_StoreSubscr(Isolate* isolate,
+                                                   Handle<PyObject> self,
                                                    Handle<PyObject> subscr,
                                                    Handle<PyObject> value);
-  static MaybeHandle<PyObject> Virtual_DeleteSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_DeleteSubscr(Isolate* isolate,
+                                                    Handle<PyObject> self,
                                                     Handle<PyObject> subscr);
   static Maybe<bool> Virtual_Contains(Isolate* isolate,
                                       Handle<PyObject> self,

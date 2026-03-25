@@ -32,7 +32,7 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(1))), 2);
 
-  ASSERT_FALSE(PyObject::StoreSubscr(Handle<PyObject>(list),
+  ASSERT_FALSE(PyObject::StoreSubscr(isolate_, Handle<PyObject>(list),
                                      Handle<PyObject>(PySmi::FromInt(0)),
                                      Handle<PyObject>(PySmi::FromInt(42)))
                    .IsEmpty());
@@ -55,12 +55,14 @@ TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
 
   Handle<PyObject> v0;
   ASSERT_TRUE(
-      PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(0))).ToHandle(&v0));
+      PyObject::Subscr(isolate_, obj, Handle<PyObject>(PySmi::FromInt(0)))
+          .ToHandle(&v0));
   EXPECT_TRUE(IsPyString(*v0));
 
   Handle<PyObject> v1;
   ASSERT_TRUE(
-      PyObject::Subscr(obj, Handle<PyObject>(PySmi::FromInt(1))).ToHandle(&v1));
+      PyObject::Subscr(isolate_, obj, Handle<PyObject>(PySmi::FromInt(1)))
+          .ToHandle(&v1));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 7);
 }
 
@@ -77,8 +79,9 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
   Handle<PyObject> contains_res;
   ASSERT_TRUE(PyObject::Contains(isolate_, obj, s).ToHandle(&contains_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
-  ASSERT_TRUE(PyObject::Contains(isolate_, obj, Handle<PyObject>(PySmi::FromInt(2)))
-                  .ToHandle(&contains_res));
+  ASSERT_TRUE(
+      PyObject::Contains(isolate_, obj, Handle<PyObject>(PySmi::FromInt(2)))
+          .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::NewInstance(2);
@@ -87,8 +90,9 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
   auto t2 = isolate_->factory()->NewPyTupleWithElements(list2);
 
   Handle<PyObject> equal_res;
-  ASSERT_TRUE(PyObject::Equal(isolate_, Handle<PyObject>(t1), Handle<PyObject>(t2))
-                  .ToHandle(&equal_res));
+  ASSERT_TRUE(
+      PyObject::Equal(isolate_, Handle<PyObject>(t1), Handle<PyObject>(t2))
+          .ToHandle(&equal_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(equal_res)->value());
 }
 

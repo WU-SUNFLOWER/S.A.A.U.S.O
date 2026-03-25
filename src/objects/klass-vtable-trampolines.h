@@ -49,14 +49,17 @@ class KlassVtableTrampolines : public AllStatic {
                                        Handle<PyObject> property_name,
                                        Handle<PyObject> property_value);
 
-  static MaybeHandle<PyObject> Subscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Subscr(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> subscr);
 
-  static MaybeHandle<PyObject> StoreSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> StoreSubscr(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> subscr,
                                            Handle<PyObject> value);
 
-  static MaybeHandle<PyObject> DeleteSubscr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> DeleteSubscr(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> subscr);
 
   static Maybe<bool> Greater(Isolate* isolate,

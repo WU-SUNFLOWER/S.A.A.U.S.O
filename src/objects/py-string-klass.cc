@@ -300,7 +300,8 @@ Maybe<bool> PyStringKlass::Virtual_Contains(Isolate* isolate,
   return Maybe<bool>(s->Contains(pattern));
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Isolate* isolate,
+                                                    Handle<PyObject> self,
                                                     Handle<PyObject> subscr) {
   auto s = Handle<PyString>::cast(self);
 

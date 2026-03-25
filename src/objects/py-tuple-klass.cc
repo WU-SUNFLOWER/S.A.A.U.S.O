@@ -201,7 +201,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Str(Isolate* isolate,
   return Virtual_Repr(isolate, self);
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Isolate* isolate,
+                                                   Handle<PyObject> self,
                                                    Handle<PyObject> subscr) {
   auto tuple = Handle<PyTuple>::cast(self);
   if (!IsPySmi(*subscr)) {
@@ -220,6 +221,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Handle<PyObject> self,
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> subscr,
     Handle<PyObject> value) {
@@ -228,7 +230,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Isolate* isolate,
+                                                      Handle<PyObject> self,
                                                       Handle<PyObject> subscr) {
   Runtime_ThrowError(ExceptionType::kTypeError,
                      "'tuple' object doesn't support item deletion\n");
@@ -241,9 +244,8 @@ Maybe<bool> PyTupleKlass::Virtual_Contains(Isolate* isolate,
   auto tuple = Handle<PyTuple>::cast(self);
   for (auto i = 0; i < tuple->length(); ++i) {
     bool eq;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
-                               PyObject::EqualBool(isolate, tuple->Get(i),
-                                                   target));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, eq, PyObject::EqualBool(isolate, tuple->Get(i), target));
     if (eq) {
       return Maybe<bool>(true);
     }
