@@ -174,7 +174,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Len(Isolate* isolate,
+                                               Handle<PyObject> self) {
   return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
 }
 
@@ -369,7 +370,8 @@ Maybe<bool> PyListKlass::Virtual_Equal(Isolate* isolate,
   return Maybe<bool>(true);
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Handle<PyObject> object) {
+MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Isolate* isolate,
+                                                Handle<PyObject> object) {
   return PyListIterator::NewInstance(Handle<PyList>::cast(object));
 }
 

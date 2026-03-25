@@ -99,11 +99,13 @@ void PyListIteratorKlass::Finalize(Isolate* isolate) {
   isolate->set_py_list_iterator_klass(Tagged<PyListIteratorKlass>::null());
 }
 
-MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Isolate* isolate,
+                                                        Handle<PyObject> self) {
   return self;
 }
 
-MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Next(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Next(Isolate* isolate,
+                                                        Handle<PyObject> self) {
   Handle<PyObject> result = NextImpl(self);
   if (result.is_null()) {
     Runtime_ThrowError(ExceptionType::kStopIteration);

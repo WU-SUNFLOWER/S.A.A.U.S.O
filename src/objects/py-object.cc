@@ -204,9 +204,9 @@ MaybeHandle<PyObject> PyObject::Mod(Isolate* isolate,
   return GetKlass(*self)->vtable().mod_(isolate, self, other);
 }
 
-MaybeHandle<PyObject> PyObject::Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObject::Len(Isolate* isolate, Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().len_);
-  return GetKlass(*self)->vtable().len_(self);
+  return GetKlass(*self)->vtable().len_(isolate, self);
 }
 
 MaybeHandle<PyBoolean> PyObject::Greater(Isolate* isolate,
@@ -446,14 +446,14 @@ Maybe<bool> PyObject::ContainsBool(Isolate* isolate,
   return GetKlass(*self)->vtable().contains_(isolate, self, target);
 }
 
-MaybeHandle<PyObject> PyObject::Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObject::Iter(Isolate* isolate, Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().iter_);
-  return GetKlass(*self)->vtable().iter_(self);
+  return GetKlass(*self)->vtable().iter_(isolate, self);
 }
 
-MaybeHandle<PyObject> PyObject::Next(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyObject::Next(Isolate* isolate, Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().next_);
-  return GetKlass(*self)->vtable().next_(self);
+  return GetKlass(*self)->vtable().next_(isolate, self);
 }
 
 Maybe<uint64_t> PyObject::Hash(Isolate* isolate, Handle<PyObject> self) {

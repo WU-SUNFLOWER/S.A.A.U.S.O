@@ -86,6 +86,7 @@ using VirtualFuncType_MaybeSetAttrWithIsolate = MaybeOopHandle (*)(Isolate*,
                                                                    OopHandle);
 using VirtualFuncType_MaybeStoreSubscrWithIsolate =
     MaybeOopHandle (*)(Isolate*, OopHandle, OopHandle, OopHandle);
+using VirtualFuncType_Maybe_2_1 = MaybeOopHandle (*)(Isolate*, OopHandle);
 // Fallible slot：返回 Maybe<uint64_t>
 using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
 using VirtualFuncType_MaybeHashWithIsolate = Maybe<uint64_t> (*)(Isolate*,
@@ -126,11 +127,11 @@ using VirtualFuncType_Maybe_Str = MaybeOopHandle (*)(Isolate*, OopHandle);
   V(VirtualFuncType_MaybeBool_2_2, le, "__le__", LessEqual)                    \
   V(VirtualFuncType_MaybeBool_2_2, contains, "__contains__", Contains)         \
                                                                                \
-  V(VirtualFuncType_Maybe_1_1, iter, "__iter__", Iter)                         \
-  V(VirtualFuncType_Maybe_1_1, next, "__next__", Next)                         \
+  V(VirtualFuncType_Maybe_2_1, iter, "__iter__", Iter)                         \
+  V(VirtualFuncType_Maybe_2_1, next, "__next__", Next)                         \
                                                                                \
   V(VirtualFuncType_Maybe_Call, call, "__call__", Call)                        \
-  V(VirtualFuncType_Maybe_1_1, len, "__len__", Len)                            \
+  V(VirtualFuncType_Maybe_2_1, len, "__len__", Len)                            \
   V(VirtualFuncType_Maybe_Repr, repr, "__repr__", Repr)                        \
   V(VirtualFuncType_Maybe_Str, str, "__str__", Str)                            \
                                                                                \

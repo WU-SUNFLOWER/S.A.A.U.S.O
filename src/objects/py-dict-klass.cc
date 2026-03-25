@@ -105,11 +105,13 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
   return JustVoid();
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Handle<PyObject> self) {
-  return Isolate::Current()->factory()->NewPyDictKeyIterator(self);
+MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Isolate* isolate,
+                                                Handle<PyObject> self) {
+  return isolate->factory()->NewPyDictKeyIterator(self);
 }
 
-MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Isolate* isolate,
+                                               Handle<PyObject> self) {
   auto value = Handle<PyDict>::cast(self)->occupied();
   return Handle<PyObject>(PySmi::FromInt(value));
 }

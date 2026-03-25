@@ -90,9 +90,9 @@ class KlassVtableTrampolines : public AllStatic {
                               Handle<PyObject> self,
                               Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Iter(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Iter(Isolate* isolate, Handle<PyObject> self);
 
-  static MaybeHandle<PyObject> Next(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Next(Isolate* isolate, Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Call(Isolate* isolate,
                                     Handle<PyObject> self,
@@ -100,7 +100,7 @@ class KlassVtableTrampolines : public AllStatic {
                                     Handle<PyObject> args,
                                     Handle<PyObject> kwargs);
 
-  static MaybeHandle<PyObject> Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Len(Isolate* isolate, Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Repr(Isolate* isolate, Handle<PyObject> self);
 

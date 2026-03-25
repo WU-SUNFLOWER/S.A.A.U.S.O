@@ -112,12 +112,14 @@ void PyDictKeysKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_keys_klass(Tagged<PyDictKeysKlass>::null());
 }
 
-MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Handle<PyObject> self) {
-  return Isolate::Current()->factory()->NewPyDictKeyIterator(
+MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Isolate* isolate,
+                                                    Handle<PyObject> self) {
+  return isolate->factory()->NewPyDictKeyIterator(
       Handle<PyDictKeys>::cast(self)->owner());
 }
 
-MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Len(Isolate* isolate,
+                                                   Handle<PyObject> self) {
   return DictViewLen<PyDictKeys>(self);
 }
 
@@ -187,12 +189,14 @@ void PyDictValuesKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_values_klass(Tagged<PyDictValuesKlass>::null());
 }
 
-MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Handle<PyObject> self) {
-  return Isolate::Current()->factory()->NewPyDictValueIterator(
+MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Isolate* isolate,
+                                                      Handle<PyObject> self) {
+  return isolate->factory()->NewPyDictValueIterator(
       Handle<PyDictValues>::cast(self)->owner());
 }
 
-MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Len(Isolate* isolate,
+                                                     Handle<PyObject> self) {
   return DictViewLen<PyDictValues>(self);
 }
 
@@ -209,8 +213,8 @@ Maybe<bool> PyDictValuesKlass::Virtual_Contains(Isolate* isolate,
     }
 
     bool equal;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, equal, PyObject::EqualBool(isolate, value, subscr));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, equal,
+                               PyObject::EqualBool(isolate, value, subscr));
 
     if (equal) {
       return Maybe<bool>(true);
@@ -279,12 +283,14 @@ void PyDictItemsKlass::Finalize(Isolate* isolate) {
   isolate->set_py_dict_items_klass(Tagged<PyDictItemsKlass>::null());
 }
 
-MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Handle<PyObject> self) {
-  return Isolate::Current()->factory()->NewPyDictItemIterator(
+MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Isolate* isolate,
+                                                     Handle<PyObject> self) {
+  return isolate->factory()->NewPyDictItemIterator(
       Handle<PyDictItems>::cast(self)->owner());
 }
 
-MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Isolate* isolate,
+                                                    Handle<PyObject> self) {
   return DictViewLen<PyDictItems>(self);
 }
 
@@ -387,11 +393,13 @@ void PyDictKeyIteratorKlass::Finalize(Isolate* isolate) {
 }
 
 MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Iter(
+    Isolate* isolate,
     Handle<PyObject> self) {
   return self;
 }
 
 MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(
+    Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictKeyIterator>(
       self, [](Handle<PyDict> dict, int64_t index) {
@@ -471,11 +479,13 @@ void PyDictItemIteratorKlass::Finalize(Isolate* isolate) {
 }
 
 MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Iter(
+    Isolate* isolate,
     Handle<PyObject> self) {
   return self;
 }
 
 MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Next(
+    Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictItemIterator>(
       self, [](Handle<PyDict> dict, int64_t index) {
@@ -555,11 +565,13 @@ void PyDictValueIteratorKlass::Finalize(Isolate* isolate) {
 }
 
 MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Iter(
+    Isolate* isolate,
     Handle<PyObject> self) {
   return self;
 }
 
 MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Next(
+    Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictValueIterator>(
       self, [](Handle<PyDict> dict, int64_t index) {

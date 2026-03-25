@@ -388,9 +388,10 @@ Maybe<bool> KlassVtableTrampolines::Contains(Isolate* isolate,
   return Maybe<bool>(Runtime_PyObjectIsTrue(result));
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Iter(Handle<PyObject> self) {
+MaybeHandle<PyObject> KlassVtableTrampolines::Iter(Isolate* isolate,
+                                                   Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self,
                                           Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(iter))
            .ToHandle(&result)) {
@@ -399,9 +400,10 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Iter(Handle<PyObject> self) {
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Next(Handle<PyObject> self) {
+MaybeHandle<PyObject> KlassVtableTrampolines::Next(Isolate* isolate,
+                                                   Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self,
                                           Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(next))
            .ToHandle(&result)) {
@@ -431,9 +433,10 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Call(Isolate* isolate,
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Len(Handle<PyObject> self) {
+MaybeHandle<PyObject> KlassVtableTrampolines::Len(Isolate* isolate,
+                                                  Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self,
                                           Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(len))
            .ToHandle(&result)) {

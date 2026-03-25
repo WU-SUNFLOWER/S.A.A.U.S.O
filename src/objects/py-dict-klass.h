@@ -28,8 +28,10 @@ class PyDictKlass : public Klass {
   void Finalize(Isolate* isolate);
 
  private:
-  static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Iter(Isolate* isolate,
+                                            Handle<PyObject> self);
+  static MaybeHandle<PyObject> Virtual_Len(Isolate* isolate,
+                                           Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Repr(Isolate* isolate,
                                             Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
