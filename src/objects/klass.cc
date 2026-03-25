@@ -24,7 +24,8 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
+Handle<PyList> C3Impl_Linear(Isolate* isolate,
+                             Handle<PyTypeObject> type_object) {
   Handle<PyList> result = PyList::NewInstance();
   Handle<PyList> mro = type_object->mro();
 
@@ -38,9 +39,8 @@ Handle<PyList> C3Impl_Linear(Handle<PyTypeObject> type_object) {
   return result;
 }
 
-Handle<PyList> C3Impl_Merge(Handle<PyList> mro_of_each_super) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
-
+Handle<PyList> C3Impl_Merge(Isolate* isolate,
+                            Handle<PyList> mro_of_each_super) {
   // 递归出口：
   // 如果所有的mro列表都被清空，这意味着完整的所求mro序列已经生成，退出递归即可
   if (mro_of_each_super->IsEmpty()) {
@@ -183,9 +183,9 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
     Handle<PyList> all = PyList::NewInstance(supers()->length());
     for (auto i = 0; i < supers()->length(); ++i) {
       auto super = handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)));
-      PyList::Append(all, C3Impl_Linear(super));
+      PyList::Append(all, C3Impl_Linear(isolate, super));
     }
-    mro_result = C3Impl_Merge(all);
+    mro_result = C3Impl_Merge(isolate, all);
     assert(!mro_result.is_null());
   }
 
