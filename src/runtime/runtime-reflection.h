@@ -10,6 +10,8 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyObject;
 class PyTypeObject;
 class PyString;
@@ -86,6 +88,7 @@ MaybeHandle<PyObject> Runtime_GetPropertyInInstanceTypeMro(
 // - args/kwargs 允许为 null。
 // - 若未找到对应方法，则抛出 TypeError。
 MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
+    Isolate* isolate,
     Handle<PyObject> object,
     Handle<PyTuple> args,
     Handle<PyDict> kwargs,
