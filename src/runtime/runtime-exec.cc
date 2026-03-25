@@ -46,12 +46,11 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
 
 // 执行一个 code object，并显式指定其运行环境（locals/globals）。
 // 该函数的核心用途是为内建 exec 等路径提供“在指定字典中执行代码”的能力。
-MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Handle<PyCodeObject> code,
+MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
+                                                  Handle<PyCodeObject> code,
                                                   Handle<PyDict> locals,
                                                   Handle<PyDict> globals) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   if (code.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,

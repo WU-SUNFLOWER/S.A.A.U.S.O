@@ -254,9 +254,10 @@ BUILTIN(Exec) {
     return kNullMaybeHandle;
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
   } else if (IsPyCodeObject(*source_or_code)) {
-    RETURN_ON_EXCEPTION(isolate, Runtime_ExecutePyCodeObject(
-                                     Handle<PyCodeObject>::cast(source_or_code),
-                                     locals_dict, globals_dict));
+    RETURN_ON_EXCEPTION(isolate,
+                        Runtime_ExecutePyCodeObject(
+                            isolate, Handle<PyCodeObject>::cast(source_or_code),
+                            locals_dict, globals_dict));
   } else {
     Runtime_ThrowError(ExceptionType::kTypeError,
                        "exec() arg 1 must be a string or code object");
