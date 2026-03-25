@@ -192,7 +192,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
   }
 
   Handle<PyTuple> parts;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), parts,
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, parts,
                              Runtime_UnpackIterableObjectToTuple(iterable));
 
   const int64_t num_parts = parts->length();
