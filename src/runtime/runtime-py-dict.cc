@@ -213,7 +213,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
   auto iter = isolate->factory()->NewPyDictItemIterator(source_dict);
   while (true) {
     Handle<PyObject> item_handle;
-    if (!PyObject::Next(iter).ToHandle(&item_handle)) {
+    if (!PyObject::Next(isolate, iter).ToHandle(&item_handle)) {
       bool is_stop_iteration = false;
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, is_stop_iteration,
