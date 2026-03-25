@@ -751,27 +751,27 @@ void Interpreter::EvalCurrentFrame() {
     switch (op_arg) {
       case BinaryOpType::kAdd:
       case BinaryOpType::kInplaceAdd:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Add(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Add(isolate_, l, r));
         break;
       case BinaryOpType::kSubtract:
       case BinaryOpType::kInplaceSubtract:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Sub(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Sub(isolate_, l, r));
         break;
       case BinaryOpType::kMultiply:
       case BinaryOpType::kInplaceMultiply:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mul(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mul(isolate_, l, r));
         break;
       case BinaryOpType::kTrueDivide:
       case BinaryOpType::kInplaceTrueDivide:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Div(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Div(isolate_, l, r));
         break;
       case BinaryOpType::kFloorDivide:
       case BinaryOpType::kInplaceFloorDivide:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::FloorDiv(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::FloorDiv(isolate_, l, r));
         break;
       case BinaryOpType::kRemainder:
       case BinaryOpType::kInplaceRemainder:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mod(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Mod(isolate_, l, r));
         break;
     }
     PUSH(result);
