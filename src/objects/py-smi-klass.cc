@@ -229,7 +229,8 @@ Maybe<uint64_t> PySmiKlass::Virtual_Hash(Isolate* isolate,
   return Maybe<uint64_t>(PySmi::cast(*self).value());
 }
 
-Maybe<bool> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_Greater(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -244,7 +245,8 @@ Maybe<bool> PySmiKlass::Virtual_Greater(Handle<PyObject> self,
   return kNullMaybe;
 }
 
-Maybe<bool> PySmiKlass::Virtual_Less(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_Less(Isolate* isolate,
+                                     Handle<PyObject> self,
                                      Handle<PyObject> other) {
   assert(IsPySmi(self));
 
@@ -261,7 +263,8 @@ Maybe<bool> PySmiKlass::Virtual_Less(Handle<PyObject> self,
   return kNullMaybe;
 }
 
-Maybe<bool> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_Equal(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -279,37 +282,39 @@ Maybe<bool> PySmiKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(false);
 }
 
-Maybe<bool> PySmiKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_NotEqual(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> other) {
   assert(IsPySmi(self));
 
   bool is_equal;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
-                             Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                             Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(!is_equal);
 }
 
-Maybe<bool> PySmiKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_GreaterEqual(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   bool gt, eq;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt, Virtual_Greater(self, other));
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt,
+                             Virtual_Greater(isolate, self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(gt || eq);
 }
 
-Maybe<bool> PySmiKlass::Virtual_LessEqual(Handle<PyObject> self,
+Maybe<bool> PySmiKlass::Virtual_LessEqual(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
   assert(IsPySmi(self));
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   bool lt, eq;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Virtual_Less(self, other));
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Virtual_Less(isolate, self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(lt || eq);
 }

@@ -57,20 +57,33 @@ class KlassVtableTrampolines : public AllStatic {
   static MaybeHandle<PyObject> DeleteSubscr(Handle<PyObject> self,
                                             Handle<PyObject> subscr);
 
-  static Maybe<bool> Greater(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<bool> Greater(Isolate* isolate,
+                             Handle<PyObject> self,
+                             Handle<PyObject> other);
 
-  static Maybe<bool> Less(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<bool> Less(Isolate* isolate,
+                          Handle<PyObject> self,
+                          Handle<PyObject> other);
 
-  static Maybe<bool> Equal(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<bool> Equal(Isolate* isolate,
+                           Handle<PyObject> self,
+                           Handle<PyObject> other);
 
-  static Maybe<bool> NotEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<bool> NotEqual(Isolate* isolate,
+                              Handle<PyObject> self,
+                              Handle<PyObject> other);
 
-  static Maybe<bool> GreaterEqual(Handle<PyObject> self,
+  static Maybe<bool> GreaterEqual(Isolate* isolate,
+                                  Handle<PyObject> self,
                                   Handle<PyObject> other);
 
-  static Maybe<bool> LessEqual(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<bool> LessEqual(Isolate* isolate,
+                               Handle<PyObject> self,
+                               Handle<PyObject> other);
 
-  static Maybe<bool> Contains(Handle<PyObject> self, Handle<PyObject> other);
+  static Maybe<bool> Contains(Isolate* isolate,
+                              Handle<PyObject> self,
+                              Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Iter(Handle<PyObject> self);
 

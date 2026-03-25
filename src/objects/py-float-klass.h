@@ -52,12 +52,22 @@ class PyFloatKlass : public Klass {
                                            Handle<PyObject>,
                                            Handle<PyObject>);
 
-  static Maybe<bool> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_Less(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_Equal(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_NotEqual(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_GreaterEqual(Handle<PyObject>, Handle<PyObject>);
-  static Maybe<bool> Virtual_LessEqual(Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Greater(Isolate*,
+                                     Handle<PyObject>,
+                                     Handle<PyObject>);
+  static Maybe<bool> Virtual_Less(Isolate*, Handle<PyObject>, Handle<PyObject>);
+  static Maybe<bool> Virtual_Equal(Isolate*,
+                                   Handle<PyObject>,
+                                   Handle<PyObject>);
+  static Maybe<bool> Virtual_NotEqual(Isolate*,
+                                      Handle<PyObject>,
+                                      Handle<PyObject>);
+  static Maybe<bool> Virtual_GreaterEqual(Isolate*,
+                                          Handle<PyObject>,
+                                          Handle<PyObject>);
+  static Maybe<bool> Virtual_LessEqual(Isolate*,
+                                       Handle<PyObject>,
+                                       Handle<PyObject>);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);

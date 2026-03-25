@@ -258,7 +258,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Mod(Isolate* isolate,
   return PyFloat::NewInstance(PythonMod(self_value, other_value));
 }
 
-Maybe<bool> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_Greater(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -266,7 +267,8 @@ Maybe<bool> PyFloatKlass::Virtual_Greater(Handle<PyObject> self,
   return Maybe<bool>(self_value > other_value);
 }
 
-Maybe<bool> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_Less(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -274,7 +276,8 @@ Maybe<bool> PyFloatKlass::Virtual_Less(Handle<PyObject> self,
   return Maybe<bool>(self_value < other_value);
 }
 
-Maybe<bool> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_Equal(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -282,7 +285,8 @@ Maybe<bool> PyFloatKlass::Virtual_Equal(Handle<PyObject> self,
   return Maybe<bool>(self_value == other_value);
 }
 
-Maybe<bool> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_NotEqual(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -290,26 +294,27 @@ Maybe<bool> PyFloatKlass::Virtual_NotEqual(Handle<PyObject> self,
   return Maybe<bool>(self_value != other_value);
 }
 
-Maybe<bool> PyFloatKlass::Virtual_GreaterEqual(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_GreaterEqual(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> other) {
   assert(IsPyFloat(self));
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   bool gt, eq;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt, Virtual_Greater(self, other));
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt,
+                             Virtual_Greater(isolate, self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(gt || eq);
 }
 
-Maybe<bool> PyFloatKlass::Virtual_LessEqual(Handle<PyObject> self,
+Maybe<bool> PyFloatKlass::Virtual_LessEqual(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> other) {
   assert(IsPyFloat(self));
 
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   bool lt, eq;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Virtual_Less(self, other));
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Virtual_Less(isolate, self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(lt || eq);
 }

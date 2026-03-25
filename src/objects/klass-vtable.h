@@ -70,7 +70,9 @@ using VirtualFuncType_Maybe_Init = MaybeOopHandle (*)(Isolate* isolate,
                                                       OopHandle);
 
 // Fallible slot：返回 Maybe<bool>，避免 false 与异常二义性
-using VirtualFuncType_MaybeBool_1_2 = Maybe<bool> (*)(OopHandle, OopHandle);
+using VirtualFuncType_MaybeBool_2_2 = Maybe<bool> (*)(Isolate*,
+                                                      OopHandle,
+                                                      OopHandle);
 // getattr：true=命中（out 写入值），false=未命中（out 为 null），Nothing=异常
 using VirtualFuncType_MaybeGetAttr = Maybe<bool> (*)(OopHandle,
                                                      OopHandle,
@@ -79,7 +81,7 @@ using VirtualFuncType_MaybeGetAttr = Maybe<bool> (*)(OopHandle,
 // Fallible slot：返回 Maybe<uint64_t>
 using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
 using VirtualFuncType_MaybeHashWithIsolate = Maybe<uint64_t> (*)(Isolate*,
-                                                                  OopHandle);
+                                                                 OopHandle);
 
 using VirtualFuncType_InstanceSize = size_t (*)(Oop);
 
@@ -107,13 +109,13 @@ using VirtualFuncType_Maybe_Str = MaybeOopHandle (*)(Isolate*, OopHandle);
   V(VirtualFuncType_Maybe_1_2, del_subscr, "__delitem__", DeleteSubscr)        \
                                                                                \
   /* 比较/contains：返回 Maybe<bool>，失败时设置 pending exception */          \
-  V(VirtualFuncType_MaybeBool_1_2, greater, "__gt__", Greater)                 \
-  V(VirtualFuncType_MaybeBool_1_2, less, "__lt__", Less)                       \
-  V(VirtualFuncType_MaybeBool_1_2, equal, "__eq__", Equal)                     \
-  V(VirtualFuncType_MaybeBool_1_2, not_equal, "__ne__", NotEqual)              \
-  V(VirtualFuncType_MaybeBool_1_2, ge, "__ge__", GreaterEqual)                 \
-  V(VirtualFuncType_MaybeBool_1_2, le, "__le__", LessEqual)                    \
-  V(VirtualFuncType_MaybeBool_1_2, contains, "__contains__", Contains)         \
+  V(VirtualFuncType_MaybeBool_2_2, greater, "__gt__", Greater)                 \
+  V(VirtualFuncType_MaybeBool_2_2, less, "__lt__", Less)                       \
+  V(VirtualFuncType_MaybeBool_2_2, equal, "__eq__", Equal)                     \
+  V(VirtualFuncType_MaybeBool_2_2, not_equal, "__ne__", NotEqual)              \
+  V(VirtualFuncType_MaybeBool_2_2, ge, "__ge__", GreaterEqual)                 \
+  V(VirtualFuncType_MaybeBool_2_2, le, "__le__", LessEqual)                    \
+  V(VirtualFuncType_MaybeBool_2_2, contains, "__contains__", Contains)         \
                                                                                \
   V(VirtualFuncType_Maybe_1_1, iter, "__iter__", Iter)                         \
   V(VirtualFuncType_Maybe_1_1, next, "__next__", Next)                         \

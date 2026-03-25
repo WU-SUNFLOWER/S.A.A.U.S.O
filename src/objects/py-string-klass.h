@@ -38,20 +38,27 @@ class PyStringKlass : public Klass {
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
 
-  static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Equal(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
-  static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
+  static Maybe<bool> Virtual_NotEqual(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static Maybe<bool> Virtual_Less(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Less(Isolate* isolate,
+                                  Handle<PyObject> self,
                                   Handle<PyObject> other);
-  static Maybe<bool> Virtual_Greater(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Greater(Isolate* isolate,
+                                     Handle<PyObject> self,
                                      Handle<PyObject> other);
-  static Maybe<bool> Virtual_LessEqual(Handle<PyObject> self,
+  static Maybe<bool> Virtual_LessEqual(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> other);
-  static Maybe<bool> Virtual_GreaterEqual(Handle<PyObject> self,
+  static Maybe<bool> Virtual_GreaterEqual(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other);
 
-  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Contains(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> target);
 
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,

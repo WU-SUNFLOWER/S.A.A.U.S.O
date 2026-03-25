@@ -85,7 +85,8 @@ void PyBooleanKlass::Finalize(Isolate* isolate) {
 
 // static
 // static
-Maybe<bool> PyBooleanKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyBooleanKlass::Virtual_Equal(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
   bool v = Handle<PyBoolean>::cast(self)->value();
 
@@ -113,11 +114,12 @@ MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Isolate* isolate,
 }
 
 // static
-Maybe<bool> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PyBooleanKlass::Virtual_NotEqual(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other) {
   bool is_equal;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
-                             Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                             Virtual_Equal(isolate, self, other));
 
   return Maybe<bool>(!is_equal);
 }
@@ -184,7 +186,8 @@ void PyNoneKlass::Finalize(Isolate* isolate) {
 }
 
 // static
-Maybe<bool> PyNoneKlass::Virtual_Equal(Handle<PyObject> self,
+Maybe<bool> PyNoneKlass::Virtual_Equal(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> other) {
   assert(IsPyNone(self));
   return Maybe<bool>(self.is_identical_to(other));
@@ -201,11 +204,12 @@ MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Isolate* isolate,
 }
 
 // static
-Maybe<bool> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
+Maybe<bool> PyNoneKlass::Virtual_NotEqual(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
   bool is_equal;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), is_equal,
-                             Virtual_Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                             Virtual_Equal(isolate, self, other));
   return Maybe<bool>(!is_equal);
 }
 

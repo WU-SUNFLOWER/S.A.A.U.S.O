@@ -26,7 +26,8 @@ class PyDictKeysKlass : public Klass {
  private:
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Contains(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
@@ -46,7 +47,8 @@ class PyDictValuesKlass : public Klass {
  private:
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Contains(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
@@ -66,7 +68,8 @@ class PyDictItemsKlass : public Klass {
  private:
   static MaybeHandle<PyObject> Virtual_Iter(Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Len(Handle<PyObject> self);
-  static Maybe<bool> Virtual_Contains(Handle<PyObject> self,
+  static Maybe<bool> Virtual_Contains(Isolate* isolate,
+                                      Handle<PyObject> self,
                                       Handle<PyObject> subscr);
 
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

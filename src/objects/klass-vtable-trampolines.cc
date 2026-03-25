@@ -221,10 +221,9 @@ MaybeHandle<PyObject> KlassVtableTrampolines::DeleteSubscr(
   return handle(isolate->py_none_object());
 }
 
-Maybe<bool> KlassVtableTrampolines::Greater(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::Greater(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> other) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(greater), callable));
@@ -245,10 +244,9 @@ Maybe<bool> KlassVtableTrampolines::Greater(Handle<PyObject> self,
   return Maybe<bool>(Runtime_PyObjectIsTrue(result));
 }
 
-Maybe<bool> KlassVtableTrampolines::Less(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::Less(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> other) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(less), callable));
@@ -269,10 +267,9 @@ Maybe<bool> KlassVtableTrampolines::Less(Handle<PyObject> self,
   return Maybe<bool>(Runtime_PyObjectIsTrue(result));
 }
 
-Maybe<bool> KlassVtableTrampolines::Equal(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::Equal(Isolate* isolate,
+                                          Handle<PyObject> self,
                                           Handle<PyObject> other) {
-  auto* isolate = Isolate::Current();
-
   if (self.is_identical_to(other)) {
     return Maybe<bool>(true);
   }
@@ -296,10 +293,9 @@ Maybe<bool> KlassVtableTrampolines::Equal(Handle<PyObject> self,
   return Maybe<bool>(Runtime_PyObjectIsTrue(result));
 }
 
-Maybe<bool> KlassVtableTrampolines::NotEqual(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::NotEqual(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(not_equal), callable));
@@ -316,17 +312,16 @@ Maybe<bool> KlassVtableTrampolines::NotEqual(Handle<PyObject> self,
     return Maybe<bool>(Runtime_PyObjectIsTrue(result));
   }
 
-  Maybe<bool> eq = Equal(self, other);
+  Maybe<bool> eq = Equal(isolate, self, other);
   if (eq.IsNothing()) {
     return kNullMaybe;
   }
   return Maybe<bool>(!eq.ToChecked());
 }
 
-Maybe<bool> KlassVtableTrampolines::GreaterEqual(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::GreaterEqual(Isolate* isolate,
+                                                 Handle<PyObject> self,
                                                  Handle<PyObject> other) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(ge), callable));
@@ -344,16 +339,15 @@ Maybe<bool> KlassVtableTrampolines::GreaterEqual(Handle<PyObject> self,
   }
 
   bool gt, eq;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt, Greater(self, other));
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, gt, Greater(isolate, self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Equal(isolate, self, other));
 
   return Maybe<bool>(gt || eq);
 }
 
-Maybe<bool> KlassVtableTrampolines::LessEqual(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::LessEqual(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
-  auto* isolate = Isolate::Current();
-
   Handle<PyObject> callable;
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(le), callable));
@@ -371,19 +365,20 @@ Maybe<bool> KlassVtableTrampolines::LessEqual(Handle<PyObject> self,
   }
 
   bool lt, eq;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Less(self, other));
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Equal(self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, lt, Less(isolate, self, other));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, eq, Equal(isolate, self, other));
 
   return Maybe<bool>(lt || eq);
 }
 
-Maybe<bool> KlassVtableTrampolines::Contains(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::Contains(Isolate* isolate,
+                                             Handle<PyObject> self,
                                              Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
                                           Handle<PyDict>::null(), ST(contains))
            .ToHandle(&result)) {
     return kNullMaybe;
