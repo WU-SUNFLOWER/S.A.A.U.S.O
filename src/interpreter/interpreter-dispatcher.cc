@@ -582,22 +582,23 @@ void Interpreter::EvalCurrentFrame() {
     int compare_op_type = op_arg >> 4;
     switch (compare_op_type) {
       case CompareOpType::kLT:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Less(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Less(isolate_, l, r));
         break;
       case CompareOpType::kLE:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::LessEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::LessEqual(isolate_, l, r));
         break;
       case CompareOpType::kEQ:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Equal(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Equal(isolate_, l, r));
         break;
       case CompareOpType::kNE:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::NotEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::NotEqual(isolate_, l, r));
         break;
       case CompareOpType::kGT:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Greater(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Greater(isolate_, l, r));
         break;
       case CompareOpType::kGE:
-        ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::GreaterEqual(l, r));
+        ASSIGN_GOTO_ON_EXCEPTION(result,
+                                 PyObject::GreaterEqual(isolate_, l, r));
         break;
       default:
         Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
@@ -738,9 +739,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> r = POP();
     Handle<PyObject> l = POP();
     bool result = false;
-    if (!PyObject::ContainsBool(r, l).To(&result)) {
-      goto pending_exception_unwind;
-    }
+    ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::ContainsBool(isolate_, r, l));
     PUSH(Isolate::ToPyBoolean(result ^ op_arg));
   })
 
