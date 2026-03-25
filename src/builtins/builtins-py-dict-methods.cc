@@ -76,9 +76,10 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
   }
 
   Handle<PyObject> result;
-  if (!Runtime_DictSetDefault(dict, key, default_or_null).ToHandle(&result)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      Runtime_DictSetDefault(isolate, dict, key, default_or_null));
+
   return scope.Escape(result);
 }
 
@@ -126,10 +127,10 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
       has_default ? args->Get(1) : Handle<PyObject>::null();
 
   Handle<PyObject> result;
-  if (!Runtime_DictPop(dict, key, default_or_null, has_default)
-           .ToHandle(&result)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      Runtime_DictPop(isolate, dict, key, default_or_null, has_default));
+
   return scope.Escape(result);
 }
 
@@ -158,9 +159,9 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Get) {
   }
 
   Handle<PyObject> result;
-  if (!Runtime_DictGet(dict, key, default_or_null).ToHandle(&result)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result, Runtime_DictGet(isolate, dict, key, default_or_null));
+
   return scope.Escape(result);
 }
 

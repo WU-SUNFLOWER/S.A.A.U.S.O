@@ -39,21 +39,27 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
 // API（Get/GetTagged/Put/Remove/
 //   ContainsKey），并在失败（Maybe 为空）时立即向上传播 pending exception；
 //   禁止把“异常”误判为“未命中”。
-MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictGetItem(Isolate* isolate,
+                                          Handle<PyDict> dict,
                                           Handle<PyObject> key);
-MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictSetItem(Isolate* isolate,
+                                          Handle<PyDict> dict,
                                           Handle<PyObject> key,
                                           Handle<PyObject> value);
-MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
+                                          Handle<PyDict> dict,
                                           Handle<PyObject> key);
 
-MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictGet(Isolate* isolate,
+                                      Handle<PyDict> dict,
                                       Handle<PyObject> key,
                                       Handle<PyObject> default_or_null);
-MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
+                                             Handle<PyDict> dict,
                                              Handle<PyObject> key,
                                              Handle<PyObject> default_or_null);
-MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
+                                      Handle<PyDict> dict,
                                       Handle<PyObject> key,
                                       Handle<PyObject> default_or_null,
                                       bool has_default);

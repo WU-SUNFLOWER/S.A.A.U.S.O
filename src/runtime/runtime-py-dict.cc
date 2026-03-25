@@ -96,7 +96,8 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
   return JustVoid();
 }
 
-MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictGetItem(Isolate* isolate,
+                                          Handle<PyDict> dict,
                                           Handle<PyObject> key) {
   Handle<PyObject> value;
   bool found = false;
@@ -111,16 +112,18 @@ MaybeHandle<PyObject> Runtime_DictGetItem(Handle<PyDict> dict,
   return value;
 }
 
-MaybeHandle<PyObject> Runtime_DictSetItem(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictSetItem(Isolate* isolate,
+                                          Handle<PyDict> dict,
                                           Handle<PyObject> key,
                                           Handle<PyObject> value) {
   if (PyDict::Put(dict, key, value).IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
+                                          Handle<PyDict> dict,
                                           Handle<PyObject> key) {
   bool removed = false;
   if (!dict->Remove(key).To(&removed)) {
@@ -130,10 +133,11 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Handle<PyDict> dict,
     Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
     return kNullMaybeHandle;
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictGet(Isolate* isolate,
+                                      Handle<PyDict> dict,
                                       Handle<PyObject> key,
                                       Handle<PyObject> default_or_null) {
   Handle<PyObject> value;
@@ -148,10 +152,11 @@ MaybeHandle<PyObject> Runtime_DictGet(Handle<PyDict> dict,
   if (!default_or_null.is_null()) {
     return default_or_null;
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
-MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
+                                             Handle<PyDict> dict,
                                              Handle<PyObject> key,
                                              Handle<PyObject> default_or_null) {
   Handle<PyObject> existing;
@@ -174,7 +179,8 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Handle<PyDict> dict,
   return value;
 }
 
-MaybeHandle<PyObject> Runtime_DictPop(Handle<PyDict> dict,
+MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
+                                      Handle<PyDict> dict,
                                       Handle<PyObject> key,
                                       Handle<PyObject> default_or_null,
                                       bool has_default) {
