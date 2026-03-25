@@ -92,7 +92,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
       }
     }
 
-    Handle<PyList> result = C3Impl_Merge(next_mro_of_each_super);
+    Handle<PyList> result = C3Impl_Merge(isolate, next_mro_of_each_super);
     if (result.is_null()) {
       return Handle<PyList>::null();
     }
