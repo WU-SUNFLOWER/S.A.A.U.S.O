@@ -145,16 +145,19 @@ Maybe<uint64_t> KlassVtableTrampolines::Hash(Isolate* isolate,
   return Maybe<uint64_t>(value);
 }
 
-Maybe<bool> KlassVtableTrampolines::GetAttr(Handle<PyObject> self,
+Maybe<bool> KlassVtableTrampolines::GetAttr(Isolate* isolate,
+                                            Handle<PyObject> self,
                                             Handle<PyObject> prop_name,
                                             bool is_try,
                                             Handle<PyObject>& out_prop_val) {
   // Python 中 __getattr__ 魔法方法不具备彻底重写默认属性查询流程的能力。
   // 因此这里还是转发到通用属性查询流程进行处理！
-  return PyObjectKlass::Generic_GetAttr(self, prop_name, is_try, out_prop_val);
+  return PyObjectKlass::Generic_GetAttr(isolate, self, prop_name, is_try,
+                                        out_prop_val);
 }
 
 MaybeHandle<PyObject> KlassVtableTrampolines::SetAttr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> property_name,
     Handle<PyObject> property_value) {
@@ -163,7 +166,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::SetAttr(
   args->SetInternal(1, property_value);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
                                           Handle<PyDict>::null(), ST(setattr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;

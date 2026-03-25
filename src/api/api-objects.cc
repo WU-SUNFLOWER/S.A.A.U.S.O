@@ -107,7 +107,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
       name_value.data(), static_cast<int64_t>(name_value.size()));
   i::Handle<i::PyObject> self_or_null;
   i::MaybeHandle<i::PyObject> maybe_callee = i::PyObject::GetAttrForCall(
-      self, i::handle(i::Tagged<i::PyObject>::cast(*py_name)), self_or_null);
+      internal_isolate, self, i::handle(*py_name), self_or_null);
   i::Handle<i::PyObject> callee;
   if (!maybe_callee.ToHandle(&callee)) {
     api::CapturePendingException(internal_isolate);
@@ -123,8 +123,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
 
   i::MaybeHandle<i::PyObject> maybe_result =
       i::PyObject::Call(internal_isolate, callee, self_or_null,
-                        i::handle(i::Tagged<i::PyObject>::cast(*py_args)),
-                        i::handle(i::Tagged<i::PyObject>::cast(*py_kwargs)));
+                        i::handle(*py_args), i::handle(*py_kwargs));
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {

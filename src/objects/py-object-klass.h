@@ -22,17 +22,20 @@ class PyObjectKlass : public Klass {
 
   static Maybe<uint64_t> Generic_Hash(Isolate* isolate, Handle<PyObject> self);
 
-  static Maybe<bool> Generic_GetAttr(Handle<PyObject> self,
+  static Maybe<bool> Generic_GetAttr(Isolate* isolate,
+                                     Handle<PyObject> self,
                                      Handle<PyObject> prop_name,
                                      bool is_try,
                                      Handle<PyObject>& out_prop_val);
 
   static MaybeHandle<PyObject> Generic_GetAttrForCall(
+      Isolate* isolate,
       Handle<PyObject> self,
       Handle<PyObject> prop_name,
       Handle<PyObject>& self_or_null);
 
-  static MaybeHandle<PyObject> Generic_SetAttr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Generic_SetAttr(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> property_name,
                                                Handle<PyObject> property_value);
 

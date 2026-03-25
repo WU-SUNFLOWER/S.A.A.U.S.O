@@ -32,7 +32,8 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 
   // 测试__dict__获取到对象properties的能力
   Handle<PyObject> dict_value;
-  ASSERT_TRUE(PyObject::GetAttr(module_obj, ST(dict)).ToHandle(&dict_value));
+  ASSERT_TRUE(PyObject::GetAttr(isolate_, module_obj, ST(dict))
+                  .ToHandle(&dict_value));
   ASSERT_TRUE(IsPyDict(dict_value));
   EXPECT_TRUE(Handle<PyDict>::cast(dict_value).is_identical_to(module_dict));
 
@@ -50,10 +51,10 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 
   Handle<PyString> x_name = PyString::NewInstance("x");
   Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)));
-  ASSERT_FALSE(PyObject::SetAttr(module_obj, x_name, x_value).IsEmpty());
+  ASSERT_FALSE(PyObject::SetAttr(isolate_, module_obj, x_name, x_value).IsEmpty());
 
   Handle<PyObject> x_got;
-  ASSERT_TRUE(PyObject::GetAttr(module_obj, x_name).ToHandle(&x_got));
+  ASSERT_TRUE(PyObject::GetAttr(isolate_, module_obj, x_name).ToHandle(&x_got));
   ASSERT_TRUE(IsPySmi(x_got));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(x_got)), 123);
 }
