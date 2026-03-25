@@ -350,7 +350,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(GetIter, {
     Handle<PyObject> iterable = POP();
     Handle<PyObject> iterator;
-    ASSIGN_GOTO_ON_EXCEPTION(iterator, PyObject::Iter(iterable));
+    ASSIGN_GOTO_ON_EXCEPTION(iterator, PyObject::Iter(isolate_, iterable));
     PUSH(iterator);
   })
 
@@ -428,7 +428,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ForIter, {
     Handle<PyObject> iterator = TOP();
     Handle<PyObject> next_result;
-    MaybeHandle<PyObject> next_maybe = PyObject::Next(iterator);
+    MaybeHandle<PyObject> next_maybe = PyObject::Next(isolate_, iterator);
 
     // Happy Path: 迭代得到一个有效值，遂直接压栈并退出bytecode handler
     if (next_maybe.ToHandle(&next_result)) [[likely]] {
