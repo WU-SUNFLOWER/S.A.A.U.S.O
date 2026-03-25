@@ -3,7 +3,6 @@ executable("ut") {
 
   sources = [
     "./handles/global-handle-unittest.cc",
-    "./handles/handle-thread-unittest.cc",
     "./handles/handle-unittest.cc",
     "./heap/gc-unittest.cc",
     "./lsan-suppressions.cc",

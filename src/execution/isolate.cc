@@ -4,11 +4,11 @@
 
 #include "src/execution/isolate.h"
 
-#include <mutex>
 #include <thread>
 #include <vector>
 
 #include "include/saauso.h"
+#include "src/execution/thread-state-infras.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/heap/factory.h"
 #include "src/heap/heap.h"
@@ -43,8 +43,11 @@
 
 namespace saauso::internal {
 
-thread_local Isolate* Isolate::current_ = nullptr;
+namespace {
 thread_local std::vector<Isolate*> g_entered_isolates;
+}  // namespace
+
+thread_local Isolate* Isolate::current_ = nullptr;
 
 Isolate* Isolate::New() {
   if (!saauso::Saauso::IsInitialized()) {
@@ -71,126 +74,71 @@ void Isolate::Dispose(Isolate* isolate) {
   delete isolate;
 }
 
+// static
 Isolate* Isolate::Current() {
   return current_;
 }
 
-ThreadId Isolate::GetCurrentThreadId() {
-  return std::this_thread::get_id();
-}
-
-Isolate::Locker::Locker(Isolate* isolate) : isolate_(isolate) {
-  if (isolate_ == nullptr) {
-    return;
-  }
-  reinterpret_cast<std::recursive_mutex*>(isolate_->mutex_)->lock();
-  ThreadId tid = GetCurrentThreadId();
-  if (isolate_->locker_thread_ == ThreadId{}) {
-    isolate_->locker_thread_ = tid;
-  }
-  if (isolate_->locker_thread_ != tid) {
-    // 错误：锁状态异常。
-    // 当前线程获得了互斥锁，但 isolate 内部记录的 locker_thread_ 却是其他线程
-    // ID。 这通常意味着锁的实现或状态维护出现了严重的逻辑错误。
-    assert(0);
-  }
-  ++isolate_->locker_count_;
-}
-
-Isolate::Locker::~Locker() {
-  if (isolate_ == nullptr) {
-    return;
-  }
-  if (isolate_->entry_count_ != 0) {
-    // 错误：试图在仍有 Scope 进入的情况下释放锁。
-    // 必须先退出所有 Scope (Exit)，才能释放 Locker。
-    // 即 Scope 的生命周期必须完全包含在 Locker 的生命周期内。
-    assert(0);
-  }
-  if (isolate_->locker_thread_ != GetCurrentThreadId() ||
-      isolate_->locker_count_ <= 0) {
-    // 错误：解锁线程不匹配或锁计数异常。
-    // 只有持有锁的线程才能释放锁，且锁计数必须大于 0。
-    assert(0);
-  }
-  --isolate_->locker_count_;
-  if (isolate_->locker_count_ == 0) {
-    isolate_->locker_thread_ = ThreadId{};
-    if (isolate_->entry_count_ == 0) {
-      isolate_->owner_thread_ = ThreadId{};
-    }
-  }
-  reinterpret_cast<std::recursive_mutex*>(isolate_->mutex_)->unlock();
-}
-
-void Isolate::CheckThreadAccess() const {
-  ThreadId tid = GetCurrentThreadId();
-  if (owner_thread_ == ThreadId{}) {
-    return;
-  }
-  if (owner_thread_ != tid) {
-    // 错误：线程访问违规。
-    // 当前线程试图访问一个已被其他线程拥有的 Isolate，且未通过 Locker/Enter
-    // 机制获得授权。
-    assert(0);
-  }
-}
-
 void Isolate::Enter() {
-  ThreadId tid = GetCurrentThreadId();
-  // 如果当前 Isolate 没有所有者，则将其分配给当前线程
-  if (owner_thread_ == ThreadId{}) {
-    owner_thread_ = tid;
-  }
-  // 如果当前线程不是所有者
-  if (owner_thread_ != tid) {
-    // 检查是否有锁（Locker），并且是持有锁的线程在重入
-    if (!(locker_thread_ == tid && locker_count_ > 0 && entry_count_ == 0)) {
-      // 错误：非法进入 Isolate。
-      // 当前 Isolate 已被其他线程拥有（owner_thread_ != tid），
-      // 且当前线程没有持有锁（Locker），或者状态不满足重入条件。
-      // 多线程访问必须先获取 Locker。
-      assert(0);
-    }
-    owner_thread_ = tid;
-  }
-  // 将之前的 current_ Isolate 压栈，支持嵌套进入不同的
-  // Isolate（虽然实际场景很少见）
+  ThreadId tid = ThreadId::Current();
+  // 合法进入该 Isolate 的情况：
+  // - 该 Isolate 没有被任何线程进入过
+  // - 该 Isolate 重复被当前线程进入
+  assert(owner_thread_ == ThreadId{} || owner_thread_ == tid);
+
+  // 标记该 Isolate 被当前线程进入
+  owner_thread_ = tid;
+
+  // 将之前的 current Isolate 压栈。
+  // 这个设计是为了支持嵌套进入不同的 Isolate
+  // 的场景（虽然实际上这种写法很少见）：
+  // {
+  //   Isolate::Scope isolate_scope1(isolate1);
+  //   {
+  //     Isolate::Scope isolate_scope2(isolate2);
+  //     // ...
+  //   }
+  // }
   g_entered_isolates.push_back(current_);
+  // 更新当前线程的 TLS 变量，将当前线程进入的这个 Isolate 实例作为 current
   current_ = this;
+
+  // 该 Isolate 实例的进入计数器自增 1
   ++entry_count_;
 }
 
 void Isolate::Exit() {
-  ThreadId tid = GetCurrentThreadId();
-  // 必须是所有者线程，且 current_ 必须是自己，且 entry_count_ 必须大于 0
-  if (owner_thread_ != tid || current_ != this || entry_count_ <= 0 ||
-      g_entered_isolates.empty()) {
-    // 错误：非法退出 Isolate。
-    // 可能原因：
-    // 1. 当前线程不是 Isolate 的所有者。
-    // 2. 退出顺序错误（未按栈顺序退出，current_ != this）。
-    // 3. 进入计数已经为 0（重复退出）。
-    assert(0);
-  }
+  ThreadId tid = ThreadId::Current();
+
+  // 退出该 Isolate 的线程，和进入该 Isolate 的必须是同一个
+  assert(owner_thread_ == tid);
+  // 准备退出的该 Isolate，必须是 Current Isolate
+  assert(current_ == this);
+  // 该 Isolate 实例的进入计数器不可能已经清零
+  assert(entry_count_ > 0);
+
+  // 该 Isolate 实例的进入计数器自减 1
   --entry_count_;
+
   // 恢复之前的 current_ Isolate
   current_ = g_entered_isolates.back();
   g_entered_isolates.pop_back();
-  // 如果完全退出了（entry_count_ == 0）且没有锁，则释放所有权
-  if (entry_count_ == 0 && locker_count_ == 0) {
+
+  // 如果当前线程已经彻底退出该 Isolate，那么清空标记
+  if (entry_count_ == 0) {
     owner_thread_ = ThreadId{};
   }
 }
 
+// static
 Tagged<PyBoolean> Isolate::ToPyBoolean(bool condition) {
   Isolate* isolate = Isolate::Current();
   return condition ? isolate->py_true_object_ : isolate->py_false_object_;
 }
 
 void Isolate::Init() {
-  // 初始化互斥锁
-  mutex_ = new std::recursive_mutex();
+  // 初始化线程管理器
+  thread_manager_ = new ThreadManager(this);
 
   // 初始化堆（Heap）
   heap_ = new Heap(this);
@@ -326,9 +274,9 @@ void Isolate::TearDown() {
     delete heap_;
     heap_ = nullptr;
 
-    // 销毁互斥锁
-    delete reinterpret_cast<std::recursive_mutex*>(mutex_);
-    mutex_ = nullptr;
+    // 销毁线程管理器
+    delete thread_manager_;
+    thread_manager_ = nullptr;
   } while (0);
   Exit();
 }

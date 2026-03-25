@@ -194,7 +194,7 @@ source_set("saauso_core") {
     # init
     "//src/init/saauso.cc",
 
-    # execution
+    # execution（虚拟机执行层门面）
     "//src/execution/exception-state.cc",
     "//src/execution/exception-state.h",
     "//src/execution/exception-utils.h",
@@ -203,6 +203,10 @@ source_set("saauso_core") {
     "//src/execution/isolate-klass-list.h",
     "//src/execution/isolate.cc",
     "//src/execution/isolate.h",
+    "//src/execution/thread-id.cc",
+    "//src/execution/thread-id.h",
+    "//src/execution/thread-state-infras.cc",
+    "//src/execution/thread-state-infras.h",
 
     # runtime (运行时)
     "//src/runtime/runtime-conversions.cc",
@@ -344,6 +348,7 @@ source_set("embedder_api") {
     "//include/saauso-internal.h",
     "//include/saauso-isolate.h",
     "//include/saauso-local-handle.h",
+    "//include/saauso-locker.h",
     "//include/saauso-object.h",
     "//include/saauso-primitive.h",
     "//include/saauso-script.h",

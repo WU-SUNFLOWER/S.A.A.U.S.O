@@ -2,14 +2,15 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_RUNTIME_ISOLATE_H_
-#define SAAUSO_RUNTIME_ISOLATE_H_
+#ifndef SAAUSO_EXECUTION_ISOLATE_H_
+#define SAAUSO_EXECUTION_ISOLATE_H_
 
 #include <thread>
 
 #include "include/saauso-maybe.h"
 #include "src/execution/exception-state.h"
 #include "src/execution/isolate-klass-list.h"
+#include "src/execution/thread-id.h"
 #include "src/handles/handles.h"
 #include "src/handles/tagged.h"
 #include "src/utils/vector.h"
@@ -20,17 +21,17 @@ class TryCatch;
 
 namespace internal {
 
-using ThreadId = std::thread::id;
-
-class Heap;
-class Klass;
-class Factory;
+class ThreadManager;
 class HandleScopeImplementer;
 class Interpreter;
 class ModuleManager;
 class StringTable;
+class Factory;
 class RandomNumberGenerator;
 class ObjectVisitor;
+
+class Heap;
+class Klass;
 class PyDict;
 class PyObject;
 
@@ -46,27 +47,6 @@ ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_TYPES)
 // 这一设计借鉴了 V8 的 Isolate 概念。
 class Isolate {
  public:
-  // Isolate::Locker 用于多线程环境下的同步。
-  // 它确保在同一时刻只有一个线程可以访问该 Isolate（类似于 GIL 的作用范围，但在
-  // Isolate 级别）。
-  //
-  // 用法示例：
-  // void RunThreadSafe(Isolate* isolate) {
-  //   Isolate::Locker lock(isolate); // 获取锁，如果被占用则阻塞
-  //   Isolate::Scope scope(isolate); // 进入作用域
-  //   // 安全地使用 isolate...
-  // }
-  class Locker {
-   public:
-    explicit Locker(Isolate* isolate);
-    Locker(const Locker&) = delete;
-    Locker& operator=(const Locker&) = delete;
-    ~Locker();
-
-   private:
-    Isolate* isolate_{nullptr};
-  };
-
   Isolate(const Isolate&) = delete;
   Isolate& operator=(const Isolate&) = delete;
 
@@ -87,6 +67,7 @@ class Isolate {
   void Exit();
 
   // 获取虚拟机的核心组件
+  ThreadManager* thread_manager() const { return thread_manager_; }
   Heap* heap() const { return heap_; }
   Factory* factory() const { return factory_; }
   HandleScopeImplementer* handle_scope_implementer() const {
@@ -134,15 +115,16 @@ class Isolate {
     try_catch_top_ = try_catch;
   }
 
+  // 线程相关
+  ThreadId owner_thread() const { return owner_thread_; }
+  int entry_count() const { return entry_count_; }
+
  private:
   Isolate() = default;
 
   void Init();
   void TearDown();
   Maybe<void> InitMetaArea();
-
-  static ThreadId GetCurrentThreadId();
-  void CheckThreadAccess() const;
 
   static thread_local Isolate* current_;
 
@@ -167,15 +149,13 @@ class Isolate {
   ISOLATE_KLASS_LIST(DECLARE_ISOLATE_KLASS_FIELDS)
 #undef DECLARE_ISOLATE_KLASS_FIELDS
 
+  ThreadManager* thread_manager_{nullptr};
+
   ThreadId owner_thread_;
   int entry_count_{0};
 
   Vector<saauso::Context*> entered_contexts_;
   saauso::TryCatch* try_catch_top_{nullptr};
-
-  void* mutex_{nullptr};
-  ThreadId locker_thread_;
-  int locker_count_{0};
 
   bool initialized_{false};
 };
@@ -183,4 +163,4 @@ class Isolate {
 }  // namespace internal
 }  // namespace saauso
 
-#endif  // SAAUSO_RUNTIME_ISOLATE_H_
+#endif  // SAAUSO_EXECUTION_ISOLATE_H_

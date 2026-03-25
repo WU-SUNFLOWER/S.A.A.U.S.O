@@ -58,16 +58,49 @@ TEST(EmbedderPhase1Test, ContextScope_NestedLifo) {
   Saauso::Dispose();
 }
 
-// TODO: Isolate模型完善后开放
-// TEST(EmbedderContractDeathTest, ExplicitApiWithoutCurrentIsolateShouldDie) {
-//   ASSERT_DEATH_IF_SUPPORTED(
-//       {
-//         Saauso::Initialize();
-//         Isolate* isolate = Isolate::New();
-//         Local<String> value = String::New(isolate, "contract");
-//         (void)value;
-//       },
-//       "");
-// }
+TEST(EmbedderContractDeathTest, ExplicitApiButNotEnterIsolateShouldDie) {
+#if defined(NDEBUG)
+  GTEST_SKIP();
+#endif
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_DEATH_IF_SUPPORTED(
+      {
+        // 没有进入该 isolate 而直接调用 api，
+        // 会导致触发 isolate != current 断言而直接崩溃。
+        HandleScope scope(isolate);
+        Local<String> value = String::New(isolate, "contract");
+        (void)value;
+      },
+      "");
+}
+
+TEST(EmbedderContractDeathTest, CrossThreadUseIsolateShouldDie) {
+#if defined(NDEBUG)
+  GTEST_SKIP();
+#endif  // defined(NDEBUG)
+
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  Isolate::Scope isolate_scope(isolate);
+  HandleScope scope(isolate);
+
+  // 在本线程调用 API，不会有任何问题
+  Local<String> value = String::New(isolate, "In the correct thread");
+  ASSERT_TRUE(!value.IsEmpty());
+
+  // 绝对不允许跨线程使用 isolate
+  ASSERT_DEATH_IF_SUPPORTED(
+      {
+        std::thread worker([&]() {
+          Isolate::Scope isolate_scope(isolate);
+          HandleScope scope(isolate);
+          Local<String> value = String::New(isolate, "cross-thread");
+          (void)value;
+        });
+        worker.join();
+      },
+      "");
+}
 
 }  // namespace saauso

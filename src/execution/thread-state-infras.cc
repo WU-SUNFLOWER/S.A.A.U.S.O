@@ -1,0 +1,95 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#include "src/execution/thread-state-infras.h"
+
+#include <cstdio>
+#include <cstdlib>
+
+#include "include/saauso-locker.h"
+#include "src/common/globals.h"
+#include "src/execution/isolate.h"
+
+namespace saauso {
+
+Locker::Locker(Isolate* isolate) : isolate_(isolate) {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  i_isolate->thread_manager()->Lock();
+}
+
+Locker::~Locker() {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
+  i_isolate->thread_manager()->Unlock();
+}
+
+bool Locker::IsLocked(Isolate* isolate) {
+  assert(isolate != nullptr);
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  return i_isolate->thread_manager()->IsLockedByCurrentThread();
+}
+
+namespace internal {
+
+ThreadManager::ThreadManager(Isolate* isolate) : isolate_(isolate) {
+  assert(isolate_ != nullptr);
+}
+
+void ThreadManager::Lock() {
+  // 因为下面要对 Isolate 内部的字段进行操作，这里首先加锁
+  mutex_.lock();
+
+  ThreadId tid = ThreadId::Current();
+  // 仅允许同一个线程重入对 Isolate 加锁，否则直接崩溃
+  if (mutex_owner_.load() != ThreadId{} && mutex_owner_.load() != tid) {
+    // 其他情况，直接让进程崩溃
+    std::printf(
+        "Illegally locking isolate, since this isolate is alread locked by "
+        "other thread.");
+    std::exit(1);
+  }
+
+  // 标记该 Isolate 被当前线程占用
+  mutex_owner_.store(tid);
+
+  // 该 Isolate 的加锁次数（含重入）自增 1
+  ++mutex_count_;
+
+  assert(IsLockedByCurrentThread());
+}
+
+void ThreadManager::Unlock() {
+  // 加锁和解锁该 Isolate 的必须是同一个线程
+  if (!IsLockedByCurrentThread()) {
+    std::printf(
+        "Illegally unlocking isolate, since you should unlock the isolate in "
+        "the thread which locked it.");
+    std::exit(1);
+  }
+
+  // 该 Isolate 的加锁次数（含重入）不能已经清零
+  assert(mutex_count_ > 0);
+
+  --mutex_count_;
+
+  // 当加锁次数清空时，说明当前线程已经彻底释放对该 Isolate 的占用。
+  // 此时清除 locker_thread_ 标记。
+  if (mutex_count_ == 0) {
+    // 在释放锁之前，当前线程必须已经完全退出该 Isolate
+    assert(isolate_->entry_count() == 0);
+    mutex_owner_.store(ThreadId{});
+  }
+
+  mutex_.unlock();
+}
+
+bool ThreadManager::IsLockedByCurrentThread() const {
+  return mutex_owner_.load() == ThreadId::Current();
+}
+bool ThreadManager::IsLockedByThread(ThreadId id) const {
+  return mutex_owner_.load() == id;
+}
+
+}  // namespace internal
+
+}  // namespace saauso
