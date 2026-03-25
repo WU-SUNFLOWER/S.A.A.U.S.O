@@ -46,18 +46,23 @@ S.A.A.U.S.O Embedder API 用于把脚本能力嵌入到 C++ 宿主程序中。
    - 它负责把“当前线程”与目标 `Isolate` 绑定。
    - 所有带 `Isolate*` 的 Embedder API 调用都应在该作用域内进行。
 
-7. `HandleScope`：一段“临时对象自动回收区间”
+7. `Locker`：跨线程共享同一 Isolate 时的串行化守卫
+   - 构造时加锁，析构时解锁。
+   - 支持同线程重入。
+   - 加锁与解锁必须发生在同一线程，违约会直接终止进程。
+
+8. `HandleScope`：一段“临时对象自动回收区间”
    - 在这段区间创建的包装对象会被统一管理。
    - 区间结束自动回收，避免长期累积导致内存膨胀。
    - `HandleScope` 只负责句柄生命周期，不包含其他隐式的语义。
    - `EscapableHandleScope` 则允许你把一个返回值“逃逸”到外层继续使用。
 
-8. `TryCatch`：错误观察器
+9. `TryCatch`：错误观察器
    - 只要你要调用可能失败的 API（编译、运行、方法调用），就建议先创建 `TryCatch`。
    - 调用后检查 `HasCaught()`，这是判定“脚本侧是否抛错”的标准方式。
 
 一句话串起来：  
-`Isolate` 提供运行沙箱，`Isolate::Scope` 绑定线程上下文，`Context` 提供全局环境，`Script` 提供可执行逻辑，`Local/MaybeLocal` 提供安全结果传递，`HandleScope/TryCatch` 提供内存与异常保障。
+`Isolate` 提供运行沙箱，`Isolate::Scope` 绑定线程上下文（跨线程共享时叠加 `Locker`），`Context` 提供全局环境，`Script` 提供可执行逻辑，`Local/MaybeLocal` 提供安全结果传递，`HandleScope/TryCatch` 提供内存与异常保障。
 
 ## 2. 5 分钟上手（带代码片段）
 
@@ -233,7 +238,8 @@ int main() {
 2. 违反契约（如 `Current != explicit isolate`、`Current == null`）会直接终止进程。
 3. 调用带 `Isolate*` 的 Embedder API 前，必须先建立 `Isolate::Scope`。
 4. `HandleScope` 是 `Local<T>` 创建窗口的前置条件，但不负责 Isolate 绑定。
-5. 不允许跨线程直接复用同一 `Isolate` 执行 Embedder API。
+5. 跨线程共享同一 `Isolate` 时，必须先建立 `Locker` 再进入 `Isolate::Scope`。
+6. `Locker` 支持同线程重入，但禁止跨线程解锁。
 
 ## 5. 一个实战 Demo 在哪里
 
@@ -251,9 +257,9 @@ int main() {
 
 ### 6.2 并发与线程
 
-1. `Isolate` 目前按单线程访问模型使用。
-2. 不保证同一个 `Isolate` 可被多个线程并发调用 API。
-3. 若要并行，请使用多个 `Isolate` 并做好外部线程隔离。
+1. 同一个 `Isolate` 不保证并发执行安全。
+2. 跨线程共享同一 `Isolate` 时，必须使用 `Locker` 串行化访问。
+3. 若要并行吞吐，强烈建议使用多个 `Isolate` 并做好外部线程隔离。
 
 ### 6.3 前端编译开关
 
