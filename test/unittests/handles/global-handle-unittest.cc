@@ -58,7 +58,7 @@ TEST_F(GlobalHandleTest, GlobalHandleShouldSurviveAcrossGc) {
     Handle<PyString> s2 = g.Get();
     Handle<PyString> expected = PyString::NewInstance("global-string");
     bool eq = false;
-    ASSERT_TRUE(PyObject::EqualBool(s2, expected).To(&eq));
+    ASSERT_TRUE(PyObject::EqualBool(isolate_, s2, expected).To(&eq));
     EXPECT_TRUE(eq);
   }
 }

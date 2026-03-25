@@ -61,7 +61,7 @@ Handle<PyObject> PyFalseObject() {
 
   // 等价性以 Python 语义的 __eq__ 路径为准，期望返回 PyTrue。
   Handle<PyObject> result;
-  if (!PyObject::Equal(x, y).ToHandle(&result)) {
+  if (!PyObject::Equal(Isolate::Current(), x, y).ToHandle(&result)) {
     return ::testing::AssertionFailure() << "PyObject::Equal failed (exception)";
   }
   if (!IsPyTrue(*result)) {

@@ -12,7 +12,6 @@
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-
 namespace saauso::internal {
 
 class PyFloatTest : public VmTestBase {};
@@ -92,17 +91,17 @@ TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
   Handle<PyObject> i10(PySmi::FromInt(10));
 
   Handle<PyObject> res;
-  ASSERT_TRUE(PyObject::Equal(f10, i10).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, f10, i10).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::NotEqual(f11, i10).ToHandle(&res));
+  ASSERT_TRUE(PyObject::NotEqual(isolate_, f11, i10).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Less(f10, f11).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Less(isolate_, f10, f11).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::LessEqual(f10, i10).ToHandle(&res));
+  ASSERT_TRUE(PyObject::LessEqual(isolate_, f10, i10).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Greater(f11, f10).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Greater(isolate_, f11, f10).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::GreaterEqual(f10, i10).ToHandle(&res));
+  ASSERT_TRUE(PyObject::GreaterEqual(isolate_, f10, i10).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
 }
 

@@ -61,12 +61,12 @@ TEST_F(GcTest, CopyGcTestForPyString) {
 
   Handle<PyString> str1 = PyString::NewInstance(content);
   Address a1 = (*str1).ptr();
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
   Handle<PyString> str2 = PyString::NewInstance(content);
   Address a2 = (*str1).ptr();
 
   Handle<PyObject> eq_res;
-  ASSERT_TRUE(PyObject::Equal(str1, str2).ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, str1, str2).ToHandle(&eq_res));
   EXPECT_TRUE(IsPyTrue(*eq_res));
 
   EXPECT_EQ(std::strncmp(str1->buffer(), content, str1->length()), 0);
@@ -92,7 +92,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   //////////////////////////////////////////
 
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   //////////////////////////////////////////
 
@@ -108,7 +108,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   EXPECT_NE(a1, (*list1).ptr());
   bool eq = false;
-  ASSERT_TRUE(PyObject::EqualBool(list1, list2).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, list1, list2).To(&eq));
   EXPECT_TRUE(eq);
 }
 
@@ -122,16 +122,20 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   PyList::Append(list1, content);
   PyList::Append(list2, content);
 
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   Handle<PyObject> eq_res;
-  ASSERT_TRUE(PyObject::Equal(list1, list2).ToHandle(&eq_res));
+  ASSERT_TRUE(
+      PyObject::Equal(isolate_, list1, list2).ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(PyObject::Equal(list1->Get(0), list2->Get(0)).ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0), list2->Get(0))
+                  .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(PyObject::Equal(list1->Get(0), content).ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0), content)
+                  .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(PyObject::Equal(list2->Get(0), content).ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list2->Get(0), content)
+                  .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
 }
 
@@ -151,7 +155,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     ASSERT_FALSE(PyDict::Put(dict, key, value).IsNothing());
   }
 
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   EXPECT_NE(dict_addr_before, (*dict).ptr());
   EXPECT_EQ(dict->occupied(), kCount);
@@ -171,7 +175,8 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     ASSERT_FALSE(actual_value.is_null());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(
-        PyObject::Equal(actual_value, expected_value).ToHandle(&eq_res));
+        PyObject::Equal(isolate_, actual_value, expected_value)
+            .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
 }
@@ -183,18 +188,18 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
   // - None/True/False 属于 VM 的全局单例，分配在 meta space 上
   // - 新生代 GC（Scavenge）只搬迁 eden -> survivor 的对象
   //   因此 meta space 的对象地址必须保持稳定
-  Address none_addr_before = Isolate::Current()->py_none_object().ptr();
-  Address true_addr_before = Isolate::Current()->py_true_object().ptr();
-  Address false_addr_before = Isolate::Current()->py_false_object().ptr();
+  Address none_addr_before = isolate_->py_none_object().ptr();
+  Address true_addr_before = isolate_->py_true_object().ptr();
+  Address false_addr_before = isolate_->py_false_object().ptr();
 
   AllocateEphemeralStrings(2000);
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
   AllocateEphemeralListsWithStrings(200, 8);
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
-  EXPECT_EQ(none_addr_before, Isolate::Current()->py_none_object().ptr());
-  EXPECT_EQ(true_addr_before, Isolate::Current()->py_true_object().ptr());
-  EXPECT_EQ(false_addr_before, Isolate::Current()->py_false_object().ptr());
+  EXPECT_EQ(none_addr_before, isolate_->py_none_object().ptr());
+  EXPECT_EQ(true_addr_before, isolate_->py_true_object().ptr());
+  EXPECT_EQ(false_addr_before, isolate_->py_false_object().ptr());
 
   EXPECT_TRUE(IsPyTrue(Isolate::ToPyBoolean(true)));
   EXPECT_TRUE(IsPyFalse(Isolate::ToPyBoolean(false)));
@@ -221,7 +226,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   Address list_addr_before = (*list).ptr();
 
   AllocateEphemeralListsWithStrings(120, 6);
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   // dict/list 作为 GC ROOT（被 Handle 持有）应当在 minor GC 后存活且被搬迁。
   EXPECT_NE(dict_addr_before, (*dict).ptr());
@@ -241,7 +246,8 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
     auto expected = PyString::NewInstance(std::to_string(i).c_str());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(
-        PyObject::Equal(payload_list->Get(i), expected).ToHandle(&eq_res));
+        PyObject::Equal(isolate_, payload_list->Get(i), expected)
+            .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
 }
@@ -262,7 +268,7 @@ TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
   Address addr_before = (*escaped).ptr();
 
   AllocateEphemeralStrings(4000);
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   EXPECT_NE(addr_before, (*escaped).ptr());
   EXPECT_EQ(
@@ -279,7 +285,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   PyList::Append(list, PyString::NewInstance("tail"));
 
   Address before = (*list).ptr();
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   EXPECT_NE(before, (*list).ptr());
   EXPECT_EQ(list->length(), 2);
@@ -303,7 +309,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
     PyList::Append(list, Handle<PyObject>(smi));
   }
 
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;

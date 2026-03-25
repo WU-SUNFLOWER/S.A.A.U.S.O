@@ -84,17 +84,17 @@ TEST_F(PyStringTest, PyObjectComparisonsWork) {
   Handle<PyObject> a2(PyString::NewInstance("abc"));
 
   Handle<PyObject> res;
-  ASSERT_TRUE(PyObject::Less(a, b).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Less(isolate_, a, b).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Greater(b, a).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Greater(isolate_, b, a).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::Equal(a, a2).ToHandle(&res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, a, a2).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::NotEqual(a, b).ToHandle(&res));
+  ASSERT_TRUE(PyObject::NotEqual(isolate_, a, b).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::LessEqual(a, a2).ToHandle(&res));
+  ASSERT_TRUE(PyObject::LessEqual(isolate_, a, a2).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
-  ASSERT_TRUE(PyObject::GreaterEqual(a, a2).ToHandle(&res));
+  ASSERT_TRUE(PyObject::GreaterEqual(isolate_, a, a2).ToHandle(&res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(res)->value());
 }
 
@@ -128,8 +128,7 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
   Handle<PyObject> left(PyString::NewInstance("Hello"));
   Handle<PyObject> right(PyString::NewInstance(" World"));
   Handle<PyObject> result;
-  ASSERT_TRUE(
-      PyObject::Add(isolate_, left, right).ToHandle(&result));
+  ASSERT_TRUE(PyObject::Add(isolate_, left, right).ToHandle(&result));
   ASSERT_TRUE(IsPyString(result));
   EXPECT_TRUE(IsPyStringEqual(Handle<PyString>::cast(result), "Hello World"));
 }
@@ -195,11 +194,12 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
   Handle<PyObject> not_a_string(PySmi::FromInt(1));
 
   Handle<PyObject> contains_res;
-  ASSERT_TRUE(PyObject::Contains(s, pat).ToHandle(&contains_res));
+  ASSERT_TRUE(PyObject::Contains(isolate_, s, pat).ToHandle(&contains_res));
   EXPECT_TRUE(IsPyTrue(*contains_res));
-  ASSERT_TRUE(PyObject::Contains(s, missing).ToHandle(&contains_res));
+  ASSERT_TRUE(PyObject::Contains(isolate_, s, missing).ToHandle(&contains_res));
   EXPECT_TRUE(IsPyFalse(*contains_res));
-  ASSERT_TRUE(PyObject::Contains(s, not_a_string).ToHandle(&contains_res));
+  ASSERT_TRUE(
+      PyObject::Contains(isolate_, s, not_a_string).ToHandle(&contains_res));
   EXPECT_TRUE(IsPyFalse(*contains_res));
 }
 
@@ -233,7 +233,8 @@ TEST_F(PyStringTest, StringUpperMethod) {
   Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs);
   for (auto i = 0; i < attrs_tuple->length(); ++i) {
     bool eq = false;
-    if (PyObject::EqualBool(attr, attrs_tuple->Get(i)).To(&eq) && eq) {
+    if (PyObject::EqualBool(isolate_, attr, attrs_tuple->Get(i)).To(&eq) &&
+        eq) {
       flag = true;
       break;
     }

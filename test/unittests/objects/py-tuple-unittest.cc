@@ -75,9 +75,9 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
 
   Handle<PyObject> obj(t1);
   Handle<PyObject> contains_res;
-  ASSERT_TRUE(PyObject::Contains(obj, s).ToHandle(&contains_res));
+  ASSERT_TRUE(PyObject::Contains(isolate_, obj, s).ToHandle(&contains_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
-  ASSERT_TRUE(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2)))
+  ASSERT_TRUE(PyObject::Contains(isolate_, obj, Handle<PyObject>(PySmi::FromInt(2)))
                   .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
@@ -87,7 +87,7 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
   auto t2 = isolate_->factory()->NewPyTupleWithElements(list2);
 
   Handle<PyObject> equal_res;
-  ASSERT_TRUE(PyObject::Equal(Handle<PyObject>(t1), Handle<PyObject>(t2))
+  ASSERT_TRUE(PyObject::Equal(isolate_, Handle<PyObject>(t1), Handle<PyObject>(t2))
                   .ToHandle(&equal_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(equal_res)->value());
 }

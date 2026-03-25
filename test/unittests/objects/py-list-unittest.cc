@@ -59,14 +59,14 @@ TEST_F(PyListTest, SetRemoveClearWork) {
 
   list->Set(1, a);
   Handle<PyObject> eq;
-  ASSERT_TRUE(PyObject::Equal(list->Get(1), a).ToHandle(&eq));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1), a).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
 
   list->RemoveByIndex(0);
   EXPECT_EQ(list->length(), 2);
-  ASSERT_TRUE(PyObject::Equal(list->Get(0), a).ToHandle(&eq));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(0), a).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
-  ASSERT_TRUE(PyObject::Equal(list->Get(1), c).ToHandle(&eq));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1), c).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
 
   list->Clear();
@@ -182,10 +182,11 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
 
   Handle<PyObject> obj(list);
   Handle<PyObject> contains_res;
-  ASSERT_TRUE(PyObject::Contains(obj, s).ToHandle(&contains_res));
+  ASSERT_TRUE(PyObject::Contains(isolate_, obj, s).ToHandle(&contains_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
-  ASSERT_TRUE(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2)))
-                  .ToHandle(&contains_res));
+  ASSERT_TRUE(
+      PyObject::Contains(isolate_, obj, Handle<PyObject>(PySmi::FromInt(2)))
+          .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::NewInstance(2);
@@ -193,8 +194,9 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
 
   Handle<PyObject> equal_res;
-  ASSERT_TRUE(PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2))
-                  .ToHandle(&equal_res));
+  ASSERT_TRUE(
+      PyObject::Equal(isolate_, Handle<PyObject>(list), Handle<PyObject>(list2))
+          .ToHandle(&equal_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(equal_res)->value());
 }
 
@@ -210,7 +212,7 @@ TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)));
 
   Handle<PyObject> less_res;
-  ASSERT_TRUE(PyObject::Less(Handle<PyObject>(a), Handle<PyObject>(b))
+  ASSERT_TRUE(PyObject::Less(isolate_, Handle<PyObject>(a), Handle<PyObject>(b))
                   .ToHandle(&less_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(less_res)->value());
 }
