@@ -56,9 +56,10 @@ class PyStringKlass : public Klass {
 
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,
                                               Handle<PyObject> subscr);
-  static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Add(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> other);
-  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Virtual_Hash(Isolate* isolate, Handle<PyObject> self);
 
   // GC相关接口
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);

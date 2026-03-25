@@ -13,7 +13,6 @@
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-
 namespace saauso::internal {
 
 class PyListTest : public VmTestBase {};
@@ -117,7 +116,7 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
   Handle<PyObject> lhs(list);
   Handle<PyObject> rhs(list);
   Handle<PyObject> combined;
-  ASSERT_TRUE(PyObject::Add(lhs, rhs).ToHandle(&combined));
+  ASSERT_TRUE(PyObject::Add(isolate_, lhs, rhs).ToHandle(&combined));
   ASSERT_TRUE(IsPyList(combined));
   auto combined_list = Handle<PyList>::cast(combined);
   EXPECT_EQ(combined_list->length(), 4);
@@ -134,7 +133,7 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
   Handle<PyObject> lhs(list);
   Handle<PyObject> coeff(PySmi::FromInt(3));
   Handle<PyObject> repeated;
-  ASSERT_TRUE(PyObject::Mul(lhs, coeff).ToHandle(&repeated));
+  ASSERT_TRUE(PyObject::Mul(isolate_, lhs, coeff).ToHandle(&repeated));
   ASSERT_TRUE(IsPyList(repeated));
   auto repeated_list = Handle<PyList>::cast(repeated);
   ASSERT_EQ(repeated_list->length(), 6);
@@ -185,9 +184,8 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   Handle<PyObject> contains_res;
   ASSERT_TRUE(PyObject::Contains(obj, s).ToHandle(&contains_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
-  ASSERT_TRUE(
-      PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2)))
-          .ToHandle(&contains_res));
+  ASSERT_TRUE(PyObject::Contains(obj, Handle<PyObject>(PySmi::FromInt(2)))
+                  .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::NewInstance(2);
@@ -195,9 +193,8 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
 
   Handle<PyObject> equal_res;
-  ASSERT_TRUE(
-      PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2))
-          .ToHandle(&equal_res));
+  ASSERT_TRUE(PyObject::Equal(Handle<PyObject>(list), Handle<PyObject>(list2))
+                  .ToHandle(&equal_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(equal_res)->value());
 }
 
@@ -213,9 +210,8 @@ TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)));
 
   Handle<PyObject> less_res;
-  ASSERT_TRUE(
-      PyObject::Less(Handle<PyObject>(a), Handle<PyObject>(b))
-          .ToHandle(&less_res));
+  ASSERT_TRUE(PyObject::Less(Handle<PyObject>(a), Handle<PyObject>(b))
+                  .ToHandle(&less_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(less_res)->value());
 }
 

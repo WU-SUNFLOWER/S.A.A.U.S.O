@@ -53,17 +53,23 @@ class PyObject : public Object {
   static MaybeHandle<PyObject> Repr(Isolate* isolate, Handle<PyObject> self);
   static MaybeHandle<PyObject> Str(Isolate* isolate, Handle<PyObject> self);
 
-  static MaybeHandle<PyObject> Add(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Add(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
-  static MaybeHandle<PyObject> Sub(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Sub(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
-  static MaybeHandle<PyObject> Mul(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Mul(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
-  static MaybeHandle<PyObject> Div(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Div(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
-  static MaybeHandle<PyObject> FloorDiv(Handle<PyObject> self,
+  static MaybeHandle<PyObject> FloorDiv(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other);
-  static MaybeHandle<PyObject> Mod(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Mod(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
   static MaybeHandle<PyObject> Len(Handle<PyObject> self);
@@ -128,7 +134,7 @@ class PyObject : public Object {
   static MaybeHandle<PyObject> DeletSubscr(Handle<PyObject> self,
                                            Handle<PyObject> subscr_name);
 
-  static Maybe<uint64_t> Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Hash(Isolate* isolate, Handle<PyObject> self);
 
   static MaybeHandle<PyObject> Call(Isolate* isolate,
                                     Handle<PyObject> self,

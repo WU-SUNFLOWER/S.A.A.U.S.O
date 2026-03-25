@@ -35,93 +35,101 @@ void ThrowCompareUnsupported(Handle<PyObject> self,
 }
 }  // namespace
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Add(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::Add(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(add))
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
+                                          Handle<PyDict>::null(), ST(add))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Sub(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::Sub(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(sub))
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
+                                          Handle<PyDict>::null(), ST(sub))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Mul(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::Mul(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(mul))
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
+                                          Handle<PyDict>::null(), ST(mul))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Div(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::Div(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(div))
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
+                                          Handle<PyDict>::null(), ST(div))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::FloorDiv(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::FloorDiv(Isolate* isolate,
+                                                       Handle<PyObject> self,
                                                        Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(floor_div))
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
+                                          Handle<PyDict>::null(), ST(floor_div))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;
 }
 
-MaybeHandle<PyObject> KlassVtableTrampolines::Mod(Handle<PyObject> self,
+MaybeHandle<PyObject> KlassVtableTrampolines::Mod(Isolate* isolate,
+                                                  Handle<PyObject> self,
                                                   Handle<PyObject> other) {
   Handle<PyTuple> args = PyTuple::NewInstance(1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(mod))
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self, args,
+                                          Handle<PyDict>::null(), ST(mod))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
   return result;
 }
 
-Maybe<uint64_t> KlassVtableTrampolines::Hash(Handle<PyObject> self) {
+Maybe<uint64_t> KlassVtableTrampolines::Hash(Isolate* isolate,
+                                             Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self,
+                                          Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(hash))
            .ToHandle(&result)) {
     return kNullMaybe;
@@ -155,8 +163,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::SetAttr(
   args->SetInternal(1, property_value);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(setattr))
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+                                          Handle<PyDict>::null(), ST(setattr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -169,8 +177,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Subscr(Handle<PyObject> self,
   args->SetInternal(0, subscr);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(subscr))
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+                                          Handle<PyDict>::null(), ST(subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
@@ -187,7 +195,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::StoreSubscr(
   args->SetInternal(1, value);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+                                          Handle<PyDict>::null(),
                                           ST(store_subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -203,7 +212,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::DeleteSubscr(
   args->SetInternal(0, subscr);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+                                          Handle<PyDict>::null(),
                                           ST(del_subscr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -373,8 +383,8 @@ Maybe<bool> KlassVtableTrampolines::Contains(Handle<PyObject> self,
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, args, Handle<PyDict>::null(),
-                                          ST(contains))
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self, args,
+                                          Handle<PyDict>::null(), ST(contains))
            .ToHandle(&result)) {
     return kNullMaybe;
   }
@@ -383,7 +393,8 @@ Maybe<bool> KlassVtableTrampolines::Contains(Handle<PyObject> self,
 
 MaybeHandle<PyObject> KlassVtableTrampolines::Iter(Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+                                          Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(iter))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -393,7 +404,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Iter(Handle<PyObject> self) {
 
 MaybeHandle<PyObject> KlassVtableTrampolines::Next(Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+                                          Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(next))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -424,7 +436,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Call(Isolate* isolate,
 
 MaybeHandle<PyObject> KlassVtableTrampolines::Len(Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+                                          Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(len))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -435,7 +448,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Len(Handle<PyObject> self) {
 MaybeHandle<PyObject> KlassVtableTrampolines::Repr(Isolate* isolate,
                                                    Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+                                          Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(repr))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -453,7 +467,8 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Repr(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Str(Isolate* isolate,
                                                   Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(self, Handle<PyTuple>::null(),
+  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+                                          Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(str))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
@@ -494,9 +509,9 @@ MaybeHandle<PyObject> KlassVtableTrampolines::InitInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(instance, Handle<PyTuple>::cast(args),
-                                          Handle<PyDict>::cast(kwargs),
-                                          ST(init_instance))
+  if (!Runtime_InvokeMagicOperationMethod(
+           isolate, instance, Handle<PyTuple>::cast(args),
+           Handle<PyDict>::cast(kwargs), ST(init_instance))
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }

@@ -36,11 +36,11 @@ TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
   Handle<PyObject> b(PyFloat::NewInstance(4.0));
 
   Handle<PyObject> add, sub, mul, div, mod;
-  ASSERT_TRUE(PyObject::Add(a, b).ToHandle(&add));
-  ASSERT_TRUE(PyObject::Sub(a, b).ToHandle(&sub));
-  ASSERT_TRUE(PyObject::Mul(a, b).ToHandle(&mul));
-  ASSERT_TRUE(PyObject::Div(a, b).ToHandle(&div));
-  ASSERT_TRUE(PyObject::Mod(a, b).ToHandle(&mod));
+  ASSERT_TRUE(PyObject::Add(isolate_, a, b).ToHandle(&add));
+  ASSERT_TRUE(PyObject::Sub(isolate_, a, b).ToHandle(&sub));
+  ASSERT_TRUE(PyObject::Mul(isolate_, a, b).ToHandle(&mul));
+  ASSERT_TRUE(PyObject::Div(isolate_, a, b).ToHandle(&div));
+  ASSERT_TRUE(PyObject::Mod(isolate_, a, b).ToHandle(&mod));
 
   ASSERT_TRUE(IsPyFloat(add));
   ASSERT_TRUE(IsPyFloat(sub));
@@ -62,12 +62,12 @@ TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
   Handle<PyObject> i(PySmi::FromInt(2));
 
   Handle<PyObject> r1, r2, r3, r4, r5, r6;
-  ASSERT_TRUE(PyObject::Add(f, i).ToHandle(&r1));
-  ASSERT_TRUE(PyObject::Sub(f, i).ToHandle(&r2));
-  ASSERT_TRUE(PyObject::Mul(f, i).ToHandle(&r3));
-  ASSERT_TRUE(PyObject::Div(f, i).ToHandle(&r4));
-  ASSERT_TRUE(PyObject::Add(i, f).ToHandle(&r5));
-  ASSERT_TRUE(PyObject::Mul(i, f).ToHandle(&r6));
+  ASSERT_TRUE(PyObject::Add(isolate_, f, i).ToHandle(&r1));
+  ASSERT_TRUE(PyObject::Sub(isolate_, f, i).ToHandle(&r2));
+  ASSERT_TRUE(PyObject::Mul(isolate_, f, i).ToHandle(&r3));
+  ASSERT_TRUE(PyObject::Div(isolate_, f, i).ToHandle(&r4));
+  ASSERT_TRUE(PyObject::Add(isolate_, i, f).ToHandle(&r5));
+  ASSERT_TRUE(PyObject::Mul(isolate_, i, f).ToHandle(&r6));
 
   ASSERT_TRUE(IsPyFloat(r1));
   ASSERT_TRUE(IsPyFloat(r2));

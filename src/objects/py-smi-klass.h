@@ -36,15 +36,26 @@ class PySmiKlass : public Klass {
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
 
-  static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject>, Handle<PyObject>);
-  static MaybeHandle<PyObject> Virtual_Sub(Handle<PyObject>, Handle<PyObject>);
-  static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject>, Handle<PyObject>);
-  static MaybeHandle<PyObject> Virtual_Div(Handle<PyObject>, Handle<PyObject>);
-  static MaybeHandle<PyObject> Virtual_FloorDiv(Handle<PyObject>,
+  static MaybeHandle<PyObject> Virtual_Add(Isolate*,
+                                           Handle<PyObject>,
+                                           Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Sub(Isolate*,
+                                           Handle<PyObject>,
+                                           Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Mul(Isolate*,
+                                           Handle<PyObject>,
+                                           Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Div(Isolate*,
+                                           Handle<PyObject>,
+                                           Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_FloorDiv(Isolate*,
+                                                Handle<PyObject>,
                                                 Handle<PyObject>);
-  static MaybeHandle<PyObject> Virtual_Mod(Handle<PyObject>, Handle<PyObject>);
+  static MaybeHandle<PyObject> Virtual_Mod(Isolate*,
+                                           Handle<PyObject>,
+                                           Handle<PyObject>);
 
-  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Virtual_Hash(Isolate* isolate, Handle<PyObject> self);
 
   static Maybe<bool> Virtual_Greater(Handle<PyObject>, Handle<PyObject>);
   static Maybe<bool> Virtual_Less(Handle<PyObject>, Handle<PyObject>);

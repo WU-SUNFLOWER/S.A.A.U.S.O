@@ -211,12 +211,12 @@ MaybeHandle<PyObject> Runtime_GetPropertyInInstanceTypeMro(
 }
 
 MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
+    Isolate* isolate,
     Handle<PyObject> object,
     Handle<PyTuple> args,
     Handle<PyDict> kwargs,
     Handle<PyObject> func_name) {
   EscapableHandleScope scope;
-  auto* isolate = Isolate::Current();
 
   Handle<PyObject> method;
   ASSIGN_RETURN_ON_EXCEPTION(

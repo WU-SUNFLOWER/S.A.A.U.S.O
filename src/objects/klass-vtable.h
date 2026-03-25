@@ -48,6 +48,9 @@ using VirtualFuncType_1_3_SAFE_CBOOL = bool (*)(OopHandle,
 using MaybeOopHandle = MaybeHandle<PyObject>;
 using VirtualFuncType_Maybe_1_1 = MaybeOopHandle (*)(OopHandle);
 using VirtualFuncType_Maybe_1_2 = MaybeOopHandle (*)(OopHandle, OopHandle);
+using VirtualFuncType_Maybe_2_2 = MaybeOopHandle (*)(Isolate*,
+                                                     OopHandle,
+                                                     OopHandle);
 using VirtualFuncType_Maybe_0_3 = MaybeOopHandle (*)(OopHandle,
                                                      OopHandle,
                                                      OopHandle);
@@ -75,6 +78,8 @@ using VirtualFuncType_MaybeGetAttr = Maybe<bool> (*)(OopHandle,
                                                      OopHandle&);
 // Fallible slot：返回 Maybe<uint64_t>
 using VirtualFuncType_MaybeHash = Maybe<uint64_t> (*)(OopHandle);
+using VirtualFuncType_MaybeHashWithIsolate = Maybe<uint64_t> (*)(Isolate*,
+                                                                  OopHandle);
 
 using VirtualFuncType_InstanceSize = size_t (*)(Oop);
 
@@ -86,13 +91,13 @@ using VirtualFuncType_Maybe_Str = MaybeOopHandle (*)(Isolate*, OopHandle);
 
 #define KLASS_VTABLE_SLOT_EXPOSED(V)                                           \
   /* add/sub/mul/div/floor_div/mod/hash：可能抛 TypeError 等*/                 \
-  V(VirtualFuncType_Maybe_1_2, add, "__add__", Add)                            \
-  V(VirtualFuncType_Maybe_1_2, sub, "__sub__", Sub)                            \
-  V(VirtualFuncType_Maybe_1_2, mul, "__mul__", Mul)                            \
-  V(VirtualFuncType_Maybe_1_2, div, "__truediv__", Div)                        \
-  V(VirtualFuncType_Maybe_1_2, floor_div, "__floordiv__", FloorDiv)            \
-  V(VirtualFuncType_Maybe_1_2, mod, "__mod__", Mod)                            \
-  V(VirtualFuncType_MaybeHash, hash, "__hash__", Hash)                         \
+  V(VirtualFuncType_Maybe_2_2, add, "__add__", Add)                            \
+  V(VirtualFuncType_Maybe_2_2, sub, "__sub__", Sub)                            \
+  V(VirtualFuncType_Maybe_2_2, mul, "__mul__", Mul)                            \
+  V(VirtualFuncType_Maybe_2_2, div, "__truediv__", Div)                        \
+  V(VirtualFuncType_Maybe_2_2, floor_div, "__floordiv__", FloorDiv)            \
+  V(VirtualFuncType_Maybe_2_2, mod, "__mod__", Mod)                            \
+  V(VirtualFuncType_MaybeHashWithIsolate, hash, "__hash__", Hash)              \
                                                                                \
   /* setattr/store_subscr/del_subscr：成功返回 None，失败返回空 MaybeHandle */ \
   V(VirtualFuncType_MaybeGetAttr, getattr, "__getattr__", GetAttr)             \
