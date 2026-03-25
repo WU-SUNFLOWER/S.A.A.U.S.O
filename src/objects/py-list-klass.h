@@ -42,9 +42,11 @@ class PyListKlass : public Klass {
                                             Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
-  static MaybeHandle<PyObject> Virtual_Add(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Add(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> other);
-  static MaybeHandle<PyObject> Virtual_Mul(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_Mul(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> coeff);
 
   static MaybeHandle<PyObject> Virtual_Subscr(Handle<PyObject> self,

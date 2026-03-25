@@ -151,7 +151,8 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
   return handle(Isolate::Current()->py_none_object());
 }
 
-Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Isolate* isolate,
+                                                Handle<PyObject> self) {
   return Maybe<uint64_t>(static_cast<uint64_t>((*self).ptr()));
 }
 

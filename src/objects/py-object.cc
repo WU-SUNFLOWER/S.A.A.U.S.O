@@ -120,7 +120,8 @@ MaybeHandle<PyObject> PyObject::Str(Isolate* isolate, Handle<PyObject> self) {
 }
 
 // python virtual function
-MaybeHandle<PyObject> PyObject::Add(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Add(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -129,10 +130,11 @@ MaybeHandle<PyObject> PyObject::Add(Handle<PyObject> self,
   }
 
   assert(GetKlass(*self)->vtable().add_);
-  return GetKlass(*self)->vtable().add_(self, other);
+  return GetKlass(*self)->vtable().add_(isolate, self, other);
 }
 
-MaybeHandle<PyObject> PyObject::Sub(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Sub(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -141,10 +143,11 @@ MaybeHandle<PyObject> PyObject::Sub(Handle<PyObject> self,
   }
 
   assert(GetKlass(*self)->vtable().sub_);
-  return GetKlass(*self)->vtable().sub_(self, other);
+  return GetKlass(*self)->vtable().sub_(isolate, self, other);
 }
 
-MaybeHandle<PyObject> PyObject::Mul(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Mul(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
@@ -153,16 +156,18 @@ MaybeHandle<PyObject> PyObject::Mul(Handle<PyObject> self,
   }
 
   assert(GetKlass(*self)->vtable().mul_);
-  return GetKlass(*self)->vtable().mul_(self, other);
+  return GetKlass(*self)->vtable().mul_(isolate, self, other);
 }
 
-MaybeHandle<PyObject> PyObject::Div(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Div(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> other) {
   assert(GetKlass(*self)->vtable().div_);
-  return GetKlass(*self)->vtable().div_(self, other);
+  return GetKlass(*self)->vtable().div_(isolate, self, other);
 }
 
-MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::FloorDiv(Isolate* isolate,
+                                         Handle<PyObject> self,
                                          Handle<PyObject> other) {
   int64_t other_value;
   // 内联Fast Path：两个Smi之间操作
@@ -182,10 +187,11 @@ MaybeHandle<PyObject> PyObject::FloorDiv(Handle<PyObject> self,
                         self_name->buffer(), other_name->buffer());
     return kNullMaybeHandle;
   }
-  return floor_div(self, other);
+  return floor_div(isolate, self, other);
 }
 
-MaybeHandle<PyObject> PyObject::Mod(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::Mod(Isolate* isolate,
+                                    Handle<PyObject> self,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(self) && IsPySmi(other)) {
@@ -195,7 +201,7 @@ MaybeHandle<PyObject> PyObject::Mod(Handle<PyObject> self,
   }
 
   assert(GetKlass(*self)->vtable().mod_);
-  return GetKlass(*self)->vtable().mod_(self, other);
+  return GetKlass(*self)->vtable().mod_(isolate, self, other);
 }
 
 MaybeHandle<PyObject> PyObject::Len(Handle<PyObject> self) {
@@ -427,9 +433,9 @@ MaybeHandle<PyObject> PyObject::DeletSubscr(Handle<PyObject> self,
   return GetKlass(*self)->vtable().del_subscr_(self, subscr_name);
 }
 
-Maybe<uint64_t> PyObject::Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyObject::Hash(Isolate* isolate, Handle<PyObject> self) {
   assert(GetKlass(*self)->vtable().hash_);
-  return GetKlass(*self)->vtable().hash_(self);
+  return GetKlass(*self)->vtable().hash_(isolate, self);
 }
 
 MaybeHandle<PyObject> PyObject::Call(Isolate* isolate,

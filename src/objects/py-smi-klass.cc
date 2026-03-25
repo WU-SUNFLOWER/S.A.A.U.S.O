@@ -113,7 +113,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Isolate* isolate,
   return Virtual_Repr(isolate, self);
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
+MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -127,7 +128,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
+MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -141,7 +143,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
+MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -155,7 +158,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
+MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -175,7 +179,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
+MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
+                                                   Handle<PyObject> self,
                                                    Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -203,7 +208,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
+MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> other) {
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
@@ -218,7 +224,8 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Handle<PyObject> self,
   return kNullMaybeHandle;
 }
 
-Maybe<uint64_t> PySmiKlass::Virtual_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PySmiKlass::Virtual_Hash(Isolate* isolate,
+                                         Handle<PyObject> self) {
   return Maybe<uint64_t>(PySmi::cast(*self).value());
 }
 

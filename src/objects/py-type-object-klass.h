@@ -36,7 +36,7 @@ class PyTypeObjectKlass : public Klass {
                                                Handle<PyObject> prop_name,
                                                Handle<PyObject> prop_value);
 
-  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Virtual_Hash(Isolate* isolate, Handle<PyObject> self);
   static Maybe<bool> Virtual_Equal(Handle<PyObject> self,
                                    Handle<PyObject> other);
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,

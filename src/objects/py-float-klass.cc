@@ -190,7 +190,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Isolate* isolate,
   return Virtual_Repr(isolate, self);
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -198,7 +199,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Handle<PyObject> self,
   return PyFloat::NewInstance(self_value + other_value);
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Sub(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -206,7 +208,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Sub(Handle<PyObject> self,
   return PyFloat::NewInstance(self_value - other_value);
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Mul(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -214,7 +217,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Mul(Handle<PyObject> self,
   return PyFloat::NewInstance(self_value * other_value);
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Div(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -227,7 +231,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Div(Handle<PyObject> self,
   return PyFloat::NewInstance(self_value / other_value);
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_FloorDiv(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_FloorDiv(Isolate* isolate,
+                                                     Handle<PyObject> self,
                                                      Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
@@ -240,7 +245,8 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_FloorDiv(Handle<PyObject> self,
   return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
 }
 
-MaybeHandle<PyObject> PyFloatKlass::Virtual_Mod(Handle<PyObject> self,
+MaybeHandle<PyObject> PyFloatKlass::Virtual_Mod(Isolate* isolate,
+                                                Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();

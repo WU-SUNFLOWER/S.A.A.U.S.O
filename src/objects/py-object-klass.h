@@ -20,7 +20,7 @@ class PyObjectKlass : public Klass {
   Maybe<void> Initialize(Isolate* isolate);
   void Finalize(Isolate* isolate);
 
-  static Maybe<uint64_t> Generic_Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Generic_Hash(Isolate* isolate, Handle<PyObject> self);
 
   static Maybe<bool> Generic_GetAttr(Handle<PyObject> self,
                                      Handle<PyObject> prop_name,

@@ -41,7 +41,7 @@ Maybe<int64_t> FindSlot(DictT dict, Tagged<PyObject> key, bool* found) {
   Handle<PyObject> key_handle(key);
 
   uint64_t hash = 0;
-  if (!PyObject::Hash(key_handle).To(&hash)) {
+  if (!PyObject::Hash(Isolate::Current(), key_handle).To(&hash)) {
     return kNullMaybe;
   }
 
@@ -82,7 +82,7 @@ Maybe<bool> RehashInto(DictT dict,
     }
 
     uint64_t hash = 0;
-    if (!PyObject::Hash(handle(key)).To(&hash)) {
+    if (!PyObject::Hash(Isolate::Current(), handle(key)).To(&hash)) {
       return kNullMaybe;
     }
 

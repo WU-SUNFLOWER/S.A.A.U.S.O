@@ -12,25 +12,31 @@ namespace saauso::internal {
 
 class KlassVtableTrampolines : public AllStatic {
  public:
-  static MaybeHandle<PyObject> Add(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Add(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Sub(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Sub(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Mul(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Mul(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Div(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Div(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> FloorDiv(Handle<PyObject> self,
+  static MaybeHandle<PyObject> FloorDiv(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> other);
 
-  static MaybeHandle<PyObject> Mod(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Mod(Isolate* isolate,
+                                   Handle<PyObject> self,
                                    Handle<PyObject> other);
 
-  static Maybe<uint64_t> Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Hash(Isolate* isolate, Handle<PyObject> self);
 
   static Maybe<bool> GetAttr(Handle<PyObject> self,
                              Handle<PyObject> prop_name,

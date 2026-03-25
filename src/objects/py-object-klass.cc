@@ -87,7 +87,8 @@ void PyObjectKlass::Finalize(Isolate* isolate) {
 }
 
 // static
-Maybe<uint64_t> PyObjectKlass::Generic_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyObjectKlass::Generic_Hash(Isolate* isolate,
+                                            Handle<PyObject> self) {
   Runtime_ThrowErrorf(ExceptionType::kTypeError, "unhashable type: '%s'",
                       PyObject::GetKlass(self)->name()->buffer());
   return kNullMaybe;

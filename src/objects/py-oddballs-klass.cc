@@ -123,7 +123,8 @@ Maybe<bool> PyBooleanKlass::Virtual_NotEqual(Handle<PyObject> self,
 }
 
 // static
-Maybe<uint64_t> PyBooleanKlass::Virtual_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyBooleanKlass::Virtual_Hash(Isolate* isolate,
+                                             Handle<PyObject> self) {
   return Maybe<uint64_t>(Handle<PyBoolean>::cast(self)->value());
 }
 
@@ -209,7 +210,8 @@ Maybe<bool> PyNoneKlass::Virtual_NotEqual(Handle<PyObject> self,
 }
 
 // static
-Maybe<uint64_t> PyNoneKlass::Virtual_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyNoneKlass::Virtual_Hash(Isolate* isolate,
+                                          Handle<PyObject> self) {
   assert(IsPyNone(self));
   return Maybe<uint64_t>((*self).ptr());  // None使用自己的地址作为哈希值
 }

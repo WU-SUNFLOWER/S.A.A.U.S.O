@@ -191,7 +191,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Str(Isolate* isolate,
   return Virtual_Repr(isolate, self);
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
+MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> other) {
   auto list1 = Handle<PyList>::cast(self);
   if (!IsPyList(other)) {
@@ -214,7 +215,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Handle<PyObject> self,
   return new_result;
 }
 
-MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Handle<PyObject> self,
+MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> coeff) {
   if (!IsPySmi(coeff)) {
     Runtime_ThrowErrorf(ExceptionType::kTypeError,

@@ -32,7 +32,7 @@ class PyBooleanKlass : public Klass {
                                    Handle<PyObject> other);
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Virtual_Hash(Isolate* isolate, Handle<PyObject> self);
 };
 
 class PyNoneKlass : public Klass {
@@ -53,7 +53,7 @@ class PyNoneKlass : public Klass {
                                    Handle<PyObject> other);
   static Maybe<bool> Virtual_NotEqual(Handle<PyObject> self,
                                       Handle<PyObject> other);
-  static Maybe<uint64_t> Virtual_Hash(Handle<PyObject> self);
+  static Maybe<uint64_t> Virtual_Hash(Isolate* isolate, Handle<PyObject> self);
 };
 
 }  // namespace saauso::internal

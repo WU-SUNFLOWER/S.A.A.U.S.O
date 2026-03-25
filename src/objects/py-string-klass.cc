@@ -308,7 +308,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Handle<PyObject> self,
                                static_cast<int64_t>(1));
 }
 
-MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
+MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Isolate* isolate,
+                                                 Handle<PyObject> self,
                                                  Handle<PyObject> other) {
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
@@ -323,7 +324,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Handle<PyObject> self,
   return PyString::Append(s1, s2);
 }
 
-Maybe<uint64_t> PyStringKlass::Virtual_Hash(Handle<PyObject> self) {
+Maybe<uint64_t> PyStringKlass::Virtual_Hash(Isolate* isolate,
+                                            Handle<PyObject> self) {
   return Maybe<uint64_t>(Handle<PyString>::cast(self)->GetHash());
 }
 
