@@ -233,9 +233,8 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (auto i = 0; i < keys->length(); ++i) {
     for (auto j = i + 1; j < keys->length(); ++j) {
       Handle<PyObject> eq_res;
-      ASSERT_TRUE(
-          PyObject::Equal(isolate_, keys->Get(i), keys->Get(j))
-              .ToHandle(&eq_res));
+      ASSERT_TRUE(PyObject::Equal(isolate_, keys->Get(i), keys->Get(j))
+                      .ToHandle(&eq_res));
       EXPECT_FALSE(Handle<PyBoolean>::cast(eq_res)->value());
     }
   }
@@ -268,12 +267,12 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
   }
 
   Handle<PyObject> iterator;
-  ASSERT_TRUE(PyObject::Iter(dict).ToHandle(&iterator));
+  ASSERT_TRUE(PyObject::Iter(isolate_, dict).ToHandle(&iterator));
   ASSERT_TRUE(IsPyDictKeyIterator(iterator));
 
   std::set<int> seen;
   Handle<PyObject> key;
-  while (PyObject::Next(iterator).ToHandle(&key)) {
+  while (PyObject::Next(isolate_, iterator).ToHandle(&key)) {
     int v = PySmi::ToInt(Handle<PySmi>::cast(key));
     seen.insert(v);
   }
