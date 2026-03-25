@@ -329,7 +329,8 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
     Handle<PyObject> result;
-    ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::Subscr(object, subscr));
+    ASSIGN_GOTO_ON_EXCEPTION(result,
+                             PyObject::Subscr(isolate_, object, subscr));
     PUSH(result);
   })
 
@@ -337,13 +338,13 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
     Handle<PyObject> value = POP();
-    GOTO_ON_EXCEPTION(PyObject::StoreSubscr(object, subscr, value));
+    GOTO_ON_EXCEPTION(PyObject::StoreSubscr(isolate_, object, subscr, value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteSubscr, {
     Handle<PyObject> subscr = POP();
     Handle<PyObject> object = POP();
-    GOTO_ON_EXCEPTION(PyObject::DeletSubscr(object, subscr));
+    GOTO_ON_EXCEPTION(PyObject::DeletSubscr(isolate_, object, subscr));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(GetIter, {
