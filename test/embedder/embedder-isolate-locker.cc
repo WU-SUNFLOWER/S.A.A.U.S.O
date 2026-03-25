@@ -63,4 +63,52 @@ TEST(IsolateLocker, LockerBlocksOtherThreadUntilRelease) {
   Saauso::Dispose();
 }
 
+TEST(IsolateLocker, IsLockedReflectsCurrentThreadState) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  EXPECT_FALSE(Locker::IsLocked(isolate));
+  {
+    Locker locker(isolate);
+    EXPECT_TRUE(Locker::IsLocked(isolate));
+    {
+      // 同一个线程允许对特定的 isolate 实例重复加锁，即允许重入。
+      Locker reentrant(isolate);
+      EXPECT_TRUE(Locker::IsLocked(isolate));
+    }
+    EXPECT_TRUE(Locker::IsLocked(isolate));
+  }
+  EXPECT_FALSE(Locker::IsLocked(isolate));
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(IsolateLockerDeathTest, DestroyLockerFromAnotherThreadShouldDie) {
+  ASSERT_DEATH_IF_SUPPORTED(
+      {
+        Saauso::Initialize();
+        Isolate* isolate = Isolate::New();
+        Locker* locker = new Locker(isolate);
+        // 加锁解锁必须发生在同一个线程，否则直接崩溃！
+        std::thread bad_thread([&] { delete locker; });
+        bad_thread.join();
+      },
+      "");
+}
+
+TEST(IsolateLockerDeathTest, UnlockWhileStillEnteredShouldDie) {
+  ASSERT_DEATH_IF_SUPPORTED(
+      {
+        Saauso::Initialize();
+        Isolate* isolate = Isolate::New();
+        Locker* locker = new Locker(isolate);
+        Isolate::Scope isolate_scope(isolate);
+        // 解锁之前必须先退出 isolate，否则直接崩溃！
+        delete locker;
+      },
+      "");
+}
+
 }  // namespace saauso
