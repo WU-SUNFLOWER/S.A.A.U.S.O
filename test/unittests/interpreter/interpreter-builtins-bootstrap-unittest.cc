@@ -124,7 +124,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   // 第二层校验：校验 BaseException 的 klass 指向正确
   auto base_exception_type = Tagged<PyTypeObject>::cast(base_exception_value);
   auto base_exception_klass = base_exception_type->own_klass();
-  EXPECT_EQ(base_exception_klass, PyBaseExceptionKlass::GetInstance());
+  EXPECT_EQ(base_exception_klass, PyBaseExceptionKlass::GetInstance(isolate_));
 
   // 第三层校验：
   // 直接检查 BaseException 的类字典，确认关键魔法方法入口已存在。

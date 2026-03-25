@@ -225,7 +225,8 @@ TEST_F(PyStringTest, StringUpperMethod) {
   Handle<PyObject> s(PyString::NewInstance("Hello World"));
   Handle<PyObject> attr(PyString::NewInstance("upper"));
 
-  Handle<PyDict> attrs = PyStringKlass::GetInstance()->klass_properties();
+  Handle<PyDict> attrs =
+      PyStringKlass::GetInstance(isolate_)->klass_properties();
 
   bool flag = false;
   Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs);
@@ -240,9 +241,10 @@ TEST_F(PyStringTest, StringUpperMethod) {
   EXPECT_TRUE(flag);
 
   bool contains = false;
-  ASSERT_TRUE(
-      PyStringKlass::GetInstance()->klass_properties()->ContainsKey(attr).To(
-          &contains));
+  ASSERT_TRUE(PyStringKlass::GetInstance(isolate_)
+                  ->klass_properties()
+                  ->ContainsKey(attr)
+                  .To(&contains));
   EXPECT_TRUE(contains);
 
   Handle<PyObject> upper_method;
