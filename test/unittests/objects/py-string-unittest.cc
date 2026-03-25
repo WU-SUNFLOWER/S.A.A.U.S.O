@@ -140,7 +140,7 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   Handle<PyObject> index(PySmi::FromInt(1));
 
   Handle<PyObject> result;
-  ASSERT_TRUE(PyObject::Subscr(s, index).ToHandle(&result));
+  ASSERT_TRUE(PyObject::Subscr(isolate_, s, index).ToHandle(&result));
   ASSERT_TRUE(IsPyString(result));
 
   auto char_str = Handle<PyString>::cast(result);

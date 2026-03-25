@@ -156,17 +156,17 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   Handle<PyObject> index1(PySmi::FromInt(1));
 
   Handle<PyObject> v0;
-  ASSERT_TRUE(PyObject::Subscr(obj, index0).ToHandle(&v0));
+  ASSERT_TRUE(PyObject::Subscr(isolate_, obj, index0).ToHandle(&v0));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
 
-  ASSERT_FALSE(
-      PyObject::StoreSubscr(obj, index1, Handle<PyObject>(PySmi::FromInt(42)))
-          .IsEmpty());
+  ASSERT_FALSE(PyObject::StoreSubscr(isolate_, obj, index1,
+                                     Handle<PyObject>(PySmi::FromInt(42)))
+                   .IsEmpty());
   Handle<PyObject> v1;
-  ASSERT_TRUE(PyObject::Subscr(obj, index1).ToHandle(&v1));
+  ASSERT_TRUE(PyObject::Subscr(isolate_, obj, index1).ToHandle(&v1));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v1)), 42);
 
-  ASSERT_FALSE(PyObject::DeletSubscr(obj, index0).IsEmpty());
+  ASSERT_FALSE(PyObject::DeletSubscr(isolate_, obj, index0).IsEmpty());
   EXPECT_EQ(Handle<PyList>::cast(obj)->length(), 1);
   EXPECT_EQ(
       PySmi::ToInt(Handle<PySmi>::cast(Handle<PyList>::cast(obj)->Get(0))), 42);
