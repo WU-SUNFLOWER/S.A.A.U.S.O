@@ -54,13 +54,13 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
 
-  return PyObjectKlass::GetInstance()->NewInstance(
+  return PyObjectKlass::GetInstance(isolate)->NewInstance(
       isolate, Handle<PyTypeObject>::cast(type_object), new_args, kwargs);
 }
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Init) {
-  return PyObjectKlass::GetInstance()->InitInstance(isolate, self, args,
-                                                    kwargs);
+  return PyObjectKlass::GetInstance(isolate)->InitInstance(isolate, self, args,
+                                                           kwargs);
 }
 
 BUILTIN_METHOD(PyObjectBuiltinMethods, Repr) {

@@ -73,7 +73,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
 
-  return PyListKlass::GetInstance()->NewInstance(
+  return PyListKlass::GetInstance(isolate)->NewInstance(
       isolate, Handle<PyTypeObject>::cast(type_object), new_args, kwargs);
 }
 
@@ -94,7 +94,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Init) {
-  return PyListKlass::GetInstance()->InitInstance(isolate, self, args, kwargs);
+  return PyListKlass::GetInstance(isolate)->InitInstance(isolate, self, args,
+                                                         kwargs);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Repr) {

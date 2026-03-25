@@ -28,8 +28,8 @@ Maybe<void> BaseExceptionMethods::Install(Isolate* isolate,
 }
 
 BUILTIN_METHOD(BaseExceptionMethods, Init) {
-  return PyBaseExceptionKlass::GetInstance()->InitInstance(isolate, self, args,
-                                                           kwargs);
+  return PyBaseExceptionKlass::GetInstance(isolate)->InitInstance(isolate, self,
+                                                                  args, kwargs);
 }
 
 BUILTIN_METHOD(BaseExceptionMethods, Str) {
