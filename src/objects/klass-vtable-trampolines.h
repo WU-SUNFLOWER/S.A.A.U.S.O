@@ -38,12 +38,14 @@ class KlassVtableTrampolines : public AllStatic {
 
   static Maybe<uint64_t> Hash(Isolate* isolate, Handle<PyObject> self);
 
-  static Maybe<bool> GetAttr(Handle<PyObject> self,
+  static Maybe<bool> GetAttr(Isolate* isolate,
+                             Handle<PyObject> self,
                              Handle<PyObject> prop_name,
                              bool is_try,
                              Handle<PyObject>& out_prop_val);
 
-  static MaybeHandle<PyObject> SetAttr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> SetAttr(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> property_name,
                                        Handle<PyObject> property_value);
 

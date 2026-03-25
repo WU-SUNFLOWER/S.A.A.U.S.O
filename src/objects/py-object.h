@@ -118,18 +118,22 @@ class PyObject : public Object {
   // - 返回 true 表示查询成功，out 为查询结果（非null）；
   // - 返回 false 表示查询失败，out 为 null
   // - 返回空 Maybe 表示查询过程中出现异常，需要调用方继续向上传播；out 为 null
-  static Maybe<bool> LookupAttr(Handle<PyObject> self,
+  static Maybe<bool> LookupAttr(Isolate* isolate,
+                                Handle<PyObject> self,
                                 Handle<PyObject> attr_name,
                                 Handle<PyObject>& out);
   // Fallible：属性不存在或查询异常时返回空 MaybeHandle 并已设置 pending
   // exception。
-  static MaybeHandle<PyObject> GetAttr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> GetAttr(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> attr_name);
-  static MaybeHandle<PyObject> GetAttrForCall(Handle<PyObject> self,
+  static MaybeHandle<PyObject> GetAttrForCall(Isolate* isolate,
+                                              Handle<PyObject> self,
                                               Handle<PyObject> attr_name,
                                               Handle<PyObject>& self_or_null);
   // 成功返回 None，失败返回空 MaybeHandle。
-  static MaybeHandle<PyObject> SetAttr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> SetAttr(Isolate* isolate,
+                                       Handle<PyObject> self,
                                        Handle<PyObject> attr_name,
                                        Handle<PyObject> attr_value);
   static MaybeHandle<PyObject> Subscr(Handle<PyObject> self,

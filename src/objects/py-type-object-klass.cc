@@ -95,13 +95,12 @@ void PyTypeObjectKlass::Finalize(Isolate* isolate) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Handle<PyObject> self,
+Maybe<bool> PyTypeObjectKlass::Virtual_GetAttr(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> prop_name,
                                                bool is_try,
                                                Handle<PyObject>& out_prop_val) {
   assert(IsPyString(prop_name));
-
-  auto* isolate = Isolate::Current();
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
 
   out_prop_val = Handle<PyObject>::null();
@@ -140,6 +139,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_Str(Isolate* isolate,
 }
 
 MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> prop_name,
     Handle<PyObject> prop_value) {
@@ -148,7 +148,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
           .IsNothing()) {
     return kNullMaybeHandle;
   }
-  return handle(Isolate::Current()->py_none_object());
+  return handle(isolate->py_none_object());
 }
 
 Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Isolate* isolate,

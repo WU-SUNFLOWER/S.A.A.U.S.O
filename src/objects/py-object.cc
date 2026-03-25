@@ -338,10 +338,10 @@ Maybe<bool> PyObject::LessEqualBool(Isolate* isolate,
   return GetKlass(*self)->vtable().le_(isolate, self, other);
 }
 
-Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
+Maybe<bool> PyObject::LookupAttr(Isolate* isolate,
+                                 Handle<PyObject> self,
                                  Handle<PyObject> attr_name,
                                  Handle<PyObject>& out) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto* getattr = GetKlass(*self)->vtable().getattr_;
   assert(getattr != nullptr);
 
@@ -349,27 +349,29 @@ Maybe<bool> PyObject::LookupAttr(Handle<PyObject> self,
 
   bool found;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             getattr(self, attr_name, true, out));
+                             getattr(isolate, self, attr_name, true, out));
 
   assert(!found && out.is_null() || found && !out.is_null());
   return Maybe<bool>(found);
 }
 
-MaybeHandle<PyObject> PyObject::GetAttr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::GetAttr(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> attr_name) {
   auto* getattr = GetKlass(*self)->vtable().getattr_;
   assert(getattr != nullptr);
 
   Handle<PyObject> result;
-  RETURN_ON_EXCEPTION(Isolate::Current(),
-                      getattr(self, attr_name, false, result));
+  RETURN_ON_EXCEPTION(isolate,
+                      getattr(isolate, self, attr_name, false, result));
 
   // 非try模式下调用getattr，如果没查到结果会直接抛异常，不可能返回一个空结果
   assert(!result.is_null());
   return result;
 }
 
-MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::GetAttrForCall(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> attr_name,
                                                Handle<PyObject>& self_or_null) {
   self_or_null = Handle<PyObject>::null();
@@ -379,13 +381,13 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   // 对于一般对象，直接查询对象方法对应的裸的PyFunction对象，绕开临时生成
   // MethodObject对象的操作。
   if (klass->vtable().getattr_ == &PyObjectKlass::Generic_GetAttr) {
-    return PyObjectKlass::Generic_GetAttrForCall(self, attr_name, self_or_null);
+    return PyObjectKlass::Generic_GetAttrForCall(isolate, self, attr_name,
+                                                 self_or_null);
   }
 
   // Fallback
   Handle<PyObject> value;
-  ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), value,
-                             GetAttr(self, attr_name));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, value, GetAttr(isolate, self, attr_name));
 
   if (IsMethodObject(value)) {
     auto method = Handle<MethodObject>::cast(value);
@@ -395,11 +397,13 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Handle<PyObject> self,
   return value;
 }
 
-MaybeHandle<PyObject> PyObject::SetAttr(Handle<PyObject> self,
+MaybeHandle<PyObject> PyObject::SetAttr(Isolate* isolate,
+                                        Handle<PyObject> self,
                                         Handle<PyObject> attr_name,
                                         Handle<PyObject> attr_value) {
   assert(GetKlass(*self)->vtable().setattr_);
-  return GetKlass(*self)->vtable().setattr_(self, attr_name, attr_value);
+  return GetKlass(*self)->vtable().setattr_(isolate, self, attr_name,
+                                            attr_value);
 }
 
 MaybeHandle<PyObject> PyObject::Subscr(Handle<PyObject> self,

@@ -28,11 +28,13 @@ class PyTypeObjectKlass : public Klass {
                                             Handle<PyObject> self);
   static MaybeHandle<PyObject> Virtual_Str(Isolate* isolate,
                                            Handle<PyObject> self);
-  static Maybe<bool> Virtual_GetAttr(Handle<PyObject> self,
+  static Maybe<bool> Virtual_GetAttr(Isolate* isolate,
+                                     Handle<PyObject> self,
                                      Handle<PyObject> prop_name,
                                      bool is_try,
                                      Handle<PyObject>& out_prop_val);
-  static MaybeHandle<PyObject> Virtual_SetAttr(Handle<PyObject> self,
+  static MaybeHandle<PyObject> Virtual_SetAttr(Isolate* isolate,
+                                               Handle<PyObject> self,
                                                Handle<PyObject> prop_name,
                                                Handle<PyObject> prop_value);
 

@@ -95,13 +95,12 @@ Maybe<uint64_t> PyObjectKlass::Generic_Hash(Isolate* isolate,
 }
 
 // static
-Maybe<bool> PyObjectKlass::Generic_GetAttr(Handle<PyObject> self,
+Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
+                                           Handle<PyObject> self,
                                            Handle<PyObject> prop_name,
                                            bool is_try,
                                            Handle<PyObject>& out_prop_val) {
   assert(IsPyString(prop_name));
-
-  auto* isolate = Isolate::Current();
   Handle<PyObject> result;
   Handle<PyObject> getattr_func;
 
@@ -191,12 +190,11 @@ not_found_and_throw_error:
 
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> prop_name,
     Handle<PyObject>& self_or_null) {
   assert(IsPyString(prop_name));
-
-  auto* isolate = Isolate::Current();
 
   self_or_null = Handle<PyObject>::null();
 
@@ -226,7 +224,8 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
   }
 
   Handle<PyObject> attr;
-  RETURN_ON_EXCEPTION(isolate, Generic_GetAttr(self, prop_name, false, attr));
+  RETURN_ON_EXCEPTION(isolate,
+                      Generic_GetAttr(isolate, self, prop_name, false, attr));
 
   assert(!attr.is_null());
   return attr;
@@ -234,10 +233,10 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
 
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
+    Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> property_name,
     Handle<PyObject> property_value) {
-  auto* isolate = Isolate::Current();
   auto properties = PyObject::GetProperties(self);
 
   if (!IsPyString(property_name)) [[unlikely]] {
