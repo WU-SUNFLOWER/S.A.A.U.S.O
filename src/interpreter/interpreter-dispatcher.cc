@@ -453,7 +453,8 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg);
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_value = POP();
-    GOTO_ON_EXCEPTION(PyObject::SetAttr(object, attr_name, attr_value));
+    GOTO_ON_EXCEPTION(
+        PyObject::SetAttr(isolate_, object, attr_name, attr_value));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
@@ -554,7 +555,8 @@ void Interpreter::EvalCurrentFrame() {
       Handle<PyObject> self_or_null;
       Handle<PyObject> value;
       ASSIGN_GOTO_ON_EXCEPTION(
-          value, PyObject::GetAttrForCall(object, attr_name, self_or_null));
+          value,
+          PyObject::GetAttrForCall(isolate_, object, attr_name, self_or_null));
 
       if (!self_or_null.is_null()) {
         // Happy case: attr_name的确对应一个对象方法
@@ -571,7 +573,8 @@ void Interpreter::EvalCurrentFrame() {
 
     // 一般的属性获取，走常规的GetAttr虚函数查询
     Handle<PyObject> value;
-    ASSIGN_GOTO_ON_EXCEPTION(value, PyObject::GetAttr(object, attr_name));
+    ASSIGN_GOTO_ON_EXCEPTION(value,
+                             PyObject::GetAttr(isolate_, object, attr_name));
     PUSH(value);
   })
 
@@ -645,7 +648,7 @@ void Interpreter::EvalCurrentFrame() {
     // Fast Path: 如果目标子模块已经被解析过了，直接返回
     Handle<PyObject> value;
     GOTO_ON_EXCEPTION(
-        PyObject::LookupAttr(parent_module, sub_module_name, value));
+        PyObject::LookupAttr(isolate_, parent_module, sub_module_name, value));
 
     if (!value.is_null()) {
       PUSH(value);
@@ -654,8 +657,9 @@ void Interpreter::EvalCurrentFrame() {
 
     // Slow Path: 目标子模块还没被解析过，走完整的解析流程
     Handle<PyObject> parent_module_name_obj;
-    ASSIGN_GOTO_ON_EXCEPTION(parent_module_name_obj,
-                             PyObject::GetAttr(parent_module, ST(name)));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        parent_module_name_obj,
+        PyObject::GetAttr(isolate_, parent_module, ST(name)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
       Runtime_ThrowError(ExceptionType::kTypeError,
                          "module __name__ must be a string");
