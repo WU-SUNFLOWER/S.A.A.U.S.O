@@ -80,7 +80,7 @@ MaybeHandle<PyDict> BuiltinBootstrapper::CreateBuiltins() {
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinTypes() {
 #define BUILTIN_TYPE_ENTRY(name, klass) \
-  {name, klass::GetInstance()->type_object()},
+  {name, klass::GetInstance(isolate_)->type_object()},
 
 #define BUILTIN_TYPE_LIST(V)   \
   V("object", PyObjectKlass)   \
@@ -193,7 +193,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
 
 Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   Handle<PyTypeObject> base_exception =
-      PyBaseExceptionKlass::GetInstance()->type_object();
+      PyBaseExceptionKlass::GetInstance(isolate_)->type_object();
 
   auto supers = PyList::NewInstance(1);
   supers->SetAndExtendLength(0, base_exception);
