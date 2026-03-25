@@ -250,7 +250,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
   EXPECT_TRUE(contains);
 
   Handle<PyObject> upper_method;
-  ASSERT_TRUE(PyObject::GetAttr(s, attr).ToHandle(&upper_method));
+  ASSERT_TRUE(PyObject::GetAttr(isolate_, s, attr).ToHandle(&upper_method));
   EXPECT_FALSE(upper_method.is_null());
 }
 

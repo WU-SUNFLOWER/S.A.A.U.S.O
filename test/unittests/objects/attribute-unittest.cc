@@ -40,9 +40,9 @@ TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
   auto key = PyString::NewInstance("x");
   auto value = handle(PySmi::FromInt(42));
 
-  ASSERT_FALSE(PyObject::SetAttr(func, key, value).IsEmpty());
+  ASSERT_FALSE(PyObject::SetAttr(isolate_, func, key, value).IsEmpty());
   Handle<PyObject> result;
-  ASSERT_TRUE(PyObject::GetAttr(func, key).ToHandle(&result));
+  ASSERT_TRUE(PyObject::GetAttr(isolate_, func, key).ToHandle(&result));
   EXPECT_TRUE(result.is_identical_to(value));
 }
 
@@ -54,7 +54,7 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
 
   Handle<PyObject> append;
   ASSERT_TRUE(
-      PyObject::GetAttr(Handle<PyObject>(list),
+      PyObject::GetAttr(isolate_, Handle<PyObject>(list),
                         Handle<PyObject>(PyString::NewInstance("append")))
           .ToHandle(&append));
 
@@ -83,7 +83,7 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
   ASSERT_FALSE(PyDict::Put(properties, ST(class), fake_class).IsNothing());
 
   Handle<PyObject> got_class;
-  ASSERT_TRUE(PyObject::GetAttr(func_obj, ST(class)).ToHandle(&got_class));
+  ASSERT_TRUE(PyObject::GetAttr(isolate_, func_obj, ST(class)).ToHandle(&got_class));
   EXPECT_TRUE(got_class.is_identical_to(expected_class));
 }
 
@@ -98,7 +98,8 @@ TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   EXPECT_TRUE(
-      PyObject::SetAttr(func, ST(class), handle(PySmi::FromInt(1))).IsEmpty());
+      PyObject::SetAttr(isolate_, func, ST(class), handle(PySmi::FromInt(1)))
+          .IsEmpty());
   EXPECT_TRUE(isolate_->HasPendingException());
   isolate_->exception_state()->Clear();
 }
@@ -118,7 +119,7 @@ TEST_F(AttributeTest, DictAccessorReturnsProperties) {
   ASSERT_FALSE(properties.is_null());
 
   Handle<PyObject> got_dict;
-  ASSERT_TRUE(PyObject::GetAttr(func_obj, ST(dict)).ToHandle(&got_dict));
+  ASSERT_TRUE(PyObject::GetAttr(isolate_, func_obj, ST(dict)).ToHandle(&got_dict));
   EXPECT_TRUE(Handle<PyDict>::cast(got_dict).is_identical_to(properties));
 }
 
@@ -133,7 +134,8 @@ TEST_F(AttributeTest, DictAccessorRejectsSetAttr) {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   EXPECT_TRUE(
-      PyObject::SetAttr(func, ST(dict), Handle<PyObject>(PyDict::NewInstance()))
+      PyObject::SetAttr(isolate_, func, ST(dict),
+                        Handle<PyObject>(PyDict::NewInstance()))
           .IsEmpty());
   EXPECT_TRUE(isolate_->HasPendingException());
   isolate_->exception_state()->Clear();
