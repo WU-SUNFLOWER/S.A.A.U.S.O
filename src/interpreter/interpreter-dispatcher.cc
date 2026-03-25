@@ -1021,13 +1021,13 @@ void Interpreter::EvalCurrentFrame() {
       case UnaryIntrinsic::kListToTuple: {
         Handle<PyTuple> tuple_result;
         ASSIGN_GOTO_ON_EXCEPTION(tuple_result,
-                                 Runtime_IntrinsicListToTuple(arg));
+                                 Runtime_IntrinsicListToTuple(isolate_, arg));
         PUSH(tuple_result);
         break;
       }
       case UnaryIntrinsic::kImportStar: {
-        GOTO_ON_EXCEPTION(
-            Runtime_IntrinsicImportStar(arg, current_frame_->locals()));
+        GOTO_ON_EXCEPTION(Runtime_IntrinsicImportStar(
+            isolate_, arg, current_frame_->locals()));
         PUSH(handle(isolate_->py_none_object()));
         break;
       }

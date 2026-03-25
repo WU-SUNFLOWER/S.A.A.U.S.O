@@ -16,7 +16,8 @@ class PyDict;
 // intrinsic：将一个 list 转换为 tuple。
 // - object 必须是 list，否则抛出 TypeError。
 // - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
+MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Isolate* isolate,
+                                                  Handle<PyObject> list);
 
 // 导入某个模块名下的所有子模块到解释器栈帧的locals
 //
@@ -29,7 +30,8 @@ MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Handle<PyObject> list);
 //
 // - 该函数返回后，调用方必须检查所得MaybeHandle是否有效。
 //   若所得MaybeHandle无效，则表明执行过程中抛出了错误！！！
-MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Handle<PyObject> module,
+MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
+                                                  Handle<PyObject> module,
                                                   Handle<PyDict> locals);
 
 }  // namespace saauso::internal
