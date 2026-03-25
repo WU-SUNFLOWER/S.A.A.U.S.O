@@ -140,12 +140,11 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
 #endif
 }
 
-MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
+MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
+                                                   std::string_view filename,
                                                    Handle<PyDict> locals,
                                                    Handle<PyDict> globals) {
   EscapableHandleScope scope;
-
-  auto* isolate = Isolate::Current();
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowError(ExceptionType::kTypeError,

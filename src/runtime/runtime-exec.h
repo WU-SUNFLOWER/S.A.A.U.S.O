@@ -49,7 +49,8 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
     Handle<PyDict> globals,
     std::string_view filename = kDefaultSourceFilename);
 
-MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(std::string_view filename,
+MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
+                                                   std::string_view filename,
                                                    Handle<PyDict> locals,
                                                    Handle<PyDict> globals);
 
