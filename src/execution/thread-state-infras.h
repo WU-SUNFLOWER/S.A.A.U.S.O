@@ -29,7 +29,7 @@ class ThreadManager {
   Isolate* isolate_{nullptr};
 
   std::recursive_mutex mutex_;
-  std::atomic<ThreadId> mutex_owner_;
+  std::atomic<ThreadId> mutex_owner_{ThreadId{}};
   int mutex_count_{0};
 };
 
