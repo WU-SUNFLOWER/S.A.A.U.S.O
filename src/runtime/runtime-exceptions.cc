@@ -219,7 +219,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
 
   bool is_stop_iteration = false;
   ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), is_stop_iteration,
+      isolate, is_stop_iteration,
       Runtime_IsInstanceOfTypeObject(
           isolate, pending, Handle<PyTypeObject>::cast(stop_iter_type)));
 
