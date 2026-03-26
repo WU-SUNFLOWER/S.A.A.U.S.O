@@ -100,7 +100,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
   assert(receiver_type->own_klass() == PySmiKlass::GetInstance(isolate));
-  return Runtime_NewSmi(args, kwargs);
+  return Runtime_NewSmi(isolate, args, kwargs);
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Isolate* isolate,

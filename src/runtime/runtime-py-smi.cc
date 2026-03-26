@@ -87,7 +87,8 @@ MaybeHandle<PySmi> Runtime_PyFloatToSmi(Tagged<PyFloat> py_float) {
   return scope.Escape(handle(PySmi::FromInt(int_value)));
 }
 
-MaybeHandle<PySmi> Runtime_NewSmi(Handle<PyObject> args,
+MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
+                                  Handle<PyObject> args,
                                   Handle<PyObject> kwargs) {
   EscapableHandleScope scope;
 
@@ -119,7 +120,7 @@ MaybeHandle<PySmi> Runtime_NewSmi(Handle<PyObject> args,
     }
 
     int64_t base = -1;
-    ASSIGN_RETURN_ON_EXCEPTION(Isolate::Current(), base,
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, base,
                                Runtime_DecodeIntLike(pos_args->GetTagged(1)));
 
     if (!(base == 0 || (2 <= base && base <= 36))) {
@@ -168,15 +169,13 @@ MaybeHandle<PySmi> Runtime_NewSmi(Handle<PyObject> args,
   if (IsPyFloat(value)) {
     Handle<PySmi> result;
     ASSIGN_RETURN_ON_EXCEPTION(
-        Isolate::Current(), result,
-        Runtime_PyFloatToSmi(*Handle<PyFloat>::cast(value)));
+        isolate, result, Runtime_PyFloatToSmi(*Handle<PyFloat>::cast(value)));
     return scope.Escape(result);
   }
   if (IsPyString(value)) {
     Handle<PySmi> result;
     ASSIGN_RETURN_ON_EXCEPTION(
-        Isolate::Current(), result,
-        Runtime_PyStringToSmi(*Handle<PyString>::cast(value)));
+        isolate, result, Runtime_PyStringToSmi(*Handle<PyString>::cast(value)));
     return scope.Escape(result);
   }
 

@@ -20,7 +20,8 @@ MaybeHandle<PySmi> Runtime_PyFloatToSmi(Tagged<PyFloat> py_float);
 
 // 按 Python 语义构造 int 对象。
 // - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PySmi> Runtime_NewSmi(Handle<PyObject> args,
+MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
+                                  Handle<PyObject> args,
                                   Handle<PyObject> kwargs);
 
 }  // namespace saauso::internal
