@@ -42,7 +42,7 @@ Maybe<bool> ImportNameImpl(Isolate* isolate,
   }
   if (found) {
     assert(!value.is_null());
-    RETURN_ON_EXCEPTION(Isolate::Current(), PyDict::Put(locals, name, value));
+    RETURN_ON_EXCEPTION(isolate, PyDict::Put(locals, name, value));
     return Maybe<bool>(true);
   }
 
