@@ -115,7 +115,7 @@ void BasicInterpreterTest::RunScript(std::string_view source,
   if (isolate_->HasPendingException()) {
     HandleScope scope;
     Handle<PyString> formatted;
-    if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
+    if (!Runtime_FormatPendingExceptionForStderr(isolate_).To(&formatted)) {
       ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr Failed!"
                     << formatted->ToStdString();
     }
@@ -132,7 +132,7 @@ std::string BasicInterpreterTest::ExpectedAndTakePendingExceptionMessage() {
   }
 
   Handle<PyString> formatted;
-  if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
+  if (!Runtime_FormatPendingExceptionForStderr(isolate_).To(&formatted)) {
     ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr Failed!";
     isolate_->exception_state()->Clear();
     return std::string();

@@ -154,10 +154,10 @@ void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
   va_end(ap);
 }
 
-MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr() {
+MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
+    Isolate* isolate) {
   EscapableHandleScope scope;
 
-  auto* isolate = Isolate::Current();
   auto* state = isolate->exception_state();
   if (!state->HasPendingException()) {
     return scope.Escape(PyString::NewInstance(""));
