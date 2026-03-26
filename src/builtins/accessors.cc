@@ -27,21 +27,24 @@ const AccessorDescriptor Accessors::kPyObjectDictAccessor = {
 // Accessor Getter/Setter 函数实现
 
 MaybeHandle<PyObject> Accessors::PyObjectClassGetter(
+    Isolate* isolate,
     Handle<PyObject> receiver) {
   return PyObject::GetKlass(receiver)->type_object();
 }
 
-MaybeHandle<PyObject> Accessors::PyObjectClassSetter(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Accessors::PyObjectClassSetter(Isolate* isolate,
+                                                     Handle<PyObject> receiver,
                                                      Handle<PyObject> value) {
-  Runtime_ThrowError(ExceptionType::kTypeError,
+  Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                      "can't set attribute '__class__'");
   return kNullMaybeHandle;
 }
 
-MaybeHandle<PyObject> Accessors::PyObjectDictGetter(Handle<PyObject> receiver) {
+MaybeHandle<PyObject> Accessors::PyObjectDictGetter(Isolate* isolate,
+                                                    Handle<PyObject> receiver) {
   Handle<PyDict> properties = PyObject::GetProperties(receiver);
   if (properties.is_null()) {
-    Runtime_ThrowErrorf(ExceptionType::kAttributeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                         "'%s' object has no attribute '__dict__'",
                         PyObject::GetKlass(receiver)->name()->buffer());
     return kNullMaybeHandle;
@@ -49,9 +52,10 @@ MaybeHandle<PyObject> Accessors::PyObjectDictGetter(Handle<PyObject> receiver) {
   return properties;
 }
 
-MaybeHandle<PyObject> Accessors::PyObjectDictSetter(Handle<PyObject> receiver,
+MaybeHandle<PyObject> Accessors::PyObjectDictSetter(Isolate* isolate,
+                                                    Handle<PyObject> receiver,
                                                     Handle<PyObject> value) {
-  Runtime_ThrowError(ExceptionType::kTypeError,
+  Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                      "can't set attribute '__dict__'");
   return kNullMaybeHandle;
 }

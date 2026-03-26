@@ -38,7 +38,7 @@ BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "type.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -48,7 +48,7 @@ BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Repr) {
 BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "type.__str__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;

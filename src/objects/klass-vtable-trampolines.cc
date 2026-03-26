@@ -24,12 +24,13 @@ namespace saauso::internal {
 
 namespace {
 // 用于在不支持的比较运算上抛出 TypeError 异常，而不是直接退出进程。
-void ThrowCompareUnsupported(Handle<PyObject> self,
+void ThrowCompareUnsupported(Isolate* isolate,
+                             Handle<PyObject> self,
                              Handle<PyObject> other,
                              const char* op) {
   auto self_name = PyObject::GetKlass(self)->name();
   auto other_name = PyObject::GetKlass(other)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'%s' not supported between instances of '%s' and '%s'\n",
                       op, self_name->buffer(), other_name->buffer());
 }
@@ -136,7 +137,7 @@ Maybe<uint64_t> KlassVtableTrampolines::Hash(Isolate* isolate,
   }
 
   if (!IsPySmi(result)) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "__hash__ method should return an integer");
     return kNullMaybe;
   }
@@ -231,7 +232,7 @@ Maybe<bool> KlassVtableTrampolines::Greater(Isolate* isolate,
                                    isolate, self, ST(greater), callable));
 
   if (callable.is_null()) {
-    ThrowCompareUnsupported(self, other, ">");
+    ThrowCompareUnsupported(isolate, self, other, ">");
     return kNullMaybe;
   }
 
@@ -254,7 +255,7 @@ Maybe<bool> KlassVtableTrampolines::Less(Isolate* isolate,
                                    isolate, self, ST(less), callable));
 
   if (callable.is_null()) {
-    ThrowCompareUnsupported(self, other, "<");
+    ThrowCompareUnsupported(isolate, self, other, "<");
     return kNullMaybe;
   }
 
@@ -456,7 +457,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Repr(Isolate* isolate,
   }
 
   if (!IsPyString(result)) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "__repr__ returned non-string");
     return kNullMaybeHandle;
   }
@@ -475,7 +476,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Str(Isolate* isolate,
   }
 
   if (!IsPyString(result)) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "__str__ returned non-string");
     return kNullMaybeHandle;
   }

@@ -63,7 +63,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
       manager_->name_resolver()->ResolveFullName(name, level, globals));
 
   if (!ModuleUtils::IsValidModuleName(fullname)) {
-    Runtime_ThrowErrorf(ExceptionType::kModuleNotFoundError,
+    Runtime_ThrowErrorf(isolate_, ExceptionType::kModuleNotFoundError,
                         "invalid module name '%s'", fullname->buffer());
     return kNullMaybe;
   }
@@ -157,7 +157,8 @@ MaybeHandle<PyList> ModuleImporter::SelectSearchPathList(
   }
 
   if (path.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kImportError, "parent is not a package");
+    Runtime_ThrowError(isolate_, ExceptionType::kImportError,
+                       "parent is not a package");
     return kNullMaybe;
   }
 
@@ -198,8 +199,8 @@ bool ModuleImporter::EnsurePackageForNextSegment(
     Handle<PyObject> module,
     Handle<PyString> module_fullname) {
   if (!ModuleUtils::IsPackageModule(module)) {
-    Runtime_ThrowErrorf(ExceptionType::kImportError, "'%s' is not a package",
-                        module_fullname->buffer());
+    Runtime_ThrowErrorf(isolate_, ExceptionType::kImportError,
+                        "'%s' is not a package", module_fullname->buffer());
     return false;
   }
   return true;

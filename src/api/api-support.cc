@@ -56,13 +56,13 @@ bool CapturePendingException(i::Isolate* isolate) {
 }
 
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
-    i::Isolate* internal_isolate,
+    i::Isolate* i_isolate,
     i::Handle<i::PyObject> receiver,
     i::Handle<i::PyTuple> args,
     i::Handle<i::PyDict>,
     i::Handle<i::PyObject> closure_data) {
   if (closure_data.is_null() || !i::IsPySmi(closure_data)) {
-    i::Runtime_ThrowError(i::ExceptionType::kRuntimeError,
+    i::Runtime_ThrowError(i_isolate, i::ExceptionType::kRuntimeError,
                           "Embedder callback closure_data is invalid");
     return i::kNullMaybeHandle;
   }
@@ -71,15 +71,14 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   FunctionCallback callback =
       reinterpret_cast<FunctionCallback>(static_cast<intptr_t>(callback_addr));
   if (callback == nullptr) {
-    i::Runtime_ThrowError(i::ExceptionType::kRuntimeError,
+    i::Runtime_ThrowError(i_isolate, i::ExceptionType::kRuntimeError,
                           "Embedder callback binding is missing");
     return i::kNullMaybeHandle;
   }
-  EscapableHandleScope escapable_scope(
-      reinterpret_cast<Isolate*>(internal_isolate));
+  EscapableHandleScope escapable_scope(reinterpret_cast<Isolate*>(i_isolate));
 
   FunctionCallbackInfoImpl callback_info_impl;
-  callback_info_impl.isolate = internal_isolate;
+  callback_info_impl.isolate = i_isolate;
   callback_info_impl.receiver = receiver;
   callback_info_impl.args = args;
 
@@ -88,13 +87,13 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
 
   callback(callback_info);
 
-  if (internal_isolate->HasPendingException()) {
+  if (i_isolate->HasPendingException()) {
     return i::kNullMaybeHandle;
   }
 
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
-  return ToInternalObject(internal_isolate, escaped_ret);
+  return ToInternalObject(i_isolate, escaped_ret);
 }
 
 }  // namespace api

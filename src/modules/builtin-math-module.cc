@@ -60,14 +60,14 @@ void FailArgc(Isolate* isolate,
               const char* func_name,
               int64_t expected,
               int64_t actual) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s.%s() takes exactly %" PRId64 " argument (%" PRId64
                       " given)",
                       kModuleName, func_name, expected, actual);
 }
 
 // 成功时返回有效 double；类型不符时抛 TypeError 并返回空。
-Maybe<double> ExtractDouble(Handle<PyObject> value) {
+Maybe<double> ExtractDouble(Isolate* isolate, Handle<PyObject> value) {
   if (IsPyFloat(value)) {
     return Maybe<double>(Handle<PyFloat>::cast(value)->value());
   }
@@ -75,22 +75,24 @@ Maybe<double> ExtractDouble(Handle<PyObject> value) {
     return Maybe<double>(PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
   Handle<PyString> type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "must be real number, not '%s'", type_name->buffer());
   return kNullMaybe;
 }
 
 // 将 double 转为 PyInt(Smi)；溢出时抛 RuntimeError 并返回空。
-MaybeHandle<PyObject> ReturnPyIntFromDouble(double v, const char* func_name) {
+MaybeHandle<PyObject> ReturnPyIntFromDouble(Isolate* isolate,
+                                            double v,
+                                            const char* func_name) {
   if (!std::isfinite(v)) {
-    Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kRuntimeError,
                         "cannot convert float %g to integer", v);
     return kNullMaybe;
   }
   if (v < static_cast<double>(PySmi::kSmiMinValue) ||
       v > static_cast<double>(PySmi::kSmiMaxValue)) {
-    Runtime_ThrowErrorf(ExceptionType::kRuntimeError, "%s result too large",
-                        func_name);
+    Runtime_ThrowErrorf(isolate, ExceptionType::kRuntimeError,
+                        "%s result too large", func_name);
     return kNullMaybe;
   }
   return handle(PySmi::FromInt(static_cast<int64_t>(v)));
@@ -110,10 +112,11 @@ BUILTIN_MODULE_FUNC(Math_Sqrt) {
                                           FailArgc(isolate, "sqrt", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   if (x < 0) {
-    Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
+                       "math domain error");
     return kNullMaybe;
   }
   return PyFloat::NewInstance(std::sqrt(x));
@@ -127,9 +130,9 @@ BUILTIN_MODULE_FUNC(Math_Floor) {
                                           FailArgc(isolate, "floor", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return ReturnPyIntFromDouble(std::floor(x), "floor");
+  return ReturnPyIntFromDouble(isolate, std::floor(x), "floor");
 }
 
 BUILTIN_MODULE_FUNC(Math_Ceil) {
@@ -140,9 +143,9 @@ BUILTIN_MODULE_FUNC(Math_Ceil) {
                                           FailArgc(isolate, "ceil", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return ReturnPyIntFromDouble(std::ceil(x), "ceil");
+  return ReturnPyIntFromDouble(isolate, std::ceil(x), "ceil");
 }
 
 BUILTIN_MODULE_FUNC(Math_Fabs) {
@@ -153,7 +156,7 @@ BUILTIN_MODULE_FUNC(Math_Fabs) {
                                           FailArgc(isolate, "fabs", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return PyFloat::NewInstance(std::fabs(x));
 }
@@ -166,7 +169,7 @@ BUILTIN_MODULE_FUNC(Math_Sin) {
                                           FailArgc(isolate, "sin", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return PyFloat::NewInstance(std::sin(x));
 }
@@ -179,7 +182,7 @@ BUILTIN_MODULE_FUNC(Math_Cos) {
                                           FailArgc(isolate, "cos", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return PyFloat::NewInstance(std::cos(x));
 }
@@ -192,7 +195,7 @@ BUILTIN_MODULE_FUNC(Math_Tan) {
                                           FailArgc(isolate, "tan", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return PyFloat::NewInstance(std::tan(x));
 }
@@ -205,7 +208,7 @@ BUILTIN_MODULE_FUNC(Math_Exp) {
                                           FailArgc(isolate, "exp", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return PyFloat::NewInstance(std::exp(x));
 }
@@ -218,10 +221,11 @@ BUILTIN_MODULE_FUNC(Math_Log) {
                                           FailArgc(isolate, "log", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   if (x <= 0) {
-    Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
+                       "math domain error");
     return kNullMaybe;
   }
   return PyFloat::NewInstance(std::log(x));
@@ -235,10 +239,11 @@ BUILTIN_MODULE_FUNC(Math_Log2) {
                                           FailArgc(isolate, "log2", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   if (x <= 0) {
-    Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
+                       "math domain error");
     return kNullMaybe;
   }
   return PyFloat::NewInstance(std::log2(x));
@@ -252,10 +257,11 @@ BUILTIN_MODULE_FUNC(Math_Log10) {
                                           FailArgc(isolate, "log10", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   if (x <= 0) {
-    Runtime_ThrowError(ExceptionType::kValueError, "math domain error");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
+                       "math domain error");
     return kNullMaybe;
   }
   return PyFloat::NewInstance(std::log10(x));
@@ -267,16 +273,16 @@ BUILTIN_MODULE_FUNC(Math_Pow) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 2,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.pow() takes exactly 2 arguments (%" PRId64
                           " given)",
                           kModuleName, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   double y = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, y, ExtractDouble(args->Get(1)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, y, ExtractDouble(isolate, args->Get(1)));
 
   return PyFloat::NewInstance(std::pow(x, y));
 }
@@ -289,7 +295,7 @@ BUILTIN_MODULE_FUNC(Math_IsFinite) {
       argc, 1, FailArgc(isolate, "isfinite", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return handle(Isolate::ToPyBoolean(std::isfinite(x)));
 }
@@ -302,7 +308,7 @@ BUILTIN_MODULE_FUNC(Math_IsNaN) {
                                           FailArgc(isolate, "isnan", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return handle(Isolate::ToPyBoolean(std::isnan(x)));
 }
@@ -315,7 +321,7 @@ BUILTIN_MODULE_FUNC(Math_IsInf) {
                                           FailArgc(isolate, "isinf", 1, argc));
 
   double x = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(args->Get(0)));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
   return handle(Isolate::ToPyBoolean(std::isinf(x)));
 }

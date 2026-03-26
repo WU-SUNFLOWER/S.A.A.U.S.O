@@ -36,10 +36,9 @@ MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
   return PyString::NewInstance("");
 }
 
-void ThrowNewException(Handle<PyString> exception_type_name,
+void ThrowNewException(Isolate* isolate,
+                       Handle<PyString> exception_type_name,
                        Handle<PyString> message_or_null) {
-  auto* isolate = Isolate::Current();
-
   auto* state = isolate->exception_state();
   if (state->HasPendingException()) {
     return;
@@ -71,7 +70,10 @@ Handle<PyString> GetExceptionStringHandle(ExceptionType type) {
 }
 
 // 将 va_list 格式化为字符串并抛出指定类型的异常。
-void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
+void ThrowFormattedError(Isolate* isolate,
+                         ExceptionType type,
+                         const char* fmt,
+                         va_list ap) {
   char buf[kFormattedErrorBufferSize];
   va_list ap_copy;
   va_copy(ap_copy, ap);
@@ -79,19 +81,19 @@ void ThrowFormattedError(ExceptionType type, const char* fmt, va_list ap) {
   va_end(ap_copy);
 
   if (len < 0) {
-    Runtime_ThrowError(type, nullptr);
+    Runtime_ThrowError(isolate, type, nullptr);
     return;
   }
 
   if (len < static_cast<int>(sizeof(buf))) {
-    Runtime_ThrowError(type, buf);
+    Runtime_ThrowError(isolate, type, buf);
     return;
   }
 
   // 在超长消息时回退到使用std::string缓冲。
   std::string dynamic(static_cast<size_t>(len) + 1, '\0');
   std::vsnprintf(dynamic.data(), dynamic.size(), fmt, ap);
-  Runtime_ThrowError(type, dynamic.c_str());
+  Runtime_ThrowError(isolate, type, dynamic.c_str());
 }
 
 }  // namespace
@@ -135,22 +137,27 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
   return scope.Escape(exception);
 }
 
-void Runtime_ThrowError(ExceptionType type, const char* message) {
+void Runtime_ThrowError(Isolate* isolate,
+                        ExceptionType type,
+                        const char* message) {
   Handle<PyString> type_name = GetExceptionStringHandle(type);
   Handle<PyString> wrapped_message = message != nullptr
                                          ? PyString::NewInstance(message)
                                          : Handle<PyString>::null();
-  ThrowNewException(type_name, wrapped_message);
+  ThrowNewException(isolate, type_name, wrapped_message);
 }
 
-void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
+void Runtime_ThrowErrorf(Isolate* isolate,
+                         ExceptionType type,
+                         const char* fmt,
+                         ...) {
   if (fmt == nullptr) {
-    Runtime_ThrowError(type, nullptr);
+    Runtime_ThrowError(isolate, type, nullptr);
     return;
   }
   va_list ap;
   va_start(ap, fmt);
-  ThrowFormattedError(type, fmt, ap);
+  ThrowFormattedError(isolate, type, fmt, ap);
   va_end(ap);
 }
 

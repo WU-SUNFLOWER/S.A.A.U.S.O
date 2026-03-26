@@ -12,10 +12,14 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyObject;
 
-using AccessorGetter = MaybeHandle<PyObject> (*)(Handle<PyObject> receiver);
-using AccessorSetter = MaybeHandle<PyObject> (*)(Handle<PyObject> receiver,
+using AccessorGetter = MaybeHandle<PyObject> (*)(Isolate* isolate,
+                                                 Handle<PyObject> receiver);
+using AccessorSetter = MaybeHandle<PyObject> (*)(Isolate* isolate,
+                                                 Handle<PyObject> receiver,
                                                  Handle<PyObject> value);
 
 struct AccessorDescriptor {
@@ -30,12 +34,16 @@ class Accessors : public AllStatic {
   static const AccessorDescriptor kPyObjectDictAccessor;
 
   // Accessor Getter/Setter 函数实现
-  static MaybeHandle<PyObject> PyObjectClassGetter(Handle<PyObject> receiver);
-  static MaybeHandle<PyObject> PyObjectClassSetter(Handle<PyObject> receiver,
+  static MaybeHandle<PyObject> PyObjectClassGetter(Isolate* isolate,
+                                                   Handle<PyObject> receiver);
+  static MaybeHandle<PyObject> PyObjectClassSetter(Isolate* isolate,
+                                                   Handle<PyObject> receiver,
                                                    Handle<PyObject> value);
 
-  static MaybeHandle<PyObject> PyObjectDictGetter(Handle<PyObject> receiver);
-  static MaybeHandle<PyObject> PyObjectDictSetter(Handle<PyObject> receiver,
+  static MaybeHandle<PyObject> PyObjectDictGetter(Isolate* isolate,
+                                                  Handle<PyObject> receiver);
+  static MaybeHandle<PyObject> PyObjectDictSetter(Isolate* isolate,
+                                                  Handle<PyObject> receiver,
                                                   Handle<PyObject> value);
 };
 

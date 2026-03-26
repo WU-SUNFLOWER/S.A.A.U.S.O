@@ -10,13 +10,17 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PySmi;
 class PyFloat;
 class PyString;
 
-MaybeHandle<PySmi> Runtime_PyStringToSmi(Tagged<PyString> py_string);
+MaybeHandle<PySmi> Runtime_PyStringToSmi(Isolate* isolate,
+                                         Tagged<PyString> py_string);
 
-MaybeHandle<PySmi> Runtime_PyFloatToSmi(Tagged<PyFloat> py_float);
+MaybeHandle<PySmi> Runtime_PyFloatToSmi(Isolate* isolate,
+                                        Tagged<PyFloat> py_float);
 
 // 按 Python 语义构造 int 对象。
 // - 失败时返回 empty，并保证已设置 pending exception。

@@ -46,7 +46,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc == 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "descriptor '__new__' of 'dict' object needs an "
                        "argument");
     return kNullMaybeHandle;
@@ -55,7 +55,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
   args = Runtime_NewTupleTailOrNull(args, 1);
 
   if (!IsPyTypeObject(type_object)) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "dict.__new__() argument 1 must be type, not '%s'",
                         PyObject::GetKlass(type_object)->name()->buffer());
     return kNullMaybeHandle;
@@ -92,7 +92,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "dict.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -102,7 +102,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Repr) {
 BUILTIN_METHOD(PyDictBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "dict.__str__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
@@ -114,7 +114,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
   EscapableHandleScope scope;
 
   if (args->length() < 1 || args->length() > 2) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "pop expected at most 2 arguments, got %" PRId64,
                         args->length());
     return kNullMaybeHandle;

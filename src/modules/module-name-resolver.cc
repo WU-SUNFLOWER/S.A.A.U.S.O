@@ -25,7 +25,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveFullName(
   // 只有在相对导入的情况下，才允许模块 name 为空，例如 `from .. import
   // my_module`
   if (level == 0 && (name.is_null() || name->length() == 0)) {
-    Runtime_ThrowError(ExceptionType::kModuleNotFoundError,
+    Runtime_ThrowError(isolate_, ExceptionType::kModuleNotFoundError,
                        "empty module name");
     return kNullMaybe;
   }
@@ -57,7 +57,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
 
   if (base->length() == 0) {
     Runtime_ThrowError(
-        ExceptionType::kImportError,
+        isolate_, ExceptionType::kImportError,
         "attempted relative import with no known parent package");
     return kNullMaybe;
   }
@@ -65,7 +65,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
   for (int i = 1; i < level; ++i) {
     Handle<PyString> parent = ParentModuleNameOrEmpty(base);
     if (parent->length() == 0) {
-      Runtime_ThrowError(ExceptionType::kImportError,
+      Runtime_ThrowError(isolate_, ExceptionType::kImportError,
                          "attempted relative import beyond top-level package");
       return kNullMaybe;
     }
@@ -96,7 +96,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   }
   if (found) {
     if (!IsPyString(package_obj)) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                          "__package__ must be a string");
       return kNullMaybe;
     }
@@ -108,7 +108,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     return kNullMaybe;
   }
   if (!found || !IsPyString(name_obj)) {
-    Runtime_ThrowError(ExceptionType::kImportError,
+    Runtime_ThrowError(isolate_, ExceptionType::kImportError,
                        "missing __name__ in globals");
     return kNullMaybe;
   }

@@ -146,7 +146,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'list' object but received a '%s'",
         instance_klass->name()->buffer());
     return kNullMaybeHandle;
@@ -157,12 +157,12 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "list() takes no keyword arguments");
     return kNullMaybeHandle;
   }
   if (argc > 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "list expected at most 1 argument, got %" PRId64, argc);
     return kNullMaybeHandle;
   }
@@ -197,7 +197,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
                                                Handle<PyObject> other) {
   auto list1 = Handle<PyList>::cast(self);
   if (!IsPyList(other)) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "can only concatenate list (not \"%s\") to list",
                         PyObject::GetKlass(other)->name()->buffer());
     return kNullMaybeHandle;
@@ -220,7 +220,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
                                                Handle<PyObject> self,
                                                Handle<PyObject> coeff) {
   if (!IsPySmi(coeff)) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "can't multiply sequence by non-int of type '%s'",
                         PyObject::GetKlass(coeff)->name()->buffer());
     return kNullMaybeHandle;
@@ -244,7 +244,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Isolate* isolate,
                                                   Handle<PyObject> self,
                                                   Handle<PyObject> subscr) {
   if (!IsPySmi(subscr)) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "list indices must be integers or slices, not %s",
                         PyObject::GetKlass(subscr)->name()->buffer());
     return kNullMaybeHandle;
@@ -263,7 +263,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Isolate* isolate,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
-    Runtime_ThrowError(ExceptionType::kIndexError,
+    Runtime_ThrowError(isolate, ExceptionType::kIndexError,
                        "list assignment index out of range");
     return kNullMaybeHandle;
   }
@@ -280,7 +280,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Isolate* isolate,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             list->length())) {
-    Runtime_ThrowError(ExceptionType::kIndexError,
+    Runtime_ThrowError(isolate, ExceptionType::kIndexError,
                        "list assignment index out of range");
     return kNullMaybeHandle;
   }
@@ -295,7 +295,7 @@ Maybe<bool> PyListKlass::Virtual_Less(Isolate* isolate,
   auto list_l = Handle<PyList>::cast(self);
   if (!IsPyList(other)) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "'<' not supported between instances of 'list' and '%s'",
         PyObject::GetKlass(other)->name()->buffer());
     return kNullMaybe;

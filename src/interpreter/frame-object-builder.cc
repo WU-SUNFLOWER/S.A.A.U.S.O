@@ -132,9 +132,9 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
 
 // 检查是否有位置形参没有有效值。
 // 若缺失形参，抛出 TypeError 并返回 false；否则返回 true。
-bool CheckMissingArgs(const FrameBuildContext& ctx) {
+bool CheckMissingArgs(Isolate* isolate, const FrameBuildContext& ctx) {
   if (ctx.localsplus_idx < ctx.real_formal_pos_arg_cnt) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s() missing %" PRId64 " required positional argument",
                         ctx.func_name->buffer(),
                         ctx.real_formal_pos_arg_cnt - ctx.localsplus_idx);
@@ -149,7 +149,8 @@ int64_t ComputeExtraPosArgCountFromPosArgs(int64_t actual_pos_cnt,
   return std::max<int64_t>(0, actual_pos_cnt - formal_pos_arg_cnt);
 }
 
-bool PackExtraPosArgsFromPosArgs(const FrameBuildContext& ctx,
+bool PackExtraPosArgsFromPosArgs(Isolate* isolate,
+                                 const FrameBuildContext& ctx,
                                  Handle<PyTuple> actual_pos_args,
                                  Handle<PyTuple>& extend_pos_args) {
   int64_t actual_pos_cnt =
@@ -164,7 +165,7 @@ bool PackExtraPosArgsFromPosArgs(const FrameBuildContext& ctx,
   if (!actual_pos_args.is_null() && extra_pos_cnt > 0) {
     // 打包拓展参数：如果函数不接受扩展参数，直接报错。
     if (extend_pos_args.is_null()) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s() takes %" PRId64
                           " positional arguments but %" PRId64 " were given",
                           ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
@@ -181,7 +182,8 @@ bool PackExtraPosArgsFromPosArgs(const FrameBuildContext& ctx,
   return true;
 }
 
-bool PackExtraPosArgsFromActualArgs(const FrameBuildContext& ctx,
+bool PackExtraPosArgsFromActualArgs(Isolate* isolate,
+                                    const FrameBuildContext& ctx,
                                     Handle<PyTuple> actual_args,
                                     int64_t actual_kw_arg_cnt,
                                     Handle<PyTuple>& extend_pos_args) {
@@ -197,7 +199,7 @@ bool PackExtraPosArgsFromActualArgs(const FrameBuildContext& ctx,
   if (extra_pos_cnt > 0) {
     // 打包拓展参数：如果函数不接受扩展参数，直接报错。
     if (extend_pos_args.is_null()) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s() takes %" PRId64
                           " positional arguments but %" PRId64 " were given",
                           ctx.func_name->buffer(), ctx.real_formal_pos_arg_cnt,
@@ -262,7 +264,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
 
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+        Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                             "%s() got multiple values for argument '%s'",
                             ctx.func_name->buffer(), key->buffer());
         return kNullMaybeHandle;
@@ -275,7 +277,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
         return kNullMaybeHandle;
       }
     } else {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s() got an unexpected keyword argument '%s'",
                           ctx.func_name->buffer(), key->buffer());
       return kNullMaybeHandle;
@@ -318,7 +320,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
         ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt));
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
-        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+        Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                             "%s() got multiple values for argument '%s'",
                             ctx.func_name->buffer(), key->buffer());
         return kNullMaybeHandle;
@@ -336,7 +338,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
       continue;
     }
 
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s() got an unexpected keyword argument '%s'",
                         ctx.func_name->buffer(), key->buffer());
     return kNullMaybeHandle;
@@ -383,12 +385,13 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
       isolate, AssignKwArgsFromDict(isolate, ctx, actual_kw_args, kw_args));
 
   FillDefaultArgs(ctx, func->default_args());
-  if (!CheckMissingArgs(ctx)) {
+  if (!CheckMissingArgs(isolate, ctx)) {
     return kNullMaybe;
   }
 
   Handle<PyTuple> extend_pos_args;
-  if (!PackExtraPosArgsFromPosArgs(ctx, actual_pos_args, extend_pos_args)) {
+  if (!PackExtraPosArgsFromPosArgs(isolate, ctx, actual_pos_args,
+                                   extend_pos_args)) {
     return kNullMaybe;
   }
 
@@ -440,13 +443,13 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
                                           kw_args));
 
   FillDefaultArgs(ctx, func->default_args());
-  if (!CheckMissingArgs(ctx)) {
+  if (!CheckMissingArgs(isolate, ctx)) {
     return kNullMaybe;
   }
 
   Handle<PyTuple> extend_pos_args;
-  if (!PackExtraPosArgsFromActualArgs(ctx, actual_args, actual_kw_arg_cnt,
-                                      extend_pos_args)) {
+  if (!PackExtraPosArgsFromActualArgs(isolate, ctx, actual_args,
+                                      actual_kw_arg_cnt, extend_pos_args)) {
     return kNullMaybe;
   }
 

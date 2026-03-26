@@ -110,7 +110,7 @@ MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Next(
     Handle<PyObject> self) {
   Handle<PyObject> result = NextImpl(self);
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration);
+    Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;

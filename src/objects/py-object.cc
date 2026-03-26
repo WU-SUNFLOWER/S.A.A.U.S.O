@@ -182,7 +182,7 @@ MaybeHandle<PyObject> PyObject::FloorDiv(Isolate* isolate,
   if (floor_div == nullptr) [[unlikely]] {
     auto self_name = GetKlass(self)->name();
     auto other_name = GetKlass(other)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "unsupported operand type(s) for //: '%s' and '%s'",
                         self_name->buffer(), other_name->buffer());
     return kNullMaybeHandle;

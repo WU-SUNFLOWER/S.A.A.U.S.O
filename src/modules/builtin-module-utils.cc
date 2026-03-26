@@ -35,7 +35,7 @@ MaybeHandle<PyModule> BuiltinModuleUtils::NewBuiltinModule(
 void BuiltinModuleUtils::ThrowNoKeywordArgsError(Isolate* isolate,
                                                  const char* module_name,
                                                  const char* func_name) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s.%s() takes no keyword arguments", module_name,
                       func_name);
 }

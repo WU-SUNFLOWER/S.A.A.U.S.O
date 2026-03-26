@@ -31,7 +31,7 @@ struct ModuleLocation {
 
 class ModuleFinder final {
  public:
-  ModuleFinder() = default;
+  ModuleFinder(Isolate* isolate) : isolate_(isolate) {};
 
   ModuleFinder(const ModuleFinder&) = delete;
   ModuleFinder& operator=(const ModuleFinder&) = delete;
@@ -44,6 +44,9 @@ class ModuleFinder final {
 
   bool ReadModuleSource(const ModuleLocation& location,
                         Handle<PyString>& out) const;
+
+ private:
+  Isolate* isolate_;
 };
 
 }  // namespace saauso::internal

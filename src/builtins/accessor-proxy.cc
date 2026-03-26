@@ -5,46 +5,46 @@
 #include "src/builtins/accessor-proxy.h"
 
 #include "src/builtins/accessors.h"
+#include "src/execution/exception-utils.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
-Maybe<bool> AccessorProxy::TryGet(Handle<PyObject> receiver,
-                                    Handle<PyObject> name,
-                                    Handle<PyObject>& out_value) {
+Maybe<bool> AccessorProxy::TryGet(Isolate* isolate,
+                                  Handle<PyObject> receiver,
+                                  Handle<PyObject> name,
+                                  Handle<PyObject>& out_value) {
+  out_value = Handle<PyObject>::null();
+
   const AccessorDescriptor* descriptor = LookupAccessor(name);
   if (descriptor == nullptr || descriptor->getter == nullptr) {
     return Maybe<bool>(false);
   }
 
   Handle<PyObject> value;
-  if (!descriptor->getter(receiver).ToHandle(&value)) {
-    out_value = Handle<PyObject>::null();
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, value,
+                             descriptor->getter(isolate, receiver));
 
   out_value = value;
   return Maybe<bool>(true);
 }
 
-Maybe<bool> AccessorProxy::TrySet(Handle<PyObject> receiver,
-                                    Handle<PyObject> name,
-                                    Handle<PyObject> value) {
+Maybe<bool> AccessorProxy::TrySet(Isolate* isolate,
+                                  Handle<PyObject> receiver,
+                                  Handle<PyObject> name,
+                                  Handle<PyObject> value) {
   const AccessorDescriptor* descriptor = LookupAccessor(name);
   if (descriptor == nullptr || descriptor->setter == nullptr) {
     return Maybe<bool>(false);
   }
 
-  if (descriptor->setter(receiver, value).IsEmpty()) {
-    return kNullMaybe;
-  }
+  RETURN_ON_EXCEPTION(isolate, descriptor->setter(isolate, receiver, value));
 
   return Maybe<bool>(true);
 }
 
-const AccessorDescriptor* AccessorProxy::LookupAccessor(
-    Handle<PyObject> name) {
+const AccessorDescriptor* AccessorProxy::LookupAccessor(Handle<PyObject> name) {
   if (!IsPyString(name)) {
     return nullptr;
   }

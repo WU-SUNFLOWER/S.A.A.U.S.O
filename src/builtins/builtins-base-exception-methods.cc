@@ -34,12 +34,12 @@ BUILTIN_METHOD(BaseExceptionMethods, Init) {
 
 BUILTIN_METHOD(BaseExceptionMethods, Str) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "BaseException.__str__() takes no keyword arguments");
     return kNullMaybeHandle;
   }
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "BaseException.__str__() takes no arguments");
     return kNullMaybeHandle;
   }
@@ -48,13 +48,13 @@ BUILTIN_METHOD(BaseExceptionMethods, Str) {
 
 BUILTIN_METHOD(BaseExceptionMethods, Repr) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "BaseException.__repr__() takes no keyword arguments");
     return kNullMaybeHandle;
   }
 
   if (!args.is_null() && args->length() != 0) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "BaseException.__repr__() takes no arguments");
     return kNullMaybeHandle;
   }

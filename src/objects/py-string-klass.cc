@@ -127,7 +127,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "str() takes no keyword arguments\n");
     return kNullMaybeHandle;
   }
@@ -160,12 +160,12 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
 
   if (argc == 2 || argc == 3) {
     if (IsPyString(input_value)) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "decoding str is not supported\n");
     } else {
       auto type_name = PyObject::GetKlass(input_value)->name();
       Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
+          isolate, ExceptionType::kTypeError,
           "decoding to str: need a bytes-like object, %s found\n",
           type_name->buffer());
     }
@@ -173,7 +173,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
   }
 
   if (argc > 3) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "str() takes at most 3 arguments (%" PRId64 " given)\n",
                         argc);
     return kNullMaybeHandle;
@@ -231,7 +231,7 @@ Maybe<bool> PyStringKlass::Virtual_Less(Isolate* isolate,
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "'<' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
     return kNullMaybe;
@@ -247,7 +247,7 @@ Maybe<bool> PyStringKlass::Virtual_Greater(Isolate* isolate,
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "'>' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
     return kNullMaybe;
@@ -263,7 +263,7 @@ Maybe<bool> PyStringKlass::Virtual_LessEqual(Isolate* isolate,
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "'<=' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
     return kNullMaybe;
@@ -279,7 +279,7 @@ Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Isolate* isolate,
   if (!IsPyString(other)) {
     auto other_name = PyObject::GetKlass(other)->name();
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "'>=' not supported between instances of 'str' and '%s'\n",
         other_name->buffer());
     return kNullMaybe;
@@ -309,7 +309,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Isolate* isolate,
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             s->length())) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kIndexError, "string index out of range");
+    Runtime_ThrowError(isolate, ExceptionType::kIndexError,
+                       "string index out of range");
     return kNullMaybeHandle;
   }
 
@@ -322,7 +323,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Isolate* isolate,
                                                  Handle<PyObject> other) {
   if (!IsPyString(other)) [[unlikely]] {
     auto other_klass = PyObject::GetKlass(other);
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "can only concatenate str (not \"%s\") to str\n",
                         other_klass->name()->buffer());
     return kNullMaybeHandle;

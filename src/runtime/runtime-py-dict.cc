@@ -28,7 +28,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc > 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "dict expected at most 1 argument, got %" PRId64, argc);
     return kNullMaybe;
   }
@@ -57,7 +57,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         ASSIGN_RETURN_ON_EXCEPTION(
             isolate, pair, Runtime_UnpackIterableObjectToTuple(isolate, elem));
         if (pair->length() != 2) {
-          Runtime_ThrowErrorf(ExceptionType::kTypeError,
+          Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                               "cannot convert dictionary update sequence "
                               "element #%" PRId64 " to a sequence",
                               i);
@@ -106,7 +106,8 @@ MaybeHandle<PyObject> Runtime_DictGetItem(Isolate* isolate,
     return kNullMaybeHandle;
   }
   if (!found) {
-    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    Runtime_ThrowError(isolate, ExceptionType::kKeyError,
+                       "key not found in dict");
     return kNullMaybeHandle;
   }
   assert(!value.is_null());
@@ -131,7 +132,8 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
     return kNullMaybeHandle;
   }
   if (!removed) {
-    Runtime_ThrowError(ExceptionType::kKeyError, "key not found in dict");
+    Runtime_ThrowError(isolate, ExceptionType::kKeyError,
+                       "key not found in dict");
     return kNullMaybeHandle;
   }
   return handle(isolate->py_none_object());
@@ -197,7 +199,7 @@ MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
       return kNullMaybeHandle;
     }
     if (!removed) {
-      Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
+      Runtime_ThrowError(isolate, ExceptionType::kKeyError, nullptr);
       return kNullMaybeHandle;
     }
     return value;
@@ -207,7 +209,7 @@ MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
     return default_or_null;
   }
 
-  Runtime_ThrowError(ExceptionType::kKeyError, nullptr);
+  Runtime_ThrowError(isolate, ExceptionType::kKeyError, nullptr);
   return kNullMaybeHandle;
 }
 
@@ -239,7 +241,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate, exists, dst_dict->ContainsKey(key), kNullMaybeHandle);
     if (!allow_overwriting && exists) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "got multiple values for keyword argument");
       return kNullMaybeHandle;
     }

@@ -47,7 +47,7 @@ MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
       isolate_, loaded, LoadModulePartOrNoneImpl(fullname, search_path_list));
 
   if (IsPyNone(loaded)) {
-    Runtime_ThrowErrorf(ExceptionType::kModuleNotFoundError,
+    Runtime_ThrowErrorf(isolate_, ExceptionType::kModuleNotFoundError,
                         "No module named '%s'", fullname->buffer());
     return kNullMaybe;
   }
@@ -120,8 +120,8 @@ MaybeHandle<PyObject> ModuleLoader::ExecuteModuleOrNoneInternal(
   if (loc.kind == ModuleFileKind::kSourcePy) {
     Handle<PyString> source;
     if (!finder_->ReadModuleSource(loc, source)) {
-      Runtime_ThrowErrorf(ExceptionType::kImportError, "cannot read '%s'",
-                          loc.origin.c_str());
+      Runtime_ThrowErrorf(isolate_, ExceptionType::kImportError,
+                          "cannot read '%s'", loc.origin.c_str());
       return kNullMaybe;
     }
     return ExecuteModuleFromSource(fullname, loc, source);

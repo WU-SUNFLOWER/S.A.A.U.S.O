@@ -18,7 +18,7 @@
 
 namespace saauso::internal {
 
-Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
+Maybe<int64_t> Runtime_DecodeIntLike(Isolate* isolate, Tagged<PyObject> value) {
   if (IsPySmi(value)) {
     return Maybe<int64_t>(PySmi::ToInt(Tagged<PySmi>::cast(value)));
   }
@@ -27,7 +27,7 @@ Maybe<int64_t> Runtime_DecodeIntLike(Tagged<PyObject> value) {
   }
 
   auto type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'%s' object cannot be interpreted as an integer",
                       type_name->buffer());
 

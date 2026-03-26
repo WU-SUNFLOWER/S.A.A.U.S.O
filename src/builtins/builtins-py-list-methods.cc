@@ -58,7 +58,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc == 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "descriptor '__new__' of 'list' object needs an "
                        "argument");
     return kNullMaybeHandle;
@@ -67,7 +67,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
   new_args = Runtime_NewTupleTailOrNull(args, 1);
 
   if (!IsPyTypeObject(type_object)) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "list.__new__() argument 1 must be type, not '%s'",
                         PyObject::GetKlass(type_object)->name()->buffer());
     return kNullMaybeHandle;
@@ -83,7 +83,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "list.append() takes exactly one argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -102,7 +102,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "list.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -112,7 +112,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Repr) {
 BUILTIN_METHOD(PyListBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "list.__str__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
@@ -124,7 +124,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
   EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   if (object->IsEmpty()) {
-    Runtime_ThrowError(ExceptionType::kIndexError, "pop from empty list");
+    Runtime_ThrowError(isolate, ExceptionType::kIndexError,
+                       "pop from empty list");
     return kNullMaybeHandle;
   }
   return scope.Escape(object->Pop());
@@ -143,7 +144,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   auto list = Handle<PyList>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "list.index() takes no keyword arguments");
     return kNullMaybeHandle;
   }
@@ -151,13 +152,13 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "list.index() takes at least 1 argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   if (argc > 3) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "list.index() takes at most 3 arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -170,11 +171,11 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
-                               Runtime_DecodeIntLike(*args->Get(1)));
+                               Runtime_DecodeIntLike(isolate, *args->Get(1)));
   }
   if (argc >= 3) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
-                               Runtime_DecodeIntLike(*args->Get(2)));
+                               Runtime_DecodeIntLike(isolate, *args->Get(2)));
   }
 
   if (begin < 0) {
@@ -196,8 +197,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
     Handle<PyString> repr_content;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, repr_content,
                                PyObject::Repr(isolate, target));
-    Runtime_ThrowErrorf(ExceptionType::kValueError, "%s is not in list",
-                        repr_content->buffer());
+    Runtime_ThrowErrorf(isolate, ExceptionType::kValueError,
+                        "%s is not in list", repr_content->buffer());
     return kNullMaybeHandle;
   }
 
@@ -231,7 +232,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   EscapableHandleScope scope;
 
   if (!args.is_null() && args->length() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "sort() takes no positional arguments");
     return kNullMaybeHandle;
   }
@@ -255,14 +256,14 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
         continue;
       }
       if (!IsPyString(*k)) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
+        Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                            "sort() keywords must be strings");
         return kNullMaybeHandle;
       }
       auto key_str = Handle<PyString>::cast(k);
       if (!key_str->IsEqualTo(*key_name) &&
           !key_str->IsEqualTo(*reverse_name)) {
-        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+        Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                             "sort() got an unexpected keyword argument");
         return kNullMaybeHandle;
       }
@@ -285,7 +286,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   if (!key_func.is_null() && !IsNormalPyFunction(key_func) &&
       !IsNativePyFunction(key_func) && !IsMethodObject(key_func)) {
-    Runtime_ThrowError(ExceptionType::kTypeError, "key must be callable");
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
+                       "key must be callable");
     return kNullMaybeHandle;
   }
 
@@ -301,7 +303,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
     for (int64_t i = 0; i < expected_length; ++i) {
       if (list->length() != expected_length) {
-        Runtime_ThrowError(ExceptionType::kValueError,
+        Runtime_ThrowError(isolate, ExceptionType::kValueError,
                            "list modified during sort (key)");
         return kNullMaybeHandle;
       }
@@ -336,7 +338,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   auto less = [](int64_t a, int64_t b, void* ctx) -> bool {
     auto* c = static_cast<CompareContext*>(ctx);
     if (c->list->length() != c->expected_length) {
-      Runtime_ThrowError(ExceptionType::kValueError,
+      Runtime_ThrowError(c->isolate, ExceptionType::kValueError,
                          "list modified during sort");
       return false;
     }
