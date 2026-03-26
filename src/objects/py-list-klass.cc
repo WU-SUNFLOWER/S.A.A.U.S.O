@@ -167,9 +167,9 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
     return kNullMaybeHandle;
   }
   if (argc == 1) {
-    RETURN_ON_EXCEPTION(isolate,
-                        Runtime_ExtendListByItratableObject(
-                            Handle<PyList>::cast(instance), pos_args->Get(0)));
+    RETURN_ON_EXCEPTION(isolate, Runtime_ExtendListByItratableObject(
+                                     isolate, Handle<PyList>::cast(instance),
+                                     pos_args->Get(0)));
   }
   return handle(isolate->py_none_object());
 }

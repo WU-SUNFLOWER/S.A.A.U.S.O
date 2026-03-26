@@ -15,10 +15,10 @@
 namespace saauso::internal {
 
 MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
+    Isolate* isolate,
     Handle<PyList> list,
     Handle<PyObject> iteratable) {
   HandleScope scope;
-  auto* isolate = Isolate::Current();
 
   // Fast Path: 直接展开tuple
   if (IsPyTuple(iteratable)) {
@@ -62,6 +62,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
 }
 
 MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
+    Isolate* isolate,
     Handle<PyObject> iterable) {
   EscapableHandleScope scope;
   Handle<PyTuple> tuple;
@@ -77,8 +78,8 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
 
   // Fallback: 通过迭代器进行转换
   Handle<PyList> tmp = PyList::NewInstance();
-  RETURN_ON_EXCEPTION(Isolate::Current(),
-                      Runtime_ExtendListByItratableObject(tmp, iterable));
+  RETURN_ON_EXCEPTION(
+      isolate, Runtime_ExtendListByItratableObject(isolate, tmp, iterable));
   tuple = PyTuple::NewInstance(tmp->length());
   for (auto i = 0; i < tmp->length(); ++i) {
     tuple->SetInternal(i, tmp->Get(i));

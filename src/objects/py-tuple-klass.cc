@@ -165,8 +165,9 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
     }
 
     Handle<PyTuple> unpacked;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, unpacked,
-                               Runtime_UnpackIterableObjectToTuple(iterable));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, unpacked,
+        Runtime_UnpackIterableObjectToTuple(isolate, iterable));
 
     int64_t unpacked_length = unpacked->length();
     result =

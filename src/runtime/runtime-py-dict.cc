@@ -48,13 +48,14 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
       }
     } else {
       Handle<PyTuple> elements;
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, elements,
-                                 Runtime_UnpackIterableObjectToTuple(input));
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, elements,
+          Runtime_UnpackIterableObjectToTuple(isolate, input));
       for (int64_t i = 0; i < elements->length(); ++i) {
         Handle<PyObject> elem = elements->Get(i);
         Handle<PyTuple> pair;
-        ASSIGN_RETURN_ON_EXCEPTION(isolate, pair,
-                                   Runtime_UnpackIterableObjectToTuple(elem));
+        ASSIGN_RETURN_ON_EXCEPTION(
+            isolate, pair, Runtime_UnpackIterableObjectToTuple(isolate, elem));
         if (pair->length() != 2) {
           Runtime_ThrowErrorf(ExceptionType::kTypeError,
                               "cannot convert dictionary update sequence "

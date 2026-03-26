@@ -219,7 +219,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
-  if (Runtime_ExtendListByItratableObject(Handle<PyList>::cast(self),
+  if (Runtime_ExtendListByItratableObject(isolate, Handle<PyList>::cast(self),
                                           args->Get(0))
           .IsEmpty()) {
     return kNullMaybeHandle;

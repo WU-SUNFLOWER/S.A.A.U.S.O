@@ -10,6 +10,8 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyList;
 class PyTuple;
 
@@ -19,6 +21,7 @@ class PyTuple;
 // - 成功时返回 None，同时 list 被成功拓展。
 // - 失败时返回 empty，并保证已设置 pending exception。
 MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
+    Isolate* isolate,
     Handle<PyList> list,
     Handle<PyObject> iteratable);
 
@@ -26,6 +29,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
 // - iterable 必须可被 Iter(...)。
 // - 失败时返回 empty，并保证已设置 pending exception。
 MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
+    Isolate* isolate,
     Handle<PyObject> iterable);
 
 }  // namespace saauso::internal
