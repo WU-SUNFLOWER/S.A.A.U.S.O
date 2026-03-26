@@ -19,7 +19,8 @@ namespace saauso::internal {
 
 namespace {
 
-Maybe<bool> ImportNameImpl(Handle<PyDict> module_dict,
+Maybe<bool> ImportNameImpl(Isolate* isolate,
+                           Handle<PyDict> module_dict,
                            Handle<PyDict> locals,
                            Handle<PyObject> name_obj,
                            bool ignore_private_member) {
@@ -55,14 +56,14 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
   if (IsPyTuple(all)) {
     auto names = Handle<PyTuple>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
-      RETURN_ON_EXCEPTION(
-          isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
+      RETURN_ON_EXCEPTION(isolate, ImportNameImpl(isolate, module_dict, locals,
+                                                  names->Get(i), false));
     }
   } else if (IsPyList(all)) {
     auto names = Handle<PyList>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
-      RETURN_ON_EXCEPTION(
-          isolate, ImportNameImpl(module_dict, locals, names->Get(i), false));
+      RETURN_ON_EXCEPTION(isolate, ImportNameImpl(isolate, module_dict, locals,
+                                                  names->Get(i), false));
     }
   } else {
     Runtime_ThrowError(ExceptionType::kTypeError,
@@ -123,8 +124,8 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
   } else {
     Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict);
     for (int64_t i = 0; i < keys->length(); ++i) {
-      RETURN_ON_EXCEPTION(
-          isolate, ImportNameImpl(module_dict, locals, keys->Get(i), true));
+      RETURN_ON_EXCEPTION(isolate, ImportNameImpl(isolate, module_dict, locals,
+                                                  keys->Get(i), true));
     }
   }
 
