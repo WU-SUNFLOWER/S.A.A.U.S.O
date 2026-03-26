@@ -171,7 +171,7 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
   }
 
   Handle<PyObject> value = default_or_null.is_null()
-                               ? handle(Isolate::Current()->py_none_object())
+                               ? handle(isolate->py_none_object())
                                : default_or_null;
 
   if (PyDict::Put(dict, key, value).IsEmpty()) {
