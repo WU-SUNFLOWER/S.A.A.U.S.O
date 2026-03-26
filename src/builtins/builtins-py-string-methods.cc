@@ -45,7 +45,7 @@ Maybe<void> PyStringBuiltinMethods::Install(Isolate* isolate,
 BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "str.__repr__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
@@ -56,7 +56,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Repr) {
 BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "str.__str__() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
@@ -69,7 +69,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "str.upper() takes no arguments (%" PRId64 " given)",
                         argc);
     return kNullMaybeHandle;
@@ -93,25 +93,26 @@ namespace {
 
 // 校验 str.index/find/rfind 的公共参数。
 // 成功返回 true；失败时抛出 TypeError 并返回 false。
-bool ValidateStringSearchArgs(Handle<PyDict> kwargs,
+bool ValidateStringSearchArgs(Isolate* isolate,
+                              Handle<PyDict> kwargs,
                               Handle<PyTuple> args,
                               const char* method_name,
                               int64_t& argc) {
   if (!kwargs.is_null() && kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s takes no keyword arguments", method_name);
     return false;
   }
 
   argc = args.is_null() ? 0 : args->length();
   if (argc < 1) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s takes at least 1 argument (%" PRId64 " given)",
                         method_name, argc);
     return false;
   }
   if (argc > 3) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s takes at most 3 arguments (%" PRId64 " given)",
                         method_name, argc);
     return false;
@@ -122,7 +123,8 @@ bool ValidateStringSearchArgs(Handle<PyDict> kwargs,
 
 // 校验搜索目标必须为 str，并解析可选的 begin/end 参数。
 // 成功返回 true；失败时抛出异常并返回 false。
-bool ParseStringSearchTarget(Handle<PyTuple> args,
+bool ParseStringSearchTarget(Isolate* isolate,
+                             Handle<PyTuple> args,
                              int64_t argc,
                              int64_t str_length,
                              Handle<PyString>& target_str,
@@ -131,8 +133,8 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
   auto target = args->Get(0);
   if (!IsPyString(target)) [[unlikely]] {
     auto type_name = PyObject::GetKlass(target)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError, "must be str, not %s",
-                        type_name->buffer());
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
+                        "must be str, not %s", type_name->buffer());
     return false;
   }
   target_str = Handle<PyString>::cast(target);
@@ -141,12 +143,12 @@ bool ParseStringSearchTarget(Handle<PyTuple> args,
   end = str_length;
 
   if (argc >= 2) {
-    if (!Runtime_DecodeIntLike(args->GetTagged(1)).To(&begin)) {
+    if (!Runtime_DecodeIntLike(isolate, args->GetTagged(1)).To(&begin)) {
       return false;
     }
   }
   if (argc >= 3) {
-    if (!Runtime_DecodeIntLike(args->GetTagged(2)).To(&end)) {
+    if (!Runtime_DecodeIntLike(isolate, args->GetTagged(2)).To(&end)) {
       return false;
     }
   }
@@ -171,15 +173,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
-  if (!ValidateStringSearchArgs(kwargs, args, "str.index()", argc)) {
+  if (!ValidateStringSearchArgs(isolate, kwargs, args, "str.index()", argc)) {
     return kNullMaybeHandle;
   }
 
   Handle<PyString> target_str;
   int64_t begin = 0;
   int64_t end = 0;
-  if (!ParseStringSearchTarget(args, argc, str_object->length(), target_str,
-                               begin, end)) {
+  if (!ParseStringSearchTarget(isolate, args, argc, str_object->length(),
+                               target_str, begin, end)) {
     return kNullMaybeHandle;
   }
 
@@ -188,7 +190,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
     result = str_object->IndexOf(target_str, begin, end);
   }
   if (result == PyString::kNotFound) {
-    Runtime_ThrowError(ExceptionType::kValueError, "substring not found");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
+                       "substring not found");
     return kNullMaybeHandle;
   }
 
@@ -200,15 +203,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
-  if (!ValidateStringSearchArgs(kwargs, args, "str.find()", argc)) {
+  if (!ValidateStringSearchArgs(isolate, kwargs, args, "str.find()", argc)) {
     return kNullMaybeHandle;
   }
 
   Handle<PyString> target_str;
   int64_t begin = 0;
   int64_t end = 0;
-  if (!ParseStringSearchTarget(args, argc, str_object->length(), target_str,
-                               begin, end)) {
+  if (!ParseStringSearchTarget(isolate, args, argc, str_object->length(),
+                               target_str, begin, end)) {
     return kNullMaybeHandle;
   }
 
@@ -228,15 +231,15 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
-  if (!ValidateStringSearchArgs(kwargs, args, "str.rfind()", argc)) {
+  if (!ValidateStringSearchArgs(isolate, kwargs, args, "str.rfind()", argc)) {
     return kNullMaybeHandle;
   }
 
   Handle<PyString> target_str;
   int64_t begin = 0;
   int64_t end = 0;
-  if (!ParseStringSearchTarget(args, argc, str_object->length(), target_str,
-                               begin, end)) {
+  if (!ParseStringSearchTarget(isolate, args, argc, str_object->length(),
+                               target_str, begin, end)) {
     return kNullMaybeHandle;
   }
 
@@ -258,7 +261,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc > 2) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "str.split() takes at most 2 arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -273,8 +276,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     sep_from_positional = true;
   }
   if (argc == 2) {
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, maxsplit,
-                               Runtime_DecodeIntLike(args->GetTagged(1)));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, maxsplit, Runtime_DecodeIntLike(isolate, args->GetTagged(1)));
     maxsplit_from_positional = true;
   }
 
@@ -290,7 +293,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
       auto key = item->Get(0);
       if (!IsPyString(key)) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
+        Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                            "keywords must be strings");
         return kNullMaybeHandle;
       }
@@ -310,7 +313,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       }
 
       auto key_str = Handle<PyString>::cast(key);
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "str.split() got an unexpected keyword argument '%s'",
                           key_str->buffer());
       return kNullMaybeHandle;
@@ -325,7 +328,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       assert(!sep_from_kwargs_handle.is_null());
       if (sep_from_positional) {
         Runtime_ThrowError(
-            ExceptionType::kTypeError,
+            isolate, ExceptionType::kTypeError,
             "str.split() got multiple values for argument 'sep'");
         return kNullMaybeHandle;
       }
@@ -340,14 +343,14 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       assert(!maxsplit_from_kwargs_handle.is_null());
       if (maxsplit_from_positional) {
         Runtime_ThrowError(
-            ExceptionType::kTypeError,
+            isolate, ExceptionType::kTypeError,
             "str.split() got multiple values for argument 'maxsplit'");
         return kNullMaybeHandle;
       }
 
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, maxsplit,
-          Runtime_DecodeIntLike(*maxsplit_from_kwargs_handle));
+          Runtime_DecodeIntLike(isolate, *maxsplit_from_kwargs_handle));
     }
   }
 
@@ -355,7 +358,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
     if (!IsPyString(*sep_obj)) {
       auto type_name = PyObject::GetKlass(sep_obj)->name();
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "must be str or None, not %s", type_name->buffer());
       return kNullMaybeHandle;
     }
@@ -375,7 +378,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
   auto str_object = Handle<PyString>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "str.join() takes no keyword arguments");
     return kNullMaybeHandle;
   }
@@ -383,7 +386,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "str.join() takes exactly one argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }

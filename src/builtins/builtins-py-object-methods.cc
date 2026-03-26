@@ -39,7 +39,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc == 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "descriptor '__new__' of 'object' object needs an "
                        "argument");
     return kNullMaybeHandle;
@@ -48,7 +48,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
   new_args = Runtime_NewTupleTailOrNull(args, 1);
 
   if (!IsPyTypeObject(type_object)) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "object.__new__() argument 1 must be type, not '%s'",
                         PyObject::GetKlass(type_object)->name()->buffer());
     return kNullMaybeHandle;
@@ -67,7 +67,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "object.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -78,7 +78,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) [[unlikely]] {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "object.__str__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }

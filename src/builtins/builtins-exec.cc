@@ -23,14 +23,15 @@ namespace saauso::internal {
 namespace {
 
 // 将 obj 解析为 dict。失败时抛出 TypeError 并返回 null。
-MaybeHandle<PyDict> CastToDictOrThrowTypeError(Handle<PyObject> obj,
+MaybeHandle<PyDict> CastToDictOrThrowTypeError(Isolate* isolate,
+                                               Handle<PyObject> obj,
                                                const char* role_name) {
   if (IsPyDictExact(obj)) {
     return MaybeHandle<PyDict>(Handle<PyDict>::cast(obj));
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(obj)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "exec() %s must be a dict, not %s", role_name,
                       type_name->buffer());
   return kNullMaybeHandle;
@@ -53,7 +54,8 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
 
     auto key = item->Get(0);
     if (!IsPyString(key)) {
-      Runtime_ThrowError(ExceptionType::kTypeError, "keywords must be strings");
+      Runtime_ThrowError(isolate, ExceptionType::kTypeError,
+                         "keywords must be strings");
       return kNullMaybeHandle;
     }
 
@@ -71,7 +73,7 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
     }
 
     auto key_str = Handle<PyString>::cast(key);
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "exec() got an unexpected keyword argument '%s'",
                         key_str->buffer());
     return kNullMaybeHandle;
@@ -101,7 +103,7 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
 
   if (found) {
     if (globals_from_positional) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'globals'");
       return kNullMaybeHandle;
     }
@@ -114,7 +116,7 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
 
   if (found) {
     if (locals_from_positional) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "exec() got multiple values for argument 'locals'");
       return kNullMaybeHandle;
     }
@@ -165,12 +167,12 @@ BUILTIN(Exec) {
   if (argc < 1 || argc > 3) [[unlikely]] {
     if (argc < 1) {
       Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
+          isolate, ExceptionType::kTypeError,
           "exec() takes at least 1 positional argument (%" PRId64 " given)",
           argc);
     } else {
       Runtime_ThrowErrorf(
-          ExceptionType::kTypeError,
+          isolate, ExceptionType::kTypeError,
           "exec() takes at most 3 positional arguments (%" PRId64 " given)",
           argc);
     }
@@ -206,7 +208,8 @@ BUILTIN(Exec) {
   if (globals_obj.is_null() || IsPyNone(*globals_obj)) {
     globals_dict = Execution::CurrentFrameGlobals(isolate);
   } else {
-    auto maybe_globals = CastToDictOrThrowTypeError(globals_obj, "globals");
+    auto maybe_globals =
+        CastToDictOrThrowTypeError(isolate, globals_obj, "globals");
     if (maybe_globals.is_null()) {
       return kNullMaybeHandle;
     }
@@ -229,7 +232,8 @@ BUILTIN(Exec) {
       }
     }
   } else {
-    auto maybe_locals = CastToDictOrThrowTypeError(locals_obj, "locals");
+    auto maybe_locals =
+        CastToDictOrThrowTypeError(isolate, locals_obj, "locals");
     if (maybe_locals.is_null()) {
       return kNullMaybeHandle;
     }
@@ -259,7 +263,7 @@ BUILTIN(Exec) {
                             isolate, Handle<PyCodeObject>::cast(source_or_code),
                             locals_dict, globals_dict));
   } else {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "exec() arg 1 must be a string or code object");
     return kNullMaybeHandle;
   }

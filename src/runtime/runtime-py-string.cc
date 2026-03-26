@@ -157,7 +157,8 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
 
   Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
-    Runtime_ThrowError(ExceptionType::kValueError, "empty separator");
+    Runtime_ThrowError(Isolate::Current(), ExceptionType::kValueError,
+                       "empty separator");
     return kNullMaybeHandle;
   }
 
@@ -187,7 +188,8 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
   EscapableHandleScope scope;
 
   if (iterable.is_null()) {
-    Runtime_ThrowError(ExceptionType::kTypeError, "can only join an iterable");
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
+                       "can only join an iterable");
     return kNullMaybeHandle;
   }
 
@@ -207,7 +209,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
     Handle<PyObject> item = parts->Get(i);
     if (!IsPyString(*item)) {
       auto type_name = PyObject::GetKlass(item)->name();
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "sequence item %" PRId64
                           ": expected str instance, %s found",
                           i, type_name->buffer());
@@ -216,7 +218,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
 
     int64_t item_length = Handle<PyString>::cast(item)->length();
     if (item_length > std::numeric_limits<int64_t>::max() - total_length) {
-      Runtime_ThrowError(ExceptionType::kValueError,
+      Runtime_ThrowError(isolate, ExceptionType::kValueError,
                          "join() result is too long");
       return kNullMaybeHandle;
     }
@@ -224,7 +226,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
 
     if (i + 1 < num_parts) {
       if (sep_length > std::numeric_limits<int64_t>::max() - total_length) {
-        Runtime_ThrowError(ExceptionType::kValueError,
+        Runtime_ThrowError(isolate, ExceptionType::kValueError,
                            "join() result is too long");
         return kNullMaybeHandle;
       }

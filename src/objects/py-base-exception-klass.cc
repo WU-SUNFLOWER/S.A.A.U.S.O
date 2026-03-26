@@ -123,7 +123,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
                         PyBaseExceptionKlass::GetInstance(isolate)));
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'BaseException' object but "
         "received a '%s'",
         instance_klass->name()->buffer());
@@ -132,7 +132,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
 
   Handle<PyDict> dict_kwargs = Handle<PyDict>::cast(kwargs);
   if (!dict_kwargs.is_null() && dict_kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "BaseException.__init__() takes no keyword arguments");
     return kNullMaybeHandle;
   }

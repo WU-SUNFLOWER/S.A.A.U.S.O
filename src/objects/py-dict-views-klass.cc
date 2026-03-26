@@ -406,7 +406,7 @@ MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(
         return dict->KeyAtIndex(index);
       });
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration);
+    Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;
@@ -492,7 +492,7 @@ MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Next(
         return dict->ItemAtIndex(index);
       });
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration);
+    Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;
@@ -578,7 +578,7 @@ MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Next(
         return dict->ValueAtIndex(index);
       });
   if (result.is_null()) {
-    Runtime_ThrowError(ExceptionType::kStopIteration);
+    Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
     return kNullMaybeHandle;
   }
   return result;

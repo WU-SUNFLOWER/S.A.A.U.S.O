@@ -78,7 +78,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
   if (receiver.is_null()) {
     int64_t argc = args.is_null() ? 0 : args->length();
     if (argc == 0) [[unlikely]] {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "unbound method %s.%s() needs an argument",
                           owner_type->own_klass()->name()->buffer(),
                           func->func_name()->buffer());
@@ -95,7 +95,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
       Runtime_IsSubtype(PyObject::GetKlass(receiver), owner_type->own_klass()));
   if (!is_valid_receiver) [[unlikely]] {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "descriptor '%s' for '%s' objects doesn't apply to a '%s' object",
         func->func_name()->buffer(), owner_type->own_klass()->name()->buffer(),
         PyObject::GetKlass(receiver)->name()->buffer());

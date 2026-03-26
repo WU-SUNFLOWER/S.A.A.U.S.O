@@ -172,7 +172,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
       builtins_handle->GetTagged(ST(exception), exception_type_tagged));
 
   if (!found) {
-    Runtime_ThrowError(ExceptionType::kRuntimeError,
+    Runtime_ThrowError(isolate_, ExceptionType::kRuntimeError,
                        "can't find exception type");
     return kNullMaybe;
   }

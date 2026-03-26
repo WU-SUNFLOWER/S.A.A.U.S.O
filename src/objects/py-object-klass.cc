@@ -89,7 +89,8 @@ void PyObjectKlass::Finalize(Isolate* isolate) {
 // static
 Maybe<uint64_t> PyObjectKlass::Generic_Hash(Isolate* isolate,
                                             Handle<PyObject> self) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError, "unhashable type: '%s'",
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
+                      "unhashable type: '%s'",
                       PyObject::GetKlass(self)->name()->buffer());
   return kNullMaybe;
 }
@@ -110,7 +111,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
   bool handled_by_accessor = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, handled_by_accessor,
-      AccessorProxy::TryGet(self, prop_name, out_prop_val));
+      AccessorProxy::TryGet(isolate, self, prop_name, out_prop_val));
   if (handled_by_accessor) {
     assert(!out_prop_val.is_null());
     return Maybe<bool>(true);
@@ -181,7 +182,7 @@ not_found:
   return Maybe<bool>(false);
 
 not_found_and_throw_error:
-  Runtime_ThrowErrorf(ExceptionType::kAttributeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                       "'%s' object has no attribute '%s'\n",
                       PyObject::GetKlass(self)->name()->buffer(),
                       Handle<PyString>::cast(prop_name)->buffer());
@@ -240,7 +241,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   auto properties = PyObject::GetProperties(self);
 
   if (!IsPyString(property_name)) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "attribute name must be string, not '%s'",
                         PyObject::GetKlass(property_name)->name()->buffer());
     return kNullMaybeHandle;
@@ -249,13 +250,13 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   bool handled_by_accessor = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, handled_by_accessor,
-      AccessorProxy::TrySet(self, property_name, property_value));
+      AccessorProxy::TrySet(isolate, self, property_name, property_value));
   if (handled_by_accessor) {
     return handle(isolate->py_none_object());
   }
 
   if (properties.is_null()) [[unlikely]] {
-    Runtime_ThrowErrorf(ExceptionType::kAttributeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                         "'%s' object has no attribute '%s'",
                         PyObject::GetKlass(self)->name()->buffer(),
                         Handle<PyString>::cast(property_name)->buffer());
@@ -274,7 +275,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Call(Isolate* isolate,
                                                   Handle<PyObject> receiver,
                                                   Handle<PyObject> args,
                                                   Handle<PyObject> kwargs) {
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'%s' object is not callable\n",
                       PyObject::GetKlass(self)->name()->buffer());
   return kNullMaybeHandle;
@@ -315,7 +316,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     // 你在子类的 __init__ 中显式调用了 object.__init__() 并传递了参数。
     if (instance_klass->vtable().init_instance_ != &Generic_InitInstance)
         [[unlikely]] {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "object.__init__() takes exactly one argument (the "
                           "instance to initialize)");
       return kNullMaybeHandle;
@@ -327,7 +328,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     // 你给一个“空空如也”的类（或者只继承 object 的类）传递了参数。
     if (instance_klass->vtable().new_instance_ == &Generic_NewInstance)
         [[unlikely]] {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.__init__() takes exactly one argument (the "
                           "instance to initialize)",
                           PyObject::GetKlass(instance)->name()->buffer());

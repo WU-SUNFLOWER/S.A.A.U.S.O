@@ -122,7 +122,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Isolate* isolate,
     double value = self_value + Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for +: 'int' and '%s'",
                       PyObject::GetKlass(other)->name()->buffer());
   return kNullMaybeHandle;
@@ -137,7 +137,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Isolate* isolate,
     double value = self_value - Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for -: 'int' and '%s'",
                       PyObject::GetKlass(other)->name()->buffer());
   return kNullMaybeHandle;
@@ -152,7 +152,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Isolate* isolate,
     double value = self_value * Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for *: 'int' and '%s'",
                       PyObject::GetKlass(other)->name()->buffer());
   return kNullMaybeHandle;
@@ -173,7 +173,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Isolate* isolate,
         static_cast<double>(self_value) / Handle<PyFloat>::cast(other)->value();
     return PyFloat::NewInstance(value);
   }
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for /: 'int' and '%s'",
                       PyObject::GetKlass(other)->name()->buffer());
   return kNullMaybeHandle;
@@ -187,7 +187,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
   if (IsPySmi(other)) {
     int64_t other_value = PySmi::cast(*other).value();
     if (other_value == 0) {
-      Runtime_ThrowError(ExceptionType::kZeroDivisionError,
+      Runtime_ThrowError(isolate, ExceptionType::kZeroDivisionError,
                          "integer division or modulo by zero");
       return kNullMaybeHandle;
     }
@@ -196,13 +196,13 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     if (other_value == 0) {
-      Runtime_ThrowError(ExceptionType::kZeroDivisionError,
+      Runtime_ThrowError(isolate, ExceptionType::kZeroDivisionError,
                          "float floor division by zero");
       return kNullMaybeHandle;
     }
     return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
   }
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for //: 'int' and '%s'",
                       PyObject::GetKlass(other)->name()->buffer());
   return kNullMaybeHandle;
@@ -218,7 +218,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Isolate* isolate,
     double value = PythonMod(self_value, other_value);
     return PyFloat::NewInstance(value);
   }
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for %%: 'int' and '%s'",
                       PyObject::GetKlass(other)->name()->buffer());
   return kNullMaybeHandle;
@@ -239,7 +239,7 @@ Maybe<bool> PySmiKlass::Virtual_Greater(Isolate* isolate,
     return Maybe<bool>(self_value > other_value);
   }
   auto other_name = PyObject::GetKlass(other)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'>' not supported between instances of 'int' and '%s'\n",
                       other_name->buffer());
   return kNullMaybe;
@@ -257,7 +257,7 @@ Maybe<bool> PySmiKlass::Virtual_Less(Isolate* isolate,
     return Maybe<bool>(self_value < other_value);
   }
   auto other_name = PyObject::GetKlass(other)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'<' not supported between instances of 'int' and '%s'\n",
                       other_name->buffer());
   return kNullMaybe;

@@ -53,12 +53,12 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
   EscapableHandleScope scope;
 
   if (code.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "code object must not be null");
     return kNullMaybeHandle;
   }
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "locals and globals must not be null");
     return kNullMaybeHandle;
   }
@@ -106,7 +106,7 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
   EscapableHandleScope scope;
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "locals and globals must not be null");
     return kNullMaybeHandle;
   }
@@ -147,7 +147,7 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
   EscapableHandleScope scope;
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "locals and globals must not be null");
     return kNullMaybeHandle;
   }

@@ -46,7 +46,8 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     }
     auto key = item->Get(0);
     if (!IsPyString(*key)) {
-      Runtime_ThrowError(ExceptionType::kTypeError, "keywords must be strings");
+      Runtime_ThrowError(isolate, ExceptionType::kTypeError,
+                         "keywords must be strings");
       return kNullMaybeHandle;
     }
 
@@ -73,7 +74,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     }
 
     auto key_str = Handle<PyString>::cast(key);
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "'print' got an unexpected keyword argument '%s'",
                         key_str->buffer());
     return kNullMaybeHandle;
@@ -91,7 +92,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
 
   if (!options.sep.is_null() && !IsPyNone(options.sep)) {
     if (!IsPyString(*options.sep)) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "sep must be None or str, not %s",
                           PyObject::GetKlass(options.sep)->name()->buffer());
       return kNullMaybeHandle;
@@ -102,7 +103,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
 
   if (!options.end.is_null() && !IsPyNone(options.end)) {
     if (!IsPyString(*options.end)) {
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "end must be None or str, not %s",
                           PyObject::GetKlass(options.end)->name()->buffer());
       return kNullMaybeHandle;
@@ -112,7 +113,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
   }
 
   if (!options.file.is_null() && !IsPyNone(options.file)) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "print() currently only supports file=None");
     return kNullMaybeHandle;
   }

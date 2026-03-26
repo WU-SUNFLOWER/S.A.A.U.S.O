@@ -45,19 +45,21 @@ RandomNumberGenerator* GetRng(Isolate* isolate) {
   return isolate->random_number_generator();
 }
 
-void FailArgRangeEmpty(const char* func_name) {
-  Runtime_ThrowErrorf(ExceptionType::kValueError, "empty range for %s()",
-                      func_name);
+void FailArgRangeEmpty(Isolate* isolate, const char* func_name) {
+  Runtime_ThrowErrorf(isolate, ExceptionType::kValueError,
+                      "empty range for %s()", func_name);
 }
 
 // 成功时返回 true 并写入 *out；类型不符时抛 TypeError 并返回 false。
-Maybe<int64_t> ExtractSmi(Handle<PyObject> value, const char* func_name) {
+Maybe<int64_t> ExtractSmi(Isolate* isolate,
+                          Handle<PyObject> value,
+                          const char* func_name) {
   if (IsPySmi(value)) {
     return Maybe<int64_t>(PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s() argument must be int, not '%s'", func_name,
                       type_name->buffer());
 
@@ -75,7 +77,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
                                             "seed");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc > 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s.seed() takes at most 1 argument (" PRId64 " given)",
                         kModuleName, argc);
     return kNullMaybe;
@@ -89,7 +91,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
       seed = RandomNumberGenerator::NowSeed();
     } else {
       int64_t val = 0;
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, val, ExtractSmi(a, "seed"));
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, val, ExtractSmi(isolate, a, "seed"));
       seed = static_cast<uint64_t>(val);
     }
   }
@@ -104,7 +106,7 @@ BUILTIN_MODULE_FUNC(Random_Random) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 0,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.random() takes 0 positional arguments but "
                           "%" PRId64 " were given",
                           kModuleName, argc));
@@ -118,19 +120,21 @@ BUILTIN_MODULE_FUNC(Random_RandInt) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 2,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.randint() takes exactly 2 arguments (%" PRId64
                           " given)",
                           kModuleName, argc));
 
   int64_t a = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, a, ExtractSmi(args->Get(0), "randint"));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, a,
+                             ExtractSmi(isolate, args->Get(0), "randint"));
 
   int64_t b = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, b, ExtractSmi(args->Get(1), "randint"));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, b,
+                             ExtractSmi(isolate, args->Get(1), "randint"));
 
   if (a > b) {
-    FailArgRangeEmpty("randint");
+    FailArgRangeEmpty(isolate, "randint");
     return kNullMaybe;
   }
 
@@ -145,7 +149,7 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
                                             "randrange");
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   if (argc < 1 || argc > 3) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s.randrange() takes from 1 to 3 positional "
                         "arguments but %" PRId64 " were given",
                         kModuleName, argc);
@@ -157,26 +161,27 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
 
   if (argc == 1) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, stop,
-                               ExtractSmi(args->Get(0), "randrange"));
+                               ExtractSmi(isolate, args->Get(0), "randrange"));
   } else {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, start,
-                               ExtractSmi(args->Get(0), "randrange"));
+                               ExtractSmi(isolate, args->Get(0), "randrange"));
     ASSIGN_RETURN_ON_EXCEPTION(isolate, stop,
-                               ExtractSmi(args->Get(1), "randrange"));
+                               ExtractSmi(isolate, args->Get(1), "randrange"));
     if (argc == 3) {
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, step,
-                                 ExtractSmi(args->Get(2), "randrange"));
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, step, ExtractSmi(isolate, args->Get(2), "randrange"));
     }
   }
 
   if (step == 0) {
-    Runtime_ThrowError(ExceptionType::kValueError, "zero step for randrange()");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
+                       "zero step for randrange()");
     return kNullMaybe;
   }
 
   if (step > 0) {
     if (start >= stop) {
-      FailArgRangeEmpty("randrange");
+      FailArgRangeEmpty(isolate, "randrange");
       return kNullMaybe;
     }
     uint64_t width = static_cast<uint64_t>(stop - start);
@@ -188,7 +193,7 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
   }
 
   if (start <= stop) {
-    FailArgRangeEmpty("randrange");
+    FailArgRangeEmpty(isolate, "randrange");
     return kNullMaybe;
   }
 
@@ -211,17 +216,17 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.getrandbits() takes exactly 1 argument "
                           "(%" PRId64 " given)",
                           kModuleName, argc));
 
   int64_t k = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, k,
-                             ExtractSmi(args->Get(0), "getrandbits"));
+                             ExtractSmi(isolate, args->Get(0), "getrandbits"));
 
   if (k < 0) {
-    Runtime_ThrowError(ExceptionType::kValueError,
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
                        "number of bits must be non-negative");
     return kNullMaybe;
   }
@@ -230,7 +235,7 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
   }
   // MVP：当前虚拟机没有 big-int，因此仅支持可表示为 Smi 的 bit 数。
   if (k > 62) {
-    Runtime_ThrowError(ExceptionType::kRuntimeError,
+    Runtime_ThrowError(isolate, ExceptionType::kRuntimeError,
                        "getrandbits() k too large for SAAUSO MVP int");
     return kNullMaybe;
   }
@@ -246,7 +251,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.choice() takes exactly 1 argument (%" PRId64
                           " given)",
                           kModuleName, argc));
@@ -261,7 +266,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
   if (IsPyList(seq)) {
     auto list = Handle<PyList>::cast(seq);
     if (list->length() == 0) {
-      Runtime_ThrowError(ExceptionType::kIndexError,
+      Runtime_ThrowError(isolate, ExceptionType::kIndexError,
                          "Cannot choose from an empty sequence");
       return kNullMaybe;
     }
@@ -273,7 +278,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
   if (IsPyTuple(seq)) {
     auto tuple = Handle<PyTuple>::cast(seq);
     if (tuple->length() == 0) {
-      Runtime_ThrowError(ExceptionType::kIndexError,
+      Runtime_ThrowError(isolate, ExceptionType::kIndexError,
                          "Cannot choose from an empty sequence");
       return kNullMaybe;
     }
@@ -285,7 +290,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
   if (IsPyString(seq)) {
     auto s = Handle<PyString>::cast(seq);
     if (s->length() == 0) {
-      Runtime_ThrowError(ExceptionType::kIndexError,
+      Runtime_ThrowError(isolate, ExceptionType::kIndexError,
                          "Cannot choose from an empty sequence");
       return kNullMaybe;
     }
@@ -296,7 +301,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(seq)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s.choice() unsupported sequence type '%s'", kModuleName,
                       type_name->buffer());
   return kNullMaybe;
@@ -308,14 +313,14 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.shuffle() takes exactly 1 argument (%" PRId64
                           " given)",
                           kModuleName, argc));
   Handle<PyObject> x = args->Get(0);
   if (!IsPyListExact(x)) {
     Handle<PyString> type_name = PyObject::GetKlass(x)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s.shuffle() argument must be list, not '%s'",
                         kModuleName, type_name->buffer());
     return kNullMaybe;

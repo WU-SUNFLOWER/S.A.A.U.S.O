@@ -234,7 +234,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'dict' object but received a '%s'",
         instance_klass->name()->buffer());
     return kNullMaybeHandle;

@@ -71,7 +71,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
       // 不允许出现一种以上的特殊内存布局基类
       if (++native_layout_count > 1) {
-        Runtime_ThrowError(ExceptionType::kTypeError,
+        Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                            "multiple bases have instance lay-out conflict");
         return kNullMaybeHandle;
       }
@@ -196,9 +196,10 @@ MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
     return scope.Escape(out_prop_val);
   }
 
-  Runtime_ThrowErrorf(
-      ExceptionType::kAttributeError, "type object '%s' has no attribute '%s'",
-      klass->name()->buffer(), Handle<PyString>::cast(prop_name)->buffer());
+  Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
+                      "type object '%s' has no attribute '%s'",
+                      klass->name()->buffer(),
+                      Handle<PyString>::cast(prop_name)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -269,7 +270,7 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
 
   if (!IsPyNone(init_result)) [[unlikely]] {
     auto type_name = PyObject::GetKlass(init_result)->name();
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "__init__() should return None, not '%s'\n",
                         type_name->buffer());
     return kNullMaybeHandle;

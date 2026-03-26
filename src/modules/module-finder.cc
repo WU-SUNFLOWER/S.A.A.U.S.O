@@ -33,7 +33,7 @@ Maybe<ModuleLocation> ModuleFinder::FindModuleLocation(
       continue;
     }
     if (!IsPyString(elem)) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                          "sys.path items must be strings");
       return kNullMaybe;
     }

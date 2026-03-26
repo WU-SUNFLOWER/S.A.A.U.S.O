@@ -65,14 +65,15 @@ void FunctionCallbackInfo::ThrowRuntimeError(std::string_view message) const {
     return;
   }
 
-  auto* internal_isolate = reinterpret_cast<i::Isolate*>(impl->isolate);
-  if (internal_isolate == nullptr) {
+  auto* i_isolate = reinterpret_cast<i::Isolate*>(impl->isolate);
+  if (i_isolate == nullptr) {
     return;
   }
 
   i::HandleScope handle_scope;
   std::string error(message);
-  i::Runtime_ThrowError(i::ExceptionType::kRuntimeError, error.c_str());
+  i::Runtime_ThrowError(i_isolate, i::ExceptionType::kRuntimeError,
+                        error.c_str());
 }
 
 void FunctionCallbackInfo::SetReturnValue(Local<Value> value) {

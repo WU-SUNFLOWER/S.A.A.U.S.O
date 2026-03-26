@@ -217,13 +217,13 @@ void Interpreter::EvalCurrentFrame() {
           continue;
         }
 
-        Runtime_ThrowError(ExceptionType::kTypeError);
+        Runtime_ThrowError(isolate_, ExceptionType::kTypeError);
         isolate_->exception_state()->set_pending_exception_origin_pc(
             current_pc);
         goto pending_exception_unwind;
       }
     } else {
-      Runtime_ThrowError(ExceptionType::kTypeError);
+      Runtime_ThrowError(isolate_, ExceptionType::kTypeError);
       isolate_->exception_state()->set_pending_exception_origin_pc(current_pc);
       goto pending_exception_unwind;
     }
@@ -275,7 +275,7 @@ void Interpreter::EvalCurrentFrame() {
         isolate_->exception_state()->set_pending_exception_origin_pc(raise_pc);
         break;
       default:
-        Runtime_ThrowErrorf(ExceptionType::kTypeError,
+        Runtime_ThrowErrorf(isolate_, ExceptionType::kTypeError,
                             "invalid RAISE_VARARGS oparg=%d", op_arg);
         goto pending_exception_unwind;
     }
@@ -380,7 +380,7 @@ void Interpreter::EvalCurrentFrame() {
     // Python中栈帧的locals是按需创建的。
     // 我们不保证一个函数栈帧当中一定有一个有效的locals字典！
     if (locals.is_null()) [[unlikely]] {
-      Runtime_ThrowError(ExceptionType::kRuntimeError,
+      Runtime_ThrowError(isolate_, ExceptionType::kRuntimeError,
                          "no locals found when storing name");
       goto pending_exception_unwind;
     }
@@ -412,7 +412,7 @@ void Interpreter::EvalCurrentFrame() {
         tuple, Runtime_UnpackIterableObjectToTuple(isolate_, sequence));
 
     if (tuple->length() != op_arg) {
-      Runtime_ThrowErrorf(ExceptionType::kValueError,
+      Runtime_ThrowErrorf(isolate_, ExceptionType::kValueError,
                           "unpack expected %d values, got %d", op_arg,
                           static_cast<int>(tuple->length()));
       goto pending_exception_unwind;
@@ -498,7 +498,8 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     // 4. 还没找到，抛错误
-    Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
+    Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
+                        "name '%s' is not defined",
                         Tagged<PyString>::cast(key)->buffer());
   })
 
@@ -532,7 +533,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> update = POP();
     Handle<PyObject> target = TOP();
     if (!IsPyDictExact(target) || !IsPyDictExact(update)) {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                          "DICT_MERGE expected dict operands");
       goto pending_exception_unwind;
     }
@@ -606,7 +607,7 @@ void Interpreter::EvalCurrentFrame() {
                                  PyObject::GreaterEqual(isolate_, l, r));
         break;
       default:
-        Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
+        Runtime_ThrowErrorf(isolate_, ExceptionType::kRuntimeError,
                             "unknown compare op type: %d", compare_op_type);
         goto pending_exception_unwind;
     }
@@ -663,7 +664,7 @@ void Interpreter::EvalCurrentFrame() {
         parent_module_name_obj,
         PyObject::GetAttr(isolate_, parent_module, ST(name)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
-      Runtime_ThrowError(ExceptionType::kTypeError,
+      Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                          "module __name__ must be a string");
       goto pending_exception_unwind;
     }
@@ -737,7 +738,8 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    Runtime_ThrowErrorf(ExceptionType::kNameError, "name '%s' is not defined",
+    Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
+                        "name '%s' is not defined",
                         Tagged<PyString>::cast(key)->buffer());
   })
 
@@ -875,12 +877,12 @@ void Interpreter::EvalCurrentFrame() {
         code_object->localsplusnames()->GetTagged(op_arg));
     char kind = code_object->localspluskinds()->Get(op_arg);
     if (kind & PyCodeObject::LocalsPlusKind::kFastFree) {
-      Runtime_ThrowErrorf(ExceptionType::kNameError,
+      Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
                           "cannot access free variable '%s' where it is "
                           "not associated with a value in enclosing scope",
                           var_name->buffer());
     } else {
-      Runtime_ThrowErrorf(ExceptionType::kNameError,
+      Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
                           "local variable '%s' referenced before assignment",
                           var_name->buffer());
     }
@@ -973,7 +975,7 @@ void Interpreter::EvalCurrentFrame() {
     if ((op_arg & 1) != 0) {
       Handle<PyObject> kw = POP();
       if (!IsPyDictExact(kw)) [[unlikely]] {
-        Runtime_ThrowError(ExceptionType::kTypeError,
+        Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                            "CALL_FUNCTION_EX expected a dict for **kwargs");
         goto pending_exception_unwind;
       }
@@ -1038,7 +1040,7 @@ void Interpreter::EvalCurrentFrame() {
         break;
       }
       default:
-        Runtime_ThrowErrorf(ExceptionType::kRuntimeError,
+        Runtime_ThrowErrorf(isolate_, ExceptionType::kRuntimeError,
                             "unsupported intrinsic for CALL_INTRINSIC_1: %d",
                             op_arg);
         goto pending_exception_unwind;

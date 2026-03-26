@@ -142,13 +142,13 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "tuple() takes no keyword arguments\n");
     return kNullMaybeHandle;
   }
 
   if (argc > 1) {
-    Runtime_ThrowErrorf(ExceptionType::kTypeError,
+    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "tuple expected at most 1 argument, got %" PRId64 "\n",
                         argc);
     return kNullMaybeHandle;
@@ -208,14 +208,14 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Isolate* isolate,
                                                    Handle<PyObject> subscr) {
   auto tuple = Handle<PyTuple>::cast(self);
   if (!IsPySmi(*subscr)) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "tuple indices must be integers\n");
     return kNullMaybeHandle;
   }
 
   auto index = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(index, static_cast<int64_t>(0), tuple->length())) {
-    Runtime_ThrowError(ExceptionType::kIndexError,
+    Runtime_ThrowError(isolate, ExceptionType::kIndexError,
                        "tuple index out of range\n");
     return kNullMaybeHandle;
   }
@@ -227,7 +227,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
     Handle<PyObject> self,
     Handle<PyObject> subscr,
     Handle<PyObject> value) {
-  Runtime_ThrowError(ExceptionType::kTypeError,
+  Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                      "'tuple' object does not support item assignment\n");
   return kNullMaybeHandle;
 }
@@ -235,7 +235,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
 MaybeHandle<PyObject> PyTupleKlass::Virtual_DelSubscr(Isolate* isolate,
                                                       Handle<PyObject> self,
                                                       Handle<PyObject> subscr) {
-  Runtime_ThrowError(ExceptionType::kTypeError,
+  Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                      "'tuple' object doesn't support item deletion\n");
   return kNullMaybeHandle;
 }

@@ -39,7 +39,9 @@ constexpr const char* kModuleName = "time";
   V("sleep", Time_Sleep)
 
 // 成功时返回有效值；类型不符时抛 TypeError 并返回 kNullMaybe。
-Maybe<double> ExtractSeconds(Handle<PyObject> value, const char* func_name) {
+Maybe<double> ExtractSeconds(Isolate* isolate,
+                             Handle<PyObject> value,
+                             const char* func_name) {
   if (IsPyFloat(value)) {
     return Maybe<double>(Handle<PyFloat>::cast(value)->value());
   }
@@ -49,7 +51,7 @@ Maybe<double> ExtractSeconds(Handle<PyObject> value, const char* func_name) {
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(value)->name();
-  Runtime_ThrowErrorf(ExceptionType::kTypeError,
+  Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s() argument must be int or float, not '%s'", func_name,
                       type_name->buffer());
   return kNullMaybe;
@@ -79,7 +81,7 @@ BUILTIN_MODULE_FUNC(Time_Time) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 0,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.time() takes 0 positional arguments but %" PRId64
                           " were given",
                           kModuleName, argc));
@@ -92,7 +94,7 @@ BUILTIN_MODULE_FUNC(Time_PerfCounter) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 0,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.perf_counter() takes 0 positional arguments "
                           "but %" PRId64 " were given",
                           kModuleName, argc));
@@ -110,17 +112,17 @@ BUILTIN_MODULE_FUNC(Time_Sleep) {
   int64_t argc = BUILTIN_MODULE_ARGC(args);
   BUILTIN_MODULE_EXPECT_ARGC_EQ_OR_RETURN(
       argc, 1,
-      Runtime_ThrowErrorf(ExceptionType::kTypeError,
+      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.sleep() takes exactly 1 argument (%" PRId64
                           " given)",
                           kModuleName, argc));
 
   double seconds = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, seconds,
-                             ExtractSeconds(args->Get(0), "sleep"));
+                             ExtractSeconds(isolate, args->Get(0), "sleep"));
 
   if (seconds < 0) {
-    Runtime_ThrowError(ExceptionType::kValueError,
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
                        "sleep length must be non-negative");
     return kNullMaybe;
   }

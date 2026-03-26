@@ -11,14 +11,17 @@
 
 namespace saauso::internal {
 
+class Isolate;
 struct AccessorDescriptor;
 
 class AccessorProxy : public AllStatic {
  public:
-  static Maybe<bool> TryGet(Handle<PyObject> receiver,
+  static Maybe<bool> TryGet(Isolate* isolate,
+                            Handle<PyObject> receiver,
                             Handle<PyObject> name,
                             Handle<PyObject>& out_value);
-  static Maybe<bool> TrySet(Handle<PyObject> receiver,
+  static Maybe<bool> TrySet(Isolate* isolate,
+                            Handle<PyObject> receiver,
                             Handle<PyObject> name,
                             Handle<PyObject> value);
 

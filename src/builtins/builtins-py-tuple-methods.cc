@@ -41,7 +41,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Repr) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "tuple.__repr__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -52,7 +52,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Str) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "tuple.__str__() takes no arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -64,7 +64,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   auto tuple = Handle<PyTuple>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Runtime_ThrowError(ExceptionType::kTypeError,
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "tuple.index() takes no keyword arguments");
     return kNullMaybeHandle;
   }
@@ -72,13 +72,13 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc < 1) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "tuple.index() takes at least 1 argument (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
   if (argc > 3) {
     Runtime_ThrowErrorf(
-        ExceptionType::kTypeError,
+        isolate, ExceptionType::kTypeError,
         "tuple.index() takes at most 3 arguments (%" PRId64 " given)", argc);
     return kNullMaybeHandle;
   }
@@ -89,12 +89,12 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
   int64_t end = length;
 
   if (argc >= 2) {
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
-                               Runtime_DecodeIntLike(args->GetTagged(1)));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, begin, Runtime_DecodeIntLike(isolate, args->GetTagged(1)));
   }
   if (argc >= 3) {
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
-                               Runtime_DecodeIntLike(args->GetTagged(2)));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, end, Runtime_DecodeIntLike(isolate, args->GetTagged(2)));
   }
 
   if (begin < 0) {
@@ -113,7 +113,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
                                tuple->IndexOf(target, begin, end));
   }
   if (result == PyTuple::kNotFound) {
-    Runtime_ThrowError(ExceptionType::kValueError,
+    Runtime_ThrowError(isolate, ExceptionType::kValueError,
                        "tuple.index(x): x not in tuple");
     return kNullMaybeHandle;
   }
