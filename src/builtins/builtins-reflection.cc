@@ -49,7 +49,7 @@ BUILTIN(IsInstance) {
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, matched,
         Runtime_IsInstanceOfTypeObject(
-            object, Handle<PyTypeObject>::cast(type_or_tuple)));
+            isolate, object, Handle<PyTypeObject>::cast(type_or_tuple)));
   } else if (IsPyTuple(type_or_tuple)) {
     auto tuple = Handle<PyTuple>::cast(type_or_tuple);
     for (auto i = 0; i < tuple->length(); ++i) {
@@ -61,9 +61,10 @@ BUILTIN(IsInstance) {
         return kNullMaybeHandle;
       }
 
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, matched,
-                                 Runtime_IsInstanceOfTypeObject(
-                                     object, Handle<PyTypeObject>::cast(elem)));
+      ASSIGN_RETURN_ON_EXCEPTION(
+          isolate, matched,
+          Runtime_IsInstanceOfTypeObject(isolate, object,
+                                         Handle<PyTypeObject>::cast(elem)));
 
       if (matched) {
         break;

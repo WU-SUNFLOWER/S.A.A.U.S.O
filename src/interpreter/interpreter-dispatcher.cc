@@ -195,8 +195,9 @@ void Interpreter::EvalCurrentFrame() {
     bool matched = false;
     if (IsPyTypeObject(match_type)) {
       ASSIGN_GOTO_ON_EXCEPTION(
-          matched, Runtime_IsInstanceOfTypeObject(
-                       exception, Handle<PyTypeObject>::cast(match_type)));
+          matched,
+          Runtime_IsInstanceOfTypeObject(
+              isolate_, exception, Handle<PyTypeObject>::cast(match_type)));
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
 
@@ -210,7 +211,7 @@ void Interpreter::EvalCurrentFrame() {
           bool current_matched;
           ASSIGN_GOTO_ON_EXCEPTION(
               current_matched,
-              Runtime_IsInstanceOfTypeObject(exception,
+              Runtime_IsInstanceOfTypeObject(isolate_, exception,
                                              Handle<PyTypeObject>::cast(elem)));
           matched |= current_matched;
           continue;
