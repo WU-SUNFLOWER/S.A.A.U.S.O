@@ -102,9 +102,9 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   return scope.Escape(type_object);
 }
 
-Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
+Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
+                                           Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object) {
-  auto* isolate [[maybe_unused]] = Isolate::Current();
   auto mro_of_object = PyObject::GetKlass(object)->mro();
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
@@ -256,7 +256,7 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
   bool is_instance_of_called_type = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_instance_of_called_type,
-      Runtime_IsInstanceOfTypeObject(result, type_object));
+      Runtime_IsInstanceOfTypeObject(isolate, result, type_object));
   if (!is_instance_of_called_type) {
     return result;
   }

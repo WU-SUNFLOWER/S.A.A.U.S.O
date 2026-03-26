@@ -212,9 +212,8 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   Handle<PyDict> builtins = handle(isolate->builtins());
   Handle<PyObject> stop_iter_type;
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), found,
-                                   builtins->Get(ST(stop_iter), stop_iter_type),
-                                   kNullMaybe);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, found, builtins->Get(ST(stop_iter), stop_iter_type), kNullMaybe);
   assert(found);
   assert(!stop_iter_type.is_null());
 
@@ -222,7 +221,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   ASSIGN_RETURN_ON_EXCEPTION(
       Isolate::Current(), is_stop_iteration,
       Runtime_IsInstanceOfTypeObject(
-          pending, Handle<PyTypeObject>::cast(stop_iter_type)));
+          isolate, pending, Handle<PyTypeObject>::cast(stop_iter_type)));
 
   if (!is_stop_iteration) {
     return Maybe<bool>(false);
