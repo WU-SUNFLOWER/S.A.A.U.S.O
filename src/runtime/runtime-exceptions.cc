@@ -154,10 +154,10 @@ void Runtime_ThrowErrorf(ExceptionType type, const char* fmt, ...) {
   va_end(ap);
 }
 
-MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr() {
+MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
+    Isolate* isolate) {
   EscapableHandleScope scope;
 
-  auto* isolate = Isolate::Current();
   auto* state = isolate->exception_state();
   if (!state->HasPendingException()) {
     return scope.Escape(PyString::NewInstance(""));
@@ -212,17 +212,16 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   Handle<PyDict> builtins = handle(isolate->builtins());
   Handle<PyObject> stop_iter_type;
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(Isolate::Current(), found,
-                                   builtins->Get(ST(stop_iter), stop_iter_type),
-                                   kNullMaybe);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+      isolate, found, builtins->Get(ST(stop_iter), stop_iter_type), kNullMaybe);
   assert(found);
   assert(!stop_iter_type.is_null());
 
   bool is_stop_iteration = false;
   ASSIGN_RETURN_ON_EXCEPTION(
-      Isolate::Current(), is_stop_iteration,
+      isolate, is_stop_iteration,
       Runtime_IsInstanceOfTypeObject(
-          pending, Handle<PyTypeObject>::cast(stop_iter_type)));
+          isolate, pending, Handle<PyTypeObject>::cast(stop_iter_type)));
 
   if (!is_stop_iteration) {
     return Maybe<bool>(false);

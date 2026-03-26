@@ -195,8 +195,9 @@ void Interpreter::EvalCurrentFrame() {
     bool matched = false;
     if (IsPyTypeObject(match_type)) {
       ASSIGN_GOTO_ON_EXCEPTION(
-          matched, Runtime_IsInstanceOfTypeObject(
-                       exception, Handle<PyTypeObject>::cast(match_type)));
+          matched,
+          Runtime_IsInstanceOfTypeObject(
+              isolate_, exception, Handle<PyTypeObject>::cast(match_type)));
     } else if (IsPyTuple(match_type)) {
       auto tuple = Handle<PyTuple>::cast(match_type);
 
@@ -210,7 +211,7 @@ void Interpreter::EvalCurrentFrame() {
           bool current_matched;
           ASSIGN_GOTO_ON_EXCEPTION(
               current_matched,
-              Runtime_IsInstanceOfTypeObject(exception,
+              Runtime_IsInstanceOfTypeObject(isolate_, exception,
                                              Handle<PyTypeObject>::cast(elem)));
           matched |= current_matched;
           continue;
@@ -407,8 +408,8 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> sequence = POP();
 
     Handle<PyTuple> tuple;
-    ASSIGN_GOTO_ON_EXCEPTION(tuple,
-                             Runtime_UnpackIterableObjectToTuple(sequence));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        tuple, Runtime_UnpackIterableObjectToTuple(isolate_, sequence));
 
     if (tuple->length() != op_arg) {
       Runtime_ThrowErrorf(ExceptionType::kValueError,
@@ -935,7 +936,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> source = POP();
     Handle<PyObject> list = PEEK(STACK_SIZE() - op_arg);
     GOTO_ON_EXCEPTION(Runtime_ExtendListByItratableObject(
-        Handle<PyList>::cast(list), source));
+        isolate_, Handle<PyList>::cast(list), source));
   })
 
   // 当使用*或**尝试展开iterable object或dict时，
@@ -989,8 +990,8 @@ void Interpreter::EvalCurrentFrame() {
       if (IsPyTuple(args_obj)) {
         pos_args = Handle<PyTuple>::cast(args_obj);
       } else {
-        ASSIGN_GOTO_ON_EXCEPTION(pos_args,
-                                 Runtime_UnpackIterableObjectToTuple(args_obj));
+        ASSIGN_GOTO_ON_EXCEPTION(
+            pos_args, Runtime_UnpackIterableObjectToTuple(isolate_, args_obj));
       }
     }
 

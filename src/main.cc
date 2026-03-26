@@ -41,7 +41,7 @@ bool CheckAndPrintException(Isolate* isolate) {
   }
 
   Handle<PyString> formatted;
-  if (!Runtime_FormatPendingExceptionForStderr().To(&formatted)) {
+  if (!Runtime_FormatPendingExceptionForStderr(isolate).To(&formatted)) {
     std::fprintf(stderr, "Runtime_FormatPendingExceptionForStderr Failed!");
     std::exit(1);
   }

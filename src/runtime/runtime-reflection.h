@@ -32,7 +32,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 // 判断 object 是否是某个 type 的实例。
 // - 该函数仅依赖对象的 klass mro，不做 Python 层参数校验。
 // - 入参应由上层（builtin/解释器语义层）保证为合法的 type object。
-Maybe<bool> Runtime_IsInstanceOfTypeObject(Handle<PyObject> object,
+Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
+                                           Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object);
 
 // 判断 derive_type_object 是否是 super_type_object 的派生类型（含自身）。
