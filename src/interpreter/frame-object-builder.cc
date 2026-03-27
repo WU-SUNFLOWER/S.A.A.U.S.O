@@ -260,7 +260,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
     int64_t index_in_var_args;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, index_in_var_args,
-        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt));
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt, isolate));
 
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
@@ -317,7 +317,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
     int64_t index_in_var_args;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, index_in_var_args,
-        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt));
+        ctx.var_names->IndexOf(key, 0, ctx.real_formal_pos_arg_cnt, isolate));
     if (index_in_var_args != PyTuple::kNotFound) {
       if (!ctx.localsplus->Get(index_in_var_args).is_null()) {
         Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,

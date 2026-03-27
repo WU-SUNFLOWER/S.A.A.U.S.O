@@ -64,7 +64,8 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
       // 则当前head不是所求mro序列中的下一个元素！
       int64_t head_pos;
       ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, head_pos,
-                                       mro_of_another_super->IndexOf(head),
+                                       mro_of_another_super->IndexOf(head,
+                                                                     isolate),
                                        Handle<PyList>::null());
       if (head_pos > 0) {
         valid = false;
@@ -85,7 +86,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
       auto mro_of_a_super = Handle<PyList>::cast(mro_of_each_super->Get(j));
       bool removed;
       ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, removed,
-                                       mro_of_a_super->Remove(head),
+                                       mro_of_a_super->Remove(head, isolate),
                                        Handle<PyList>::null());
       if (!mro_of_a_super->IsEmpty()) {
         PyList::Append(next_mro_of_each_super, mro_of_a_super);

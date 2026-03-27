@@ -73,11 +73,9 @@ void PyList::RemoveByIndex(int64_t index) {
   --length_;
 }
 
-Maybe<bool> PyList::Remove(Handle<PyObject> target) {
+Maybe<bool> PyList::Remove(Handle<PyObject> target, Isolate* isolate) {
   int64_t index;
-  if (!IndexOf(target).To(&index)) {
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, index, IndexOf(target, isolate));
 
   if (index != kNotFound) {
     RemoveByIndex(index);
@@ -94,19 +92,20 @@ int64_t PyList::capacity() const {
   return array()->capacity();
 }
 
-Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target) const {
-  return IndexOf(target, 0, length());
+Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target,
+                               Isolate* isolate) const {
+  return IndexOf(target, 0, length(), isolate);
 }
 
 Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target,
                                int64_t begin,
-                               int64_t end) const {
+                               int64_t end,
+                               Isolate* isolate) const {
   for (auto i = begin; i < end; ++i) {
-    Maybe<bool> mb = PyObject::EqualBool(Isolate::Current(), target, Get(i));
-    if (mb.IsNothing()) {
-      return kNullMaybe;
-    }
-    if (mb.ToChecked()) {
+    bool is_equal = false;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                               PyObject::EqualBool(isolate, target, Get(i)));
+    if (is_equal) {
       return Maybe<int64_t>(i);
     }
   }

@@ -53,15 +53,17 @@ void PyTuple::ShrinkInternal(int64_t new_length) {
   length_ = new_length;
 }
 
-Maybe<int64_t> PyTuple::IndexOf(Handle<PyObject> target) const {
-  return IndexOf(target, 0, length());
+Maybe<int64_t> PyTuple::IndexOf(Handle<PyObject> target,
+                                Isolate* isolate) const {
+  return IndexOf(target, 0, length(), isolate);
 }
 
 Maybe<int64_t> PyTuple::IndexOf(Handle<PyObject> target,
                                 int64_t begin,
-                                int64_t end) const {
+                                int64_t end,
+                                Isolate* isolate) const {
   for (auto i = begin; i < end; ++i) {
-    Maybe<bool> mb = PyObject::EqualBool(Isolate::Current(), target, Get(i));
+    Maybe<bool> mb = PyObject::EqualBool(isolate, target, Get(i));
     if (mb.IsNothing()) {
       return kNullMaybe;
     }

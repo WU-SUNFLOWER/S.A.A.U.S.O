@@ -191,7 +191,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
   int64_t result = PyList::kNotFound;
   if (begin <= end) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
-                               list->IndexOf(target, begin, end));
+                               list->IndexOf(target, begin, end, isolate));
   }
   if (result == PyList::kNotFound) {
     Handle<PyString> repr_content;
