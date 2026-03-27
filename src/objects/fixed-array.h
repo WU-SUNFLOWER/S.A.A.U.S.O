@@ -11,9 +11,6 @@ namespace saauso::internal {
 
 class FixedArray : public PyObject {
  public:
-  // 创建固定长度的数组对象
-  static Handle<FixedArray> NewInstance(int64_t capacity);
-
   static Tagged<FixedArray> cast(Tagged<PyObject> object);
 
   static size_t ComputeObjectSize(int64_t capacity);

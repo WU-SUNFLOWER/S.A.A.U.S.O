@@ -71,7 +71,8 @@ Handle<PyDict> GetDefaultBoundLocals(Handle<PyFunction> func) {
   return Handle<PyDict>::null();
 }
 
-FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
+FrameBuildContext PrepareForFunction(Isolate* isolate,
+                                     Handle<PyFunction> func,
                                      Handle<PyObject> receiver,
                                      Handle<PyDict> bound_locals) {
   FrameBuildContext ctx;
@@ -80,9 +81,10 @@ FrameBuildContext PrepareForFunction(Handle<PyFunction> func,
   ctx.locals = bound_locals;
   ctx.globals = func->func_globals();
   if (ctx.code_object->nlocalsplus() > 0) {
-    ctx.localsplus = FixedArray::NewInstance(ctx.code_object->nlocalsplus());
+    ctx.localsplus =
+        isolate->factory()->NewFixedArray(ctx.code_object->nlocalsplus());
   }
-  ctx.stack = FixedArray::NewInstance(ctx.code_object->stack_size());
+  ctx.stack = isolate->factory()->NewFixedArray(ctx.code_object->stack_size());
 
   ctx.func_name = ctx.code_object->co_name();
   ctx.var_names = ctx.code_object->var_names();
@@ -372,7 +374,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   HandleScope scope;
 
   // 创建一般的 python 栈帧（慢速路径）。
-  FrameBuildContext ctx = PrepareForFunction(func, receiver, bound_locals);
+  FrameBuildContext ctx =
+      PrepareForFunction(isolate, func, receiver, bound_locals);
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置实参优先）。
   if (!actual_pos_args.is_null()) {
@@ -426,7 +429,8 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   HandleScope scope;
 
   // 创建一般的 python 栈帧（快速路径）。
-  FrameBuildContext ctx = PrepareForFunction(func, receiver, bound_locals);
+  FrameBuildContext ctx =
+      PrepareForFunction(isolate, func, receiver, bound_locals);
 
   // 用户传入的全体实参个数。
   int64_t actual_arg_cnt = actual_args.is_null() ? 0 : actual_args->length();

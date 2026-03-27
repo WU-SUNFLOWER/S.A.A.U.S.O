@@ -13,6 +13,7 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
@@ -291,7 +292,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     return kNullMaybeHandle;
   }
 
-  Handle<FixedArray> keys = FixedArray::NewInstance(expected_length);
+  Handle<FixedArray> keys = isolate->factory()->NewFixedArray(expected_length);
 
   if (key_func.is_null()) {
     for (int64_t i = 0; i < expected_length; ++i) {
@@ -360,7 +361,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     return kNullMaybeHandle;
   }
 
-  Handle<FixedArray> tmp = FixedArray::NewInstance(expected_length);
+  Handle<FixedArray> tmp = isolate->factory()->NewFixedArray(expected_length);
   for (int64_t i = 0; i < expected_length; ++i) {
     tmp->Set(i, list->Get(indices[static_cast<size_t>(i)]));
   }

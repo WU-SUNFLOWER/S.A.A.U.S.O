@@ -215,7 +215,8 @@ Maybe<bool> PyDict::Remove(Handle<PyObject> key) {
     return Maybe<bool>(false);
   }
 
-  Handle<FixedArray> new_data = FixedArray::NewInstance(capacity() * 2);
+  Handle<FixedArray> new_data =
+      Isolate::Current()->factory()->NewFixedArray(capacity() * 2);
   uint64_t new_mask = capacity() - 1;
 
   if (RehashInto(this, new_data, new_mask, index).IsNothing()) {
@@ -296,7 +297,8 @@ Maybe<bool> PyDict::ExpandImplMaybe(Handle<PyDict> dict) {
   HandleScope scope;
 
   int64_t new_capacity = dict->capacity() << 1;
-  Handle<FixedArray> new_data = FixedArray::NewInstance(new_capacity * 2);
+  Handle<FixedArray> new_data =
+      Isolate::Current()->factory()->NewFixedArray(new_capacity * 2);
   uint64_t new_mask = new_capacity - 1;
 
   if (RehashInto(dict, new_data, new_mask, -1).IsNothing()) {
