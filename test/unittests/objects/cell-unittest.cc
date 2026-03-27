@@ -31,14 +31,14 @@ MaybeHandle<PyObject> DummyNative(Isolate*,
 TEST_F(CellTest, NewInstanceDefaultsToNullValue) {
   HandleScope scope;
 
-  Handle<Cell> cell = Cell::NewInstance();
+  Handle<Cell> cell = isolate_->factory()->NewCell();
   EXPECT_TRUE(cell->value().is_null());
 }
 
 TEST_F(CellTest, SetValueSurvivesMinorGc) {
   HandleScope scope;
 
-  Handle<Cell> cell = Cell::NewInstance();
+  Handle<Cell> cell = isolate_->factory()->NewCell();
   Handle<PyString> payload = PyString::NewInstance("payload");
   cell->set_value(payload);
 
@@ -52,7 +52,7 @@ TEST_F(CellTest, SetValueSurvivesMinorGc) {
 TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   HandleScope scope;
 
-  Handle<Cell> cell = Cell::NewInstance();
+  Handle<Cell> cell = isolate_->factory()->NewCell();
   Handle<PyString> payload = PyString::NewInstance("payload");
   cell->set_value(payload);
 
@@ -70,7 +70,7 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   }
   func->set_closures(closures);
 
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   Handle<PyTuple> closures_after = func->closures();
   Handle<Cell> cell_after = Handle<Cell>::cast(closures_after->Get(0));

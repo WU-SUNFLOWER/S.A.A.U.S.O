@@ -840,7 +840,7 @@ void Interpreter::EvalCurrentFrame() {
 
   // 初始化闭包变量
   INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
-    Handle<Cell> cell = Cell::NewInstance();
+    Handle<Cell> cell = isolate_->factory()->NewCell();
     Tagged<PyObject> initial = current_frame_->localsplus()->Get(op_arg);
     cell->set_value(initial);
     current_frame_->localsplus()->Set(op_arg, cell);

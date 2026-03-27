@@ -18,7 +18,6 @@ namespace saauso::internal {
 //    行任何交互。因此它的klass定义相比正常的python对象会简洁许多。
 class Cell : public PyObject {
  public:
-  static Handle<Cell> NewInstance();
   static Tagged<Cell> cast(Tagged<PyObject> object);
 
   Handle<PyObject> value();
