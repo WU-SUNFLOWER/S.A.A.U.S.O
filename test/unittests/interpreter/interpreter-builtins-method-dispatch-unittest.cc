@@ -32,7 +32,7 @@ print(t)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
   AppendExpected(expected_printv_result, PyString::NewInstance("HELLO"));
   ExpectPrintResult(expected_printv_result);
@@ -51,7 +51,7 @@ print(l[3])
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::NewInstance("HELLO"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
   ExpectPrintResult(expected_printv_result);

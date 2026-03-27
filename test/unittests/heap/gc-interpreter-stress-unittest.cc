@@ -84,7 +84,7 @@ print(checksum)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(32)));
   AppendExpected(expected_printv_result, PyString::NewInstance("0"));
   AppendExpected(expected_printv_result, PyString::NewInstance("31"));
@@ -118,7 +118,7 @@ print(work(5, 0))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6 * 60 * 12)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -143,11 +143,10 @@ print(cnt)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   ExpectPrintResult(expected_printv_result);
 }
 
 }  // namespace saauso::internal
-

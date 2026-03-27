@@ -51,7 +51,7 @@ print(random.choice((7, 8, 9)) in (7, 8, 9))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyTrueObject());
   AppendExpected(expected, handle(PySmi::FromInt(5)));
   AppendExpected(expected, PyTrueObject());
@@ -69,9 +69,8 @@ import random
 random.seed(a=1)
 )";
 
-  RunScriptExpectExceptionContains(kSource,
-                                   "random.seed() takes no keyword arguments",
-                                   kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "random.seed() takes no keyword arguments", kTestFileName);
 }
 
 }  // namespace saauso::internal

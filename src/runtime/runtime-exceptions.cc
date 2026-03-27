@@ -115,7 +115,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
 
   Handle<PyTuple> init_args = Handle<PyTuple>::null();
   if (!message_or_null.is_null()) {
-    init_args = PyTuple::NewInstance(1);
+    init_args = PyTuple::New(isolate, 1);
     init_args->SetInternal(0, message_or_null);
   }
 

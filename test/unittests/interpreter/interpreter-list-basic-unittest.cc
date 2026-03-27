@@ -32,9 +32,9 @@ print(lst)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, handle(PySmi::FromInt(1)));
   PyList::Append(list, PyString::NewInstance("hello"));
 
@@ -52,9 +52,9 @@ print(lst)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, handle(PySmi::FromInt(1)));
   PyList::Append(list, handle(PySmi::FromInt(2)));
   PyList::Append(list, handle(PySmi::FromInt(3)));
@@ -78,7 +78,7 @@ print(lst[1])
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
   AppendExpected(expected_printv_result, PyString::NewInstance("world"));
   ExpectPrintResult(expected_printv_result);
@@ -96,7 +96,7 @@ print("python" in l)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyFalseObject());
   AppendExpected(expected_printv_result, PyFalseObject());
@@ -114,7 +114,7 @@ for elem in l:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
@@ -138,10 +138,10 @@ print(l[0], l[1], l[2])
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(3.14));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 3.14));
   AppendExpected(expected_printv_result, PyString::NewInstance("python"));
   ExpectPrintResult(expected_printv_result);
 }
@@ -157,9 +157,9 @@ print(l)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   PyList::Append(list, handle(PySmi::FromInt(3)));
   PyList::Append(list, handle(PySmi::FromInt(1)));
   PyList::Append(list, handle(PySmi::FromInt(2)));
@@ -185,7 +185,7 @@ print(count)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(10)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -211,7 +211,7 @@ while i < 5:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
@@ -234,7 +234,7 @@ print(len(l4))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
   ExpectPrintResult(expected_printv_result);

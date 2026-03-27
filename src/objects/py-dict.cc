@@ -133,7 +133,7 @@ Handle<PyTuple> PyDict::ItemAtIndex(int64_t index) const {
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
-  auto result = PyTuple::NewInstance(2);
+  auto result = PyTuple::New(Isolate::Current(), 2);
   auto value = ValueAtIndex(index);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
@@ -215,7 +215,8 @@ Maybe<bool> PyDict::Remove(Handle<PyObject> key) {
     return Maybe<bool>(false);
   }
 
-  Handle<FixedArray> new_data = FixedArray::NewInstance(capacity() * 2);
+  Handle<FixedArray> new_data =
+      Isolate::Current()->factory()->NewFixedArray(capacity() * 2);
   uint64_t new_mask = capacity() - 1;
 
   if (RehashInto(this, new_data, new_mask, index).IsNothing()) {
@@ -266,7 +267,7 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
   EscapableHandleScope scope;
 
   int64_t out_length = dict->occupied();
-  Handle<PyTuple> keys = PyTuple::NewInstance(out_length);
+  Handle<PyTuple> keys = PyTuple::New(Isolate::Current(), out_length);
 
   Handle<FixedArray> data = dict->data();
   int64_t out_index = 0;
@@ -296,7 +297,8 @@ Maybe<bool> PyDict::ExpandImplMaybe(Handle<PyDict> dict) {
   HandleScope scope;
 
   int64_t new_capacity = dict->capacity() << 1;
-  Handle<FixedArray> new_data = FixedArray::NewInstance(new_capacity * 2);
+  Handle<FixedArray> new_data =
+      Isolate::Current()->factory()->NewFixedArray(new_capacity * 2);
   uint64_t new_mask = new_capacity - 1;
 
   if (RehashInto(dict, new_data, new_mask, -1).IsNothing()) {

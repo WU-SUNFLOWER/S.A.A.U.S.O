@@ -35,12 +35,12 @@ print(math.pow(2, 3))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
-  AppendExpected(expected, PyFloat::NewInstance(3.0));
+  auto expected = PyList::New(isolate_);
+  AppendExpected(expected, PyFloat::New(isolate_, 3.0));
   AppendExpected(expected, handle(PySmi::FromInt(1)));
   AppendExpected(expected, handle(PySmi::FromInt(2)));
-  AppendExpected(expected, PyFloat::NewInstance(3.0));
-  AppendExpected(expected, PyFloat::NewInstance(8.0));
+  AppendExpected(expected, PyFloat::New(isolate_, 3.0));
+  AppendExpected(expected, PyFloat::New(isolate_, 8.0));
   ExpectPrintResult(expected);
 }
 
@@ -55,9 +55,9 @@ print(math.e)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
-  AppendExpected(expected, PyFloat::NewInstance(std::acos(-1.0)));
-  AppendExpected(expected, PyFloat::NewInstance(std::exp(1.0)));
+  auto expected = PyList::New(isolate_);
+  AppendExpected(expected, PyFloat::New(isolate_, std::acos(-1.0)));
+  AppendExpected(expected, PyFloat::New(isolate_, std::exp(1.0)));
   ExpectPrintResult(expected);
 }
 
@@ -69,9 +69,8 @@ import math
 math.sqrt(x=9)
 )";
 
-  RunScriptExpectExceptionContains(kSource,
-                                   "math.sqrt() takes no keyword arguments",
-                                   kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "math.sqrt() takes no keyword arguments", kTestFileName);
 }
 
 }  // namespace saauso::internal

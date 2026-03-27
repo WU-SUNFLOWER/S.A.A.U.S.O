@@ -71,7 +71,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
 
   Handle<PyList> supers;
   if (bases_tuple->length() > 0) {
-    supers = PyList::NewInstance(bases_tuple->length());
+    supers = PyList::New(isolate, bases_tuple->length());
     for (int64_t i = 0; i < bases_tuple->length(); ++i) {
       Handle<PyObject> base = bases_tuple->Get(i);
       if (!IsPyTypeObject(base)) {

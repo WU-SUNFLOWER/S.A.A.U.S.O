@@ -101,7 +101,7 @@
 //   - 将 marshal tuple 映射为 `PyTuple`，marshal list 映射为 `PyList`。
 //   - 将 marshal 的 int/long 在当前 MVP 里限制为 int32 范围，并用 `PySmi`
 //   表示。
-//   - code object 落地到 `PyCodeObject::NewInstance(...)`，并补齐：
+//   - code object 落地到 `PyCodeObject::New(...)`，并补齐：
 //       * nlocals_（由 localsplusnames 长度推导）
 //       * free_vars_ / cell_vars_（由 localspluskinds 推导）
 //       * 可空字段（localspluskinds/linetable/exceptiontable）用 null 表示
@@ -219,8 +219,8 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
   // marshal 的两个核心表：
   // - string_table: 存放被 intern 的字符串（由 't'/'A'/'Z' 等 tag 推入）
   // - cache: ref_flag 置位的对象会进入 cache，后续可由 'r' 复用
-  Handle<PyList> string_table = PyList::NewInstance();
-  Handle<PyList> cache = PyList::NewInstance();
+  Handle<PyList> string_table = PyList::New(isolate_);
+  Handle<PyList> cache = PyList::New(isolate_);
 
   int index = 0;
   if (ref_flag) {
@@ -283,10 +283,11 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
     }
   }
 
-  Handle<PyCodeObject> result = PyCodeObject::NewInstance(
-      arg_count, posonly_arg_count, kwonly_arg_count, stack_size, flags,
-      bytecodes, consts, names, localsplusnames, localspluskinds, file_name,
-      co_name, qual_name, begin_line_no, line_table, exception_table);
+  Handle<PyCodeObject> result = PyCodeObject::New(
+      isolate_, arg_count, posonly_arg_count, kwonly_arg_count, stack_size,
+      flags, bytecodes, consts, names, localsplusnames, localspluskinds,
+      file_name, co_name, qual_name, begin_line_no, line_table,
+      exception_table);
 
   return scope.Escape(result);
 }
@@ -342,7 +343,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       break;
     }
     case kDoubleFlag:
-      object = PyFloat::NewInstance(reader_->ReadDouble());
+      object = PyFloat::New(isolate_, reader_->ReadDouble());
       break;
     case kNoneObjectFlag:
       object = Handle<PyNone>(isolate_->py_none_object());
@@ -384,7 +385,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     case kSmallTupleFlag: {
       uint8_t length =
           static_cast<uint8_t>(static_cast<unsigned char>(reader_->ReadByte()));
-      auto tuple = PyTuple::NewInstance(length);
+      auto tuple = PyTuple::New(isolate_, length);
       if (ref_flag) {
         cache->Set(cache_index, tuple);
       }
@@ -398,7 +399,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     }
     case kTupleFlag: {
       int length = ReadInt32();
-      auto tuple = PyTuple::NewInstance(length);
+      auto tuple = PyTuple::New(isolate_, length);
       if (ref_flag) {
         cache->Set(cache_index, tuple);
       }
@@ -412,7 +413,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     }
     case kListFlag: {
       int length = ReadInt32();
-      auto list = PyList::NewInstance(length);
+      auto list = PyList::New(isolate_, length);
       if (ref_flag) {
         cache->Set(cache_index, list);
       }

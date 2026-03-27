@@ -48,6 +48,7 @@ void ComputeLocalsplusCounts(int nlocalsplus,
 }
 
 Tagged<PyObject> GetNamesFromLocalsplusNames(
+    Isolate* isolate,
     Handle<PyCodeObject> code_object,
     PyCodeObject::LocalsPlusKind target_kind,
     int num) {
@@ -56,7 +57,7 @@ Tagged<PyObject> GetNamesFromLocalsplusNames(
   Handle<PyTuple> localsplusnames = code_object->localsplusnames();
   Handle<PyString> localspluskinds = code_object->localspluskinds();
 
-  Handle<PyTuple> result_names = PyTuple::NewInstance(num);
+  Handle<PyTuple> result_names = PyTuple::New(isolate, num);
   int result_index = 0;
 
   for (auto i = 0; i < code_object->nlocalsplus(); ++i) {
@@ -77,26 +78,26 @@ Tagged<PyObject> GetNamesFromLocalsplusNames(
 }  // namespace
 
 // static
-Handle<PyCodeObject> PyCodeObject::NewInstance(
-    int arg_count,
-    int posonly_arg_count,
-    int kwonly_arg_count,
-    int stack_size,
-    int flags,
-    Handle<PyString> bytecodes,
-    Handle<PyTuple> consts,
-    Handle<PyTuple> names,
-    Handle<PyTuple> localsplusnames,
-    Handle<PyString> localspluskinds,
-    Handle<PyString> file_name,
-    Handle<PyString> co_name,
-    Handle<PyString> qual_name,
-    int line_no,
-    Handle<PyString> line_table,
-    Handle<PyString> exception_table) {
+Handle<PyCodeObject> PyCodeObject::New(Isolate* isolate,
+                                       int arg_count,
+                                       int posonly_arg_count,
+                                       int kwonly_arg_count,
+                                       int stack_size,
+                                       int flags,
+                                       Handle<PyString> bytecodes,
+                                       Handle<PyTuple> consts,
+                                       Handle<PyTuple> names,
+                                       Handle<PyTuple> localsplusnames,
+                                       Handle<PyString> localspluskinds,
+                                       Handle<PyString> file_name,
+                                       Handle<PyString> co_name,
+                                       Handle<PyString> qual_name,
+                                       int line_no,
+                                       Handle<PyString> line_table,
+                                       Handle<PyString> exception_table) {
   EscapableHandleScope scope;
 
-  Handle<PyCodeObject> object = Isolate::Current()->factory()->NewPyCodeObject();
+  Handle<PyCodeObject> object = isolate->factory()->NewPyCodeObject();
 
   object->arg_count_ = arg_count;
   object->posonly_arg_count_ = posonly_arg_count;
@@ -120,11 +121,11 @@ Handle<PyCodeObject> PyCodeObject::NewInstance(
                           object->nfreevars_);
 
   object->var_names_ = GetNamesFromLocalsplusNames(
-      object, LocalsPlusKind::kFastLocal, object->nlocals_);
+      isolate, object, LocalsPlusKind::kFastLocal, object->nlocals_);
   object->cell_vars_ = GetNamesFromLocalsplusNames(
-      object, LocalsPlusKind::kFastCell, object->ncellvars_);
+      isolate, object, LocalsPlusKind::kFastCell, object->ncellvars_);
   object->free_vars_ = GetNamesFromLocalsplusNames(
-      object, LocalsPlusKind::kFastFree, object->nfreevars_);
+      isolate, object, LocalsPlusKind::kFastFree, object->nfreevars_);
 
   object->file_name_ = *file_name;
   object->co_name_ = *co_name;

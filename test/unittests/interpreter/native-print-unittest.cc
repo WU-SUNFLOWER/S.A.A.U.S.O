@@ -20,7 +20,7 @@ class NativePrintTest : public VmTestBase {};
 TEST_F(NativePrintTest, DefaultSepAndEnd) {
   HandleScope scope;
 
-  auto args = PyTuple::NewInstance(2);
+  auto args = PyTuple::New(isolate_, 2);
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
@@ -36,7 +36,7 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
 TEST_F(NativePrintTest, EndParameter) {
   HandleScope scope;
 
-  auto args = PyTuple::NewInstance(2);
+  auto args = PyTuple::New(isolate_, 2);
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
@@ -54,7 +54,7 @@ TEST_F(NativePrintTest, EndParameter) {
 TEST_F(NativePrintTest, EolKeywordRejected) {
   HandleScope scope;
 
-  auto args = PyTuple::NewInstance(2);
+  auto args = PyTuple::New(isolate_, 2);
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   auto kwargs = PyDict::NewInstance();
@@ -70,7 +70,7 @@ TEST_F(NativePrintTest, EolKeywordRejected) {
 TEST_F(NativePrintTest, SepParameter) {
   HandleScope scope;
 
-  auto args = PyTuple::NewInstance(3);
+  auto args = PyTuple::New(isolate_, 3);
   args->SetInternal(0, PyString::NewInstance("a"));
   args->SetInternal(1, PyString::NewInstance("b"));
   args->SetInternal(2, PyString::NewInstance("c"));
@@ -89,7 +89,7 @@ TEST_F(NativePrintTest, SepParameter) {
 TEST_F(NativePrintTest, NoArgsUsesEnd) {
   HandleScope scope;
 
-  auto args = PyTuple::NewInstance(0);
+  auto args = PyTuple::New(isolate_, 0);
   auto kwargs = PyDict::NewInstance();
   ASSERT_FALSE(
       PyDict::Put(kwargs, ST(end), PyString::NewInstance("X")).IsNothing());
@@ -105,7 +105,7 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
 TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
   HandleScope scope;
 
-  auto repr_args = PyTuple::NewInstance(1);
+  auto repr_args = PyTuple::New(isolate_, 1);
   repr_args->SetInternal(0, PyString::NewInstance("abc"));
   auto repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),
                                              repr_args, PyDict::NewInstance());
@@ -116,7 +116,7 @@ TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
                         static_cast<size_t>(repr_text->length())),
             "'abc'");
 
-  auto list = PyList::NewInstance(1);
+  auto list = PyList::New(isolate_, 1);
   list->SetAndExtendLength(0, PyString::NewInstance("x"));
   repr_args->SetInternal(0, list);
   repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),

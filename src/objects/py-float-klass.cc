@@ -102,7 +102,7 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance(isolate));
+  AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -196,7 +196,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Add(Isolate* isolate,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(isolate, other);
-  return PyFloat::NewInstance(self_value + other_value);
+  return PyFloat::New(isolate, self_value + other_value);
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Sub(Isolate* isolate,
@@ -205,7 +205,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Sub(Isolate* isolate,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(isolate, other);
-  return PyFloat::NewInstance(self_value - other_value);
+  return PyFloat::New(isolate, self_value - other_value);
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Mul(Isolate* isolate,
@@ -214,7 +214,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Mul(Isolate* isolate,
   assert(IsPyFloat(self));
   double self_value = Handle<PyFloat>::cast(self)->value();
   double other_value = ExtractValue(isolate, other);
-  return PyFloat::NewInstance(self_value * other_value);
+  return PyFloat::New(isolate, self_value * other_value);
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Div(Isolate* isolate,
@@ -228,7 +228,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Div(Isolate* isolate,
                        "float division by zero");
     return kNullMaybeHandle;
   }
-  return PyFloat::NewInstance(self_value / other_value);
+  return PyFloat::New(isolate, self_value / other_value);
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_FloorDiv(Isolate* isolate,
@@ -242,7 +242,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_FloorDiv(Isolate* isolate,
                        "float floor division by zero");
     return kNullMaybeHandle;
   }
-  return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
+  return PyFloat::New(isolate, PythonFloorDivide(self_value, other_value));
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Mod(Isolate* isolate,
@@ -256,7 +256,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_Mod(Isolate* isolate,
                        "float modulo");
     return kNullMaybeHandle;
   }
-  return PyFloat::NewInstance(PythonMod(self_value, other_value));
+  return PyFloat::New(isolate, PythonMod(self_value, other_value));
 }
 
 Maybe<bool> PyFloatKlass::Virtual_Greater(Isolate* isolate,

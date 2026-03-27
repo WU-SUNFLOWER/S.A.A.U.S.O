@@ -368,7 +368,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   Handle<PyList> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Runtime_PyStringSplit(str_object, sep_or_null, maxsplit));
+      Runtime_PyStringSplit(isolate, str_object, sep_or_null, maxsplit));
 
   return scope.Escape(result);
 }

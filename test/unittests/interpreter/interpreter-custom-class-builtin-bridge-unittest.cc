@@ -31,7 +31,7 @@ print(l[0] + l[1] + l[2] + l.x)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(106)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -53,7 +53,7 @@ print(d["x"] + d["y"])
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   ExpectPrintResult(expected_printv_result);
@@ -70,7 +70,7 @@ print(a[0] + a[1] + a[2])
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(15)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -103,7 +103,7 @@ print(d["x"] + d["y"])
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   ExpectPrintResult(expected_printv_result);
@@ -123,7 +123,7 @@ print(isinstance(a, A))
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
@@ -151,7 +151,7 @@ print(isinstance(b, list))
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));

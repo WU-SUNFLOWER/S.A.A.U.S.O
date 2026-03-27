@@ -16,8 +16,8 @@
 
 namespace saauso::internal {
 
-Handle<PyTuple> PyTuple::NewInstance(int64_t length) {
-  return Isolate::Current()->factory()->NewPyTuple(length);
+Handle<PyTuple> PyTuple::New(Isolate* isolate, int64_t length) {
+  return isolate->factory()->NewPyTuple(length);
 }
 
 Tagged<PyTuple> PyTuple::cast(Tagged<PyObject> object) {

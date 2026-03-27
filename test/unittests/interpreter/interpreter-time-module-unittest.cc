@@ -35,7 +35,7 @@ print(time.time() > 0)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyTrueObject());
   AppendExpected(expected, PyTrueObject());
   AppendExpected(expected, PyTrueObject());
@@ -81,7 +81,7 @@ print(c.x.v)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, handle(PySmi::FromInt(111)));
   AppendExpected(expected, handle(PySmi::FromInt(222)));
   AppendExpected(expected, handle(PySmi::FromInt(111)));
@@ -97,9 +97,8 @@ import time
 time.sleep(seconds=0.01)
 )";
 
-  RunScriptExpectExceptionContains(kSource,
-                                   "time.sleep() takes no keyword arguments",
-                                   kTestFileName);
+  RunScriptExpectExceptionContains(
+      kSource, "time.sleep() takes no keyword arguments", kTestFileName);
 }
 
 }  // namespace saauso::internal

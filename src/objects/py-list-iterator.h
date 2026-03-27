@@ -13,7 +13,6 @@ class PyList;
 
 class PyListIterator : public PyObject {
  public:
-  static Handle<PyListIterator> NewInstance(Handle<PyObject> owner);
   static Tagged<PyListIterator> cast(Tagged<PyObject> object);
 
   Handle<PyList> owner() const;

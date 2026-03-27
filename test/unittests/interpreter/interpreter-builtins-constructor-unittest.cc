@@ -46,7 +46,7 @@ print(str(float("nan")))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::NewInstance(""));
   AppendExpected(expected_printv_result, PyString::NewInstance("123"));
   AppendExpected(expected_printv_result, PyString::NewInstance("3.0"));
@@ -55,8 +55,8 @@ print(str(float("nan")))
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1234)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(255)));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(0.0));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(10.5));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 0.0));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 10.5));
   AppendExpected(expected_printv_result, PyString::NewInstance("nan"));
   ExpectPrintResult(expected_printv_result);
 }
@@ -128,16 +128,16 @@ print(tuple([1, 2]))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyFalseObject());
 
-  auto expected_list = PyList::NewInstance();
+  auto expected_list = PyList::New(isolate_);
   PyList::Append(expected_list, handle(PySmi::FromInt(1)));
   PyList::Append(expected_list, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, expected_list);
 
-  auto expected_tuple = PyTuple::NewInstance(2);
+  auto expected_tuple = PyTuple::New(isolate_, 2);
   expected_tuple->SetInternal(0, PySmi::FromInt(1));
   expected_tuple->SetInternal(1, PySmi::FromInt(2));
   AppendExpected(expected_printv_result, expected_tuple);
@@ -164,7 +164,7 @@ print(t1 is t3) # True
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyFalseObject());
   AppendExpected(expected_printv_result, PyFalseObject());
@@ -188,7 +188,7 @@ print(isinstance(o, object))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyTrueObject());
@@ -209,7 +209,7 @@ print(C.x)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected_printv_result);
 }

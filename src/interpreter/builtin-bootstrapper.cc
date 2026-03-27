@@ -195,7 +195,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   Handle<PyTypeObject> base_exception =
       PyBaseExceptionKlass::GetInstance(isolate_)->type_object();
 
-  auto supers = PyList::NewInstance(1);
+  auto supers = PyList::New(isolate_, 1);
   supers->SetAndExtendLength(0, base_exception);
 
   Handle<PyTypeObject> exception;
@@ -214,7 +214,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
 Maybe<void> BuiltinBootstrapper::RegisterSimpleTypeToBuiltins(
     Handle<PyString> type_name,
     Handle<PyObject> type_base) {
-  auto supers = PyList::NewInstance(1);
+  auto supers = PyList::New(isolate_, 1);
   supers->SetAndExtendLength(0, type_base);
 
   Handle<PyObject> type_object;

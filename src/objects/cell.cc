@@ -13,11 +13,6 @@
 namespace saauso::internal {
 
 // static
-Handle<Cell> Cell::NewInstance() {
-  return Isolate::Current()->factory()->NewCell();
-}
-
-// static
 Tagged<Cell> Cell::cast(Tagged<PyObject> object) {
   assert(PyObject::GetKlass(object).ptr() ==
          Isolate::Current()->cell_klass().ptr());

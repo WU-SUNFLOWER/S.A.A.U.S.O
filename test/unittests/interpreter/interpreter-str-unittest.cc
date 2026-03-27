@@ -43,7 +43,7 @@ print(t.index(1, 1, 3))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
@@ -79,7 +79,7 @@ print(s.rfind("yy", 0, 2))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
@@ -107,31 +107,31 @@ print("a,b".split(sep=","))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto v0 = PyList::NewInstance();
+  auto v0 = PyList::New(isolate_);
   PyList::Append(v0, PyString::NewInstance("a"));
   PyList::Append(v0, PyString::NewInstance("b"));
   PyList::Append(v0, PyString::NewInstance("c"));
   AppendExpected(expected_printv_result, v0);
 
-  auto v1 = PyList::NewInstance();
+  auto v1 = PyList::New(isolate_);
   PyList::Append(v1, PyString::NewInstance("a"));
   PyList::Append(v1, PyString::NewInstance("b"));
   AppendExpected(expected_printv_result, v1);
 
-  auto v2 = PyList::NewInstance();
+  auto v2 = PyList::New(isolate_);
   PyList::Append(v2, PyString::NewInstance("a"));
   PyList::Append(v2, PyString::NewInstance(""));
   PyList::Append(v2, PyString::NewInstance("b"));
   PyList::Append(v2, PyString::NewInstance(""));
   AppendExpected(expected_printv_result, v2);
 
-  auto v3 = PyList::NewInstance();
+  auto v3 = PyList::New(isolate_);
   PyList::Append(v3, PyString::NewInstance(""));
   AppendExpected(expected_printv_result, v3);
 
-  auto v4 = PyList::NewInstance();
+  auto v4 = PyList::New(isolate_);
   PyList::Append(v4, PyString::NewInstance("a"));
   PyList::Append(v4, PyString::NewInstance("b"));
   AppendExpected(expected_printv_result, v4);
@@ -176,7 +176,7 @@ print("x".join(["a"]))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::NewInstance("a,b"));
   AppendExpected(expected_printv_result, PyString::NewInstance("abc"));
   AppendExpected(expected_printv_result, PyString::NewInstance(""));

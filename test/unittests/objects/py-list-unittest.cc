@@ -20,7 +20,7 @@ class PyListTest : public VmTestBase {};
 TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   EXPECT_EQ(list->length(), 0);
   EXPECT_TRUE(list->IsEmpty());
   EXPECT_GE(list->capacity(), PyList::kMinimumCapacity);
@@ -29,7 +29,7 @@ TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
 TEST_F(PyListTest, AppendGetGetLastPopWork) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   auto s1 = Handle<PyObject>(PyString::NewInstance("Item 1"));
   auto i1 = Handle<PyObject>(PySmi::FromInt(100));
 
@@ -48,7 +48,7 @@ TEST_F(PyListTest, AppendGetGetLastPopWork) {
 TEST_F(PyListTest, SetRemoveClearWork) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   auto a = Handle<PyObject>(PySmi::FromInt(1));
   auto b = Handle<PyObject>(PySmi::FromInt(2));
   auto c = Handle<PyObject>(PySmi::FromInt(3));
@@ -77,7 +77,7 @@ TEST_F(PyListTest, SetRemoveClearWork) {
 TEST_F(PyListTest, InsertWorksInTheMiddle) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   auto a = Handle<PyObject>(PySmi::FromInt(1));
   auto b = Handle<PyObject>(PySmi::FromInt(2));
   auto c = Handle<PyObject>(PySmi::FromInt(3));
@@ -95,7 +95,7 @@ TEST_F(PyListTest, InsertWorksInTheMiddle) {
 TEST_F(PyListTest, AppendTriggersExpand) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   const int64_t initial_capacity = list->capacity();
 
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
@@ -109,7 +109,7 @@ TEST_F(PyListTest, AppendTriggersExpand) {
 TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
 
@@ -126,7 +126,7 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
 TEST_F(PyListTest, PyObjectMulRepeatsList) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
 
@@ -147,7 +147,7 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
 TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
 
@@ -175,7 +175,7 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
 TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::NewInstance("x"));
   PyList::Append(list, s);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
@@ -189,7 +189,7 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
           .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
-  auto list2 = PyList::NewInstance(2);
+  auto list2 = PyList::New(isolate_, 2);
   PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
 
@@ -203,11 +203,11 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
 TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   HandleScope scope;
 
-  auto a = PyList::NewInstance(2);
+  auto a = PyList::New(isolate_, 2);
   PyList::Append(a, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(a, Handle<PyObject>(PySmi::FromInt(2)));
 
-  auto b = PyList::NewInstance(2);
+  auto b = PyList::New(isolate_, 2);
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)));
 

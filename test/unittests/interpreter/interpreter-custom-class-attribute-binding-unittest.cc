@@ -55,7 +55,7 @@ print(b.baz)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
@@ -85,7 +85,7 @@ print(a.miss)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result,
                  PyString::NewInstance("__getattr__ called"));
@@ -153,7 +153,7 @@ a.f(a)
 )";
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
@@ -173,7 +173,7 @@ a.f()
 )";
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
@@ -192,7 +192,7 @@ print(A.f is f)
 )";
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }
@@ -215,7 +215,7 @@ f()
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -238,7 +238,7 @@ g(a)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(8)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -264,7 +264,7 @@ print(ok)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   ExpectPrintResult(expected_printv_result);
 }

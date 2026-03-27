@@ -21,7 +21,8 @@ class PyList : public PyObject {
   static constexpr int64_t kMinimumCapacity = 2;
   static constexpr int kNotFound = -1;
 
-  static Handle<PyList> NewInstance(int64_t init_capacity = kMinimumCapacity);
+  static Handle<PyList> New(Isolate* isolate,
+                            int64_t init_capacity = kMinimumCapacity);
 
   static Tagged<PyList> cast(Tagged<PyObject> object);
 

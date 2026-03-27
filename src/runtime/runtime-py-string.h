@@ -19,7 +19,8 @@ class PyList;
 // - sep_or_null 非 null 时必须为 str；空字符串分隔符会触发 ValueError。
 // - maxsplit < 0 表示不限次数；maxsplit == 0 返回至多一个元素（保留现有行为）。
 // - 失败时返回 empty，并保证已设置 pending exception。
-MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
+MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
+                                          Handle<PyString> str,
                                           Handle<PyObject> sep_or_null,
                                           int64_t maxsplit);
 

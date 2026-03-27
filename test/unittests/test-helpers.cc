@@ -96,7 +96,7 @@ void BasicInterpreterTest::TearDownTestSuite() {
 
 void BasicInterpreterTest::SetUp() {
   HandleScope scope;
-  printv_result_ = PyList::NewInstance();
+  printv_result_ = PyList::New(isolate_);
   isolate_->interpreter()->ClearPendingException();
 }
 

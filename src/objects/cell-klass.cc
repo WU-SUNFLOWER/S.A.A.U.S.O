@@ -46,15 +46,11 @@ void CellKlass::Finalize(Isolate* isolate) {
 
 // static
 size_t CellKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
-  assert(PyObject::GetKlass(self).ptr() ==
-         Isolate::Current()->cell_klass().ptr());
   return ObjectSizeAlign(sizeof(Cell));
 }
 
 // static
 void CellKlass::Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v) {
-  assert(PyObject::GetKlass(self).ptr() ==
-         Isolate::Current()->cell_klass().ptr());
   Tagged<Cell> cell = Tagged<Cell>::cast(self);
   v->VisitPointer(&cell->value_);
 }

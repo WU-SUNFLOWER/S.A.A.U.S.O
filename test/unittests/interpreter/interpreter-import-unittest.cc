@@ -44,7 +44,7 @@ print(sys.version)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("3.12 (saauso mvp)"));
   ExpectPrintResult(expected);
 }
@@ -69,7 +69,7 @@ print(time.__package__)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("sys"));
   AppendExpected(expected, PyString::NewInstance("math"));
   AppendExpected(expected, PyString::NewInstance("random"));
@@ -98,7 +98,7 @@ print(a.x)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("a_init"));
   AppendExpected(expected, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected);
@@ -122,7 +122,7 @@ print(pkg.sub.answer)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected);
@@ -135,7 +135,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
                  PyString::NewInstance("test/python312/import-mvp"));
 
   Handle<PyString> name = PyString::NewInstance("pkg.sub");
-  Handle<PyTuple> non_empty_fromlist = PyTuple::NewInstance(1);
+  Handle<PyTuple> non_empty_fromlist = PyTuple::New(isolate_, 1);
 
   MaybeHandle<PyObject> imported_module =
       isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
@@ -177,8 +177,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   ASSERT_FALSE(pkg_sub_module.is_null());
   ASSERT_FALSE(bound.is_null());
   bool eq = false;
-  ASSERT_TRUE(
-      PyObject::EqualBool(isolate_, bound, pkg_sub_module).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, bound, pkg_sub_module).To(&eq));
   EXPECT_TRUE(eq);
 }
 
@@ -205,7 +204,7 @@ import pkg.rel.mod
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(12)));
   ExpectPrintResult(expected);
@@ -231,7 +230,7 @@ print(_b)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, handle(PySmi::FromInt(1)));
   AppendExpected(expected, handle(PySmi::FromInt(99)));
   AppendExpected(expected, handle(PySmi::FromInt(99)));
@@ -262,7 +261,7 @@ print(pkg.sub.answer)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected);
@@ -318,7 +317,7 @@ TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {
 
   RunScript(script, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::NewInstance("pyc_init"));
   AppendExpected(expected, handle(PySmi::FromInt(7)));
   ExpectPrintResult(expected);

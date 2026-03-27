@@ -34,10 +34,12 @@ void AllocateEphemeralStrings(int count) {
   }
 }
 
-void AllocateEphemeralListsWithStrings(int list_count, int element_count) {
+void AllocateEphemeralListsWithStrings(Isolate* isolate,
+                                       int list_count,
+                                       int element_count) {
   for (int i = 0; i < list_count; ++i) {
     HandleScope inner_scope;
-    auto list = PyList::NewInstance();
+    auto list = PyList::New(isolate);
     for (int j = 0; j < element_count; ++j) {
       HandleScope elem_scope;
       auto s = std::string("l")
@@ -81,7 +83,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   //////////////////////////////////////////
 
-  Handle<PyList> list1 = PyList::NewInstance(kLength);
+  Handle<PyList> list1 = PyList::New(isolate_, kLength);
   Address a1 = (*list1).ptr();
 
   for (auto i = 0; i < kLength; ++i) {
@@ -96,7 +98,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   //////////////////////////////////////////
 
-  Handle<PyList> list2 = PyList::NewInstance(kLength);
+  Handle<PyList> list2 = PyList::New(isolate_, kLength);
 
   for (auto i = 0; i < kLength; ++i) {
     HandleScope inner_scope;
@@ -115,8 +117,8 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   HandleScope scope;
 
-  Handle<PyList> list1 = PyList::NewInstance();
-  Handle<PyList> list2 = PyList::NewInstance();
+  Handle<PyList> list1 = PyList::New(isolate_);
+  Handle<PyList> list2 = PyList::New(isolate_);
 
   Handle<PyString> content = PyString::NewInstance("Hello World");
   PyList::Append(list1, content);
@@ -125,17 +127,16 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   isolate_->heap()->CollectGarbage();
 
   Handle<PyObject> eq_res;
-  ASSERT_TRUE(
-      PyObject::Equal(isolate_, list1, list2).ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list1, list2).ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
   ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0), list2->Get(0))
                   .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0), content)
-                  .ToHandle(&eq_res));
+  ASSERT_TRUE(
+      PyObject::Equal(isolate_, list1->Get(0), content).ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(PyObject::Equal(isolate_, list2->Get(0), content)
-                  .ToHandle(&eq_res));
+  ASSERT_TRUE(
+      PyObject::Equal(isolate_, list2->Get(0), content).ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
 }
 
@@ -174,9 +175,8 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     auto actual_value = handle(actual_value_tagged);
     ASSERT_FALSE(actual_value.is_null());
     Handle<PyObject> eq_res;
-    ASSERT_TRUE(
-        PyObject::Equal(isolate_, actual_value, expected_value)
-            .ToHandle(&eq_res));
+    ASSERT_TRUE(PyObject::Equal(isolate_, actual_value, expected_value)
+                    .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
 }
@@ -194,7 +194,7 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
 
   AllocateEphemeralStrings(2000);
   isolate_->heap()->CollectGarbage();
-  AllocateEphemeralListsWithStrings(200, 8);
+  AllocateEphemeralListsWithStrings(isolate_, 200, 8);
   isolate_->heap()->CollectGarbage();
 
   EXPECT_EQ(none_addr_before, isolate_->py_none_object().ptr());
@@ -214,7 +214,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   Handle<PyDict> dict = PyDict::NewInstance();
   Handle<PyObject> key = PyString::NewInstance("payload");
 
-  Handle<PyList> list = PyList::NewInstance();
+  Handle<PyList> list = PyList::New(isolate_);
   constexpr int kCount = 64;
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
@@ -225,7 +225,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   Address dict_addr_before = (*dict).ptr();
   Address list_addr_before = (*list).ptr();
 
-  AllocateEphemeralListsWithStrings(120, 6);
+  AllocateEphemeralListsWithStrings(isolate_, 120, 6);
   isolate_->heap()->CollectGarbage();
 
   // dict/list 作为 GC ROOT（被 Handle 持有）应当在 minor GC 后存活且被搬迁。
@@ -245,9 +245,8 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
     HandleScope inner_scope;
     auto expected = PyString::NewInstance(std::to_string(i).c_str());
     Handle<PyObject> eq_res;
-    ASSERT_TRUE(
-        PyObject::Equal(isolate_, payload_list->Get(i), expected)
-            .ToHandle(&eq_res));
+    ASSERT_TRUE(PyObject::Equal(isolate_, payload_list->Get(i), expected)
+                    .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
 }
@@ -280,7 +279,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
 
   // 这个用例验证“环形引用”在 Scavenge 下不会造成错误：
   // list[0] 指向 list 本身，GC 需要正确更新该内部指针为新地址。
-  Handle<PyList> list = PyList::NewInstance();
+  Handle<PyList> list = PyList::New(isolate_);
   PyList::Append(list, Handle<PyObject>(list));
   PyList::Append(list, PyString::NewInstance("tail"));
 
@@ -301,7 +300,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
   // 关键点：
   // - Smi 不是真正的堆对象，不应该被 Scavenge 搬迁
   // - 同时它作为 list 元素被存储在 fixed array 中，需要保证读取解码正确
-  Handle<PyList> list = PyList::NewInstance();
+  Handle<PyList> list = PyList::New(isolate_);
   constexpr int kCount = 50;
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;

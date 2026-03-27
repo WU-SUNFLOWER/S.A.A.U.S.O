@@ -49,8 +49,8 @@ else:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(-2));
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, -2));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, PyFalseObject());
   ExpectPrintResult(expected_printv_result);
@@ -78,7 +78,7 @@ while i < 10:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   int a = 1;
   int b = 0;
@@ -114,7 +114,7 @@ print(i)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   int i = 0;
   while (i < 5) {
@@ -143,7 +143,7 @@ while i < 10:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   int i = 0;
   while (i < 10) {
@@ -176,7 +176,7 @@ print(j)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   int i = 0;
   int j = 0;
@@ -197,4 +197,3 @@ print(j)
 }
 
 }  // namespace saauso::internal
-

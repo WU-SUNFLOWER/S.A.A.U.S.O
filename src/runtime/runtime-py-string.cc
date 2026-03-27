@@ -59,12 +59,13 @@ void AppendStringReprContent(Handle<PyString> value, std::string& out) {
 
 }  // namespace
 
-MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
+MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
+                                          Handle<PyString> str,
                                           Handle<PyObject> sep_or_null,
                                           int64_t maxsplit) {
   EscapableHandleScope scope;
 
-  Handle<PyList> result = PyList::NewInstance();
+  Handle<PyList> result = PyList::New(isolate);
 
   const int64_t str_length = str->length();
   if (maxsplit == 0) {

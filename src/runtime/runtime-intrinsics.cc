@@ -87,7 +87,7 @@ MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Isolate* isolate,
   }
 
   auto list = Handle<PyList>::cast(object);
-  auto tuple = PyTuple::NewInstance(list->length());
+  auto tuple = PyTuple::New(isolate, list->length());
   for (auto i = 0; i < list->length(); ++i) {
     tuple->SetInternal(i, list->Get(i));
   }

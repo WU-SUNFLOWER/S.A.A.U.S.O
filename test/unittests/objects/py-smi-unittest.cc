@@ -108,7 +108,7 @@ TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
   HandleScope scope;
 
   Handle<PyObject> i(PySmi::FromInt(10));
-  Handle<PyObject> f(PyFloat::NewInstance(0.25));
+  Handle<PyObject> f(PyFloat::New(isolate_, 0.25));
 
   Handle<PyObject> r1, r2, r3, r4, r5;
   ASSERT_TRUE(PyObject::Add(isolate_, i, f).ToHandle(&r1));
@@ -134,8 +134,8 @@ TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
   HandleScope scope;
 
   Handle<PyObject> i(PySmi::FromInt(10));
-  Handle<PyObject> f1(PyFloat::NewInstance(10.0));
-  Handle<PyObject> f2(PyFloat::NewInstance(11.0));
+  Handle<PyObject> f1(PyFloat::New(isolate_, 10.0));
+  Handle<PyObject> f2(PyFloat::New(isolate_, 11.0));
 
   Handle<PyObject> res;
   ASSERT_TRUE(PyObject::Equal(isolate_, i, f1).ToHandle(&res));

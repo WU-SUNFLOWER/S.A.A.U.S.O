@@ -32,7 +32,7 @@ print(A.value)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2025)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -56,7 +56,7 @@ print(A.value is a.value)
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   auto s = PyString::NewInstance("Hello World");
   AppendExpected(expected_printv_result, s);
@@ -90,7 +90,7 @@ b.say()
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
@@ -126,7 +126,7 @@ c.say()    # "I am A"
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
   AppendExpected(expected_printv_result, PyString::NewInstance("I am B"));
   AppendExpected(expected_printv_result, PyString::NewInstance("I am A"));
@@ -153,7 +153,7 @@ print(isinstance(b, dict))
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));

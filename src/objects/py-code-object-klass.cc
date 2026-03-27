@@ -57,7 +57,7 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   set_klass_properties(PyDict::NewInstance());
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance(isolate));
+  AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表

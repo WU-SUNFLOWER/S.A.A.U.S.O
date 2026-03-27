@@ -14,8 +14,8 @@
 namespace saauso::internal {
 
 // static
-Handle<PyFloat> PyFloat::NewInstance(double value) {
-  return Isolate::Current()->factory()->NewPyFloat(value);
+Handle<PyFloat> PyFloat::New(Isolate* isolate, double value) {
+  return isolate->factory()->NewPyFloat(value);
 }
 
 // static

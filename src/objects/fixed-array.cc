@@ -17,11 +17,6 @@
 namespace saauso::internal {
 
 // static
-Handle<FixedArray> FixedArray::NewInstance(int64_t capacity) {
-  return Isolate::Current()->factory()->NewFixedArray(capacity);
-}
-
-// static
 Tagged<FixedArray> FixedArray::cast(Tagged<PyObject> object) {
   assert(IsFixedArray(object));
   return Tagged<FixedArray>(object.ptr());

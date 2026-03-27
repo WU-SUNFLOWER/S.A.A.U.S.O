@@ -18,21 +18,21 @@ class PyFloatTest : public VmTestBase {};
 
 TEST_F(PyFloatTest, NewInstanceStoresValue) {
   HandleScope scope;
-  auto f = PyFloat::NewInstance(3.14);
+  auto f = PyFloat::New(isolate_, 3.14);
   EXPECT_DOUBLE_EQ(f->value(), 3.14);
 }
 
 TEST_F(PyFloatTest, IsGcAbleObjectIsTrueForFloat) {
   HandleScope scope;
-  Handle<PyObject> f(PyFloat::NewInstance(1.0));
+  Handle<PyObject> f(PyFloat::New(isolate_, 1.0));
   EXPECT_TRUE(IsGcAbleObject(f));
 }
 
 TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
   HandleScope scope;
 
-  Handle<PyObject> a(PyFloat::NewInstance(10.0));
-  Handle<PyObject> b(PyFloat::NewInstance(4.0));
+  Handle<PyObject> a(PyFloat::New(isolate_, 10.0));
+  Handle<PyObject> b(PyFloat::New(isolate_, 4.0));
 
   Handle<PyObject> add, sub, mul, div, mod;
   ASSERT_TRUE(PyObject::Add(isolate_, a, b).ToHandle(&add));
@@ -57,7 +57,7 @@ TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
 TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
   HandleScope scope;
 
-  Handle<PyObject> f(PyFloat::NewInstance(3.5));
+  Handle<PyObject> f(PyFloat::New(isolate_, 3.5));
   Handle<PyObject> i(PySmi::FromInt(2));
 
   Handle<PyObject> r1, r2, r3, r4, r5, r6;
@@ -86,8 +86,8 @@ TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
 TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
   HandleScope scope;
 
-  Handle<PyObject> f10(PyFloat::NewInstance(10.0));
-  Handle<PyObject> f11(PyFloat::NewInstance(11.0));
+  Handle<PyObject> f10(PyFloat::New(isolate_, 10.0));
+  Handle<PyObject> f11(PyFloat::New(isolate_, 11.0));
   Handle<PyObject> i10(PySmi::FromInt(10));
 
   Handle<PyObject> res;

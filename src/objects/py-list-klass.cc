@@ -96,7 +96,7 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
-  AddSuper(PyObjectKlass::GetInstance(isolate));
+  AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
   RETURN_ON_EXCEPTION(isolate, OrderSupers(isolate));
 
   // 根据继承关系填充虚函数表
@@ -204,7 +204,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
   }
   auto list2 = Handle<PyList>::cast(other);
 
-  auto new_result = PyList::NewInstance(list1->length() + list2->length());
+  auto new_result = PyList::New(isolate, list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
     PyList::Append(new_result, list1->Get(i));
   }
@@ -230,7 +230,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
   auto decoded_coeff = std::max(static_cast<int64_t>(0),
                                 PySmi::ToInt(Handle<PySmi>::cast(coeff)));
 
-  auto result = PyList::NewInstance(list->length() * decoded_coeff);
+  auto result = PyList::New(isolate, list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
     for (int i = 0; i < list->length(); ++i) {
       PyList::Append(result, list->Get(i));
@@ -372,7 +372,7 @@ Maybe<bool> PyListKlass::Virtual_Equal(Isolate* isolate,
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Isolate* isolate,
                                                 Handle<PyObject> object) {
-  return PyListIterator::NewInstance(Handle<PyList>::cast(object));
+  return isolate->factory()->NewPyListIterator(Handle<PyList>::cast(object));
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

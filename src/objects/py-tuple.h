@@ -13,15 +13,17 @@
 
 namespace saauso::internal {
 
+class Isolate;
 class CPython312PycFileParser;
 class PycFileParser;
+
 class PyList;
 
 class PyTuple : public PyObject {
  public:
   static constexpr int kNotFound = -1;
 
-  static Handle<PyTuple> NewInstance(int64_t length);
+  static Handle<PyTuple> New(Isolate* isolate, int64_t length);
 
   static Tagged<PyTuple> cast(Tagged<PyObject> object);
 
