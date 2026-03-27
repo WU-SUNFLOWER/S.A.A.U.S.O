@@ -10,6 +10,8 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyString;
 class PyTuple;
 
@@ -31,22 +33,23 @@ class PyCodeObject : public PyObject {
     kFastFree = 0x80,
   };
 
-  static Handle<PyCodeObject> NewInstance(int arg_count,
-                                          int posonly_arg_count,
-                                          int kwonly_arg_count,
-                                          int stack_size,
-                                          int flags,
-                                          Handle<PyString> bytecodes,
-                                          Handle<PyTuple> consts,
-                                          Handle<PyTuple> names,
-                                          Handle<PyTuple> localsplusnames,
-                                          Handle<PyString> localspluskinds,
-                                          Handle<PyString> file_name,
-                                          Handle<PyString> co_name,
-                                          Handle<PyString> qual_name,
-                                          int line_no,
-                                          Handle<PyString> line_table,
-                                          Handle<PyString> exception_table);
+  static Handle<PyCodeObject> New(Isolate* isolate,
+                                  int arg_count,
+                                  int posonly_arg_count,
+                                  int kwonly_arg_count,
+                                  int stack_size,
+                                  int flags,
+                                  Handle<PyString> bytecodes,
+                                  Handle<PyTuple> consts,
+                                  Handle<PyTuple> names,
+                                  Handle<PyTuple> localsplusnames,
+                                  Handle<PyString> localspluskinds,
+                                  Handle<PyString> file_name,
+                                  Handle<PyString> co_name,
+                                  Handle<PyString> qual_name,
+                                  int line_no,
+                                  Handle<PyString> line_table,
+                                  Handle<PyString> exception_table);
 
   static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 

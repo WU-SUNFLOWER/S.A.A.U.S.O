@@ -77,26 +77,26 @@ Tagged<PyObject> GetNamesFromLocalsplusNames(
 }  // namespace
 
 // static
-Handle<PyCodeObject> PyCodeObject::NewInstance(
-    int arg_count,
-    int posonly_arg_count,
-    int kwonly_arg_count,
-    int stack_size,
-    int flags,
-    Handle<PyString> bytecodes,
-    Handle<PyTuple> consts,
-    Handle<PyTuple> names,
-    Handle<PyTuple> localsplusnames,
-    Handle<PyString> localspluskinds,
-    Handle<PyString> file_name,
-    Handle<PyString> co_name,
-    Handle<PyString> qual_name,
-    int line_no,
-    Handle<PyString> line_table,
-    Handle<PyString> exception_table) {
+Handle<PyCodeObject> PyCodeObject::New(Isolate* isolate,
+                                       int arg_count,
+                                       int posonly_arg_count,
+                                       int kwonly_arg_count,
+                                       int stack_size,
+                                       int flags,
+                                       Handle<PyString> bytecodes,
+                                       Handle<PyTuple> consts,
+                                       Handle<PyTuple> names,
+                                       Handle<PyTuple> localsplusnames,
+                                       Handle<PyString> localspluskinds,
+                                       Handle<PyString> file_name,
+                                       Handle<PyString> co_name,
+                                       Handle<PyString> qual_name,
+                                       int line_no,
+                                       Handle<PyString> line_table,
+                                       Handle<PyString> exception_table) {
   EscapableHandleScope scope;
 
-  Handle<PyCodeObject> object = Isolate::Current()->factory()->NewPyCodeObject();
+  Handle<PyCodeObject> object = isolate->factory()->NewPyCodeObject();
 
   object->arg_count_ = arg_count;
   object->posonly_arg_count_ = posonly_arg_count;
