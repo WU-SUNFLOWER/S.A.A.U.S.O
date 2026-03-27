@@ -372,7 +372,7 @@ Maybe<bool> PyListKlass::Virtual_Equal(Isolate* isolate,
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Iter(Isolate* isolate,
                                                 Handle<PyObject> object) {
-  return PyListIterator::NewInstance(Handle<PyList>::cast(object));
+  return isolate->factory()->NewPyListIterator(Handle<PyList>::cast(object));
 }
 
 size_t PyListKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

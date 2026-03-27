@@ -16,10 +16,6 @@
 
 namespace saauso::internal {
 
-Handle<PyListIterator> PyListIterator::NewInstance(Handle<PyObject> owner) {
-  return Isolate::Current()->factory()->NewPyListIterator(owner);
-}
-
 Tagged<PyListIterator> PyListIterator::cast(Tagged<PyObject> object) {
   assert(IsPyListIterator(object));
   return Tagged<PyListIterator>::cast(object);
