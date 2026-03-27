@@ -24,7 +24,8 @@ MaybeHandle<PyString> Runtime_NewTupleRepr(Isolate* isolate,
 // - tuple 允许为 null；为 null 时直接返回 null Handle。
 // - begin/end 会被裁剪到合法范围，且保证 end >= begin。
 // - 返回值始终为拷贝结果（可为空 tuple）。
-Handle<PyTuple> Runtime_NewTupleSlice(Handle<PyTuple> tuple,
+Handle<PyTuple> Runtime_NewTupleSlice(Isolate* isolate,
+                                      Handle<PyTuple> tuple,
                                       int64_t begin,
                                       int64_t end);
 
@@ -32,7 +33,8 @@ Handle<PyTuple> Runtime_NewTupleSlice(Handle<PyTuple> tuple,
 // - tuple 允许为 null；为 null 时返回 null Handle。
 // - 当 begin >= tuple 长度时返回 null Handle。
 // - 其余情况等价于 Runtime_NewTupleSlice(tuple, begin, tuple->length())。
-Handle<PyTuple> Runtime_NewTupleTailOrNull(Handle<PyTuple> tuple,
+Handle<PyTuple> Runtime_NewTupleTailOrNull(Isolate* isolate,
+                                           Handle<PyTuple> tuple,
                                            int64_t begin);
 
 }  // namespace saauso::internal

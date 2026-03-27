@@ -141,8 +141,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
     //   （这样调用时 self 才会自动传入）。
     // 2. 如果该值是普通数据，直接返回。
     if (IsPyFunction(result)) {
-      result = MethodObject::NewInstance(
-          handle(Tagged<PyFunction>::cast(*result)), self);
+      result = isolate->factory()->NewMethodObject(result, self);
     }
     goto found;
   }
@@ -152,7 +151,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, ST(getattr), getattr_func));
   if (!getattr_func.is_null()) {
-    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    Handle<PyTuple> args = PyTuple::New(isolate, 1);
     args->SetInternal(0, prop_name);
 
     ASSIGN_RETURN_ON_EXCEPTION(isolate, result,

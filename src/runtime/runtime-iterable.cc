@@ -69,7 +69,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
   // Fast Path: List转Tuple
   if (IsPyList(iterable)) {
     auto list = Handle<PyList>::cast(iterable);
-    tuple = PyTuple::NewInstance(list->length());
+    tuple = PyTuple::New(isolate, list->length());
     for (auto i = 0; i < list->length(); ++i) {
       tuple->SetInternal(i, list->Get(i));
     }
@@ -80,7 +80,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
   Handle<PyList> tmp = PyList::NewInstance();
   RETURN_ON_EXCEPTION(
       isolate, Runtime_ExtendListByItratableObject(isolate, tmp, iterable));
-  tuple = PyTuple::NewInstance(tmp->length());
+  tuple = PyTuple::New(isolate, tmp->length());
   for (auto i = 0; i < tmp->length(); ++i) {
     tuple->SetInternal(i, tmp->Get(i));
   }

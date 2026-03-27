@@ -225,7 +225,7 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
       Runtime_GetPropertyInInstanceTypeMro(isolate, object, func_name));
   assert(!method.is_null());
 
-  Handle<PyTuple> call_args = args.is_null() ? PyTuple::NewInstance(0) : args;
+  Handle<PyTuple> call_args = args.is_null() ? PyTuple::New(isolate, 0) : args;
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,

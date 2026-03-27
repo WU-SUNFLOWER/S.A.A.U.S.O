@@ -385,7 +385,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     case kSmallTupleFlag: {
       uint8_t length =
           static_cast<uint8_t>(static_cast<unsigned char>(reader_->ReadByte()));
-      auto tuple = PyTuple::NewInstance(length);
+      auto tuple = PyTuple::New(isolate_, length);
       if (ref_flag) {
         cache->Set(cache_index, tuple);
       }
@@ -399,7 +399,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     }
     case kTupleFlag: {
       int length = ReadInt32();
-      auto tuple = PyTuple::NewInstance(length);
+      auto tuple = PyTuple::New(isolate_, length);
       if (ref_flag) {
         cache->Set(cache_index, tuple);
       }

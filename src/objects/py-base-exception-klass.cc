@@ -138,7 +138,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   }
 
   Handle<PyTuple> init_args =
-      args.is_null() ? PyTuple::NewInstance(0) : Handle<PyTuple>::cast(args);
+      args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
   Handle<PyDict> properties = PyObject::GetProperties(instance);
   if (properties.is_null()) {
     properties = PyDict::NewInstance();

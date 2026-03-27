@@ -65,7 +65,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
   type_object = args->Get(0);
-  new_args = Runtime_NewTupleTailOrNull(args, 1);
+  new_args = Runtime_NewTupleTailOrNull(isolate, args, 1);
 
   if (!IsPyTypeObject(type_object)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
@@ -299,7 +299,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       keys->Set(i, list->Get(i));
     }
   } else {
-    Handle<PyTuple> key_args = PyTuple::NewInstance(1);
+    Handle<PyTuple> key_args = PyTuple::New(isolate, 1);
     Handle<PyDict> empty_kwargs = PyDict::NewInstance();
 
     for (int64_t i = 0; i < expected_length; ++i) {

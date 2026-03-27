@@ -86,7 +86,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
     }
 
     receiver = args->Get(0);
-    args = Runtime_NewTupleTailOrNull(args, 1);
+    args = Runtime_NewTupleTailOrNull(isolate, args, 1);
   }
 
   bool is_valid_receiver = false;

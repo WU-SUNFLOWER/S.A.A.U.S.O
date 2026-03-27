@@ -70,12 +70,6 @@ Tagged<PyTuple> PyFunction::closures_tagged() const {
   return Tagged<PyTuple>::cast(closures_);
 }
 
-// static
-Handle<MethodObject> MethodObject::NewInstance(Handle<PyObject> func,
-                                               Handle<PyObject> owner) {
-  return Isolate::Current()->factory()->NewMethodObject(func, owner);
-}
-
 Tagged<MethodObject> MethodObject::cast(Tagged<PyObject> object) {
   assert(IsMethodObject(object));
   return Tagged<MethodObject>::cast(object);

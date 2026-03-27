@@ -137,7 +137,7 @@ print(tuple([1, 2]))
   PyList::Append(expected_list, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, expected_list);
 
-  auto expected_tuple = PyTuple::NewInstance(2);
+  auto expected_tuple = PyTuple::New(isolate_, 2);
   expected_tuple->SetInternal(0, PySmi::FromInt(1));
   expected_tuple->SetInternal(1, PySmi::FromInt(2));
   AppendExpected(expected_printv_result, expected_tuple);

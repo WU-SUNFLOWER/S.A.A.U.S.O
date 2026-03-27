@@ -135,7 +135,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
                  PyString::NewInstance("test/python312/import-mvp"));
 
   Handle<PyString> name = PyString::NewInstance("pkg.sub");
-  Handle<PyTuple> non_empty_fromlist = PyTuple::NewInstance(1);
+  Handle<PyTuple> non_empty_fromlist = PyTuple::New(isolate_, 1);
 
   MaybeHandle<PyObject> imported_module =
       isolate()->module_manager()->ImportModule(name, non_empty_fromlist, 0,
@@ -177,8 +177,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   ASSERT_FALSE(pkg_sub_module.is_null());
   ASSERT_FALSE(bound.is_null());
   bool eq = false;
-  ASSERT_TRUE(
-      PyObject::EqualBool(isolate_, bound, pkg_sub_module).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, bound, pkg_sub_module).To(&eq));
   EXPECT_TRUE(eq);
 }
 

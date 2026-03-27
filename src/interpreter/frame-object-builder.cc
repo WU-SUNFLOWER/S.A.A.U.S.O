@@ -161,7 +161,7 @@ bool PackExtraPosArgsFromPosArgs(Isolate* isolate,
       actual_pos_cnt, ctx.formal_pos_arg_cnt);
 
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarArgs) {
-    extend_pos_args = PyTuple::NewInstance(extra_pos_cnt);
+    extend_pos_args = PyTuple::New(isolate, extra_pos_cnt);
   }
 
   if (!actual_pos_args.is_null() && extra_pos_cnt > 0) {
@@ -195,7 +195,7 @@ bool PackExtraPosArgsFromActualArgs(Isolate* isolate,
       actual_pos_cnt, ctx.formal_pos_arg_cnt);
 
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarArgs) {
-    extend_pos_args = PyTuple::NewInstance(extra_pos_cnt);
+    extend_pos_args = PyTuple::New(isolate, extra_pos_cnt);
   }
 
   if (extra_pos_cnt > 0) {

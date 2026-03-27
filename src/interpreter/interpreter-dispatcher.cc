@@ -504,7 +504,7 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildTuple, {
-    Handle<PyTuple> tuple = PyTuple::NewInstance(op_arg);
+    Handle<PyTuple> tuple = PyTuple::New(isolate_, op_arg);
     while (op_arg-- > 0) {
       tuple->SetInternal(op_arg, POP());
     }
@@ -679,7 +679,7 @@ void Interpreter::EvalCurrentFrame() {
     sub_module_fullname =
         PyString::Append(sub_module_fullname, sub_module_name);
 
-    auto synthetic_fromlist = PyTuple::NewInstance(1);
+    auto synthetic_fromlist = PyTuple::New(isolate_, 1);
     synthetic_fromlist->SetInternal(0, sub_module_name);
 
     Handle<PyObject> submodule;
@@ -1006,7 +1006,7 @@ void Interpreter::EvalCurrentFrame() {
 
     Handle<PyTuple> args;
     if (arg_count > 0) {
-      args = PyTuple::NewInstance(arg_count);
+      args = PyTuple::New(isolate_, arg_count);
       while (arg_count-- > 0) {
         args->SetInternal(arg_count, POP());
       }

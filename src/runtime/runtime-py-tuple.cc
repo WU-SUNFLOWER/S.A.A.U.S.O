@@ -36,7 +36,8 @@ MaybeHandle<PyString> Runtime_NewTupleRepr(Isolate* isolate,
   return scope.Escape(PyString::FromStdString(repr));
 }
 
-Handle<PyTuple> Runtime_NewTupleSlice(Handle<PyTuple> tuple,
+Handle<PyTuple> Runtime_NewTupleSlice(Isolate* isolate,
+                                      Handle<PyTuple> tuple,
                                       int64_t begin,
                                       int64_t end) {
   if (tuple.is_null()) {
@@ -47,14 +48,15 @@ Handle<PyTuple> Runtime_NewTupleSlice(Handle<PyTuple> tuple,
   begin = std::max(static_cast<int64_t>(0), std::min(begin, length));
   end = std::max(begin, std::min(end, length));
 
-  Handle<PyTuple> sliced = PyTuple::NewInstance(end - begin);
+  Handle<PyTuple> sliced = PyTuple::New(isolate, end - begin);
   for (int64_t i = begin; i < end; ++i) {
     sliced->SetInternal(i - begin, tuple->GetTagged(i));
   }
   return sliced;
 }
 
-Handle<PyTuple> Runtime_NewTupleTailOrNull(Handle<PyTuple> tuple,
+Handle<PyTuple> Runtime_NewTupleTailOrNull(Isolate* isolate,
+                                           Handle<PyTuple> tuple,
                                            int64_t begin) {
   if (tuple.is_null()) {
     return Handle<PyTuple>::null();
@@ -62,7 +64,7 @@ Handle<PyTuple> Runtime_NewTupleTailOrNull(Handle<PyTuple> tuple,
   if (begin >= tuple->length()) {
     return Handle<PyTuple>::null();
   }
-  return Runtime_NewTupleSlice(tuple, begin, tuple->length());
+  return Runtime_NewTupleSlice(isolate, tuple, begin, tuple->length());
 }
 
 }  // namespace saauso::internal

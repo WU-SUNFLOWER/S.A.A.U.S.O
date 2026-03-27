@@ -52,7 +52,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
     return kNullMaybeHandle;
   }
   type_object = args->Get(0);
-  args = Runtime_NewTupleTailOrNull(args, 1);
+  args = Runtime_NewTupleTailOrNull(isolate, args, 1);
 
   if (!IsPyTypeObject(type_object)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,

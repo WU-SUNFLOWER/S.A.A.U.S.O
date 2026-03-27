@@ -133,7 +133,7 @@ Handle<PyTuple> PyDict::ItemAtIndex(int64_t index) const {
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
-  auto result = PyTuple::NewInstance(2);
+  auto result = PyTuple::New(Isolate::Current(), 2);
   auto value = ValueAtIndex(index);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
@@ -267,7 +267,7 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
   EscapableHandleScope scope;
 
   int64_t out_length = dict->occupied();
-  Handle<PyTuple> keys = PyTuple::NewInstance(out_length);
+  Handle<PyTuple> keys = PyTuple::New(Isolate::Current(), out_length);
 
   Handle<FixedArray> data = dict->data();
   int64_t out_index = 0;

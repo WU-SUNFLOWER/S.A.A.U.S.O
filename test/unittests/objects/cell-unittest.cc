@@ -56,7 +56,7 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   Handle<PyString> payload = PyString::NewInstance("payload");
   cell->set_value(payload);
 
-  Handle<PyTuple> closures = PyTuple::NewInstance(1);
+  Handle<PyTuple> closures = PyTuple::New(isolate_, 1);
   closures->SetInternal(0, cell);
 
   Handle<PyString> func_name = PyString::NewInstance("dummy");

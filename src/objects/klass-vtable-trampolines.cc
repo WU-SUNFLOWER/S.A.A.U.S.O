@@ -39,7 +39,7 @@ void ThrowCompareUnsupported(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Add(Isolate* isolate,
                                                   Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -54,7 +54,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Add(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Sub(Isolate* isolate,
                                                   Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -69,7 +69,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Sub(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Mul(Isolate* isolate,
                                                   Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -84,7 +84,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Mul(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Div(Isolate* isolate,
                                                   Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -99,7 +99,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Div(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::FloorDiv(Isolate* isolate,
                                                        Handle<PyObject> self,
                                                        Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -114,7 +114,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::FloorDiv(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Mod(Isolate* isolate,
                                                   Handle<PyObject> self,
                                                   Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -162,7 +162,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::SetAttr(
     Handle<PyObject> self,
     Handle<PyObject> property_name,
     Handle<PyObject> property_value) {
-  Handle<PyTuple> args = PyTuple::NewInstance(2);
+  Handle<PyTuple> args = PyTuple::New(isolate, 2);
   args->SetInternal(0, property_name);
   args->SetInternal(1, property_value);
 
@@ -178,7 +178,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::SetAttr(
 MaybeHandle<PyObject> KlassVtableTrampolines::Subscr(Isolate* isolate,
                                                      Handle<PyObject> self,
                                                      Handle<PyObject> subscr) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, subscr);
 
   Handle<PyObject> result;
@@ -195,7 +195,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::StoreSubscr(
     Handle<PyObject> self,
     Handle<PyObject> subscr,
     Handle<PyObject> value) {
-  Handle<PyTuple> args = PyTuple::NewInstance(2);
+  Handle<PyTuple> args = PyTuple::New(isolate, 2);
   args->SetInternal(0, subscr);
   args->SetInternal(1, value);
 
@@ -212,7 +212,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::DeleteSubscr(
     Isolate* isolate,
     Handle<PyObject> self,
     Handle<PyObject> subscr) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, subscr);
 
   Handle<PyObject> result;
@@ -236,7 +236,7 @@ Maybe<bool> KlassVtableTrampolines::Greater(Isolate* isolate,
     return kNullMaybe;
   }
 
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -259,7 +259,7 @@ Maybe<bool> KlassVtableTrampolines::Less(Isolate* isolate,
     return kNullMaybe;
   }
 
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -285,7 +285,7 @@ Maybe<bool> KlassVtableTrampolines::Equal(Isolate* isolate,
     return Maybe<bool>(false);
   }
 
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
@@ -304,7 +304,7 @@ Maybe<bool> KlassVtableTrampolines::NotEqual(Isolate* isolate,
                                    isolate, self, ST(not_equal), callable));
 
   if (!callable.is_null()) {
-    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    Handle<PyTuple> args = PyTuple::New(isolate, 1);
     args->SetInternal(0, other);
 
     Handle<PyObject> result;
@@ -330,7 +330,7 @@ Maybe<bool> KlassVtableTrampolines::GreaterEqual(Isolate* isolate,
                                    isolate, self, ST(ge), callable));
 
   if (!callable.is_null()) {
-    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    Handle<PyTuple> args = PyTuple::New(isolate, 1);
     args->SetInternal(0, other);
 
     Handle<PyObject> result;
@@ -356,7 +356,7 @@ Maybe<bool> KlassVtableTrampolines::LessEqual(Isolate* isolate,
                                    isolate, self, ST(le), callable));
 
   if (!callable.is_null()) {
-    Handle<PyTuple> args = PyTuple::NewInstance(1);
+    Handle<PyTuple> args = PyTuple::New(isolate, 1);
     args->SetInternal(0, other);
 
     Handle<PyObject> result;
@@ -377,7 +377,7 @@ Maybe<bool> KlassVtableTrampolines::LessEqual(Isolate* isolate,
 Maybe<bool> KlassVtableTrampolines::Contains(Isolate* isolate,
                                              Handle<PyObject> self,
                                              Handle<PyObject> other) {
-  Handle<PyTuple> args = PyTuple::NewInstance(1);
+  Handle<PyTuple> args = PyTuple::New(isolate, 1);
   args->SetInternal(0, other);
 
   Handle<PyObject> result;
