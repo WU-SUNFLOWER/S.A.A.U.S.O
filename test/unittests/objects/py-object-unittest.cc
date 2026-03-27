@@ -24,7 +24,7 @@ class PyObjectTest : public VmTestBase {};
 TEST_F(PyObjectTest, GetPropertiesReturnsNullByDefaultAndAcceptsNullSet) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   auto props = PyObject::GetProperties(Handle<PyObject>(list));
   EXPECT_TRUE(props.is_null());
 
@@ -36,7 +36,7 @@ TEST_F(PyObjectTest, GetPropertiesReturnsNullByDefaultAndAcceptsNullSet) {
 TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   auto dict = PyDict::NewInstance();
 
   PyObject::SetProperties(*Handle<PyObject>(list), *dict);
@@ -55,7 +55,7 @@ TEST_F(PyObjectTest, IsHeapObjectReturnsFalseForNullAndSmi) {
   Tagged<PyObject> smi = Tagged<PyObject>(PySmi::FromInt(123));
   EXPECT_FALSE(IsHeapObject(smi));
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   EXPECT_TRUE(IsHeapObject(*Handle<PyObject>(list)));
 }
 
@@ -63,7 +63,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   HandleScope scope;
   Handle<PyString> list_like_name = PyString::NewInstance("ListLikeCase");
   Handle<PyDict> list_like_props = PyDict::NewInstance();
-  Handle<PyList> list_like_supers = PyList::NewInstance(1);
+  Handle<PyList> list_like_supers = PyList::New(isolate_, 1);
   list_like_supers->SetAndExtendLength(
       0, PyListKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> list_like_type;
@@ -81,7 +81,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
 
   Handle<PyString> dict_like_name = PyString::NewInstance("DictLikeCase");
   Handle<PyDict> dict_like_props = PyDict::NewInstance();
-  Handle<PyList> dict_like_supers = PyList::NewInstance(1);
+  Handle<PyList> dict_like_supers = PyList::New(isolate_, 1);
   dict_like_supers->SetAndExtendLength(
       0, PyDictKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> dict_like_type;
@@ -99,7 +99,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
 
   Handle<PyString> tuple_like_name = PyString::NewInstance("TupleLikeCase");
   Handle<PyDict> tuple_like_props = PyDict::NewInstance();
-  Handle<PyList> tuple_like_supers = PyList::NewInstance(1);
+  Handle<PyList> tuple_like_supers = PyList::New(isolate_, 1);
   tuple_like_supers->SetAndExtendLength(
       0, PyTupleKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> tuple_like_type;
@@ -117,7 +117,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
 
   Handle<PyString> string_like_name = PyString::NewInstance("StringLikeCase");
   Handle<PyDict> string_like_props = PyDict::NewInstance();
-  Handle<PyList> string_like_supers = PyList::NewInstance(1);
+  Handle<PyList> string_like_supers = PyList::New(isolate_, 1);
   string_like_supers->SetAndExtendLength(
       0, PyStringKlass::GetInstance(isolate_)->type_object());
   Handle<PyTypeObject> string_like_type;

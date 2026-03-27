@@ -46,7 +46,7 @@ print(str(float("nan")))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::NewInstance(""));
   AppendExpected(expected_printv_result, PyString::NewInstance("123"));
   AppendExpected(expected_printv_result, PyString::NewInstance("3.0"));
@@ -128,11 +128,11 @@ print(tuple([1, 2]))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyFalseObject());
 
-  auto expected_list = PyList::NewInstance();
+  auto expected_list = PyList::New(isolate_);
   PyList::Append(expected_list, handle(PySmi::FromInt(1)));
   PyList::Append(expected_list, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, expected_list);
@@ -164,7 +164,7 @@ print(t1 is t3) # True
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyFalseObject());
   AppendExpected(expected_printv_result, PyFalseObject());
@@ -188,7 +188,7 @@ print(isinstance(o, object))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyTrueObject());
@@ -209,7 +209,7 @@ print(C.x)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected_printv_result);
 }

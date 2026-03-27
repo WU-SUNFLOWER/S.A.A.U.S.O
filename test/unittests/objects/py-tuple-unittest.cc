@@ -23,7 +23,7 @@ class PyTupleTest : public VmTestBase {};
 TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
 
@@ -42,7 +42,7 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
 TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PyString::NewInstance("x")));
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(7)));
 
@@ -69,7 +69,7 @@ TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
 TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
   HandleScope scope;
 
-  auto list1 = PyList::NewInstance(2);
+  auto list1 = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::NewInstance("x"));
   PyList::Append(list1, s);
   PyList::Append(list1, Handle<PyObject>(PySmi::FromInt(1)));
@@ -84,7 +84,7 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
           .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
-  auto list2 = PyList::NewInstance(2);
+  auto list2 = PyList::New(isolate_, 2);
   PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
   auto t2 = isolate_->factory()->NewPyTupleWithElements(list2);
@@ -99,7 +99,7 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
 TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
   HandleScope scope;
 
-  auto list = PyList::NewInstance(2);
+  auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
   auto tuple = isolate_->factory()->NewPyTupleWithElements(list);

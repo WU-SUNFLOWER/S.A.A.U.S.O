@@ -204,7 +204,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
   }
   auto list2 = Handle<PyList>::cast(other);
 
-  auto new_result = PyList::NewInstance(list1->length() + list2->length());
+  auto new_result = PyList::New(isolate, list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
     PyList::Append(new_result, list1->Get(i));
   }
@@ -230,7 +230,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
   auto decoded_coeff = std::max(static_cast<int64_t>(0),
                                 PySmi::ToInt(Handle<PySmi>::cast(coeff)));
 
-  auto result = PyList::NewInstance(list->length() * decoded_coeff);
+  auto result = PyList::New(isolate, list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
     for (int i = 0; i < list->length(); ++i) {
       PyList::Append(result, list->Get(i));

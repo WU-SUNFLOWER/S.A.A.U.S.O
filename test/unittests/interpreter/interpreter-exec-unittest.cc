@@ -27,7 +27,7 @@ TEST_F(BasicInterpreterTest, ExecPrint) {
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -43,7 +43,7 @@ print(x)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -59,7 +59,7 @@ print(d["a"])
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -76,7 +76,7 @@ print(l["y"])
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(11)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -93,7 +93,7 @@ except TypeError as e:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(
       expected_printv_result,
       PyString::NewInstance("exec() globals must be a dict, not int"));
@@ -112,7 +112,7 @@ except TypeError as e:
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result,
                  PyString::NewInstance("keywords must be strings"));
   ExpectPrintResult(expected_printv_result);

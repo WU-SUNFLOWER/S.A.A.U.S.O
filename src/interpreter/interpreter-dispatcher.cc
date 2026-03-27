@@ -512,7 +512,7 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildList, {
-    Handle<PyList> list = PyList::NewInstance(op_arg);
+    Handle<PyList> list = PyList::New(isolate_, op_arg);
     while (op_arg-- > 0) {
       list->SetAndExtendLength(op_arg, POP());
     }

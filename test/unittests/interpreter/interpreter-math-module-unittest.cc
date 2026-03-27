@@ -35,7 +35,7 @@ print(math.pow(2, 3))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyFloat::New(isolate_, 3.0));
   AppendExpected(expected, handle(PySmi::FromInt(1)));
   AppendExpected(expected, handle(PySmi::FromInt(2)));
@@ -55,7 +55,7 @@ print(math.e)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected = PyList::NewInstance();
+  auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyFloat::New(isolate_, std::acos(-1.0)));
   AppendExpected(expected, PyFloat::New(isolate_, std::exp(1.0)));
   ExpectPrintResult(expected);

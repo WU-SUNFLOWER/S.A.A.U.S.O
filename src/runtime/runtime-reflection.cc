@@ -43,7 +43,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
   // 如果没有有效的supers列表，那么显式创建一个列表，并将object作为基类添加进去
   if (supers.is_null() || supers->IsEmpty()) {
-    supers = PyList::NewInstance(1);
+    supers = PyList::New(isolate, 1);
     PyList::Append(supers, PyObjectKlass::GetInstance(isolate)->type_object());
   }
   klass->set_supers(supers);

@@ -64,7 +64,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Handle<PyString> str,
                                           int64_t maxsplit) {
   EscapableHandleScope scope;
 
-  Handle<PyList> result = PyList::NewInstance();
+  Handle<PyList> result = PyList::New(Isolate::Current());
 
   const int64_t str_length = str->length();
   if (maxsplit == 0) {

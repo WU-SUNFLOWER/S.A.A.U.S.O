@@ -46,7 +46,7 @@ print(1 if last else 0)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1999)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1999)));
@@ -77,7 +77,7 @@ print(len(c.foo()))
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));

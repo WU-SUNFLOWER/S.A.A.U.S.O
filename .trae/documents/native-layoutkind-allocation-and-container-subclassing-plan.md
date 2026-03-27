@@ -32,7 +32,7 @@
 
 * exact builtin 与 subclass 的 properties 策略差异（base 无 `__dict__`，subclass 有）
 
-导致 `*Klass::Virtual_ConstructInstance` 中出现“语义 + 分配初始化细节”耦合，并绕过 `PyList::NewInstance` 手写初始化协议。为防止该模式在 dict/tuple/str 复制扩散，需要在 objects/heap 层引入可复用的“按 native layout 分配并建立不变量”的原语。
+导致 `*Klass::Virtual_ConstructInstance` 中出现“语义 + 分配初始化细节”耦合，并绕过 `PyList::New` 手写初始化协议。为防止该模式在 dict/tuple/str 复制扩散，需要在 objects/heap 层引入可复用的“按 native layout 分配并建立不变量”的原语。
 
 ### API 形态（建议）
 
@@ -123,7 +123,7 @@
 
 目标：
 
-* `PyList::NewInstance` 与 `PyListKlass::Virtual_ConstructInstance` 不再直接手写 heap allocate 初始化协议。
+* `PyList::New` 与 `PyListKlass::Virtual_ConstructInstance` 不再直接手写 heap allocate 初始化协议。
 
 * list-like 分配集中到一个可复用 helper（可放在 `py-list.{h,cc}` 或更底层模块）。
 
@@ -135,7 +135,7 @@
 
   * `NewPyListLike(Tagged<Klass> klass_self, int64_t init_capacity, PropertiesPolicy policy)`
 
-  * 让 `PyList::NewInstance` 变成对 `NewPyListLike(PyListKlass::GetInstance(), ...)` 的包装。
+  * 让 `PyList::New` 变成对 `NewPyListLike(PyListKlass::GetInstance(), ...)` 的包装。
 
 * 在 `PyListKlass::Virtual_ConstructInstance`：
 

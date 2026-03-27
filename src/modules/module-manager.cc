@@ -71,7 +71,7 @@ void ModuleManager::InitializeSysState() {
   Handle<PyDict> modules = PyDict::NewInstance();
   modules_ = *modules;
 
-  Handle<PyList> path = PyList::NewInstance();
+  Handle<PyList> path = PyList::New(isolate_);
   PyList::Append(path, ST(dot));
   path_ = *path;
 }

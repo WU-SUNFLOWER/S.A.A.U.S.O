@@ -116,7 +116,7 @@ TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
                         static_cast<size_t>(repr_text->length())),
             "'abc'");
 
-  auto list = PyList::NewInstance(1);
+  auto list = PyList::New(isolate_, 1);
   list->SetAndExtendLength(0, PyString::NewInstance("x"));
   repr_args->SetInternal(0, list);
   repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),

@@ -32,9 +32,9 @@ print(l)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   PyList::Append(list, handle(PySmi::FromInt(1)));
   PyList::Append(list, handle(PySmi::FromInt(2)));
   PyList::Append(list, handle(PySmi::FromInt(3)));
@@ -54,9 +54,9 @@ print(l)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   PyList::Append(list, handle(PySmi::FromInt(3)));
   PyList::Append(list, handle(PySmi::FromInt(2)));
   PyList::Append(list, handle(PySmi::FromInt(1)));
@@ -80,15 +80,15 @@ print(s)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   PyList::Append(list, PyString::NewInstance("b"));
   PyList::Append(list, PyString::NewInstance("aa"));
   PyList::Append(list, PyString::NewInstance("dd"));
   PyList::Append(list, PyString::NewInstance("ccc"));
 
-  auto stable_list = PyList::NewInstance();
+  auto stable_list = PyList::New(isolate_);
   PyList::Append(stable_list, PyString::NewInstance("bb"));
   PyList::Append(stable_list, PyString::NewInstance("aa"));
 
@@ -108,9 +108,9 @@ print(l)
 
   RunScript(kSource, kTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
 
-  auto list = PyList::NewInstance();
+  auto list = PyList::New(isolate_);
   PyList::Append(list, handle(PySmi::FromInt(100)));
   PyList::Append(list, handle(PySmi::FromInt(105)));
   PyList::Append(list, handle(PySmi::FromInt(106)));

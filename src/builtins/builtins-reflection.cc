@@ -106,7 +106,7 @@ BUILTIN(BuildTypeObject) {
   }
   auto class_name = Handle<PyString>::cast(class_name_obj);
 
-  auto class_supers = PyList::NewInstance(args_length - 2);
+  auto class_supers = PyList::New(isolate, args_length - 2);
   for (auto i = 2; i < args_length; ++i) {
     PyList::Append(class_supers, args->Get(i));
   }

@@ -219,8 +219,8 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
   // marshal 的两个核心表：
   // - string_table: 存放被 intern 的字符串（由 't'/'A'/'Z' 等 tag 推入）
   // - cache: ref_flag 置位的对象会进入 cache，后续可由 'r' 复用
-  Handle<PyList> string_table = PyList::NewInstance();
-  Handle<PyList> cache = PyList::NewInstance();
+  Handle<PyList> string_table = PyList::New(isolate_);
+  Handle<PyList> cache = PyList::New(isolate_);
 
   int index = 0;
   if (ref_flag) {
@@ -413,7 +413,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
     }
     case kListFlag: {
       int length = ReadInt32();
-      auto list = PyList::NewInstance(length);
+      auto list = PyList::New(isolate_, length);
       if (ref_flag) {
         cache->Set(cache_index, list);
       }

@@ -77,7 +77,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
   }
 
   // Fallback: 通过迭代器进行转换
-  Handle<PyList> tmp = PyList::NewInstance();
+  Handle<PyList> tmp = PyList::New(isolate);
   RETURN_ON_EXCEPTION(
       isolate, Runtime_ExtendListByItratableObject(isolate, tmp, iterable));
   tuple = PyTuple::New(isolate, tmp->length());

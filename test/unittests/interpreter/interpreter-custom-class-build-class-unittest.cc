@@ -40,7 +40,7 @@ except TypeError as e:
 
   RunScript(kSource, kInterpreterTestFileName);
 
-  auto expected_printv_result = PyList::NewInstance();
+  auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(
       expected_printv_result,
       PyString::NewInstance("__build_class__: not enough arguments"));

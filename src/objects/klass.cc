@@ -26,7 +26,7 @@ namespace {
 
 Handle<PyList> C3Impl_Linear(Isolate* isolate,
                              Handle<PyTypeObject> type_object) {
-  Handle<PyList> result = PyList::NewInstance();
+  Handle<PyList> result = PyList::New(isolate);
   Handle<PyList> mro = type_object->mro();
 
   // 在C3Impl_Merge中我们会不断地从super的mro序列中移除元素，
@@ -44,7 +44,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
   // 递归出口：
   // 如果所有的mro列表都被清空，这意味着完整的所求mro序列已经生成，退出递归即可
   if (mro_of_each_super->IsEmpty()) {
-    return PyList::NewInstance();
+    return PyList::New(isolate);
   }
 
   for (auto i = 0; i < mro_of_each_super->length(); ++i) {
@@ -63,10 +63,9 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
       // 如果发现head在其他mro序列的中间（而非开头或不存在），
       // 则当前head不是所求mro序列中的下一个元素！
       int64_t head_pos;
-      ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, head_pos,
-                                       mro_of_another_super->IndexOf(head,
-                                                                     isolate),
-                                       Handle<PyList>::null());
+      ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+          isolate, head_pos, mro_of_another_super->IndexOf(head, isolate),
+          Handle<PyList>::null());
       if (head_pos > 0) {
         valid = false;
         break;
@@ -81,7 +80,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
 
     // 否则，head就是所求mro序列中的下一个元素，将它从所有mro列表中移除，
     // 然后递归重复这个过程，直到所有mro列表被清空！
-    Handle<PyList> next_mro_of_each_super = PyList::NewInstance();
+    Handle<PyList> next_mro_of_each_super = PyList::New(isolate);
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
       auto mro_of_a_super = Handle<PyList>::cast(mro_of_each_super->Get(j));
       bool removed;
@@ -166,7 +165,7 @@ void Klass::Iterate(ObjectVisitor* v) {
 
 void Klass::AddSuper(Tagged<Klass> super) {
   if (supers_.is_null()) {
-    set_supers(PyList::NewInstance());
+    set_supers(PyList::New(Isolate::Current()));
   }
   PyList::Append(supers(), super->type_object());
 }
@@ -179,9 +178,9 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   Handle<PyList> mro_result;
 
   if (supers_.is_null() || supers()->IsEmpty()) {
-    mro_result = PyList::NewInstance();
+    mro_result = PyList::New(isolate);
   } else {
-    Handle<PyList> all = PyList::NewInstance(supers()->length());
+    Handle<PyList> all = PyList::New(isolate, supers()->length());
     for (auto i = 0; i < supers()->length(); ++i) {
       auto super = handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)));
       PyList::Append(all, C3Impl_Linear(isolate, super));

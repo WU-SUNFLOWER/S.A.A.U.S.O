@@ -20,8 +20,8 @@
 namespace saauso::internal {
 
 // static
-Handle<PyList> PyList::NewInstance(int64_t init_capacity) {
-  return Isolate::Current()->factory()->NewPyList(init_capacity);
+Handle<PyList> PyList::New(Isolate* isolate, int64_t init_capacity) {
+  return isolate->factory()->NewPyList(init_capacity);
 }
 
 // static
