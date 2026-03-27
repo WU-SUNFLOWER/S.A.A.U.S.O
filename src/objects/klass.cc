@@ -163,9 +163,9 @@ void Klass::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&mro_);
 }
 
-void Klass::AddSuper(Tagged<Klass> super) {
+void Klass::AddSuper(Tagged<Klass> super, Isolate* isolate) {
   if (supers_.is_null()) {
-    set_supers(PyList::New(Isolate::Current()));
+    set_supers(PyList::New(isolate));
   }
   PyList::Append(supers(), super->type_object());
 }

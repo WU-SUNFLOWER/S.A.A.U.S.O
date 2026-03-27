@@ -80,7 +80,7 @@ class Klass : public Object {
   void Iterate(ObjectVisitor* v);
 
   // 添加父类
-  void AddSuper(Tagged<Klass> super);
+  void AddSuper(Tagged<Klass> super, Isolate* isolate);
   // 执行C3算法，执行结果保存在mro_
   Maybe<void> OrderSupers(Isolate* isolate);
 
