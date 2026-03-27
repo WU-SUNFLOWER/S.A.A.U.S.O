@@ -9,6 +9,8 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyDict : public PyObject {
  public:
   static constexpr int64_t kMinimumCapacity = 8;
@@ -41,7 +43,7 @@ class PyDict : public PyObject {
   static Maybe<bool> Put(Handle<PyDict> dict,
                          Handle<PyObject> key,
                          Handle<PyObject> value);
-  static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict);
+  static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict, Isolate* isolate);
 
   Handle<FixedArray> data() const;
 

@@ -124,7 +124,7 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
     RETURN_ON_EXCEPTION(
         isolate, ImportModulesByAllImpl(isolate, all, module_dict, locals));
   } else {
-    Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict);
+    Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict, isolate);
     for (int64_t i = 0; i < keys->length(); ++i) {
       RETURN_ON_EXCEPTION(isolate, ImportNameImpl(isolate, module_dict, locals,
                                                   keys->Get(i), true));

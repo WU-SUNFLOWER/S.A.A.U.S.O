@@ -263,7 +263,7 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
 }
 
 // static
-Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
+Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
   EscapableHandleScope scope;
 
   int64_t out_length = dict->occupied();
