@@ -449,7 +449,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Len(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Repr(Isolate* isolate,
                                                    Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self,
                                           Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(repr))
            .ToHandle(&result)) {
@@ -468,7 +468,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::Repr(Isolate* isolate,
 MaybeHandle<PyObject> KlassVtableTrampolines::Str(Isolate* isolate,
                                                   Handle<PyObject> self) {
   Handle<PyObject> result;
-  if (!Runtime_InvokeMagicOperationMethod(Isolate::Current(), self,
+  if (!Runtime_InvokeMagicOperationMethod(isolate, self,
                                           Handle<PyTuple>::null(),
                                           Handle<PyDict>::null(), ST(str))
            .ToHandle(&result)) {
