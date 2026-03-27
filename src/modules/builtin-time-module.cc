@@ -85,7 +85,7 @@ BUILTIN_MODULE_FUNC(Time_Time) {
                           "%s.time() takes 0 positional arguments but %" PRId64
                           " were given",
                           kModuleName, argc));
-  return PyFloat::NewInstance(WallTimeSeconds());
+  return PyFloat::New(isolate, WallTimeSeconds());
 }
 
 BUILTIN_MODULE_FUNC(Time_PerfCounter) {
@@ -98,7 +98,7 @@ BUILTIN_MODULE_FUNC(Time_PerfCounter) {
                           "%s.perf_counter() takes 0 positional arguments "
                           "but %" PRId64 " were given",
                           kModuleName, argc));
-  return PyFloat::NewInstance(MonotonicSeconds());
+  return PyFloat::New(isolate, MonotonicSeconds());
 }
 
 BUILTIN_MODULE_FUNC(Time_Monotonic) {

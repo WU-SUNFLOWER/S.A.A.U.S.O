@@ -55,8 +55,8 @@ print(str(float("nan")))
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1234)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(255)));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(0.0));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(10.5));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 0.0));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 10.5));
   AppendExpected(expected_printv_result, PyString::NewInstance("nan"));
   ExpectPrintResult(expected_printv_result);
 }

@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 class PyFloat : public PyObject {
  public:
-  static Handle<PyFloat> NewInstance(double value);
+  static Handle<PyFloat> New(Isolate* isolate, double value);
 
   static Tagged<PyFloat> cast(Tagged<PyObject> object);
 

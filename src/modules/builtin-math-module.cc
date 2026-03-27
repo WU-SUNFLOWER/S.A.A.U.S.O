@@ -119,7 +119,7 @@ BUILTIN_MODULE_FUNC(Math_Sqrt) {
                        "math domain error");
     return kNullMaybe;
   }
-  return PyFloat::NewInstance(std::sqrt(x));
+  return PyFloat::New(isolate, std::sqrt(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Floor) {
@@ -158,7 +158,7 @@ BUILTIN_MODULE_FUNC(Math_Fabs) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return PyFloat::NewInstance(std::fabs(x));
+  return PyFloat::New(isolate, std::fabs(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Sin) {
@@ -171,7 +171,7 @@ BUILTIN_MODULE_FUNC(Math_Sin) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return PyFloat::NewInstance(std::sin(x));
+  return PyFloat::New(isolate, std::sin(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Cos) {
@@ -184,7 +184,7 @@ BUILTIN_MODULE_FUNC(Math_Cos) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return PyFloat::NewInstance(std::cos(x));
+  return PyFloat::New(isolate, std::cos(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Tan) {
@@ -197,7 +197,7 @@ BUILTIN_MODULE_FUNC(Math_Tan) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return PyFloat::NewInstance(std::tan(x));
+  return PyFloat::New(isolate, std::tan(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Exp) {
@@ -210,7 +210,7 @@ BUILTIN_MODULE_FUNC(Math_Exp) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return PyFloat::NewInstance(std::exp(x));
+  return PyFloat::New(isolate, std::exp(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Log) {
@@ -228,7 +228,7 @@ BUILTIN_MODULE_FUNC(Math_Log) {
                        "math domain error");
     return kNullMaybe;
   }
-  return PyFloat::NewInstance(std::log(x));
+  return PyFloat::New(isolate, std::log(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Log2) {
@@ -246,7 +246,7 @@ BUILTIN_MODULE_FUNC(Math_Log2) {
                        "math domain error");
     return kNullMaybe;
   }
-  return PyFloat::NewInstance(std::log2(x));
+  return PyFloat::New(isolate, std::log2(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Log10) {
@@ -264,7 +264,7 @@ BUILTIN_MODULE_FUNC(Math_Log10) {
                        "math domain error");
     return kNullMaybe;
   }
-  return PyFloat::NewInstance(std::log10(x));
+  return PyFloat::New(isolate, std::log10(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_Pow) {
@@ -284,7 +284,7 @@ BUILTIN_MODULE_FUNC(Math_Pow) {
   double y = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, y, ExtractDouble(isolate, args->Get(1)));
 
-  return PyFloat::NewInstance(std::pow(x, y));
+  return PyFloat::New(isolate, std::pow(x, y));
 }
 
 BUILTIN_MODULE_FUNC(Math_IsFinite) {
@@ -341,21 +341,23 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("pi"),
-                                  PyFloat::NewInstance(kPI)));
+                                  PyFloat::New(isolate, kPI)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("e"),
-                                  PyFloat::NewInstance(kE)));
+                                  PyFloat::New(isolate, kE)));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("tau"),
-                                  PyFloat::NewInstance(kTau)));
+                                  PyFloat::New(isolate, kTau)));
   RETURN_ON_EXCEPTION(
-      isolate, PyDict::Put(module_dict, PyString::NewInstance("inf"),
-                           PyFloat::NewInstance(
-                               std::numeric_limits<double>::infinity())));
+      isolate,
+      PyDict::Put(
+          module_dict, PyString::NewInstance("inf"),
+          PyFloat::New(isolate, std::numeric_limits<double>::infinity())));
   RETURN_ON_EXCEPTION(
-      isolate, PyDict::Put(module_dict, PyString::NewInstance("nan"),
-                           PyFloat::NewInstance(
-                               std::numeric_limits<double>::quiet_NaN())));
+      isolate,
+      PyDict::Put(
+          module_dict, PyString::NewInstance("nan"),
+          PyFloat::New(isolate, std::numeric_limits<double>::quiet_NaN())));
 
   const BuiltinModuleFuncSpec kMathModuleFuncs[] = {
 #define DEFINE_MATH_FUNC_SPEC(name, func) \

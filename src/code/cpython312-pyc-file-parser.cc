@@ -343,7 +343,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       break;
     }
     case kDoubleFlag:
-      object = PyFloat::NewInstance(reader_->ReadDouble());
+      object = PyFloat::New(isolate_, reader_->ReadDouble());
       break;
     case kNoneObjectFlag:
       object = Handle<PyNone>(isolate_->py_none_object());

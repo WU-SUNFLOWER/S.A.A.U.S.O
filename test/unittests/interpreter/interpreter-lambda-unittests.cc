@@ -38,7 +38,7 @@ print(f(1, 2))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(102));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 102));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -54,7 +54,7 @@ print(apply(lambda y: y * 2, 6))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(12));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 12));
   ExpectPrintResult(expected_printv_result);
 }
 

@@ -50,7 +50,7 @@ else:
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::NewInstance();
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(-2));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, -2));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, PyFalseObject());
   ExpectPrintResult(expected_printv_result);
@@ -197,4 +197,3 @@ print(j)
 }
 
 }  // namespace saauso::internal
-

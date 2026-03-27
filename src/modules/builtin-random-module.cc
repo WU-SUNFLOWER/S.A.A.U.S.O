@@ -111,7 +111,7 @@ BUILTIN_MODULE_FUNC(Random_Random) {
                           "%" PRId64 " were given",
                           kModuleName, argc));
 
-  return PyFloat::NewInstance(GetRng(isolate)->NextDouble01());
+  return PyFloat::New(isolate, GetRng(isolate)->NextDouble01());
 }
 
 BUILTIN_MODULE_FUNC(Random_RandInt) {

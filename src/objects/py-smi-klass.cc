@@ -120,7 +120,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Isolate* isolate,
   int64_t self_value = PySmi::cast(*self).value();
   if (IsPyFloat(other)) {
     double value = self_value + Handle<PyFloat>::cast(other)->value();
-    return PyFloat::NewInstance(value);
+    return PyFloat::New(isolate, value);
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for +: 'int' and '%s'",
@@ -135,7 +135,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Isolate* isolate,
   int64_t self_value = PySmi::cast(*self).value();
   if (IsPyFloat(other)) {
     double value = self_value - Handle<PyFloat>::cast(other)->value();
-    return PyFloat::NewInstance(value);
+    return PyFloat::New(isolate, value);
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for -: 'int' and '%s'",
@@ -150,7 +150,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Isolate* isolate,
   int64_t self_value = PySmi::cast(*self).value();
   if (IsPyFloat(other)) {
     double value = self_value * Handle<PyFloat>::cast(other)->value();
-    return PyFloat::NewInstance(value);
+    return PyFloat::New(isolate, value);
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for *: 'int' and '%s'",
@@ -166,12 +166,12 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Isolate* isolate,
   if (IsPySmi(other)) {
     double value =
         static_cast<double>(self_value) / PySmi::cast(*other).value();
-    return PyFloat::NewInstance(value);
+    return PyFloat::New(isolate, value);
   }
   if (IsPyFloat(other)) {
     double value =
         static_cast<double>(self_value) / Handle<PyFloat>::cast(other)->value();
-    return PyFloat::NewInstance(value);
+    return PyFloat::New(isolate, value);
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for /: 'int' and '%s'",
@@ -200,7 +200,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
                          "float floor division by zero");
       return kNullMaybeHandle;
     }
-    return PyFloat::NewInstance(PythonFloorDivide(self_value, other_value));
+    return PyFloat::New(isolate, PythonFloorDivide(self_value, other_value));
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for //: 'int' and '%s'",
@@ -216,7 +216,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Isolate* isolate,
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     double value = PythonMod(self_value, other_value);
-    return PyFloat::NewInstance(value);
+    return PyFloat::New(isolate, value);
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for %%: 'int' and '%s'",

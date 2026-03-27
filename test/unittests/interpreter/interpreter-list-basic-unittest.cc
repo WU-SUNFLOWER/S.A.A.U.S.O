@@ -141,7 +141,7 @@ print(l[0], l[1], l[2])
   auto expected_printv_result = PyList::NewInstance();
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(3.14));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 3.14));
   AppendExpected(expected_printv_result, PyString::NewInstance("python"));
   ExpectPrintResult(expected_printv_result);
 }

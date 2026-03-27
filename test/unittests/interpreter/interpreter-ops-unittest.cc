@@ -83,8 +83,8 @@ print(7 // 2.0)
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(-4)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
 
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(3.0));
-  AppendExpected(expected_printv_result, PyFloat::NewInstance(3.0));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 3.0));
+  AppendExpected(expected_printv_result, PyFloat::New(isolate_, 3.0));
 
   ExpectPrintResult(expected_printv_result);
 }
