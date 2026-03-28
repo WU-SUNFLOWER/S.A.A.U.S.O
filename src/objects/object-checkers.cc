@@ -46,6 +46,10 @@ bool IsNativeLayoutKind(Tagged<PyObject> object,
   bool Is##Name(Tagged<PyObject> object) {                        \
     return IsNativeLayoutKind(object, NativeLayoutKind::k##Kind); \
   }
+IMPL_PY_CHECKER_BY_KIND(PyString, String)
+IMPL_PY_CHECKER_BY_KIND(PyList, List)
+IMPL_PY_CHECKER_BY_KIND(PyTuple, Tuple)
+IMPL_PY_CHECKER_BY_KIND(PyDict, Dict)
 IMPL_PY_CHECKER_BY_KIND(PyTypeObject, TypeObject)
 IMPL_PY_CHECKER_BY_KIND(PyFloat, Float)
 IMPL_PY_CHECKER_BY_KIND(PyCodeObject, CodeObject)
@@ -72,26 +76,6 @@ IMPL_PY_CHECKER_BY_KIND(PyBoolean, Boolean)
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
 IMPL_PY_CHECKER_BY_KLASS(PyModule)
 #undef IMPL_PY_CHECKER_BY_KLASS
-
-/////////////////////////////////////////////////////////////////////////
-// 支持被用户Python代码继承的类型，`IsXxxx` API 的语义为 like 而非 exact。
-// 这些 API 通过检查 Klass 中的 NativeLayoutKind 字段进行判断。
-
-bool IsPyString(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kString);
-}
-
-bool IsPyList(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kList);
-}
-
-bool IsPyTuple(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kTuple);
-}
-
-bool IsPyDict(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kDict);
-}
 
 /////////////////////////////////////////////////////////////////////////
 // 其他特化 checker API
