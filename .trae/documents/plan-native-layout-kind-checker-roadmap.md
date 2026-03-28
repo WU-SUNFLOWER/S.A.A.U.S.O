@@ -14,6 +14,8 @@
 
   * `IsXxxExact`、`IsPyTrue/False`、`IsPySmi` 等特殊判定继续保留各自边界，不被 layout kind 一刀切吞并。
 
+  * 对非继承型 heap builtin，优先采用“不新增额外 `IsXxxExact` API，只把现有 `IsXxx` 实现迁为 exact-by-kind”的策略。
+
 ## Current State
 
 ### 1. NativeLayoutKind 当前语义
@@ -415,4 +417,3 @@
   * 一批适配 checker 不再依赖 `Isolate::Current()`
 
   * like / exact / identity 三类语义边界保持清晰，无行为回归
-
