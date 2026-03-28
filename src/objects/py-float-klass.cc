@@ -182,7 +182,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Repr(Isolate* isolate,
                                                  Handle<PyObject> self) {
-  return PyString::FromPyFloat(Handle<PyFloat>::cast(self));
+  return PyString::FromPyFloat(isolate, Handle<PyFloat>::cast(self));
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Isolate* isolate,

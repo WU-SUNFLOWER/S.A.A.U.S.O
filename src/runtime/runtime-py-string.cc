@@ -257,7 +257,7 @@ MaybeHandle<PyString> Runtime_NewPyStringRepr(Isolate* isolate,
                                               Handle<PyString> str) {
   std::string repr;
   AppendStringReprContent(str, repr);
-  return PyString::FromStdString(repr);
+  return PyString::FromStdString(isolate, repr);
 }
 
 }  // namespace saauso::internal

@@ -283,7 +283,7 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
   }
   repr.push_back('}');
 
-  return scope.Escape(PyString::FromStdString(repr));
+  return scope.Escape(PyString::FromStdString(isolate, repr));
 }
 
 }  // namespace saauso::internal

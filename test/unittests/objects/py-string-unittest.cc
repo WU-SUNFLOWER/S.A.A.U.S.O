@@ -102,10 +102,10 @@ TEST_F(PyStringTest, SliceWorks) {
   HandleScope scope;
 
   auto s = PyString::New(isolate_, "Hello World");
-  auto sub = PyString::Slice(s, 0, 4);
+  auto sub = PyString::Slice(s, 0, 4, isolate_);
   EXPECT_TRUE(IsPyStringEqual(sub, "Hello"));
 
-  auto tail = PyString::Slice(s, 6, 10);
+  auto tail = PyString::Slice(s, 6, 10, isolate_);
   EXPECT_TRUE(IsPyStringEqual(tail, "World"));
 }
 
@@ -206,18 +206,22 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
 TEST_F(PyStringTest, FromIntAndFromDoubleWork) {
   HandleScope scope;
 
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(0), "0"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(-42), "-42"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromPySmi(PySmi::FromInt(233)), "233"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(isolate_, 0), "0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(isolate_, -42), "-42"));
+  EXPECT_TRUE(IsPyStringEqual(
+      PyString::FromPySmi(isolate_, PySmi::FromInt(233)), "233"));
 
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1.0), "1.0"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1000000.0), "1000000.0"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1e-5), "1e-05"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1e16), "1e+16"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(isolate_, 1.0), "1.0"));
+  EXPECT_TRUE(
+      IsPyStringEqual(PyString::FromDouble(isolate_, 1000000.0), "1000000.0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(isolate_, 1e-5), "1e-05"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(isolate_, 1e16), "1e+16"));
   EXPECT_TRUE(IsPyStringEqual(
-      PyString::FromDouble(std::numeric_limits<double>::infinity()), "inf"));
+      PyString::FromDouble(isolate_, std::numeric_limits<double>::infinity()),
+      "inf"));
   EXPECT_TRUE(IsPyStringEqual(
-      PyString::FromDouble(-std::numeric_limits<double>::infinity()), "-inf"));
+      PyString::FromDouble(isolate_, -std::numeric_limits<double>::infinity()),
+      "-inf"));
 }
 
 TEST_F(PyStringTest, StringUpperMethod) {

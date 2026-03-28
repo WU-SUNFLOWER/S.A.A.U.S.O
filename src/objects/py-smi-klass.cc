@@ -105,7 +105,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Isolate* isolate,
                                                Handle<PyObject> self) {
-  return PyString::FromPySmi(Tagged<PySmi>::cast(*self));
+  return PyString::FromPySmi(isolate, Tagged<PySmi>::cast(*self));
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Isolate* isolate,

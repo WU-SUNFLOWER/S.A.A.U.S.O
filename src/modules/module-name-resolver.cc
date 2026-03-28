@@ -140,7 +140,7 @@ Handle<PyString> ModuleNameResolver::ParentModuleNameOrEmpty(
   }
 
   int64_t parent_end = dot_index - 1;
-  return scope.Escape(PyString::Slice(name, 0, parent_end));
+  return scope.Escape(PyString::Slice(name, 0, parent_end, isolate_));
 }
 
 }  // namespace saauso::internal

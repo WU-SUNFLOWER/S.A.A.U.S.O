@@ -99,7 +99,7 @@ MaybeHandle<PyObject> ModuleLoader::LoadAsFileModuleOrNone(
   if (dot_index == PyString::kNotFound) {
     relative_name = fullname;
   } else {
-    relative_name = PyString::Slice(fullname, dot_index + 1);
+    relative_name = PyString::Slice(fullname, dot_index + 1, isolate_);
   }
 
   ModuleLocation loc;
@@ -189,7 +189,8 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
                                       PyString::New(isolate_, ""), isolate_));
     } else {
       int64_t package_end = static_cast<int64_t>(dot_index) - 1;
-      Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);
+      Handle<PyString> package_name =
+          PyString::Slice(fullname, 0, package_end, isolate_);
 
       RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(package),
                                                 package_name, isolate_));

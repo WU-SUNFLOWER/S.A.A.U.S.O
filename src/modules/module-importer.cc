@@ -88,7 +88,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModuleImpl(
     ModulePartScanResult scan = ScanNextPart(fullname, segment_start);
 
     Handle<PyString> part_module_fullname =
-        PyString::Slice(fullname, 0, scan.part_end);
+        PyString::Slice(fullname, 0, scan.part_end, isolate_);
     Handle<PyModule> part_module;
     ASSIGN_RETURN_ON_EXCEPTION(
         manager_->isolate(), part_module,
@@ -97,7 +97,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModuleImpl(
 
     if (segment_start != 0) {
       Handle<PyString> part_module_short_name =
-          PyString::Slice(fullname, segment_start, scan.part_end);
+          PyString::Slice(fullname, segment_start, scan.part_end, isolate_);
       RETURN_ON_EXCEPTION(
           isolate_, BindChildModuleToParentNamespace(
                         last_module, part_module_short_name, part_module));
@@ -218,7 +218,7 @@ MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
   int64_t dot = fullname->IndexOf(ST(dot));
   if (!has_fromlist && dot != PyString::kNotFound) {
     int64_t top_end = dot - 1;
-    Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end);
+    Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end, isolate_);
 
     Handle<PyObject> top_module;
     bool found = false;

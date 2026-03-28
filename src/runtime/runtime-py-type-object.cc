@@ -100,7 +100,7 @@ MaybeHandle<PyString> Runtime_NewTypeObjectRepr(
   repr.append(type_name->ToStdString());
   repr.append("'>");
 
-  return scope.Escape(PyString::FromStdString(repr));
+  return scope.Escape(PyString::FromStdString(isolate, repr));
 }
 
 }  // namespace saauso::internal
