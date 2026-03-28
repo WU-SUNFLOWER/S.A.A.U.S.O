@@ -35,30 +35,35 @@ constexpr int kSentinelValueSizeInBytes = 1;
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
-  Isolate* isolate = Isolate::Current();
+Handle<PyString> PyString::New(Isolate* isolate,
+                               int64_t str_length,
+                               bool in_meta_space) {
   return isolate->factory()->NewRawStringLike(
       PyStringKlass::GetInstance(isolate), str_length, in_meta_space);
 }
 
 // static
-Handle<PyString> PyString::NewInstance(const char* source,
-                                       int64_t str_length,
-                                       bool in_meta_space) {
-  return Isolate::Current()->factory()->NewString(source, str_length,
-                                                  in_meta_space);
+Handle<PyString> PyString::New(Isolate* isolate,
+                               const char* source,
+                               int64_t str_length,
+                               bool in_meta_space) {
+  return isolate->factory()->NewString(source, str_length, in_meta_space);
 }
 
 // static
-Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
-  return Isolate::Current()->factory()->NewString(source, std::strlen(source),
-                                                  in_meta_space);
+Handle<PyString> PyString::New(Isolate* isolate,
+                               const char* source,
+                               bool in_meta_space) {
+  return isolate->factory()->NewString(source, std::strlen(source),
+                                       in_meta_space);
 }
 
 // static
-Handle<PyString> PyString::Clone(Handle<PyString> other, bool in_meta_space) {
-  return Isolate::Current()->factory()->NewString(
-      other->buffer(), other->length(), in_meta_space);
+Handle<PyString> PyString::Clone(Isolate* isolate,
+                                 Handle<PyString> other,
+                                 bool in_meta_space) {
+  return isolate->factory()->NewString(other->buffer(), other->length(),
+                                       in_meta_space);
 }
 
 ////////////////////////////////////////////////////////////
@@ -74,7 +79,7 @@ Handle<PyString> PyString::FromInt(int64_t n) {
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   Int64ToStringView(n, std::string_view(buffer.data(), buffer.size()));
-  Handle<PyString> result = PyString::NewInstance(buffer.data());
+  Handle<PyString> result = PyString::New(Isolate::Current(), buffer.data());
   return scope.Escape(result);
 }
 
@@ -89,14 +94,14 @@ Handle<PyString> PyString::FromDouble(double n) {
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   DoubleToStringView(n, std::string_view(buffer.data(), buffer.size()));
-  Handle<PyString> result = PyString::NewInstance(buffer.data());
+  Handle<PyString> result = PyString::New(Isolate::Current(), buffer.data());
   return scope.Escape(result);
 }
 
 // static
 Handle<PyString> PyString::FromStdString(std::string source) {
-  return PyString::NewInstance(source.data(),
-                               static_cast<int64_t>(source.size()));
+  return PyString::New(Isolate::Current(), source.data(),
+                       static_cast<int64_t>(source.size()));
 }
 
 ////////////////////////////////////////////////////////////
@@ -203,15 +208,16 @@ Handle<PyString> PyString::Slice(Handle<PyString> self,
   assert(0 <= from && from <= to && to < self->length_);
 
   int sliced_length = to - from + 1;
-  Handle<PyString> result = PyString::NewInstance(sliced_length);
+  Handle<PyString> result = PyString::New(Isolate::Current(), sliced_length);
 
   std::memcpy(result->writable_buffer(), self->buffer() + from, sliced_length);
   return scope.Escape(result);
 }
 
 Handle<PyString> PyString::Append(Handle<PyString> self,
-                                  Handle<PyString> other) {
-  return Isolate::Current()->factory()->NewConsString(self, other);
+                                  Handle<PyString> other,
+                                  Isolate* isolate) {
+  return isolate->factory()->NewConsString(self, other);
 }
 
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {

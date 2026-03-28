@@ -21,15 +21,19 @@ class PyString : public PyObject {
  public:
   static constexpr int kNotFound = StringSearch::kNotFound;
 
-  static Handle<PyString> NewInstance(int64_t str_length,
-                                      bool in_meta_space = false);
-  static Handle<PyString> NewInstance(const char* source,
-                                      bool in_meta_space = false);
-  static Handle<PyString> NewInstance(const char* source,
-                                      int64_t str_length,
-                                      bool in_meta_space = false);
+  static Handle<PyString> New(Isolate* isolate,
+                              int64_t str_length,
+                              bool in_meta_space = false);
+  static Handle<PyString> New(Isolate* isolate,
+                              const char* source,
+                              bool in_meta_space = false);
+  static Handle<PyString> New(Isolate* isolate,
+                              const char* source,
+                              int64_t str_length,
+                              bool in_meta_space = false);
 
-  static Handle<PyString> Clone(Handle<PyString> other,
+  static Handle<PyString> Clone(Isolate* isolate,
+                                Handle<PyString> other,
                                 bool in_meta_space = false);
 
   static Handle<PyString> FromPySmi(Tagged<PySmi> smi);
@@ -89,7 +93,9 @@ class PyString : public PyObject {
   static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from,
                                 int64_t to);
-  static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);
+  static Handle<PyString> Append(Handle<PyString> self,
+                                 Handle<PyString> other,
+                                 Isolate* isolate);
 
  private:
   friend class PyStringKlass;
