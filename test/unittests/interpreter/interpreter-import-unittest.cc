@@ -132,7 +132,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   HandleScope scope;
 
   PyList::Append(isolate()->module_manager()->path(),
-                 PyString::NewInstance("test/python312/import-mvp"));
+                 PyString::NewInstance("test/python312/import-mvp"), isolate_);
 
   Handle<PyString> name = PyString::NewInstance("pkg.sub");
   Handle<PyTuple> non_empty_fromlist = PyTuple::New(isolate_, 1);
@@ -146,8 +146,8 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Tagged<PyObject> pkg_module_tagged;
   bool found = false;
   ASSERT_TRUE(
-      modules->GetTagged(PyString::NewInstance("pkg"), pkg_module_tagged,
-                         isolate_)
+      modules
+          ->GetTagged(PyString::NewInstance("pkg"), pkg_module_tagged, isolate_)
           .To(&found));
   ASSERT_TRUE(found);
   Handle<PyObject> pkg_module = handle(pkg_module_tagged);

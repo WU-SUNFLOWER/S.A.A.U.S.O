@@ -108,7 +108,7 @@ BUILTIN(BuildTypeObject) {
 
   auto class_supers = PyList::New(isolate, args_length - 2);
   for (auto i = 2; i < args_length; ++i) {
-    PyList::Append(class_supers, args->Get(i));
+    PyList::Append(class_supers, args->Get(i), isolate);
   }
 
   auto class_properties = PyDict::New(isolate);

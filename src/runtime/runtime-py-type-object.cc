@@ -79,7 +79,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
                            "type() bases must be types");
         return kNullMaybeHandle;
       }
-      PyList::Append(supers, base);
+      PyList::Append(supers, base, isolate);
     }
   }
 

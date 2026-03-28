@@ -35,8 +35,8 @@ print(lst)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, handle(PySmi::FromInt(1)));
-  PyList::Append(list, PyString::NewInstance("hello"));
+  PyList::Append(list, handle(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, PyString::NewInstance("hello"), isolate_);
 
   AppendExpected(expected_printv_result, list);
   ExpectPrintResult(expected_printv_result);
@@ -55,13 +55,13 @@ print(lst)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, handle(PySmi::FromInt(1)));
-  PyList::Append(list, handle(PySmi::FromInt(2)));
-  PyList::Append(list, handle(PySmi::FromInt(3)));
-  PyList::Append(list, handle(PySmi::FromInt(4)));
-  PyList::Append(list, handle(PySmi::FromInt(5)));
-  PyList::Append(list, handle(PySmi::FromInt(6)));
-  PyList::Append(list, PyString::NewInstance("hello"));
+  PyList::Append(list, handle(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(2)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(3)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(4)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(5)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(6)), isolate_);
+  PyList::Append(list, PyString::NewInstance("hello"), isolate_);
 
   AppendExpected(expected_printv_result, list);
   ExpectPrintResult(expected_printv_result);
@@ -160,9 +160,9 @@ print(l)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(3)));
-  PyList::Append(list, handle(PySmi::FromInt(1)));
-  PyList::Append(list, handle(PySmi::FromInt(2)));
+  PyList::Append(list, handle(PySmi::FromInt(3)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, handle(PySmi::FromInt(2)), isolate_);
 
   AppendExpected(expected_printv_result, list);
   ExpectPrintResult(expected_printv_result);

@@ -87,7 +87,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
       if (end > i) {
         std::memcpy(part->writable_buffer(), str->buffer() + i, end - i);
       }
-      PyList::Append(result, part);
+      PyList::Append(result, part, isolate);
       return scope.Escape(result);
     }
 
@@ -95,7 +95,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
     if (str_length > 0) {
       std::memcpy(part->writable_buffer(), str->buffer(), str_length);
     }
-    PyList::Append(result, part);
+    PyList::Append(result, part, isolate);
     return scope.Escape(result);
   }
 
@@ -129,7 +129,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
              !std::isspace(static_cast<unsigned char>(str->Get(i)))) {
         ++i;
       }
-      PyList::Append(result, make_substring(start, i));
+      PyList::Append(result, make_substring(start, i), isolate);
 
       while (i < str_length &&
              std::isspace(static_cast<unsigned char>(str->Get(i)))) {
@@ -148,7 +148,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
           --end;
         }
         if (i < end) {
-          PyList::Append(result, make_substring(i, end));
+          PyList::Append(result, make_substring(i, end), isolate);
         }
         break;
       }
@@ -174,12 +174,12 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
     }
 
     const int64_t found = pos + offset;
-    PyList::Append(result, make_substring(pos, found));
+    PyList::Append(result, make_substring(pos, found), isolate);
 
     pos = found + sep->length();
     --splits_left;
   }
-  PyList::Append(result, make_substring(pos, str_length));
+  PyList::Append(result, make_substring(pos, str_length), isolate);
   return scope.Escape(result);
 }
 

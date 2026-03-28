@@ -46,7 +46,7 @@ void AllocateEphemeralListsWithStrings(Isolate* isolate,
                    .append(std::to_string(i))
                    .append("-e")
                    .append(std::to_string(j));
-      PyList::Append(list, PyString::NewInstance(s.c_str()));
+      PyList::Append(list, PyString::NewInstance(s.c_str()), isolate);
     }
   }
 }
@@ -89,7 +89,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   for (auto i = 0; i < kLength; ++i) {
     HandleScope inner_scope;
     Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
-    PyList::Append(list1, elem);
+    PyList::Append(list1, elem, isolate_);
   }
 
   //////////////////////////////////////////
@@ -103,7 +103,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   for (auto i = 0; i < kLength; ++i) {
     HandleScope inner_scope;
     Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
-    PyList::Append(list2, elem);
+    PyList::Append(list2, elem, isolate_);
   }
 
   //////////////////////////////////////////
@@ -121,8 +121,8 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   Handle<PyList> list2 = PyList::New(isolate_);
 
   Handle<PyString> content = PyString::NewInstance("Hello World");
-  PyList::Append(list1, content);
-  PyList::Append(list2, content);
+  PyList::Append(list1, content, isolate_);
+  PyList::Append(list2, content, isolate_);
 
   isolate_->heap()->CollectGarbage();
 
@@ -219,7 +219,8 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   constexpr int kCount = 64;
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    PyList::Append(list, PyString::NewInstance(std::to_string(i).c_str()));
+    PyList::Append(list, PyString::NewInstance(std::to_string(i).c_str()),
+                   isolate_);
   }
   ASSERT_FALSE(
       PyDict::Put(dict, key, Handle<PyObject>(list), isolate_).IsNothing());
@@ -282,8 +283,8 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   // 这个用例验证“环形引用”在 Scavenge 下不会造成错误：
   // list[0] 指向 list 本身，GC 需要正确更新该内部指针为新地址。
   Handle<PyList> list = PyList::New(isolate_);
-  PyList::Append(list, Handle<PyObject>(list));
-  PyList::Append(list, PyString::NewInstance("tail"));
+  PyList::Append(list, Handle<PyObject>(list), isolate_);
+  PyList::Append(list, PyString::NewInstance("tail"), isolate_);
 
   Address before = (*list).ptr();
   isolate_->heap()->CollectGarbage();
@@ -307,7 +308,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
     Handle<PySmi> smi(PySmi::FromInt(i));
-    PyList::Append(list, Handle<PyObject>(smi));
+    PyList::Append(list, Handle<PyObject>(smi), isolate_);
   }
 
   isolate_->heap()->CollectGarbage();

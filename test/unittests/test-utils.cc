@@ -81,7 +81,7 @@ Handle<PyObject> PyFalseObject() {
 }
 
 void AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
-  PyList::Append(list, value);
+  PyList::Append(list, value, Isolate::Current());
 }
 
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {

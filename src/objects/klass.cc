@@ -33,7 +33,7 @@ Handle<PyList> C3Impl_Linear(Isolate* isolate,
   // 因此为了不影响父类的mro序列数据，我们这里需要手工（潜）拷贝
   // 一份父类的mro序列。
   for (auto i = 0; i < mro->length(); ++i) {
-    PyList::Append(result, mro->Get(i));
+    PyList::Append(result, mro->Get(i), isolate);
   }
 
   return result;
@@ -88,7 +88,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
                                        mro_of_a_super->Remove(head, isolate),
                                        Handle<PyList>::null());
       if (!mro_of_a_super->IsEmpty()) {
-        PyList::Append(next_mro_of_each_super, mro_of_a_super);
+        PyList::Append(next_mro_of_each_super, mro_of_a_super, isolate);
       }
     }
 
@@ -96,7 +96,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
     if (result.is_null()) {
       return Handle<PyList>::null();
     }
-    PyList::Insert(result, 0, head);
+    PyList::Insert(result, 0, head, isolate);
 
     return result;
   }
@@ -167,7 +167,7 @@ void Klass::AddSuper(Tagged<Klass> super, Isolate* isolate) {
   if (supers_.is_null()) {
     set_supers(PyList::New(isolate));
   }
-  PyList::Append(supers(), super->type_object());
+  PyList::Append(supers(), super->type_object(), isolate);
 }
 
 Maybe<void> Klass::OrderSupers(Isolate* isolate) {
@@ -183,14 +183,14 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
     Handle<PyList> all = PyList::New(isolate, supers()->length());
     for (auto i = 0; i < supers()->length(); ++i) {
       auto super = handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)));
-      PyList::Append(all, C3Impl_Linear(isolate, super));
+      PyList::Append(all, C3Impl_Linear(isolate, super), isolate);
     }
     mro_result = C3Impl_Merge(isolate, all);
     assert(!mro_result.is_null());
   }
 
   // 把自己添加到mro序列的开头
-  PyList::Insert(mro_result, 0, type_object());
+  PyList::Insert(mro_result, 0, type_object(), isolate);
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(klass_properties(), ST(mro), mro_result,
                                   isolate));

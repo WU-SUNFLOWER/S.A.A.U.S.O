@@ -110,30 +110,30 @@ print("a,b".split(sep=","))
   auto expected_printv_result = PyList::New(isolate_);
 
   auto v0 = PyList::New(isolate_);
-  PyList::Append(v0, PyString::NewInstance("a"));
-  PyList::Append(v0, PyString::NewInstance("b"));
-  PyList::Append(v0, PyString::NewInstance("c"));
+  PyList::Append(v0, PyString::NewInstance("a"), isolate_);
+  PyList::Append(v0, PyString::NewInstance("b"), isolate_);
+  PyList::Append(v0, PyString::NewInstance("c"), isolate_);
   AppendExpected(expected_printv_result, v0);
 
   auto v1 = PyList::New(isolate_);
-  PyList::Append(v1, PyString::NewInstance("a"));
-  PyList::Append(v1, PyString::NewInstance("b"));
+  PyList::Append(v1, PyString::NewInstance("a"), isolate_);
+  PyList::Append(v1, PyString::NewInstance("b"), isolate_);
   AppendExpected(expected_printv_result, v1);
 
   auto v2 = PyList::New(isolate_);
-  PyList::Append(v2, PyString::NewInstance("a"));
-  PyList::Append(v2, PyString::NewInstance(""));
-  PyList::Append(v2, PyString::NewInstance("b"));
-  PyList::Append(v2, PyString::NewInstance(""));
+  PyList::Append(v2, PyString::NewInstance("a"), isolate_);
+  PyList::Append(v2, PyString::NewInstance(""), isolate_);
+  PyList::Append(v2, PyString::NewInstance("b"), isolate_);
+  PyList::Append(v2, PyString::NewInstance(""), isolate_);
   AppendExpected(expected_printv_result, v2);
 
   auto v3 = PyList::New(isolate_);
-  PyList::Append(v3, PyString::NewInstance(""));
+  PyList::Append(v3, PyString::NewInstance(""), isolate_);
   AppendExpected(expected_printv_result, v3);
 
   auto v4 = PyList::New(isolate_);
-  PyList::Append(v4, PyString::NewInstance("a"));
-  PyList::Append(v4, PyString::NewInstance("b"));
+  PyList::Append(v4, PyString::NewInstance("a"), isolate_);
+  PyList::Append(v4, PyString::NewInstance("b"), isolate_);
   AppendExpected(expected_printv_result, v4);
 
   ExpectPrintResult(expected_printv_result);
