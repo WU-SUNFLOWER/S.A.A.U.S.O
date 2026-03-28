@@ -54,7 +54,7 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   type_object->BindWithKlass(Tagged<Klass>(this));
 
   // 初始化类字典
-  set_klass_properties(PyDict::NewInstance());
+  set_klass_properties(PyDict::New(isolate));
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance(isolate), isolate);

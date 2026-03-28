@@ -76,7 +76,8 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
       key->Value().data(), static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> py_value = api::ToInternalObject(i_isolate, value);
   auto maybe_set = i::PyDict::Put(
-      globals, i::handle(i::Tagged<i::PyObject>::cast(*py_key)), py_value);
+      globals, i::handle(i::Tagged<i::PyObject>::cast(*py_key)), py_value,
+      i_isolate);
   if (maybe_set.IsNothing()) {
     api::CapturePendingException(i_isolate);
     return i::kNullMaybe;
@@ -104,7 +105,8 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
       key->Value().data(), static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> out;
   auto maybe_found =
-      globals->Get(i::handle(i::Tagged<i::PyObject>::cast(*py_key)), out);
+      globals->Get(i::handle(i::Tagged<i::PyObject>::cast(*py_key)), out,
+                   i_isolate);
   if (maybe_found.IsNothing()) {
     api::CapturePendingException(i_isolate);
     return MaybeLocal<Value>();

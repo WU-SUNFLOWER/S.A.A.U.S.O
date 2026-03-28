@@ -33,15 +33,17 @@ BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
 
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("modules"),
-                                  manager->modules()));
+                                  manager->modules(), isolate));
 
   RETURN_ON_EXCEPTION(
       isolate,
-      PyDict::Put(module_dict, PyString::NewInstance("path"), manager->path()));
+      PyDict::Put(module_dict, PyString::NewInstance("path"), manager->path(),
+                  isolate));
 
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("version"),
-                                  PyString::NewInstance("3.12 (saauso mvp)")));
+                                  PyString::NewInstance("3.12 (saauso mvp)"),
+                                  isolate));
 
   return scope.Escape(module);
 }

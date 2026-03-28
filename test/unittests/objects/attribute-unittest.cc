@@ -80,7 +80,8 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
 
   Handle<PyDict> properties = PyObject::GetProperties(func_obj);
   ASSERT_FALSE(properties.is_null());
-  ASSERT_FALSE(PyDict::Put(properties, ST(class), fake_class).IsNothing());
+  ASSERT_FALSE(
+      PyDict::Put(properties, ST(class), fake_class, isolate_).IsNothing());
 
   Handle<PyObject> got_class;
   ASSERT_TRUE(
@@ -136,7 +137,7 @@ TEST_F(AttributeTest, DictAccessorRejectsSetAttr) {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   EXPECT_TRUE(PyObject::SetAttr(isolate_, func, ST(dict),
-                                Handle<PyObject>(PyDict::NewInstance()))
+                                Handle<PyObject>(PyDict::New(isolate_)))
                   .IsEmpty());
   EXPECT_TRUE(isolate_->HasPendingException());
   isolate_->exception_state()->Clear();

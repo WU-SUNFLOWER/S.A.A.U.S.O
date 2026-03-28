@@ -239,7 +239,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
 
   // 如果函数支持接收 **kwargs，在这里初始化它。
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarKeywords) {
-    out_kw_args = PyDict::NewInstance();
+    out_kw_args = PyDict::New(isolate);
   }
 
   if (actual_kw_args.is_null()) {
@@ -275,7 +275,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
       ctx.localsplus->Set(index_in_var_args, value);
       ++ctx.localsplus_idx;
     } else if (!out_kw_args.is_null()) {
-      if (PyDict::Put(out_kw_args, key, value).IsNothing()) {
+      if (PyDict::Put(out_kw_args, key, value, isolate).IsNothing()) {
         return kNullMaybeHandle;
       }
     } else {
@@ -300,7 +300,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
 
   // 如果函数支持接收 **kwargs，在这里初始化它。
   if (ctx.code_object->flags() & PyCodeObject::Flag::kVarKeywords) {
-    out_kw_args = PyDict::NewInstance();
+    out_kw_args = PyDict::New(isolate);
   }
 
   // 如果函数调用时压根没传入键值对参数，那么什么也不用做
@@ -334,7 +334,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
     }
 
     if (!out_kw_args.is_null()) {
-      if (PyDict::Put(out_kw_args, key, value).IsNothing()) {
+      if (PyDict::Put(out_kw_args, key, value, isolate).IsNothing()) {
         return kNullMaybeHandle;
       }
       continue;

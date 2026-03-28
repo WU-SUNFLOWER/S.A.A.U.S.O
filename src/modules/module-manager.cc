@@ -68,7 +68,7 @@ Tagged<PyList> ModuleManager::path_tagged() const {
 void ModuleManager::InitializeSysState() {
   HandleScope scope;
 
-  Handle<PyDict> modules = PyDict::NewInstance();
+  Handle<PyDict> modules = PyDict::New(isolate_);
   modules_ = *modules;
 
   Handle<PyList> path = PyList::New(isolate_);

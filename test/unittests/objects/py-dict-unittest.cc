@@ -22,20 +22,20 @@ TEST_F(PyDictTest, GetApiTriState) {
   HandleScope scope;
   auto* isolate = Isolate::Current();
 
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
   Handle<PyObject> key = PyString::NewInstance("k");
   Handle<PyObject> value(PySmi::FromInt(1));
-  ASSERT_FALSE(PyDict::Put(dict, key, value).IsNothing());
+  ASSERT_FALSE(PyDict::Put(dict, key, value, isolate_).IsNothing());
 
   Handle<PyObject> miss_key = PyString::NewInstance("missing");
   Tagged<PyObject> out_tagged;
   bool found = true;
-  ASSERT_TRUE(dict->GetTagged(miss_key, out_tagged).To(&found));
+  ASSERT_TRUE(dict->GetTagged(miss_key, out_tagged, isolate_).To(&found));
   EXPECT_FALSE(found);
   EXPECT_TRUE(out_tagged.is_null());
   EXPECT_FALSE(isolate->HasPendingException());
 
-  ASSERT_TRUE(dict->GetTagged(key, out_tagged).To(&found));
+  ASSERT_TRUE(dict->GetTagged(key, out_tagged, isolate_).To(&found));
   EXPECT_TRUE(found);
   EXPECT_FALSE(out_tagged.is_null());
   bool eq = false;
@@ -43,13 +43,13 @@ TEST_F(PyDictTest, GetApiTriState) {
   EXPECT_TRUE(eq);
 
   Handle<PyObject> out_handle;
-  ASSERT_TRUE(dict->Get(key, out_handle).To(&found));
+  ASSERT_TRUE(dict->Get(key, out_handle, isolate_).To(&found));
   EXPECT_TRUE(found);
   EXPECT_FALSE(out_handle.is_null());
 
-  Handle<PyObject> bad_key = PyDict::NewInstance();
+  Handle<PyObject> bad_key = PyDict::New(isolate_);
   out_tagged = Tagged<PyObject>::null();
-  EXPECT_TRUE(dict->GetTagged(bad_key, out_tagged).IsNothing());
+  EXPECT_TRUE(dict->GetTagged(bad_key, out_tagged, isolate_).IsNothing());
   EXPECT_TRUE(isolate->HasPendingException());
   EXPECT_TRUE(out_tagged.is_null());
   isolate->exception_state()->Clear();
@@ -58,20 +58,20 @@ TEST_F(PyDictTest, GetApiTriState) {
 TEST_F(PyDictTest, BasicOperations) {
   HandleScope scope;
 
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
   EXPECT_EQ(dict->occupied(), 0);
 
   Handle<PyObject> key1 = PyString::NewInstance("key1");
   Handle<PyObject> val1(PySmi::FromInt(100));
 
   // Put
-  ASSERT_FALSE(PyDict::Put(dict, key1, val1).IsNothing());
+  ASSERT_FALSE(PyDict::Put(dict, key1, val1, isolate_).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);
 
   // Get
   Tagged<PyObject> res1_tagged;
   bool found = false;
-  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
+  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
   ASSERT_TRUE(found);
   Handle<PyObject> res1 = handle(res1_tagged);
   EXPECT_FALSE(res1.is_null());
@@ -81,17 +81,17 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Contains
   bool contains = false;
-  ASSERT_TRUE(dict->ContainsKey(key1).To(&contains));
+  ASSERT_TRUE(dict->ContainsKey(key1, isolate_).To(&contains));
   EXPECT_TRUE(contains);
   Handle<PyObject> key2 = PyString::NewInstance("key2");
-  ASSERT_TRUE(dict->ContainsKey(key2).To(&contains));
+  ASSERT_TRUE(dict->ContainsKey(key2, isolate_).To(&contains));
   EXPECT_TRUE(!contains);
 
   // Update
   Handle<PyObject> val2(PySmi::FromInt(200));
-  ASSERT_FALSE(PyDict::Put(dict, key1, val2).IsNothing());
+  ASSERT_FALSE(PyDict::Put(dict, key1, val2, isolate_).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
-  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
+  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
   ASSERT_TRUE(found);
   res1 = handle(res1_tagged);
   bool eq = false;
@@ -100,12 +100,12 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Remove
   bool removed = false;
-  ASSERT_TRUE(dict->Remove(key1).To(&removed));
+  ASSERT_TRUE(dict->Remove(key1, isolate_).To(&removed));
   ASSERT_TRUE(removed);
   EXPECT_EQ(dict->occupied(), 0);
-  ASSERT_TRUE(dict->ContainsKey(key1).To(&contains));
+  ASSERT_TRUE(dict->ContainsKey(key1, isolate_).To(&contains));
   EXPECT_TRUE(!contains);
-  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged).To(&found));
+  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
   EXPECT_FALSE(found);
   EXPECT_TRUE(res1_tagged.is_null());
 }
@@ -114,14 +114,14 @@ TEST_F(PyDictTest, CollisionAndShift) {
   HandleScope scope;
 
   // Create dict with default capacity (min 2, usually expands)
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
 
   // Insert multiple items
   int count = 10;
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    ASSERT_FALSE(PyDict::Put(dict, key, val).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, val, isolate_).IsNothing());
   }
 
   EXPECT_EQ(dict->occupied(), count);
@@ -130,7 +130,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool removed = false;
-    ASSERT_TRUE(dict->Remove(key).To(&removed));
+    ASSERT_TRUE(dict->Remove(key, isolate_).To(&removed));
   }
 
   EXPECT_EQ(dict->occupied(), count / 2);
@@ -139,11 +139,11 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 1; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool exists = false;
-    ASSERT_TRUE(dict->ContainsKey(key).To(&exists));
+    ASSERT_TRUE(dict->ContainsKey(key, isolate_).To(&exists));
     EXPECT_TRUE(exists);
     Tagged<PyObject> val_tagged;
     bool found = false;
-    ASSERT_TRUE(dict->GetTagged(key, val_tagged).To(&found));
+    ASSERT_TRUE(dict->GetTagged(key, val_tagged, isolate_).To(&found));
     ASSERT_TRUE(found);
     Handle<PyObject> val = handle(val_tagged);
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
@@ -153,7 +153,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool exists = false;
-    ASSERT_TRUE(dict->ContainsKey(key).To(&exists));
+    ASSERT_TRUE(dict->ContainsKey(key, isolate_).To(&exists));
     EXPECT_TRUE(!exists);
   }
 }
@@ -161,8 +161,8 @@ TEST_F(PyDictTest, CollisionAndShift) {
 TEST_F(PyDictTest, Equality) {
   HandleScope scope;
 
-  Handle<PyDict> d1 = PyDict::NewInstance();
-  Handle<PyDict> d2 = PyDict::NewInstance();
+  Handle<PyDict> d1 = PyDict::New(isolate_);
+  Handle<PyDict> d2 = PyDict::New(isolate_);
 
   Handle<PyObject> k1 = PyString::NewInstance("a");
   Handle<PyObject> v1(PySmi::FromInt(1));
@@ -170,12 +170,12 @@ TEST_F(PyDictTest, Equality) {
   Handle<PyObject> v2(PySmi::FromInt(2));
 
   // d1 = {"a": 1, "b": 2}
-  ASSERT_FALSE(PyDict::Put(d1, k1, v1).IsNothing());
-  ASSERT_FALSE(PyDict::Put(d1, k2, v2).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d1, k1, v1, isolate_).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d1, k2, v2, isolate_).IsNothing());
 
   // d2 = {"b": 2, "a": 1} (Different insertion order, should be equal)
-  ASSERT_FALSE(PyDict::Put(d2, k2, v2).IsNothing());
-  ASSERT_FALSE(PyDict::Put(d2, k1, v1).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d2, k2, v2, isolate_).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d2, k1, v1, isolate_).IsNothing());
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
@@ -183,13 +183,13 @@ TEST_F(PyDictTest, Equality) {
 
   // d2 = {"b": 2, "a": 3} (Different value)
   Handle<PyObject> v3(PySmi::FromInt(3));
-  ASSERT_FALSE(PyDict::Put(d2, k1, v3).IsNothing());
+  ASSERT_FALSE(PyDict::Put(d2, k1, v3, isolate_).IsNothing());
   ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 
   // d2 = {"b": 2} (Different size)
   bool removed = false;
-  ASSERT_TRUE(d2->Remove(k1).To(&removed));
+  ASSERT_TRUE(d2->Remove(k1, isolate_).To(&removed));
   ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 }
@@ -208,16 +208,16 @@ TEST_F(PyDictTest, GetKeyTuple) {
     return false;
   };
 
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
 
   int count = 20;
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    ASSERT_FALSE(PyDict::Put(dict, key, val).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, val, isolate_).IsNothing());
   }
 
-  Handle<PyTuple> keys = PyDict::GetKeyTuple(dict);
+  Handle<PyTuple> keys = PyDict::GetKeyTuple(dict, isolate_);
   EXPECT_EQ(keys->length(), dict->occupied());
   EXPECT_EQ(keys->length(), count);
 
@@ -242,10 +242,10 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i));
     bool removed = false;
-    ASSERT_TRUE(dict->Remove(key).To(&removed));
+    ASSERT_TRUE(dict->Remove(key, isolate_).To(&removed));
   }
 
-  Handle<PyTuple> keys_after_remove = PyDict::GetKeyTuple(dict);
+  Handle<PyTuple> keys_after_remove = PyDict::GetKeyTuple(dict, isolate_);
   EXPECT_EQ(keys_after_remove->length(), dict->occupied());
   EXPECT_EQ(keys_after_remove->length(), count / 2);
 
@@ -258,12 +258,12 @@ TEST_F(PyDictTest, GetKeyTuple) {
 TEST_F(PyDictTest, IteratorIteratesKeys) {
   HandleScope scope;
 
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
   int count = 50;
   for (int i = 0; i < count; ++i) {
     Handle<PyObject> key(PySmi::FromInt(i));
     Handle<PyObject> val(PySmi::FromInt(i * 10));
-    ASSERT_FALSE(PyDict::Put(dict, key, val).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, val, isolate_).IsNothing());
   }
 
   Handle<PyObject> iterator;

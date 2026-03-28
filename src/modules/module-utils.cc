@@ -34,20 +34,21 @@ bool ModuleUtils::IsValidModuleName(Handle<PyString> fullname) {
   return true;
 }
 
-bool ModuleUtils::IsPackageModule(Handle<PyObject> module) {
+bool ModuleUtils::IsPackageModule(Isolate* isolate, Handle<PyObject> module) {
   Handle<PyDict> dict = PyObject::GetProperties(module);
   if (dict.is_null()) {
     return false;
   }
   Tagged<PyObject> path;
   bool found = false;
-  if (!dict->GetTagged(ST(path), path).To(&found)) {
+  if (!dict->GetTagged(ST(path), path, isolate).To(&found)) {
     return false;
   }
   return found && IsPyList(path);
 }
 
-bool ModuleUtils::GetPackagePathList(Handle<PyObject> module,
+bool ModuleUtils::GetPackagePathList(Isolate* isolate,
+                                     Handle<PyObject> module,
                                      Handle<PyList>& out) {
   out = Handle<PyList>::null();
 
@@ -58,7 +59,7 @@ bool ModuleUtils::GetPackagePathList(Handle<PyObject> module,
 
   Tagged<PyObject> path_obj;
   bool found = false;
-  if (!dict->GetTagged(ST(path), path_obj).To(&found)) {
+  if (!dict->GetTagged(ST(path), path_obj, isolate).To(&found)) {
     return false;
   }
 

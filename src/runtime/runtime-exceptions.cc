@@ -110,7 +110,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
 
   Handle<PyObject> exception_type;
   RETURN_ON_EXCEPTION(isolate,
-                      builtins->Get(exception_type_name, exception_type));
+                      builtins->Get(exception_type_name, exception_type,
+                                    isolate));
   assert(!exception_type.is_null());
 
   Handle<PyTuple> init_args = Handle<PyTuple>::null();
@@ -129,7 +130,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyDict> properties = PyObject::GetProperties(exception);
     if (!properties.is_null()) {
       RETURN_ON_EXCEPTION_VALUE(
-          isolate, PyDict::Put(properties, ST(message), message_or_null),
+          isolate, PyDict::Put(properties, ST(message), message_or_null,
+                               isolate),
           kNullMaybeHandle);
     }
   }
@@ -179,7 +181,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     Handle<PyObject> args_obj;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(args), args_obj));
+                               properties->Get(ST(args), args_obj, isolate));
     if (found && IsPyTuple(args_obj)) {
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, message,
@@ -189,7 +191,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     Handle<PyObject> msg_obj;
     found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message), msg_obj));
+                               properties->Get(ST(message), msg_obj, isolate));
     if ((message.is_null() || message->IsEmpty()) && found &&
         IsPyString(msg_obj)) {
       message = Handle<PyString>::cast(msg_obj);
@@ -220,7 +222,8 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   Handle<PyObject> stop_iter_type;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, builtins->Get(ST(stop_iter), stop_iter_type), kNullMaybe);
+      isolate, found, builtins->Get(ST(stop_iter), stop_iter_type, isolate),
+      kNullMaybe);
   assert(found);
   assert(!stop_iter_type.is_null());
 

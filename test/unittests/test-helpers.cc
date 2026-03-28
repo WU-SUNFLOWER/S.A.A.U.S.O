@@ -86,7 +86,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   // 将 builtins.print 替换为 Builtin_PrintV，用于捕获解释器侧的打印参数。
-  ASSERT_FALSE(PyDict::Put(builtins, func_name, func).IsNothing());
+  ASSERT_FALSE(PyDict::Put(builtins, func_name, func, isolate_).IsNothing());
 }
 
 void BasicInterpreterTest::TearDownTestSuite() {

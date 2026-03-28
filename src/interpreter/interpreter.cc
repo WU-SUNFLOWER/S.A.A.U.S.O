@@ -76,8 +76,9 @@ Handle<PyDict> Interpreter::CurrentFrameLocals() const {
 }
 
 Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
-  Handle<PyDict> globals = PyDict::NewInstance();
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(globals, ST(name), ST(main)));
+  Handle<PyDict> globals = PyDict::New(isolate_);
+  RETURN_ON_EXCEPTION(isolate_,
+                      PyDict::Put(globals, ST(name), ST(main), isolate_));
 
   boilerplate->set_func_globals(globals);
 
@@ -216,7 +217,7 @@ Maybe<void> Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
                                             Handle<PyDict>& kw_args) {
   // 如果有有效的键值对参数，从全体args当中单独提取出来
   if (!kwarg_keys.is_null()) {
-    kw_args = PyDict::NewInstance();
+    kw_args = PyDict::New(isolate_);
 
     assert(!actual_args.is_null());
     auto actual_args_size = actual_args->length();
@@ -227,7 +228,8 @@ Maybe<void> Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
       Handle<PyObject> actual_arg = actual_args->Get(actual_args_size - i - 1);
 
       RETURN_ON_EXCEPTION(isolate_,
-                          PyDict::Put(kw_args, kwarg_key, actual_arg));
+                          PyDict::Put(kw_args, kwarg_key, actual_arg,
+                                      isolate_));
     }
 
     // 从actual_args尾部截去提取出来的参数，剩余部分作为pos_args

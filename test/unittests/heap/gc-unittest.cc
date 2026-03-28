@@ -143,7 +143,7 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
 TEST_F(GcTest, CopyGcTestForPyDict) {
   HandleScope scope;
 
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
   Address dict_addr_before = (*dict).ptr();
 
   constexpr int kCount = 32;
@@ -153,7 +153,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
         std::string("k").append(std::to_string(i)).c_str());
     Handle<PyObject> value = PyString::NewInstance(
         std::string("v").append(std::to_string(i)).c_str());
-    ASSERT_FALSE(PyDict::Put(dict, key, value).IsNothing());
+    ASSERT_FALSE(PyDict::Put(dict, key, value, isolate_).IsNothing());
   }
 
   isolate_->heap()->CollectGarbage();
@@ -170,7 +170,8 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
 
     Tagged<PyObject> actual_value_tagged;
     bool found = false;
-    ASSERT_TRUE(dict->GetTagged(query_key, actual_value_tagged).To(&found));
+    ASSERT_TRUE(
+        dict->GetTagged(query_key, actual_value_tagged, isolate_).To(&found));
     ASSERT_TRUE(found);
     auto actual_value = handle(actual_value_tagged);
     ASSERT_FALSE(actual_value.is_null());
@@ -211,7 +212,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   // 这个用例主要验证“遍历约定（iterate）”是否正确：
   // dict -> fixed_array (entries) -> (key/value) -> list -> fixed_array ->
   // string
-  Handle<PyDict> dict = PyDict::NewInstance();
+  Handle<PyDict> dict = PyDict::New(isolate_);
   Handle<PyObject> key = PyString::NewInstance("payload");
 
   Handle<PyList> list = PyList::New(isolate_);
@@ -220,7 +221,8 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
     HandleScope inner_scope;
     PyList::Append(list, PyString::NewInstance(std::to_string(i).c_str()));
   }
-  ASSERT_FALSE(PyDict::Put(dict, key, Handle<PyObject>(list)).IsNothing());
+  ASSERT_FALSE(
+      PyDict::Put(dict, key, Handle<PyObject>(list), isolate_).IsNothing());
 
   Address dict_addr_before = (*dict).ptr();
   Address list_addr_before = (*list).ptr();
@@ -234,7 +236,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
 
   Tagged<PyObject> payload_tagged;
   bool found = false;
-  ASSERT_TRUE(dict->GetTagged(key, payload_tagged).To(&found));
+  ASSERT_TRUE(dict->GetTagged(key, payload_tagged, isolate_).To(&found));
   ASSERT_TRUE(found);
   auto payload = handle(payload_tagged);
   ASSERT_FALSE(payload.is_null());

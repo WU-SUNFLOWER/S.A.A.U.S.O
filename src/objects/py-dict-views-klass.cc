@@ -34,7 +34,9 @@ namespace saauso::internal {
 namespace {
 
 template <typename IteratorType, typename Getter>
-Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
+Handle<PyObject> NextFromIterator(Isolate* isolate,
+                                  Handle<PyObject> self,
+                                  Getter getter) {
   EscapableHandleScope scope;
 
   auto iterator = Handle<IteratorType>::cast(self);
@@ -43,7 +45,7 @@ Handle<PyObject> NextFromIterator(Handle<PyObject> self, Getter getter) {
 
   int64_t index = iterator->iter_index();
   for (; index < dict->capacity(); ++index) {
-    Handle<PyObject> result = getter(dict, index);
+    Handle<PyObject> result = getter(isolate, dict, index);
     if (result.is_null()) {
       continue;
     }
@@ -93,7 +95,7 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  set_klass_properties(PyDict::NewInstance());
+  set_klass_properties(PyDict::New(isolate));
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
@@ -127,7 +129,7 @@ Maybe<bool> PyDictKeysKlass::Virtual_Contains(Isolate* isolate,
                                               Handle<PyObject> self,
                                               Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner();
-  return dict->ContainsKey(subscr);
+  return dict->ContainsKey(subscr, isolate);
 }
 
 size_t PyDictKeysKlass::Virtual_InstanceSize(Tagged<PyObject> self) {
@@ -170,7 +172,7 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  set_klass_properties(PyDict::NewInstance());
+  set_klass_properties(PyDict::New(isolate));
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
@@ -264,7 +266,7 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  set_klass_properties(PyDict::NewInstance());
+  set_klass_properties(PyDict::New(isolate));
 
   // 设置父类并计算mro序列
   AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
@@ -314,7 +316,8 @@ Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
 
   Handle<PyObject> found_value;
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, found, dict->Get(key, found_value));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             dict->Get(key, found_value, isolate));
 
   if (!found) {
     return Maybe<bool>(false);
@@ -368,7 +371,7 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  auto klass_properties = PyDict::NewInstance();
+  auto klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
@@ -402,7 +405,7 @@ MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(
     Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictKeyIterator>(
-      self, [](Handle<PyDict> dict, int64_t index) {
+      isolate, self, [](Isolate* isolate, Handle<PyDict> dict, int64_t index) {
         return dict->KeyAtIndex(index);
       });
   if (result.is_null()) {
@@ -454,7 +457,7 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  auto klass_properties = PyDict::NewInstance();
+  auto klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
@@ -488,8 +491,8 @@ MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Next(
     Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictItemIterator>(
-      self, [](Handle<PyDict> dict, int64_t index) {
-        return dict->ItemAtIndex(index);
+      isolate, self, [](Isolate* isolate, Handle<PyDict> dict, int64_t index) {
+        return dict->ItemAtIndex(index, isolate);
       });
   if (result.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
@@ -540,7 +543,7 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  auto klass_properties = PyDict::NewInstance();
+  auto klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
@@ -574,7 +577,7 @@ MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Next(
     Isolate* isolate,
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictValueIterator>(
-      self, [](Handle<PyDict> dict, int64_t index) {
+      isolate, self, [](Isolate* isolate, Handle<PyDict> dict, int64_t index) {
         return dict->ValueAtIndex(index);
       });
   if (result.is_null()) {

@@ -168,7 +168,8 @@ Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
     Handle<PyObject> result;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               klass_properties->Get(prop_name, result));
+                               klass_properties->Get(prop_name, result,
+                                                     isolate));
     if (found) {
       assert(!result.is_null());
       out_prop_val = scope.Escape(result);

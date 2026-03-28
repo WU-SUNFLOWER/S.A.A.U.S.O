@@ -31,7 +31,8 @@ Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
       isolate, func_object,
       isolate->factory()->NewPyFunctionWithTemplate(func_template));
 
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(target, prop_name, func_object));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(target, prop_name, func_object, isolate));
 
   return JustVoid();
 }

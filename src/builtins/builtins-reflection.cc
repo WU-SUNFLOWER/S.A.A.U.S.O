@@ -111,7 +111,7 @@ BUILTIN(BuildTypeObject) {
     PyList::Append(class_supers, args->Get(i));
   }
 
-  auto class_properties = PyDict::NewInstance();
+  auto class_properties = PyDict::New(isolate);
   if (Execution::Call(isolate, class_builder, Handle<PyTuple>::null(),
                       Handle<PyTuple>::null(), Handle<PyDict>::null(),
                       class_properties)

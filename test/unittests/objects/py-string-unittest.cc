@@ -230,7 +230,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
       PyStringKlass::GetInstance(isolate_)->klass_properties();
 
   bool flag = false;
-  Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs);
+  Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs, isolate_);
   for (auto i = 0; i < attrs_tuple->length(); ++i) {
     bool eq = false;
     if (PyObject::EqualBool(isolate_, attr, attrs_tuple->Get(i)).To(&eq) &&
@@ -245,7 +245,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
   bool contains = false;
   ASSERT_TRUE(PyStringKlass::GetInstance(isolate_)
                   ->klass_properties()
-                  ->ContainsKey(attr)
+                  ->ContainsKey(attr, isolate_)
                   .To(&contains));
   EXPECT_TRUE(contains);
 

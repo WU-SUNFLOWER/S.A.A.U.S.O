@@ -8,6 +8,7 @@
 
 #include "include/saauso-internal.h"
 #include "include/saauso-maybe.h"
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -36,12 +37,15 @@ uint64_t GetProbe(uint64_t index, uint64_t mask) {
 }
 
 template <typename DictT>
-Maybe<int64_t> FindSlot(DictT dict, Tagged<PyObject> key, bool* found) {
+Maybe<int64_t> FindSlot(DictT dict,
+                        Tagged<PyObject> key,
+                        bool* found,
+                        Isolate* isolate) {
   HandleScope scope;
   Handle<PyObject> key_handle(key);
 
   uint64_t hash = 0;
-  if (!PyObject::Hash(Isolate::Current(), key_handle).To(&hash)) {
+  if (!PyObject::Hash(isolate, key_handle).To(&hash)) {
     return kNullMaybe;
   }
 
@@ -51,10 +55,10 @@ Maybe<int64_t> FindSlot(DictT dict, Tagged<PyObject> key, bool* found) {
   Tagged<PyObject> curr_key = GET_DICT_KEY(dict, index);
   while (!curr_key.is_null()) {
     bool is_equal = false;
-    if (!PyObject::EqualBool(Isolate::Current(), handle(curr_key), key_handle)
-             .To(&is_equal)) {
-      return kNullMaybe;
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, is_equal,
+        PyObject::EqualBool(isolate, handle(curr_key), key_handle));
+
     if (is_equal) {
       *found = true;
       return Maybe<int64_t>(static_cast<int64_t>(index));
@@ -71,7 +75,8 @@ template <typename DictT>
 Maybe<bool> RehashInto(DictT dict,
                        Handle<FixedArray> new_data,
                        uint64_t new_mask,
-                       int64_t skip_index) {
+                       int64_t skip_index,
+                       Isolate* isolate) {
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     if (i == skip_index) {
       continue;
@@ -83,7 +88,7 @@ Maybe<bool> RehashInto(DictT dict,
     }
 
     uint64_t hash = 0;
-    if (!PyObject::Hash(Isolate::Current(), handle(key)).To(&hash)) {
+    if (!PyObject::Hash(isolate, handle(key)).To(&hash)) {
       return kNullMaybe;
     }
 
@@ -103,8 +108,8 @@ Maybe<bool> RehashInto(DictT dict,
 //////////////////////////////////////////////////////////////////////////
 
 // static
-Handle<PyDict> PyDict::NewInstance(int64_t init_capacity) {
-  return Isolate::Current()->factory()->NewPyDict(init_capacity);
+Handle<PyDict> PyDict::New(Isolate* isolate, int64_t init_capacity) {
+  return isolate->factory()->NewPyDict(init_capacity);
 }
 
 // static
@@ -127,13 +132,13 @@ Handle<PyObject> PyDict::ValueAtIndex(int64_t index) const {
   return handle(data()->Get((index << 1) + 1));
 }
 
-Handle<PyTuple> PyDict::ItemAtIndex(int64_t index) const {
+Handle<PyTuple> PyDict::ItemAtIndex(int64_t index, Isolate* isolate) const {
   auto key = KeyAtIndex(index);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
-  auto result = PyTuple::New(Isolate::Current(), 2);
+  auto result = PyTuple::New(isolate, 2);
   auto value = ValueAtIndex(index);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
@@ -144,29 +149,30 @@ Handle<FixedArray> PyDict::data() const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
 }
 
-Maybe<bool> PyDict::ContainsKey(Handle<PyObject> key) const {
+Maybe<bool> PyDict::ContainsKey(Handle<PyObject> key, Isolate* isolate) const {
   Tagged<PyObject> value;
   bool found = false;
-  if (!GetTagged(*key, value).To(&found)) {
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found, GetTagged(*key, value, isolate));
   return Maybe<bool>(found);
 }
 
-Maybe<bool> PyDict::Get(Handle<PyObject> key, Handle<PyObject>& out) const {
-  return Get(*key, out);
+Maybe<bool> PyDict::Get(Handle<PyObject> key,
+                        Handle<PyObject>& out,
+                        Isolate* isolate) const {
+  return Get(*key, out, isolate);
 }
 
-Maybe<bool> PyDict::Get(Tagged<PyObject> key, Handle<PyObject>& out) const {
+Maybe<bool> PyDict::Get(Tagged<PyObject> key,
+                        Handle<PyObject>& out,
+                        Isolate* isolate) const {
   assert(!key.is_null());
 
   out = Handle<PyObject>::null();
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(this, key, &found).To(&index)) {
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
+                             FindSlot(this, key, &found, isolate));
 
   if (!found) {
     return Maybe<bool>(false);
@@ -178,21 +184,22 @@ Maybe<bool> PyDict::Get(Tagged<PyObject> key, Handle<PyObject>& out) const {
 }
 
 Maybe<bool> PyDict::GetTagged(Handle<PyObject> key,
-                              Tagged<PyObject>& out) const {
-  return GetTagged(*key, out);
+                              Tagged<PyObject>& out,
+                              Isolate* isolate) const {
+  return GetTagged(*key, out, isolate);
 }
 
 Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
-                              Tagged<PyObject>& out) const {
+                              Tagged<PyObject>& out,
+                              Isolate* isolate) const {
   assert(!key.is_null());
 
   out = Tagged<PyObject>::null();
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(this, key, &found).To(&index)) {
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
+                             FindSlot(this, key, &found, isolate));
 
   if (!found) {
     return Maybe<bool>(false);
@@ -203,25 +210,23 @@ Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
   return Maybe<bool>(true);
 }
 
-Maybe<bool> PyDict::Remove(Handle<PyObject> key) {
+Maybe<bool> PyDict::Remove(Handle<PyObject> key, Isolate* isolate) {
   HandleScope scope;
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(this, *key, &found).To(&index)) {
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
+                             FindSlot(this, *key, &found, isolate));
   if (!found) {
     return Maybe<bool>(false);
   }
 
   Handle<FixedArray> new_data =
-      Isolate::Current()->factory()->NewFixedArray(capacity() * 2);
+      isolate->factory()->NewFixedArray(capacity() * 2);
   uint64_t new_mask = capacity() - 1;
 
-  if (RehashInto(this, new_data, new_mask, index).IsNothing()) {
-    return kNullMaybe;
-  }
+  RETURN_ON_EXCEPTION(isolate,
+                      RehashInto(this, new_data, new_mask, index, isolate));
 
   data_ = *new_data;
   --occupied_;
@@ -231,7 +236,8 @@ Maybe<bool> PyDict::Remove(Handle<PyObject> key) {
 // static
 Maybe<bool> PyDict::Put(Handle<PyDict> object,
                         Handle<PyObject> key,
-                        Handle<PyObject> value) {
+                        Handle<PyObject> value,
+                        Isolate* isolate) {
   HandleScope scope;
 
   assert(!key.is_null());
@@ -240,16 +246,13 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
   auto dict = Handle<PyDict>::cast(object);
   if (dict->occupied_ + 1 > dict->capacity() * kMaxLoadFactor) {
     bool expanded = false;
-    if (!ExpandImplMaybe(dict).To(&expanded)) {
-      return kNullMaybe;
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, expanded, ExpandImpl(dict, isolate));
   }
 
   bool found = false;
   int64_t index = 0;
-  if (!FindSlot(dict, *key, &found).To(&index)) {
-    return kNullMaybe;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
+                             FindSlot(dict, *key, &found, isolate));
 
   if (found) {
     SET_DICT_VAL(dict, index, *value);
@@ -263,11 +266,11 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
 }
 
 // static
-Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
+Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
   EscapableHandleScope scope;
 
   int64_t out_length = dict->occupied();
-  Handle<PyTuple> keys = PyTuple::New(Isolate::Current(), out_length);
+  Handle<PyTuple> keys = PyTuple::New(isolate, out_length);
 
   Handle<FixedArray> data = dict->data();
   int64_t out_index = 0;
@@ -287,23 +290,16 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict) {
 }
 
 // static
-void PyDict::ExpandImpl(Handle<PyDict> dict) {
-  bool expanded = false;
-  ExpandImplMaybe(dict).To(&expanded);
-}
-
-// static
-Maybe<bool> PyDict::ExpandImplMaybe(Handle<PyDict> dict) {
+Maybe<bool> PyDict::ExpandImpl(Handle<PyDict> dict, Isolate* isolate) {
   HandleScope scope;
 
   int64_t new_capacity = dict->capacity() << 1;
   Handle<FixedArray> new_data =
-      Isolate::Current()->factory()->NewFixedArray(new_capacity * 2);
+      isolate->factory()->NewFixedArray(new_capacity * 2);
   uint64_t new_mask = new_capacity - 1;
 
-  if (RehashInto(dict, new_data, new_mask, -1).IsNothing()) {
-    return kNullMaybe;
-  }
+  RETURN_ON_EXCEPTION(isolate,
+                      RehashInto(dict, new_data, new_mask, -1, isolate));
 
   dict->data_ = *new_data;
   return Maybe<bool>(true);

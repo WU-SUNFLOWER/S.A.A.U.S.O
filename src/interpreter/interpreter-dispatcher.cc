@@ -358,8 +358,9 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
     Tagged<PyObject> value;
     bool found = false;
-    ASSIGN_GOTO_ON_EXCEPTION(found, isolate_->builtins()->GetTagged(
-                                        ST_TAGGED(func_build_class), value));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, isolate_->builtins()->GetTagged(ST_TAGGED(func_build_class),
+                                               value, isolate_));
     assert(found);
     assert(!value.is_null());
     PUSH(handle(value));
@@ -386,7 +387,7 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     Handle<PyObject> value = POP();
-    GOTO_ON_EXCEPTION(PyDict::Put(locals, key, value));
+    GOTO_ON_EXCEPTION(PyDict::Put(locals, key, value, isolate_));
   })
 
   // 删除一个 name（用于 except ... as e
@@ -398,7 +399,7 @@ void Interpreter::EvalCurrentFrame() {
     if (locals.is_null()) {
       break;
     }
-    GOTO_ON_EXCEPTION(locals->Remove(key));
+    GOTO_ON_EXCEPTION(locals->Remove(key, isolate_));
   })
 
   // CPython 约定：UNPACK_SEQUENCE 后栈顶为可迭代对象的第一个元素，以便后续
@@ -462,7 +463,8 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
     Handle<PyObject> key = current_frame_->names()->Get(op_arg);
     Handle<PyObject> value = POP();
-    GOTO_ON_EXCEPTION(PyDict::Put(current_frame_->globals(), key, value));
+    GOTO_ON_EXCEPTION(
+        PyDict::Put(current_frame_->globals(), key, value, isolate_));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
@@ -474,24 +476,24 @@ void Interpreter::EvalCurrentFrame() {
     bool found = false;
 
     // 1. 查local符号表
-    ASSIGN_GOTO_ON_EXCEPTION(found,
-                             current_frame_->locals()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, current_frame_->locals()->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
     }
 
     // 2. 查global符号表
-    ASSIGN_GOTO_ON_EXCEPTION(found,
-                             current_frame_->globals()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, current_frame_->globals()->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
     }
 
     // 3. 查builtin符号表
-    ASSIGN_GOTO_ON_EXCEPTION(found,
-                             isolate_->builtins()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, isolate_->builtins()->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -520,11 +522,11 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildMap, {
-    auto result = PyDict::NewInstance();
+    auto result = PyDict::New(isolate_);
     for (auto i = 0; i < op_arg; ++i) {
       auto value = POP();
       auto key = POP();
-      GOTO_ON_EXCEPTION(PyDict::Put(result, key, value));
+      GOTO_ON_EXCEPTION(PyDict::Put(result, key, value, isolate_));
     }
     PUSH(result);
   })
@@ -724,15 +726,15 @@ void Interpreter::EvalCurrentFrame() {
     Tagged<PyObject> value;
     bool found = false;
 
-    ASSIGN_GOTO_ON_EXCEPTION(found,
-                             current_frame_->globals()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, current_frame_->globals()->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
     }
 
-    ASSIGN_GOTO_ON_EXCEPTION(found,
-                             isolate_->builtins()->GetTagged(key, value));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, isolate_->builtins()->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -926,10 +928,10 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildConstKeyMap, {
     auto keys = Handle<PyTuple>::cast(POP());
-    auto result = PyDict::NewInstance();
+    auto result = PyDict::New(isolate_);
     for (auto i = keys->length() - 1; 0 <= i; --i) {
       Handle<PyObject> value = POP();
-      GOTO_ON_EXCEPTION(PyDict::Put(result, keys->Get(i), value));
+      GOTO_ON_EXCEPTION(PyDict::Put(result, keys->Get(i), value, isolate_));
     }
     PUSH(result);
   })

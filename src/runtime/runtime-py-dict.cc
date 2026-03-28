@@ -38,12 +38,12 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
     if (IsPyDict(input)) {
       auto src = Handle<PyDict>::cast(input);
       for (int64_t i = 0; i < src->capacity(); ++i) {
-        Handle<PyTuple> item = src->ItemAtIndex(i);
+        Handle<PyTuple> item = src->ItemAtIndex(i, isolate);
         if (item.is_null()) {
           continue;
         }
         RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, item->Get(0), item->Get(1)),
+            isolate, PyDict::Put(result, item->Get(0), item->Get(1), isolate),
             kNullMaybe);
       }
     } else {
@@ -65,7 +65,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         }
 
         RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, pair->Get(0), pair->Get(1)),
+            isolate, PyDict::Put(result, pair->Get(0), pair->Get(1), isolate),
             kNullMaybe);
       }
     }
@@ -75,7 +75,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
     Handle<PyDict> kw = Handle<PyDict>::cast(kwargs);
     if (!kw.is_null() && kw->occupied() != 0) {
       for (int64_t i = 0; i < kw->capacity(); ++i) {
-        Handle<PyTuple> item = kw->ItemAtIndex(i);
+        Handle<PyTuple> item = kw->ItemAtIndex(i, isolate);
         if (item.is_null()) {
           continue;
         }
@@ -89,7 +89,8 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         }
 
         RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, key, item->Get(1)), kNullMaybe);
+            isolate, PyDict::Put(result, key, item->Get(1), isolate),
+            kNullMaybe);
       }
     }
   }
@@ -102,7 +103,7 @@ MaybeHandle<PyObject> Runtime_DictGetItem(Isolate* isolate,
                                           Handle<PyObject> key) {
   Handle<PyObject> value;
   bool found = false;
-  if (!dict->Get(key, value).To(&found)) {
+  if (!dict->Get(key, value, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (!found) {
@@ -118,7 +119,7 @@ MaybeHandle<PyObject> Runtime_DictSetItem(Isolate* isolate,
                                           Handle<PyDict> dict,
                                           Handle<PyObject> key,
                                           Handle<PyObject> value) {
-  if (PyDict::Put(dict, key, value).IsEmpty()) {
+  if (PyDict::Put(dict, key, value, isolate).IsEmpty()) {
     return kNullMaybeHandle;
   }
   return handle(isolate->py_none_object());
@@ -128,7 +129,7 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
                                           Handle<PyDict> dict,
                                           Handle<PyObject> key) {
   bool removed = false;
-  if (!dict->Remove(key).To(&removed)) {
+  if (!dict->Remove(key, isolate).To(&removed)) {
     return kNullMaybeHandle;
   }
   if (!removed) {
@@ -145,7 +146,7 @@ MaybeHandle<PyObject> Runtime_DictGet(Isolate* isolate,
                                       Handle<PyObject> default_or_null) {
   Handle<PyObject> value;
   bool found = false;
-  if (!dict->Get(key, value).To(&found)) {
+  if (!dict->Get(key, value, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (found) {
@@ -164,7 +165,7 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
                                              Handle<PyObject> default_or_null) {
   Handle<PyObject> existing;
   bool found = false;
-  if (!dict->Get(key, existing).To(&found)) {
+  if (!dict->Get(key, existing, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (found) {
@@ -176,7 +177,7 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
                                ? handle(isolate->py_none_object())
                                : default_or_null;
 
-  if (PyDict::Put(dict, key, value).IsEmpty()) {
+  if (PyDict::Put(dict, key, value, isolate).IsEmpty()) {
     return kNullMaybeHandle;
   }
   return value;
@@ -189,13 +190,13 @@ MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
                                       bool has_default) {
   Handle<PyObject> value;
   bool found = false;
-  if (!dict->Get(key, value).To(&found)) {
+  if (!dict->Get(key, value, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (found) {
     assert(!value.is_null());
     bool removed = false;
-    if (!dict->Remove(key).To(&removed)) {
+    if (!dict->Remove(key, isolate).To(&removed)) {
       return kNullMaybeHandle;
     }
     if (!removed) {
@@ -239,15 +240,15 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
 
     bool exists = false;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-        isolate, exists, dst_dict->ContainsKey(key), kNullMaybeHandle);
+        isolate, exists, dst_dict->ContainsKey(key, isolate), kNullMaybeHandle);
     if (!allow_overwriting && exists) {
       Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "got multiple values for keyword argument");
       return kNullMaybeHandle;
     }
 
-    RETURN_ON_EXCEPTION_VALUE(isolate, PyDict::Put(dst_dict, key, value),
-                              kNullMaybeHandle);
+    RETURN_ON_EXCEPTION_VALUE(
+        isolate, PyDict::Put(dst_dict, key, value, isolate), kNullMaybeHandle);
   }
 
   return scope.Escape(dst_dict);
