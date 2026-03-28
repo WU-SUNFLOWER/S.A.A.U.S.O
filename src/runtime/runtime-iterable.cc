@@ -24,7 +24,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
   if (IsPyTuple(iteratable)) {
     auto tuple = Handle<PyTuple>::cast(iteratable);
     for (int64_t i = 0; i < tuple->length(); ++i) {
-      PyList::Append(list, tuple->Get(i));
+      PyList::Append(list, tuple->Get(i), isolate);
     }
     return handle(isolate->py_none_object());
   }
@@ -33,7 +33,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
   if (IsPyList(iteratable)) {
     auto source = Handle<PyList>::cast(iteratable);
     for (int64_t i = 0; i < source->length(); ++i) {
-      PyList::Append(list, source->Get(i));
+      PyList::Append(list, source->Get(i), isolate);
     }
     return handle(isolate->py_none_object());
   }
@@ -55,7 +55,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
       }
       return kNullMaybeHandle;
     }
-    PyList::Append(list, elem);
+    PyList::Append(list, elem, isolate);
   }
 
   return handle(isolate->py_none_object());

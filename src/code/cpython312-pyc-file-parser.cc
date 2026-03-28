@@ -225,7 +225,7 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
   int index = 0;
   if (ref_flag) {
     index = static_cast<int>(cache->length());
-    PyList::Append(cache, Handle<PyObject>::null());
+    PyList::Append(cache, Handle<PyObject>::null(), isolate_);
   }
 
   Handle<PyCodeObject> code_object = ParseCodeObject(string_table, cache);
@@ -307,7 +307,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
   int cache_index = 0;
   if (ref_flag) {
     cache_index = static_cast<int>(cache->length());
-    PyList::Append(cache, Handle<PyObject>::null());
+    PyList::Append(cache, Handle<PyObject>::null(), isolate_);
   }
 
   Handle<PyObject> object;
@@ -362,14 +362,14 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = ParseStringLong();
       if (object_type == kInternedStringFlag ||
           object_type == kAsciiInternedStringFlag) {
-        PyList::Append(string_table, object);
+        PyList::Append(string_table, object, isolate_);
       }
       break;
     case kShortAsciiStringFlag:
     case kShortAsciiInternedStringFlag:
       object = ParseStringShort();
       if (object_type == kShortAsciiInternedStringFlag) {
-        PyList::Append(string_table, object);
+        PyList::Append(string_table, object, isolate_);
       }
       break;
     case kInStringTableObjectFlag: {
@@ -418,7 +418,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
         cache->Set(cache_index, list);
       }
       for (int i = 0; i < length; ++i) {
-        PyList::Append(list, ParseObject(string_table, cache));
+        PyList::Append(list, ParseObject(string_table, cache), isolate_);
       }
       object = list;
       break;

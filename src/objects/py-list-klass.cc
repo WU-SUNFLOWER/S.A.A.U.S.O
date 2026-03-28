@@ -206,11 +206,11 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
 
   auto new_result = PyList::New(isolate, list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
-    PyList::Append(new_result, list1->Get(i));
+    PyList::Append(new_result, list1->Get(i), isolate);
   }
 
   for (auto i = 0; i < list2->length(); ++i) {
-    PyList::Append(new_result, list2->Get(i));
+    PyList::Append(new_result, list2->Get(i), isolate);
   }
 
   return new_result;
@@ -233,7 +233,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
   auto result = PyList::New(isolate, list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
     for (int i = 0; i < list->length(); ++i) {
-      PyList::Append(result, list->Get(i));
+      PyList::Append(result, list->Get(i), isolate);
     }
   }
 

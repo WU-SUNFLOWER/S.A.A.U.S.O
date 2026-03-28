@@ -44,7 +44,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   // 如果没有有效的supers列表，那么显式创建一个列表，并将object作为基类添加进去
   if (supers.is_null() || supers->IsEmpty()) {
     supers = PyList::New(isolate, 1);
-    PyList::Append(supers, PyObjectKlass::GetInstance(isolate)->type_object());
+    PyList::Append(supers, PyObjectKlass::GetInstance(isolate)->type_object(),
+                   isolate);
   }
   klass->set_supers(supers);
 
@@ -167,9 +168,8 @@ Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
 
     Handle<PyObject> result;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               klass_properties->Get(prop_name, result,
-                                                     isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found, klass_properties->Get(prop_name, result, isolate));
     if (found) {
       assert(!result.is_null());
       out_prop_val = scope.Escape(result);

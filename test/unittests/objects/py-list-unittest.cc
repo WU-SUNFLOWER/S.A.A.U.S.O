@@ -33,8 +33,8 @@ TEST_F(PyListTest, AppendGetGetLastPopWork) {
   auto s1 = Handle<PyObject>(PyString::NewInstance("Item 1"));
   auto i1 = Handle<PyObject>(PySmi::FromInt(100));
 
-  PyList::Append(list, s1);
-  PyList::Append(list, i1);
+  PyList::Append(list, s1, isolate_);
+  PyList::Append(list, i1, isolate_);
 
   EXPECT_EQ(list->length(), 2);
   EXPECT_EQ((*list->Get(0)).ptr(), (*s1).ptr());
@@ -53,9 +53,9 @@ TEST_F(PyListTest, SetRemoveClearWork) {
   auto b = Handle<PyObject>(PySmi::FromInt(2));
   auto c = Handle<PyObject>(PySmi::FromInt(3));
 
-  PyList::Append(list, a);
-  PyList::Append(list, b);
-  PyList::Append(list, c);
+  PyList::Append(list, a, isolate_);
+  PyList::Append(list, b, isolate_);
+  PyList::Append(list, c, isolate_);
 
   list->Set(1, a);
   Handle<PyObject> eq;
@@ -82,10 +82,10 @@ TEST_F(PyListTest, InsertWorksInTheMiddle) {
   auto b = Handle<PyObject>(PySmi::FromInt(2));
   auto c = Handle<PyObject>(PySmi::FromInt(3));
 
-  PyList::Append(list, a);
-  PyList::Append(list, c);
+  PyList::Append(list, a, isolate_);
+  PyList::Append(list, c, isolate_);
 
-  PyList::Insert(list, 1, b);
+  PyList::Insert(list, 1, b, isolate_);
   EXPECT_EQ(list->length(), 3);
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(0))), 1);
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(1))), 2);
@@ -98,9 +98,9 @@ TEST_F(PyListTest, AppendTriggersExpand) {
   auto list = PyList::New(isolate_, 2);
   const int64_t initial_capacity = list->capacity();
 
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(3)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(3)), isolate_);
 
   EXPECT_EQ(list->length(), 3);
   EXPECT_GT(list->capacity(), initial_capacity);
@@ -110,8 +110,8 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
 
   Handle<PyObject> lhs(list);
   Handle<PyObject> rhs(list);
@@ -127,8 +127,8 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
 
   Handle<PyObject> lhs(list);
   Handle<PyObject> coeff(PySmi::FromInt(3));
@@ -148,8 +148,8 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
 
   Handle<PyObject> obj(list);
   Handle<PyObject> index0(PySmi::FromInt(0));
@@ -177,8 +177,8 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
 
   auto list = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::NewInstance("x"));
-  PyList::Append(list, s);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
+  PyList::Append(list, s, isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
 
   Handle<PyObject> obj(list);
   Handle<PyObject> contains_res;
@@ -190,8 +190,8 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::New(isolate_, 2);
-  PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
-  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
+  PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")), isolate_);
+  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
 
   Handle<PyObject> equal_res;
   ASSERT_TRUE(
@@ -204,12 +204,12 @@ TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   HandleScope scope;
 
   auto a = PyList::New(isolate_, 2);
-  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(2)));
+  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
 
   auto b = PyList::New(isolate_, 2);
-  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)));
+  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)), isolate_);
 
   Handle<PyObject> less_res;
   ASSERT_TRUE(PyObject::Less(isolate_, Handle<PyObject>(a), Handle<PyObject>(b))

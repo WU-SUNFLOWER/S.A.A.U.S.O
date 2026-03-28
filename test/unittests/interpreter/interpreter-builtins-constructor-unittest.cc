@@ -133,8 +133,8 @@ print(tuple([1, 2]))
   AppendExpected(expected_printv_result, PyFalseObject());
 
   auto expected_list = PyList::New(isolate_);
-  PyList::Append(expected_list, handle(PySmi::FromInt(1)));
-  PyList::Append(expected_list, handle(PySmi::FromInt(2)));
+  PyList::Append(expected_list, handle(PySmi::FromInt(1)), isolate_);
+  PyList::Append(expected_list, handle(PySmi::FromInt(2)), isolate_);
   AppendExpected(expected_printv_result, expected_list);
 
   auto expected_tuple = PyTuple::New(isolate_, 2);

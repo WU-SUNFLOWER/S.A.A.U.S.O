@@ -438,16 +438,16 @@ print(merge_sort(data))
 
   auto expected_printv_result = PyList::New(isolate_);
   auto expected_sorted = PyList::New(isolate_);
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(0)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(1)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(2)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(3)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(4)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(5)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(6)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(7)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(8)));
-  PyList::Append(expected_sorted, handle(PySmi::FromInt(9)));
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(0)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(1)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(2)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(3)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(4)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(5)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(6)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(7)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(8)), isolate_);
+  PyList::Append(expected_sorted, handle(PySmi::FromInt(9)), isolate_);
   AppendExpected(expected_printv_result, expected_sorted);
   ExpectPrintResult(expected_printv_result);
 }

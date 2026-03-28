@@ -24,8 +24,8 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
 
   auto tuple = isolate_->factory()->NewPyTupleWithElements(list);
   EXPECT_EQ(tuple->length(), 2);
@@ -43,8 +43,8 @@ TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PyString::NewInstance("x")));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(7)));
+  PyList::Append(list, Handle<PyObject>(PyString::NewInstance("x")), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(7)), isolate_);
 
   auto tuple = isolate_->factory()->NewPyTupleWithElements(list);
   Handle<PyObject> obj(tuple);
@@ -71,8 +71,8 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
 
   auto list1 = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::NewInstance("x"));
-  PyList::Append(list1, s);
-  PyList::Append(list1, Handle<PyObject>(PySmi::FromInt(1)));
+  PyList::Append(list1, s, isolate_);
+  PyList::Append(list1, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
   auto t1 = isolate_->factory()->NewPyTupleWithElements(list1);
 
   Handle<PyObject> obj(t1);
@@ -85,8 +85,8 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::New(isolate_, 2);
-  PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")));
-  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)));
+  PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")), isolate_);
+  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
   auto t2 = isolate_->factory()->NewPyTupleWithElements(list2);
 
   Handle<PyObject> equal_res;
@@ -100,8 +100,8 @@ TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)));
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)));
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
   auto tuple = isolate_->factory()->NewPyTupleWithElements(list);
 
   Handle<PyObject> iterator;

@@ -90,7 +90,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
   }
 
   auto object = Handle<PyList>::cast(self);
-  PyList::Append(object, args->Get(0));
+  PyList::Append(object, args->Get(0), isolate);
   return scope.Escape(handle(isolate->py_none_object()));
 }
 
@@ -136,7 +136,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
-  PyList::Insert(object, PySmi::ToInt(index), args->Get(1));
+  PyList::Insert(object, PySmi::ToInt(index), args->Get(1), isolate);
   return scope.Escape(handle(isolate->py_none_object()));
 }
 
@@ -278,9 +278,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
     // 查找倒序排序控制参数
     Handle<PyObject> reverse_flag;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               kwargs->Get(reverse_name, reverse_flag,
-                                           isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found, kwargs->Get(reverse_name, reverse_flag, isolate));
     if (found) {
       assert(!reverse_flag.is_null());
       reverse = Runtime_PyObjectIsTrue(reverse_flag);

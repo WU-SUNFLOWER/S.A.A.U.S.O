@@ -43,7 +43,7 @@ Maybe<void> List::Push(Local<Value> value) {
   }
   i::HandleScope handle_scope;
   i::Handle<i::PyList> list = i::handle(i::Tagged<i::PyList>::cast(*object));
-  i::PyList::Append(list, api::ToInternalObject(i_isolate, value));
+  i::PyList::Append(list, api::ToInternalObject(i_isolate, value), i_isolate);
   if (i_isolate->HasPendingException()) {
     api::CapturePendingException(i_isolate);
     return i::kNullMaybe;
