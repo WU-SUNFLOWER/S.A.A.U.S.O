@@ -83,7 +83,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
              std::isspace(static_cast<unsigned char>(str->Get(end - 1)))) {
         --end;
       }
-      Handle<PyString> part = PyString::NewInstance(end - i);
+      Handle<PyString> part = PyString::New(isolate, end - i);
       if (end > i) {
         std::memcpy(part->writable_buffer(), str->buffer() + i, end - i);
       }
@@ -91,7 +91,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
       return scope.Escape(result);
     }
 
-    Handle<PyString> part = PyString::NewInstance(str_length);
+    Handle<PyString> part = PyString::New(isolate, str_length);
     if (str_length > 0) {
       std::memcpy(part->writable_buffer(), str->buffer(), str_length);
     }
@@ -102,7 +102,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
   auto make_substring = [&](int64_t begin, int64_t end) -> Handle<PyString> {
     assert(0 <= begin && begin <= end && end <= str_length);
     const int64_t part_length = end - begin;
-    Handle<PyString> part = PyString::NewInstance(part_length);
+    Handle<PyString> part = PyString::New(isolate, part_length);
     if (part_length > 0) {
       std::memcpy(part->writable_buffer(), str->buffer() + begin, part_length);
     }
@@ -158,8 +158,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
 
   Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
-    Runtime_ThrowError(Isolate::Current(), ExceptionType::kValueError,
-                       "empty separator");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError, "empty separator");
     return kNullMaybeHandle;
   }
 
@@ -200,7 +199,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
 
   const int64_t num_parts = parts->length();
   if (num_parts == 0) {
-    return scope.Escape(PyString::NewInstance(static_cast<int64_t>(0)));
+    return scope.Escape(PyString::New(isolate, static_cast<int64_t>(0)));
   }
 
   const int64_t sep_length = str->length();
@@ -235,7 +234,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
     }
   }
 
-  Handle<PyString> result = PyString::NewInstance(total_length);
+  Handle<PyString> result = PyString::New(isolate, total_length);
   char* dst = result->writable_buffer();
 
   int64_t dst_offset = 0;
@@ -258,7 +257,7 @@ MaybeHandle<PyString> Runtime_NewPyStringRepr(Isolate* isolate,
                                               Handle<PyString> str) {
   std::string repr;
   AppendStringReprContent(str, repr);
-  return PyString::FromStdString(repr);
+  return PyString::FromStdString(isolate, repr);
 }
 
 }  // namespace saauso::internal

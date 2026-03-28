@@ -25,7 +25,7 @@ class PyStringTest : public VmTestBase {};
 TEST_F(PyStringTest, NewInstanceFromCString) {
   HandleScope scope;
 
-  auto s = PyString::NewInstance("Hello World");
+  auto s = PyString::New(isolate_, "Hello World");
   EXPECT_FALSE(s.is_null());
   EXPECT_TRUE(IsPyStringEqual(s, "Hello World"));
 }
@@ -33,7 +33,7 @@ TEST_F(PyStringTest, NewInstanceFromCString) {
 TEST_F(PyStringTest, NewInstanceWithLengthAndSetGet) {
   HandleScope scope;
 
-  auto s = PyString::NewInstance(5);
+  auto s = PyString::New(isolate_, 5);
   EXPECT_EQ(s->length(), 5);
 
   const char* payload = "abcde";
@@ -48,7 +48,7 @@ TEST_F(PyStringTest, NewInstanceWithLengthAndSetGet) {
 TEST_F(PyStringTest, HashCacheWorks) {
   HandleScope scope;
 
-  auto s = PyString::NewInstance("hash-me");
+  auto s = PyString::New(isolate_, "hash-me");
   EXPECT_FALSE(s->HasHashCache());
 
   const uint64_t h1 = s->GetHash();
@@ -61,10 +61,10 @@ TEST_F(PyStringTest, HashCacheWorks) {
 TEST_F(PyStringTest, EqualityAndOrderingPrimitives) {
   HandleScope scope;
 
-  auto a1 = PyString::NewInstance("abc");
-  auto a2 = PyString::NewInstance("abc");
-  auto b = PyString::NewInstance("abd");
-  auto short_a = PyString::NewInstance("ab");
+  auto a1 = PyString::New(isolate_, "abc");
+  auto a2 = PyString::New(isolate_, "abc");
+  auto b = PyString::New(isolate_, "abd");
+  auto short_a = PyString::New(isolate_, "ab");
 
   EXPECT_TRUE(a1->IsEqualTo(*a2));
   EXPECT_FALSE(a1->IsEqualTo(*b));
@@ -79,9 +79,9 @@ TEST_F(PyStringTest, EqualityAndOrderingPrimitives) {
 TEST_F(PyStringTest, PyObjectComparisonsWork) {
   HandleScope scope;
 
-  Handle<PyObject> a(PyString::NewInstance("abc"));
-  Handle<PyObject> b(PyString::NewInstance("abd"));
-  Handle<PyObject> a2(PyString::NewInstance("abc"));
+  Handle<PyObject> a(PyString::New(isolate_, "abc"));
+  Handle<PyObject> b(PyString::New(isolate_, "abd"));
+  Handle<PyObject> a2(PyString::New(isolate_, "abc"));
 
   Handle<PyObject> res;
   ASSERT_TRUE(PyObject::Less(isolate_, a, b).ToHandle(&res));
@@ -101,21 +101,21 @@ TEST_F(PyStringTest, PyObjectComparisonsWork) {
 TEST_F(PyStringTest, SliceWorks) {
   HandleScope scope;
 
-  auto s = PyString::NewInstance("Hello World");
-  auto sub = PyString::Slice(s, 0, 4);
+  auto s = PyString::New(isolate_, "Hello World");
+  auto sub = PyString::Slice(s, 0, 4, isolate_);
   EXPECT_TRUE(IsPyStringEqual(sub, "Hello"));
 
-  auto tail = PyString::Slice(s, 6, 10);
+  auto tail = PyString::Slice(s, 6, 10, isolate_);
   EXPECT_TRUE(IsPyStringEqual(tail, "World"));
 }
 
 TEST_F(PyStringTest, AppendWorksAndDoesNotMutateInputs) {
   HandleScope scope;
 
-  auto left = PyString::NewInstance("Hello");
-  auto right = PyString::NewInstance(" World");
+  auto left = PyString::New(isolate_, "Hello");
+  auto right = PyString::New(isolate_, " World");
 
-  auto appended = PyString::Append(left, right);
+  auto appended = PyString::Append(left, right, isolate_);
   EXPECT_TRUE(IsPyStringEqual(appended, "Hello World"));
 
   EXPECT_TRUE(IsPyStringEqual(left, "Hello"));
@@ -125,8 +125,8 @@ TEST_F(PyStringTest, AppendWorksAndDoesNotMutateInputs) {
 TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
   HandleScope scope;
 
-  Handle<PyObject> left(PyString::NewInstance("Hello"));
-  Handle<PyObject> right(PyString::NewInstance(" World"));
+  Handle<PyObject> left(PyString::New(isolate_, "Hello"));
+  Handle<PyObject> right(PyString::New(isolate_, " World"));
   Handle<PyObject> result;
   ASSERT_TRUE(PyObject::Add(isolate_, left, right).ToHandle(&result));
   ASSERT_TRUE(IsPyString(result));
@@ -136,7 +136,7 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
 TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   HandleScope scope;
 
-  Handle<PyObject> s(PyString::NewInstance("abc"));
+  Handle<PyObject> s(PyString::New(isolate_, "abc"));
   Handle<PyObject> index(PySmi::FromInt(1));
 
   Handle<PyObject> result;
@@ -151,11 +151,11 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
 TEST_F(PyStringTest, IndexOfAndContainsWork) {
   HandleScope scope;
 
-  auto s = PyString::NewInstance("abcabcabcd");
-  auto pattern1 = PyString::NewInstance("abcabcd");
-  auto pattern2 = PyString::NewInstance("bca");
-  auto missing = PyString::NewInstance("xyz");
-  auto empty = PyString::NewInstance("");
+  auto s = PyString::New(isolate_, "abcabcabcd");
+  auto pattern1 = PyString::New(isolate_, "abcabcd");
+  auto pattern2 = PyString::New(isolate_, "bca");
+  auto missing = PyString::New(isolate_, "xyz");
+  auto empty = PyString::New(isolate_, "");
 
   EXPECT_EQ(s->IndexOf(pattern1), 3);
   EXPECT_EQ(s->IndexOf(pattern2), 1);
@@ -171,10 +171,10 @@ TEST_F(PyStringTest, IndexOfAndContainsWork) {
 TEST_F(PyStringTest, LastIndexOfWorks) {
   HandleScope scope;
 
-  auto s = PyString::NewInstance("abcabcabcd");
-  auto pattern = PyString::NewInstance("abc");
-  auto missing = PyString::NewInstance("xyz");
-  auto empty = PyString::NewInstance("");
+  auto s = PyString::New(isolate_, "abcabcabcd");
+  auto pattern = PyString::New(isolate_, "abc");
+  auto missing = PyString::New(isolate_, "xyz");
+  auto empty = PyString::New(isolate_, "");
 
   EXPECT_EQ(s->LastIndexOf(pattern), 6);
   EXPECT_EQ(s->LastIndexOf(missing), PyString::kNotFound);
@@ -188,9 +188,9 @@ TEST_F(PyStringTest, LastIndexOfWorks) {
 TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
   HandleScope scope;
 
-  Handle<PyObject> s(PyString::NewInstance("Hello World"));
-  Handle<PyObject> pat(PyString::NewInstance("World"));
-  Handle<PyObject> missing(PyString::NewInstance("planet"));
+  Handle<PyObject> s(PyString::New(isolate_, "Hello World"));
+  Handle<PyObject> pat(PyString::New(isolate_, "World"));
+  Handle<PyObject> missing(PyString::New(isolate_, "planet"));
   Handle<PyObject> not_a_string(PySmi::FromInt(1));
 
   Handle<PyObject> contains_res;
@@ -206,25 +206,29 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
 TEST_F(PyStringTest, FromIntAndFromDoubleWork) {
   HandleScope scope;
 
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(0), "0"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(-42), "-42"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromPySmi(PySmi::FromInt(233)), "233"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(isolate_, 0), "0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(isolate_, -42), "-42"));
+  EXPECT_TRUE(IsPyStringEqual(
+      PyString::FromPySmi(isolate_, PySmi::FromInt(233)), "233"));
 
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1.0), "1.0"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1000000.0), "1000000.0"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1e-5), "1e-05"));
-  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(1e16), "1e+16"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(isolate_, 1.0), "1.0"));
+  EXPECT_TRUE(
+      IsPyStringEqual(PyString::FromDouble(isolate_, 1000000.0), "1000000.0"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(isolate_, 1e-5), "1e-05"));
+  EXPECT_TRUE(IsPyStringEqual(PyString::FromDouble(isolate_, 1e16), "1e+16"));
   EXPECT_TRUE(IsPyStringEqual(
-      PyString::FromDouble(std::numeric_limits<double>::infinity()), "inf"));
+      PyString::FromDouble(isolate_, std::numeric_limits<double>::infinity()),
+      "inf"));
   EXPECT_TRUE(IsPyStringEqual(
-      PyString::FromDouble(-std::numeric_limits<double>::infinity()), "-inf"));
+      PyString::FromDouble(isolate_, -std::numeric_limits<double>::infinity()),
+      "-inf"));
 }
 
 TEST_F(PyStringTest, StringUpperMethod) {
   HandleScope scope;
 
-  Handle<PyObject> s(PyString::NewInstance("Hello World"));
-  Handle<PyObject> attr(PyString::NewInstance("upper"));
+  Handle<PyObject> s(PyString::New(isolate_, "Hello World"));
+  Handle<PyObject> attr(PyString::New(isolate_, "upper"));
 
   Handle<PyDict> attrs =
       PyStringKlass::GetInstance(isolate_)->klass_properties();

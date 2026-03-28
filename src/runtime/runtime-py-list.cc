@@ -29,7 +29,7 @@ MaybeHandle<PyString> Runtime_NewListRepr(Isolate* isolate,
   }
   repr.append("]");
 
-  return scope.Escape(PyString::FromStdString(repr));
+  return scope.Escape(PyString::FromStdString(isolate, repr));
 }
 
 }  // namespace saauso::internal

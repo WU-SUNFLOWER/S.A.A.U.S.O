@@ -33,7 +33,7 @@ MaybeHandle<PyString> Runtime_NewTupleRepr(Isolate* isolate,
   }
   repr.push_back(')');
 
-  return scope.Escape(PyString::FromStdString(repr));
+  return scope.Escape(PyString::FromStdString(isolate, repr));
 }
 
 Handle<PyTuple> Runtime_NewTupleSlice(Isolate* isolate,

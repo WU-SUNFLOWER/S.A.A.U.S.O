@@ -21,8 +21,8 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
   HandleScope scope;
 
   auto args = PyTuple::New(isolate_, 2);
-  args->SetInternal(0, PyString::NewInstance("a"));
-  args->SetInternal(1, PyString::NewInstance("b"));
+  args->SetInternal(0, PyString::New(isolate_, "a"));
+  args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
 
   testing::internal::CaptureStdout();
@@ -37,11 +37,11 @@ TEST_F(NativePrintTest, EndParameter) {
   HandleScope scope;
 
   auto args = PyTuple::New(isolate_, 2);
-  args->SetInternal(0, PyString::NewInstance("a"));
-  args->SetInternal(1, PyString::NewInstance("b"));
+  args->SetInternal(0, PyString::New(isolate_, "a"));
+  args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(end), PyString::NewInstance("!"), isolate_)
+      PyDict::Put(kwargs, ST(end), PyString::New(isolate_, "!"), isolate_)
           .IsNothing());
 
   testing::internal::CaptureStdout();
@@ -56,11 +56,11 @@ TEST_F(NativePrintTest, EolKeywordRejected) {
   HandleScope scope;
 
   auto args = PyTuple::New(isolate_, 2);
-  args->SetInternal(0, PyString::NewInstance("a"));
-  args->SetInternal(1, PyString::NewInstance("b"));
+  args->SetInternal(0, PyString::New(isolate_, "a"));
+  args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(eol), PyString::NewInstance("??"), isolate_)
+      PyDict::Put(kwargs, ST(eol), PyString::New(isolate_, "??"), isolate_)
           .IsNothing());
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(
       isolate_, Handle<PyObject>::null(), args, kwargs);
@@ -73,12 +73,12 @@ TEST_F(NativePrintTest, SepParameter) {
   HandleScope scope;
 
   auto args = PyTuple::New(isolate_, 3);
-  args->SetInternal(0, PyString::NewInstance("a"));
-  args->SetInternal(1, PyString::NewInstance("b"));
-  args->SetInternal(2, PyString::NewInstance("c"));
+  args->SetInternal(0, PyString::New(isolate_, "a"));
+  args->SetInternal(1, PyString::New(isolate_, "b"));
+  args->SetInternal(2, PyString::New(isolate_, "c"));
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(sep), PyString::NewInstance(","), isolate_)
+      PyDict::Put(kwargs, ST(sep), PyString::New(isolate_, ","), isolate_)
           .IsNothing());
 
   testing::internal::CaptureStdout();
@@ -95,7 +95,7 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
   auto args = PyTuple::New(isolate_, 0);
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(end), PyString::NewInstance("X"), isolate_)
+      PyDict::Put(kwargs, ST(end), PyString::New(isolate_, "X"), isolate_)
           .IsNothing());
 
   testing::internal::CaptureStdout();
@@ -110,7 +110,7 @@ TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
   HandleScope scope;
 
   auto repr_args = PyTuple::New(isolate_, 1);
-  repr_args->SetInternal(0, PyString::NewInstance("abc"));
+  repr_args->SetInternal(0, PyString::New(isolate_, "abc"));
   auto repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),
                                              repr_args, PyDict::New(isolate_));
   ASSERT_FALSE(repr_result.IsEmpty());
@@ -121,7 +121,7 @@ TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
             "'abc'");
 
   auto list = PyList::New(isolate_, 1);
-  list->SetAndExtendLength(0, PyString::NewInstance("x"));
+  list->SetAndExtendLength(0, PyString::New(isolate_, "x"));
   repr_args->SetInternal(0, list);
   repr_result = BUILTIN_FUNC_NAME(Repr)(isolate_, Handle<PyObject>::null(),
                                         repr_args, PyDict::New(isolate_));

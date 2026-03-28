@@ -24,14 +24,15 @@ namespace saauso::internal {
 
 namespace {
 
-MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
+MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
+                                          Handle<PyTuple> exception_args) {
   if (exception_args.is_null() || exception_args->length() == 0) {
-    return PyString::NewInstance("");
+    return PyString::New(isolate, "");
   }
   if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
     return Handle<PyString>::cast(exception_args->Get(0));
   }
-  return PyString::NewInstance("");
+  return PyString::New(isolate, "");
 }
 
 MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
@@ -100,7 +101,7 @@ Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
                                    isolate, klass_properties, type_object()));
 
   // 设置类名
-  set_name(PyString::NewInstance("BaseException"));
+  set_name(PyString::New(isolate, "BaseException"));
 
   return JustVoid();
 }
@@ -150,7 +151,8 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
       kNullMaybeHandle);
 
   Handle<PyString> message;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message, MessageFromArgsTuple(init_args));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
+                             MessageFromArgsTuple(isolate, init_args));
   RETURN_ON_EXCEPTION_VALUE(
       isolate, PyDict::Put(properties, ST(message), message, isolate),
       kNullMaybeHandle);
@@ -168,13 +170,13 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
   ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(isolate, self));
   Handle<PyString> message = Handle<PyString>::cast(message_obj);
 
-  Handle<PyString> result = PyString::NewInstance("<");
-  result = PyString::Append(result, type_name);
+  Handle<PyString> result = PyString::New(isolate, "<");
+  result = PyString::Append(result, type_name, isolate);
   if (!message.is_null() && !message->IsEmpty()) {
-    result = PyString::Append(result, PyString::NewInstance(": "));
-    result = PyString::Append(result, message);
+    result = PyString::Append(result, PyString::New(isolate, ": "), isolate);
+    result = PyString::Append(result, message, isolate);
   }
-  result = PyString::Append(result, PyString::NewInstance(">"));
+  result = PyString::Append(result, PyString::New(isolate, ">"), isolate);
 
   return scope.Escape(result);
 }
@@ -189,7 +191,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
   if (!exception_args.is_null()) {
     Handle<PyString> args_message;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
-                               MessageFromArgsTuple(exception_args));
+                               MessageFromArgsTuple(isolate, exception_args));
     return scope.Escape(args_message);
   }
 
@@ -204,7 +206,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
     }
   }
 
-  return scope.Escape(PyString::NewInstance(""));
+  return scope.Escape(PyString::New(isolate, ""));
 }
 
 }  // namespace saauso::internal

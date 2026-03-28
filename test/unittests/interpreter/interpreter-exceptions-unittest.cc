@@ -33,8 +33,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -55,8 +55,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("2"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "2"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -77,8 +77,8 @@ except ValueError:
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("inner"));
-  AppendExpected(expected, PyString::NewInstance("outer"));
+  AppendExpected(expected, PyString::New(isolate_, "inner"));
+  AppendExpected(expected, PyString::New(isolate_, "outer"));
   ExpectPrintResult(expected);
 }
 
@@ -98,9 +98,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("except"));
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "except"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -122,9 +122,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("runtime eroror"));
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "runtime eroror"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -142,9 +142,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("try"));
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "try"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -165,9 +165,9 @@ print(f())
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("try"));
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("ret"));
+  AppendExpected(expected, PyString::New(isolate_, "try"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "ret"));
   ExpectPrintResult(expected);
 }
 
@@ -185,8 +185,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -204,8 +204,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -228,9 +228,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("outer"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "outer"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -251,8 +251,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("type_error"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "type_error"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -270,8 +270,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -289,8 +289,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -314,8 +314,8 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -345,10 +345,10 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("g.finally"));
-  AppendExpected(expected, PyString::NewInstance("f.finally"));
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "g.finally"));
+  AppendExpected(expected, PyString::New(isolate_, "f.finally"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -377,9 +377,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("f.finally"));
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "f.finally"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -403,10 +403,10 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("except"));
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "except"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -428,9 +428,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("finally"));
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -461,10 +461,10 @@ print("done")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("0"));
-  AppendExpected(expected, PyString::NewInstance("1"));
-  AppendExpected(expected, PyString::NewInstance("2"));
-  AppendExpected(expected, PyString::NewInstance("done"));
+  AppendExpected(expected, PyString::New(isolate_, "0"));
+  AppendExpected(expected, PyString::New(isolate_, "1"));
+  AppendExpected(expected, PyString::New(isolate_, "2"));
+  AppendExpected(expected, PyString::New(isolate_, "done"));
   ExpectPrintResult(expected);
 }
 
@@ -488,7 +488,7 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 
@@ -521,9 +521,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("1"));
-  AppendExpected(expected, PyString::NewInstance("caught"));
-  AppendExpected(expected, PyString::NewInstance("after"));
+  AppendExpected(expected, PyString::New(isolate_, "1"));
+  AppendExpected(expected, PyString::New(isolate_, "caught"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected);
 }
 

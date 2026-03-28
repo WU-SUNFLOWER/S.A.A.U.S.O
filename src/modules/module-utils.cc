@@ -13,13 +13,6 @@
 
 namespace saauso::internal {
 
-Handle<PyString> ModuleUtils::NewPyString(std::string_view s) {
-  if (s.empty()) {
-    return PyString::NewInstance("");
-  }
-  return PyString::NewInstance(s.data(), static_cast<int64_t>(s.size()));
-}
-
 bool ModuleUtils::IsValidModuleName(Handle<PyString> fullname) {
   if (fullname->IsEmpty()) {
     return false;

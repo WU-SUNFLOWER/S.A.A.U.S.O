@@ -20,8 +20,6 @@ class PyString;
 
 class ModuleUtils final : public AllStatic {
  public:
-  static Handle<PyString> NewPyString(std::string_view s);
-
   static bool IsValidModuleName(Handle<PyString> fullname);
 
   static Maybe<bool> IsPackageModule(Isolate* isolate, Handle<PyObject> module);

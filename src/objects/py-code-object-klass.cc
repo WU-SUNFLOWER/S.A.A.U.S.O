@@ -65,7 +65,7 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("code"));
+  set_name(PyString::New(isolate, "code"));
 
   return JustVoid();
 }

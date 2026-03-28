@@ -45,7 +45,7 @@ print(sys.version)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("3.12 (saauso mvp)"));
+  AppendExpected(expected, PyString::New(isolate_, "3.12 (saauso mvp)"));
   ExpectPrintResult(expected);
 }
 
@@ -70,14 +70,14 @@ print(time.__package__)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("sys"));
-  AppendExpected(expected, PyString::NewInstance("math"));
-  AppendExpected(expected, PyString::NewInstance("random"));
-  AppendExpected(expected, PyString::NewInstance("time"));
-  AppendExpected(expected, PyString::NewInstance(""));
-  AppendExpected(expected, PyString::NewInstance(""));
-  AppendExpected(expected, PyString::NewInstance(""));
-  AppendExpected(expected, PyString::NewInstance(""));
+  AppendExpected(expected, PyString::New(isolate_, "sys"));
+  AppendExpected(expected, PyString::New(isolate_, "math"));
+  AppendExpected(expected, PyString::New(isolate_, "random"));
+  AppendExpected(expected, PyString::New(isolate_, "time"));
+  AppendExpected(expected, PyString::New(isolate_, ""));
+  AppendExpected(expected, PyString::New(isolate_, ""));
+  AppendExpected(expected, PyString::New(isolate_, ""));
+  AppendExpected(expected, PyString::New(isolate_, ""));
   ExpectPrintResult(expected);
 }
 
@@ -99,7 +99,7 @@ print(a.x)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("a_init"));
+  AppendExpected(expected, PyString::New(isolate_, "a_init"));
   AppendExpected(expected, handle(PySmi::FromInt(1)));
   ExpectPrintResult(expected);
 }
@@ -123,7 +123,7 @@ print(pkg.sub.answer)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("pkg_init"));
+  AppendExpected(expected, PyString::New(isolate_, "pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected);
 }
@@ -132,9 +132,10 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   HandleScope scope;
 
   PyList::Append(isolate()->module_manager()->path(),
-                 PyString::NewInstance("test/python312/import-mvp"), isolate_);
+                 PyString::New(isolate_, "test/python312/import-mvp"),
+                 isolate_);
 
-  Handle<PyString> name = PyString::NewInstance("pkg.sub");
+  Handle<PyString> name = PyString::New(isolate_, "pkg.sub");
   Handle<PyTuple> non_empty_fromlist = PyTuple::New(isolate_, 1);
 
   MaybeHandle<PyObject> imported_module =
@@ -145,10 +146,10 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Handle<PyDict> modules = isolate()->module_manager()->modules();
   Tagged<PyObject> pkg_module_tagged;
   bool found = false;
-  ASSERT_TRUE(
-      modules
-          ->GetTagged(PyString::NewInstance("pkg"), pkg_module_tagged, isolate_)
-          .To(&found));
+  ASSERT_TRUE(modules
+                  ->GetTagged(PyString::New(isolate_, "pkg"), pkg_module_tagged,
+                              isolate_)
+                  .To(&found));
   ASSERT_TRUE(found);
   Handle<PyObject> pkg_module = handle(pkg_module_tagged);
   ASSERT_FALSE(pkg_module.is_null());
@@ -156,7 +157,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Handle<PyDict> pkg_dict = PyObject::GetProperties(pkg_module);
   ASSERT_FALSE(pkg_dict.is_null());
 
-  Handle<PyString> sub_short_name = PyString::NewInstance("sub");
+  Handle<PyString> sub_short_name = PyString::New(isolate_, "sub");
   bool removed = false;
   ASSERT_TRUE(pkg_dict->Remove(sub_short_name, isolate_).To(&removed));
   Tagged<PyObject> bound_tagged;
@@ -209,7 +210,7 @@ import pkg.rel.mod
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("pkg_init"));
+  AppendExpected(expected, PyString::New(isolate_, "pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(12)));
   ExpectPrintResult(expected);
 }
@@ -266,7 +267,7 @@ print(pkg.sub.answer)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("pkg_init"));
+  AppendExpected(expected, PyString::New(isolate_, "pkg_init"));
   AppendExpected(expected, handle(PySmi::FromInt(42)));
   ExpectPrintResult(expected);
 }
@@ -275,7 +276,7 @@ print(pkg.sub.answer)
 // exit。
 TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
   HandleScope scope;
-  Handle<PyString> invalid = PyString::NewInstance("a..b");
+  Handle<PyString> invalid = PyString::New(isolate_, "a..b");
 
   MaybeHandle<PyObject> result = isolate()->module_manager()->ImportModule(
       invalid, Handle<PyTuple>::null(), 0, Handle<PyDict>::null());
@@ -322,7 +323,7 @@ TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {
   RunScript(script, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyString::NewInstance("pyc_init"));
+  AppendExpected(expected, PyString::New(isolate_, "pyc_init"));
   AppendExpected(expected, handle(PySmi::FromInt(7)));
   ExpectPrintResult(expected);
 

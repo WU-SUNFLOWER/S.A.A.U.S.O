@@ -43,10 +43,10 @@ except TypeError as e:
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(
       expected_printv_result,
-      PyString::NewInstance("__build_class__: not enough arguments"));
+      PyString::New(isolate_, "__build_class__: not enough arguments"));
   AppendExpected(
       expected_printv_result,
-      PyString::NewInstance("__build_class__: name is not a string"));
+      PyString::New(isolate_, "__build_class__: name is not a string"));
   ExpectPrintResult(expected_printv_result);
 }
 

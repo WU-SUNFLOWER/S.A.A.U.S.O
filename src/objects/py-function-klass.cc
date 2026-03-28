@@ -70,7 +70,7 @@ Maybe<void> PyFunctionKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("function"));
+  set_name(PyString::New(isolate, "function"));
 
   return JustVoid();
 }
@@ -160,7 +160,7 @@ Maybe<void> NativeFunctionKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("builtin_function_or_method"));
+  set_name(PyString::New(isolate, "builtin_function_or_method"));
 
   return JustVoid();
 }
@@ -254,7 +254,7 @@ Maybe<void> MethodObjectKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("method"));
+  set_name(PyString::New(isolate, "method"));
 
   return JustVoid();
 }

@@ -195,7 +195,7 @@ Maybe<void> Isolate::InitMetaArea() {
 #undef PREINIT_PY_KLASS
 
   // 2. 初始化字符串表
-  string_table_ = new StringTable();
+  string_table_ = new StringTable(this);
 
   // 3. 创建全局单例对象（None, True, False）
   // 这些对象必须在其他逻辑使用它们之前创建好

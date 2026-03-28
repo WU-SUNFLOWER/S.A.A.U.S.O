@@ -27,7 +27,7 @@ MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
     repr = "<built-in function ";
     repr.append(func->func_name()->ToStdString());
     repr.push_back('>');
-    return scope.Escape(PyString::FromStdString(repr));
+    return scope.Escape(PyString::FromStdString(isolate, repr));
   }
 
   repr = "<function ";
@@ -37,7 +37,7 @@ MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
                 reinterpret_cast<void*>((*func).ptr()));
   repr.append(addr);
 
-  return scope.Escape(PyString::FromStdString(repr));
+  return scope.Escape(PyString::FromStdString(isolate, repr));
 }
 
 MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Isolate* isolate,
@@ -45,7 +45,7 @@ MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Isolate* isolate,
   char buffer[64];
   std::snprintf(buffer, sizeof(buffer), "<method object at %p>",
                 reinterpret_cast<void*>((*method).ptr()));
-  return PyString::NewInstance(buffer);
+  return PyString::New(isolate, buffer);
 }
 
 Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,

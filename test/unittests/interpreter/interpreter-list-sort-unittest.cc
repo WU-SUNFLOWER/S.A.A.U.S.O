@@ -83,14 +83,14 @@ print(s)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_);
-  PyList::Append(list, PyString::NewInstance("b"), isolate_);
-  PyList::Append(list, PyString::NewInstance("aa"), isolate_);
-  PyList::Append(list, PyString::NewInstance("dd"), isolate_);
-  PyList::Append(list, PyString::NewInstance("ccc"), isolate_);
+  PyList::Append(list, PyString::New(isolate_, "b"), isolate_);
+  PyList::Append(list, PyString::New(isolate_, "aa"), isolate_);
+  PyList::Append(list, PyString::New(isolate_, "dd"), isolate_);
+  PyList::Append(list, PyString::New(isolate_, "ccc"), isolate_);
 
   auto stable_list = PyList::New(isolate_);
-  PyList::Append(stable_list, PyString::NewInstance("bb"), isolate_);
-  PyList::Append(stable_list, PyString::NewInstance("aa"), isolate_);
+  PyList::Append(stable_list, PyString::New(isolate_, "bb"), isolate_);
+  PyList::Append(stable_list, PyString::New(isolate_, "aa"), isolate_);
 
   AppendExpected(expected_printv_result, list);
   AppendExpected(expected_printv_result, stable_list);

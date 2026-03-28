@@ -286,7 +286,8 @@ print(a.upper())
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("HELLO WORLD"));
+  AppendExpected(expected_printv_result,
+                 PyString::New(isolate_, "HELLO WORLD"));
   ExpectPrintResult(expected_printv_result);
 }
 

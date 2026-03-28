@@ -96,7 +96,7 @@ except TypeError as e:
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(
       expected_printv_result,
-      PyString::NewInstance("exec() globals must be a dict, not int"));
+      PyString::New(isolate_, "exec() globals must be a dict, not int"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -114,7 +114,7 @@ except TypeError as e:
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result,
-                 PyString::NewInstance("keywords must be strings"));
+                 PyString::New(isolate_, "keywords must be strings"));
   ExpectPrintResult(expected_printv_result);
 }
 

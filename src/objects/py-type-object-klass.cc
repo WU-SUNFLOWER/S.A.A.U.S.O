@@ -84,7 +84,7 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
                                    isolate, klass_properties, type_object()));
 
   // 设置类名
-  set_name(PyString::NewInstance("type"));
+  set_name(PyString::New(isolate, "type"));
 
   return JustVoid();
 }

@@ -9,9 +9,9 @@
 
 namespace saauso::internal {
 
-StringTable::StringTable() {
+StringTable::StringTable(Isolate* isolate) {
 #define INIT_STR_FIELD(name, value) \
-  name##_str_ = *PyString::NewInstance(value, true);
+  name##_str_ = *PyString::New(isolate, value, true);
 #define INIT_STR_FIELD_FOR_EXCEPTION(_, name, value) INIT_STR_FIELD(name, value)
 #define INIT_STR_FIELD_FOR_MAGIC_METHOD(ignore1, name, value, ignore2) \
   INIT_STR_FIELD(name, value)

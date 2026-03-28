@@ -297,7 +297,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
     uint64_t index =
         GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(s->length()));
     return PyString::Slice(s, static_cast<int64_t>(index),
-                           static_cast<int64_t>(index) + 1);
+                           static_cast<int64_t>(index) + 1, isolate);
   }
 
   Handle<PyString> type_name = PyObject::GetKlass(seq)->name();

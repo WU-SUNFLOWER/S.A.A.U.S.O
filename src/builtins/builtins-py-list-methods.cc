@@ -248,8 +248,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   bool reverse = false;
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Handle<PyString> key_name = PyString::NewInstance("key");
-    Handle<PyString> reverse_name = PyString::NewInstance("reverse");
+    Handle<PyString> key_name = PyString::New(isolate, "key");
+    Handle<PyString> reverse_name = PyString::New(isolate, "reverse");
 
     for (int64_t i = 0; i < kwargs->capacity(); ++i) {
       Handle<PyObject> k = kwargs->KeyAtIndex(i);

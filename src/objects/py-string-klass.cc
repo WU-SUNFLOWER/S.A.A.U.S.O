@@ -99,7 +99,7 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("str"));
+  set_name(PyString::New(isolate, "str"));
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(isolate, PyStringBuiltinMethods::Install(
@@ -314,8 +314,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return PyString::NewInstance(s->buffer() + decoded_subscr,
-                               static_cast<int64_t>(1));
+  return PyString::New(isolate, s->buffer() + decoded_subscr,
+                       static_cast<int64_t>(1));
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Isolate* isolate,
@@ -331,7 +331,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Isolate* isolate,
 
   auto s1 = Handle<PyString>::cast(self);
   auto s2 = Handle<PyString>::cast(other);
-  return PyString::Append(s1, s2);
+  return PyString::Append(s1, s2, isolate);
 }
 
 Maybe<uint64_t> PyStringKlass::Virtual_Hash(Isolate* isolate,

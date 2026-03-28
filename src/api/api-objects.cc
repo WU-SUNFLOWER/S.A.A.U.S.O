@@ -36,8 +36,9 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
   i::HandleScope handle_scope;
   i::Handle<i::PyDict> dict = i::handle(i::Tagged<i::PyDict>::cast(*object));
   std::string key_value = key->Value();
-  i::Handle<i::PyString> py_key = i::PyString::NewInstance(
-      key_value.data(), static_cast<int64_t>(key_value.size()));
+  i::Handle<i::PyString> py_key =
+      i::PyString::New(internal_isolate, key_value.data(),
+                       static_cast<int64_t>(key_value.size()));
   i::Handle<i::PyObject> py_value =
       api::ToInternalObject(internal_isolate, value);
   auto maybe_put =
@@ -70,8 +71,9 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   }
   i::Handle<i::PyDict> dict = i::handle(i::Tagged<i::PyDict>::cast(*object));
   std::string key_value = key->Value();
-  i::Handle<i::PyString> py_key = i::PyString::NewInstance(
-      key_value.data(), static_cast<int64_t>(key_value.size()));
+  i::Handle<i::PyString> py_key =
+      i::PyString::New(internal_isolate, key_value.data(),
+                       static_cast<int64_t>(key_value.size()));
   i::Handle<i::PyObject> out;
   auto maybe_found = dict->Get(i::handle(i::Tagged<i::PyObject>::cast(*py_key)),
                                out, internal_isolate);
@@ -104,8 +106,9 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   }
   i::EscapableHandleScope handle_scope;
   std::string name_value = name->Value();
-  i::Handle<i::PyString> py_name = i::PyString::NewInstance(
-      name_value.data(), static_cast<int64_t>(name_value.size()));
+  i::Handle<i::PyString> py_name =
+      i::PyString::New(internal_isolate, name_value.data(),
+                       static_cast<int64_t>(name_value.size()));
   i::Handle<i::PyObject> self_or_null;
   i::MaybeHandle<i::PyObject> maybe_callee = i::PyObject::GetAttrForCall(
       internal_isolate, self, i::handle(*py_name), self_or_null);

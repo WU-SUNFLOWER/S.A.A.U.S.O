@@ -30,7 +30,7 @@ TEST_F(PyListTest, AppendGetGetLastPopWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  auto s1 = Handle<PyObject>(PyString::NewInstance("Item 1"));
+  auto s1 = Handle<PyObject>(PyString::New(isolate_, "Item 1"));
   auto i1 = Handle<PyObject>(PySmi::FromInt(100));
 
   PyList::Append(list, s1, isolate_);
@@ -176,7 +176,7 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  auto s = Handle<PyObject>(PyString::NewInstance("x"));
+  auto s = Handle<PyObject>(PyString::New(isolate_, "x"));
   PyList::Append(list, s, isolate_);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
 
@@ -190,7 +190,8 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::New(isolate_, 2);
-  PyList::Append(list2, Handle<PyObject>(PyString::NewInstance("x")), isolate_);
+  PyList::Append(list2, Handle<PyObject>(PyString::New(isolate_, "x")),
+                 isolate_);
   PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
 
   Handle<PyObject> equal_res;

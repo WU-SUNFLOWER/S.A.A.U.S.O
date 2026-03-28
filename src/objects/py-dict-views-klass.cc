@@ -105,7 +105,7 @@ Maybe<void> PyDictKeysKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("dict_keys"));
+  set_name(PyString::New(isolate, "dict_keys"));
 
   return JustVoid();
 }
@@ -182,7 +182,7 @@ Maybe<void> PyDictValuesKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("dict_values"));
+  set_name(PyString::New(isolate, "dict_values"));
 
   return JustVoid();
 }
@@ -276,7 +276,7 @@ Maybe<void> PyDictItemsKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("dict_items"));
+  set_name(PyString::New(isolate, "dict_items"));
 
   return JustVoid();
 }
@@ -385,7 +385,7 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
                                    isolate, klass_properties, type_object()));
 
-  set_name(PyString::NewInstance("dict_keyiterator"));
+  set_name(PyString::New(isolate, "dict_keyiterator"));
 
   return JustVoid();
 }
@@ -471,7 +471,7 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
                                    isolate, klass_properties, type_object()));
 
-  set_name(PyString::NewInstance("dict_itemiterator"));
+  set_name(PyString::New(isolate, "dict_itemiterator"));
 
   return JustVoid();
 }
@@ -557,7 +557,7 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(
                                    isolate, klass_properties, type_object()));
 
-  set_name(PyString::NewInstance("dict_valueiterator"));
+  set_name(PyString::New(isolate, "dict_valueiterator"));
 
   return JustVoid();
 }

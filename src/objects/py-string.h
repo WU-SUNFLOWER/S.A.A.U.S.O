@@ -21,22 +21,27 @@ class PyString : public PyObject {
  public:
   static constexpr int kNotFound = StringSearch::kNotFound;
 
-  static Handle<PyString> NewInstance(int64_t str_length,
-                                      bool in_meta_space = false);
-  static Handle<PyString> NewInstance(const char* source,
-                                      bool in_meta_space = false);
-  static Handle<PyString> NewInstance(const char* source,
-                                      int64_t str_length,
-                                      bool in_meta_space = false);
+  static Handle<PyString> New(Isolate* isolate,
+                              int64_t str_length,
+                              bool in_meta_space = false);
+  static Handle<PyString> New(Isolate* isolate,
+                              const char* source,
+                              bool in_meta_space = false);
+  static Handle<PyString> New(Isolate* isolate,
+                              const char* source,
+                              int64_t str_length,
+                              bool in_meta_space = false);
 
-  static Handle<PyString> Clone(Handle<PyString> other,
+  static Handle<PyString> Clone(Isolate* isolate,
+                                Handle<PyString> other,
                                 bool in_meta_space = false);
 
-  static Handle<PyString> FromPySmi(Tagged<PySmi> smi);
-  static Handle<PyString> FromInt(int64_t n);
-  static Handle<PyString> FromPyFloat(Handle<PyFloat> py_float);
-  static Handle<PyString> FromDouble(double n);
-  static Handle<PyString> FromStdString(std::string source);
+  static Handle<PyString> FromPySmi(Isolate* isolate, Tagged<PySmi> smi);
+  static Handle<PyString> FromInt(Isolate* isolate, int64_t n);
+  static Handle<PyString> FromPyFloat(Isolate* isolate,
+                                      Handle<PyFloat> py_float);
+  static Handle<PyString> FromDouble(Isolate* isolate, double n);
+  static Handle<PyString> FromStdString(Isolate* isolate, std::string source);
 
   static Tagged<PyString> cast(Tagged<PyObject> object);
 
@@ -85,11 +90,16 @@ class PyString : public PyObject {
   std::string ToStdString() const;
   const char* ToCString() const { return buffer(); }
 
-  static Handle<PyString> Slice(Handle<PyString> self, int64_t from);
   static Handle<PyString> Slice(Handle<PyString> self,
                                 int64_t from,
-                                int64_t to);
-  static Handle<PyString> Append(Handle<PyString> self, Handle<PyString> other);
+                                Isolate* isolate);
+  static Handle<PyString> Slice(Handle<PyString> self,
+                                int64_t from,
+                                int64_t to,
+                                Isolate* isolate);
+  static Handle<PyString> Append(Handle<PyString> self,
+                                 Handle<PyString> other,
+                                 Isolate* isolate);
 
  private:
   friend class PyStringKlass;

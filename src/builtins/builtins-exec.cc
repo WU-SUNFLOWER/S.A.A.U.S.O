@@ -143,8 +143,8 @@ MaybeHandle<PyObject> NormalizeExecArgs(Isolate* isolate,
     return handle(isolate->py_none_object());
   }
 
-  Handle<PyObject> globals_key = PyString::NewInstance("globals");
-  Handle<PyObject> locals_key = PyString::NewInstance("locals");
+  Handle<PyObject> globals_key = PyString::New(isolate, "globals");
+  Handle<PyObject> locals_key = PyString::New(isolate, "locals");
   RETURN_ON_EXCEPTION_VALUE(
       isolate,
       ValidateExecKeywordArguments(isolate, kwargs, globals_key, locals_key),

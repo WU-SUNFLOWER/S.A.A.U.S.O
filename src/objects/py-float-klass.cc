@@ -110,7 +110,7 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("float"));
+  set_name(PyString::New(isolate, "float"));
 
   return JustVoid();
 }
@@ -182,7 +182,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Repr(Isolate* isolate,
                                                  Handle<PyObject> self) {
-  return PyString::FromPyFloat(Handle<PyFloat>::cast(self));
+  return PyString::FromPyFloat(isolate, Handle<PyFloat>::cast(self));
 }
 
 MaybeHandle<PyObject> PyFloatKlass::Virtual_Str(Isolate* isolate,

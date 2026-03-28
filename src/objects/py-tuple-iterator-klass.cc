@@ -90,7 +90,7 @@ Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, PyTupleIteratorBuiltinMethods::Install(
                                    isolate, klass_properties, type_object()));
 
-  set_name(PyString::NewInstance("tuple_iterator"));
+  set_name(PyString::New(isolate, "tuple_iterator"));
 
   return JustVoid();
 }

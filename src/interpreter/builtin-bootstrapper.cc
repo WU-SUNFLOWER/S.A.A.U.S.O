@@ -102,7 +102,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinTypes() {
   auto builtins_handle = builtins_.Get();
   for (const auto& entry : entries) {
     RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_handle,
-                                              PyString::NewInstance(entry.name),
+                                              PyString::New(isolate_, entry.name),
                                               entry.type_object, isolate_));
   }
 

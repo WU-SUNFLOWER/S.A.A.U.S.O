@@ -33,7 +33,7 @@ print(d["world"])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "hello"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   ExpectPrintResult(expected_printv_result);
 }
@@ -52,8 +52,8 @@ print(d[b])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("world"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "hello"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "world"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -71,7 +71,7 @@ print(d[x])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("world"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "world"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -96,7 +96,7 @@ print(d["k"] is v)
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyNoneObject());
-  AppendExpected(expected_printv_result, PyString::NewInstance("x"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "x"));
   AppendExpected(expected_printv_result, PyTrueObject());
   AppendExpected(expected_printv_result, PyTrueObject());
   ExpectPrintResult(expected_printv_result);
@@ -116,15 +116,15 @@ print(d)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("x"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "x"));
 
   auto expected_dict = PyDict::New(isolate_);
   ASSERT_FALSE(PyDict::Put(expected_dict, handle(PySmi::FromInt(2)),
-                           PyString::NewInstance("y"), isolate_)
+                           PyString::New(isolate_, "y"), isolate_)
                    .IsNothing());
   AppendExpected(expected_printv_result, expected_dict);
 
-  AppendExpected(expected_printv_result, PyString::NewInstance("z"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "z"));
   AppendExpected(expected_printv_result, expected_dict);
   ExpectPrintResult(expected_printv_result);
 }
@@ -225,9 +225,9 @@ print(len(d))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("Alice"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "Alice"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(30)));
-  AppendExpected(expected_printv_result, PyString::NewInstance("Beijing"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "Beijing"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   ExpectPrintResult(expected_printv_result);
 }

@@ -83,7 +83,7 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("int"));
+  set_name(PyString::New(isolate, "int"));
 
   return JustVoid();
 }
@@ -105,7 +105,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Repr(Isolate* isolate,
                                                Handle<PyObject> self) {
-  return PyString::FromPySmi(Tagged<PySmi>::cast(*self));
+  return PyString::FromPySmi(isolate, Tagged<PySmi>::cast(*self));
 }
 
 MaybeHandle<PyObject> PySmiKlass::Virtual_Str(Isolate* isolate,

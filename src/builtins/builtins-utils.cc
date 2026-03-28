@@ -22,7 +22,7 @@ Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
                                      Handle<PyTypeObject> owner_type) {
   HandleScope scope;
 
-  auto prop_name = PyString::NewInstance(method_name);
+  auto prop_name = PyString::New(isolate, method_name);
   auto func_template =
       FunctionTemplateInfo(func, prop_name, access_flag, owner_type);
 

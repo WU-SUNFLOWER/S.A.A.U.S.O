@@ -56,7 +56,7 @@ Maybe<void> PyModuleKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("module"));
+  set_name(PyString::New(isolate, "module"));
 
   return JustVoid();
 }

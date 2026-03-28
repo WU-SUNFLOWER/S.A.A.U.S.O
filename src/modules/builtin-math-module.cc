@@ -340,24 +340,24 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
 
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, PyString::NewInstance("pi"),
+                      PyDict::Put(module_dict, PyString::New(isolate, "pi"),
                                   PyFloat::New(isolate, kPI), isolate));
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, PyString::NewInstance("e"),
+                      PyDict::Put(module_dict, PyString::New(isolate, "e"),
                                   PyFloat::New(isolate, kE), isolate));
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, PyString::NewInstance("tau"),
+                      PyDict::Put(module_dict, PyString::New(isolate, "tau"),
                                   PyFloat::New(isolate, kTau), isolate));
   RETURN_ON_EXCEPTION(
       isolate,
       PyDict::Put(
-          module_dict, PyString::NewInstance("inf"),
+          module_dict, PyString::New(isolate, "inf"),
           PyFloat::New(isolate, std::numeric_limits<double>::infinity()),
           isolate));
   RETURN_ON_EXCEPTION(
       isolate,
       PyDict::Put(
-          module_dict, PyString::NewInstance("nan"),
+          module_dict, PyString::New(isolate, "nan"),
           PyFloat::New(isolate, std::numeric_limits<double>::quiet_NaN()),
           isolate));
 

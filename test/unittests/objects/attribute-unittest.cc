@@ -30,14 +30,14 @@ BUILTIN(DoNoThing) {
 TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
   HandleScope scope;
 
-  auto func_name = PyString::NewInstance("foo");
+  auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
 
   Handle<PyFunction> func;
   ASSERT_TRUE(
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
-  auto key = PyString::NewInstance("x");
+  auto key = PyString::New(isolate_, "x");
   auto value = handle(PySmi::FromInt(42));
 
   ASSERT_FALSE(PyObject::SetAttr(isolate_, func, key, value).IsEmpty());
@@ -55,7 +55,7 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
   Handle<PyObject> append;
   ASSERT_TRUE(
       PyObject::GetAttr(isolate_, Handle<PyObject>(list),
-                        Handle<PyObject>(PyString::NewInstance("append")))
+                        Handle<PyObject>(PyString::New(isolate_, "append")))
           .ToHandle(&append));
 
   ASSERT_FALSE(append.is_null());
@@ -66,7 +66,7 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
 TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
   HandleScope scope;
 
-  auto func_name = PyString::NewInstance("foo");
+  auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
 
   Handle<PyFunction> func;
@@ -92,7 +92,7 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
 TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
   HandleScope scope;
 
-  auto func_name = PyString::NewInstance("foo");
+  auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
 
   Handle<PyFunction> func;
@@ -109,7 +109,7 @@ TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
 TEST_F(AttributeTest, DictAccessorReturnsProperties) {
   HandleScope scope;
 
-  auto func_name = PyString::NewInstance("foo");
+  auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
 
   Handle<PyFunction> func;
@@ -129,7 +129,7 @@ TEST_F(AttributeTest, DictAccessorReturnsProperties) {
 TEST_F(AttributeTest, DictAccessorRejectsSetAttr) {
   HandleScope scope;
 
-  auto func_name = PyString::NewInstance("foo");
+  auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
 
   Handle<PyFunction> func;

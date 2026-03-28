@@ -35,68 +35,74 @@ constexpr int kSentinelValueSizeInBytes = 1;
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::NewInstance(int64_t str_length, bool in_meta_space) {
-  Isolate* isolate = Isolate::Current();
+Handle<PyString> PyString::New(Isolate* isolate,
+                               int64_t str_length,
+                               bool in_meta_space) {
   return isolate->factory()->NewRawStringLike(
       PyStringKlass::GetInstance(isolate), str_length, in_meta_space);
 }
 
 // static
-Handle<PyString> PyString::NewInstance(const char* source,
-                                       int64_t str_length,
-                                       bool in_meta_space) {
-  return Isolate::Current()->factory()->NewString(source, str_length,
-                                                  in_meta_space);
+Handle<PyString> PyString::New(Isolate* isolate,
+                               const char* source,
+                               int64_t str_length,
+                               bool in_meta_space) {
+  return isolate->factory()->NewString(source, str_length, in_meta_space);
 }
 
 // static
-Handle<PyString> PyString::NewInstance(const char* source, bool in_meta_space) {
-  return Isolate::Current()->factory()->NewString(source, std::strlen(source),
-                                                  in_meta_space);
+Handle<PyString> PyString::New(Isolate* isolate,
+                               const char* source,
+                               bool in_meta_space) {
+  return isolate->factory()->NewString(source, std::strlen(source),
+                                       in_meta_space);
 }
 
 // static
-Handle<PyString> PyString::Clone(Handle<PyString> other, bool in_meta_space) {
-  return Isolate::Current()->factory()->NewString(
-      other->buffer(), other->length(), in_meta_space);
+Handle<PyString> PyString::Clone(Isolate* isolate,
+                                 Handle<PyString> other,
+                                 bool in_meta_space) {
+  return isolate->factory()->NewString(other->buffer(), other->length(),
+                                       in_meta_space);
 }
 
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::FromPySmi(Tagged<PySmi> smi) {
-  return FromInt(PySmi::ToInt(smi));
+Handle<PyString> PyString::FromPySmi(Isolate* isolate, Tagged<PySmi> smi) {
+  return FromInt(isolate, PySmi::ToInt(smi));
 }
 
 // static
-Handle<PyString> PyString::FromInt(int64_t n) {
+Handle<PyString> PyString::FromInt(Isolate* isolate, int64_t n) {
   EscapableHandleScope scope;
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   Int64ToStringView(n, std::string_view(buffer.data(), buffer.size()));
-  Handle<PyString> result = PyString::NewInstance(buffer.data());
+  Handle<PyString> result = PyString::New(isolate, buffer.data());
   return scope.Escape(result);
 }
 
 // static
-Handle<PyString> PyString::FromPyFloat(Handle<PyFloat> py_float) {
-  return FromDouble(py_float->value());
+Handle<PyString> PyString::FromPyFloat(Isolate* isolate,
+                                       Handle<PyFloat> py_float) {
+  return FromDouble(isolate, py_float->value());
 }
 
 // static
-Handle<PyString> PyString::FromDouble(double n) {
+Handle<PyString> PyString::FromDouble(Isolate* isolate, double n) {
   EscapableHandleScope scope;
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   DoubleToStringView(n, std::string_view(buffer.data(), buffer.size()));
-  Handle<PyString> result = PyString::NewInstance(buffer.data());
+  Handle<PyString> result = PyString::New(isolate, buffer.data());
   return scope.Escape(result);
 }
 
 // static
-Handle<PyString> PyString::FromStdString(std::string source) {
-  return PyString::NewInstance(source.data(),
-                               static_cast<int64_t>(source.size()));
+Handle<PyString> PyString::FromStdString(Isolate* isolate, std::string source) {
+  return PyString::New(isolate, source.data(),
+                       static_cast<int64_t>(source.size()));
 }
 
 ////////////////////////////////////////////////////////////
@@ -191,27 +197,31 @@ std::string PyString::ToStdString() const {
   return std::string(buffer(), static_cast<size_t>(length()));
 }
 
-Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from) {
-  return Slice(self, from, self->length() - 1);
+Handle<PyString> PyString::Slice(Handle<PyString> self,
+                                 int64_t from,
+                                 Isolate* isolate) {
+  return Slice(self, from, self->length() - 1, isolate);
 }
 
 Handle<PyString> PyString::Slice(Handle<PyString> self,
                                  int64_t from,
-                                 int64_t to) {
+                                 int64_t to,
+                                 Isolate* isolate) {
   EscapableHandleScope scope;
 
   assert(0 <= from && from <= to && to < self->length_);
 
   int sliced_length = to - from + 1;
-  Handle<PyString> result = PyString::NewInstance(sliced_length);
+  Handle<PyString> result = PyString::New(isolate, sliced_length);
 
   std::memcpy(result->writable_buffer(), self->buffer() + from, sliced_length);
   return scope.Escape(result);
 }
 
 Handle<PyString> PyString::Append(Handle<PyString> self,
-                                  Handle<PyString> other) {
-  return Isolate::Current()->factory()->NewConsString(self, other);
+                                  Handle<PyString> other,
+                                  Isolate* isolate) {
+  return isolate->factory()->NewConsString(self, other);
 }
 
 int64_t PyString::IndexOf(Handle<PyString> pattern) const {
