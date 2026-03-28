@@ -60,6 +60,18 @@ void PyObject::SetMapWordForwarded(Tagged<PyObject> object,
   object->mark_word_ = MarkWord::FromForwardingAddress(target);
 }
 
+// TODO:
+// 未来 PyObject::GetKlass API 可以拆成若干个使用场景更有针对性的 API：
+// -Tagged<Klass> GetHeapKlassUnchecked(Tagged<HeapObject> object);
+// -Tagged<Klass> ResolveObjectKlass(Tagged<PyObject> object, Isolate* isolate);
+// -Handle<PyString> GetTypeName(Handle<PyObject> object, Isolate* isolate);
+//
+// 这样语义会变得更加清楚，比把所有需求都堆在 GetKlass 上健康得多：
+// - GetHeapKlassUnchecked 纯对象头读操作
+//   - （调用方需自行保证传入的是一个HeapObject）
+// - ResolveObjectKlass 对象语义解析，支持特化处理 Smi
+// - GetTypeName 上层获取类型信息专用，不要求调用者自己摸 klass
+//   - 适用于需要抛出异常等场景
 Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
   if (IsPySmi(object)) {
