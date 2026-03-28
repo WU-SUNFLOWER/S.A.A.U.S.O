@@ -118,9 +118,9 @@ print(d)
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::NewInstance("x"));
 
-  auto expected_dict = PyDict::NewInstance();
+  auto expected_dict = PyDict::New(isolate_);
   ASSERT_FALSE(PyDict::Put(expected_dict, handle(PySmi::FromInt(2)),
-                           PyString::NewInstance("y"))
+                           PyString::NewInstance("y"), isolate_)
                    .IsNothing());
   AppendExpected(expected_printv_result, expected_dict);
 

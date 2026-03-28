@@ -424,7 +424,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       break;
     }
     case kDictFlag: {
-      auto dict = PyDict::NewInstance();
+      auto dict = PyDict::New(isolate_);
       if (ref_flag) {
         cache->Set(cache_index, dict);
       }
@@ -434,7 +434,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
           break;
         }
         auto value = ParseObject(string_table, cache);
-        if (PyDict::Put(dict, key, value).IsNothing()) {
+        if (PyDict::Put(dict, key, value, isolate_).IsNothing()) {
           std::fprintf(stderr, "marshal parser: failed to insert dict entry\n");
           std::exit(1);
         }

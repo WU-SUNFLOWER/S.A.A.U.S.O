@@ -30,12 +30,13 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
     Handle<PyDict> globals) {
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             globals->ContainsKey(ST(builtins)));
+                             globals->ContainsKey(ST(builtins), isolate));
 
   if (!found) {
     Handle<PyDict> builtins = handle(isolate->builtins());
     RETURN_ON_EXCEPTION_VALUE(isolate,
-                              PyDict::Put(globals, ST(builtins), builtins),
+                              PyDict::Put(globals, ST(builtins), builtins,
+                                          isolate),
                               kNullMaybeHandle);
   }
 

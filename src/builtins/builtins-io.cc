@@ -40,7 +40,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
   auto flush_key = ST(flush);
 
   for (int64_t i = 0; i < kwargs->capacity(); ++i) {
-    auto item = kwargs->ItemAtIndex(i);
+    auto item = kwargs->ItemAtIndex(i, isolate);
     if (item.is_null()) {
       continue;
     }
@@ -81,14 +81,18 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
   }
 
   bool found = false;
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found,
+                                   kwargs->Get(sep_key, options.sep, isolate),
+                                   kNullMaybeHandle);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found,
+                                   kwargs->Get(end_key, options.end, isolate),
+                                   kNullMaybeHandle);
+  ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found,
+                                   kwargs->Get(file_key, options.file, isolate),
+                                   kNullMaybeHandle);
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, kwargs->Get(sep_key, options.sep), kNullMaybeHandle);
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, kwargs->Get(end_key, options.end), kNullMaybeHandle);
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, kwargs->Get(file_key, options.file), kNullMaybeHandle);
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, kwargs->Get(flush_key, options.flush), kNullMaybeHandle);
+      isolate, found, kwargs->Get(flush_key, options.flush, isolate),
+      kNullMaybeHandle);
 
   if (!options.sep.is_null() && !IsPyNone(options.sep)) {
     if (!IsPyString(*options.sep)) {

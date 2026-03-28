@@ -341,23 +341,25 @@ BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("pi"),
-                                  PyFloat::New(isolate, kPI)));
+                                  PyFloat::New(isolate, kPI), isolate));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("e"),
-                                  PyFloat::New(isolate, kE)));
+                                  PyFloat::New(isolate, kE), isolate));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, PyString::NewInstance("tau"),
-                                  PyFloat::New(isolate, kTau)));
+                                  PyFloat::New(isolate, kTau), isolate));
   RETURN_ON_EXCEPTION(
       isolate,
       PyDict::Put(
           module_dict, PyString::NewInstance("inf"),
-          PyFloat::New(isolate, std::numeric_limits<double>::infinity())));
+          PyFloat::New(isolate, std::numeric_limits<double>::infinity()),
+          isolate));
   RETURN_ON_EXCEPTION(
       isolate,
       PyDict::Put(
           module_dict, PyString::NewInstance("nan"),
-          PyFloat::New(isolate, std::numeric_limits<double>::quiet_NaN())));
+          PyFloat::New(isolate, std::numeric_limits<double>::quiet_NaN()),
+          isolate));
 
   const BuiltinModuleFuncSpec kMathModuleFuncs[] = {
 #define DEFINE_MATH_FUNC_SPEC(name, func) \

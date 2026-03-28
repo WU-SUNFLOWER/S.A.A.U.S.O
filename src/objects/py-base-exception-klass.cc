@@ -44,7 +44,7 @@ MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
   Handle<PyObject> args_obj;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             properties->Get(ST(args), args_obj));
+                             properties->Get(ST(args), args_obj, isolate));
   if (!found || !IsPyTuple(args_obj)) {
     return Handle<PyTuple>::null();
   }
@@ -84,7 +84,7 @@ Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  Handle<PyDict> klass_properties = PyDict::NewInstance();
+  Handle<PyDict> klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
@@ -141,17 +141,19 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
       args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
   Handle<PyDict> properties = PyObject::GetProperties(instance);
   if (properties.is_null()) {
-    properties = PyDict::NewInstance();
+    properties = PyDict::New(isolate);
     PyObject::SetProperties(*instance, *properties);
   }
 
   RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(args), init_args), kNullMaybeHandle);
+      isolate, PyDict::Put(properties, ST(args), init_args, isolate),
+      kNullMaybeHandle);
 
   Handle<PyString> message;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, message, MessageFromArgsTuple(init_args));
   RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(message), message), kNullMaybeHandle);
+      isolate, PyDict::Put(properties, ST(message), message, isolate),
+      kNullMaybeHandle);
 
   return handle(isolate->py_none_object());
 }
@@ -196,7 +198,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
     Handle<PyObject> message;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message), message));
+                               properties->Get(ST(message), message, isolate));
     if (found && IsPyString(message)) {
       return scope.Escape(Handle<PyString>::cast(message));
     }

@@ -84,7 +84,7 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  auto klass_properties = PyDict::NewInstance();
+  auto klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列
@@ -152,7 +152,8 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Isolate* isolate,
       auto v1 = d1->data()->Get((i << 1) + 1);
       Tagged<PyObject> v2_tagged;
       bool found = false;
-      ASSIGN_RETURN_ON_EXCEPTION(isolate, found, d2->GetTagged(k1, v2_tagged));
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                                 d2->GetTagged(k1, v2_tagged, isolate));
       if (!found) {
         return Maybe<bool>(false);
       }
@@ -203,7 +204,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_DeleteSubscr(
 Maybe<bool> PyDictKlass::Virtual_Contains(Isolate* isolate,
                                           Handle<PyObject> self,
                                           Handle<PyObject> subscr) {
-  return Handle<PyDict>::cast(self)->ContainsKey(subscr);
+  return Handle<PyDict>::cast(self)->ContainsKey(subscr, isolate);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_NewInstance(

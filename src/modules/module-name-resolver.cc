@@ -91,7 +91,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
 
   Handle<PyObject> package_obj;
   bool found = false;
-  if (!globals->Get(ST(package), package_obj).To(&found)) {
+  if (!globals->Get(ST(package), package_obj, isolate_).To(&found)) {
     return kNullMaybe;
   }
   if (found) {
@@ -104,7 +104,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   }
 
   Tagged<PyObject> name_obj;
-  if (!globals->GetTagged(ST(name), name_obj).To(&found)) {
+  if (!globals->GetTagged(ST(name), name_obj, isolate_).To(&found)) {
     return kNullMaybe;
   }
   if (!found || !IsPyString(name_obj)) {
@@ -116,7 +116,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   Handle<PyString> name_str = Handle<PyString>::cast(handle(name_obj));
 
   Tagged<PyObject> path_obj;
-  if (!globals->GetTagged(ST(path), path_obj).To(&found)) {
+  if (!globals->GetTagged(ST(path), path_obj, isolate_).To(&found)) {
     return kNullMaybe;
   }
   bool is_package = found;

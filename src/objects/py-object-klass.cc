@@ -64,7 +64,7 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  Handle<PyDict> klass_properties = PyDict::NewInstance();
+  Handle<PyDict> klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // Python中object类型之上没有父类。
@@ -124,7 +124,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
     if (!properties.is_null()) {
       bool found = false;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                                 properties->Get(prop_name, result));
+                                 properties->Get(prop_name, result, isolate));
       if (found) {
         assert(!result.is_null());
         goto found;
@@ -203,7 +203,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
     Handle<PyDict> properties = PyObject::GetProperties(self);
     if (!properties.is_null()) {
       bool found = false;
-      if (!properties->Get(prop_name, result).To(&found)) {
+      if (!properties->Get(prop_name, result, isolate).To(&found)) {
         return kNullMaybeHandle;
       }
       if (found) {
@@ -263,7 +263,8 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   }
 
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(properties, property_name, property_value));
+                      PyDict::Put(properties, property_name, property_value,
+                                  isolate));
 
   return handle(isolate->py_none_object());
 }

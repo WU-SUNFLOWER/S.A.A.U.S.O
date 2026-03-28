@@ -37,7 +37,7 @@ TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_);
-  auto dict = PyDict::NewInstance();
+  auto dict = PyDict::New(isolate_);
 
   PyObject::SetProperties(*Handle<PyObject>(list), *dict);
   auto props = PyObject::GetProperties(Handle<PyObject>(list));
@@ -62,7 +62,7 @@ TEST_F(PyObjectTest, IsHeapObjectReturnsFalseForNullAndSmi) {
 TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   HandleScope scope;
   Handle<PyString> list_like_name = PyString::NewInstance("ListLikeCase");
-  Handle<PyDict> list_like_props = PyDict::NewInstance();
+  Handle<PyDict> list_like_props = PyDict::New(isolate_);
   Handle<PyList> list_like_supers = PyList::New(isolate_, 1);
   list_like_supers->SetAndExtendLength(
       0, PyListKlass::GetInstance(isolate_)->type_object());
@@ -80,7 +80,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(PyObject::GetProperties(list_like).is_null());
 
   Handle<PyString> dict_like_name = PyString::NewInstance("DictLikeCase");
-  Handle<PyDict> dict_like_props = PyDict::NewInstance();
+  Handle<PyDict> dict_like_props = PyDict::New(isolate_);
   Handle<PyList> dict_like_supers = PyList::New(isolate_, 1);
   dict_like_supers->SetAndExtendLength(
       0, PyDictKlass::GetInstance(isolate_)->type_object());
@@ -98,7 +98,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(PyObject::GetProperties(dict_like).is_null());
 
   Handle<PyString> tuple_like_name = PyString::NewInstance("TupleLikeCase");
-  Handle<PyDict> tuple_like_props = PyDict::NewInstance();
+  Handle<PyDict> tuple_like_props = PyDict::New(isolate_);
   Handle<PyList> tuple_like_supers = PyList::New(isolate_, 1);
   tuple_like_supers->SetAndExtendLength(
       0, PyTupleKlass::GetInstance(isolate_)->type_object());
@@ -116,7 +116,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(PyObject::GetProperties(tuple_like).is_null());
 
   Handle<PyString> string_like_name = PyString::NewInstance("StringLikeCase");
-  Handle<PyDict> string_like_props = PyDict::NewInstance();
+  Handle<PyDict> string_like_props = PyDict::New(isolate_);
   Handle<PyList> string_like_supers = PyList::New(isolate_, 1);
   string_like_supers->SetAndExtendLength(
       0, PyStringKlass::GetInstance(isolate_)->type_object());

@@ -64,7 +64,7 @@ MaybeHandle<PyDict> BuiltinBootstrapper::CreateBuiltins() {
   EscapableHandleScope scope;
 
   assert(!is_bootstrapped_);
-  builtins_ = PyDict::NewInstance();
+  builtins_ = PyDict::New(isolate_);
 
   RETURN_ON_EXCEPTION(isolate_, InstallBuiltinTypes());
   RETURN_ON_EXCEPTION(isolate_, InstallOddballs());
@@ -103,7 +103,7 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinTypes() {
   for (const auto& entry : entries) {
     RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_handle,
                                               PyString::NewInstance(entry.name),
-                                              entry.type_object));
+                                              entry.type_object, isolate_));
   }
 
   return JustVoid();
@@ -120,7 +120,7 @@ Maybe<void> BuiltinBootstrapper::InstallOddballs() {
   auto builtins_handle = builtins_.Get();
   for (const auto& entry : entries) {
     RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_handle, entry.name,
-                                              handle(entry.value)));
+                                              handle(entry.value), isolate_));
   }
 
   return JustVoid();
@@ -142,7 +142,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinFunctions() {
         isolate_->factory()->NewPyFunctionWithTemplate(func_template));
 
     RETURN_ON_EXCEPTION(isolate_,
-                        PyDict::Put(builtins_handle, entry.name, func_object));
+                        PyDict::Put(builtins_handle, entry.name, func_object,
+                                    isolate_));
   }
 
 #undef BUILTIN_FUNC_LIST
@@ -154,7 +155,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinFunctions() {
 Maybe<void> BuiltinBootstrapper::InstallBuiltinsSelfReference() {
   auto builtins_handle = builtins_.Get();
   RETURN_ON_EXCEPTION(
-      isolate_, PyDict::Put(builtins_handle, ST(builtins), builtins_handle));
+      isolate_,
+      PyDict::Put(builtins_handle, ST(builtins), builtins_handle, isolate_));
   return JustVoid();
 }
 
@@ -169,7 +171,8 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, found,
-      builtins_handle->GetTagged(ST(exception), exception_type_tagged));
+      builtins_handle->GetTagged(ST(exception), exception_type_tagged,
+                                 isolate_));
 
   if (!found) {
     Runtime_ThrowError(isolate_, ExceptionType::kRuntimeError,
@@ -201,12 +204,13 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinBasicExceptionTypes() {
   Handle<PyTypeObject> exception;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, exception,
-      Runtime_CreatePythonClass(isolate_, ST(exception), PyDict::NewInstance(),
+      Runtime_CreatePythonClass(isolate_, ST(exception), PyDict::New(isolate_),
                                 supers));
 
   // 注入 Exception 类型到 builtin 字典
   RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::Put(builtins_.Get(), ST(exception), exception));
+                      PyDict::Put(builtins_.Get(), ST(exception), exception,
+                                  isolate_));
 
   return JustVoid();
 }
@@ -220,11 +224,12 @@ Maybe<void> BuiltinBootstrapper::RegisterSimpleTypeToBuiltins(
   Handle<PyObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, type_object,
-      Runtime_CreatePythonClass(isolate_, type_name, PyDict::NewInstance(),
+      Runtime_CreatePythonClass(isolate_, type_name, PyDict::New(isolate_),
                                 supers));
 
   RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::Put(builtins_.Get(), type_name, type_object));
+                      PyDict::Put(builtins_.Get(), type_name, type_object,
+                                  isolate_));
 
   return JustVoid();
 }

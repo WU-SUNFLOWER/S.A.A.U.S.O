@@ -47,7 +47,7 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
     Handle<PyObject> globals_key,
     Handle<PyObject> locals_key) {
   for (auto i = 0; i < kwargs->capacity(); ++i) {
-    auto item = kwargs->ItemAtIndex(i);
+    auto item = kwargs->ItemAtIndex(i, isolate);
     if (item.is_null()) {
       continue;
     }
@@ -99,7 +99,8 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
 
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, found, kwargs->GetTagged(globals_key, globals_from_kwargs));
+      isolate, found,
+      kwargs->GetTagged(globals_key, globals_from_kwargs, isolate));
 
   if (found) {
     if (globals_from_positional) {
@@ -111,8 +112,8 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
   }
 
   Handle<PyObject> locals_from_kwargs;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             kwargs->Get(locals_key, locals_from_kwargs));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, found, kwargs->Get(locals_key, locals_from_kwargs, isolate));
 
   if (found) {
     if (locals_from_positional) {

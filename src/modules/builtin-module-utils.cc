@@ -48,10 +48,12 @@ Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
   RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance(module_name)));
+                                           PyString::NewInstance(module_name),
+                                           isolate));
   RETURN_ON_EXCEPTION(isolate,
                       PyDict::Put(module_dict, ST(package),
-                                  PyString::NewInstance(package_name)));
+                                  PyString::NewInstance(package_name),
+                                  isolate));
 
   return JustVoid();
 }
@@ -75,7 +77,8 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
       isolate->factory()->NewPyFunctionWithTemplate(function_template));
 
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, py_name, function_object));
+                      PyDict::Put(module_dict, py_name, function_object,
+                                  isolate));
 
   return JustVoid();
 }

@@ -40,12 +40,14 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   // __dict__不是存储在对象properties字典当中的实体，因此直接访问字典是查询不到的
   Handle<PyObject> mirrored_value;
   bool mirrored_found = true;
-  ASSERT_TRUE(module_dict->Get(ST(dict), mirrored_value).To(&mirrored_found));
+  ASSERT_TRUE(
+      module_dict->Get(ST(dict), mirrored_value, isolate_).To(&mirrored_found));
   EXPECT_FALSE(mirrored_found);
   EXPECT_TRUE(mirrored_value.is_null());
 
   // 同理，__class__也查询不到
-  ASSERT_TRUE(module_dict->Get(ST(class), mirrored_value).To(&mirrored_found));
+  ASSERT_TRUE(module_dict->Get(ST(class), mirrored_value, isolate_)
+                  .To(&mirrored_found));
   EXPECT_FALSE(mirrored_found);
   EXPECT_TRUE(mirrored_value.is_null());
 

@@ -87,7 +87,7 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate, CreateAndBindToPyTypeObject(isolate));
 
   // 初始化类字典
-  auto klass_properties = PyDict::NewInstance();
+  auto klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
 
   // 设置父类并计算mro序列

@@ -37,12 +37,12 @@ Maybe<bool> ImportNameImpl(Isolate* isolate,
 
   Handle<PyObject> value;
   bool found = false;
-  if (!module_dict->Get(name, value).To(&found)) {
+  if (!module_dict->Get(name, value, isolate).To(&found)) {
     return kNullMaybe;
   }
   if (found) {
     assert(!value.is_null());
-    RETURN_ON_EXCEPTION(isolate, PyDict::Put(locals, name, value));
+    RETURN_ON_EXCEPTION(isolate, PyDict::Put(locals, name, value, isolate));
     return Maybe<bool>(true);
   }
 
@@ -112,7 +112,8 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
 
   Handle<PyObject> all;
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, found, module_dict->Get(ST(all), all));
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             module_dict->Get(ST(all), all, isolate));
 
   if (!found) {
     all = Handle<PyObject>::null();

@@ -128,7 +128,8 @@ MaybeHandle<PyModule> ModuleImporter::GetOrLoadModulePart(
   Handle<PyObject> cached;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
-                             modules_dict()->Get(part_fullname, cached));
+                             modules_dict()->Get(part_fullname, cached,
+                                                 isolate_));
   if (found) {
     assert(!cached.is_null());
     return Handle<PyModule>::cast(cached);
@@ -152,7 +153,7 @@ MaybeHandle<PyList> ModuleImporter::SelectSearchPathList(
   }
 
   Handle<PyList> path;
-  if (!ModuleUtils::GetPackagePathList(parent_module, path)) {
+  if (!ModuleUtils::GetPackagePathList(isolate_, parent_module, path)) {
     return kNullMaybeHandle;
   }
 
@@ -173,11 +174,13 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 
   bool exists = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, exists,
-                             parent_dict->ContainsKey(child_short_name));
+                             parent_dict->ContainsKey(child_short_name,
+                                                      isolate_));
 
   if (!exists) {
     RETURN_ON_EXCEPTION(
-        isolate_, PyDict::Put(parent_dict, child_short_name, child_module));
+        isolate_,
+        PyDict::Put(parent_dict, child_short_name, child_module, isolate_));
   } else {
 #ifdef _DEBUG
     // 如果父模块中已经链接了子模块，则不需要重复链接。
@@ -185,7 +188,8 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
     Handle<PyObject> existing;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
-                               parent_dict->Get(child_short_name, existing));
+                               parent_dict->Get(child_short_name, existing,
+                                                isolate_));
     assert(found);
     assert(!existing.is_null());
     assert(existing.is_identical_to(child_module));
@@ -198,7 +202,7 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 bool ModuleImporter::EnsurePackageForNextSegment(
     Handle<PyObject> module,
     Handle<PyString> module_fullname) {
-  if (!ModuleUtils::IsPackageModule(module)) {
+  if (!ModuleUtils::IsPackageModule(isolate_, module)) {
     Runtime_ThrowErrorf(isolate_, ExceptionType::kImportError,
                         "'%s' is not a package", module_fullname->buffer());
     return false;
@@ -219,7 +223,8 @@ MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
     Handle<PyObject> top_module;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
-                               modules_dict()->Get(top_name, top_module));
+                               modules_dict()->Get(top_name, top_module,
+                                                   isolate_));
     assert(found);
     assert(!top_module.is_null());
 
