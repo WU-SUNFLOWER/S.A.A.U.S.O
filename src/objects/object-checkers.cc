@@ -60,6 +60,7 @@ IMPL_PY_CHECKER_BY_KIND(PyDictValueIterator, DictValueIterator)
 IMPL_PY_CHECKER_BY_KIND(FixedArray, FixedArray)
 IMPL_PY_CHECKER_BY_KIND(MethodObject, MethodObject)
 IMPL_PY_CHECKER_BY_KIND(Cell, Cell)
+IMPL_PY_CHECKER_BY_KIND(PyBoolean, Boolean)
 #undef IMPL_PY_CHECKER_BY_KIND
 
 // TODO: VM内部IsXxxx系列API，要求显式传入Isolate
@@ -68,7 +69,6 @@ IMPL_PY_CHECKER_BY_KIND(Cell, Cell)
     return PyObject::GetKlass(object) ==                 \
            Name##Klass::GetInstance(Isolate::Current()); \
   }
-IMPL_PY_CHECKER_BY_KLASS(PyBoolean)
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
 IMPL_PY_CHECKER_BY_KLASS(PyModule)
 #undef IMPL_PY_CHECKER_BY_KLASS

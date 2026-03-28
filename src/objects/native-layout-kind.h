@@ -29,6 +29,7 @@ enum class NativeLayoutKind : uint8_t {
   kDictKeyIterator,
   kDictItemIterator,
   kDictValueIterator,
+  kBoolean,
 };
 
 }  // namespace saauso::internal
