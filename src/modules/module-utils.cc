@@ -4,6 +4,7 @@
 
 #include "src/modules/module-utils.h"
 
+#include "src/execution/exception-utils.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -34,41 +35,42 @@ bool ModuleUtils::IsValidModuleName(Handle<PyString> fullname) {
   return true;
 }
 
-bool ModuleUtils::IsPackageModule(Isolate* isolate, Handle<PyObject> module) {
+Maybe<bool> ModuleUtils::IsPackageModule(Isolate* isolate,
+                                         Handle<PyObject> module) {
   Handle<PyDict> dict = PyObject::GetProperties(module);
   if (dict.is_null()) {
-    return false;
+    return Maybe<bool>(false);
   }
+
   Tagged<PyObject> path;
   bool found = false;
-  if (!dict->GetTagged(ST(path), path, isolate).To(&found)) {
-    return false;
-  }
-  return found && IsPyList(path);
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             dict->GetTagged(ST(path), path, isolate));
+
+  return Maybe<bool>(found && IsPyList(path));
 }
 
-bool ModuleUtils::GetPackagePathList(Isolate* isolate,
-                                     Handle<PyObject> module,
-                                     Handle<PyList>& out) {
+Maybe<void> ModuleUtils::GetPackagePathList(Isolate* isolate,
+                                            Handle<PyObject> module,
+                                            Handle<PyList>& out) {
   out = Handle<PyList>::null();
 
   Handle<PyDict> dict = PyObject::GetProperties(module);
   if (dict.is_null()) {
-    return true;
+    return JustVoid();
   }
 
   Tagged<PyObject> path_obj;
   bool found = false;
-  if (!dict->GetTagged(ST(path), path_obj, isolate).To(&found)) {
-    return false;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                             dict->GetTagged(ST(path), path_obj, isolate));
 
   if (!found || !IsPyList(path_obj)) {
-    return true;
+    return JustVoid();
   }
 
   out = Handle<PyList>::cast(handle(path_obj));
-  return true;
+  return JustVoid();
 }
 
 }  // namespace saauso::internal
