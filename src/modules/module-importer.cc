@@ -110,9 +110,8 @@ MaybeHandle<PyModule> ModuleImporter::ImportModuleImpl(
 
     // 如果当前段不是最后一段，则对应 module 必须为 package！
     // 否则抛出错误！
-    if (!EnsurePackageForNextSegment(part_module, part_module_fullname)) {
-      return kNullMaybe;
-    }
+    RETURN_ON_EXCEPTION(isolate_, EnsurePackageForNextSegment(
+                                      part_module, part_module_fullname));
 
     segment_start = scan.dot + 1;
   }
@@ -127,9 +126,8 @@ MaybeHandle<PyModule> ModuleImporter::GetOrLoadModulePart(
   // Fast Path: 模块已经被缓存
   Handle<PyObject> cached;
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
-                             modules_dict()->Get(part_fullname, cached,
-                                                 isolate_));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, found, modules_dict()->Get(part_fullname, cached, isolate_));
   if (found) {
     assert(!cached.is_null());
     return Handle<PyModule>::cast(cached);
@@ -153,9 +151,8 @@ MaybeHandle<PyList> ModuleImporter::SelectSearchPathList(
   }
 
   Handle<PyList> path;
-  if (!ModuleUtils::GetPackagePathList(isolate_, parent_module, path)) {
-    return kNullMaybeHandle;
-  }
+  RETURN_ON_EXCEPTION(
+      isolate_, ModuleUtils::GetPackagePathList(isolate_, parent_module, path));
 
   if (path.is_null()) [[unlikely]] {
     Runtime_ThrowError(isolate_, ExceptionType::kImportError,
@@ -173,23 +170,21 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
   Handle<PyDict> parent_dict = PyObject::GetProperties(parent_module);
 
   bool exists = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, exists,
-                             parent_dict->ContainsKey(child_short_name,
-                                                      isolate_));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, exists, parent_dict->ContainsKey(child_short_name, isolate_));
 
   if (!exists) {
-    RETURN_ON_EXCEPTION(
-        isolate_,
-        PyDict::Put(parent_dict, child_short_name, child_module, isolate_));
+    RETURN_ON_EXCEPTION(isolate_, PyDict::Put(parent_dict, child_short_name,
+                                              child_module, isolate_));
   } else {
 #ifdef _DEBUG
     // 如果父模块中已经链接了子模块，则不需要重复链接。
     // 但应确保该子模块与当前准备链接的child_module是同一个module object对象。
     Handle<PyObject> existing;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
-                               parent_dict->Get(child_short_name, existing,
-                                                isolate_));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate_, found,
+        parent_dict->Get(child_short_name, existing, isolate_));
     assert(found);
     assert(!existing.is_null());
     assert(existing.is_identical_to(child_module));
@@ -199,15 +194,20 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
   return handle(isolate_->py_none_object());
 }
 
-bool ModuleImporter::EnsurePackageForNextSegment(
+Maybe<void> ModuleImporter::EnsurePackageForNextSegment(
     Handle<PyObject> module,
     Handle<PyString> module_fullname) {
-  if (!ModuleUtils::IsPackageModule(isolate_, module)) {
+  bool is_package_module = false;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate_, is_package_module,
+                             ModuleUtils::IsPackageModule(isolate_, module));
+
+  if (!is_package_module) {
     Runtime_ThrowErrorf(isolate_, ExceptionType::kImportError,
                         "'%s' is not a package", module_fullname->buffer());
-    return false;
+    return kNullMaybe;
   }
-  return true;
+
+  return JustVoid();
 }
 
 MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
@@ -222,9 +222,8 @@ MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
 
     Handle<PyObject> top_module;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate_, found,
-                               modules_dict()->Get(top_name, top_module,
-                                                   isolate_));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate_, found, modules_dict()->Get(top_name, top_module, isolate_));
     assert(found);
     assert(!top_module.is_null());
 
