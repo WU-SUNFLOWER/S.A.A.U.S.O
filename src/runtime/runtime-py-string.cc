@@ -158,8 +158,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
 
   Handle<PyString> sep = Handle<PyString>::cast(sep_or_null);
   if (sep->length() == 0) {
-    Runtime_ThrowError(Isolate::Current(), ExceptionType::kValueError,
-                       "empty separator");
+    Runtime_ThrowError(isolate, ExceptionType::kValueError, "empty separator");
     return kNullMaybeHandle;
   }
 
