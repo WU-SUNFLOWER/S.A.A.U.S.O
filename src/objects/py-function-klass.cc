@@ -229,6 +229,8 @@ void MethodObjectKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kMethodObject);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();

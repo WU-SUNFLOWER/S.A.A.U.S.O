@@ -30,7 +30,9 @@ DECLARE_PY_CHECKER(GcAbleObject)
 #undef DECLARE_PY_CHECKER
 
 // 支持被用户Python代码显式继承的内建类型 Like 与 Exact 语义约定：
-// - IsXxx：Like（按 native layout 判定）
+// - IsXxx：Like
+//   - 如属于具有特殊内存布局的内建容器，采用 native layout kind 进行判定
+//   - 否则采用 klass 全等判定作为 fallback
 // - IsXxxExact：Exact（按 klass 全等判定）
 #define DECLARE_PY_EXACT_CHECKER(name)           \
   bool Is##name##Exact(Tagged<PyObject> object); \
