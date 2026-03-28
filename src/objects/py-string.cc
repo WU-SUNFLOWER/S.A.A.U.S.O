@@ -69,38 +69,39 @@ Handle<PyString> PyString::Clone(Isolate* isolate,
 ////////////////////////////////////////////////////////////
 
 // static
-Handle<PyString> PyString::FromPySmi(Tagged<PySmi> smi) {
-  return FromInt(PySmi::ToInt(smi));
+Handle<PyString> PyString::FromPySmi(Isolate* isolate, Tagged<PySmi> smi) {
+  return FromInt(isolate, PySmi::ToInt(smi));
 }
 
 // static
-Handle<PyString> PyString::FromInt(int64_t n) {
+Handle<PyString> PyString::FromInt(Isolate* isolate, int64_t n) {
   EscapableHandleScope scope;
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   Int64ToStringView(n, std::string_view(buffer.data(), buffer.size()));
-  Handle<PyString> result = PyString::New(Isolate::Current(), buffer.data());
+  Handle<PyString> result = PyString::New(isolate, buffer.data());
   return scope.Escape(result);
 }
 
 // static
-Handle<PyString> PyString::FromPyFloat(Handle<PyFloat> py_float) {
-  return FromDouble(py_float->value());
+Handle<PyString> PyString::FromPyFloat(Isolate* isolate,
+                                       Handle<PyFloat> py_float) {
+  return FromDouble(isolate, py_float->value());
 }
 
 // static
-Handle<PyString> PyString::FromDouble(double n) {
+Handle<PyString> PyString::FromDouble(Isolate* isolate, double n) {
   EscapableHandleScope scope;
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   DoubleToStringView(n, std::string_view(buffer.data(), buffer.size()));
-  Handle<PyString> result = PyString::New(Isolate::Current(), buffer.data());
+  Handle<PyString> result = PyString::New(isolate, buffer.data());
   return scope.Escape(result);
 }
 
 // static
-Handle<PyString> PyString::FromStdString(std::string source) {
-  return PyString::New(Isolate::Current(), source.data(),
+Handle<PyString> PyString::FromStdString(Isolate* isolate, std::string source) {
+  return PyString::New(isolate, source.data(),
                        static_cast<int64_t>(source.size()));
 }
 
@@ -196,19 +197,22 @@ std::string PyString::ToStdString() const {
   return std::string(buffer(), static_cast<size_t>(length()));
 }
 
-Handle<PyString> PyString::Slice(Handle<PyString> self, int64_t from) {
-  return Slice(self, from, self->length() - 1);
+Handle<PyString> PyString::Slice(Handle<PyString> self,
+                                 int64_t from,
+                                 Isolate* isolate) {
+  return Slice(self, from, self->length() - 1, isolate);
 }
 
 Handle<PyString> PyString::Slice(Handle<PyString> self,
                                  int64_t from,
-                                 int64_t to) {
+                                 int64_t to,
+                                 Isolate* isolate) {
   EscapableHandleScope scope;
 
   assert(0 <= from && from <= to && to < self->length_);
 
   int sliced_length = to - from + 1;
-  Handle<PyString> result = PyString::New(Isolate::Current(), sliced_length);
+  Handle<PyString> result = PyString::New(isolate, sliced_length);
 
   std::memcpy(result->writable_buffer(), self->buffer() + from, sliced_length);
   return scope.Escape(result);
