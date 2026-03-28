@@ -7,6 +7,7 @@
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array.h"
+#include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
 #include "src/objects/visitors.h"
 
@@ -26,9 +27,11 @@ Tagged<FixedArrayKlass> FixedArrayKlass::GetInstance(Isolate* isolate) {
 void FixedArrayKlass::PreInitialize(Isolate* isolate) {
   // 将自己注册到universe
   isolate->klass_list().PushBack(Tagged<Klass>(this));
-  
+
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kFixedArray);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();

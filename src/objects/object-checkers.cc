@@ -38,53 +38,44 @@ bool IsNativeLayoutKind(Tagged<PyObject> object,
 }  // namespace
 
 /////////////////////////////////////////////////////////////////////////
-// 普通的对象类型 checker，直接基于 Klass 指针进行判断
+// 普通的对象类型 checker：
+// - 对容器型 builtin，IsXxx 已经表示 like，走 native layout kind
+// - 对其余非继承型 heap builtin，IsXxx 当前仍表示 exact
+
+#define IMPL_PY_CHECKER_BY_KIND(Name, Kind)                       \
+  bool Is##Name(Tagged<PyObject> object) {                        \
+    return IsNativeLayoutKind(object, NativeLayoutKind::k##Kind); \
+  }
+IMPL_PY_CHECKER_BY_KIND(PyString, String)
+IMPL_PY_CHECKER_BY_KIND(PyList, List)
+IMPL_PY_CHECKER_BY_KIND(PyTuple, Tuple)
+IMPL_PY_CHECKER_BY_KIND(PyDict, Dict)
+IMPL_PY_CHECKER_BY_KIND(PyTypeObject, TypeObject)
+IMPL_PY_CHECKER_BY_KIND(PyFloat, Float)
+IMPL_PY_CHECKER_BY_KIND(PyCodeObject, CodeObject)
+IMPL_PY_CHECKER_BY_KIND(PyListIterator, ListIterator)
+IMPL_PY_CHECKER_BY_KIND(PyTupleIterator, TupleIterator)
+IMPL_PY_CHECKER_BY_KIND(PyDictKeys, DictKeys)
+IMPL_PY_CHECKER_BY_KIND(PyDictValues, DictValues)
+IMPL_PY_CHECKER_BY_KIND(PyDictItems, DictItems)
+IMPL_PY_CHECKER_BY_KIND(PyDictKeyIterator, DictKeyIterator)
+IMPL_PY_CHECKER_BY_KIND(PyDictItemIterator, DictItemIterator)
+IMPL_PY_CHECKER_BY_KIND(PyDictValueIterator, DictValueIterator)
+IMPL_PY_CHECKER_BY_KIND(FixedArray, FixedArray)
+IMPL_PY_CHECKER_BY_KIND(MethodObject, MethodObject)
+IMPL_PY_CHECKER_BY_KIND(Cell, Cell)
+IMPL_PY_CHECKER_BY_KIND(PyBoolean, Boolean)
+#undef IMPL_PY_CHECKER_BY_KIND
 
 // TODO: VM内部IsXxxx系列API，要求显式传入Isolate
-#define IMPL_PY_CHECKER_BY_KLASS(name)                   \
-  bool Is##name(Tagged<PyObject> object) {               \
+#define IMPL_PY_CHECKER_BY_KLASS(Name)                   \
+  bool Is##Name(Tagged<PyObject> object) {               \
     return PyObject::GetKlass(object) ==                 \
-           name##Klass::GetInstance(Isolate::Current()); \
+           Name##Klass::GetInstance(Isolate::Current()); \
   }
-
-IMPL_PY_CHECKER_BY_KLASS(PyTypeObject)
-IMPL_PY_CHECKER_BY_KLASS(PyFloat)
-IMPL_PY_CHECKER_BY_KLASS(PyBoolean)
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
-IMPL_PY_CHECKER_BY_KLASS(PyCodeObject)
 IMPL_PY_CHECKER_BY_KLASS(PyModule)
-IMPL_PY_CHECKER_BY_KLASS(PyListIterator)
-IMPL_PY_CHECKER_BY_KLASS(PyTupleIterator)
-IMPL_PY_CHECKER_BY_KLASS(PyDictKeys)
-IMPL_PY_CHECKER_BY_KLASS(PyDictValues)
-IMPL_PY_CHECKER_BY_KLASS(PyDictItems)
-IMPL_PY_CHECKER_BY_KLASS(PyDictKeyIterator)
-IMPL_PY_CHECKER_BY_KLASS(PyDictItemIterator)
-IMPL_PY_CHECKER_BY_KLASS(PyDictValueIterator)
-IMPL_PY_CHECKER_BY_KLASS(FixedArray)
-IMPL_PY_CHECKER_BY_KLASS(MethodObject)
-IMPL_PY_CHECKER_BY_KLASS(Cell)
 #undef IMPL_PY_CHECKER_BY_KLASS
-
-/////////////////////////////////////////////////////////////////////////
-// 支持被用户Python代码继承的类型，`IsXxxx` API 的语义为 like 而非 exact。
-// 这些 API 通过检查 Klass 中的 NativeLayoutKind 字段进行判断。
-
-bool IsPyString(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kString);
-}
-
-bool IsPyList(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kList);
-}
-
-bool IsPyTuple(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kTuple);
-}
-
-bool IsPyDict(Tagged<PyObject> object) {
-  return IsNativeLayoutKind(object, NativeLayoutKind::kDict);
-}
 
 /////////////////////////////////////////////////////////////////////////
 // 其他特化 checker API

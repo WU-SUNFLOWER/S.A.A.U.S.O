@@ -107,6 +107,7 @@ source_set("saauso_core") {
     "//src/objects/mark-word.cc",
     "//src/objects/mark-word.h",
     "//src/objects/native-function-helpers.h",
+    "//src/objects/native-layout-kind.h",
     "//src/objects/object-checkers.cc",
     "//src/objects/object-checkers.h",
     "//src/objects/object-type-list.h",

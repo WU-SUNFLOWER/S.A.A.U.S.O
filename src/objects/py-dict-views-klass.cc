@@ -80,6 +80,8 @@ void PyDictKeysKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kDictKeys);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -157,6 +159,8 @@ void PyDictValuesKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kDictValues);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -251,6 +255,8 @@ void PyDictItemsKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kDictItems);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -357,6 +363,8 @@ void PyDictKeyIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kDictKeyIterator);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -443,6 +451,8 @@ void PyDictItemIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kDictItemIterator);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();
@@ -529,6 +539,8 @@ void PyDictValueIteratorKlass::PreInitialize(Isolate* isolate) {
 
   // 实例对象不创建__dict__字典
   set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kDictValueIterator);
+  set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   // 初始化虚函数表
   vtable_.Clear();

@@ -5,13 +5,11 @@
 #ifndef SAAUSO_OBJECTS_KLASS_H_
 #define SAAUSO_OBJECTS_KLASS_H_
 
-#include <cstddef>
-#include <cstdint>
-
 #include "include/saauso-maybe.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/objects/klass-vtable.h"
+#include "src/objects/native-layout-kind.h"
 #include "src/objects/objects.h"
 #include "src/utils/vector.h"
 
@@ -26,14 +24,6 @@ class PyList;
 class PyTuple;
 class PyBoolean;
 class ObjectVisitor;
-
-enum class NativeLayoutKind : uint8_t {
-  kPyObject = 0,
-  kList = 1,
-  kDict = 2,
-  kTuple = 3,
-  kString = 4,
-};
 
 class Klass : public Object {
  public:
