@@ -77,7 +77,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
   VmTestBase::SetUpTestSuite();
 
   HandleScope scope;
-  Handle<PyString> func_name = PyString::NewInstance("print");
+  Handle<PyString> func_name = PyString::New(isolate_, "print");
   Handle<PyDict> builtins = handle(isolate_->builtins());
 
   FunctionTemplateInfo func_template(&Builtin_PrintV, func_name);

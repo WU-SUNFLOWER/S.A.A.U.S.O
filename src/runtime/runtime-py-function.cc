@@ -45,7 +45,7 @@ MaybeHandle<PyString> Runtime_NewMethodObjectRepr(Isolate* isolate,
   char buffer[64];
   std::snprintf(buffer, sizeof(buffer), "<method object at %p>",
                 reinterpret_cast<void*>((*method).ptr()));
-  return PyString::NewInstance(buffer);
+  return PyString::New(isolate, buffer);
 }
 
 Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,

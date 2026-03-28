@@ -26,14 +26,15 @@ namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
 
-MaybeHandle<PyString> MessageFromArgsTuple(Handle<PyTuple> exception_args) {
+MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
+                                          Handle<PyTuple> exception_args) {
   if (exception_args.is_null() || exception_args->length() == 0) {
-    return PyString::NewInstance("");
+    return PyString::New(isolate, "");
   }
   if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
     return Handle<PyString>::cast(exception_args->Get(0));
   }
-  return PyString::NewInstance("");
+  return PyString::New(isolate, "");
 }
 
 void ThrowNewException(Isolate* isolate,
@@ -144,7 +145,7 @@ void Runtime_ThrowError(Isolate* isolate,
                         const char* message) {
   Handle<PyString> type_name = GetExceptionStringHandle(type);
   Handle<PyString> wrapped_message = message != nullptr
-                                         ? PyString::NewInstance(message)
+                                         ? PyString::New(isolate, message)
                                          : Handle<PyString>::null();
   ThrowNewException(isolate, type_name, wrapped_message);
 }
@@ -169,7 +170,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
 
   auto* state = isolate->exception_state();
   if (!state->HasPendingException()) {
-    return scope.Escape(PyString::NewInstance(""));
+    return scope.Escape(PyString::New(isolate, ""));
   }
 
   Handle<PyObject> exception = state->pending_exception();
@@ -185,7 +186,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     if (found && IsPyTuple(args_obj)) {
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, message,
-          MessageFromArgsTuple(Handle<PyTuple>::cast(args_obj)));
+          MessageFromArgsTuple(isolate, Handle<PyTuple>::cast(args_obj)));
     }
 
     Handle<PyObject> msg_obj;
@@ -202,9 +203,10 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(type_name);
   }
 
-  Handle<PyString> formatted = PyString::Clone(type_name);
-  formatted = PyString::Append(formatted, PyString::NewInstance(": "));
-  formatted = PyString::Append(formatted, message);
+  Handle<PyString> formatted = PyString::Clone(isolate, type_name);
+  formatted = PyString::Append(formatted, PyString::New(isolate, ": "),
+                               isolate);
+  formatted = PyString::Append(formatted, message, isolate);
 
   return scope.Escape(formatted);
 }

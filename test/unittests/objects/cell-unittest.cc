@@ -39,7 +39,7 @@ TEST_F(CellTest, SetValueSurvivesMinorGc) {
   HandleScope scope;
 
   Handle<Cell> cell = isolate_->factory()->NewCell();
-  Handle<PyString> payload = PyString::NewInstance("payload");
+  Handle<PyString> payload = PyString::New(isolate_, "payload");
   cell->set_value(payload);
 
   Isolate::Current()->heap()->CollectGarbage();
@@ -53,13 +53,13 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   HandleScope scope;
 
   Handle<Cell> cell = isolate_->factory()->NewCell();
-  Handle<PyString> payload = PyString::NewInstance("payload");
+  Handle<PyString> payload = PyString::New(isolate_, "payload");
   cell->set_value(payload);
 
   Handle<PyTuple> closures = PyTuple::New(isolate_, 1);
   closures->SetInternal(0, cell);
 
-  Handle<PyString> func_name = PyString::NewInstance("dummy");
+  Handle<PyString> func_name = PyString::New(isolate_, "dummy");
   FunctionTemplateInfo func_template(&DummyNative, func_name);
 
   Handle<PyFunction> func;

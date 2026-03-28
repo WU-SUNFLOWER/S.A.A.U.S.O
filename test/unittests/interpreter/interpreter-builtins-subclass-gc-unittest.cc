@@ -194,8 +194,8 @@ print(s2.upper())
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, PyString::NewInstance("hi"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("HI"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "hi"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "HI"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -237,9 +237,9 @@ print(s)
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
-  AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "hello"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
-  AppendExpected(expected_printv_result, PyString::NewInstance("hello"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "hello"));
   ExpectPrintResult(expected_printv_result);
 }
 

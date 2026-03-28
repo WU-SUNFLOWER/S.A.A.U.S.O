@@ -46,7 +46,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
   // 如果不是相对导入，直接返回即可
   if (level <= 0) {
     if (name.is_null()) {
-      return scope.Escape(PyString::NewInstance(""));
+      return scope.Escape(PyString::New(isolate_, ""));
     }
     return scope.Escape(name);
   }
@@ -76,8 +76,8 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     return scope.Escape(base);
   }
 
-  Handle<PyString> fullname = PyString::Append(base, ST(dot));
-  fullname = PyString::Append(fullname, name);
+  Handle<PyString> fullname = PyString::Append(base, ST(dot), isolate_);
+  fullname = PyString::Append(fullname, name, isolate_);
   return scope.Escape(fullname);
 }
 
@@ -86,7 +86,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   EscapableHandleScope scope;
 
   if (globals.is_null()) {
-    return scope.Escape(PyString::NewInstance(""));
+    return scope.Escape(PyString::New(isolate_, ""));
   }
 
   Handle<PyObject> package_obj;
@@ -131,12 +131,12 @@ Handle<PyString> ModuleNameResolver::ParentModuleNameOrEmpty(
   EscapableHandleScope scope;
 
   if (name.is_null() || name->length() == 0) {
-    return scope.Escape(PyString::NewInstance(""));
+    return scope.Escape(PyString::New(isolate_, ""));
   }
 
   auto dot_index = name->LastIndexOf(ST(dot));
   if (dot_index == PyString::kNotFound || dot_index == 0) {
-    return scope.Escape(PyString::NewInstance(""));
+    return scope.Escape(PyString::New(isolate_, ""));
   }
 
   int64_t parent_end = dot_index - 1;

@@ -110,7 +110,7 @@ Maybe<void> PyFloatKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("float"));
+  set_name(PyString::New(isolate, "float"));
 
   return JustVoid();
 }

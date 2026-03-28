@@ -186,7 +186,7 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
     if (dot_index == PyString::kNotFound) {
       RETURN_ON_EXCEPTION(isolate_,
                           PyDict::Put(module_dict, ST(package),
-                                      PyString::NewInstance(""), isolate_));
+                                      PyString::New(isolate_, ""), isolate_));
     } else {
       int64_t package_end = static_cast<int64_t>(dot_index) - 1;
       Handle<PyString> package_name = PyString::Slice(fullname, 0, package_end);

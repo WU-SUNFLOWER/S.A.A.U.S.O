@@ -73,7 +73,7 @@ Maybe<void> PyBooleanKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("bool"));
+  set_name(PyString::New(isolate, "bool"));
 
   return JustVoid();
 }
@@ -176,7 +176,7 @@ Maybe<void> PyNoneKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 设置类名
-  set_name(PyString::NewInstance("NoneType"));
+  set_name(PyString::New(isolate, "NoneType"));
 
   return JustVoid();
 }

@@ -86,8 +86,8 @@ print(checksum)
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(32)));
-  AppendExpected(expected_printv_result, PyString::NewInstance("0"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("31"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "0"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "31"));
   AppendExpected(expected_printv_result,
                  handle(PySmi::FromInt(ComputeExpectedChecksumForSysgcLoop())));
   ExpectPrintResult(expected_printv_result);

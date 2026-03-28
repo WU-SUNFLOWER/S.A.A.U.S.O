@@ -72,7 +72,7 @@ class ObjectVisitor;
 
 class StringTable {
  public:
-  StringTable();
+  explicit StringTable(Isolate* isolate);
   void Iterate(ObjectVisitor* v);
 
 #define DECLARE_STR_FIELD(name) Tagged<PyString> name##_str_{kNullAddress};

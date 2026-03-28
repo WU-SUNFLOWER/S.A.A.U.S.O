@@ -94,8 +94,8 @@ Local<T> WrapObject(i::Isolate* isolate, i::Handle<i::PyObject> object) {
 template <typename T>
 Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
   i::EscapableHandleScope scope;
-  i::Handle<i::PyString> py_string = i::PyString::NewInstance(
-      value.data(), static_cast<int64_t>(value.size()));
+  i::Handle<i::PyString> py_string =
+      i::PyString::New(isolate, value.data(), static_cast<int64_t>(value.size()));
   i::Handle<i::PyObject> escaped =
       scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_string)));
   return i::Utils::ToLocal<T>(escaped);

@@ -192,8 +192,8 @@ Handle<PyString> CPython312PycFileParser::ParseString(bool is_long_string) {
   for (uint32_t i = 0; i < length; ++i) {
     bytes[i] = reader_->ReadByte();
   }
-  return PyString::NewInstance(bytes.get(), static_cast<int64_t>(length),
-                               false);
+  return PyString::New(isolate_, bytes.get(), static_cast<int64_t>(length),
+                       false);
 }
 
 Handle<PyCodeObject> CPython312PycFileParser::Parse() {

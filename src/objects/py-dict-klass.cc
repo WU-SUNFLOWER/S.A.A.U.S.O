@@ -100,7 +100,7 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
                                    isolate, klass_properties, type_object()));
 
   // 设置类名
-  set_name(PyString::NewInstance("dict"));
+  set_name(PyString::New(isolate, "dict"));
 
   return JustVoid();
 }

@@ -77,7 +77,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
 
   auto str_object = Handle<PyString>::cast(self);
   auto result =
-      PyString::NewInstance(str_object->buffer(), str_object->length());
+      PyString::New(isolate, str_object->buffer(), str_object->length());
 
   for (auto i = 0; i < result->length(); ++i) {
     char ch = result->Get(i);
@@ -282,8 +282,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   }
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
-    Handle<PyObject> sep_key = PyString::NewInstance("sep");
-    Handle<PyObject> maxsplit_key = PyString::NewInstance("maxsplit");
+    Handle<PyObject> sep_key = PyString::New(isolate, "sep");
+    Handle<PyObject> maxsplit_key = PyString::New(isolate, "maxsplit");
 
     for (auto i = 0; i < kwargs->capacity(); ++i) {
       auto item = kwargs->ItemAtIndex(i, isolate);
@@ -321,9 +321,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
     Tagged<PyObject> sep_from_kwargs;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               kwargs->GetTagged(sep_key, sep_from_kwargs,
-                                                 isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found, kwargs->GetTagged(sep_key, sep_from_kwargs, isolate));
     Handle<PyObject> sep_from_kwargs_handle = handle(sep_from_kwargs);
     if (found) {
       assert(!sep_from_kwargs_handle.is_null());

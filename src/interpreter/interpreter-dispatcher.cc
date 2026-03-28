@@ -676,10 +676,11 @@ void Interpreter::EvalCurrentFrame() {
     // 拼接目标子模块的完整符号名
     // 如`from os import path`，则目标子模块`path`的
     // 完整符号名为`os.path`。
-    auto sub_module_fullname = PyString::Clone(parent_module_name);
-    sub_module_fullname = PyString::Append(sub_module_fullname, ST(dot));
+    auto sub_module_fullname = PyString::Clone(isolate_, parent_module_name);
     sub_module_fullname =
-        PyString::Append(sub_module_fullname, sub_module_name);
+        PyString::Append(sub_module_fullname, ST(dot), isolate_);
+    sub_module_fullname =
+        PyString::Append(sub_module_fullname, sub_module_name, isolate_);
 
     auto synthetic_fromlist = PyTuple::New(isolate_, 1);
     synthetic_fromlist->SetInternal(0, sub_module_name);

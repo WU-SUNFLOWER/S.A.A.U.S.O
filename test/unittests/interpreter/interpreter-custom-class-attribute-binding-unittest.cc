@@ -88,7 +88,7 @@ print(a.miss)
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result,
-                 PyString::NewInstance("__getattr__ called"));
+                 PyString::New(isolate_, "__getattr__ called"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(99)));
   ExpectPrintResult(expected_printv_result);
 }

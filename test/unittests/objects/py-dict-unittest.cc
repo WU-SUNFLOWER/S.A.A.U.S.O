@@ -23,11 +23,11 @@ TEST_F(PyDictTest, GetApiTriState) {
   auto* isolate = Isolate::Current();
 
   Handle<PyDict> dict = PyDict::New(isolate_);
-  Handle<PyObject> key = PyString::NewInstance("k");
+  Handle<PyObject> key = PyString::New(isolate_, "k");
   Handle<PyObject> value(PySmi::FromInt(1));
   ASSERT_FALSE(PyDict::Put(dict, key, value, isolate_).IsNothing());
 
-  Handle<PyObject> miss_key = PyString::NewInstance("missing");
+  Handle<PyObject> miss_key = PyString::New(isolate_, "missing");
   Tagged<PyObject> out_tagged;
   bool found = true;
   ASSERT_TRUE(dict->GetTagged(miss_key, out_tagged, isolate_).To(&found));
@@ -61,7 +61,7 @@ TEST_F(PyDictTest, BasicOperations) {
   Handle<PyDict> dict = PyDict::New(isolate_);
   EXPECT_EQ(dict->occupied(), 0);
 
-  Handle<PyObject> key1 = PyString::NewInstance("key1");
+  Handle<PyObject> key1 = PyString::New(isolate_, "key1");
   Handle<PyObject> val1(PySmi::FromInt(100));
 
   // Put
@@ -83,7 +83,7 @@ TEST_F(PyDictTest, BasicOperations) {
   bool contains = false;
   ASSERT_TRUE(dict->ContainsKey(key1, isolate_).To(&contains));
   EXPECT_TRUE(contains);
-  Handle<PyObject> key2 = PyString::NewInstance("key2");
+  Handle<PyObject> key2 = PyString::New(isolate_, "key2");
   ASSERT_TRUE(dict->ContainsKey(key2, isolate_).To(&contains));
   EXPECT_TRUE(!contains);
 
@@ -164,9 +164,9 @@ TEST_F(PyDictTest, Equality) {
   Handle<PyDict> d1 = PyDict::New(isolate_);
   Handle<PyDict> d2 = PyDict::New(isolate_);
 
-  Handle<PyObject> k1 = PyString::NewInstance("a");
+  Handle<PyObject> k1 = PyString::New(isolate_, "a");
   Handle<PyObject> v1(PySmi::FromInt(1));
-  Handle<PyObject> k2 = PyString::NewInstance("b");
+  Handle<PyObject> k2 = PyString::New(isolate_, "b");
   Handle<PyObject> v2(PySmi::FromInt(2));
 
   // d1 = {"a": 1, "b": 2}

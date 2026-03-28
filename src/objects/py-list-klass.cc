@@ -108,7 +108,7 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
                                    isolate, klass_properties, type_object()));
 
   // 设置类名
-  set_name(PyString::NewInstance("list"));
+  set_name(PyString::New(isolate, "list"));
 
   return JustVoid();
 }

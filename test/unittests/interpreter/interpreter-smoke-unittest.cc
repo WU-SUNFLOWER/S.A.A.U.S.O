@@ -33,7 +33,7 @@ print("Hello World")
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("Hello World"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "Hello World"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -51,9 +51,9 @@ print("after")
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("before"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("foo"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("after"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "before"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "foo"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "after"));
   ExpectPrintResult(expected_printv_result);
 }
 

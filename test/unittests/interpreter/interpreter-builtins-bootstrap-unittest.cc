@@ -35,7 +35,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   const char* const kTypeNames[] = {"object", "int",  "str",   "float", "list",
                                     "bool",   "dict", "tuple", "type"};
   for (const char* name : kTypeNames) {
-    Handle<PyString> key = PyString::NewInstance(name);
+    Handle<PyString> key = PyString::New(isolate_, name);
     bool exists = false;
     ASSERT_TRUE(builtins->ContainsKey(key, isolate_).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
@@ -48,7 +48,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
 
   const char* const kOddballs[] = {"True", "False", "None"};
   for (const char* name : kOddballs) {
-    Handle<PyString> key = PyString::NewInstance(name);
+    Handle<PyString> key = PyString::New(isolate_, name);
     bool exists = false;
     ASSERT_TRUE(builtins->ContainsKey(key, isolate_).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
@@ -71,7 +71,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   const char* const kBuiltinFunctions[] = {
       "print", "repr", "len", "isinstance", "build_class", "sysgc", "exec"};
   for (const char* name : kBuiltinFunctions) {
-    Handle<PyString> key = PyString::NewInstance(name);
+    Handle<PyString> key = PyString::New(isolate_, name);
     if (std::string_view(name) == "build_class") {
       key = ST(func_build_class);
     }
@@ -105,7 +105,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   // 2) 每个条目都是 type object；
   // 3) BaseException 的 type object 必须绑定到独立的 PyBaseExceptionKlass。
   for (const char* name : kExceptionTypes) {
-    Handle<PyString> key = PyString::NewInstance(name);
+    Handle<PyString> key = PyString::New(isolate_, name);
     bool exists = false;
     ASSERT_TRUE(builtins->ContainsKey(key, isolate_).To(&exists)) << name;
     ASSERT_TRUE(exists) << name;
@@ -119,7 +119,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   Tagged<PyObject> base_exception_value;
   bool found = false;
   ASSERT_TRUE(builtins
-                  ->GetTagged(PyString::NewInstance("BaseException"),
+                  ->GetTagged(PyString::New(isolate_, "BaseException"),
                               base_exception_value, isolate_)
                   .To(&found));
   ASSERT_TRUE(found);
@@ -160,7 +160,7 @@ TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
     Tagged<PyObject> value;
     bool found = false;
     ASSERT_TRUE(
-        builtins->GetTagged(PyString::NewInstance(name), value, isolate_)
+        builtins->GetTagged(PyString::New(isolate_, name), value, isolate_)
             .To(&found))
         << name;
     ASSERT_TRUE(found) << name;

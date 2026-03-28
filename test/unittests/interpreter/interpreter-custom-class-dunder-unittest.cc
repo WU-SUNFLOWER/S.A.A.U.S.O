@@ -45,7 +45,7 @@ print(c.value)   # 3
   auto expected_printv_result = PyList::New(isolate_);
 
   AppendExpected(expected_printv_result,
-                 PyString::NewInstance("executing operator +"));
+                 PyString::New(isolate_, "executing operator +"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
@@ -125,10 +125,10 @@ print(a["one"]) # Error
 
   auto expected_printv_result = PyList::New(isolate_);
 
-  AppendExpected(expected_printv_result, PyString::NewInstance("hi"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("fine"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "hi"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "fine"));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
-  AppendExpected(expected_printv_result, PyString::NewInstance("Error"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "Error"));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -158,9 +158,9 @@ print(str(b))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("str(A)"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("repr(A)"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("repr(B)"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "str(A)"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "repr(A)"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "repr(B)"));
   ExpectPrintResult(expected_printv_result);
 }
 

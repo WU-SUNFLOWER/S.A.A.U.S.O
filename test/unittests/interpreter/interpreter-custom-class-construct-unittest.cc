@@ -264,7 +264,7 @@ print(d())
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("C"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "C"));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -293,8 +293,8 @@ C.foo(o2)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance("baoluo"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("wanxiang"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "baoluo"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "wanxiang"));
   ExpectPrintResult(expected_printv_result);
 }
 

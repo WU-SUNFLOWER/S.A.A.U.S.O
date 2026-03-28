@@ -58,7 +58,7 @@ print(A.value is a.value)
 
   auto expected_printv_result = PyList::New(isolate_);
 
-  auto s = PyString::NewInstance("Hello World");
+  auto s = PyString::New(isolate_, "Hello World");
   AppendExpected(expected_printv_result, s);
   AppendExpected(expected_printv_result, s);
   AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
@@ -128,8 +128,8 @@ c.say()    # "I am A"
 
   auto expected_printv_result = PyList::New(isolate_);
 
-  AppendExpected(expected_printv_result, PyString::NewInstance("I am B"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("I am A"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "I am B"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "I am A"));
 
   ExpectPrintResult(expected_printv_result);
 }

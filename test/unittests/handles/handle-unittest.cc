@@ -25,17 +25,17 @@ class HandleTest : public VmTestBase {};
 
 TEST_F(HandleTest, EscapeFromHandleScope) {
   HandleScope scope;
-  Handle<PyObject> str1 = PyString::NewInstance("Hello World");
+  Handle<PyObject> str1 = PyString::New(Isolate::Current(), "Hello World");
 
   auto f = []() -> Handle<PyObject> {
     EscapableHandleScope scope;
-    Handle<PyObject> object = PyString::NewInstance("Hello World");
+    Handle<PyObject> object = PyString::New(Isolate::Current(), "Hello World");
     return scope.Escape(object);
   };
 
-  Handle<PyObject> str2 = PyString::NewInstance("I love you");
+  Handle<PyObject> str2 = PyString::New(Isolate::Current(), "I love you");
   Handle<PyObject> str3 = f();
-  Handle<PyObject> str4 = PyString::NewInstance("I love you");
+  Handle<PyObject> str4 = PyString::New(Isolate::Current(), "I love you");
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, str1, str3).To(&eq));
@@ -46,17 +46,17 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
 
 TEST_F(HandleTest, EscapableHandleScopeEscape) {
   HandleScope scope;
-  Handle<PyObject> str1 = PyString::NewInstance("Hello World");
+  Handle<PyObject> str1 = PyString::New(Isolate::Current(), "Hello World");
 
   auto f = []() -> Handle<PyObject> {
     EscapableHandleScope scope;
-    Handle<PyObject> object = PyString::NewInstance("Hello World");
+    Handle<PyObject> object = PyString::New(Isolate::Current(), "Hello World");
     return scope.Escape(object);
   };
 
-  Handle<PyObject> str2 = PyString::NewInstance("I love you");
+  Handle<PyObject> str2 = PyString::New(Isolate::Current(), "I love you");
   Handle<PyObject> str3 = f();
-  Handle<PyObject> str4 = PyString::NewInstance("I love you");
+  Handle<PyObject> str4 = PyString::New(Isolate::Current(), "I love you");
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, str1, str3).To(&eq));
@@ -69,7 +69,7 @@ TEST_F(HandleTest, EscapableHandleScopeEscape) {
 TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
   auto f = []() -> Handle<PyObject> {
     HandleScope scope;
-    return PyString::NewInstance("Hello World");
+    return PyString::New(Isolate::Current(), "Hello World");
   };
 
   ASSERT_DEATH_IF_SUPPORTED(

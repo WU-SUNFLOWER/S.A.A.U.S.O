@@ -30,7 +30,7 @@ void AllocateEphemeralStrings(int count) {
   for (int i = 0; i < count; ++i) {
     HandleScope inner_scope;
     auto s = std::string("ephemeral-").append(std::to_string(i));
-    (void)PyString::NewInstance(s.c_str());
+    (void)PyString::New(Isolate::Current(), s.c_str());
   }
 }
 
@@ -46,7 +46,7 @@ void AllocateEphemeralListsWithStrings(Isolate* isolate,
                    .append(std::to_string(i))
                    .append("-e")
                    .append(std::to_string(j));
-      PyList::Append(list, PyString::NewInstance(s.c_str()), isolate);
+      PyList::Append(list, PyString::New(isolate, s.c_str()), isolate);
     }
   }
 }
@@ -61,10 +61,10 @@ TEST_F(GcTest, CopyGcTestForPyString) {
 
   char content[] = "Hello World";
 
-  Handle<PyString> str1 = PyString::NewInstance(content);
+  Handle<PyString> str1 = PyString::New(isolate_, content);
   Address a1 = (*str1).ptr();
   isolate_->heap()->CollectGarbage();
-  Handle<PyString> str2 = PyString::NewInstance(content);
+  Handle<PyString> str2 = PyString::New(isolate_, content);
   Address a2 = (*str1).ptr();
 
   Handle<PyObject> eq_res;
@@ -88,7 +88,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   for (auto i = 0; i < kLength; ++i) {
     HandleScope inner_scope;
-    Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
+    Handle<PyString> elem = PyString::New(isolate_, std::to_string(i).c_str());
     PyList::Append(list1, elem, isolate_);
   }
 
@@ -102,7 +102,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 
   for (auto i = 0; i < kLength; ++i) {
     HandleScope inner_scope;
-    Handle<PyString> elem = PyString::NewInstance(std::to_string(i).c_str());
+    Handle<PyString> elem = PyString::New(isolate_, std::to_string(i).c_str());
     PyList::Append(list2, elem, isolate_);
   }
 
@@ -120,7 +120,7 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   Handle<PyList> list1 = PyList::New(isolate_);
   Handle<PyList> list2 = PyList::New(isolate_);
 
-  Handle<PyString> content = PyString::NewInstance("Hello World");
+  Handle<PyString> content = PyString::New(isolate_, "Hello World");
   PyList::Append(list1, content, isolate_);
   PyList::Append(list2, content, isolate_);
 
@@ -149,10 +149,10 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
   constexpr int kCount = 32;
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    Handle<PyObject> key = PyString::NewInstance(
-        std::string("k").append(std::to_string(i)).c_str());
-    Handle<PyObject> value = PyString::NewInstance(
-        std::string("v").append(std::to_string(i)).c_str());
+    Handle<PyObject> key = PyString::New(
+        isolate_, std::string("k").append(std::to_string(i)).c_str());
+    Handle<PyObject> value = PyString::New(
+        isolate_, std::string("v").append(std::to_string(i)).c_str());
     ASSERT_FALSE(PyDict::Put(dict, key, value, isolate_).IsNothing());
   }
 
@@ -163,10 +163,10 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
 
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    Handle<PyObject> query_key = PyString::NewInstance(
-        std::string("k").append(std::to_string(i)).c_str());
-    Handle<PyObject> expected_value = PyString::NewInstance(
-        std::string("v").append(std::to_string(i)).c_str());
+    Handle<PyObject> query_key = PyString::New(
+        isolate_, std::string("k").append(std::to_string(i)).c_str());
+    Handle<PyObject> expected_value = PyString::New(
+        isolate_, std::string("v").append(std::to_string(i)).c_str());
 
     Tagged<PyObject> actual_value_tagged;
     bool found = false;
@@ -213,13 +213,13 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   // dict -> fixed_array (entries) -> (key/value) -> list -> fixed_array ->
   // string
   Handle<PyDict> dict = PyDict::New(isolate_);
-  Handle<PyObject> key = PyString::NewInstance("payload");
+  Handle<PyObject> key = PyString::New(isolate_, "payload");
 
   Handle<PyList> list = PyList::New(isolate_);
   constexpr int kCount = 64;
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    PyList::Append(list, PyString::NewInstance(std::to_string(i).c_str()),
+    PyList::Append(list, PyString::New(isolate_, std::to_string(i).c_str()),
                    isolate_);
   }
   ASSERT_FALSE(
@@ -246,7 +246,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
 
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    auto expected = PyString::NewInstance(std::to_string(i).c_str());
+    auto expected = PyString::New(isolate_, std::to_string(i).c_str());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(PyObject::Equal(isolate_, payload_list->Get(i), expected)
                     .ToHandle(&eq_res));
@@ -262,7 +262,7 @@ TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
   // - 在 minor GC 中，handle slot 会被更新为新地址
   auto create_escaped_string = []() -> Handle<PyString> {
     EscapableHandleScope inner_scope;
-    auto s = PyString::NewInstance("escaped-string");
+    auto s = PyString::New(Isolate::Current(), "escaped-string");
     return inner_scope.Escape(s);
   };
 
@@ -284,7 +284,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   // list[0] 指向 list 本身，GC 需要正确更新该内部指针为新地址。
   Handle<PyList> list = PyList::New(isolate_);
   PyList::Append(list, Handle<PyObject>(list), isolate_);
-  PyList::Append(list, PyString::NewInstance("tail"), isolate_);
+  PyList::Append(list, PyString::New(isolate_, "tail"), isolate_);
 
   Address before = (*list).ptr();
   isolate_->heap()->CollectGarbage();

@@ -83,7 +83,7 @@ Maybe<void> PySmiKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  set_name(PyString::NewInstance("int"));
+  set_name(PyString::New(isolate, "int"));
 
   return JustVoid();
 }

@@ -76,7 +76,7 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
                                    isolate, klass_properties, type_object()));
 
   // 设置类名
-  set_name(PyString::NewInstance("object"));
+  set_name(PyString::New(isolate, "object"));
 
   return JustVoid();
 }
@@ -262,9 +262,8 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
     return kNullMaybeHandle;
   }
 
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(properties, property_name, property_value,
-                                  isolate));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(properties, property_name, property_value, isolate));
 
   return handle(isolate->py_none_object());
 }
@@ -357,7 +356,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Isolate* isolate,
   std::snprintf(buffer, sizeof(buffer), "<%s object at %p>",
                 PyObject::GetKlass(self)->name()->buffer(),
                 reinterpret_cast<void*>((*self).ptr()));
-  return scope.Escape(PyString::NewInstance(buffer));
+  return scope.Escape(PyString::New(isolate, buffer));
 }
 
 // static

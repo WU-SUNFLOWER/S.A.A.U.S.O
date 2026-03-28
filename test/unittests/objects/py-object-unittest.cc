@@ -61,7 +61,7 @@ TEST_F(PyObjectTest, IsHeapObjectReturnsFalseForNullAndSmi) {
 
 TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   HandleScope scope;
-  Handle<PyString> list_like_name = PyString::NewInstance("ListLikeCase");
+  Handle<PyString> list_like_name = PyString::New(isolate_, "ListLikeCase");
   Handle<PyDict> list_like_props = PyDict::New(isolate_);
   Handle<PyList> list_like_supers = PyList::New(isolate_, 1);
   list_like_supers->SetAndExtendLength(
@@ -79,7 +79,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyListExact(list_like));
   EXPECT_FALSE(PyObject::GetProperties(list_like).is_null());
 
-  Handle<PyString> dict_like_name = PyString::NewInstance("DictLikeCase");
+  Handle<PyString> dict_like_name = PyString::New(isolate_, "DictLikeCase");
   Handle<PyDict> dict_like_props = PyDict::New(isolate_);
   Handle<PyList> dict_like_supers = PyList::New(isolate_, 1);
   dict_like_supers->SetAndExtendLength(
@@ -97,7 +97,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyDictExact(dict_like));
   EXPECT_FALSE(PyObject::GetProperties(dict_like).is_null());
 
-  Handle<PyString> tuple_like_name = PyString::NewInstance("TupleLikeCase");
+  Handle<PyString> tuple_like_name = PyString::New(isolate_, "TupleLikeCase");
   Handle<PyDict> tuple_like_props = PyDict::New(isolate_);
   Handle<PyList> tuple_like_supers = PyList::New(isolate_, 1);
   tuple_like_supers->SetAndExtendLength(
@@ -115,7 +115,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyTupleExact(tuple_like));
   EXPECT_FALSE(PyObject::GetProperties(tuple_like).is_null());
 
-  Handle<PyString> string_like_name = PyString::NewInstance("StringLikeCase");
+  Handle<PyString> string_like_name = PyString::New(isolate_, "StringLikeCase");
   Handle<PyDict> string_like_props = PyDict::New(isolate_);
   Handle<PyList> string_like_supers = PyList::New(isolate_, 1);
   string_like_supers->SetAndExtendLength(

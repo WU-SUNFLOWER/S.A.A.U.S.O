@@ -47,9 +47,9 @@ print(str(float("nan")))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyString::NewInstance(""));
-  AppendExpected(expected_printv_result, PyString::NewInstance("123"));
-  AppendExpected(expected_printv_result, PyString::NewInstance("3.0"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, ""));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "123"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "3.0"));
   AppendExpected(expected_printv_result, ST(true_symbol));
   AppendExpected(expected_printv_result, ST(none_symbol));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
@@ -57,7 +57,7 @@ print(str(float("nan")))
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(255)));
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 0.0));
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 10.5));
-  AppendExpected(expected_printv_result, PyString::NewInstance("nan"));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "nan"));
   ExpectPrintResult(expected_printv_result);
 }
 

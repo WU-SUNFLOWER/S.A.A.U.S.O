@@ -47,13 +47,12 @@ Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
     const char* package_name) {
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(module_dict, ST(name),
-                                           PyString::NewInstance(module_name),
-                                           isolate));
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, ST(package),
-                                  PyString::NewInstance(package_name),
-                                  isolate));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(module_dict, ST(name),
+                           PyString::New(isolate, module_name), isolate));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(module_dict, ST(package),
+                           PyString::New(isolate, package_name), isolate));
 
   return JustVoid();
 }
@@ -68,7 +67,7 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
   // 语义”的最小接口，避免模块函数安装与类型方法安装耦合。
   HandleScope scope;
 
-  Handle<PyString> py_name = PyString::NewInstance(name);
+  Handle<PyString> py_name = PyString::New(isolate, name);
   FunctionTemplateInfo function_template(func, py_name);
 
   Handle<PyFunction> function_object;
@@ -76,9 +75,8 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
       isolate, function_object,
       isolate->factory()->NewPyFunctionWithTemplate(function_template));
 
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(module_dict, py_name, function_object,
-                                  isolate));
+  RETURN_ON_EXCEPTION(
+      isolate, PyDict::Put(module_dict, py_name, function_object, isolate));
 
   return JustVoid();
 }
