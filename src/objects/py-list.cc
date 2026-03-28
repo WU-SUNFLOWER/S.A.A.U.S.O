@@ -112,11 +112,13 @@ Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target,
   return Maybe<int64_t>(kNotFound);
 }
 
-void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
+void PyList::Append(Handle<PyList> self,
+                    Handle<PyObject> value,
+                    Isolate* isolate) {
   HandleScope scope;
 
   if (self->IsFull()) {
-    ExpandImpl(self);
+    ExpandImpl(self, isolate);
   }
 
   self->array()->Set(self->length_++,
@@ -125,13 +127,14 @@ void PyList::Append(Handle<PyList> self, Handle<PyObject> value) {
 
 void PyList::Insert(Handle<PyList> self,
                     int64_t index,
-                    Handle<PyObject> value) {
+                    Handle<PyObject> value,
+                    Isolate* isolate) {
   assert(0 <= index && index <= self->length_);
 
   HandleScope scope;
 
   if (self->IsFull()) {
-    ExpandImpl(self);
+    ExpandImpl(self, isolate);
   }
   auto old_length = self->length_;
   self->length_ = old_length + 1;
@@ -144,14 +147,13 @@ void PyList::Insert(Handle<PyList> self,
                      value.is_null() ? Tagged<PyObject>::null() : *value);
 }
 
-void PyList::ExpandImpl(Handle<PyList> list) {
+void PyList::ExpandImpl(Handle<PyList> list, Isolate* isolate) {
   int64_t old_capacity = list->capacity();
   int64_t new_capacity = std::max(kMinimumCapacity, old_capacity << 1);
 
   Handle<FixedArray> old_array(list->array());
-  Handle<FixedArray> new_array =
-      Isolate::Current()->factory()->CopyFixedArrayAndGrow(
-          old_array, new_capacity - old_capacity);
+  Handle<FixedArray> new_array = isolate->factory()->CopyFixedArrayAndGrow(
+      old_array, new_capacity - old_capacity);
 
   list->array_ = *new_array;
 }

@@ -71,10 +71,13 @@ class PyList : public PyObject {
                          int64_t end,
                          Isolate* isolate) const;
 
-  static void Append(Handle<PyList> self, Handle<PyObject> value);
+  static void Append(Handle<PyList> self,
+                     Handle<PyObject> value,
+                     Isolate* isolate);
   static void Insert(Handle<PyList> self,
                      int64_t index,
-                     Handle<PyObject> value);
+                     Handle<PyObject> value,
+                     Isolate* isolate);
 
   Tagged<FixedArray> array() const { return Tagged<FixedArray>::cast(array_); }
 
@@ -85,7 +88,7 @@ class PyList : public PyObject {
   friend class PyListKlass;
   friend class Factory;
 
-  static void ExpandImpl(Handle<PyList> list);
+  static void ExpandImpl(Handle<PyList> list, Isolate* isolate);
 
   int64_t length_{0};
   // FixedArray* array_
