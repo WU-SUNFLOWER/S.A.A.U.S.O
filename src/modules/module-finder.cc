@@ -96,7 +96,7 @@ bool ModuleFinder::ReadModuleSource(const ModuleLocation& location,
     return false;
   }
 
-  out = ModuleUtils::NewPyString(raw_out);
+  out = PyString::FromStdString(isolate_, raw_out);
   return true;
 }
 
