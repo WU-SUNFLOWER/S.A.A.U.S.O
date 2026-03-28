@@ -7,8 +7,7 @@
         "--compile-commands-dir=${workspaceFolder}/out/debug",
         "--query-driver=D:/LLVM/bin/*.exe", // 指向你的 LLVM bin 目录
         "--clang-tidy=false",
-        //"--background-index=false",
-        "-j=4",
+        "-j=2",
         "--pch-storage=disk",
         "--header-insertion=never",
         "--completion-style=bundled",
