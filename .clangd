@@ -7,3 +7,6 @@ Index:
   Background: Skip
 CompileFlags:
   Add: ["/std:c++20", "-Wno-msvc-not-found", "-I../..", "-I../../include"]
+  Remove: ["/Zi", "/Od"]
+If:
+  PathExclude: [third_party/.*, out/.*, testing/.*]
