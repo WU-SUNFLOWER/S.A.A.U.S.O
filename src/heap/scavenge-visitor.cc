@@ -17,19 +17,7 @@
 
 namespace saauso::internal {
 
-namespace {
-
-Address AllocateInSurvivorSpace(size_t size) {
-  Address target_addr =
-      Isolate::Current()->heap()->new_space().survivor_space().AllocateRaw(
-          size);
-  // survivor space中理论上一定有剩余的空间
-  assert(target_addr != kNullAddress &&
-         "survivor space must have enough space!!!");
-  return target_addr;
-}
-
-}  // namespace
+ScavenageVisitor::ScavenageVisitor(Isolate* isolate) : ObjectVisitor(isolate) {}
 
 void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
                                      Tagged<PyObject>* end) {
@@ -38,7 +26,7 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
 
     // 跳过空指针、Smi、指向meta space和不指向new space的指针
     if (object.is_null() || !IsGcAbleObject(object) ||
-        !Isolate::Current()->heap()->InNewSpaceEden(object.ptr())) {
+        !isolate()->heap()->InNewSpaceEden(object.ptr())) {
       continue;
     }
 
@@ -81,6 +69,15 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 
   // 注意：我们这里并没有递归处理object的子引用
   // 这将在Scavenage算法的主循环中完成 (无递归)
+}
+
+Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
+  Address target_addr =
+      isolate()->heap()->new_space().survivor_space().AllocateRaw(size);
+  // survivor space中理论上一定有剩余的空间
+  assert(target_addr != kNullAddress &&
+         "survivor space must have enough space!!!");
+  return target_addr;
 }
 
 }  // namespace saauso::internal
