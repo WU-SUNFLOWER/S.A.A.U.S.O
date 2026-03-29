@@ -12,7 +12,7 @@ namespace saauso::internal {
 
 // static
 Tagged<PyBaseException> PyBaseException::cast(Tagged<PyObject> object) {
-  assert(PyObject::GetKlass(object) ==
+  assert(PyObject::GetHeapKlassUnchecked(object) ==
          PyBaseExceptionKlass::GetInstance(Isolate::Current()));
   return Tagged<PyBaseException>::cast(object);
 }

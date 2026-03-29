@@ -14,8 +14,7 @@ namespace saauso::internal {
 
 // static
 Tagged<Cell> Cell::cast(Tagged<PyObject> object) {
-  assert(PyObject::GetKlass(object).ptr() ==
-         Isolate::Current()->cell_klass().ptr());
+  assert(IsCell(object));
   return Tagged<Cell>::cast(object);
 }
 
