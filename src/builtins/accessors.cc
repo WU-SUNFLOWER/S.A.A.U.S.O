@@ -46,7 +46,7 @@ MaybeHandle<PyObject> Accessors::PyObjectDictGetter(Isolate* isolate,
   if (properties.is_null()) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                         "'%s' object has no attribute '__dict__'",
-                        PyObject::GetKlass(receiver)->name()->buffer());
+                        PyObject::GetTypeName(receiver, isolate)->buffer());
     return kNullMaybeHandle;
   }
   return properties;

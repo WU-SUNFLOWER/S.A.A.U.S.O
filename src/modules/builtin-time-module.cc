@@ -50,7 +50,7 @@ Maybe<double> ExtractSeconds(Isolate* isolate,
     return Maybe<double>(PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
 
-  Handle<PyString> type_name = PyObject::GetKlass(value)->name();
+  Handle<PyString> type_name = PyObject::GetTypeName(value, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s() argument must be int or float, not '%s'", func_name,
                       type_name->buffer());

@@ -270,7 +270,7 @@ MaybeHandle<PyObject> Runtime_NewObject(Isolate* isolate,
       own_klass->InitInstance(isolate, result, args, kwargs));
 
   if (!IsPyNone(init_result)) [[unlikely]] {
-    auto type_name = PyObject::GetKlass(init_result)->name();
+    auto type_name = PyObject::GetTypeName(init_result, isolate);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "__init__() should return None, not '%s'\n",
                         type_name->buffer());

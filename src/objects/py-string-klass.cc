@@ -163,7 +163,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
       Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "decoding str is not supported\n");
     } else {
-      auto type_name = PyObject::GetKlass(input_value)->name();
+      auto type_name = PyObject::GetTypeName(input_value, isolate);
       Runtime_ThrowErrorf(
           isolate, ExceptionType::kTypeError,
           "decoding to str: need a bytes-like object, %s found\n",
@@ -229,7 +229,7 @@ Maybe<bool> PyStringKlass::Virtual_Less(Isolate* isolate,
                                         Handle<PyObject> self,
                                         Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    auto other_name = PyObject::GetKlass(other)->name();
+    auto other_name = PyObject::GetTypeName(other, isolate);
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "'<' not supported between instances of 'str' and '%s'\n",
@@ -245,7 +245,7 @@ Maybe<bool> PyStringKlass::Virtual_Greater(Isolate* isolate,
                                            Handle<PyObject> self,
                                            Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    auto other_name = PyObject::GetKlass(other)->name();
+    auto other_name = PyObject::GetTypeName(other, isolate);
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "'>' not supported between instances of 'str' and '%s'\n",
@@ -261,7 +261,7 @@ Maybe<bool> PyStringKlass::Virtual_LessEqual(Isolate* isolate,
                                              Handle<PyObject> self,
                                              Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    auto other_name = PyObject::GetKlass(other)->name();
+    auto other_name = PyObject::GetTypeName(other, isolate);
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "'<=' not supported between instances of 'str' and '%s'\n",
@@ -277,7 +277,7 @@ Maybe<bool> PyStringKlass::Virtual_GreaterEqual(Isolate* isolate,
                                                 Handle<PyObject> self,
                                                 Handle<PyObject> other) {
   if (!IsPyString(other)) {
-    auto other_name = PyObject::GetKlass(other)->name();
+    auto other_name = PyObject::GetTypeName(other, isolate);
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "'>=' not supported between instances of 'str' and '%s'\n",
@@ -322,10 +322,9 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Isolate* isolate,
                                                  Handle<PyObject> self,
                                                  Handle<PyObject> other) {
   if (!IsPyString(other)) [[unlikely]] {
-    auto other_klass = PyObject::GetKlass(other);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "can only concatenate str (not \"%s\") to str\n",
-                        other_klass->name()->buffer());
+                        PyObject::GetTypeName(other, isolate)->buffer());
     return kNullMaybeHandle;
   }
 

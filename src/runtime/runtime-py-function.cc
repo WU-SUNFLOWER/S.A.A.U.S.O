@@ -98,7 +98,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
         isolate, ExceptionType::kTypeError,
         "descriptor '%s' for '%s' objects doesn't apply to a '%s' object",
         func->func_name()->buffer(), owner_type->own_klass()->name()->buffer(),
-        PyObject::GetKlass(receiver)->name()->buffer());
+        PyObject::GetTypeName(receiver, isolate)->buffer());
     return kNullMaybe;
   }
 

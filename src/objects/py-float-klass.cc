@@ -44,7 +44,7 @@ double ExtractValue(Isolate* isolate, Handle<PyObject> object) {
 
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for +: 'float' and '%s'",
-                      PyObject::GetKlass(object)->name()->buffer());
+                      PyObject::GetTypeName(object, isolate)->buffer());
   return 0;
 }
 
@@ -174,7 +174,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     return isolate->factory()->NewPyFloat(*parsed);
   }
 
-  auto type_name = PyObject::GetKlass(value)->name();
+  auto type_name = PyObject::GetTypeName(value, isolate);
   Runtime_ThrowErrorf(
       isolate, ExceptionType::kTypeError,
       "float() argument must be a string or a real number, not '%s'\n",

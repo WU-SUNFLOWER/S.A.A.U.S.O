@@ -208,7 +208,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
   for (int64_t i = 0; i < num_parts; ++i) {
     Handle<PyObject> item = parts->Get(i);
     if (!IsPyString(*item)) {
-      auto type_name = PyObject::GetKlass(item)->name();
+      auto type_name = PyObject::GetTypeName(item, isolate);
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "sequence item %" PRId64
                           ": expected str instance, %s found",

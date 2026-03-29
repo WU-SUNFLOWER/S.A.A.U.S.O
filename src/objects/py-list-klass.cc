@@ -148,7 +148,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'list' object but received a '%s'",
-        instance_klass->name()->buffer());
+        PyObject::GetTypeName(instance, isolate)->buffer());
     return kNullMaybeHandle;
   }
   assert(instance_klass->native_layout_kind() == NativeLayoutKind::kList);
@@ -199,7 +199,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
   if (!IsPyList(other)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "can only concatenate list (not \"%s\") to list",
-                        PyObject::GetKlass(other)->name()->buffer());
+                        PyObject::GetTypeName(other, isolate)->buffer());
     return kNullMaybeHandle;
   }
   auto list2 = Handle<PyList>::cast(other);
@@ -222,7 +222,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
   if (!IsPySmi(coeff)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "can't multiply sequence by non-int of type '%s'",
-                        PyObject::GetKlass(coeff)->name()->buffer());
+                        PyObject::GetTypeName(coeff, isolate)->buffer());
     return kNullMaybeHandle;
   }
 
@@ -246,7 +246,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Isolate* isolate,
   if (!IsPySmi(subscr)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "list indices must be integers or slices, not %s",
-                        PyObject::GetKlass(subscr)->name()->buffer());
+                        PyObject::GetTypeName(subscr, isolate)->buffer());
     return kNullMaybeHandle;
   }
 
@@ -297,7 +297,7 @@ Maybe<bool> PyListKlass::Virtual_Less(Isolate* isolate,
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "'<' not supported between instances of 'list' and '%s'",
-        PyObject::GetKlass(other)->name()->buffer());
+        PyObject::GetTypeName(other, isolate)->buffer());
     return kNullMaybe;
   }
   auto list_r = Handle<PyList>::cast(other);

@@ -132,7 +132,7 @@ bool ParseStringSearchTarget(Isolate* isolate,
                              int64_t& end) {
   auto target = args->Get(0);
   if (!IsPyString(target)) [[unlikely]] {
-    auto type_name = PyObject::GetKlass(target)->name();
+    auto type_name = PyObject::GetTypeName(target, isolate);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "must be str, not %s", type_name->buffer());
     return false;
@@ -358,7 +358,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   Handle<PyObject> sep_or_null = Handle<PyObject>::null();
   if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
     if (!IsPyString(*sep_obj)) {
-      auto type_name = PyObject::GetKlass(sep_obj)->name();
+      auto type_name = PyObject::GetTypeName(sep_obj, isolate);
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "must be str or None, not %s", type_name->buffer());
       return kNullMaybeHandle;
