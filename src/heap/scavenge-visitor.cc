@@ -17,28 +17,14 @@
 
 namespace saauso::internal {
 
-namespace {
-
-Address AllocateInSurvivorSpace(size_t size) {
-  Address target_addr =
-      Isolate::Current()->heap()->new_space().survivor_space().AllocateRaw(
-          size);
-  // survivor space中理论上一定有剩余的空间
-  assert(target_addr != kNullAddress &&
-         "survivor space must have enough space!!!");
-  return target_addr;
-}
-
-}  // namespace
+ScavenageVisitor::ScavenageVisitor(Isolate* isolate) : ObjectVisitor(isolate) {}
 
 void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
                                      Tagged<PyObject>* end) {
   for (Tagged<PyObject>* p = start; p < end; ++p) {
     Tagged<PyObject> object = *p;
 
-    // 跳过空指针、Smi、指向meta space和不指向new space的指针
-    if (object.is_null() || !IsGcAbleObject(object) ||
-        !Isolate::Current()->heap()->InNewSpaceEden(object.ptr())) {
+    if (!CanEvacuate(object)) {
       continue;
     }
 
@@ -53,6 +39,18 @@ void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
     return;
   }
   (*p)->Iterate(this);
+}
+
+bool ScavenageVisitor::CanEvacuate(Tagged<PyObject> object) {
+  // object 必须是位于 NewSpace 的有效堆上对象，
+  // 才可以执行 Evacuate 操作。
+  //
+  // 特别注意：
+  // 对于已经被拷贝过的对象，即 MarkWord 已被更新成 Forwarding Address 的对象，
+  // 这里不能排除掉。
+  // 因为我们需要通过执行 Evacuate 操作来更新当前遍历到的 slot。
+  return IsHeapObject(object) &&
+         isolate()->heap()->InNewSpaceEden(object.ptr());
 }
 
 void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
@@ -81,6 +79,15 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 
   // 注意：我们这里并没有递归处理object的子引用
   // 这将在Scavenage算法的主循环中完成 (无递归)
+}
+
+Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
+  Address target_addr =
+      isolate()->heap()->new_space().survivor_space().AllocateRaw(size);
+  // survivor space中理论上一定有剩余的空间
+  assert(target_addr != kNullAddress &&
+         "survivor space must have enough space!!!");
+  return target_addr;
 }
 
 }  // namespace saauso::internal

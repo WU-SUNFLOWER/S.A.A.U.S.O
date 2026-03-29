@@ -210,7 +210,7 @@ void Heap::IterateRoots(ObjectVisitor* v) {
 }
 
 void Heap::DoScavenge() {
-  ScavenageVisitor visitor;
+  ScavenageVisitor visitor(isolate_);
 
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   IterateRoots(&visitor);

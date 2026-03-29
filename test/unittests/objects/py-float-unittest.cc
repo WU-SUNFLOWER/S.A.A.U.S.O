@@ -22,10 +22,10 @@ TEST_F(PyFloatTest, NewInstanceStoresValue) {
   EXPECT_DOUBLE_EQ(f->value(), 3.14);
 }
 
-TEST_F(PyFloatTest, IsGcAbleObjectIsTrueForFloat) {
+TEST_F(PyFloatTest, IsHeapObjectIsTrueForFloat) {
   HandleScope scope;
   Handle<PyObject> f(PyFloat::New(isolate_, 1.0));
-  EXPECT_TRUE(IsGcAbleObject(f));
+  EXPECT_TRUE(IsHeapObject(f));
 }
 
 TEST_F(PyFloatTest, ArithmeticBetweenFloats) {

@@ -10,9 +10,11 @@
 namespace saauso::internal {
 
 class Klass;
+class Isolate;
 
 class ObjectVisitor {
  public:
+  ObjectVisitor(Isolate* isolate) : isolate_(isolate) {};
   virtual ~ObjectVisitor() {}
 
   // 访问一串连续的指针
@@ -23,6 +25,11 @@ class ObjectVisitor {
   void VisitPointer(Tagged<PyObject>* p) { VisitPointers(p, p + 1); }
 
   virtual void VisitKlass(Tagged<Klass>* p) = 0;
+
+  Isolate* isolate() const { return isolate_; }
+
+ private:
+  Isolate* isolate_;
 };
 
 }  // namespace saauso::internal
