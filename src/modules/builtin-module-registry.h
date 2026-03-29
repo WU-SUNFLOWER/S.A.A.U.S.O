@@ -14,6 +14,8 @@
 
 namespace saauso::internal {
 
+class Isolate;
+
 class PyString;
 class ObjectVisitor;
 
@@ -25,7 +27,7 @@ class ObjectVisitor;
 //   builtin 模块清单注册进该 registry，避免 ModuleManager 直接依赖具体清单。
 class BuiltinModuleRegistry final {
  public:
-  BuiltinModuleRegistry() = default;
+  BuiltinModuleRegistry(Isolate* isolate) : isolate_(isolate) {};
   BuiltinModuleRegistry(const BuiltinModuleRegistry&) = delete;
   BuiltinModuleRegistry& operator=(const BuiltinModuleRegistry&) = delete;
   ~BuiltinModuleRegistry() = default;
@@ -50,6 +52,7 @@ class BuiltinModuleRegistry final {
     BuiltinModuleInitFunc init{nullptr};
   };
   Vector<Entry> entries_;
+  Isolate* isolate_;
 };
 
 }  // namespace saauso::internal
