@@ -83,20 +83,30 @@ IMPL_PY_CHECKER_BY_KLASS(PyModule)
 // 其他特化 checker API
 
 bool IsPyFunction(Tagged<PyObject> object) {
+  if (IsHeapObject(object)) {
+    return false;
+  }
   Isolate* isolate = Isolate::Current();
-  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance(isolate) ||
-         PyObject::GetKlass(object) ==
-             NativeFunctionKlass::GetInstance(isolate);
+  Tagged<Klass> klass = PyObject::GetHeapKlassUnchecked(object);
+  return klass == PyFunctionKlass::GetInstance(isolate) ||
+         klass == NativeFunctionKlass::GetInstance(isolate);
 }
 
 bool IsNormalPyFunction(Tagged<PyObject> object) {
+  if (IsHeapObject(object)) {
+    return false;
+  }
   Isolate* isolate = Isolate::Current();
-  return PyObject::GetKlass(object) == PyFunctionKlass::GetInstance(isolate);
+  return PyObject::GetHeapKlassUnchecked(object) ==
+         PyFunctionKlass::GetInstance(isolate);
 }
 
 bool IsNativePyFunction(Tagged<PyObject> object) {
+  if (IsHeapObject(object)) {
+    return false;
+  }
   Isolate* isolate = Isolate::Current();
-  return PyObject::GetKlass(object) ==
+  return PyObject::GetHeapKlassUnchecked(object) ==
          NativeFunctionKlass::GetInstance(isolate);
 }
 
