@@ -84,6 +84,20 @@ Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
   return GetKlass(*object);
 }
 
+Tagged<Klass> PyObject::ResolveObjectKlass(Tagged<PyObject> object,
+                                           Isolate* isolate) {
+  // 特化：Smi使用PySmiKlass，使得它表现得像一个标准的Python对象
+  if (IsPySmi(object)) {
+    return PySmiKlass::GetInstance(isolate);
+  }
+  return GetHeapKlassUnchecked(object);
+}
+
+Tagged<Klass> PyObject::ResolveObjectKlass(Handle<PyObject> object,
+                                           Isolate* isolate) {
+  return ResolveObjectKlass(*object, isolate);
+}
+
 Tagged<Klass> PyObject::GetHeapKlassUnchecked(Tagged<PyObject> object) {
   assert(IsHeapObject(object));
   assert(!object->mark_word_.ToKlass().is_null());

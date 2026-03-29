@@ -40,6 +40,11 @@ class PyObject : public Object {
   static Tagged<Klass> GetKlass(Tagged<PyObject> object);
   static Tagged<Klass> GetKlass(Handle<PyObject> object);
 
+  static Tagged<Klass> ResolveObjectKlass(Tagged<PyObject> object,
+                                          Isolate* isolate);
+  static Tagged<Klass> ResolveObjectKlass(Handle<PyObject> object,
+                                          Isolate* isolate);
+
   static Tagged<Klass> GetHeapKlassUnchecked(Tagged<PyObject> object);
 
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
