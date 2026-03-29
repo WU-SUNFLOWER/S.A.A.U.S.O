@@ -45,6 +45,9 @@ class PyObject : public Object {
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
 
+  static Handle<PyString> GetTypeName(Handle<PyObject> object,
+                                      Isolate* isolate);
+
   static Handle<PyDict> GetProperties(Tagged<PyObject> object);
   static Handle<PyDict> GetProperties(Handle<PyObject> object);
   static void SetProperties(Tagged<PyObject> object, Tagged<PyDict> properties);
