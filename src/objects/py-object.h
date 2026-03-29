@@ -37,19 +37,22 @@ class PyObject : public Object {
   static void SetMapWordForwarded(Tagged<PyObject> object,
                                   Tagged<PyObject> target);
 
-  static Tagged<Klass> GetKlass(Tagged<PyObject> object);
-  static Tagged<Klass> GetKlass(Handle<PyObject> object);
-
+  // 解析对象对应类型的 Klass（支持特化处理 Smi 等非堆上对象）
   static Tagged<Klass> ResolveObjectKlass(Tagged<PyObject> object,
                                           Isolate* isolate);
   static Tagged<Klass> ResolveObjectKlass(Handle<PyObject> object,
                                           Isolate* isolate);
 
+  // 直接从对象头中读出 Klass 指针
+  // 调用方需自行保证传入的 object 是一个堆上对象！！
   static Tagged<Klass> GetHeapKlassUnchecked(Tagged<PyObject> object);
 
+  // 设置对象头中的 Klass 指针
+  // 调用方需自行保证传入的 object 是一个堆上对象！！
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
 
+  // 获取传入对象对应的类型名称，如"int"、"str"、"list"等
   static Handle<PyString> GetTypeName(Tagged<PyObject> object,
                                       Isolate* isolate);
   static Handle<PyString> GetTypeName(Handle<PyObject> object,
