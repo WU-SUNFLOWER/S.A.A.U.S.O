@@ -19,6 +19,8 @@ class ScavenageVisitor : public ObjectVisitor {
   void VisitKlass(Tagged<Klass>* p) override;
 
  private:
+  bool CanEvacuate(Tagged<PyObject> object);
+
   void EvacuateObject(Tagged<PyObject>* slot_ptr);
 
   Address AllocateInSurvivorSpace(size_t size);
