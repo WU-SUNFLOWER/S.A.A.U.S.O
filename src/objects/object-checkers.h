@@ -21,17 +21,32 @@ PY_TYPE_LIST(DECLARE_PY_TYPE)
   bool Is##name(Tagged<PyObject> object); \
   bool Is##name(Handle<PyObject> object);
 
-PY_TYPE_LIST(DECLARE_PY_CHECKER)
-DECLARE_PY_CHECKER(NormalPyFunction)
-DECLARE_PY_CHECKER(NativePyFunction)
-DECLARE_PY_CHECKER(PyTrue)
-DECLARE_PY_CHECKER(PyFalse)
+DECLARE_PY_CHECKER(PySmi)
+DECLARE_PY_CHECKER(PyString)
+DECLARE_PY_CHECKER(PyList)
+DECLARE_PY_CHECKER(PyTuple)
+DECLARE_PY_CHECKER(PyDict)
+DECLARE_PY_CHECKER(PyTypeObject)
+DECLARE_PY_CHECKER(PyFloat)
+DECLARE_PY_CHECKER(PyBoolean)
+DECLARE_PY_CHECKER(PyCodeObject)
+DECLARE_PY_CHECKER(PyListIterator)
+DECLARE_PY_CHECKER(PyTupleIterator)
+DECLARE_PY_CHECKER(PyDictKeys)
+DECLARE_PY_CHECKER(PyDictValues)
+DECLARE_PY_CHECKER(PyDictItems)
+DECLARE_PY_CHECKER(PyDictKeyIterator)
+DECLARE_PY_CHECKER(PyDictItemIterator)
+DECLARE_PY_CHECKER(PyDictValueIterator)
+DECLARE_PY_CHECKER(FixedArray)
+DECLARE_PY_CHECKER(MethodObject)
+DECLARE_PY_CHECKER(Cell)
 DECLARE_PY_CHECKER(HeapObject)
 DECLARE_PY_CHECKER(GcAbleObject)
 #undef DECLARE_PY_CHECKER
 
-#define DECLARE_PY_CHECKER_WITH_ISOLATE(name)                 \
-  bool Is##name(Tagged<PyObject> object, Isolate* isolate);   \
+#define DECLARE_PY_CHECKER_WITH_ISOLATE(name)               \
+  bool Is##name(Tagged<PyObject> object, Isolate* isolate); \
   bool Is##name(Handle<PyObject> object, Isolate* isolate);
 
 DECLARE_PY_CHECKER_WITH_ISOLATE(PyNone)
@@ -48,14 +63,7 @@ DECLARE_PY_CHECKER_WITH_ISOLATE(PyFalse)
 //   - 如属于具有特殊内存布局的内建容器，采用 native layout kind 进行判定
 //   - 否则采用 klass 全等判定作为 fallback
 // - IsXxxExact：Exact（按 klass 全等判定）
-#define DECLARE_PY_EXACT_CHECKER(name)           \
-  bool Is##name##Exact(Tagged<PyObject> object); \
-  bool Is##name##Exact(Handle<PyObject> object);
-
-PY_INHERITABLE_TYPE_IN_HEAP_LIST(DECLARE_PY_EXACT_CHECKER)
-#undef DECLARE_PY_EXACT_CHECKER
-
-#define DECLARE_PY_EXACT_CHECKER_WITH_ISOLATE(name)               \
+#define DECLARE_PY_EXACT_CHECKER_WITH_ISOLATE(name)                \
   bool Is##name##Exact(Tagged<PyObject> object, Isolate* isolate); \
   bool Is##name##Exact(Handle<PyObject> object, Isolate* isolate);
 
