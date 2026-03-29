@@ -28,7 +28,8 @@ bool Value::IsBoolean() const {
   if (object.is_null()) {
     return false;
   }
-  return i::IsPyTrue(object) || i::IsPyFalse(object);
+  i::Isolate* isolate = i::Isolate::Current();
+  return i::IsPyTrue(object, isolate) || i::IsPyFalse(object, isolate);
 }
 
 Maybe<std::string> Value::ToString() const {
@@ -62,10 +63,11 @@ Maybe<bool> Value::ToBoolean() const {
   if (object.is_null()) {
     return i::kNullMaybe;
   }
-  if (i::IsPyTrue(object)) {
+  i::Isolate* isolate = i::Isolate::Current();
+  if (i::IsPyTrue(object, isolate)) {
     return Maybe<bool>(true);
   }
-  if (i::IsPyFalse(object)) {
+  if (i::IsPyFalse(object, isolate)) {
     return Maybe<bool>(false);
   }
   return i::kNullMaybe;

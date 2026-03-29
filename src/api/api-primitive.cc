@@ -66,7 +66,7 @@ bool Boolean::Value() const {
   if (object.is_null()) {
     return false;
   }
-  return i::IsPyTrue(object);
+  return i::IsPyTrue(object, i::Isolate::Current());
 }
 
 }  // namespace saauso
