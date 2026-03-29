@@ -144,16 +144,6 @@ bool IsHeapObject(Tagged<PyObject> object) {
   return !object.is_null() && !IsPySmi(object);
 }
 
-bool IsGcAbleObject(Tagged<PyObject> object) {
-  if (IsPySmi(object)) {
-    return false;
-  }
-  if (PyObject::GetMarkWord(object).IsForwardingAddress()) {
-    return true;
-  }
-  return !IsPyBoolean(object) && !IsPyNone(object, Isolate::Current());
-}
-
 /////////////////////////////////////////////////////////////////////////
 // 支持接收 Handle 的 checker API
 
@@ -183,7 +173,6 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(FixedArray)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(MethodObject)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(Cell)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(HeapObject)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 #undef IMPL_PY_CHECKER_WITH_HANDLE_ARG
 
 /////////////////////////////////////////////////////////////////////////

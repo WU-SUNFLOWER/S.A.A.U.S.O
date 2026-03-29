@@ -32,10 +32,10 @@ TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v2)), -5678);
 }
 
-TEST_F(PySmiTest, IsGcAbleObjectIsFalseForSmi) {
+TEST_F(PySmiTest, IsHeapObjectIsFalseForSmi) {
   HandleScope scope;
   Handle<PyObject> v(PySmi::FromInt(1));
-  EXPECT_FALSE(IsGcAbleObject(v));
+  EXPECT_FALSE(IsHeapObject(v));
 }
 
 TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
