@@ -45,6 +45,8 @@ class PyObject : public Object {
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
 
+  static Handle<PyString> GetTypeName(Tagged<PyObject> object,
+                                      Isolate* isolate);
   static Handle<PyString> GetTypeName(Handle<PyObject> object,
                                       Isolate* isolate);
 

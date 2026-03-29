@@ -102,6 +102,11 @@ void PyObject::SetKlass(Handle<PyObject> object, Tagged<Klass> klass) {
 
 Handle<PyString> PyObject::GetTypeName(Handle<PyObject> object,
                                        Isolate* isolate) {
+  return GetTypeName(*object, isolate);
+}
+
+Handle<PyString> PyObject::GetTypeName(Tagged<PyObject> object,
+                                       Isolate* isolate) {
   return GetKlass(object)->name();
 }
 
