@@ -29,7 +29,7 @@ const AccessorDescriptor Accessors::kPyObjectDictAccessor = {
 MaybeHandle<PyObject> Accessors::PyObjectClassGetter(
     Isolate* isolate,
     Handle<PyObject> receiver) {
-  return PyObject::GetKlass(receiver)->type_object();
+  return PyObject::ResolveObjectKlass(receiver, isolate)->type_object();
 }
 
 MaybeHandle<PyObject> Accessors::PyObjectClassSetter(Isolate* isolate,

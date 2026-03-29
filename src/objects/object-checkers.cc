@@ -69,11 +69,16 @@ IMPL_PY_CHECKER_BY_KIND(PyBoolean, Boolean)
 #undef IMPL_PY_CHECKER_BY_KIND
 
 // TODO: VM内部IsXxxx系列API，要求显式传入Isolate
-#define IMPL_PY_CHECKER_BY_KLASS(Name)                       \
-  bool Is##Name(Tagged<PyObject> object) {                   \
-    return IsHeapObject(object) &&                           \
-           PyObject::GetHeapKlassUnchecked(object) ==        \
-               Name##Klass::GetInstance(Isolate::Current()); \
+#define IMPL_PY_CHECKER_BY_KLASS(Name)                                        \
+  bool Is##Name(Tagged<PyObject> object, Isolate* isolate) {                  \
+    return IsHeapObject(object) && PyObject::GetHeapKlassUnchecked(object) == \
+                                       Name##Klass::GetInstance(isolate);     \
+  }                                                                           \
+  bool Is##Name(Tagged<PyObject> object) {                                    \
+    return Is##Name(object, Isolate::Current());                              \
+  }                                                                           \
+  bool Is##Name(Handle<PyObject> object, Isolate* isolate) {                  \
+    return Is##Name(*object, isolate);                                        \
   }
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
 IMPL_PY_CHECKER_BY_KLASS(PyModule)
@@ -82,46 +87,81 @@ IMPL_PY_CHECKER_BY_KLASS(PyModule)
 /////////////////////////////////////////////////////////////////////////
 // 其他特化 checker API
 
-bool IsPyFunction(Tagged<PyObject> object) {
-  if (IsHeapObject(object)) {
+bool IsPyFunction(Tagged<PyObject> object, Isolate* isolate) {
+  if (!IsHeapObject(object)) {
     return false;
   }
-  Isolate* isolate = Isolate::Current();
   Tagged<Klass> klass = PyObject::GetHeapKlassUnchecked(object);
   return klass == PyFunctionKlass::GetInstance(isolate) ||
          klass == NativeFunctionKlass::GetInstance(isolate);
 }
 
-bool IsNormalPyFunction(Tagged<PyObject> object) {
-  if (IsHeapObject(object)) {
+bool IsPyFunction(Tagged<PyObject> object) {
+  return IsPyFunction(object, Isolate::Current());
+}
+
+bool IsPyFunction(Handle<PyObject> object, Isolate* isolate) {
+  return IsPyFunction(*object, isolate);
+}
+
+bool IsNormalPyFunction(Tagged<PyObject> object, Isolate* isolate) {
+  if (!IsHeapObject(object)) {
     return false;
   }
-  Isolate* isolate = Isolate::Current();
   return PyObject::GetHeapKlassUnchecked(object) ==
          PyFunctionKlass::GetInstance(isolate);
 }
 
-bool IsNativePyFunction(Tagged<PyObject> object) {
-  if (IsHeapObject(object)) {
+bool IsNormalPyFunction(Tagged<PyObject> object) {
+  return IsNormalPyFunction(object, Isolate::Current());
+}
+
+bool IsNormalPyFunction(Handle<PyObject> object, Isolate* isolate) {
+  return IsNormalPyFunction(*object, isolate);
+}
+
+bool IsNativePyFunction(Tagged<PyObject> object, Isolate* isolate) {
+  if (!IsHeapObject(object)) {
     return false;
   }
-  Isolate* isolate = Isolate::Current();
   return PyObject::GetHeapKlassUnchecked(object) ==
          NativeFunctionKlass::GetInstance(isolate);
+}
+
+bool IsNativePyFunction(Tagged<PyObject> object) {
+  return IsNativePyFunction(object, Isolate::Current());
+}
+
+bool IsNativePyFunction(Handle<PyObject> object, Isolate* isolate) {
+  return IsNativePyFunction(*object, isolate);
 }
 
 bool IsPySmi(Tagged<PyObject> object) {
   return object.IsSmi();
 }
 
-bool IsPyTrue(Tagged<PyObject> object) {
-  Isolate* isolate = Isolate::Current();
+bool IsPyTrue(Tagged<PyObject> object, Isolate* isolate) {
   return object == Tagged<PyObject>(isolate->py_true_object());
 }
 
-bool IsPyFalse(Tagged<PyObject> object) {
-  Isolate* isolate = Isolate::Current();
+bool IsPyTrue(Tagged<PyObject> object) {
+  return IsPyTrue(object, Isolate::Current());
+}
+
+bool IsPyTrue(Handle<PyObject> object, Isolate* isolate) {
+  return IsPyTrue(*object, isolate);
+}
+
+bool IsPyFalse(Tagged<PyObject> object, Isolate* isolate) {
   return object == Tagged<PyObject>(isolate->py_false_object());
+}
+
+bool IsPyFalse(Tagged<PyObject> object) {
+  return IsPyFalse(object, Isolate::Current());
+}
+
+bool IsPyFalse(Handle<PyObject> object, Isolate* isolate) {
+  return IsPyFalse(*object, isolate);
 }
 
 bool IsHeapObject(Tagged<PyObject> object) {
@@ -160,13 +200,19 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 // 基于 Klass 头指针进行精确判断。
 
 // TODO: VM内部IsXxxx系列API，要求显式传入Isolate
-#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)             \
-  bool Is##name##Exact(Tagged<PyObject> object) {        \
-    return PyObject::GetKlass(object) ==                 \
-           name##Klass::GetInstance(Isolate::Current()); \
-  }                                                      \
-  bool Is##name##Exact(Handle<PyObject> object) {        \
-    return Is##name##Exact(*object);                     \
+#define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)                                  \
+  bool Is##name##Exact(Tagged<PyObject> object, Isolate* isolate) {           \
+    return IsHeapObject(object) && PyObject::GetHeapKlassUnchecked(object) == \
+                                       name##Klass::GetInstance(isolate);     \
+  }                                                                           \
+  bool Is##name##Exact(Tagged<PyObject> object) {                             \
+    return Is##name##Exact(object, Isolate::Current());                       \
+  }                                                                           \
+  bool Is##name##Exact(Handle<PyObject> object) {                             \
+    return Is##name##Exact(*object);                                          \
+  }                                                                           \
+  bool Is##name##Exact(Handle<PyObject> object, Isolate* isolate) {           \
+    return Is##name##Exact(*object, isolate);                                 \
   }
 
 PY_INHERITABLE_TYPE_IN_HEAP_LIST(IMPL_PY_EXACT_CHECKER_BY_KLASS)

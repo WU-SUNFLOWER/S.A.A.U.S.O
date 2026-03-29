@@ -300,7 +300,8 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
+  Tagged<Klass> instance_klass =
+      PyObject::ResolveObjectKlass(instance, isolate);
 
   int64_t arg_count =
       args.is_null() ? 0 : Handle<PyTuple>::cast(args)->length();

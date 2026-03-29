@@ -160,7 +160,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
     // 对齐 CPython 3.12：
     // 如果要创建一个tuple-exact实例，同时传入的参数恰好是一个tuple-exact对象，
     // 那么不分配内存，直接返回即可。
-    if (is_exact_tuple && IsPyTupleExact(iterable)) {
+    if (is_exact_tuple && IsPyTupleExact(iterable, isolate)) {
       return iterable;
     }
 

@@ -106,7 +106,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
                                            Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object) {
-  auto mro_of_object = PyObject::GetKlass(object)->mro();
+  auto mro_of_object = PyObject::ResolveObjectKlass(object, isolate)->mro();
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
     auto curr_type_object = mro_of_object->Get(i);
@@ -146,8 +146,9 @@ Maybe<bool> Runtime_LookupPropertyInInstanceTypeMro(
     Handle<PyObject> instance,
     Handle<PyObject> prop_name,
     Handle<PyObject>& out_prop_val) {
-  return Runtime_LookupPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
-                                          prop_name, out_prop_val);
+  return Runtime_LookupPropertyInKlassMro(
+      isolate, PyObject::ResolveObjectKlass(instance, isolate), prop_name,
+      out_prop_val);
 }
 
 Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
@@ -208,8 +209,8 @@ MaybeHandle<PyObject> Runtime_GetPropertyInInstanceTypeMro(
     Isolate* isolate,
     Handle<PyObject> instance,
     Handle<PyObject> prop_name) {
-  return Runtime_GetPropertyInKlassMro(isolate, PyObject::GetKlass(instance),
-                                       prop_name);
+  return Runtime_GetPropertyInKlassMro(
+      isolate, PyObject::ResolveObjectKlass(instance, isolate), prop_name);
 }
 
 MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(

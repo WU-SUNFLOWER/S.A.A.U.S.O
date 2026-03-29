@@ -75,7 +75,8 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
 
   Handle<PyObject> func_obj(func);
   Handle<PyObject> expected_class(
-      Handle<PyObject>::cast(PyObject::GetKlass(func_obj)->type_object()));
+      Handle<PyObject>::cast(
+          PyObject::ResolveObjectKlass(func_obj, isolate_)->type_object()));
   Handle<PyObject> fake_class = handle(PySmi::FromInt(7));
 
   Handle<PyDict> properties = PyObject::GetProperties(func_obj);
