@@ -74,7 +74,7 @@ Maybe<double> ExtractDouble(Isolate* isolate, Handle<PyObject> value) {
   if (IsPySmi(value)) {
     return Maybe<double>(PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
-  Handle<PyString> type_name = PyObject::GetKlass(value)->name();
+  Handle<PyString> type_name = PyObject::GetTypeName(value, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "must be real number, not '%s'", type_name->buffer());
   return kNullMaybe;

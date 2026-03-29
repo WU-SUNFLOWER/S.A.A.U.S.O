@@ -91,7 +91,7 @@ Maybe<uint64_t> PyObjectKlass::Generic_Hash(Isolate* isolate,
                                             Handle<PyObject> self) {
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unhashable type: '%s'",
-                      PyObject::GetKlass(self)->name()->buffer());
+                      PyObject::GetTypeName(self, isolate)->buffer());
   return kNullMaybe;
 }
 
@@ -183,7 +183,7 @@ not_found:
 not_found_and_throw_error:
   Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                       "'%s' object has no attribute '%s'\n",
-                      PyObject::GetKlass(self)->name()->buffer(),
+                      PyObject::GetTypeName(self, isolate)->buffer(),
                       Handle<PyString>::cast(prop_name)->buffer());
   return kNullMaybe;
 }
@@ -242,7 +242,8 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   if (!IsPyString(property_name)) [[unlikely]] {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "attribute name must be string, not '%s'",
-                        PyObject::GetKlass(property_name)->name()->buffer());
+                        PyObject::GetTypeName(property_name, isolate)
+                            ->buffer());
     return kNullMaybeHandle;
   }
 
@@ -257,7 +258,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   if (properties.is_null()) [[unlikely]] {
     Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                         "'%s' object has no attribute '%s'",
-                        PyObject::GetKlass(self)->name()->buffer(),
+                        PyObject::GetTypeName(self, isolate)->buffer(),
                         Handle<PyString>::cast(property_name)->buffer());
     return kNullMaybeHandle;
   }
@@ -276,7 +277,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Call(Isolate* isolate,
                                                   Handle<PyObject> kwargs) {
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'%s' object is not callable\n",
-                      PyObject::GetKlass(self)->name()->buffer());
+                      PyObject::GetTypeName(self, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -330,7 +331,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s.__init__() takes exactly one argument (the "
                           "instance to initialize)",
-                          PyObject::GetKlass(instance)->name()->buffer());
+                          PyObject::GetTypeName(instance, isolate)->buffer());
       return kNullMaybeHandle;
     }
   }
@@ -354,7 +355,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Isolate* isolate,
   EscapableHandleScope scope;
   char buffer[128];
   std::snprintf(buffer, sizeof(buffer), "<%s object at %p>",
-                PyObject::GetKlass(self)->name()->buffer(),
+                PyObject::GetTypeName(self, isolate)->buffer(),
                 reinterpret_cast<void*>((*self).ptr()));
   return scope.Escape(PyString::New(isolate, buffer));
 }

@@ -48,19 +48,19 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
   if (!IsPyString(name_obj)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "type() argument 1 must be str, not '%s'",
-                        PyObject::GetKlass(name_obj)->name()->buffer());
+                        PyObject::GetTypeName(name_obj, isolate)->buffer());
     return kNullMaybeHandle;
   }
   if (!IsPyTuple(bases_obj)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "type() argument 2 must be tuple, not '%s'",
-                        PyObject::GetKlass(bases_obj)->name()->buffer());
+                        PyObject::GetTypeName(bases_obj, isolate)->buffer());
     return kNullMaybeHandle;
   }
   if (!IsPyDict(dict_obj)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "type() argument 3 must be dict, not '%s'",
-                        PyObject::GetKlass(dict_obj)->name()->buffer());
+                        PyObject::GetTypeName(dict_obj, isolate)->buffer());
     return kNullMaybeHandle;
   }
 

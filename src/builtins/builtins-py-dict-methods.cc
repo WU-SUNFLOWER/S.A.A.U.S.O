@@ -57,7 +57,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
   if (!IsPyTypeObject(type_object)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "dict.__new__() argument 1 must be type, not '%s'",
-                        PyObject::GetKlass(type_object)->name()->buffer());
+                        PyObject::GetTypeName(type_object, isolate)->buffer());
     return kNullMaybeHandle;
   }
 

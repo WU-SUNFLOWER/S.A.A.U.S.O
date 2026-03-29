@@ -28,8 +28,8 @@ void ThrowCompareUnsupported(Isolate* isolate,
                              Handle<PyObject> self,
                              Handle<PyObject> other,
                              const char* op) {
-  auto self_name = PyObject::GetKlass(self)->name();
-  auto other_name = PyObject::GetKlass(other)->name();
+  auto self_name = PyObject::GetTypeName(self, isolate);
+  auto other_name = PyObject::GetTypeName(other, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'%s' not supported between instances of '%s' and '%s'\n",
                       op, self_name->buffer(), other_name->buffer());

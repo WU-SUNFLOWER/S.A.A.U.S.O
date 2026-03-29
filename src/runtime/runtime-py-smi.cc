@@ -183,7 +183,7 @@ MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
     return scope.Escape(result);
   }
 
-  auto type_name = PyObject::GetKlass(value)->name();
+  auto type_name = PyObject::GetTypeName(value, isolate);
   Runtime_ThrowErrorf(
       isolate, ExceptionType::kTypeError,
       "int() argument must be a string, a bytes-like object or a real number, "

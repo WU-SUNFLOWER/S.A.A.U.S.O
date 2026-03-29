@@ -58,7 +58,7 @@ Maybe<int64_t> ExtractSmi(Isolate* isolate,
     return Maybe<int64_t>(PySmi::ToInt(Handle<PySmi>::cast(value)));
   }
 
-  Handle<PyString> type_name = PyObject::GetKlass(value)->name();
+  Handle<PyString> type_name = PyObject::GetTypeName(value, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s() argument must be int, not '%s'", func_name,
                       type_name->buffer());
@@ -300,7 +300,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
                            static_cast<int64_t>(index) + 1, isolate);
   }
 
-  Handle<PyString> type_name = PyObject::GetKlass(seq)->name();
+  Handle<PyString> type_name = PyObject::GetTypeName(seq, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "%s.choice() unsupported sequence type '%s'", kModuleName,
                       type_name->buffer());
@@ -319,7 +319,7 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
                           kModuleName, argc));
   Handle<PyObject> x = args->Get(0);
   if (!IsPyListExact(x)) {
-    Handle<PyString> type_name = PyObject::GetKlass(x)->name();
+    Handle<PyString> type_name = PyObject::GetTypeName(x, isolate);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s.shuffle() argument must be list, not '%s'",
                         kModuleName, type_name->buffer());

@@ -40,8 +40,13 @@ class PyObject : public Object {
   static Tagged<Klass> GetKlass(Tagged<PyObject> object);
   static Tagged<Klass> GetKlass(Handle<PyObject> object);
 
+  static Tagged<Klass> GetHeapKlassUnchecked(Tagged<PyObject> object);
+
   static void SetKlass(Tagged<PyObject> object, Tagged<Klass> klass);
   static void SetKlass(Handle<PyObject> object, Tagged<Klass> klass);
+
+  static Handle<PyString> GetTypeName(Handle<PyObject> object,
+                                      Isolate* isolate);
 
   static Handle<PyDict> GetProperties(Tagged<PyObject> object);
   static Handle<PyDict> GetProperties(Handle<PyObject> object);

@@ -77,15 +77,17 @@ Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   if (IsPySmi(object)) {
     return PySmiKlass::GetInstance(Isolate::Current());
   }
-
-  assert(IsHeapObject(object));
-  assert(!object->mark_word_.ToKlass().is_null());
-
-  return object->mark_word_.ToKlass();
+  return GetHeapKlassUnchecked(object);
 }
 
 Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
   return GetKlass(*object);
+}
+
+Tagged<Klass> PyObject::GetHeapKlassUnchecked(Tagged<PyObject> object) {
+  assert(IsHeapObject(object));
+  assert(!object->mark_word_.ToKlass().is_null());
+  return object->mark_word_.ToKlass();
 }
 
 void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
@@ -96,6 +98,11 @@ void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
 
 void PyObject::SetKlass(Handle<PyObject> object, Tagged<Klass> klass) {
   SetKlass(*object, klass);
+}
+
+Handle<PyString> PyObject::GetTypeName(Handle<PyObject> object,
+                                       Isolate* isolate) {
+  return GetKlass(object)->name();
 }
 
 Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {
@@ -192,11 +199,10 @@ MaybeHandle<PyObject> PyObject::FloorDiv(Isolate* isolate,
 
   auto* floor_div = GetKlass(*self)->vtable().floor_div_;
   if (floor_div == nullptr) [[unlikely]] {
-    auto self_name = GetKlass(self)->name();
-    auto other_name = GetKlass(other)->name();
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "unsupported operand type(s) for //: '%s' and '%s'",
-                        self_name->buffer(), other_name->buffer());
+                        GetTypeName(self, isolate)->buffer(),
+                        GetTypeName(other, isolate)->buffer());
     return kNullMaybeHandle;
   }
   return floor_div(isolate, self, other);

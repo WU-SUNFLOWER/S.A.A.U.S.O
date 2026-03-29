@@ -27,7 +27,7 @@ namespace {
 constexpr size_t kFormattedErrorBufferSize = 256;
 
 MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
-                                          Handle<PyTuple> exception_args) {
+                                           Handle<PyTuple> exception_args) {
   if (exception_args.is_null() || exception_args->length() == 0) {
     return PyString::New(isolate, "");
   }
@@ -110,9 +110,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
   Handle<PyDict> builtins = handle(isolate->builtins());
 
   Handle<PyObject> exception_type;
-  RETURN_ON_EXCEPTION(isolate,
-                      builtins->Get(exception_type_name, exception_type,
-                                    isolate));
+  RETURN_ON_EXCEPTION(
+      isolate, builtins->Get(exception_type_name, exception_type, isolate));
   assert(!exception_type.is_null());
 
   Handle<PyTuple> init_args = Handle<PyTuple>::null();
@@ -131,8 +130,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyDict> properties = PyObject::GetProperties(exception);
     if (!properties.is_null()) {
       RETURN_ON_EXCEPTION_VALUE(
-          isolate, PyDict::Put(properties, ST(message), message_or_null,
-                               isolate),
+          isolate,
+          PyDict::Put(properties, ST(message), message_or_null, isolate),
           kNullMaybeHandle);
     }
   }
@@ -174,7 +173,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
   }
 
   Handle<PyObject> exception = state->pending_exception();
-  Handle<PyString> type_name = PyObject::GetKlass(exception)->name();
+  Handle<PyString> type_name = PyObject::GetTypeName(exception, isolate);
 
   Handle<PyString> message = Handle<PyString>::null();
   Handle<PyDict> properties = PyObject::GetProperties(exception);
@@ -204,8 +203,8 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
   }
 
   Handle<PyString> formatted = PyString::Clone(isolate, type_name);
-  formatted = PyString::Append(formatted, PyString::New(isolate, ": "),
-                               isolate);
+  formatted =
+      PyString::Append(formatted, PyString::New(isolate, ": "), isolate);
   formatted = PyString::Append(formatted, message, isolate);
 
   return scope.Escape(formatted);

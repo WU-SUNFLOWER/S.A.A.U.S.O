@@ -124,7 +124,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Add(Isolate* isolate,
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for +: 'int' and '%s'",
-                      PyObject::GetKlass(other)->name()->buffer());
+                      PyObject::GetTypeName(other, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -139,7 +139,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Sub(Isolate* isolate,
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for -: 'int' and '%s'",
-                      PyObject::GetKlass(other)->name()->buffer());
+                      PyObject::GetTypeName(other, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -154,7 +154,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mul(Isolate* isolate,
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for *: 'int' and '%s'",
-                      PyObject::GetKlass(other)->name()->buffer());
+                      PyObject::GetTypeName(other, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -175,7 +175,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Isolate* isolate,
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for /: 'int' and '%s'",
-                      PyObject::GetKlass(other)->name()->buffer());
+                      PyObject::GetTypeName(other, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -204,7 +204,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for //: 'int' and '%s'",
-                      PyObject::GetKlass(other)->name()->buffer());
+                      PyObject::GetTypeName(other, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -220,7 +220,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Mod(Isolate* isolate,
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for %%: 'int' and '%s'",
-                      PyObject::GetKlass(other)->name()->buffer());
+                      PyObject::GetTypeName(other, isolate)->buffer());
   return kNullMaybeHandle;
 }
 
@@ -238,7 +238,7 @@ Maybe<bool> PySmiKlass::Virtual_Greater(Isolate* isolate,
     double other_value = Handle<PyFloat>::cast(other)->value();
     return Maybe<bool>(self_value > other_value);
   }
-  auto other_name = PyObject::GetKlass(other)->name();
+  auto other_name = PyObject::GetTypeName(other, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'>' not supported between instances of 'int' and '%s'\n",
                       other_name->buffer());
@@ -256,7 +256,7 @@ Maybe<bool> PySmiKlass::Virtual_Less(Isolate* isolate,
     double other_value = Handle<PyFloat>::cast(other)->value();
     return Maybe<bool>(self_value < other_value);
   }
-  auto other_name = PyObject::GetKlass(other)->name();
+  auto other_name = PyObject::GetTypeName(other, isolate);
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "'<' not supported between instances of 'int' and '%s'\n",
                       other_name->buffer());

@@ -32,7 +32,8 @@ namespace {
 bool IsNativeLayoutKind(Tagged<PyObject> object,
                         NativeLayoutKind expected_kind) {
   return IsHeapObject(object) &&
-         PyObject::GetKlass(object)->native_layout_kind() == expected_kind;
+         PyObject::GetHeapKlassUnchecked(object)->native_layout_kind() ==
+             expected_kind;
 }
 
 }  // namespace
@@ -68,10 +69,11 @@ IMPL_PY_CHECKER_BY_KIND(PyBoolean, Boolean)
 #undef IMPL_PY_CHECKER_BY_KIND
 
 // TODO: VM内部IsXxxx系列API，要求显式传入Isolate
-#define IMPL_PY_CHECKER_BY_KLASS(Name)                   \
-  bool Is##Name(Tagged<PyObject> object) {               \
-    return PyObject::GetKlass(object) ==                 \
-           Name##Klass::GetInstance(Isolate::Current()); \
+#define IMPL_PY_CHECKER_BY_KLASS(Name)                       \
+  bool Is##Name(Tagged<PyObject> object) {                   \
+    return IsHeapObject(object) &&                           \
+           PyObject::GetHeapKlassUnchecked(object) ==        \
+               Name##Klass::GetInstance(Isolate::Current()); \
   }
 IMPL_PY_CHECKER_BY_KLASS(PyNone)
 IMPL_PY_CHECKER_BY_KLASS(PyModule)

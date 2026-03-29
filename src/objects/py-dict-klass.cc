@@ -237,7 +237,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'dict' object but received a '%s'",
-        instance_klass->name()->buffer());
+        PyObject::GetTypeName(instance, isolate)->buffer());
     return kNullMaybeHandle;
   }
   assert(instance_klass->native_layout_kind() == NativeLayoutKind::kDict);

@@ -127,7 +127,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
         isolate, ExceptionType::kTypeError,
         "descriptor '__init__' requires a 'BaseException' object but "
         "received a '%s'",
-        instance_klass->name()->buffer());
+        PyObject::GetTypeName(instance, isolate)->buffer());
     return kNullMaybeHandle;
   }
 
@@ -165,7 +165,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
     Handle<PyObject> self) {
   EscapableHandleScope scope;
 
-  Handle<PyString> type_name = PyObject::GetKlass(self)->name();
+  Handle<PyString> type_name = PyObject::GetTypeName(self, isolate);
   Handle<PyObject> message_obj;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(isolate, self));
   Handle<PyString> message = Handle<PyString>::cast(message_obj);

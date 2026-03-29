@@ -30,10 +30,9 @@ MaybeHandle<PyDict> CastToDictOrThrowTypeError(Isolate* isolate,
     return MaybeHandle<PyDict>(Handle<PyDict>::cast(obj));
   }
 
-  Handle<PyString> type_name = PyObject::GetKlass(obj)->name();
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "exec() %s must be a dict, not %s", role_name,
-                      type_name->buffer());
+                      PyObject::GetTypeName(obj, isolate)->buffer());
   return kNullMaybeHandle;
 }
 

@@ -96,9 +96,9 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
 
   if (!options.sep.is_null() && !IsPyNone(options.sep)) {
     if (!IsPyString(*options.sep)) {
-      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
-                          "sep must be None or str, not %s",
-                          PyObject::GetKlass(options.sep)->name()->buffer());
+      Runtime_ThrowErrorf(
+          isolate, ExceptionType::kTypeError, "sep must be None or str, not %s",
+          PyObject::GetTypeName(options.sep, isolate)->buffer());
       return kNullMaybeHandle;
     }
   } else {
@@ -107,9 +107,9 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
 
   if (!options.end.is_null() && !IsPyNone(options.end)) {
     if (!IsPyString(*options.end)) {
-      Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
-                          "end must be None or str, not %s",
-                          PyObject::GetKlass(options.end)->name()->buffer());
+      Runtime_ThrowErrorf(
+          isolate, ExceptionType::kTypeError, "end must be None or str, not %s",
+          PyObject::GetTypeName(options.end, isolate)->buffer());
       return kNullMaybeHandle;
     }
   } else {
