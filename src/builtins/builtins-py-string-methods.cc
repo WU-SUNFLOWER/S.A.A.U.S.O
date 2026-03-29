@@ -356,7 +356,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   }
 
   Handle<PyObject> sep_or_null = Handle<PyObject>::null();
-  if (!sep_obj.is_null() && !IsPyNone(*sep_obj)) {
+  if (!sep_obj.is_null() && !IsPyNone(sep_obj, isolate)) {
     if (!IsPyString(*sep_obj)) {
       auto type_name = PyObject::GetTypeName(sep_obj, isolate);
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,

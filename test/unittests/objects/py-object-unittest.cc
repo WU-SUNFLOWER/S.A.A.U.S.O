@@ -89,25 +89,25 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyObject> exact_string(PyString::New(isolate_, "exact"));
 
   EXPECT_TRUE(IsPyList(exact_list));
-  EXPECT_TRUE(IsPyListExact(exact_list));
+  EXPECT_TRUE(IsPyListExact(exact_list, isolate_));
   EXPECT_FALSE(IsPyDict(exact_list));
   EXPECT_FALSE(IsPyTuple(exact_list));
   EXPECT_FALSE(IsPyString(exact_list));
 
   EXPECT_TRUE(IsPyDict(exact_dict));
-  EXPECT_TRUE(IsPyDictExact(exact_dict));
+  EXPECT_TRUE(IsPyDictExact(exact_dict, isolate_));
   EXPECT_FALSE(IsPyList(exact_dict));
   EXPECT_FALSE(IsPyTuple(exact_dict));
   EXPECT_FALSE(IsPyString(exact_dict));
 
   EXPECT_TRUE(IsPyTuple(exact_tuple));
-  EXPECT_TRUE(IsPyTupleExact(exact_tuple));
+  EXPECT_TRUE(IsPyTupleExact(exact_tuple, isolate_));
   EXPECT_FALSE(IsPyList(exact_tuple));
   EXPECT_FALSE(IsPyDict(exact_tuple));
   EXPECT_FALSE(IsPyString(exact_tuple));
 
   EXPECT_TRUE(IsPyString(exact_string));
-  EXPECT_TRUE(IsPyStringExact(exact_string));
+  EXPECT_TRUE(IsPyStringExact(exact_string, isolate_));
   EXPECT_FALSE(IsPyList(exact_string));
   EXPECT_FALSE(IsPyDict(exact_string));
   EXPECT_FALSE(IsPyTuple(exact_string));
@@ -127,7 +127,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                                 Handle<PyObject>::null())
                   .ToHandle(&list_like));
   EXPECT_TRUE(IsPyList(list_like));
-  EXPECT_FALSE(IsPyListExact(list_like));
+  EXPECT_FALSE(IsPyListExact(list_like, isolate_));
   EXPECT_FALSE(IsPyDict(list_like));
   EXPECT_FALSE(IsPyTuple(list_like));
   EXPECT_FALSE(IsPyString(list_like));
@@ -148,7 +148,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                                 Handle<PyObject>::null())
                   .ToHandle(&dict_like));
   EXPECT_TRUE(IsPyDict(dict_like));
-  EXPECT_FALSE(IsPyDictExact(dict_like));
+  EXPECT_FALSE(IsPyDictExact(dict_like, isolate_));
   EXPECT_FALSE(IsPyList(dict_like));
   EXPECT_FALSE(IsPyTuple(dict_like));
   EXPECT_FALSE(IsPyString(dict_like));
@@ -169,7 +169,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                                 Handle<PyObject>::null())
                   .ToHandle(&tuple_like));
   EXPECT_TRUE(IsPyTuple(tuple_like));
-  EXPECT_FALSE(IsPyTupleExact(tuple_like));
+  EXPECT_FALSE(IsPyTupleExact(tuple_like, isolate_));
   EXPECT_FALSE(IsPyList(tuple_like));
   EXPECT_FALSE(IsPyDict(tuple_like));
   EXPECT_FALSE(IsPyString(tuple_like));
@@ -190,7 +190,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
                                 Handle<PyObject>::null())
                   .ToHandle(&string_like));
   EXPECT_TRUE(IsPyString(string_like));
-  EXPECT_FALSE(IsPyStringExact(string_like));
+  EXPECT_FALSE(IsPyStringExact(string_like, isolate_));
   EXPECT_FALSE(IsPyList(string_like));
   EXPECT_FALSE(IsPyDict(string_like));
   EXPECT_FALSE(IsPyTuple(string_like));

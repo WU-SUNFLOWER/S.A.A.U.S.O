@@ -624,7 +624,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyTuple> fromlist;
     // 对于纯import操作，fromlist为None。
     // 例如`import os`就没有有效的fromlist。
-    if (!IsPyNone(fromlist_obj)) {
+    if (!IsPyNone(fromlist_obj, isolate_)) {
       fromlist = Handle<PyTuple>::cast(fromlist_obj);
     }
 
@@ -914,7 +914,7 @@ void Interpreter::EvalCurrentFrame() {
     assert(op_arg == code_object->nfreevars());
 
     Tagged<PyFunction> func_of_current_frame = current_frame_->func_tagged();
-    assert(IsPyFunction(func_of_current_frame));
+    assert(IsPyFunction(func_of_current_frame, isolate_));
 
     Tagged<PyTuple> func_closures = func_of_current_frame->closures_tagged();
     int offset = code_object->nlocalsplus() - op_arg;
@@ -1158,7 +1158,7 @@ Maybe<void> Interpreter::InvokeCallable(Handle<PyObject> callable,
   NormalizeCallable(callable, receiver);
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
-  if (IsNormalPyFunction(callable)) {
+  if (IsNormalPyFunction(callable, isolate_)) {
     FrameObject* frame;
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
                                FrameObjectBuilder::BuildFastPath(
@@ -1192,7 +1192,7 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
   NormalizeCallable(callable, receiver);
 
   // Fast Path：如果是普通的python函数，那么直接创建并进入新的解释器栈帧
-  if (IsNormalPyFunction(callable)) {
+  if (IsNormalPyFunction(callable, isolate_)) {
     FrameObject* frame;
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, frame,
                                FrameObjectBuilder::BuildSlowPath(

@@ -33,7 +33,7 @@ Tagged<PyBoolean> PyBoolean::Reverse() {
 
 // static
 Tagged<PyNone> PyNone::cast(Tagged<PyObject> object) {
-  assert(IsPyNone(object));
+  assert(IsPyNone(object, Isolate::Current()));
   return Tagged<PyNone>::cast(object);
 }
 

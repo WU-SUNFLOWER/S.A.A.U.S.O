@@ -201,11 +201,11 @@ BUILTIN(Exec) {
                         globals_from_positional, locals_from_positional),
       kNullMaybeHandle);
   const bool globals_explicit =
-      !globals_obj.is_null() && !IsPyNone(*globals_obj);
+      !globals_obj.is_null() && !IsPyNone(globals_obj, isolate);
 
   // 解析 globals：省略或传 None 时使用当前帧 globals；否则必须为 dict。
   Handle<PyDict> globals_dict;
-  if (globals_obj.is_null() || IsPyNone(*globals_obj)) {
+  if (globals_obj.is_null() || IsPyNone(globals_obj, isolate)) {
     globals_dict = Execution::CurrentFrameGlobals(isolate);
   } else {
     auto maybe_globals =
@@ -222,7 +222,7 @@ BUILTIN(Exec) {
   // - 否则尝试使用当前帧 locals；若当前帧没有 locals 字典，则回退为 globals。
   // - locals 显式传入时必须为 dict。
   Handle<PyDict> locals_dict;
-  if (locals_obj.is_null() || IsPyNone(*locals_obj)) {
+  if (locals_obj.is_null() || IsPyNone(locals_obj, isolate)) {
     if (globals_from_positional || globals_explicit) {
       locals_dict = globals_dict;
     } else {

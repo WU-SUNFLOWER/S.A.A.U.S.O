@@ -4,6 +4,7 @@
 
 #include "src/runtime/runtime-truthiness.h"
 
+#include "src/execution/isolate.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -23,10 +24,11 @@ bool Runtime_PyObjectIsTrue(Handle<PyObject> object) {
 }
 
 bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
-  if (IsPyFalse(object) || IsPyNone(object)) {
+  Isolate* isolate = Isolate::Current();
+  if (IsPyFalse(object, isolate) || IsPyNone(object, isolate)) {
     return false;
   }
-  if (IsPyTrue(object)) {
+  if (IsPyTrue(object, isolate)) {
     return true;
   }
   if (IsPySmi(object)) {

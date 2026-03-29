@@ -64,7 +64,7 @@ Handle<PyObject> PyFalseObject() {
   if (!PyObject::Equal(Isolate::Current(), x, y).ToHandle(&result)) {
     return ::testing::AssertionFailure() << "PyObject::Equal failed (exception)";
   }
-  if (!IsPyTrue(*result)) {
+  if (!IsPyTrue(result, Isolate::Current())) {
     return ::testing::AssertionFailure() << "PyObject::Equal returned false";
   }
   return ::testing::AssertionSuccess();
@@ -74,7 +74,7 @@ Handle<PyObject> PyFalseObject() {
   if (condition.is_null()) {
     return ::testing::AssertionFailure() << "condition is null";
   }
-  if (!IsPyTrue(condition)) {
+  if (!IsPyTrue(condition, Isolate::Current())) {
     return ::testing::AssertionFailure() << "condition is not PyTrue";
   }
   return ::testing::AssertionSuccess();

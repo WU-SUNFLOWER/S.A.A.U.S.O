@@ -23,7 +23,7 @@ MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
                                               Handle<PyFunction> func) {
   EscapableHandleScope scope;
   std::string repr;
-  if (IsNativePyFunction(func)) {
+  if (IsNativePyFunction(func, isolate)) {
     repr = "<built-in function ";
     repr.append(func->func_name()->ToStdString());
     repr.push_back('>');
@@ -112,7 +112,7 @@ MaybeHandle<PyObject> Runtime_CallNativePyFunction(Isolate* isolate,
                                                    Handle<PyObject> receiver,
                                                    Handle<PyTuple> args,
                                                    Handle<PyDict> kwargs) {
-  assert(IsNativePyFunction(func));
+  assert(IsNativePyFunction(func, isolate));
 
   RETURN_ON_EXCEPTION(isolate, Runtime_NormalizeNativeMethodCall(
                                    isolate, func, receiver, args));

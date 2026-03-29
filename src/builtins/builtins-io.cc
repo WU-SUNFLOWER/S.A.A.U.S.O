@@ -94,7 +94,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
       isolate, found, kwargs->Get(flush_key, options.flush, isolate),
       kNullMaybeHandle);
 
-  if (!options.sep.is_null() && !IsPyNone(options.sep)) {
+  if (!options.sep.is_null() && !IsPyNone(options.sep, isolate)) {
     if (!IsPyString(*options.sep)) {
       Runtime_ThrowErrorf(
           isolate, ExceptionType::kTypeError, "sep must be None or str, not %s",
@@ -105,7 +105,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     options.sep = Handle<PyObject>::null();
   }
 
-  if (!options.end.is_null() && !IsPyNone(options.end)) {
+  if (!options.end.is_null() && !IsPyNone(options.end, isolate)) {
     if (!IsPyString(*options.end)) {
       Runtime_ThrowErrorf(
           isolate, ExceptionType::kTypeError, "end must be None or str, not %s",
@@ -116,7 +116,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     options.end = Handle<PyObject>::null();
   }
 
-  if (!options.file.is_null() && !IsPyNone(options.file)) {
+  if (!options.file.is_null() && !IsPyNone(options.file, isolate)) {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "print() currently only supports file=None");
     return kNullMaybeHandle;

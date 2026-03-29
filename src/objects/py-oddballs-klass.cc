@@ -191,7 +191,7 @@ void PyNoneKlass::Finalize(Isolate* isolate) {
 Maybe<bool> PyNoneKlass::Virtual_Equal(Isolate* isolate,
                                        Handle<PyObject> self,
                                        Handle<PyObject> other) {
-  assert(IsPyNone(self));
+  assert(IsPyNone(self, isolate));
   return Maybe<bool>(self.is_identical_to(other));
 }
 
@@ -218,7 +218,7 @@ Maybe<bool> PyNoneKlass::Virtual_NotEqual(Isolate* isolate,
 // static
 Maybe<uint64_t> PyNoneKlass::Virtual_Hash(Isolate* isolate,
                                           Handle<PyObject> self) {
-  assert(IsPyNone(self));
+  assert(IsPyNone(self, isolate));
   return Maybe<uint64_t>((*self).ptr());  // None使用自己的地址作为哈希值
 }
 

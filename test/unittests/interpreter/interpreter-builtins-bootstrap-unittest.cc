@@ -80,7 +80,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
     ASSERT_TRUE(exists) << name;
     ASSERT_TRUE(builtins->GetTagged(key, value, isolate_).To(&found)) << name;
     ASSERT_TRUE(found) << name;
-    EXPECT_TRUE(IsPyFunction(value)) << name;
+    EXPECT_TRUE(IsPyFunction(value, isolate_)) << name;
   }
 
   bool exists = false;
