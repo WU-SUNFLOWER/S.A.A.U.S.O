@@ -195,12 +195,12 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
 
   Handle<PyObject> contains_res;
   ASSERT_TRUE(PyObject::Contains(isolate_, s, pat).ToHandle(&contains_res));
-  EXPECT_TRUE(IsPyTrue(*contains_res));
+  EXPECT_TRUE(IsPyTrue(contains_res, isolate_));
   ASSERT_TRUE(PyObject::Contains(isolate_, s, missing).ToHandle(&contains_res));
-  EXPECT_TRUE(IsPyFalse(*contains_res));
+  EXPECT_TRUE(IsPyFalse(contains_res, isolate_));
   ASSERT_TRUE(
       PyObject::Contains(isolate_, s, not_a_string).ToHandle(&contains_res));
-  EXPECT_TRUE(IsPyFalse(*contains_res));
+  EXPECT_TRUE(IsPyFalse(contains_res, isolate_));
 }
 
 TEST_F(PyStringTest, FromIntAndFromDoubleWork) {

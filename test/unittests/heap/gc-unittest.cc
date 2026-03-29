@@ -22,7 +22,7 @@
 
 namespace saauso::internal {
 
-#define EXPECT_PY_TRUE(condition) EXPECT_TRUE(IsPyTrue(condition))
+#define EXPECT_PY_TRUE(condition) EXPECT_TRUE(IsPyTrue(condition, isolate_))
 
 namespace {
 
@@ -69,7 +69,7 @@ TEST_F(GcTest, CopyGcTestForPyString) {
 
   Handle<PyObject> eq_res;
   ASSERT_TRUE(PyObject::Equal(isolate_, str1, str2).ToHandle(&eq_res));
-  EXPECT_TRUE(IsPyTrue(*eq_res));
+  EXPECT_TRUE(IsPyTrue(eq_res, isolate_));
 
   EXPECT_EQ(std::strncmp(str1->buffer(), content, str1->length()), 0);
 
@@ -202,8 +202,8 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
   EXPECT_EQ(true_addr_before, isolate_->py_true_object().ptr());
   EXPECT_EQ(false_addr_before, isolate_->py_false_object().ptr());
 
-  EXPECT_TRUE(IsPyTrue(Isolate::ToPyBoolean(true)));
-  EXPECT_TRUE(IsPyFalse(Isolate::ToPyBoolean(false)));
+  EXPECT_TRUE(IsPyTrue(Isolate::ToPyBoolean(true), isolate_));
+  EXPECT_TRUE(IsPyFalse(Isolate::ToPyBoolean(false), isolate_));
 }
 
 TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
