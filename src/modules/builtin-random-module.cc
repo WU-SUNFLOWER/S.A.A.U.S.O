@@ -87,7 +87,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
     seed = RandomNumberGenerator::NowSeed();
   } else {
     Handle<PyObject> a = args->Get(0);
-    if (IsPyNone(a)) {
+    if (IsPyNone(a, isolate)) {
       seed = RandomNumberGenerator::NowSeed();
     } else {
       int64_t val = 0;

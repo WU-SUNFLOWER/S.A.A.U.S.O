@@ -140,7 +140,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
     // 1. 如果该值是一个函数（Function），通常需要将其封装为Bound Method并返回
     //   （这样调用时 self 才会自动传入）。
     // 2. 如果该值是普通数据，直接返回。
-    if (IsPyFunction(result)) {
+    if (IsPyFunction(result, isolate)) {
       result = isolate->factory()->NewMethodObject(result, self);
     }
     goto found;
@@ -217,7 +217,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
                                    isolate, self, prop_name, result));
   if (!result.is_null()) {
-    if (IsPyFunction(result) || IsNativePyFunction(result)) {
+    if (IsPyFunction(result, isolate) || IsNativePyFunction(result, isolate)) {
       self_or_null = self;
     }
     return result;

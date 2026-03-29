@@ -19,7 +19,7 @@ namespace saauso::internal {
 
 // static
 Tagged<PyFunction> PyFunction::cast(Tagged<PyObject> object) {
-  assert(IsPyFunction(object));
+  assert(IsPyFunction(object, Isolate::Current()));
   return Tagged<PyFunction>::cast(object);
 }
 

@@ -46,7 +46,7 @@ MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, loaded, LoadModulePartOrNoneImpl(fullname, search_path_list));
 
-  if (IsPyNone(loaded)) {
+  if (IsPyNone(loaded, isolate_)) {
     Runtime_ThrowErrorf(isolate_, ExceptionType::kModuleNotFoundError,
                         "No module named '%s'", fullname->buffer());
     return kNullMaybe;
@@ -69,7 +69,7 @@ MaybeHandle<PyObject> ModuleLoader::LoadModulePartOrNoneImpl(
   Handle<PyObject> builtin_module;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, builtin_module,
                              LoadAsBuiltinModuleOrNone(fullname));
-  if (!IsPyNone(builtin_module)) {
+  if (!IsPyNone(builtin_module, isolate_)) {
     return builtin_module;
   }
 

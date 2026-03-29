@@ -131,7 +131,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
   Handle<PyObject> result = Handle<PyObject>::null();
 
   // 如果是普通的python函数，那么请求解释器进行处理
-  if (IsNormalPyFunction(callable)) {
+  if (IsNormalPyFunction(callable, isolate_)) {
     FrameObject* frame;
     // 构建栈帧
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -173,12 +173,12 @@ MaybeHandle<PyObject> Interpreter::CallNonNormalFunction(
     Handle<PyTuple> pos_args,
     Handle<PyDict> kw_args) {
   // 该API只允许传入非普通Python函数的callable对象
-  assert(!IsNormalPyFunction(callable));
+  assert(!IsNormalPyFunction(callable, isolate_));
 
   Handle<PyObject> result;
 
   // Fast Path: 如果是NativeFunction，直接执行调用
-  if (IsNativePyFunction(callable)) {
+  if (IsNativePyFunction(callable, isolate_)) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate_, result,
                                Runtime_CallNativePyFunction(
                                    isolate_, Handle<PyFunction>::cast(callable),

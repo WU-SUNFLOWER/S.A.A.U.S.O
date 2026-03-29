@@ -14,7 +14,7 @@ namespace saauso::internal {
 
 // static
 Tagged<PyModule> PyModule::cast(Tagged<PyObject> object) {
-  assert(IsPyModule(object));
+  assert(IsPyModule(object, Isolate::Current()));
   return Tagged<PyModule>::cast(object);
 }
 

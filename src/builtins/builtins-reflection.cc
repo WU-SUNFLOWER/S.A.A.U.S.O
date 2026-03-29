@@ -91,7 +91,7 @@ BUILTIN(BuildTypeObject) {
   }
 
   auto class_builder_obj = args->Get(0);
-  if (!IsPyFunction(class_builder_obj)) [[unlikely]] {
+  if (!IsPyFunction(class_builder_obj, isolate)) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "__build_class__: func must be a function");
     return kNullMaybeHandle;
