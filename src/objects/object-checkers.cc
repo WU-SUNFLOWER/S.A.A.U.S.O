@@ -68,14 +68,10 @@ IMPL_PY_CHECKER_BY_KIND(Cell, Cell)
 IMPL_PY_CHECKER_BY_KIND(PyBoolean, Boolean)
 #undef IMPL_PY_CHECKER_BY_KIND
 
-// TODO: VM内部IsXxxx系列API，要求显式传入Isolate
 #define IMPL_PY_CHECKER_BY_KLASS(Name)                                        \
   bool Is##Name(Tagged<PyObject> object, Isolate* isolate) {                  \
     return IsHeapObject(object) && PyObject::GetHeapKlassUnchecked(object) == \
                                        Name##Klass::GetInstance(isolate);     \
-  }                                                                           \
-  bool Is##Name(Tagged<PyObject> object) {                                    \
-    return Is##Name(object, Isolate::Current());                              \
   }                                                                           \
   bool Is##Name(Handle<PyObject> object, Isolate* isolate) {                  \
     return Is##Name(*object, isolate);                                        \
@@ -96,10 +92,6 @@ bool IsPyFunction(Tagged<PyObject> object, Isolate* isolate) {
          klass == NativeFunctionKlass::GetInstance(isolate);
 }
 
-bool IsPyFunction(Tagged<PyObject> object) {
-  return IsPyFunction(object, Isolate::Current());
-}
-
 bool IsPyFunction(Handle<PyObject> object, Isolate* isolate) {
   return IsPyFunction(*object, isolate);
 }
@@ -110,10 +102,6 @@ bool IsNormalPyFunction(Tagged<PyObject> object, Isolate* isolate) {
   }
   return PyObject::GetHeapKlassUnchecked(object) ==
          PyFunctionKlass::GetInstance(isolate);
-}
-
-bool IsNormalPyFunction(Tagged<PyObject> object) {
-  return IsNormalPyFunction(object, Isolate::Current());
 }
 
 bool IsNormalPyFunction(Handle<PyObject> object, Isolate* isolate) {
@@ -128,10 +116,6 @@ bool IsNativePyFunction(Tagged<PyObject> object, Isolate* isolate) {
          NativeFunctionKlass::GetInstance(isolate);
 }
 
-bool IsNativePyFunction(Tagged<PyObject> object) {
-  return IsNativePyFunction(object, Isolate::Current());
-}
-
 bool IsNativePyFunction(Handle<PyObject> object, Isolate* isolate) {
   return IsNativePyFunction(*object, isolate);
 }
@@ -144,20 +128,12 @@ bool IsPyTrue(Tagged<PyObject> object, Isolate* isolate) {
   return object == Tagged<PyObject>(isolate->py_true_object());
 }
 
-bool IsPyTrue(Tagged<PyObject> object) {
-  return IsPyTrue(object, Isolate::Current());
-}
-
 bool IsPyTrue(Handle<PyObject> object, Isolate* isolate) {
   return IsPyTrue(*object, isolate);
 }
 
 bool IsPyFalse(Tagged<PyObject> object, Isolate* isolate) {
   return object == Tagged<PyObject>(isolate->py_false_object());
-}
-
-bool IsPyFalse(Tagged<PyObject> object) {
-  return IsPyFalse(object, Isolate::Current());
 }
 
 bool IsPyFalse(Handle<PyObject> object, Isolate* isolate) {
@@ -175,7 +151,7 @@ bool IsGcAbleObject(Tagged<PyObject> object) {
   if (PyObject::GetMarkWord(object).IsForwardingAddress()) {
     return true;
   }
-  return !IsPyBoolean(object) && !IsPyNone(object);
+  return !IsPyBoolean(object) && !IsPyNone(object, Isolate::Current());
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -186,11 +162,26 @@ bool IsGcAbleObject(Tagged<PyObject> object) {
     return Is##name(*object);                 \
   }
 
-PY_TYPE_LIST(IMPL_PY_CHECKER_WITH_HANDLE_ARG)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(NormalPyFunction)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(NativePyFunction)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTrue)
-IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFalse)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PySmi)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyString)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyList)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTuple)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDict)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTypeObject)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyFloat)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyBoolean)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyCodeObject)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyListIterator)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyTupleIterator)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDictKeys)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDictValues)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDictItems)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDictKeyIterator)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDictItemIterator)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(PyDictValueIterator)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(FixedArray)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(MethodObject)
+IMPL_PY_CHECKER_WITH_HANDLE_ARG(Cell)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(HeapObject)
 IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
 #undef IMPL_PY_CHECKER_WITH_HANDLE_ARG
@@ -204,12 +195,6 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(GcAbleObject)
   bool Is##name##Exact(Tagged<PyObject> object, Isolate* isolate) {           \
     return IsHeapObject(object) && PyObject::GetHeapKlassUnchecked(object) == \
                                        name##Klass::GetInstance(isolate);     \
-  }                                                                           \
-  bool Is##name##Exact(Tagged<PyObject> object) {                             \
-    return Is##name##Exact(object, Isolate::Current());                       \
-  }                                                                           \
-  bool Is##name##Exact(Handle<PyObject> object) {                             \
-    return Is##name##Exact(*object);                                          \
   }                                                                           \
   bool Is##name##Exact(Handle<PyObject> object, Isolate* isolate) {           \
     return Is##name##Exact(*object, isolate);                                 \
