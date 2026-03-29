@@ -63,9 +63,10 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
   if (!receiver.is_null()) [[likely]] {
 #if defined(_DEBUG)
     bool is_valid_receiver = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, is_valid_receiver,
-                               Runtime_IsSubtype(PyObject::GetKlass(receiver),
-                                                 owner_type->own_klass()));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, is_valid_receiver,
+        Runtime_IsSubtype(PyObject::ResolveObjectKlass(receiver, isolate),
+                          owner_type->own_klass()));
     assert(is_valid_receiver);
 #endif  // defined(_DEBUG)
 
@@ -92,7 +93,8 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
   bool is_valid_receiver = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_receiver,
-      Runtime_IsSubtype(PyObject::GetKlass(receiver), owner_type->own_klass()));
+      Runtime_IsSubtype(PyObject::ResolveObjectKlass(receiver, isolate),
+                        owner_type->own_klass()));
   if (!is_valid_receiver) [[unlikely]] {
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,

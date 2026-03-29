@@ -142,7 +142,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
 
   input_value = pos_args->Get(0);
   if (argc == 1) {
-    if (is_exact_str && IsPyStringExact(input_value)) {
+    if (is_exact_str && IsPyStringExact(input_value, isolate)) {
       return input_value;
     }
 

@@ -121,7 +121,7 @@ Handle<PyString> PyObject::GetTypeName(Handle<PyObject> object,
 
 Handle<PyString> PyObject::GetTypeName(Tagged<PyObject> object,
                                        Isolate* isolate) {
-  return GetKlass(object)->name();
+  return ResolveObjectKlass(object, isolate)->name();
 }
 
 Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {

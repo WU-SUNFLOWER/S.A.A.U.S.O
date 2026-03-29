@@ -26,7 +26,7 @@ namespace {
 MaybeHandle<PyDict> CastToDictOrThrowTypeError(Isolate* isolate,
                                                Handle<PyObject> obj,
                                                const char* role_name) {
-  if (IsPyDictExact(obj)) {
+  if (IsPyDictExact(obj, isolate)) {
     return MaybeHandle<PyDict>(Handle<PyDict>::cast(obj));
   }
 

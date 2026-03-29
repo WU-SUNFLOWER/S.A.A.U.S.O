@@ -10,6 +10,7 @@
 
 namespace saauso::internal {
 
+class Isolate;
 class PyObject;
 
 #define DECLARE_PY_TYPE(name) class name;
@@ -29,6 +30,19 @@ DECLARE_PY_CHECKER(HeapObject)
 DECLARE_PY_CHECKER(GcAbleObject)
 #undef DECLARE_PY_CHECKER
 
+#define DECLARE_PY_CHECKER_WITH_ISOLATE(name)                 \
+  bool Is##name(Tagged<PyObject> object, Isolate* isolate);   \
+  bool Is##name(Handle<PyObject> object, Isolate* isolate);
+
+DECLARE_PY_CHECKER_WITH_ISOLATE(PyNone)
+DECLARE_PY_CHECKER_WITH_ISOLATE(PyModule)
+DECLARE_PY_CHECKER_WITH_ISOLATE(PyFunction)
+DECLARE_PY_CHECKER_WITH_ISOLATE(NormalPyFunction)
+DECLARE_PY_CHECKER_WITH_ISOLATE(NativePyFunction)
+DECLARE_PY_CHECKER_WITH_ISOLATE(PyTrue)
+DECLARE_PY_CHECKER_WITH_ISOLATE(PyFalse)
+#undef DECLARE_PY_CHECKER_WITH_ISOLATE
+
 // 支持被用户Python代码显式继承的内建类型 Like 与 Exact 语义约定：
 // - IsXxx：Like
 //   - 如属于具有特殊内存布局的内建容器，采用 native layout kind 进行判定
@@ -40,6 +54,13 @@ DECLARE_PY_CHECKER(GcAbleObject)
 
 PY_INHERITABLE_TYPE_IN_HEAP_LIST(DECLARE_PY_EXACT_CHECKER)
 #undef DECLARE_PY_EXACT_CHECKER
+
+#define DECLARE_PY_EXACT_CHECKER_WITH_ISOLATE(name)               \
+  bool Is##name##Exact(Tagged<PyObject> object, Isolate* isolate); \
+  bool Is##name##Exact(Handle<PyObject> object, Isolate* isolate);
+
+PY_INHERITABLE_TYPE_IN_HEAP_LIST(DECLARE_PY_EXACT_CHECKER_WITH_ISOLATE)
+#undef DECLARE_PY_EXACT_CHECKER_WITH_ISOLATE
 
 }  // namespace saauso::internal
 

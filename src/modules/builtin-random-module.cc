@@ -318,7 +318,7 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
                           " given)",
                           kModuleName, argc));
   Handle<PyObject> x = args->Get(0);
-  if (!IsPyListExact(x)) {
+  if (!IsPyListExact(x, isolate)) {
     Handle<PyString> type_name = PyObject::GetTypeName(x, isolate);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                         "%s.shuffle() argument must be list, not '%s'",

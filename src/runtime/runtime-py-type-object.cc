@@ -38,7 +38,8 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
     }
 
     Handle<PyObject> obj = pos_args->Get(0);
-    return scope.Escape(PyObject::GetKlass(obj)->type_object());
+    return scope.Escape(PyObject::ResolveObjectKlass(obj, isolate)
+                            ->type_object());
   }
 
   Handle<PyObject> name_obj = pos_args->Get(0);

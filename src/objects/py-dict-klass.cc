@@ -226,7 +226,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
     Handle<PyObject> instance,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  Tagged<Klass> instance_klass = PyObject::GetKlass(instance);
+  Tagged<Klass> instance_klass =
+      PyObject::ResolveObjectKlass(instance, isolate);
 
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
