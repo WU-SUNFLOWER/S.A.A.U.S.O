@@ -24,7 +24,7 @@ void BuiltinModuleRegistry::BootstrapAllBuiltinModules() {
   HandleScope scope;
 
 #define REGISTER_BUILTIN_MODULE(module_name, func_name) \
-  Register(PyString::New(Isolate::Current(), module_name), &func_name);
+  Register(PyString::New(isolate_, module_name), &func_name);
   BUILTIN_MODULE_LIST(REGISTER_BUILTIN_MODULE)
 #undef REGISTER_BUILTIN_MODULE
 }

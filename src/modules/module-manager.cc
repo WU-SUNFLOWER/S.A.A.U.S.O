@@ -30,7 +30,7 @@ namespace saauso::internal {
 ////////////////////////////////////////////////////////////////////////////////////
 
 ModuleManager::ModuleManager(Isolate* isolate) : isolate_(isolate) {
-  builtin_registry_ = std::make_unique<BuiltinModuleRegistry>();
+  builtin_registry_ = std::make_unique<BuiltinModuleRegistry>(isolate_);
   finder_ = std::make_unique<ModuleFinder>(isolate_);
   loader_ = std::make_unique<ModuleLoader>(isolate_, finder_.get(), this,
                                            builtin_registry_.get());
