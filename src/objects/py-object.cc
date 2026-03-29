@@ -77,15 +77,17 @@ Tagged<Klass> PyObject::GetKlass(Tagged<PyObject> object) {
   if (IsPySmi(object)) {
     return PySmiKlass::GetInstance(Isolate::Current());
   }
-
-  assert(IsHeapObject(object));
-  assert(!object->mark_word_.ToKlass().is_null());
-
-  return object->mark_word_.ToKlass();
+  return GetHeapKlassUnchecked(object);
 }
 
 Tagged<Klass> PyObject::GetKlass(Handle<PyObject> object) {
   return GetKlass(*object);
+}
+
+Tagged<Klass> PyObject::GetHeapKlassUnchecked(Tagged<PyObject> object) {
+  assert(IsHeapObject(object));
+  assert(!object->mark_word_.ToKlass().is_null());
+  return object->mark_word_.ToKlass();
 }
 
 void PyObject::SetKlass(Tagged<PyObject> object, Tagged<Klass> klass) {
