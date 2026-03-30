@@ -359,8 +359,8 @@ void Interpreter::EvalCurrentFrame() {
     Tagged<PyObject> value;
     bool found = false;
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, isolate_->builtins()->GetTagged(ST_TAGGED(func_build_class),
-                                               value, isolate_));
+        found, isolate_->builtins()->GetTagged(
+                   ST_TAGGED(func_build_class, isolate_), value, isolate_));
     assert(found);
     assert(!value.is_null());
     PUSH(handle(value));

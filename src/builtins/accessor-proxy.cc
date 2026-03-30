@@ -17,7 +17,7 @@ Maybe<bool> AccessorProxy::TryGet(Isolate* isolate,
                                   Handle<PyObject>& out_value) {
   out_value = Handle<PyObject>::null();
 
-  const AccessorDescriptor* descriptor = LookupAccessor(name);
+  const AccessorDescriptor* descriptor = LookupAccessor(isolate, name);
   if (descriptor == nullptr || descriptor->getter == nullptr) {
     return Maybe<bool>(false);
   }
@@ -34,7 +34,7 @@ Maybe<bool> AccessorProxy::TrySet(Isolate* isolate,
                                   Handle<PyObject> receiver,
                                   Handle<PyObject> name,
                                   Handle<PyObject> value) {
-  const AccessorDescriptor* descriptor = LookupAccessor(name);
+  const AccessorDescriptor* descriptor = LookupAccessor(isolate, name);
   if (descriptor == nullptr || descriptor->setter == nullptr) {
     return Maybe<bool>(false);
   }
@@ -44,15 +44,16 @@ Maybe<bool> AccessorProxy::TrySet(Isolate* isolate,
   return Maybe<bool>(true);
 }
 
-const AccessorDescriptor* AccessorProxy::LookupAccessor(Handle<PyObject> name) {
+const AccessorDescriptor* AccessorProxy::LookupAccessor(Isolate* isolate,
+                                                        Handle<PyObject> name) {
   if (!IsPyString(name)) {
     return nullptr;
   }
   Handle<PyString> str_name = Handle<PyString>::cast(name);
-  if (str_name->IsEqualTo(ST_TAGGED(class))) {
+  if (str_name->IsEqualTo(ST_TAGGED(class, isolate))) {
     return &Accessors::kPyObjectClassAccessor;
   }
-  if (str_name->IsEqualTo(ST_TAGGED(dict))) {
+  if (str_name->IsEqualTo(ST_TAGGED(dict, isolate))) {
     return &Accessors::kPyObjectDictAccessor;
   }
   return nullptr;
