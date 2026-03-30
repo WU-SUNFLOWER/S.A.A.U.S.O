@@ -20,9 +20,9 @@ Tagged<PyDictKeys> PyDictKeys::cast(Tagged<PyObject> object) {
   return Tagged<PyDictKeys>::cast(object);
 }
 
-Handle<PyDict> PyDictKeys::owner() const {
+Handle<PyDict> PyDictKeys::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyDict>::cast(handle(owner_));
+  return Handle<PyDict>::cast(handle(owner_, isolate));
 }
 
 Tagged<PyDictValues> PyDictValues::cast(Tagged<PyObject> object) {
@@ -30,9 +30,9 @@ Tagged<PyDictValues> PyDictValues::cast(Tagged<PyObject> object) {
   return Tagged<PyDictValues>::cast(object);
 }
 
-Handle<PyDict> PyDictValues::owner() const {
+Handle<PyDict> PyDictValues::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyDict>::cast(handle(owner_));
+  return Handle<PyDict>::cast(handle(owner_, isolate));
 }
 
 Tagged<PyDictItems> PyDictItems::cast(Tagged<PyObject> object) {
@@ -40,9 +40,9 @@ Tagged<PyDictItems> PyDictItems::cast(Tagged<PyObject> object) {
   return Tagged<PyDictItems>::cast(object);
 }
 
-Handle<PyDict> PyDictItems::owner() const {
+Handle<PyDict> PyDictItems::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyDict>::cast(handle(owner_));
+  return Handle<PyDict>::cast(handle(owner_, isolate));
 }
 
 Tagged<PyDictKeyIterator> PyDictKeyIterator::cast(Tagged<PyObject> object) {
@@ -50,9 +50,9 @@ Tagged<PyDictKeyIterator> PyDictKeyIterator::cast(Tagged<PyObject> object) {
   return Tagged<PyDictKeyIterator>::cast(object);
 }
 
-Handle<PyDict> PyDictKeyIterator::owner() const {
+Handle<PyDict> PyDictKeyIterator::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyDict>::cast(handle(owner_));
+  return Handle<PyDict>::cast(handle(owner_, isolate));
 }
 
 Tagged<PyDictValueIterator> PyDictValueIterator::cast(Tagged<PyObject> object) {
@@ -60,9 +60,9 @@ Tagged<PyDictValueIterator> PyDictValueIterator::cast(Tagged<PyObject> object) {
   return Tagged<PyDictValueIterator>::cast(object);
 }
 
-Handle<PyDict> PyDictValueIterator::owner() const {
+Handle<PyDict> PyDictValueIterator::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyDict>::cast(handle(owner_));
+  return Handle<PyDict>::cast(handle(owner_, isolate));
 }
 
 Tagged<PyDictItemIterator> PyDictItemIterator::cast(Tagged<PyObject> object) {
@@ -70,9 +70,9 @@ Tagged<PyDictItemIterator> PyDictItemIterator::cast(Tagged<PyObject> object) {
   return Tagged<PyDictItemIterator>::cast(object);
 }
 
-Handle<PyDict> PyDictItemIterator::owner() const {
+Handle<PyDict> PyDictItemIterator::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyDict>::cast(handle(owner_));
+  return Handle<PyDict>::cast(handle(owner_, isolate));
 }
 
 }  // namespace saauso::internal

@@ -26,7 +26,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     for (int64_t i = 0; i < tuple->length(); ++i) {
       PyList::Append(list, tuple->Get(i), isolate);
     }
-    return handle(isolate->py_none_object());
+    return handle(isolate->py_none_object(), isolate);
   }
 
   // Fast Path: 直接展开list
@@ -35,9 +35,8 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     for (int64_t i = 0; i < source->length(); ++i) {
       PyList::Append(list, source->Get(i), isolate);
     }
-    return handle(isolate->py_none_object());
+    return handle(isolate->py_none_object(), isolate);
   }
-
   // Slow Path: 走一般的迭代器调用流程
   Handle<PyObject> iterator;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, iterator,
@@ -58,7 +57,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     PyList::Append(list, elem, isolate);
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(

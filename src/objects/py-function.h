@@ -16,20 +16,20 @@ class PyFunction : public PyObject {
  public:
   static Tagged<PyFunction> cast(Tagged<PyObject> object);
 
-  Handle<PyCodeObject> func_code() const;
+  Handle<PyCodeObject> func_code(Isolate* isolate) const;
 
-  Handle<PyString> func_name() const;
+  Handle<PyString> func_name(Isolate* isolate) const;
   void set_func_name(Handle<PyString> name);
 
-  Handle<PyDict> func_globals() const;
+  Handle<PyDict> func_globals(Isolate* isolate) const;
   void set_func_globals(Handle<PyDict> func_globals);
   void set_func_globals(Tagged<PyDict> func_globals);
 
   void set_default_args(Handle<PyTuple> default_args);
-  Handle<PyTuple> default_args() const;
+  Handle<PyTuple> default_args(Isolate* isolate) const;
 
   void set_closures(Handle<PyTuple> closures);
-  Handle<PyTuple> closures() const;
+  Handle<PyTuple> closures(Isolate* isolate) const;
   Tagged<PyTuple> closures_tagged() const;
 
   NativeFuncPointer native_func() const { return native_func_; }
@@ -39,8 +39,8 @@ class PyFunction : public PyObject {
   bool has_closure_native_func() const {
     return native_func_with_closure_ != nullptr;
   }
-  Handle<PyObject> native_closure_data() const {
-    return handle(native_closure_data_);
+  Handle<PyObject> native_closure_data(Isolate* isolate) const {
+    return handle(native_closure_data_, isolate);
   }
   void set_native_closure_data(Handle<PyObject> closure_data) {
     native_closure_data_ = *closure_data;
@@ -55,8 +55,8 @@ class PyFunction : public PyObject {
   bool is_native_instance_method() const {
     return native_access_flag_ == NativeFuncAccessFlag::kInstanceMethod;
   }
-  Handle<PyTypeObject> native_owner_type() const {
-    return handle(Tagged<PyTypeObject>::cast(native_owner_type_));
+  Handle<PyTypeObject> native_owner_type(Isolate* isolate) const {
+    return handle(Tagged<PyTypeObject>::cast(native_owner_type_), isolate);
   }
   void set_native_owner_type(Handle<PyTypeObject> owner_type) {
     native_owner_type_ = *owner_type;
@@ -99,9 +99,11 @@ class MethodObject : public PyObject {
   static Tagged<MethodObject> cast(Tagged<PyObject> object);
 
   void set_owner(Handle<PyObject> owner) { owner_ = *owner; }
-  Handle<PyObject> owner() { return handle(owner_); }
+  Handle<PyObject> owner(Isolate* isolate) { return handle(owner_, isolate); }
 
-  Handle<PyFunction> func() { return handle(Tagged<PyFunction>::cast(func_)); }
+  Handle<PyFunction> func(Isolate* isolate) {
+    return handle(Tagged<PyFunction>::cast(func_), isolate);
+  }
 
  private:
   friend class MethodObjectKlass;

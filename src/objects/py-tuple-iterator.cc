@@ -21,9 +21,9 @@ Tagged<PyTupleIterator> PyTupleIterator::cast(Tagged<PyObject> object) {
   return Tagged<PyTupleIterator>::cast(object);
 }
 
-Handle<PyTuple> PyTupleIterator::owner() const {
+Handle<PyTuple> PyTupleIterator::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return Handle<PyTuple>::cast(handle(owner_));
+  return Handle<PyTuple>::cast(handle(owner_, isolate));
 }
 
 }  // namespace saauso::internal

@@ -41,13 +41,13 @@
 namespace saauso::internal {
 
 #define STACK_SIZE() (current_frame_->StackSize())
-#define TOP() (current_frame_->TopOfStack())
+#define TOP() (current_frame_->TopOfStack(isolate_))
 #define TOP_TAGGED() (current_frame_->TopOfStackTagged())
 #define PUSH(elem) (current_frame_->PushToStack(elem))
-#define POP() (current_frame_->PopFromStack())
+#define POP() (current_frame_->PopFromStack(isolate_))
 #define POP_TAGGED() (current_frame_->PopFromStackTagged())
-#define PEEK(x) (handle(current_frame_->stack()->Get((x))))
-#define PEEK_TAGGED(x) (current_frame_->stack()->Get((x)))
+#define PEEK(x) (handle(current_frame_->stack(isolate_)->Get((x)), isolate_))
+#define PEEK_TAGGED(x) (current_frame_->stack(isolate_)->Get((x)))
 #define EMPTY() (STACK_LEVEL() == 0)
 
 void Interpreter::EvalCurrentFrame() {
@@ -125,7 +125,7 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_DISPATCH(Swap, {
     assert(op_arg > 0);
-    auto stack = current_frame_->stack();
+    auto stack = current_frame_->stack(isolate_);
     const int index = current_frame_->stack_top() - op_arg;
     const int top = current_frame_->stack_top() - 1;
     Tagged<PyObject> a = stack->Get(index);
@@ -251,7 +251,7 @@ void Interpreter::EvalCurrentFrame() {
     switch (op_arg) {
       case 0:
         if (!caught_exception_.is_null()) [[likely]] {
-          exception = handle(caught_exception_);
+          exception = handle(caught_exception_, isolate_);
           if (caught_exception_origin_pc_ ==
               ExceptionState::kInvalidProgramCounter) [[unlikely]] {
             isolate_->exception_state()->set_pending_exception_origin_pc(
@@ -364,7 +364,7 @@ void Interpreter::EvalCurrentFrame() {
                    ST_TAGGED(func_build_class, isolate_), value, isolate_));
     assert(found);
     assert(!value.is_null());
-    PUSH(handle(value));
+    PUSH(handle(value, isolate_));
   })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
@@ -376,9 +376,9 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
-    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg);
 
-    Handle<PyDict> locals = current_frame_->locals();
+    Handle<PyDict> locals = current_frame_->locals(isolate_);
     // Python中栈帧的locals是按需创建的。
     // 我们不保证一个函数栈帧当中一定有一个有效的locals字典！
     if (locals.is_null()) [[unlikely]] {
@@ -394,9 +394,9 @@ void Interpreter::EvalCurrentFrame() {
   // 删除一个 name（用于 except ... as e
   // 的清理阶段，确保异常变量不泄漏到外层作用域）。
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteName, {
-    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg);
 
-    Handle<PyDict> locals = current_frame_->locals();
+    Handle<PyDict> locals = current_frame_->locals(isolate_);
     if (locals.is_null()) {
       break;
     }
@@ -423,8 +423,8 @@ void Interpreter::EvalCurrentFrame() {
     auto old_stack_top = current_frame_->stack_top();
     current_frame_->set_stack_top(old_stack_top + op_arg);
     for (int i = 0; i < op_arg; ++i) {
-      current_frame_->stack()->Set(old_stack_top + (op_arg - 1 - i),
-                                   tuple->Get(i));
+      current_frame_->stack(isolate_)->Set(old_stack_top + (op_arg - 1 - i),
+                                           tuple->Get(i));
     }
   })
 
@@ -454,7 +454,7 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
-    Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg);
+    Handle<PyObject> attr_name = current_frame_->names(isolate_)->Get(op_arg);
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_value = POP();
     GOTO_ON_EXCEPTION(
@@ -462,23 +462,23 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
-    Handle<PyObject> key = current_frame_->names()->Get(op_arg);
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg);
     Handle<PyObject> value = POP();
     GOTO_ON_EXCEPTION(
-        PyDict::Put(current_frame_->globals(), key, value, isolate_));
+        PyDict::Put(current_frame_->globals(isolate_), key, value, isolate_));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
-      LoadConst, { PUSH(current_frame_->consts()->GetTagged(op_arg)); })
+      LoadConst, { PUSH(current_frame_->consts(isolate_)->GetTagged(op_arg)); })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
-    Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg);
+    Tagged<PyObject> key = current_frame_->names(isolate_)->GetTagged(op_arg);
     Tagged<PyObject> value;
     bool found = false;
 
     // 1. 查local符号表
-    ASSIGN_GOTO_ON_EXCEPTION(
-        found, current_frame_->locals()->GetTagged(key, value, isolate_));
+    ASSIGN_GOTO_ON_EXCEPTION(found, current_frame_->locals(isolate_)->GetTagged(
+                                        key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -486,7 +486,8 @@ void Interpreter::EvalCurrentFrame() {
 
     // 2. 查global符号表
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, current_frame_->globals()->GetTagged(key, value, isolate_));
+        found,
+        current_frame_->globals(isolate_)->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -551,7 +552,8 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {
     Handle<PyObject> object = POP();
-    Handle<PyObject> attr_name = current_frame_->names()->Get(op_arg >> 1);
+    Handle<PyObject> attr_name =
+        current_frame_->names(isolate_)->Get(op_arg >> 1);
 
     // 在python代码中出现了类似于`obj.do_something(arg)`的操作，
     // 即此处可能发生了对象方法调用。
@@ -635,21 +637,22 @@ void Interpreter::EvalCurrentFrame() {
     // `from ..os import path`的level是2。
     auto level = Handle<PySmi>::cast(POP());
 
-    auto name = Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
+    auto name =
+        Handle<PyString>::cast(current_frame_->names(isolate_)->Get(op_arg));
 
     Handle<PyObject> module;
-    ASSIGN_GOTO_ON_EXCEPTION_TARGET(
-        isolate_, module,
-        isolate_->module_manager()->ImportModule(
-            name, fromlist, PySmi::ToInt(level), current_frame_->globals()),
-        pending_exception_unwind);
+    ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, module,
+                                    isolate_->module_manager()->ImportModule(
+                                        name, fromlist, PySmi::ToInt(level),
+                                        current_frame_->globals(isolate_)),
+                                    pending_exception_unwind);
     PUSH(module);
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ImportFrom, {
     auto parent_module = TOP();
     auto sub_module_name =
-        Handle<PyString>::cast(current_frame_->names()->Get(op_arg));
+        Handle<PyString>::cast(current_frame_->names(isolate_)->Get(op_arg));
 
     // Fast Path: 如果目标子模块已经被解析过了，直接返回
     Handle<PyObject> value;
@@ -690,7 +693,7 @@ void Interpreter::EvalCurrentFrame() {
     ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, submodule,
                                     isolate_->module_manager()->ImportModule(
                                         sub_module_fullname, synthetic_fromlist,
-                                        0, current_frame_->globals()),
+                                        0, current_frame_->globals(isolate_)),
                                     pending_exception_unwind);
     PUSH(submodule);
   })
@@ -725,12 +728,14 @@ void Interpreter::EvalCurrentFrame() {
       PUSH(Tagged<PyObject>::null());
     }
 
-    Tagged<PyObject> key = current_frame_->names()->GetTagged(op_arg >> 1);
+    Tagged<PyObject> key =
+        current_frame_->names(isolate_)->GetTagged(op_arg >> 1);
     Tagged<PyObject> value;
     bool found = false;
 
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, current_frame_->globals()->GetTagged(key, value, isolate_));
+        found,
+        current_frame_->globals(isolate_)->GetTagged(key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -790,10 +795,10 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(
-      LoadFast, PUSH(current_frame_->localsplus()->Get(op_arg));)
+      LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
 
   INTERPRETER_HANDLER_WITH_SCOPE(
-      StoreFast, current_frame_->localsplus()->Set(op_arg, *POP());)
+      StoreFast, current_frame_->localsplus(isolate_)->Set(op_arg, *POP());)
 
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteFast, {
                                                  // todo
@@ -812,7 +817,9 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnConst, {
-    ret_value_ = current_frame_->code_object()->consts()->GetTagged(op_arg);
+    ret_value_ =
+        current_frame_->code_object(isolate_)->consts(isolate_)->GetTagged(
+            op_arg);
     if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
       goto exit_interpreter;
     }
@@ -828,7 +835,7 @@ void Interpreter::EvalCurrentFrame() {
 
     // 向函数对象注入创建它的函数所绑定的全局变量表
     // 这是Python中函数依据词法作用域规则访问它所在模块全局变量的根本原理！！！
-    func->set_func_globals(current_frame_->globals());
+    func->set_func_globals(current_frame_->globals(isolate_));
 
     // 向函数对象中注入依据词法作用域捕获到的cell们
     if (op_arg & MakeFunctionOpArgMask::kClosure) {
@@ -846,9 +853,10 @@ void Interpreter::EvalCurrentFrame() {
   // 初始化闭包变量
   INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
     Handle<Cell> cell = isolate_->factory()->NewCell();
-    Tagged<PyObject> initial = current_frame_->localsplus()->Get(op_arg);
+    Tagged<PyObject> initial =
+        current_frame_->localsplus(isolate_)->Get(op_arg);
     cell->set_value(initial);
-    current_frame_->localsplus()->Set(op_arg, cell);
+    current_frame_->localsplus(isolate_)->Set(op_arg, cell);
   })
 
   // 加载cell对象到栈上（不解引用），
@@ -860,7 +868,7 @@ void Interpreter::EvalCurrentFrame() {
   // MAKE_FUNCTION            8 (closure)
   // STORE_FAST               0 (say)
   INTERPRETER_HANDLER_DISPATCH(LoadClosure, {
-    Tagged<PyObject> cell = current_frame_->localsplus()->Get(op_arg);
+    Tagged<PyObject> cell = current_frame_->localsplus(isolate_)->Get(op_arg);
     assert(IsCell(cell));
     PUSH(cell);
   })
@@ -868,7 +876,7 @@ void Interpreter::EvalCurrentFrame() {
   // 加载cell对象指向的实际值对象
   INTERPRETER_HANDLER_WITH_SCOPE(LoadDeref, {
     Tagged<Cell> cell =
-        Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
+        Tagged<Cell>::cast(current_frame_->localsplus(isolate_)->Get(op_arg));
     assert(IsCell(cell));
 
     Tagged<PyObject> value = cell->value_tagged();
@@ -879,8 +887,8 @@ void Interpreter::EvalCurrentFrame() {
 
     Tagged<PyCodeObject> code_object = current_frame_->code_object_tagged();
     Tagged<PyString> var_name = Tagged<PyString>::cast(
-        code_object->localsplusnames()->GetTagged(op_arg));
-    char kind = code_object->localspluskinds()->Get(op_arg);
+        code_object->localsplusnames(isolate_)->GetTagged(op_arg));
+    char kind = code_object->localspluskinds(isolate_)->Get(op_arg);
     if (kind & PyCodeObject::LocalsPlusKind::kFastFree) {
       Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
                           "cannot access free variable '%s' where it is "
@@ -898,7 +906,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
     Tagged<PyObject> value = POP_TAGGED();
     Tagged<Cell> cell =
-        Tagged<Cell>::cast(current_frame_->localsplus()->Get(op_arg));
+        Tagged<Cell>::cast(current_frame_->localsplus(isolate_)->Get(op_arg));
     assert(IsCell(cell));
     cell->set_value(value);
   })
@@ -923,7 +931,7 @@ void Interpreter::EvalCurrentFrame() {
     for (auto i = 0; i < op_arg; ++i) {
       Tagged<PyObject> object = func_closures->GetTagged(i);
       assert(IsCell(object));
-      current_frame_->localsplus()->Set(i + offset, object);
+      current_frame_->localsplus(isolate_)->Set(i + offset, object);
     }
   })
 
@@ -1025,8 +1033,9 @@ void Interpreter::EvalCurrentFrame() {
         InvokeCallable(callable, receiver, args, ReleaseKwArgKeys()));
   })
 
-  INTERPRETER_HANDLER_DISPATCH(
-      KwNames, { kwarg_keys_ = current_frame_->consts()->GetTagged(op_arg); })
+  INTERPRETER_HANDLER_DISPATCH(KwNames, {
+    kwarg_keys_ = current_frame_->consts(isolate_)->GetTagged(op_arg);
+  })
 
   INTERPRETER_HANDLER_WITH_SCOPE(CallIntrinsic1, {
     Handle<PyObject> arg = POP();
@@ -1040,8 +1049,8 @@ void Interpreter::EvalCurrentFrame() {
       }
       case UnaryIntrinsic::kImportStar: {
         GOTO_ON_EXCEPTION(Runtime_IntrinsicImportStar(
-            isolate_, arg, current_frame_->locals()));
-        PUSH(handle(isolate_->py_none_object()));
+            isolate_, arg, current_frame_->locals(isolate_)));
+        PUSH(handle(isolate_->py_none_object(), isolate_));
         break;
       }
       default:
@@ -1091,9 +1100,9 @@ pending_exception_unwind: {
 
   // 如果在当前栈帧中成功找到有效的exception handler，那么跳转过去处理错误
   ExceptionHandlerInfo handler_info;
-  if (ExceptionTable::LookupHandler(current_frame_->code_object(),
-                                    exception_state->pending_exception_pc(),
-                                    handler_info)) {
+  if (ExceptionTable::LookupHandler(
+          isolate_, current_frame_->code_object(isolate_),
+          exception_state->pending_exception_pc(), handler_info)) {
     // 清理操作数栈上多余的元素，为执行exception handler做好准备
     current_frame_->set_stack_top(handler_info.stack_depth);
 

@@ -15,7 +15,7 @@ class PyDictKeys : public PyObject {
  public:
   static Tagged<PyDictKeys> cast(Tagged<PyObject> object);
 
-  Handle<PyDict> owner() const;
+  Handle<PyDict> owner(Isolate* isolate) const;
 
  private:
   friend class PyDictKeysKlass;
@@ -28,7 +28,7 @@ class PyDictValues : public PyObject {
  public:
   static Tagged<PyDictValues> cast(Tagged<PyObject> object);
 
-  Handle<PyDict> owner() const;
+  Handle<PyDict> owner(Isolate* isolate) const;
 
  private:
   friend class PyDictValuesKlass;
@@ -41,7 +41,7 @@ class PyDictItems : public PyObject {
  public:
   static Tagged<PyDictItems> cast(Tagged<PyObject> object);
 
-  Handle<PyDict> owner() const;
+  Handle<PyDict> owner(Isolate* isolate) const;
 
  private:
   friend class PyDictItemsKlass;
@@ -54,7 +54,7 @@ class PyDictKeyIterator : public PyObject {
  public:
   static Tagged<PyDictKeyIterator> cast(Tagged<PyObject> object);
 
-  Handle<PyDict> owner() const;
+  Handle<PyDict> owner(Isolate* isolate) const;
   int64_t iter_index() const { return iter_index_; }
   void set_iter_index(int64_t iter_index) { iter_index_ = iter_index; }
 
@@ -70,7 +70,7 @@ class PyDictValueIterator : public PyObject {
  public:
   static Tagged<PyDictValueIterator> cast(Tagged<PyObject> object);
 
-  Handle<PyDict> owner() const;
+  Handle<PyDict> owner(Isolate* isolate) const;
   int64_t iter_index() const { return iter_index_; }
   void set_iter_index(int64_t iter_index) { iter_index_ = iter_index; }
 
@@ -86,7 +86,7 @@ class PyDictItemIterator : public PyObject {
  public:
   static Tagged<PyDictItemIterator> cast(Tagged<PyObject> object);
 
-  Handle<PyDict> owner() const;
+  Handle<PyDict> owner(Isolate* isolate) const;
   int64_t iter_index() const { return iter_index_; }
   void set_iter_index(int64_t iter_index) { iter_index_ = iter_index; }
 

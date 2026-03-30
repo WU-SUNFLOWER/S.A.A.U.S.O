@@ -27,11 +27,11 @@ namespace saauso::internal {
 
 namespace {
 
-Handle<PyObject> NextImpl(Handle<PyObject> self) {
+Handle<PyObject> NextImpl(Isolate* isolate, Handle<PyObject> self) {
   EscapableHandleScope scope;
 
   auto iterator = Handle<PyTupleIterator>::cast(self);
-  auto tuple = iterator->owner();
+  auto tuple = iterator->owner(isolate);
   assert(!tuple.is_null());
 
   auto result = Handle<PyObject>::null();
@@ -110,7 +110,7 @@ MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Iter(
 MaybeHandle<PyObject> PyTupleIteratorKlass::Virtual_Next(
     Isolate* isolate,
     Handle<PyObject> self) {
-  Handle<PyObject> result = NextImpl(self);
+  Handle<PyObject> result = NextImpl(isolate, self);
   if (result.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
     return kNullMaybeHandle;

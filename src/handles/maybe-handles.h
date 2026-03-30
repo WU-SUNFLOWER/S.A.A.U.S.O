@@ -44,7 +44,8 @@ class [[nodiscard]] MaybeHandle : public HandleBase {
     requires(is_subtype_v<S, T>)
       : MaybeHandle(maybe_handle.location()) {}
 
-  explicit MaybeHandle(Tagged<T> tagged) : MaybeHandle(handle(tagged)) {};
+  explicit MaybeHandle(Tagged<T> tagged, Isolate* isolate)
+      : MaybeHandle(handle(tagged, isolate)) {};
 
   void Check() const {
     if (IsEmpty()) {

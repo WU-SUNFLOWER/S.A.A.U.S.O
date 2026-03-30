@@ -195,7 +195,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
     return kNullMaybeHandle;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(result)));
+  return scope.Escape(handle(PySmi::FromInt(result), isolate));
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
@@ -223,7 +223,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
     result = -1;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(result)));
+  return scope.Escape(handle(PySmi::FromInt(result), isolate));
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
@@ -251,7 +251,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
     result = -1;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(result)));
+  return scope.Escape(handle(PySmi::FromInt(result), isolate));
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
@@ -319,29 +319,27 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
       return kNullMaybeHandle;
     }
 
-    Tagged<PyObject> sep_from_kwargs;
+    Handle<PyObject> sep_from_kwargs;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found, kwargs->GetTagged(sep_key, sep_from_kwargs, isolate));
-    Handle<PyObject> sep_from_kwargs_handle = handle(sep_from_kwargs);
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
+                               kwargs->Get(sep_key, sep_from_kwargs, isolate));
     if (found) {
-      assert(!sep_from_kwargs_handle.is_null());
+      assert(!sep_from_kwargs.is_null());
       if (sep_from_positional) {
         Runtime_ThrowError(
             isolate, ExceptionType::kTypeError,
             "str.split() got multiple values for argument 'sep'");
         return kNullMaybeHandle;
       }
-      sep_obj = sep_from_kwargs_handle;
+      sep_obj = sep_from_kwargs;
     }
 
-    Tagged<PyObject> maxsplit_from_kwargs;
+    Handle<PyObject> maxsplit_from_kwargs;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, found,
-        kwargs->GetTagged(maxsplit_key, maxsplit_from_kwargs, isolate));
-    Handle<PyObject> maxsplit_from_kwargs_handle = handle(maxsplit_from_kwargs);
+        kwargs->Get(maxsplit_key, maxsplit_from_kwargs, isolate));
     if (found) {
-      assert(!maxsplit_from_kwargs_handle.is_null());
+      assert(!maxsplit_from_kwargs.is_null());
       if (maxsplit_from_positional) {
         Runtime_ThrowError(
             isolate, ExceptionType::kTypeError,
@@ -351,7 +349,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, maxsplit,
-          Runtime_DecodeIntLike(isolate, *maxsplit_from_kwargs_handle));
+          Runtime_DecodeIntLike(isolate, *maxsplit_from_kwargs));
     }
   }
 

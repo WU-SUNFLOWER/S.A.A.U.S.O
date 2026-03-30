@@ -27,11 +27,11 @@ class FrameObject : Object {
   ~FrameObject();
 
   int StackSize() const;
-  Handle<PyObject> TopOfStack() const;
+  Handle<PyObject> TopOfStack(Isolate* isolate) const;
   Tagged<PyObject> TopOfStackTagged() const;
   void PushToStack(Tagged<PyObject> object);
   void PushToStack(Handle<PyObject> object);
-  Handle<PyObject> PopFromStack();
+  Handle<PyObject> PopFromStack(Isolate* isolate);
   Tagged<PyObject> PopFromStackTagged();
   Tagged<PyObject> StackGetTagged(int index) const;
 
@@ -50,16 +50,16 @@ class FrameObject : Object {
   FrameObject* caller() const { return caller_; }
   void set_caller(FrameObject* caller) { caller_ = caller; }
 
-  Handle<FixedArray> stack() const;
-  Handle<PyTuple> consts() const;
-  Handle<PyTuple> names() const;
-  Handle<PyDict> locals() const;
-  Handle<FixedArray> localsplus() const;
-  Handle<PyDict> globals() const;
+  Handle<FixedArray> stack(Isolate* isolate) const;
+  Handle<PyTuple> consts(Isolate* isolate) const;
+  Handle<PyTuple> names(Isolate* isolate) const;
+  Handle<PyDict> locals(Isolate* isolate) const;
+  Handle<FixedArray> localsplus(Isolate* isolate) const;
+  Handle<PyDict> globals(Isolate* isolate) const;
 
-  Handle<PyCodeObject> code_object() const;
+  Handle<PyCodeObject> code_object(Isolate* isolate) const;
   Tagged<PyCodeObject> code_object_tagged() const;
-  Handle<PyFunction> func() const;
+  Handle<PyFunction> func(Isolate* isolate) const;
   Tagged<PyFunction> func_tagged() const;
 
   bool is_entry_frame() const { return is_entry_frame_; }

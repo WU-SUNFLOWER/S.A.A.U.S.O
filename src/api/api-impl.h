@@ -97,7 +97,7 @@ Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
   i::Handle<i::PyString> py_string =
       i::PyString::New(isolate, value.data(), static_cast<int64_t>(value.size()));
   i::Handle<i::PyObject> escaped =
-      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_string)));
+      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_string), isolate));
   return i::Utils::ToLocal<T>(escaped);
 }
 
@@ -105,7 +105,8 @@ template <typename T>
 Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
   i::EscapableHandleScope scope;
   i::Handle<i::PyObject> smi =
-      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)));
+      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)),
+                isolate);
   i::Handle<i::PyObject> escaped = scope.Escape(smi);
   return i::Utils::ToLocal<T>(escaped);
 }
@@ -115,7 +116,7 @@ Local<T> WrapHostFloat(i::Isolate* isolate, double value) {
   i::EscapableHandleScope scope;
   i::Handle<i::PyFloat> py_float = isolate->factory()->NewPyFloat(value);
   i::Handle<i::PyObject> escaped =
-      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_float)));
+      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_float), isolate));
   return i::Utils::ToLocal<T>(escaped);
 }
 

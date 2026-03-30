@@ -71,14 +71,15 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
   }
   i::HandleScope handle_scope;
   i::Handle<i::PyDict> globals =
-      i::handle(i::Tagged<i::PyDict>::cast(*context_object));
+      i::handle(i::Tagged<i::PyDict>::cast(*context_object), i_isolate);
   i::Handle<i::PyString> py_key =
       i::PyString::New(i_isolate, key->Value().data(),
                        static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> py_value = api::ToInternalObject(i_isolate, value);
   auto maybe_set =
-      i::PyDict::Put(globals, i::handle(i::Tagged<i::PyObject>::cast(*py_key)),
-                     py_value, i_isolate);
+      i::PyDict::Put(
+          globals, i::handle(i::Tagged<i::PyObject>::cast(*py_key), i_isolate),
+          py_value, i_isolate);
   if (maybe_set.IsNothing()) {
     api::CapturePendingException(i_isolate);
     return i::kNullMaybe;
@@ -101,13 +102,14 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   }
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
-      i::handle(i::Tagged<i::PyDict>::cast(*context_object));
+      i::handle(i::Tagged<i::PyDict>::cast(*context_object), i_isolate);
   i::Handle<i::PyString> py_key =
       i::PyString::New(i_isolate, key->Value().data(),
                        static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> out;
   auto maybe_found = globals->Get(
-      i::handle(i::Tagged<i::PyObject>::cast(*py_key)), out, i_isolate);
+      i::handle(i::Tagged<i::PyObject>::cast(*py_key), i_isolate), out,
+      i_isolate);
   if (maybe_found.IsNothing()) {
     api::CapturePendingException(i_isolate);
     return MaybeLocal<Value>();

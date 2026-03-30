@@ -25,13 +25,13 @@ MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
   std::string repr;
   if (IsNativePyFunction(func, isolate)) {
     repr = "<built-in function ";
-    repr.append(func->func_name()->ToStdString());
+    repr.append(func->func_name(isolate)->ToStdString());
     repr.push_back('>');
     return scope.Escape(PyString::FromStdString(isolate, repr));
   }
 
   repr = "<function ";
-  repr.append(func->func_name()->ToStdString());
+  repr.append(func->func_name(isolate)->ToStdString());
   char addr[32];
   std::snprintf(addr, sizeof(addr), " at 0x%p>",
                 reinterpret_cast<void*>((*func).ptr()));
@@ -57,7 +57,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
     return JustVoid();
   }
 
-  Handle<PyTypeObject> owner_type = func->native_owner_type();
+  Handle<PyTypeObject> owner_type = func->native_owner_type(isolate);
 
   // Fast Path: 对于已知receiver显式方法调用，直接返回
   if (!receiver.is_null()) [[likely]] {
@@ -82,7 +82,7 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "unbound method %s.%s() needs an argument",
                           owner_type->own_klass()->name()->buffer(),
-                          func->func_name()->buffer());
+                          func->func_name(isolate)->buffer());
       return kNullMaybe;
     }
 
@@ -99,7 +99,8 @@ Maybe<void> Runtime_NormalizeNativeMethodCall(Isolate* isolate,
     Runtime_ThrowErrorf(
         isolate, ExceptionType::kTypeError,
         "descriptor '%s' for '%s' objects doesn't apply to a '%s' object",
-        func->func_name()->buffer(), owner_type->own_klass()->name()->buffer(),
+        func->func_name(isolate)->buffer(),
+        owner_type->own_klass()->name()->buffer(),
         PyObject::GetTypeName(receiver, isolate)->buffer());
     return kNullMaybe;
   }
@@ -125,7 +126,7 @@ MaybeHandle<PyObject> Runtime_CallNativePyFunction(Isolate* isolate,
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, result,
         native_func_with_closure_ptr(isolate, receiver, args, kwargs,
-                                     func->native_closure_data()));
+                                     func->native_closure_data(isolate)));
   } else {
     assert(native_func_ptr != nullptr);
     ASSIGN_RETURN_ON_EXCEPTION(

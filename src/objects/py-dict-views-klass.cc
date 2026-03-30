@@ -40,7 +40,7 @@ Handle<PyObject> NextFromIterator(Isolate* isolate,
   EscapableHandleScope scope;
 
   auto iterator = Handle<IteratorType>::cast(self);
-  auto dict = iterator->owner();
+  auto dict = iterator->owner(isolate);
   assert(!dict.is_null());
 
   int64_t index = iterator->iter_index();
@@ -58,8 +58,8 @@ Handle<PyObject> NextFromIterator(Isolate* isolate,
 }
 
 template <typename ViewType>
-Handle<PyObject> DictViewLen(Handle<PyObject> self) {
-  auto dict = Handle<ViewType>::cast(self)->owner();
+Handle<PyObject> DictViewLen(Isolate* isolate, Handle<PyObject> self) {
+  auto dict = Handle<ViewType>::cast(self)->owner(isolate);
   return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
 }
 
@@ -119,18 +119,18 @@ void PyDictKeysKlass::Finalize(Isolate* isolate) {
 MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Iter(Isolate* isolate,
                                                     Handle<PyObject> self) {
   return isolate->factory()->NewPyDictKeyIterator(
-      Handle<PyDictKeys>::cast(self)->owner());
+      Handle<PyDictKeys>::cast(self)->owner(isolate));
 }
 
 MaybeHandle<PyObject> PyDictKeysKlass::Virtual_Len(Isolate* isolate,
                                                    Handle<PyObject> self) {
-  return DictViewLen<PyDictKeys>(self);
+  return DictViewLen<PyDictKeys>(isolate, self);
 }
 
 Maybe<bool> PyDictKeysKlass::Virtual_Contains(Isolate* isolate,
                                               Handle<PyObject> self,
                                               Handle<PyObject> subscr) {
-  auto dict = Handle<PyDictKeys>::cast(self)->owner();
+  auto dict = Handle<PyDictKeys>::cast(self)->owner(isolate);
   return dict->ContainsKey(subscr, isolate);
 }
 
@@ -198,12 +198,12 @@ void PyDictValuesKlass::Finalize(Isolate* isolate) {
 MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Iter(Isolate* isolate,
                                                       Handle<PyObject> self) {
   return isolate->factory()->NewPyDictValueIterator(
-      Handle<PyDictValues>::cast(self)->owner());
+      Handle<PyDictValues>::cast(self)->owner(isolate));
 }
 
 MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Len(Isolate* isolate,
                                                      Handle<PyObject> self) {
-  return DictViewLen<PyDictValues>(self);
+  return DictViewLen<PyDictValues>(isolate, self);
 }
 
 Maybe<bool> PyDictValuesKlass::Virtual_Contains(Isolate* isolate,
@@ -211,7 +211,7 @@ Maybe<bool> PyDictValuesKlass::Virtual_Contains(Isolate* isolate,
                                                 Handle<PyObject> subscr) {
   HandleScope scope;
 
-  auto dict = Handle<PyDictValues>::cast(self)->owner();
+  auto dict = Handle<PyDictValues>::cast(self)->owner(isolate);
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     Handle<PyObject> value = dict->ValueAtIndex(i);
     if (value.is_null()) {
@@ -294,12 +294,12 @@ void PyDictItemsKlass::Finalize(Isolate* isolate) {
 MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Iter(Isolate* isolate,
                                                      Handle<PyObject> self) {
   return isolate->factory()->NewPyDictItemIterator(
-      Handle<PyDictItems>::cast(self)->owner());
+      Handle<PyDictItems>::cast(self)->owner(isolate));
 }
 
 MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Isolate* isolate,
                                                     Handle<PyObject> self) {
-  return DictViewLen<PyDictItems>(self);
+  return DictViewLen<PyDictItems>(isolate, self);
 }
 
 Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
@@ -316,7 +316,7 @@ Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
     return Maybe<bool>(false);
   }
 
-  auto dict = Handle<PyDictItems>::cast(self)->owner();
+  auto dict = Handle<PyDictItems>::cast(self)->owner(isolate);
   auto key = item->Get(0);
   auto value = item->Get(1);
 

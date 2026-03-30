@@ -50,7 +50,7 @@ MaybeHandle<PySmi> Runtime_PyStringToSmi(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(parsed)));
+  return scope.Escape(handle(PySmi::FromInt(parsed), isolate));
 }
 
 MaybeHandle<PySmi> Runtime_PyFloatToSmi(Isolate* isolate,
@@ -86,7 +86,7 @@ MaybeHandle<PySmi> Runtime_PyFloatToSmi(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(int_value)));
+  return scope.Escape(handle(PySmi::FromInt(int_value), isolate));
 }
 
 MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
@@ -103,7 +103,7 @@ MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
   if (argc == 0) {
-    return scope.Escape(handle(PySmi::FromInt(0)));
+    return scope.Escape(handle(PySmi::FromInt(0), isolate));
   }
   if (argc > 2) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
@@ -158,7 +158,7 @@ MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
                          "int too large to convert to Smi");
       return kNullMaybeHandle;
     }
-    return scope.Escape(handle(PySmi::FromInt(parsed_value)));
+    return scope.Escape(handle(PySmi::FromInt(parsed_value), isolate));
   }
 
   if (IsPySmi(value)) {
@@ -166,7 +166,7 @@ MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
   }
   if (IsPyBoolean(value)) {
     bool v = Tagged<PyBoolean>::cast(*value)->value();
-    return scope.Escape(handle(PySmi::FromInt(v ? 1 : 0)));
+    return scope.Escape(handle(PySmi::FromInt(v ? 1 : 0), isolate));
   }
   if (IsPyFloat(value)) {
     Handle<PySmi> result;

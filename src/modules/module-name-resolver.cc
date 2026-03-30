@@ -113,7 +113,8 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     return kNullMaybe;
   }
 
-  Handle<PyString> name_str = Handle<PyString>::cast(handle(name_obj));
+  Handle<PyString> name_str =
+      Handle<PyString>::cast(handle(name_obj, isolate_));
 
   Tagged<PyObject> path_obj;
   if (!globals->GetTagged(ST(path, isolate_), path_obj, isolate_).To(&found)) {

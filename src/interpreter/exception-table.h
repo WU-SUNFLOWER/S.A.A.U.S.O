@@ -30,7 +30,8 @@ class ExceptionTable final {
   //
   // 在 co_exceptiontable 中，start/size/target 的单位是 code units（CPython3.11+
   // wordcode 语义）；本接口要求传入 byte offset，并在内部完成单位换算与查表。
-  static bool LookupHandler(Handle<PyCodeObject> code_object,
+  static bool LookupHandler(Isolate* isolate,
+                            Handle<PyCodeObject> code_object,
                             int instruction_offset_in_bytes,
                             ExceptionHandlerInfo& out);
 };

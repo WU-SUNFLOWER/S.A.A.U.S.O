@@ -150,7 +150,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
           .IsNothing()) {
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 Maybe<uint64_t> PyTypeObjectKlass::Virtual_Hash(Isolate* isolate,

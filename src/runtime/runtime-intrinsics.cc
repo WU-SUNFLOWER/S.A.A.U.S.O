@@ -132,7 +132,7 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
     }
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 }  // namespace saauso::internal

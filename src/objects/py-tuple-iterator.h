@@ -15,7 +15,7 @@ class PyTupleIterator : public PyObject {
  public:
   static Tagged<PyTupleIterator> cast(Tagged<PyObject> object);
 
-  Handle<PyTuple> owner() const;
+  Handle<PyTuple> owner(Isolate* isolate) const;
   int64_t iter_cnt() const { return iter_cnt_; }
   void increase_iter_cnt() { ++iter_cnt_; }
 

@@ -53,12 +53,12 @@ class PyCodeObject : public PyObject {
 
   static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 
-  Handle<PyString> bytecodes() const;
+  Handle<PyString> bytecodes(Isolate* isolate) const;
 
-  Handle<PyTuple> consts() const;
+  Handle<PyTuple> consts(Isolate* isolate) const;
 
-  Handle<PyString> co_name() const;
-  Handle<PyString> file_name() const;
+  Handle<PyString> co_name(Isolate* isolate) const;
+  Handle<PyString> file_name(Isolate* isolate) const;
 
   int flags() const { return flags_; }
   int stack_size() const { return stack_size_; }
@@ -89,10 +89,10 @@ class PyCodeObject : public PyObject {
   //
   // 对应到解释器栈帧当中，就是localplus元组。这种设计可以进一步节约空间，还能提升cpu
   // cache的命中率。
-  Handle<PyTuple> names() const;
-  Handle<PyTuple> var_names() const;
-  Handle<PyTuple> cell_vars() const;
-  Handle<PyTuple> free_vars() const;
+  Handle<PyTuple> names(Isolate* isolate) const;
+  Handle<PyTuple> var_names(Isolate* isolate) const;
+  Handle<PyTuple> cell_vars(Isolate* isolate) const;
+  Handle<PyTuple> free_vars(Isolate* isolate) const;
 
   // 解释器栈帧中实际localsplus的长度
   int nlocalsplus() const { return nlocalsplus_; }
@@ -103,9 +103,9 @@ class PyCodeObject : public PyObject {
   // free_vars的长度
   int nfreevars() const { return nfreevars_; }
 
-  Handle<PyTuple> localsplusnames() const;
-  Handle<PyString> localspluskinds() const;
-  Handle<PyString> exception_table() const;
+  Handle<PyTuple> localsplusnames(Isolate* isolate) const;
+  Handle<PyString> localspluskinds(Isolate* isolate) const;
+  Handle<PyString> exception_table(Isolate* isolate) const;
 
  private:
   friend class PyCodeObjectKlass;

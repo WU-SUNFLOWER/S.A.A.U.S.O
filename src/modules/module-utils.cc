@@ -62,7 +62,7 @@ Maybe<void> ModuleUtils::GetPackagePathList(Isolate* isolate,
     return JustVoid();
   }
 
-  out = Handle<PyList>::cast(handle(path_obj));
+  out = Handle<PyList>::cast(handle(path_obj, isolate));
   return JustVoid();
 }
 

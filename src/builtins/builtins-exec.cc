@@ -78,7 +78,7 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
     return kNullMaybeHandle;
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 // 将 kwargs 中的 globals/locals 合并到对应的引用参数中。
@@ -107,7 +107,7 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
                          "exec() got multiple values for argument 'globals'");
       return kNullMaybeHandle;
     }
-    globals = handle(globals_from_kwargs);
+    globals = handle(globals_from_kwargs, isolate);
   }
 
   Handle<PyObject> locals_from_kwargs;
@@ -123,7 +123,7 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
     locals = locals_from_kwargs;
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 // 这里的作用是：
@@ -139,7 +139,7 @@ MaybeHandle<PyObject> NormalizeExecArgs(Isolate* isolate,
                                         bool globals_from_positional,
                                         bool locals_from_positional) {
   if (kwargs.is_null()) {
-    return handle(isolate->py_none_object());
+    return handle(isolate->py_none_object(), isolate);
   }
 
   Handle<PyObject> globals_key = PyString::New(isolate, "globals");
@@ -154,7 +154,7 @@ MaybeHandle<PyObject> NormalizeExecArgs(Isolate* isolate,
           isolate, kwargs, globals_key, locals_key, globals, locals,
           globals_from_positional, locals_from_positional),
       kNullMaybeHandle);
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 }  // namespace
@@ -273,7 +273,7 @@ BUILTIN(Exec) {
   }
 
   // 对齐 CPython：exec 总是返回 None。
-  return scope.Escape(handle(isolate->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object(), isolate));
 }
 
 }  // namespace saauso::internal

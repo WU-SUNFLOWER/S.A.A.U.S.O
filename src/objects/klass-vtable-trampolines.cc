@@ -205,7 +205,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::StoreSubscr(
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyObject> KlassVtableTrampolines::DeleteSubscr(
@@ -221,7 +221,7 @@ MaybeHandle<PyObject> KlassVtableTrampolines::DeleteSubscr(
            .ToHandle(&result)) {
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 Maybe<bool> KlassVtableTrampolines::Greater(Isolate* isolate,

@@ -27,11 +27,11 @@
 namespace saauso::internal {
 
 namespace {
-Handle<PyObject> NextImpl(Handle<PyObject> self) {
+Handle<PyObject> NextImpl(Isolate* isolate, Handle<PyObject> self) {
   EscapableHandleScope scope;
 
   auto iterator = Handle<PyListIterator>::cast(self);
-  auto list = iterator->owner();
+  auto list = iterator->owner(isolate);
   assert(!list.is_null());
 
   auto iter_cnt = iterator->iter_cnt();
@@ -103,12 +103,12 @@ void PyListIteratorKlass::Finalize(Isolate* isolate) {
 
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Iter(Isolate* isolate,
                                                         Handle<PyObject> self) {
-  return self;
+  return NextImpl(isolate, self);
 }
 
 MaybeHandle<PyObject> PyListIteratorKlass::Virtual_Next(Isolate* isolate,
                                                         Handle<PyObject> self) {
-  Handle<PyObject> result = NextImpl(self);
+  Handle<PyObject> result = NextImpl(isolate, self);
   if (result.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
     return kNullMaybeHandle;

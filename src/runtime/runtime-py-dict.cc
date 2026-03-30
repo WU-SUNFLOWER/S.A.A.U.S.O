@@ -122,7 +122,7 @@ MaybeHandle<PyObject> Runtime_DictSetItem(Isolate* isolate,
   if (PyDict::Put(dict, key, value, isolate).IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
@@ -137,7 +137,7 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
                        "key not found in dict");
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyObject> Runtime_DictGet(Isolate* isolate,
@@ -156,7 +156,7 @@ MaybeHandle<PyObject> Runtime_DictGet(Isolate* isolate,
   if (!default_or_null.is_null()) {
     return default_or_null;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
@@ -174,7 +174,7 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
   }
 
   Handle<PyObject> value = default_or_null.is_null()
-                               ? handle(isolate->py_none_object())
+                               ? handle(isolate->py_none_object(), isolate)
                                : default_or_null;
 
   if (PyDict::Put(dict, key, value, isolate).IsEmpty()) {
@@ -278,7 +278,8 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
     Handle<PyString> value_repr;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, value_repr,
-        PyObject::Repr(isolate, handle(dict->data()->Get((i << 1) + 1))));
+        PyObject::Repr(isolate,
+                       handle(dict->data()->Get((i << 1) + 1), isolate)));
     repr.append(value_repr->ToStdString());
   }
   repr.push_back('}');

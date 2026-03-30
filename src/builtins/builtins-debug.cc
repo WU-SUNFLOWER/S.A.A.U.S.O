@@ -11,7 +11,7 @@ namespace saauso::internal {
 
 BUILTIN(Sysgc) {
   isolate->heap()->CollectGarbage();
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 }  // namespace saauso::internal

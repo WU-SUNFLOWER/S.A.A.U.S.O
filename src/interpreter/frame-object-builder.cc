@@ -63,10 +63,11 @@ struct FrameBuildContext {
   int localsplus_idx{0};
 };
 
-Handle<PyDict> GetDefaultBoundLocals(Handle<PyFunction> func) {
-  if ((func->func_code()->flags() & PyCodeObject::Flag::kOptimized) != 0)
+Handle<PyDict> GetDefaultBoundLocals(Isolate* isolate,
+                                     Handle<PyFunction> func) {
+  if ((func->func_code(isolate)->flags() & PyCodeObject::Flag::kOptimized) != 0)
       [[unlikely]] {
-    return func->func_globals();
+    return func->func_globals(isolate);
   }
   return Handle<PyDict>::null();
 }
@@ -76,18 +77,18 @@ FrameBuildContext PrepareForFunction(Isolate* isolate,
                                      Handle<PyObject> receiver,
                                      Handle<PyDict> bound_locals) {
   FrameBuildContext ctx;
-  ctx.code_object = func->func_code();
+  ctx.code_object = func->func_code(isolate);
   ctx.func = func;
   ctx.locals = bound_locals;
-  ctx.globals = func->func_globals();
+  ctx.globals = func->func_globals(isolate);
   if (ctx.code_object->nlocalsplus() > 0) {
     ctx.localsplus =
         isolate->factory()->NewFixedArray(ctx.code_object->nlocalsplus());
   }
   ctx.stack = isolate->factory()->NewFixedArray(ctx.code_object->stack_size());
 
-  ctx.func_name = ctx.code_object->co_name();
-  ctx.var_names = ctx.code_object->var_names();
+  ctx.func_name = ctx.code_object->co_name(isolate);
+  ctx.var_names = ctx.code_object->var_names(isolate);
 
   ctx.real_formal_pos_arg_cnt = ctx.code_object->arg_count();
 
@@ -287,7 +288,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
   }
 
 ret:
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
@@ -347,7 +348,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
   }
 
 ret:
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 }  // namespace
@@ -359,7 +360,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
     Handle<PyTuple> actual_pos_args,
     Handle<PyDict> actual_kw_args) {
   return BuildSlowPath(isolate, func, receiver, actual_pos_args, actual_kw_args,
-                       GetDefaultBoundLocals(func));
+                       GetDefaultBoundLocals(isolate, func));
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
@@ -387,7 +388,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   RETURN_ON_EXCEPTION(
       isolate, AssignKwArgsFromDict(isolate, ctx, actual_kw_args, kw_args));
 
-  FillDefaultArgs(ctx, func->default_args());
+  FillDefaultArgs(ctx, func->default_args(isolate));
   if (!CheckMissingArgs(isolate, ctx)) {
     return kNullMaybe;
   }
@@ -402,8 +403,9 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
 
   auto* frame_object = FrameObject::Create(
-      *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
-      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object, *ctx.func);
+      *ctx.code_object->consts(isolate), *ctx.code_object->names(isolate),
+      *ctx.locals, *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object,
+      *ctx.func);
   return Maybe<FrameObject*>(frame_object);
 }
 
@@ -414,7 +416,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
     Handle<PyTuple> actual_args,
     Handle<PyTuple> kwarg_keys) {
   return BuildFastPath(isolate, func, receiver, actual_args, kwarg_keys,
-                       GetDefaultBoundLocals(func));
+                       GetDefaultBoundLocals(isolate, func));
 }
 
 Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
@@ -446,7 +448,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
       isolate, AssignKwArgsFromActualArgs(isolate, ctx, actual_args, kwarg_keys,
                                           kw_args));
 
-  FillDefaultArgs(ctx, func->default_args());
+  FillDefaultArgs(ctx, func->default_args(isolate));
   if (!CheckMissingArgs(isolate, ctx)) {
     return kNullMaybe;
   }
@@ -461,8 +463,9 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   InjectVarArgsAndKwArgs(ctx, extend_pos_args, kw_args);
 
   auto* frame_object = FrameObject::Create(
-      *ctx.code_object->consts(), *ctx.code_object->names(), *ctx.locals,
-      *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object, *ctx.func);
+      *ctx.code_object->consts(isolate), *ctx.code_object->names(isolate),
+      *ctx.locals, *ctx.globals, *ctx.localsplus, *ctx.stack, *ctx.code_object,
+      *ctx.func);
   return Maybe<FrameObject*>(frame_object);
 }
 

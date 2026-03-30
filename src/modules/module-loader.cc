@@ -81,7 +81,7 @@ MaybeHandle<PyObject> ModuleLoader::LoadAsBuiltinModuleOrNone(
     Handle<PyString> fullname) {
   BuiltinModuleInitFunc builtin_init = builtin_registry_->Find(fullname);
   if (builtin_init == nullptr) {
-    return handle(isolate_->py_none_object());
+    return handle(isolate_->py_none_object(), isolate_);
   }
 
   Handle<PyModule> module;
@@ -108,7 +108,7 @@ MaybeHandle<PyObject> ModuleLoader::LoadAsFileModuleOrNone(
       finder_->FindModuleLocation(search_path_list, relative_name));
 
   if (loc.origin.empty()) [[unlikely]] {
-    return handle(isolate_->py_none_object());
+    return handle(isolate_->py_none_object(), isolate_);
   }
 
   return ExecuteModuleOrNoneInternal(fullname, loc);
@@ -131,7 +131,7 @@ MaybeHandle<PyObject> ModuleLoader::ExecuteModuleOrNoneInternal(
     return ExecuteModuleFromPyc(fullname, loc);
   }
 
-  return handle(isolate_->py_none_object());
+  return handle(isolate_->py_none_object(), isolate_);
 }
 
 MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
@@ -175,12 +175,13 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
     const ModuleLocation& loc) {
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
-  RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::Put(module_dict, ST(name, isolate_), fullname, isolate_));
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(name, isolate_),
+                                            fullname, isolate_));
 
   if (loc.is_package) {
     RETURN_ON_EXCEPTION(
-        isolate_, PyDict::Put(module_dict, ST(package, isolate_), fullname, isolate_));
+        isolate_,
+        PyDict::Put(module_dict, ST(package, isolate_), fullname, isolate_));
   } else {
     int64_t dot_index = fullname->LastIndexOf(ST(dot, isolate_));
     if (dot_index == PyString::kNotFound) {
@@ -192,8 +193,9 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
       Handle<PyString> package_name =
           PyString::Slice(fullname, 0, package_end, isolate_);
 
-      RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(package, isolate_),
-                                                package_name, isolate_));
+      RETURN_ON_EXCEPTION(isolate_,
+                          PyDict::Put(module_dict, ST(package, isolate_),
+                                      package_name, isolate_));
     }
   }
 
@@ -206,11 +208,11 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
     Handle<PyList> pkg_path = PyList::New(isolate_);
     PyList::Append(pkg_path, PyString::FromStdString(isolate_, loc.package_dir),
                    isolate_);
-    RETURN_ON_EXCEPTION(isolate_,
-                        PyDict::Put(module_dict, ST(path, isolate_), pkg_path, isolate_));
+    RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(path, isolate_),
+                                              pkg_path, isolate_));
   }
 
-  return handle(isolate_->py_none_object());
+  return handle(isolate_->py_none_object(), isolate_);
 }
 
 }  // namespace saauso::internal
