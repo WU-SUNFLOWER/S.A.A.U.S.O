@@ -282,7 +282,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
         isolate, found, kwargs->Get(reverse_name, reverse_flag, isolate));
     if (found) {
       assert(!reverse_flag.is_null());
-      reverse = Runtime_PyObjectIsTrue(reverse_flag);
+      reverse = Runtime_PyObjectIsTrue(isolate, reverse_flag);
     }
   }
 

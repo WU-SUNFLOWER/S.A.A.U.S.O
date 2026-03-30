@@ -13,14 +13,14 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
   assert(i_isolate == i::Isolate::Current());
 
   i::EscapableHandleScope handle_scope;
-  i::Handle<i::PyString> py_name =
-      i::PyString::New(i_isolate, name.data(), static_cast<int64_t>(name.size()));
+  i::Handle<i::PyString> py_name = i::PyString::New(
+      i_isolate, name.data(), static_cast<int64_t>(name.size()));
   int64_t callback_addr =
       static_cast<int64_t>(reinterpret_cast<intptr_t>(callback));
   i::Handle<i::PyObject> closure_data =
       i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(callback_addr)));
-  i::FunctionTemplateInfo template_info(&api::InvokeEmbedderCallback, py_name,
-                                        closure_data);
+  i::FunctionTemplateInfo template_info(i_isolate, &api::InvokeEmbedderCallback,
+                                        py_name, closure_data);
   i::MaybeHandle<i::PyFunction> maybe_function =
       i_isolate->factory()->NewPyFunctionWithTemplate(template_info);
   i::Handle<i::PyFunction> function;

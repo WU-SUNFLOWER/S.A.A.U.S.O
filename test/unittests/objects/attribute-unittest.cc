@@ -31,7 +31,8 @@ TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
   HandleScope scope;
 
   auto func_name = PyString::New(isolate_, "foo");
-  FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
+  FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
+                                     func_name);
 
   Handle<PyFunction> func;
   ASSERT_TRUE(
@@ -67,26 +68,26 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
   HandleScope scope;
 
   auto func_name = PyString::New(isolate_, "foo");
-  FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
+  FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
+                                     func_name);
 
   Handle<PyFunction> func;
   ASSERT_TRUE(
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   Handle<PyObject> func_obj(func);
-  Handle<PyObject> expected_class(
-      Handle<PyObject>::cast(
-          PyObject::ResolveObjectKlass(func_obj, isolate_)->type_object()));
+  Handle<PyObject> expected_class(Handle<PyObject>::cast(
+      PyObject::ResolveObjectKlass(func_obj, isolate_)->type_object()));
   Handle<PyObject> fake_class = handle(PySmi::FromInt(7));
 
   Handle<PyDict> properties = PyObject::GetProperties(func_obj);
   ASSERT_FALSE(properties.is_null());
   ASSERT_FALSE(
-      PyDict::Put(properties, ST(class), fake_class, isolate_).IsNothing());
+      PyDict::Put(properties, ST(class, isolate_), fake_class, isolate_).IsNothing());
 
   Handle<PyObject> got_class;
   ASSERT_TRUE(
-      PyObject::GetAttr(isolate_, func_obj, ST(class)).ToHandle(&got_class));
+      PyObject::GetAttr(isolate_, func_obj, ST(class, isolate_)).ToHandle(&got_class));
   EXPECT_TRUE(got_class.is_identical_to(expected_class));
 }
 
@@ -94,14 +95,15 @@ TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
   HandleScope scope;
 
   auto func_name = PyString::New(isolate_, "foo");
-  FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
+  FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
+                                     func_name);
 
   Handle<PyFunction> func;
   ASSERT_TRUE(
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   EXPECT_TRUE(
-      PyObject::SetAttr(isolate_, func, ST(class), handle(PySmi::FromInt(1)))
+      PyObject::SetAttr(isolate_, func, ST(class, isolate_), handle(PySmi::FromInt(1)))
           .IsEmpty());
   EXPECT_TRUE(isolate_->HasPendingException());
   isolate_->exception_state()->Clear();
@@ -111,7 +113,8 @@ TEST_F(AttributeTest, DictAccessorReturnsProperties) {
   HandleScope scope;
 
   auto func_name = PyString::New(isolate_, "foo");
-  FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
+  FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
+                                     func_name);
 
   Handle<PyFunction> func;
   ASSERT_TRUE(
@@ -123,7 +126,7 @@ TEST_F(AttributeTest, DictAccessorReturnsProperties) {
 
   Handle<PyObject> got_dict;
   ASSERT_TRUE(
-      PyObject::GetAttr(isolate_, func_obj, ST(dict)).ToHandle(&got_dict));
+      PyObject::GetAttr(isolate_, func_obj, ST(dict, isolate_)).ToHandle(&got_dict));
   EXPECT_TRUE(Handle<PyDict>::cast(got_dict).is_identical_to(properties));
 }
 
@@ -131,13 +134,14 @@ TEST_F(AttributeTest, DictAccessorRejectsSetAttr) {
   HandleScope scope;
 
   auto func_name = PyString::New(isolate_, "foo");
-  FunctionTemplateInfo func_template(&BUILTIN_FUNC_NAME(DoNoThing), func_name);
+  FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
+                                     func_name);
 
   Handle<PyFunction> func;
   ASSERT_TRUE(
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
-  EXPECT_TRUE(PyObject::SetAttr(isolate_, func, ST(dict),
+  EXPECT_TRUE(PyObject::SetAttr(isolate_, func, ST(dict, isolate_),
                                 Handle<PyObject>(PyDict::New(isolate_)))
                   .IsEmpty());
   EXPECT_TRUE(isolate_->HasPendingException());

@@ -107,7 +107,7 @@ Maybe<bool> PyBooleanKlass::Virtual_Equal(Isolate* isolate,
 MaybeHandle<PyObject> PyBooleanKlass::Virtual_Repr(Isolate* isolate,
                                                    Handle<PyObject> self) {
   bool v = Handle<PyBoolean>::cast(self)->value();
-  return v ? ST(true_symbol) : ST(false_symbol);
+  return v ? ST(true_symbol, isolate) : ST(false_symbol, isolate);
 }
 
 MaybeHandle<PyObject> PyBooleanKlass::Virtual_Str(Isolate* isolate,
@@ -197,7 +197,7 @@ Maybe<bool> PyNoneKlass::Virtual_Equal(Isolate* isolate,
 
 MaybeHandle<PyObject> PyNoneKlass::Virtual_Repr(Isolate* isolate,
                                                 Handle<PyObject> self) {
-  return ST(none_symbol);
+  return ST(none_symbol, isolate);
 }
 
 MaybeHandle<PyObject> PyNoneKlass::Virtual_Str(Isolate* isolate,

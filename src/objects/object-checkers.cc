@@ -179,7 +179,6 @@ IMPL_PY_CHECKER_WITH_HANDLE_ARG(HeapObject)
 // 针对支持被用户Python代码继承的类型，提供显式的 exact 语义 API。
 // 基于 Klass 头指针进行精确判断。
 
-// TODO: VM内部IsXxxx系列API，要求显式传入Isolate
 #define IMPL_PY_EXACT_CHECKER_BY_KLASS(name)                                  \
   bool Is##name##Exact(Tagged<PyObject> object, Isolate* isolate) {           \
     return IsHeapObject(object) && PyObject::GetHeapKlassUnchecked(object) == \

@@ -45,7 +45,7 @@ MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
   Handle<PyObject> args_obj;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             properties->Get(ST(args), args_obj, isolate));
+                             properties->Get(ST(args, isolate), args_obj, isolate));
   if (!found || !IsPyTuple(args_obj)) {
     return Handle<PyTuple>::null();
   }
@@ -148,14 +148,14 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   }
 
   RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(args), init_args, isolate),
+      isolate, PyDict::Put(properties, ST(args, isolate), init_args, isolate),
       kNullMaybeHandle);
 
   Handle<PyString> message;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
                              MessageFromArgsTuple(isolate, init_args));
   RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(message), message, isolate),
+      isolate, PyDict::Put(properties, ST(message, isolate), message, isolate),
       kNullMaybeHandle);
 
   return handle(isolate->py_none_object());
@@ -201,7 +201,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
     Handle<PyObject> message;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message), message, isolate));
+                               properties->Get(ST(message, isolate), message, isolate));
     if (found && IsPyString(message)) {
       return scope.Escape(Handle<PyString>::cast(message));
     }

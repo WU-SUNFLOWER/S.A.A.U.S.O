@@ -149,7 +149,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
   RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
-                                   isolate, self, ST(getattr), getattr_func));
+                                   isolate, self, ST(getattr, isolate), getattr_func));
   if (!getattr_func.is_null()) {
     Handle<PyTuple> args = PyTuple::New(isolate, 1);
     args->SetInternal(0, prop_name);

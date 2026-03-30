@@ -19,12 +19,11 @@
 
 namespace saauso::internal {
 
-bool Runtime_PyObjectIsTrue(Handle<PyObject> object) {
-  return Runtime_PyObjectIsTrue(*object);
+bool Runtime_PyObjectIsTrue(Isolate* isolate, Handle<PyObject> object) {
+  return Runtime_PyObjectIsTrue(isolate, *object);
 }
 
-bool Runtime_PyObjectIsTrue(Tagged<PyObject> object) {
-  Isolate* isolate = Isolate::Current();
+bool Runtime_PyObjectIsTrue(Isolate* isolate, Tagged<PyObject> object) {
   if (IsPyFalse(object, isolate) || IsPyNone(object, isolate)) {
     return false;
   }

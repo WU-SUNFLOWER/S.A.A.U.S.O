@@ -92,9 +92,6 @@ class Isolate {
   Tagged<PyBoolean> py_true_object() const { return py_true_object_; }
   Tagged<PyBoolean> py_false_object() const { return py_false_object_; }
 
-  // 辅助函数：将 C++ bool 转换为 Python 的 True/False 对象
-  static Tagged<PyBoolean> ToPyBoolean(bool condition);
-
 #define DECLARE_ISOLATE_KLASS_ACCESSORS(_, Klass, slot)        \
   Tagged<Klass> slot##_klass() const { return slot##_klass_; } \
   void set_##slot##_klass(Tagged<Klass> klass) { slot##_klass_ = klass; }

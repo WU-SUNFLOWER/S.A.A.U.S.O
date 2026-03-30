@@ -224,7 +224,7 @@ TEST_F(PyObjectTest, IsExactByKindBuiltinCheckersRemainPrecise) {
       isolate_->factory()->NewPyDictItemIterator(dict));
 
   Handle<PyFunction> func;
-  FunctionTemplateInfo func_template(&DummyMethodTarget,
+  FunctionTemplateInfo func_template(isolate_, &DummyMethodTarget,
                                      PyString::New(isolate_, "dummy"));
   ASSERT_TRUE(isolate_->factory()
                   ->NewPyFunctionWithTemplate(func_template)

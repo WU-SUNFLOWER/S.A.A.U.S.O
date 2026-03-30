@@ -50,8 +50,8 @@ print(str(float("nan")))
   AppendExpected(expected_printv_result, PyString::New(isolate_, ""));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "123"));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "3.0"));
-  AppendExpected(expected_printv_result, ST(true_symbol));
-  AppendExpected(expected_printv_result, ST(none_symbol));
+  AppendExpected(expected_printv_result, ST(true_symbol, isolate_));
+  AppendExpected(expected_printv_result, ST(none_symbol, isolate_));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1234)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(255)));

@@ -60,7 +60,7 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   closures->SetInternal(0, cell);
 
   Handle<PyString> func_name = PyString::New(isolate_, "dummy");
-  FunctionTemplateInfo func_template(&DummyNative, func_name);
+  FunctionTemplateInfo func_template(isolate_, &DummyNative, func_name);
 
   Handle<PyFunction> func;
   if (!isolate_->factory()

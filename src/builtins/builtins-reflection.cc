@@ -8,6 +8,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -76,7 +77,7 @@ BUILTIN(IsInstance) {
     return kNullMaybeHandle;
   }
 
-  auto result = handle(Isolate::ToPyBoolean(matched));
+  auto result = isolate->factory()->ToPyBoolean(matched);
   return scope.Escape(result);
 }
 

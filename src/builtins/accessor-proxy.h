@@ -26,7 +26,8 @@ class AccessorProxy : public AllStatic {
                             Handle<PyObject> value);
 
  private:
-  static const AccessorDescriptor* LookupAccessor(Handle<PyObject> name);
+  static const AccessorDescriptor* LookupAccessor(Isolate* isolate,
+                                                  Handle<PyObject> name);
 };
 
 }  // namespace saauso::internal

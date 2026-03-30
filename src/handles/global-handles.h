@@ -24,12 +24,10 @@ class Global {
         Tagged<PyObject>(object).ptr());
   }
 
-  explicit Global(Tagged<T> object) : Global(Isolate::Current(), object) {}
-
   template <typename S>
-  Global(Handle<S> local)  // NOLINT
+  Global(Isolate* isolate, Handle<S> local)  // NOLINT
     requires(is_subtype_v<S, T>)
-      : Global(Isolate::Current(), Tagged<T>(*local)) {}
+      : Global(isolate, Tagged<T>(*local)) {}
 
   // 类似于std::unique_ptr，禁止拷贝和赋值，避免对应的slot槽位被重复释放
   Global(const Global&) = delete;
@@ -59,33 +57,27 @@ class Global {
   bool IsEmpty() const { return location_ == nullptr; }
 
   void Reset() {
-    if (location_ == nullptr) {
-      isolate_ = nullptr;
-      return;
+    // 该 Global 句柄有申请实际的 slot 槽位，那么需要首先进行释放
+    if (location_ != nullptr) {
+      assert(isolate_ != nullptr);
+      isolate_->handle_scope_implementer()->DestroyGlobalHandle(location_);
     }
-    assert(isolate_ != nullptr);
-    // 释放slot槽位
-    isolate_->handle_scope_implementer()->DestroyGlobalHandle(location_);
     isolate_ = nullptr;
     location_ = nullptr;
   }
 
-  void Reset(Tagged<T> object) {
-    if (location_ == nullptr) {
-      isolate_ = Isolate::Current();
-      location_ = isolate_->handle_scope_implementer()->CreateGlobalHandle(
-          Tagged<PyObject>(object).ptr());
-      return;
-    }
-    assert(isolate_ == Isolate::Current());
-    *location_ = Tagged<PyObject>(object).ptr();
+  void Reset(Isolate* isolate, Tagged<T> object) {
+    Reset();
+    isolate_ = isolate;
+    location_ = isolate_->handle_scope_implementer()->CreateGlobalHandle(
+        Tagged<PyObject>(object).ptr());
   }
 
-  Handle<T> Get() const {
+  Handle<T> Get(Isolate* isolate) const {
     if (IsEmpty()) {
       return Handle<T>::null();
     }
-    assert(isolate_ == Isolate::Current());
+    assert(isolate_ == isolate);
     return Handle<T>(GetDirectionPtr());
   }
 

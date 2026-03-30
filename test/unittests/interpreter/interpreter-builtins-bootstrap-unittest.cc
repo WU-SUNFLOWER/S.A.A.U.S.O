@@ -56,15 +56,15 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   Tagged<PyObject> value;
   bool found = false;
   ASSERT_TRUE(
-      builtins->GetTagged(ST(true_symbol), value, isolate_).To(&found));
+      builtins->GetTagged(ST(true_symbol, isolate_), value, isolate_).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_true_object());
   ASSERT_TRUE(
-      builtins->GetTagged(ST(false_symbol), value, isolate_).To(&found));
+      builtins->GetTagged(ST(false_symbol, isolate_), value, isolate_).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_false_object());
   ASSERT_TRUE(
-      builtins->GetTagged(ST(none_symbol), value, isolate_).To(&found));
+      builtins->GetTagged(ST(none_symbol, isolate_), value, isolate_).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_none_object());
 
@@ -73,7 +73,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   for (const char* name : kBuiltinFunctions) {
     Handle<PyString> key = PyString::New(isolate_, name);
     if (std::string_view(name) == "build_class") {
-      key = ST(func_build_class);
+      key = ST(func_build_class, isolate_);
     }
     bool exists = false;
     ASSERT_TRUE(builtins->ContainsKey(key, isolate_).To(&exists)) << name;
@@ -84,9 +84,9 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   }
 
   bool exists = false;
-  ASSERT_TRUE(builtins->ContainsKey(ST(builtins), isolate_).To(&exists));
+  ASSERT_TRUE(builtins->ContainsKey(ST(builtins, isolate_), isolate_).To(&exists));
   ASSERT_TRUE(exists);
-  ASSERT_TRUE(builtins->GetTagged(ST(builtins), value, isolate_).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(builtins, isolate_), value, isolate_).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, *builtins);
 }
@@ -136,17 +136,17 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
 
   bool has_init = false;
   ASSERT_TRUE(
-      base_exception_props->ContainsKey(ST(init_instance), isolate_)
+      base_exception_props->ContainsKey(ST(init_instance, isolate_), isolate_)
           .To(&has_init));
   EXPECT_TRUE(has_init);
 
   bool has_repr = false;
   ASSERT_TRUE(
-      base_exception_props->ContainsKey(ST(repr), isolate_).To(&has_repr));
+      base_exception_props->ContainsKey(ST(repr, isolate_), isolate_).To(&has_repr));
   EXPECT_TRUE(has_repr);
 
   bool has_str = false;
-  ASSERT_TRUE(base_exception_props->ContainsKey(ST(str), isolate_).To(&has_str));
+  ASSERT_TRUE(base_exception_props->ContainsKey(ST(str, isolate_), isolate_).To(&has_str));
   EXPECT_TRUE(has_str);
 }
 
@@ -170,11 +170,11 @@ TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
     auto props = type_obj->own_klass()->klass_properties();
 
     bool has_repr = false;
-    ASSERT_TRUE(props->ContainsKey(ST(repr), isolate_).To(&has_repr)) << name;
+    ASSERT_TRUE(props->ContainsKey(ST(repr, isolate_), isolate_).To(&has_repr)) << name;
     EXPECT_TRUE(has_repr) << name;
 
     bool has_str = false;
-    ASSERT_TRUE(props->ContainsKey(ST(str), isolate_).To(&has_str)) << name;
+    ASSERT_TRUE(props->ContainsKey(ST(str, isolate_), isolate_).To(&has_str)) << name;
     EXPECT_TRUE(has_str) << name;
   }
 }

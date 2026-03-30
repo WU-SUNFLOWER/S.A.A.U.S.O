@@ -80,7 +80,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
   Handle<PyString> func_name = PyString::New(isolate_, "print");
   Handle<PyDict> builtins = handle(isolate_->builtins());
 
-  FunctionTemplateInfo func_template(&Builtin_PrintV, func_name);
+  FunctionTemplateInfo func_template(isolate_, &Builtin_PrintV, func_name);
   Handle<PyFunction> func;
   ASSERT_TRUE(
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
@@ -96,7 +96,7 @@ void BasicInterpreterTest::TearDownTestSuite() {
 
 void BasicInterpreterTest::SetUp() {
   HandleScope scope;
-  printv_result_ = PyList::New(isolate_);
+  printv_result_ = Global<PyList>(isolate_, PyList::New(isolate_));
   isolate_->interpreter()->ClearPendingException();
 }
 
@@ -173,14 +173,14 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
-    PyList::Append(printv_result_.Get(), args->Get(i), isolate);
+    PyList::Append(printv_result_.Get(isolate_), args->Get(i), isolate);
   }
   return handle(isolate->py_none_object());
 }
 
 void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
   HandleScope scope;
-  Handle<PyList> actual = printv_result_.Get();
+  Handle<PyList> actual = printv_result_.Get(isolate_);
 
   ASSERT_FALSE(expected.is_null());
   ASSERT_FALSE(actual.is_null());

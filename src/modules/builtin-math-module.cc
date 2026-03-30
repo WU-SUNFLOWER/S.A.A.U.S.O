@@ -297,7 +297,7 @@ BUILTIN_MODULE_FUNC(Math_IsFinite) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return handle(Isolate::ToPyBoolean(std::isfinite(x)));
+  return isolate->factory()->ToPyBoolean(std::isfinite(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_IsNaN) {
@@ -310,7 +310,7 @@ BUILTIN_MODULE_FUNC(Math_IsNaN) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return handle(Isolate::ToPyBoolean(std::isnan(x)));
+  return isolate->factory()->ToPyBoolean(std::isnan(x));
 }
 
 BUILTIN_MODULE_FUNC(Math_IsInf) {
@@ -323,7 +323,7 @@ BUILTIN_MODULE_FUNC(Math_IsInf) {
   double x = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, x, ExtractDouble(isolate, args->Get(0)));
 
-  return handle(Isolate::ToPyBoolean(std::isinf(x)));
+  return isolate->factory()->ToPyBoolean(std::isinf(x));
 }
 
 }  // namespace module_impl

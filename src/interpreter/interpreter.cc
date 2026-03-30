@@ -78,7 +78,7 @@ Handle<PyDict> Interpreter::CurrentFrameLocals() const {
 Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
   Handle<PyDict> globals = PyDict::New(isolate_);
   RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::Put(globals, ST(name), ST(main), isolate_));
+                      PyDict::Put(globals, ST(name, isolate_), ST(main, isolate_), isolate_));
 
   boilerplate->set_func_globals(globals);
 

@@ -192,7 +192,7 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   // 把自己添加到mro序列的开头
   PyList::Insert(mro_result, 0, type_object(), isolate);
   RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(klass_properties(), ST(mro), mro_result,
+                      PyDict::Put(klass_properties(), ST(mro, isolate), mro_result,
                                   isolate));
 
   mro_ = *mro_result;

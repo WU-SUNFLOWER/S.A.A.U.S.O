@@ -228,7 +228,7 @@ void Interpreter::EvalCurrentFrame() {
       goto pending_exception_unwind;
     }
 
-    PUSH(isolate_->ToPyBoolean(matched));
+    PUSH(isolate_->factory()->ToPyBoolean(matched));
   })
 
   // 设置 pending_exception_ 并触发异常展开（由 DISPATCH 统一跳转到
@@ -258,9 +258,10 @@ void Interpreter::EvalCurrentFrame() {
                 raise_pc);
           }
         } else {
-          ASSIGN_GOTO_ON_EXCEPTION(exception, Runtime_NewExceptionInstance(
-                                                  isolate_, ST(runtime_err),
-                                                  Handle<PyString>::null()));
+          ASSIGN_GOTO_ON_EXCEPTION(
+              exception,
+              Runtime_NewExceptionInstance(isolate_, ST(runtime_err, isolate_),
+                                           Handle<PyString>::null()));
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }
@@ -359,8 +360,8 @@ void Interpreter::EvalCurrentFrame() {
     Tagged<PyObject> value;
     bool found = false;
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, isolate_->builtins()->GetTagged(ST_TAGGED(func_build_class),
-                                               value, isolate_));
+        found, isolate_->builtins()->GetTagged(
+                   ST_TAGGED(func_build_class, isolate_), value, isolate_));
     assert(found);
     assert(!value.is_null());
     PUSH(handle(value));
@@ -664,7 +665,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> parent_module_name_obj;
     ASSIGN_GOTO_ON_EXCEPTION(
         parent_module_name_obj,
-        PyObject::GetAttr(isolate_, parent_module, ST(name)));
+        PyObject::GetAttr(isolate_, parent_module, ST(name, isolate_)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
       Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                          "module __name__ must be a string");
@@ -678,7 +679,7 @@ void Interpreter::EvalCurrentFrame() {
     // 完整符号名为`os.path`。
     auto sub_module_fullname = PyString::Clone(isolate_, parent_module_name);
     sub_module_fullname =
-        PyString::Append(sub_module_fullname, ST(dot), isolate_);
+        PyString::Append(sub_module_fullname, ST(dot, isolate_), isolate_);
     sub_module_fullname =
         PyString::Append(sub_module_fullname, sub_module_name, isolate_);
 
@@ -700,14 +701,14 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
     Tagged<PyObject> condition = POP_TAGGED();
-    if (!Runtime_PyObjectIsTrue(condition)) {
+    if (!Runtime_PyObjectIsTrue(isolate_, condition)) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
     }
   })
 
   INTERPRETER_HANDLER_DISPATCH(JumpIfTrue, {
     Tagged<PyObject> condition = POP_TAGGED();
-    if (Runtime_PyObjectIsTrue(condition)) {
+    if (Runtime_PyObjectIsTrue(isolate_, condition)) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
     }
   })
@@ -715,7 +716,8 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_DISPATCH(IsOp, {
     Tagged<PyObject> r = POP_TAGGED();
     Tagged<PyObject> l = POP_TAGGED();
-    PUSH(Isolate::ToPyBoolean((l == r) ^ op_arg));
+    PUSH(((l == r) ^ op_arg) ? isolate_->py_true_object()
+                             : isolate_->py_false_object());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
@@ -751,7 +753,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> l = POP();
     bool result = false;
     ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::ContainsBool(isolate_, r, l));
-    PUSH(Isolate::ToPyBoolean(result ^ op_arg));
+    PUSH(isolate_->factory()->ToPyBoolean(result ^ op_arg));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinaryOp, {
