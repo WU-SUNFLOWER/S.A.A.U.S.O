@@ -49,13 +49,13 @@ TEST_F(GlobalHandleTest, GlobalHandleShouldSurviveAcrossGc) {
   {
     HandleScope scope;
     isolate_->heap()->CollectGarbage();
-    Address addr_after = (*g.Get()).ptr();
+    Address addr_after = (*g.Get(isolate_)).ptr();
     EXPECT_NE(addr_before, addr_after);
   }
 
   {
     HandleScope scope;
-    Handle<PyString> s2 = g.Get();
+    Handle<PyString> s2 = g.Get(isolate_);
     Handle<PyString> expected = PyString::New(isolate_, "global-string");
     bool eq = false;
     ASSERT_TRUE(PyObject::EqualBool(isolate_, s2, expected).To(&eq));

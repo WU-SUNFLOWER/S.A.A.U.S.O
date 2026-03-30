@@ -173,14 +173,14 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
-    PyList::Append(printv_result_.Get(), args->Get(i), isolate);
+    PyList::Append(printv_result_.Get(isolate_), args->Get(i), isolate);
   }
   return handle(isolate->py_none_object());
 }
 
 void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
   HandleScope scope;
-  Handle<PyList> actual = printv_result_.Get();
+  Handle<PyList> actual = printv_result_.Get(isolate_);
 
   ASSERT_FALSE(expected.is_null());
   ASSERT_FALSE(actual.is_null());

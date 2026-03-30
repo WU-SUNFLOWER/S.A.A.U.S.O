@@ -22,7 +22,8 @@ class FunctionTemplateInfo {
       NativeFuncAccessFlag native_access_flag = NativeFuncAccessFlag::kStatic,
       Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null(),
       Handle<PyObject> closure_data = Handle<PyObject>::null())
-      : function_(function),
+      : isolate_(isolate),
+        function_(function),
         name_(isolate, name),
         native_access_flag_(native_access_flag),
         native_owner_type_(isolate, native_owner_type),
@@ -35,7 +36,8 @@ class FunctionTemplateInfo {
       Handle<PyObject> closure_data,
       NativeFuncAccessFlag native_access_flag = NativeFuncAccessFlag::kStatic,
       Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null())
-      : function_with_closure_(function_with_closure),
+      : isolate_(isolate),
+        function_with_closure_(function_with_closure),
         name_(isolate, name),
         native_access_flag_(native_access_flag),
         native_owner_type_(isolate, native_owner_type),
@@ -45,16 +47,17 @@ class FunctionTemplateInfo {
   NativeFuncPointerWithClosure function_with_closure() const {
     return function_with_closure_;
   }
-  Handle<PyString> name() const { return name_.Get(); }
+  Handle<PyString> name() const { return name_.Get(isolate_); }
   NativeFuncAccessFlag native_access_flag() const {
     return native_access_flag_;
   }
   Handle<PyTypeObject> native_owner_type() const {
-    return native_owner_type_.Get();
+    return native_owner_type_.Get(isolate_);
   }
-  Handle<PyObject> closure_data() const { return closure_data_.Get(); }
+  Handle<PyObject> closure_data() const { return closure_data_.Get(isolate_); }
 
  private:
+  Isolate* isolate_{nullptr};
   NativeFuncPointer function_{nullptr};
   NativeFuncPointerWithClosure function_with_closure_{nullptr};
   Global<PyString> name_;
