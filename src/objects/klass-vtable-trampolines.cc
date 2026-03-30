@@ -244,7 +244,7 @@ Maybe<bool> KlassVtableTrampolines::Greater(Isolate* isolate,
       isolate, result,
       Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()));
 
-  return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+  return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
 }
 
 Maybe<bool> KlassVtableTrampolines::Less(Isolate* isolate,
@@ -267,7 +267,7 @@ Maybe<bool> KlassVtableTrampolines::Less(Isolate* isolate,
       isolate, result,
       Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()));
 
-  return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+  return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
 }
 
 Maybe<bool> KlassVtableTrampolines::Equal(Isolate* isolate,
@@ -293,7 +293,7 @@ Maybe<bool> KlassVtableTrampolines::Equal(Isolate* isolate,
       isolate, result,
       Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()));
 
-  return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+  return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
 }
 
 Maybe<bool> KlassVtableTrampolines::NotEqual(Isolate* isolate,
@@ -312,7 +312,7 @@ Maybe<bool> KlassVtableTrampolines::NotEqual(Isolate* isolate,
         isolate, result,
         Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()));
 
-    return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+    return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
   }
 
   Maybe<bool> eq = Equal(isolate, self, other);
@@ -338,7 +338,7 @@ Maybe<bool> KlassVtableTrampolines::GreaterEqual(Isolate* isolate,
         isolate, result,
         Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()));
 
-    return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+    return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
   }
 
   bool gt, eq;
@@ -364,7 +364,7 @@ Maybe<bool> KlassVtableTrampolines::LessEqual(Isolate* isolate,
         isolate, result,
         Execution::Call(isolate, callable, self, args, Handle<PyDict>::null()));
 
-    return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+    return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
   }
 
   bool lt, eq;
@@ -386,7 +386,7 @@ Maybe<bool> KlassVtableTrampolines::Contains(Isolate* isolate,
            .ToHandle(&result)) {
     return kNullMaybe;
   }
-  return Maybe<bool>(Runtime_PyObjectIsTrue(result));
+  return Maybe<bool>(Runtime_PyObjectIsTrue(isolate, result));
 }
 
 MaybeHandle<PyObject> KlassVtableTrampolines::Iter(Isolate* isolate,

@@ -700,14 +700,14 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
     Tagged<PyObject> condition = POP_TAGGED();
-    if (!Runtime_PyObjectIsTrue(condition)) {
+    if (!Runtime_PyObjectIsTrue(isolate_, condition)) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
     }
   })
 
   INTERPRETER_HANDLER_DISPATCH(JumpIfTrue, {
     Tagged<PyObject> condition = POP_TAGGED();
-    if (Runtime_PyObjectIsTrue(condition)) {
+    if (Runtime_PyObjectIsTrue(isolate_, condition)) {
       current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
     }
   })

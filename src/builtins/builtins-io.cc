@@ -168,7 +168,7 @@ BUILTIN(Print) {
   }
 
   if (!options.flush.is_null()) {
-    if (Runtime_PyObjectIsTrue(options.flush)) {
+    if (Runtime_PyObjectIsTrue(isolate, options.flush)) {
       std::fflush(stdout);
     }
   }
