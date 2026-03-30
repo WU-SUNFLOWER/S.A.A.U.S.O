@@ -10,7 +10,6 @@
 namespace saauso::internal {
 
 class Isolate;
-class HandleScopeImplementer;
 
 class HandleScope {
  public:
@@ -20,20 +19,32 @@ class HandleScope {
     int extension{-1};  // 进入该scope后额外申请的block数量
   };
 
+  // TODO: HandleScope(Isolate* isolate) 铺开后移除该构造函数
   HandleScope();
+
+  explicit HandleScope(Isolate* isolate);
+
   HandleScope(const HandleScope&) = delete;
   HandleScope& operator=(const HandleScope&) = delete;
 
   ~HandleScope();
 
+  // TODO: Address* CreateHandle(Isolate* isolate, Address ptr)铺开后，
+  //       移除该 API
   static Address* CreateHandle(Address ptr);
+  static Address* CreateHandle(Isolate* isolate, Address ptr);
+  
+  // TODO: AssertValidLocation(Isolate* isolate, Address* location)铺开后，
+  //       移除该 API
   static void AssertValidLocation(Address* location);
+  static void AssertValidLocation(Isolate* isolate, Address* location);
 
  protected:
   Address* CloseAndEscape(Address ptr);
 
  private:
   static void Extend();
+  static void Extend(Isolate* isolate);
 
   void Close();
 
@@ -48,6 +59,7 @@ class Handle;
 class EscapableHandleScope final : public HandleScope {
  public:
   EscapableHandleScope() = default;
+  explicit EscapableHandleScope(Isolate* isolate) : HandleScope(isolate) {}
   EscapableHandleScope(const EscapableHandleScope&) = delete;
   EscapableHandleScope& operator=(const EscapableHandleScope&) = delete;
 

@@ -65,6 +65,33 @@ TEST_F(HandleTest, EscapableHandleScopeEscape) {
   EXPECT_TRUE(eq);
 }
 
+TEST_F(HandleTest, ExplicitIsolateHandleScopeCreatesHandles) {
+  HandleScope scope(isolate_);
+
+  auto base_handles = isolate_->handle_scope_implementer()->NumberOfHandles();
+
+  Handle<PySmi> one = handle(PySmi::FromInt(1), isolate_);
+  Handle<PySmi> two = handle(PySmi::FromInt(2), isolate_);
+
+  EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(),
+            base_handles + 2);
+  EXPECT_EQ(PySmi::ToInt(one), 1);
+  EXPECT_EQ(PySmi::ToInt(two), 2);
+}
+
+TEST_F(HandleTest, ExplicitIsolateEscapableHandleScopeEscape) {
+  HandleScope scope(isolate_);
+
+  auto f = []() -> Handle<PySmi> {
+    EscapableHandleScope scope(isolate_);
+    Handle<PySmi> value = handle(PySmi::FromInt(42), isolate_);
+    return scope.Escape(value);
+  };
+
+  Handle<PySmi> escaped = f();
+  EXPECT_EQ(PySmi::ToInt(escaped), 42);
+}
+
 #if defined(_DEBUG) || defined(ASAN_BUILD)
 TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
   auto f = []() -> Handle<PyObject> {

@@ -13,9 +13,11 @@
 namespace saauso::internal {
 
 // 保存父级scope的现场
-HandleScope::HandleScope() {
+HandleScope::HandleScope() : HandleScope(Isolate::Current()) {}
+
+HandleScope::HandleScope(Isolate* isolate) {
   // 将新建的handle scope与当前的isolate绑定
-  isolate_ = Isolate::Current();
+  isolate_ = isolate;
   assert(isolate_ != nullptr);
 
   auto* impl = isolate_->handle_scope_implementer();
@@ -61,12 +63,22 @@ Address* HandleScope::CloseAndEscape(Address ptr) {
   assert(!is_closed_);
   Close();
   // 把ptr放置在父级的scope上
-  return CreateHandle(ptr);
+  return CreateHandle(isolate_, ptr);
 }
 
 // static
 Address* HandleScope::CreateHandle(Address ptr) {
-  auto* impl = Isolate::Current()->handle_scope_implementer();
+  return CreateHandle(Isolate::Current(), ptr);
+}
+
+// static
+Address* HandleScope::CreateHandle(Isolate* isolate, Address ptr) {
+  if (isolate == nullptr) {
+    std::printf("Cannot create a handle without an isolate");
+    std::exit(1);
+  }
+
+  auto* impl = isolate->handle_scope_implementer();
   auto* handle_scope_state = impl->handle_scope_state();
 
   if (handle_scope_state->extension == -1) {
@@ -75,7 +87,7 @@ Address* HandleScope::CreateHandle(Address ptr) {
   }
 
   if (handle_scope_state->next == handle_scope_state->limit) {
-    Extend();
+    Extend(isolate);
   }
 
   Address* location = handle_scope_state->next;
@@ -87,7 +99,13 @@ Address* HandleScope::CreateHandle(Address ptr) {
 
 // static
 void HandleScope::Extend() {
-  auto* impl = Isolate::Current()->handle_scope_implementer();
+  Extend(Isolate::Current());
+}
+
+// static
+void HandleScope::Extend(Isolate* isolate) {
+  assert(isolate != nullptr);
+  auto* impl = isolate->handle_scope_implementer();
   auto* handle_scope_state = impl->handle_scope_state();
   Address* new_block = impl->AllocateSpareOrNewBlock();
   handle_scope_state->extension++;
@@ -98,15 +116,19 @@ void HandleScope::Extend() {
 
 // static
 void HandleScope::AssertValidLocation(Address* location) {
+  AssertValidLocation(Isolate::Current(), location);
+}
+
+// static
+void HandleScope::AssertValidLocation(Isolate* isolate, Address* location) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
   if (location == nullptr) {
     std::fprintf(stderr, "Invalid handle: null location");
     std::exit(1);
   }
 
-  Isolate* isolate = Isolate::Current();
   if (isolate == nullptr) {
-    std::fprintf(stderr, "Invalid handle: no current isolate");
+    std::fprintf(stderr, "Invalid handle: missing isolate");
     std::exit(1);
   }
 

@@ -16,7 +16,13 @@ template <typename T>
 class Handle : public HandleBase {
  public:
   Handle() = default;
+
+  // TODO: Handle(Tagged<T> tagged, Isolate* isolate)铺开后，
+  //       移除该构造函数！
   explicit Handle(Tagged<T> tagged) : HandleBase(tagged.ptr()) {}
+  Handle(Tagged<T> tagged, Isolate* isolate)
+      : HandleBase(tagged.ptr(), isolate) {}
+
   explicit Handle(Address* location) : HandleBase(location) {}
 
   // 允许Handle的向下转换
@@ -60,6 +66,8 @@ class Handle : public HandleBase {
 };
 
 // 工具函数，用于方便地将一个裸指针或tagged提升为一个handle
+// TODO: handle(Tagged<T> object, Isolate* isolate)铺开后，
+//       移除该API
 template <typename T>
 constexpr Handle<T> handle(Tagged<T> object) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
@@ -71,8 +79,13 @@ constexpr Handle<T> handle(Tagged<T> object) {
 }
 
 template <typename T>
-constexpr Handle<T> handle(T object) {
-  return handle(Tagged<T>(object));
+constexpr Handle<T> handle(Tagged<T> object, Isolate* isolate) {
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+  if (!object.is_null()) {
+    T::cast(object);
+  }
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
+  return Handle<T>(object, isolate);
 }
 
 }  // namespace saauso::internal
