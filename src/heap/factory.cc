@@ -642,6 +642,11 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
   return scope.Escape(iterator);
 }
 
+Handle<PyBoolean> Factory::ToPyBoolean(bool condition) {
+  return handle(condition ? isolate_->py_true_object()
+                          : isolate_->py_false_object());
+}
+
 Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {
   auto klass = PyBooleanKlass::GetInstance(isolate_);
   auto object = Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);

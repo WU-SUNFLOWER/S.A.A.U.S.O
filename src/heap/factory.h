@@ -118,7 +118,13 @@ class Factory {
   Handle<PyDictValueIterator> NewPyDictValueIterator(Handle<PyObject> owner);
   Handle<PyDictItemIterator> NewPyDictItemIterator(Handle<PyObject> owner);
 
+  // 将 C++ 布尔值转为对应的 Python bool 对象。
+  // - 本 API 仅仅是使用 handle 包装 isolate 实例
+  //   持有的常量对象，不涉及实际的内存分配！
+  Handle<PyBoolean> ToPyBoolean(bool condition);
+  // 在堆上创建一个新的 bool 对象，用于为虚拟机初始化 True 和 False 对象
   Tagged<PyBoolean> NewPyBoolean(bool value);
+
   Tagged<PyNone> NewPyNone();
 
  private:

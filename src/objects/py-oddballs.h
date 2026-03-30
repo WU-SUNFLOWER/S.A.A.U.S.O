@@ -16,8 +16,6 @@ class PyBoolean : public PyObject {
 
   bool value() const { return value_; }
 
-  Tagged<PyBoolean> Reverse();
-
  private:
   friend class Factory;
   bool value_;

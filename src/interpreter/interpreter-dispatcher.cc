@@ -228,7 +228,7 @@ void Interpreter::EvalCurrentFrame() {
       goto pending_exception_unwind;
     }
 
-    PUSH(isolate_->ToPyBoolean(matched));
+    PUSH(isolate_->factory()->ToPyBoolean(matched));
   })
 
   // 设置 pending_exception_ 并触发异常展开（由 DISPATCH 统一跳转到
@@ -716,7 +716,8 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_DISPATCH(IsOp, {
     Tagged<PyObject> r = POP_TAGGED();
     Tagged<PyObject> l = POP_TAGGED();
-    PUSH(Isolate::ToPyBoolean((l == r) ^ op_arg));
+    PUSH(((l == r) ^ op_arg) ? isolate_->py_true_object()
+                             : isolate_->py_false_object());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
@@ -752,7 +753,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> l = POP();
     bool result = false;
     ASSIGN_GOTO_ON_EXCEPTION(result, PyObject::ContainsBool(isolate_, r, l));
-    PUSH(Isolate::ToPyBoolean(result ^ op_arg));
+    PUSH(isolate_->factory()->ToPyBoolean(result ^ op_arg));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinaryOp, {

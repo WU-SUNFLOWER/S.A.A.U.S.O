@@ -238,7 +238,7 @@ MaybeHandle<PyBoolean> PyObject::Greater(Isolate* isolate,
   if (!GreaterBool(isolate, self, other).To(&result)) {
     return kNullMaybeHandle;
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(result));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(result));
 }
 
 Maybe<bool> PyObject::GreaterBool(Isolate* isolate,
@@ -262,7 +262,7 @@ MaybeHandle<PyBoolean> PyObject::Less(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::LessBool(Isolate* isolate,
@@ -286,7 +286,7 @@ MaybeHandle<PyBoolean> PyObject::Equal(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::EqualBool(Isolate* isolate,
@@ -307,7 +307,7 @@ MaybeHandle<PyBoolean> PyObject::NotEqual(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::NotEqualBool(Isolate* isolate,
@@ -329,7 +329,7 @@ MaybeHandle<PyBoolean> PyObject::GreaterEqual(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::GreaterEqualBool(Isolate* isolate,
@@ -351,7 +351,7 @@ MaybeHandle<PyBoolean> PyObject::LessEqual(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::LessEqualBool(Isolate* isolate,
@@ -469,7 +469,7 @@ MaybeHandle<PyBoolean> PyObject::Contains(Isolate* isolate,
   if (!ContainsBool(isolate, self, target).To(&result)) {
     return kNullMaybeHandle;
   }
-  return MaybeHandle<PyBoolean>(Isolate::ToPyBoolean(result));
+  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(result));
 }
 
 Maybe<bool> PyObject::ContainsBool(Isolate* isolate,

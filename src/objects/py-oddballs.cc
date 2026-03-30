@@ -24,10 +24,6 @@ Tagged<PyBoolean> PyBoolean::cast(Tagged<PyObject> object) {
   return Tagged<PyBoolean>::cast(object);
 }
 
-Tagged<PyBoolean> PyBoolean::Reverse() {
-  return Isolate::ToPyBoolean(!value_);
-}
-
 ///////////////////////////////////////////////////////////////////////////
 // Python空值
 

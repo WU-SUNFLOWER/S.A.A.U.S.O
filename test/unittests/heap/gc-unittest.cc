@@ -9,6 +9,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -202,8 +203,8 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
   EXPECT_EQ(true_addr_before, isolate_->py_true_object().ptr());
   EXPECT_EQ(false_addr_before, isolate_->py_false_object().ptr());
 
-  EXPECT_TRUE(IsPyTrue(Isolate::ToPyBoolean(true), isolate_));
-  EXPECT_TRUE(IsPyFalse(Isolate::ToPyBoolean(false), isolate_));
+  EXPECT_TRUE(IsPyTrue(isolate_->factory()->ToPyBoolean(true), isolate_));
+  EXPECT_TRUE(IsPyFalse(isolate_->factory()->ToPyBoolean(false), isolate_));
 }
 
 TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {

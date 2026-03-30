@@ -130,12 +130,6 @@ void Isolate::Exit() {
   }
 }
 
-// static
-Tagged<PyBoolean> Isolate::ToPyBoolean(bool condition) {
-  Isolate* isolate = Isolate::Current();
-  return condition ? isolate->py_true_object_ : isolate->py_false_object_;
-}
-
 void Isolate::Init() {
   // 初始化线程管理器
   thread_manager_ = new ThreadManager(this);
