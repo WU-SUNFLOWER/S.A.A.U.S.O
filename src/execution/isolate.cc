@@ -10,6 +10,7 @@
 #include "include/saauso.h"
 #include "src/execution/thread-state-infras.h"
 #include "src/handles/handle-scope-implementer.h"
+#include "src/handles/handles.h"
 #include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/interpreter/builtin-bootstrapper.h"
@@ -213,8 +214,13 @@ bool Isolate::HasPendingException() const {
   return exception_state_.HasPendingException();
 }
 
-Tagged<PyDict> Isolate::builtins() const {
+Tagged<PyDict> Isolate::raw_builtins() const {
   return Tagged<PyDict>::cast(builtins_);
+}
+
+Handle<PyDict> Isolate::builtins() {
+  assert(!raw_builtins().is_null());
+  return handle(raw_builtins(), this);
 }
 
 void Isolate::Iterate(ObjectVisitor* v) {

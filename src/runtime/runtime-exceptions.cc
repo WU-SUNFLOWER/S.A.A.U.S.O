@@ -108,7 +108,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyString> message_or_null) {
   EscapableHandleScope scope;
 
-  Handle<PyDict> builtins = handle(isolate->builtins(), isolate);
+  Handle<PyDict> builtins = isolate->builtins();
 
   Handle<PyObject> exception_type;
   RETURN_ON_EXCEPTION(
@@ -221,7 +221,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   HandleScope scope;
   Handle<PyObject> pending = state->pending_exception();
 
-  Handle<PyDict> builtins = handle(isolate->builtins(), isolate);
+  Handle<PyDict> builtins = isolate->builtins();
   Handle<PyObject> stop_iter_type;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(

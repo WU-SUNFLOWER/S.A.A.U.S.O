@@ -78,7 +78,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
 
   HandleScope scope;
   Handle<PyString> func_name = PyString::New(isolate_, "print");
-  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
+  Handle<PyDict> builtins = isolate_->builtins();
 
   FunctionTemplateInfo func_template(isolate_, &Builtin_PrintV, func_name);
   Handle<PyFunction> func;
