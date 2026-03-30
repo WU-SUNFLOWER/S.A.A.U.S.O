@@ -33,7 +33,7 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   // 测试__dict__获取到对象properties的能力
   Handle<PyObject> dict_value;
   ASSERT_TRUE(
-      PyObject::GetAttr(isolate_, module_obj, ST(dict)).ToHandle(&dict_value));
+      PyObject::GetAttr(isolate_, module_obj, ST(dict, isolate_)).ToHandle(&dict_value));
   ASSERT_TRUE(IsPyDict(dict_value));
   EXPECT_TRUE(Handle<PyDict>::cast(dict_value).is_identical_to(module_dict));
 
@@ -41,12 +41,12 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   Handle<PyObject> mirrored_value;
   bool mirrored_found = true;
   ASSERT_TRUE(
-      module_dict->Get(ST(dict), mirrored_value, isolate_).To(&mirrored_found));
+      module_dict->Get(ST(dict, isolate_), mirrored_value, isolate_).To(&mirrored_found));
   EXPECT_FALSE(mirrored_found);
   EXPECT_TRUE(mirrored_value.is_null());
 
   // 同理，__class__也查询不到
-  ASSERT_TRUE(module_dict->Get(ST(class), mirrored_value, isolate_)
+  ASSERT_TRUE(module_dict->Get(ST(class, isolate_), mirrored_value, isolate_)
                   .To(&mirrored_found));
   EXPECT_FALSE(mirrored_found);
   EXPECT_TRUE(mirrored_value.is_null());

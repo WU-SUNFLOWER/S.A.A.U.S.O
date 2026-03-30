@@ -29,10 +29,11 @@ struct ModulePartScanResult {
   bool is_last{false};
 };
 
-ModulePartScanResult ScanNextPart(Handle<PyString> fullname,
+ModulePartScanResult ScanNextPart(Isolate* isolate,
+                                  Handle<PyString> fullname,
                                   int64_t segment_start) {
   int64_t fullname_len = fullname->length();
-  int64_t dot = fullname->IndexOf(ST(dot), segment_start, fullname_len);
+  int64_t dot = fullname->IndexOf(ST(dot, isolate), segment_start, fullname_len);
   if (dot == PyString::kNotFound) {
     dot = fullname_len;
   }
@@ -85,7 +86,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModuleImpl(
 
   int64_t segment_start = 0;
   while (true) {
-    ModulePartScanResult scan = ScanNextPart(fullname, segment_start);
+    ModulePartScanResult scan = ScanNextPart(isolate_, fullname, segment_start);
 
     Handle<PyString> part_module_fullname =
         PyString::Slice(fullname, 0, scan.part_end, isolate_);
@@ -215,7 +216,7 @@ MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
     Handle<PyTuple> fromlist,
     Handle<PyModule> last_module) {
   bool has_fromlist = !fromlist.is_null() && fromlist->length() != 0;
-  int64_t dot = fullname->IndexOf(ST(dot));
+  int64_t dot = fullname->IndexOf(ST(dot, isolate_));
   if (!has_fromlist && dot != PyString::kNotFound) {
     int64_t top_end = dot - 1;
     Handle<PyString> top_name = PyString::Slice(fullname, 0, top_end, isolate_);

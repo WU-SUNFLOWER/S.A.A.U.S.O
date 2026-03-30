@@ -72,7 +72,7 @@ void ModuleManager::InitializeSysState() {
   modules_ = *modules;
 
   Handle<PyList> path = PyList::New(isolate_);
-  PyList::Append(path, ST(dot), isolate_);
+  PyList::Append(path, ST(dot, isolate_), isolate_);
   path_ = *path;
 }
 

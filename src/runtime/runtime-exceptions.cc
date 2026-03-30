@@ -55,18 +55,18 @@ void ThrowNewException(Isolate* isolate,
 }
 
 // 辅助函数：根据枚举类型获取对应的异常类名字符串 Handle
-Handle<PyString> GetExceptionStringHandle(ExceptionType type) {
+Handle<PyString> GetExceptionStringHandle(Isolate* isolate, ExceptionType type) {
   switch (type) {
 #define DEFINE_EXCEPTION_TYPE_CASE(type, string_table_name, _) \
   case ExceptionType::type:                                    \
-    return ST(string_table_name);
+    return ST(string_table_name, isolate);
 
     EXCEPTION_TYPE_LIST(DEFINE_EXCEPTION_TYPE_CASE)
 
 #undef DEFINE_EXCEPTION_TYPE_CASE
     default:
       // 默认回退到 RuntimeError
-      return ST(runtime_err);
+      return ST(runtime_err, isolate);
   }
 }
 
@@ -131,7 +131,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     if (!properties.is_null()) {
       RETURN_ON_EXCEPTION_VALUE(
           isolate,
-          PyDict::Put(properties, ST(message), message_or_null, isolate),
+          PyDict::Put(properties, ST(message, isolate), message_or_null, isolate),
           kNullMaybeHandle);
     }
   }
@@ -142,7 +142,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
 void Runtime_ThrowError(Isolate* isolate,
                         ExceptionType type,
                         const char* message) {
-  Handle<PyString> type_name = GetExceptionStringHandle(type);
+  Handle<PyString> type_name = GetExceptionStringHandle(isolate, type);
   Handle<PyString> wrapped_message = message != nullptr
                                          ? PyString::New(isolate, message)
                                          : Handle<PyString>::null();
@@ -181,7 +181,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     Handle<PyObject> args_obj;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(args), args_obj, isolate));
+                               properties->Get(ST(args, isolate), args_obj, isolate));
     if (found && IsPyTuple(args_obj)) {
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, message,
@@ -191,7 +191,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     Handle<PyObject> msg_obj;
     found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message), msg_obj, isolate));
+                               properties->Get(ST(message, isolate), msg_obj, isolate));
     if ((message.is_null() || message->IsEmpty()) && found &&
         IsPyString(msg_obj)) {
       message = Handle<PyString>::cast(msg_obj);
@@ -223,7 +223,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   Handle<PyObject> stop_iter_type;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, builtins->Get(ST(stop_iter), stop_iter_type, isolate),
+      isolate, found, builtins->Get(ST(stop_iter, isolate), stop_iter_type, isolate),
       kNullMaybe);
   assert(found);
   assert(!stop_iter_type.is_null());

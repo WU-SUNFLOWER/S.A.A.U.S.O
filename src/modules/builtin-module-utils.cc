@@ -48,10 +48,10 @@ Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
   Handle<PyDict> module_dict = PyObject::GetProperties(module);
 
   RETURN_ON_EXCEPTION(
-      isolate, PyDict::Put(module_dict, ST(name),
+      isolate, PyDict::Put(module_dict, ST(name, isolate),
                            PyString::New(isolate, module_name), isolate));
   RETURN_ON_EXCEPTION(
-      isolate, PyDict::Put(module_dict, ST(package),
+      isolate, PyDict::Put(module_dict, ST(package, isolate),
                            PyString::New(isolate, package_name), isolate));
 
   return JustVoid();

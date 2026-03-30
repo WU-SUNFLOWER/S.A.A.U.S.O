@@ -258,9 +258,10 @@ void Interpreter::EvalCurrentFrame() {
                 raise_pc);
           }
         } else {
-          ASSIGN_GOTO_ON_EXCEPTION(exception, Runtime_NewExceptionInstance(
-                                                  isolate_, ST(runtime_err),
-                                                  Handle<PyString>::null()));
+          ASSIGN_GOTO_ON_EXCEPTION(
+              exception,
+              Runtime_NewExceptionInstance(isolate_, ST(runtime_err, isolate_),
+                                           Handle<PyString>::null()));
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }
@@ -664,7 +665,7 @@ void Interpreter::EvalCurrentFrame() {
     Handle<PyObject> parent_module_name_obj;
     ASSIGN_GOTO_ON_EXCEPTION(
         parent_module_name_obj,
-        PyObject::GetAttr(isolate_, parent_module, ST(name)));
+        PyObject::GetAttr(isolate_, parent_module, ST(name, isolate_)));
     if (!IsPyString(parent_module_name_obj)) [[unlikely]] {
       Runtime_ThrowError(isolate_, ExceptionType::kTypeError,
                          "module __name__ must be a string");
@@ -678,7 +679,7 @@ void Interpreter::EvalCurrentFrame() {
     // 完整符号名为`os.path`。
     auto sub_module_fullname = PyString::Clone(isolate_, parent_module_name);
     sub_module_fullname =
-        PyString::Append(sub_module_fullname, ST(dot), isolate_);
+        PyString::Append(sub_module_fullname, ST(dot, isolate_), isolate_);
     sub_module_fullname =
         PyString::Append(sub_module_fullname, sub_module_name, isolate_);
 

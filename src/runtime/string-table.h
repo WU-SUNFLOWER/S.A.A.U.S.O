@@ -18,7 +18,7 @@ namespace saauso::internal {
 class ObjectVisitor;
 
 #define ST_TAGGED(x, isolate) (isolate->string_table()->x##_str_)
-#define ST(x) (handle(ST_TAGGED(x, Isolate::Current())))
+#define ST(x, isolate) (handle(ST_TAGGED(x, isolate)))
 
 #define PY_ODDBALLS(V)     \
   V(true_symbol, "True")   \

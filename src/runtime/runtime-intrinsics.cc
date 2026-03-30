@@ -113,7 +113,7 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
   Handle<PyObject> all;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             module_dict->Get(ST(all), all, isolate));
+                             module_dict->Get(ST(all, isolate), all, isolate));
 
   if (!found) {
     all = Handle<PyObject>::null();

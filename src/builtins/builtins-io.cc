@@ -34,10 +34,10 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     return handle(isolate->py_none_object());
   }
 
-  auto sep_key = ST(sep);
-  auto end_key = ST(end);
-  auto file_key = ST(print_file);
-  auto flush_key = ST(flush);
+  auto sep_key = ST(sep, isolate);
+  auto end_key = ST(end, isolate);
+  auto file_key = ST(print_file, isolate);
+  auto flush_key = ST(flush, isolate);
 
   for (int64_t i = 0; i < kwargs->capacity(); ++i) {
     auto item = kwargs->ItemAtIndex(i, isolate);

@@ -77,7 +77,7 @@ Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
     bool has_magic_method = false;                                           \
     ASSIGN_RETURN_ON_EXCEPTION(                                             \
         isolate, has_magic_method,                                          \
-        klass_properties->Get(ST(slot_name), dummy, isolate));              \
+        klass_properties->Get(ST(slot_name, isolate), dummy, isolate));     \
     if (has_magic_method) {                                                  \
       slot_name##_ = &KlassVtableTrampolines::trampoline_name;               \
     }                                                                        \

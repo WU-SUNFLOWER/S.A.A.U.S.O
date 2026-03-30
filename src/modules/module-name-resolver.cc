@@ -76,7 +76,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     return scope.Escape(base);
   }
 
-  Handle<PyString> fullname = PyString::Append(base, ST(dot), isolate_);
+  Handle<PyString> fullname = PyString::Append(base, ST(dot, isolate_), isolate_);
   fullname = PyString::Append(fullname, name, isolate_);
   return scope.Escape(fullname);
 }
@@ -91,7 +91,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
 
   Handle<PyObject> package_obj;
   bool found = false;
-  if (!globals->Get(ST(package), package_obj, isolate_).To(&found)) {
+  if (!globals->Get(ST(package, isolate_), package_obj, isolate_).To(&found)) {
     return kNullMaybe;
   }
   if (found) {
@@ -104,7 +104,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   }
 
   Tagged<PyObject> name_obj;
-  if (!globals->GetTagged(ST(name), name_obj, isolate_).To(&found)) {
+  if (!globals->GetTagged(ST(name, isolate_), name_obj, isolate_).To(&found)) {
     return kNullMaybe;
   }
   if (!found || !IsPyString(name_obj)) {
@@ -116,7 +116,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
   Handle<PyString> name_str = Handle<PyString>::cast(handle(name_obj));
 
   Tagged<PyObject> path_obj;
-  if (!globals->GetTagged(ST(path), path_obj, isolate_).To(&found)) {
+  if (!globals->GetTagged(ST(path, isolate_), path_obj, isolate_).To(&found)) {
     return kNullMaybe;
   }
   bool is_package = found;
@@ -134,7 +134,7 @@ Handle<PyString> ModuleNameResolver::ParentModuleNameOrEmpty(
     return scope.Escape(PyString::New(isolate_, ""));
   }
 
-  auto dot_index = name->LastIndexOf(ST(dot));
+  auto dot_index = name->LastIndexOf(ST(dot, isolate_));
   if (dot_index == PyString::kNotFound || dot_index == 0) {
     return scope.Escape(PyString::New(isolate_, ""));
   }

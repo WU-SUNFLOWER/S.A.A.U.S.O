@@ -41,7 +41,7 @@ TEST_F(NativePrintTest, EndParameter) {
   args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(end), PyString::New(isolate_, "!"), isolate_)
+      PyDict::Put(kwargs, ST(end, isolate_), PyString::New(isolate_, "!"), isolate_)
           .IsNothing());
 
   testing::internal::CaptureStdout();
@@ -60,7 +60,7 @@ TEST_F(NativePrintTest, EolKeywordRejected) {
   args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(eol), PyString::New(isolate_, "??"), isolate_)
+      PyDict::Put(kwargs, ST(eol, isolate_), PyString::New(isolate_, "??"), isolate_)
           .IsNothing());
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(
       isolate_, Handle<PyObject>::null(), args, kwargs);
@@ -78,7 +78,7 @@ TEST_F(NativePrintTest, SepParameter) {
   args->SetInternal(2, PyString::New(isolate_, "c"));
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(sep), PyString::New(isolate_, ","), isolate_)
+      PyDict::Put(kwargs, ST(sep, isolate_), PyString::New(isolate_, ","), isolate_)
           .IsNothing());
 
   testing::internal::CaptureStdout();
@@ -95,7 +95,7 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
   auto args = PyTuple::New(isolate_, 0);
   auto kwargs = PyDict::New(isolate_);
   ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(end), PyString::New(isolate_, "X"), isolate_)
+      PyDict::Put(kwargs, ST(end, isolate_), PyString::New(isolate_, "X"), isolate_)
           .IsNothing());
 
   testing::internal::CaptureStdout();
