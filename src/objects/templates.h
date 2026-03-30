@@ -15,29 +15,31 @@ class PyTypeObject;
 
 class FunctionTemplateInfo {
  public:
-  explicit FunctionTemplateInfo(
+  FunctionTemplateInfo(
+      Isolate* isolate,
       NativeFuncPointer function,
       Handle<PyString> name,
       NativeFuncAccessFlag native_access_flag = NativeFuncAccessFlag::kStatic,
       Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null(),
       Handle<PyObject> closure_data = Handle<PyObject>::null())
       : function_(function),
-        name_(name),
+        name_(isolate, name),
         native_access_flag_(native_access_flag),
-        native_owner_type_(native_owner_type),
-        closure_data_(closure_data) {}
+        native_owner_type_(isolate, native_owner_type),
+        closure_data_(isolate, closure_data) {}
 
-  explicit FunctionTemplateInfo(
+  FunctionTemplateInfo(
+      Isolate* isolate,
       NativeFuncPointerWithClosure function_with_closure,
       Handle<PyString> name,
       Handle<PyObject> closure_data,
       NativeFuncAccessFlag native_access_flag = NativeFuncAccessFlag::kStatic,
       Handle<PyTypeObject> native_owner_type = Handle<PyTypeObject>::null())
       : function_with_closure_(function_with_closure),
-        name_(name),
+        name_(isolate, name),
         native_access_flag_(native_access_flag),
-        native_owner_type_(native_owner_type),
-        closure_data_(closure_data) {}
+        native_owner_type_(isolate, native_owner_type),
+        closure_data_(isolate, closure_data) {}
 
   NativeFuncPointer function() const { return function_; }
   NativeFuncPointerWithClosure function_with_closure() const {
