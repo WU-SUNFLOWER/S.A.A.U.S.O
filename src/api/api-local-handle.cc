@@ -18,20 +18,15 @@ namespace api {
 // 这里为了保证一致性，我们临时添加一个断言校验。
 // 在虚拟机内部 HandleScope 完成显式接收 isolate 改造后，此处断言可以移除！
 struct HandleScopeImpl {
-  explicit HandleScopeImpl(i::Isolate* isolate) : isolate(isolate) {
-    assert(isolate == i::Isolate::Current());
-  }
+  explicit HandleScopeImpl(i::Isolate* isolate) : handle_scope(isolate) {}
 
-  i::Isolate* isolate{nullptr};
   i::HandleScope handle_scope;
 };
 
 struct EscapableHandleScopeImpl {
-  explicit EscapableHandleScopeImpl(i::Isolate* isolate) : isolate(isolate) {
-    assert(isolate == i::Isolate::Current());
-  }
+  explicit EscapableHandleScopeImpl(i::Isolate* isolate)
+      : handle_scope(isolate) {}
 
-  i::Isolate* isolate{nullptr};
   i::EscapableHandleScope handle_scope;
 };
 
