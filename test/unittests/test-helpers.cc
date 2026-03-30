@@ -80,7 +80,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
   Handle<PyString> func_name = PyString::New(isolate_, "print");
   Handle<PyDict> builtins = handle(isolate_->builtins());
 
-  FunctionTemplateInfo func_template(&Builtin_PrintV, func_name);
+  FunctionTemplateInfo func_template(isolate_, &Builtin_PrintV, func_name);
   Handle<PyFunction> func;
   ASSERT_TRUE(
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
@@ -96,7 +96,7 @@ void BasicInterpreterTest::TearDownTestSuite() {
 
 void BasicInterpreterTest::SetUp() {
   HandleScope scope;
-  printv_result_ = PyList::New(isolate_);
+  printv_result_ = Global<PyList>(isolate_, PyList::New(isolate_));
   isolate_->interpreter()->ClearPendingException();
 }
 

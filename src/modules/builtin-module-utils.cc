@@ -68,7 +68,7 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
   HandleScope scope;
 
   Handle<PyString> py_name = PyString::New(isolate, name);
-  FunctionTemplateInfo function_template(func, py_name);
+  FunctionTemplateInfo function_template(isolate, func, py_name);
 
   Handle<PyFunction> function_object;
   ASSIGN_RETURN_ON_EXCEPTION(

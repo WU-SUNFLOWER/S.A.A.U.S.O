@@ -24,7 +24,7 @@ Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
 
   auto prop_name = PyString::New(isolate, method_name);
   auto func_template =
-      FunctionTemplateInfo(func, prop_name, access_flag, owner_type);
+      FunctionTemplateInfo(isolate, func, prop_name, access_flag, owner_type);
 
   Handle<PyFunction> func_object;
   ASSIGN_RETURN_ON_EXCEPTION(

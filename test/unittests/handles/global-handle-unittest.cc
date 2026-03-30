@@ -24,7 +24,7 @@ TEST_F(GlobalHandleTest, GlobalHandleShouldBeReleasedByDestructor) {
 
   {
     HandleScope scope;
-    Global<PyObject> g(PyString::New(Isolate::Current(), "x"));
+    Global<PyObject> g(isolate_, PyString::New(Isolate::Current(), "x"));
     EXPECT_EQ(
         Isolate::Current()->handle_scope_implementer()->NumberOfGlobalHandles(),
         base + 1);
@@ -41,14 +41,14 @@ TEST_F(GlobalHandleTest, GlobalHandleShouldSurviveAcrossGc) {
 
   {
     HandleScope scope;
-    Handle<PyString> s = PyString::New(Isolate::Current(), "global-string");
+    Handle<PyString> s = PyString::New(isolate_, "global-string");
     addr_before = (*s).ptr();
-    g = Global<PyString>(s);
+    g = Global<PyString>(isolate_, s);
   }
 
   {
     HandleScope scope;
-    Isolate::Current()->heap()->CollectGarbage();
+    isolate_->heap()->CollectGarbage();
     Address addr_after = (*g.Get()).ptr();
     EXPECT_NE(addr_before, addr_after);
   }
@@ -56,8 +56,7 @@ TEST_F(GlobalHandleTest, GlobalHandleShouldSurviveAcrossGc) {
   {
     HandleScope scope;
     Handle<PyString> s2 = g.Get();
-    Handle<PyString> expected =
-        PyString::New(Isolate::Current(), "global-string");
+    Handle<PyString> expected = PyString::New(isolate_, "global-string");
     bool eq = false;
     ASSERT_TRUE(PyObject::EqualBool(isolate_, s2, expected).To(&eq));
     EXPECT_TRUE(eq);
