@@ -72,9 +72,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
       i::PyString::New(internal_isolate, key_value.data(),
                        static_cast<int64_t>(key_value.size()));
   i::Handle<i::PyObject> out;
-  auto maybe_found = dict->Get(
-      i::handle(i::Tagged<i::PyObject>::cast(*py_key), internal_isolate), out,
-      internal_isolate);
+  auto maybe_found = dict->Get(py_key, out, internal_isolate);
   if (maybe_found.IsNothing()) {
     api::CapturePendingException(internal_isolate);
     return MaybeLocal<Value>();
@@ -109,8 +107,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
                        static_cast<int64_t>(name_value.size()));
   i::Handle<i::PyObject> self_or_null;
   i::MaybeHandle<i::PyObject> maybe_callee = i::PyObject::GetAttrForCall(
-      internal_isolate, self, i::handle(*py_name, internal_isolate),
-      self_or_null);
+      internal_isolate, self, py_name, self_or_null);
   i::Handle<i::PyObject> callee;
   if (!maybe_callee.ToHandle(&callee)) {
     api::CapturePendingException(internal_isolate);
@@ -124,10 +121,8 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   i::Handle<i::PyDict> py_kwargs =
       internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
-  i::MaybeHandle<i::PyObject> maybe_result =
-      i::PyObject::Call(internal_isolate, callee, self_or_null,
-                        i::handle(*py_args, internal_isolate),
-                        i::handle(*py_kwargs, internal_isolate));
+  i::MaybeHandle<i::PyObject> maybe_result = i::PyObject::Call(
+      internal_isolate, callee, self_or_null, py_args, py_kwargs);
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {

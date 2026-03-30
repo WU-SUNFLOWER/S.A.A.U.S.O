@@ -96,17 +96,14 @@ Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
   i::EscapableHandleScope scope;
   i::Handle<i::PyString> py_string =
       i::PyString::New(isolate, value.data(), static_cast<int64_t>(value.size()));
-  i::Handle<i::PyObject> escaped =
-      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_string), isolate));
+  i::Handle<i::PyObject> escaped = scope.Escape(py_string);
   return i::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
 Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
   i::EscapableHandleScope scope;
-  i::Handle<i::PyObject> smi =
-      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(value)),
-                isolate);
+  i::Handle<i::PyObject> smi = i::handle(i::PySmi::FromInt(value), isolate);
   i::Handle<i::PyObject> escaped = scope.Escape(smi);
   return i::Utils::ToLocal<T>(escaped);
 }
@@ -115,16 +112,15 @@ template <typename T>
 Local<T> WrapHostFloat(i::Isolate* isolate, double value) {
   i::EscapableHandleScope scope;
   i::Handle<i::PyFloat> py_float = isolate->factory()->NewPyFloat(value);
-  i::Handle<i::PyObject> escaped =
-      scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*py_float), isolate));
+  i::Handle<i::PyObject> escaped = scope.Escape(py_float);
   return i::Utils::ToLocal<T>(escaped);
 }
 
 template <typename T>
 Local<T> WrapHostBoolean(i::Isolate* isolate, bool value) {
   i::EscapableHandleScope scope;
-  i::Handle<i::PyObject> py_bool = i::handle(i::Tagged<i::PyObject>::cast(
-      value ? isolate->py_true_object() : isolate->py_false_object()));
+  i::Handle<i::PyObject> py_bool =
+      i::handle(value ? isolate->py_true_object() : isolate->py_false_object());
   i::Handle<i::PyObject> escaped = scope.Escape(py_bool);
   return i::Utils::ToLocal<T>(escaped);
 }

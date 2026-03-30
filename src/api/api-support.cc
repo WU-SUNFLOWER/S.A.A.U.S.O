@@ -18,15 +18,11 @@ Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source) {
 i::Handle<i::PyObject> ToInternalObject(i::Isolate* internal_isolate,
                                         Local<Value> value) {
   if (value.IsEmpty()) {
-    return i::handle(
-        i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()),
-        internal_isolate);
+    return i::handle(internal_isolate->py_none_object(), internal_isolate);
   }
   i::Handle<i::PyObject> object = internal::Utils::OpenHandle(value);
   if (object.is_null()) {
-    return i::handle(
-        i::Tagged<i::PyObject>::cast(internal_isolate->py_none_object()),
-        internal_isolate);
+    return i::handle(internal_isolate->py_none_object(), internal_isolate);
   }
   return object;
 }
