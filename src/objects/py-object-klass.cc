@@ -148,8 +148,9 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
 
   // 3. 沿着MRO查找__getattr__(self, name)并尝试调用
   //    注意：是在类中查找 __getattr__，而不是在实例字典中查找它！！！
-  RETURN_ON_EXCEPTION(isolate, Runtime_LookupPropertyInInstanceTypeMro(
-                                   isolate, self, ST(getattr, isolate), getattr_func));
+  RETURN_ON_EXCEPTION(isolate,
+                      Runtime_LookupPropertyInInstanceTypeMro(
+                          isolate, self, ST(getattr, isolate), getattr_func));
   if (!getattr_func.is_null()) {
     Handle<PyTuple> args = PyTuple::New(isolate, 1);
     args->SetInternal(0, prop_name);
@@ -240,10 +241,10 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   auto properties = PyObject::GetProperties(self);
 
   if (!IsPyString(property_name)) [[unlikely]] {
-    Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
-                        "attribute name must be string, not '%s'",
-                        PyObject::GetTypeName(property_name, isolate)
-                            ->buffer());
+    Runtime_ThrowErrorf(
+        isolate, ExceptionType::kTypeError,
+        "attribute name must be string, not '%s'",
+        PyObject::GetTypeName(property_name, isolate)->buffer());
     return kNullMaybeHandle;
   }
 
@@ -252,7 +253,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
       isolate, handled_by_accessor,
       AccessorProxy::TrySet(isolate, self, property_name, property_value));
   if (handled_by_accessor) {
-    return handle(isolate->py_none_object());
+    return handle(isolate->py_none_object(), isolate);
   }
 
   if (properties.is_null()) [[unlikely]] {
@@ -266,7 +267,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(properties, property_name, property_value, isolate));
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 // static
@@ -337,7 +338,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     }
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 // static

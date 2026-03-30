@@ -39,7 +39,7 @@ TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
     FAIL() << "fail to compile source code";
   }
 
-  auto file_name = boilerplate->func_code()->file_name();
+  auto file_name = boilerplate->func_code(isolate_)->file_name(isolate_);
   EXPECT_TRUE(IsPyStringEqual(file_name, kFileName));
 }
 

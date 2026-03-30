@@ -18,7 +18,7 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
   int64_t callback_addr =
       static_cast<int64_t>(reinterpret_cast<intptr_t>(callback));
   i::Handle<i::PyObject> closure_data =
-      i::handle(i::Tagged<i::PyObject>::cast(i::PySmi::FromInt(callback_addr)));
+      i::handle(i::PySmi::FromInt(callback_addr), i_isolate);
   i::FunctionTemplateInfo template_info(i_isolate, &api::InvokeEmbedderCallback,
                                         py_name, closure_data);
   i::MaybeHandle<i::PyFunction> maybe_function =
@@ -28,8 +28,7 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
     api::CapturePendingException(i_isolate);
     return MaybeLocal<Function>();
   }
-  i::Handle<i::PyObject> escaped =
-      handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*function)));
+  i::Handle<i::PyObject> escaped = handle_scope.Escape(function);
   return i::Utils::ToLocal<Function>(escaped);
 }
 
@@ -64,10 +63,8 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
   i::Handle<i::PyObject> py_receiver =
       receiver.IsEmpty() ? i::Handle<i::PyObject>::null()
                          : api::ToInternalObject(i_isolate, receiver);
-  i::MaybeHandle<i::PyObject> maybe_result =
-      i::PyObject::Call(i_isolate, function_object, py_receiver,
-                        i::handle(i::Tagged<i::PyObject>::cast(*py_args)),
-                        i::handle(i::Tagged<i::PyObject>::cast(*py_kwargs)));
+  i::MaybeHandle<i::PyObject> maybe_result = i::PyObject::Call(
+      i_isolate, function_object, py_receiver, py_args, py_kwargs);
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
     api::CapturePendingException(i_isolate);

@@ -72,7 +72,7 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
 
   isolate_->heap()->CollectGarbage();
 
-  Handle<PyTuple> closures_after = func->closures();
+  Handle<PyTuple> closures_after = func->closures(isolate_);
   Handle<Cell> cell_after = Handle<Cell>::cast(closures_after->Get(0));
   Handle<PyObject> cell_value = cell_after->value();
   ASSERT_FALSE(cell_value.is_null());

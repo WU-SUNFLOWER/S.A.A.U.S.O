@@ -91,7 +91,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
 
   auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0), isolate);
-  return scope.Escape(handle(isolate->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object(), isolate));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Init) {
@@ -137,7 +137,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1), isolate);
-  return scope.Escape(handle(isolate->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object(), isolate));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Index) {
@@ -203,7 +203,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
     return kNullMaybeHandle;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(result)));
+  return scope.Escape(handle(PySmi::FromInt(result), isolate));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
@@ -217,7 +217,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
     list->Set(length - i - 1, tmp);
   }
 
-  return scope.Escape(handle(isolate->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object(), isolate));
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
@@ -226,7 +226,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
           .IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
@@ -241,7 +241,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   auto list = Handle<PyList>::cast(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {
-    return scope.Escape(handle(isolate->py_none_object()));
+    return scope.Escape(handle(isolate->py_none_object(), isolate));
   }
 
   Handle<PyObject> key_func;
@@ -345,8 +345,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
       return false;
     }
     HandleScope scope;
-    Handle<PyObject> ka = handle(c->keys->Get(a));
-    Handle<PyObject> kb = handle(c->keys->Get(b));
+    Handle<PyObject> ka = handle(c->keys->Get(a), c->isolate);
+    Handle<PyObject> kb = handle(c->keys->Get(b), c->isolate);
     Maybe<bool> mb = PyObject::LessBool(c->isolate, ka, kb);
     if (mb.IsNothing()) {
       return false;
@@ -367,7 +367,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     tmp->Set(i, list->Get(indices[static_cast<size_t>(i)]));
   }
   for (int64_t i = 0; i < expected_length; ++i) {
-    list->Set(i, handle(tmp->Get(i)));
+    list->Set(i, handle(tmp->Get(i), isolate));
   }
 
   if (reverse) {
@@ -378,7 +378,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     }
   }
 
-  return scope.Escape(handle(isolate->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object(), isolate));
 }
 
 }  // namespace saauso::internal

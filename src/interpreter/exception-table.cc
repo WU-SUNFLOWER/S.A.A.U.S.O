@@ -77,7 +77,8 @@ bool ParseExceptionTableVarint(const char* data,
 
 }  // namespace
 
-bool ExceptionTable::LookupHandler(Handle<PyCodeObject> code_object,
+bool ExceptionTable::LookupHandler(Isolate* isolate,
+                                   Handle<PyCodeObject> code_object,
                                    int instruction_offset_in_bytes,
                                    ExceptionHandlerInfo& out) {
   HandleScope scope;
@@ -87,7 +88,7 @@ bool ExceptionTable::LookupHandler(Handle<PyCodeObject> code_object,
   }
   assert(instruction_offset_in_bytes % kBytecodeSizeInBytes == 0);
 
-  Handle<PyString> table = code_object->exception_table();
+  Handle<PyString> table = code_object->exception_table(isolate);
   if (table.is_null() || table->length() == 0) {
     return false;
   }

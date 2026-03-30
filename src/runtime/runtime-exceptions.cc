@@ -55,7 +55,8 @@ void ThrowNewException(Isolate* isolate,
 }
 
 // 辅助函数：根据枚举类型获取对应的异常类名字符串 Handle
-Handle<PyString> GetExceptionStringHandle(Isolate* isolate, ExceptionType type) {
+Handle<PyString> GetExceptionStringHandle(Isolate* isolate,
+                                          ExceptionType type) {
   switch (type) {
 #define DEFINE_EXCEPTION_TYPE_CASE(type, string_table_name, _) \
   case ExceptionType::type:                                    \
@@ -107,7 +108,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Handle<PyString> message_or_null) {
   EscapableHandleScope scope;
 
-  Handle<PyDict> builtins = handle(isolate->builtins());
+  Handle<PyDict> builtins = handle(isolate->builtins(), isolate);
 
   Handle<PyObject> exception_type;
   RETURN_ON_EXCEPTION(
@@ -129,10 +130,10 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
   if (!message_or_null.is_null()) {
     Handle<PyDict> properties = PyObject::GetProperties(exception);
     if (!properties.is_null()) {
-      RETURN_ON_EXCEPTION_VALUE(
-          isolate,
-          PyDict::Put(properties, ST(message, isolate), message_or_null, isolate),
-          kNullMaybeHandle);
+      RETURN_ON_EXCEPTION_VALUE(isolate,
+                                PyDict::Put(properties, ST(message, isolate),
+                                            message_or_null, isolate),
+                                kNullMaybeHandle);
     }
   }
 
@@ -180,8 +181,8 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
   if (!properties.is_null()) {
     Handle<PyObject> args_obj;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(args, isolate), args_obj, isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found, properties->Get(ST(args, isolate), args_obj, isolate));
     if (found && IsPyTuple(args_obj)) {
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, message,
@@ -190,8 +191,9 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
 
     Handle<PyObject> msg_obj;
     found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message, isolate), msg_obj, isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found,
+        properties->Get(ST(message, isolate), msg_obj, isolate));
     if ((message.is_null() || message->IsEmpty()) && found &&
         IsPyString(msg_obj)) {
       message = Handle<PyString>::cast(msg_obj);
@@ -219,11 +221,12 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   HandleScope scope;
   Handle<PyObject> pending = state->pending_exception();
 
-  Handle<PyDict> builtins = handle(isolate->builtins());
+  Handle<PyDict> builtins = handle(isolate->builtins(), isolate);
   Handle<PyObject> stop_iter_type;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, builtins->Get(ST(stop_iter, isolate), stop_iter_type, isolate),
+      isolate, found,
+      builtins->Get(ST(stop_iter, isolate), stop_iter_type, isolate),
       kNullMaybe);
   assert(found);
   assert(!stop_iter_type.is_null());

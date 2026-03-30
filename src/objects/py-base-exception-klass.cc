@@ -158,7 +158,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
       isolate, PyDict::Put(properties, ST(message, isolate), message, isolate),
       kNullMaybeHandle);
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(

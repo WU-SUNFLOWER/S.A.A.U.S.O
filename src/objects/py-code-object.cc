@@ -54,8 +54,8 @@ Tagged<PyObject> GetNamesFromLocalsplusNames(
     int num) {
   HandleScope scope;
 
-  Handle<PyTuple> localsplusnames = code_object->localsplusnames();
-  Handle<PyString> localspluskinds = code_object->localspluskinds();
+  Handle<PyTuple> localsplusnames = code_object->localsplusnames(isolate);
+  Handle<PyString> localspluskinds = code_object->localspluskinds(isolate);
 
   Handle<PyTuple> result_names = PyTuple::New(isolate, num);
   int result_index = 0;
@@ -147,48 +147,48 @@ Tagged<PyCodeObject> PyCodeObject::cast(Tagged<PyObject> object) {
   return Tagged<PyCodeObject>::cast(object);
 }
 
-Handle<PyString> PyCodeObject::bytecodes() const {
-  return handle(Tagged<PyString>::cast(bytecodes_));
+Handle<PyString> PyCodeObject::bytecodes(Isolate* isolate) const {
+  return handle(Tagged<PyString>::cast(bytecodes_), isolate);
 }
 
-Handle<PyTuple> PyCodeObject::names() const {
-  return handle(Tagged<PyTuple>::cast(names_));
+Handle<PyTuple> PyCodeObject::names(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(names_), isolate);
 }
 
-Handle<PyTuple> PyCodeObject::var_names() const {
-  return handle(Tagged<PyTuple>::cast(var_names_));
+Handle<PyTuple> PyCodeObject::var_names(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(var_names_), isolate);
 }
 
-Handle<PyTuple> PyCodeObject::free_vars() const {
-  return handle(Tagged<PyTuple>::cast(free_vars_));
+Handle<PyTuple> PyCodeObject::free_vars(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(free_vars_), isolate);
 }
 
-Handle<PyTuple> PyCodeObject::cell_vars() const {
-  return handle(Tagged<PyTuple>::cast(cell_vars_));
+Handle<PyTuple> PyCodeObject::cell_vars(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(cell_vars_), isolate);
 }
 
-Handle<PyTuple> PyCodeObject::consts() const {
-  return handle(Tagged<PyTuple>::cast(consts_));
+Handle<PyTuple> PyCodeObject::consts(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(consts_), isolate);
 }
 
-Handle<PyString> PyCodeObject::co_name() const {
-  return handle(Tagged<PyString>::cast(co_name_));
+Handle<PyString> PyCodeObject::co_name(Isolate* isolate) const {
+  return handle(Tagged<PyString>::cast(co_name_), isolate);
 }
 
-Handle<PyString> PyCodeObject::file_name() const {
-  return handle(Tagged<PyString>::cast(file_name_));
+Handle<PyString> PyCodeObject::file_name(Isolate* isolate) const {
+  return handle(Tagged<PyString>::cast(file_name_), isolate);
 }
 
-Handle<PyTuple> PyCodeObject::localsplusnames() const {
-  return handle(Tagged<PyTuple>::cast(localsplusnames_));
+Handle<PyTuple> PyCodeObject::localsplusnames(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(localsplusnames_), isolate);
 }
 
-Handle<PyString> PyCodeObject::localspluskinds() const {
-  return handle(Tagged<PyString>::cast(localspluskinds_));
+Handle<PyString> PyCodeObject::localspluskinds(Isolate* isolate) const {
+  return handle(Tagged<PyString>::cast(localspluskinds_), isolate);
 }
 
-Handle<PyString> PyCodeObject::exception_table() const {
-  return handle(Tagged<PyString>::cast(exception_table_));
+Handle<PyString> PyCodeObject::exception_table(Isolate* isolate) const {
+  return handle(Tagged<PyString>::cast(exception_table_), isolate);
 }
 
 };  // namespace saauso::internal

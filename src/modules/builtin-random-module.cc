@@ -97,7 +97,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
   }
   GetRng(isolate)->SetSeed(seed);
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 BUILTIN_MODULE_FUNC(Random_Random) {
@@ -141,7 +141,7 @@ BUILTIN_MODULE_FUNC(Random_RandInt) {
   const uint64_t bound = static_cast<uint64_t>(b - a) + 1;
   uint64_t offset = GetRng(isolate)->NextU64Bounded(bound);
   int64_t result = a + static_cast<int64_t>(offset);
-  return handle(PySmi::FromInt(result));
+  return handle(PySmi::FromInt(result), isolate);
 }
 
 BUILTIN_MODULE_FUNC(Random_RandRange) {
@@ -189,7 +189,7 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
     uint64_t n = (width + step_u - 1) / step_u;
     uint64_t k = GetRng(isolate)->NextU64Bounded(n);
     int64_t result = start + static_cast<int64_t>(k * step_u);
-    return handle(PySmi::FromInt(result));
+    return handle(PySmi::FromInt(result), isolate);
   }
 
   if (start <= stop) {
@@ -207,7 +207,7 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
   uint64_t n = (width + step_u - 1) / step_u;
   uint64_t k = GetRng(isolate)->NextU64Bounded(n);
   int64_t result = start - static_cast<int64_t>(k * step_u);
-  return handle(PySmi::FromInt(result));
+  return handle(PySmi::FromInt(result), isolate);
 }
 
 BUILTIN_MODULE_FUNC(Random_GetRandBits) {
@@ -231,7 +231,7 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
     return kNullMaybe;
   }
   if (k == 0) {
-    return handle(PySmi::FromInt(0));
+    return handle(PySmi::FromInt(0), isolate);
   }
   // MVP：当前虚拟机没有 big-int，因此仅支持可表示为 Smi 的 bit 数。
   if (k > 62) {
@@ -242,7 +242,7 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
 
   uint64_t mask = (uint64_t{1} << static_cast<uint64_t>(k)) - 1;
   uint64_t x = GetRng(isolate)->NextU64() & mask;
-  return handle(PySmi::FromInt(static_cast<int64_t>(x)));
+  return handle(PySmi::FromInt(static_cast<int64_t>(x)), isolate);
 }
 
 BUILTIN_MODULE_FUNC(Random_Choice) {
@@ -338,7 +338,7 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
     list->Set(static_cast<int64_t>(j), vi);
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 }  // namespace module_impl

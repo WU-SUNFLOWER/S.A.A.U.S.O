@@ -50,7 +50,7 @@ void ModuleManager::Iterate(ObjectVisitor* v) {
 }
 
 Handle<PyDict> ModuleManager::modules() const {
-  return handle(modules_tagged());
+  return handle(modules_tagged(), isolate_);
 }
 
 Tagged<PyDict> ModuleManager::modules_tagged() const {
@@ -58,7 +58,7 @@ Tagged<PyDict> ModuleManager::modules_tagged() const {
 }
 
 Handle<PyList> ModuleManager::path() const {
-  return handle(path_tagged());
+  return handle(path_tagged(), isolate_);
 }
 
 Tagged<PyList> ModuleManager::path_tagged() const {

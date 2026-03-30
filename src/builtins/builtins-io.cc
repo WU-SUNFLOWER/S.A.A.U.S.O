@@ -31,7 +31,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
                                             Handle<PyDict> kwargs,
                                             PrintOptions& options) {
   if (kwargs.is_null()) {
-    return handle(isolate->py_none_object());
+    return handle(isolate->py_none_object(), isolate);
   }
 
   auto sep_key = ST(sep, isolate);
@@ -122,7 +122,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 void WriteRawString(const char* buffer, int64_t length) {
@@ -173,7 +173,7 @@ BUILTIN(Print) {
     }
   }
 
-  return scope.Escape(handle(isolate->py_none_object()));
+  return scope.Escape(handle(isolate->py_none_object(), isolate));
 }
 
 }  // namespace saauso::internal

@@ -421,8 +421,8 @@ MaybeHandle<PyObject> PyObject::GetAttrForCall(Isolate* isolate,
 
   if (IsMethodObject(value)) {
     auto method = Handle<MethodObject>::cast(value);
-    self_or_null = method->owner();
-    return method->func();
+    self_or_null = method->owner(isolate);
+    return method->func(isolate);
   }
   return value;
 }

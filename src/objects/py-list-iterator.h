@@ -15,7 +15,7 @@ class PyListIterator : public PyObject {
  public:
   static Tagged<PyListIterator> cast(Tagged<PyObject> object);
 
-  Handle<PyList> owner() const;
+  Handle<PyList> owner(Isolate* isolate) const;
   int64_t iter_cnt() const { return iter_cnt_; }
   void increase_iter_cnt() { ++iter_cnt_; }
 

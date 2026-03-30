@@ -55,7 +55,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
       i::Tagged<i::PyString>::cast(*script_object);
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> globals =
-      i::handle(i::Tagged<i::PyDict>::cast(*context_object));
+      i::handle(i::Tagged<i::PyDict>::cast(*context_object), internal_isolate);
   i::MaybeHandle<i::PyObject> maybe_result = i::Runtime_ExecutePythonSourceCode(
       internal_isolate,
       std::string_view(source_string->buffer(),

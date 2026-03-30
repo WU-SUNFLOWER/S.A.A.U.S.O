@@ -21,9 +21,9 @@ Tagged<PyListIterator> PyListIterator::cast(Tagged<PyObject> object) {
   return Tagged<PyListIterator>::cast(object);
 }
 
-Handle<PyList> PyListIterator::owner() const {
+Handle<PyList> PyListIterator::owner(Isolate* isolate) const {
   assert(!owner_.is_null());
-  return handle(Tagged<PyList>::cast(owner_));
+  return handle(Tagged<PyList>::cast(owner_), isolate);
 }
 
 }  // namespace saauso::internal

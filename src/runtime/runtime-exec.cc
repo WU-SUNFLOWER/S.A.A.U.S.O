@@ -29,18 +29,17 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
     Isolate* isolate,
     Handle<PyDict> globals) {
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             globals->ContainsKey(ST(builtins, isolate), isolate));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, found, globals->ContainsKey(ST(builtins, isolate), isolate));
 
   if (!found) {
-    Handle<PyDict> builtins = handle(isolate->builtins());
-    RETURN_ON_EXCEPTION_VALUE(isolate,
-                              PyDict::Put(globals, ST(builtins, isolate), builtins,
-                                          isolate),
-                              kNullMaybeHandle);
+    Handle<PyDict> builtins = handle(isolate->builtins(), isolate);
+    RETURN_ON_EXCEPTION_VALUE(
+        isolate, PyDict::Put(globals, ST(builtins, isolate), builtins, isolate),
+        kNullMaybeHandle);
   }
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 }  // namespace

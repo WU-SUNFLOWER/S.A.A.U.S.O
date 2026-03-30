@@ -28,7 +28,7 @@ class BuiltinsBootstrapTest : public VmTestBase {
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   HandleScope scope;
 
-  Handle<PyDict> builtins = handle(isolate_->builtins());
+  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
 
   // 这里的 << 是 Google Test
   // 的流式断言语法，用于在断言失败时输出额外信息（这里是当前遍历到的 name）。
@@ -55,16 +55,16 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   }
   Tagged<PyObject> value;
   bool found = false;
-  ASSERT_TRUE(
-      builtins->GetTagged(ST(true_symbol, isolate_), value, isolate_).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(true_symbol, isolate_), value, isolate_)
+                  .To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_true_object());
-  ASSERT_TRUE(
-      builtins->GetTagged(ST(false_symbol, isolate_), value, isolate_).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(false_symbol, isolate_), value, isolate_)
+                  .To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_false_object());
-  ASSERT_TRUE(
-      builtins->GetTagged(ST(none_symbol, isolate_), value, isolate_).To(&found));
+  ASSERT_TRUE(builtins->GetTagged(ST(none_symbol, isolate_), value, isolate_)
+                  .To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, isolate_->py_none_object());
 
@@ -84,9 +84,11 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   }
 
   bool exists = false;
-  ASSERT_TRUE(builtins->ContainsKey(ST(builtins, isolate_), isolate_).To(&exists));
+  ASSERT_TRUE(
+      builtins->ContainsKey(ST(builtins, isolate_), isolate_).To(&exists));
   ASSERT_TRUE(exists);
-  ASSERT_TRUE(builtins->GetTagged(ST(builtins, isolate_), value, isolate_).To(&found));
+  ASSERT_TRUE(
+      builtins->GetTagged(ST(builtins, isolate_), value, isolate_).To(&found));
   ASSERT_TRUE(found);
   EXPECT_EQ(value, *builtins);
 }
@@ -94,7 +96,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   HandleScope scope;
 
-  Handle<PyDict> builtins = handle(isolate_->builtins());
+  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
 
   const char* const kExceptionTypes[] = {
       "BaseException",  "Exception",  "TypeError", "ValueError",   "NameError",
@@ -141,18 +143,19 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   EXPECT_TRUE(has_init);
 
   bool has_repr = false;
-  ASSERT_TRUE(
-      base_exception_props->ContainsKey(ST(repr, isolate_), isolate_).To(&has_repr));
+  ASSERT_TRUE(base_exception_props->ContainsKey(ST(repr, isolate_), isolate_)
+                  .To(&has_repr));
   EXPECT_TRUE(has_repr);
 
   bool has_str = false;
-  ASSERT_TRUE(base_exception_props->ContainsKey(ST(str, isolate_), isolate_).To(&has_str));
+  ASSERT_TRUE(base_exception_props->ContainsKey(ST(str, isolate_), isolate_)
+                  .To(&has_str));
   EXPECT_TRUE(has_str);
 }
 
 TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
   HandleScope scope;
-  Handle<PyDict> builtins = handle(isolate_->builtins());
+  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
 
   const char* const kTypeNames[] = {"object", "list", "dict",
                                     "tuple",  "str",  "type"};
@@ -170,11 +173,13 @@ TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
     auto props = type_obj->own_klass()->klass_properties();
 
     bool has_repr = false;
-    ASSERT_TRUE(props->ContainsKey(ST(repr, isolate_), isolate_).To(&has_repr)) << name;
+    ASSERT_TRUE(props->ContainsKey(ST(repr, isolate_), isolate_).To(&has_repr))
+        << name;
     EXPECT_TRUE(has_repr) << name;
 
     bool has_str = false;
-    ASSERT_TRUE(props->ContainsKey(ST(str, isolate_), isolate_).To(&has_str)) << name;
+    ASSERT_TRUE(props->ContainsKey(ST(str, isolate_), isolate_).To(&has_str))
+        << name;
     EXPECT_TRUE(has_str) << name;
   }
 }

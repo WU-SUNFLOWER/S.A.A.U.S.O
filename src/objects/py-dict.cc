@@ -57,7 +57,7 @@ Maybe<int64_t> FindSlot(DictT dict,
     bool is_equal = false;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, is_equal,
-        PyObject::EqualBool(isolate, handle(curr_key), key_handle));
+        PyObject::EqualBool(isolate, handle(curr_key, isolate), key_handle));
 
     if (is_equal) {
       *found = true;
@@ -88,7 +88,7 @@ Maybe<bool> RehashInto(DictT dict,
     }
 
     uint64_t hash = 0;
-    if (!PyObject::Hash(isolate, handle(key)).To(&hash)) {
+    if (!PyObject::Hash(isolate, handle(key, isolate)).To(&hash)) {
       return kNullMaybe;
     }
 

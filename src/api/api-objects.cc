@@ -12,8 +12,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyDict> dict =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
-  i::Handle<i::PyObject> escaped =
-      handle_scope.Escape(i::handle(i::Tagged<i::PyObject>::cast(*dict)));
+  i::Handle<i::PyObject> escaped = handle_scope.Escape(dict);
   return i::Utils::ToLocal<api::RawObject>(escaped);
 }
 
@@ -34,16 +33,14 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
   }
 
   i::HandleScope handle_scope;
-  i::Handle<i::PyDict> dict = i::handle(i::Tagged<i::PyDict>::cast(*object));
+  i::Handle<i::PyDict> dict = i::Handle<i::PyDict>::cast(object);
   std::string key_value = key->Value();
   i::Handle<i::PyString> py_key =
       i::PyString::New(internal_isolate, key_value.data(),
                        static_cast<int64_t>(key_value.size()));
   i::Handle<i::PyObject> py_value =
       api::ToInternalObject(internal_isolate, value);
-  auto maybe_put =
-      i::PyDict::Put(dict, i::handle(i::Tagged<i::PyObject>::cast(*py_key)),
-                     py_value, internal_isolate);
+  auto maybe_put = i::PyDict::Put(dict, py_key, py_value, internal_isolate);
   if (maybe_put.IsNothing()) {
     api::CapturePendingException(internal_isolate);
     return i::kNullMaybe;
@@ -69,14 +66,15 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   if (object.is_null() || !i::IsPyDict(object)) {
     return MaybeLocal<Value>();
   }
-  i::Handle<i::PyDict> dict = i::handle(i::Tagged<i::PyDict>::cast(*object));
+  i::Handle<i::PyDict> dict = i::Handle<i::PyDict>::cast(object);
   std::string key_value = key->Value();
   i::Handle<i::PyString> py_key =
       i::PyString::New(internal_isolate, key_value.data(),
                        static_cast<int64_t>(key_value.size()));
   i::Handle<i::PyObject> out;
-  auto maybe_found = dict->Get(i::handle(i::Tagged<i::PyObject>::cast(*py_key)),
-                               out, internal_isolate);
+  auto maybe_found = dict->Get(
+      i::handle(i::Tagged<i::PyObject>::cast(*py_key), internal_isolate), out,
+      internal_isolate);
   if (maybe_found.IsNothing()) {
     api::CapturePendingException(internal_isolate);
     return MaybeLocal<Value>();
@@ -111,7 +109,8 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
                        static_cast<int64_t>(name_value.size()));
   i::Handle<i::PyObject> self_or_null;
   i::MaybeHandle<i::PyObject> maybe_callee = i::PyObject::GetAttrForCall(
-      internal_isolate, self, i::handle(*py_name), self_or_null);
+      internal_isolate, self, i::handle(*py_name, internal_isolate),
+      self_or_null);
   i::Handle<i::PyObject> callee;
   if (!maybe_callee.ToHandle(&callee)) {
     api::CapturePendingException(internal_isolate);
@@ -127,7 +126,8 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
 
   i::MaybeHandle<i::PyObject> maybe_result =
       i::PyObject::Call(internal_isolate, callee, self_or_null,
-                        i::handle(*py_args), i::handle(*py_kwargs));
+                        i::handle(*py_args, internal_isolate),
+                        i::handle(*py_kwargs, internal_isolate));
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {

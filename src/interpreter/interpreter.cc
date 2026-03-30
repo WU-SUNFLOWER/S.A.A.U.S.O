@@ -42,7 +42,7 @@ namespace saauso::internal {
 Interpreter::Interpreter(Isolate* isolate) : isolate_(isolate) {}
 
 Handle<PyTuple> Interpreter::kwarg_keys() const {
-  return handle(Tagged<PyTuple>::cast(kwarg_keys_));
+  return handle(Tagged<PyTuple>::cast(kwarg_keys_), isolate_);
 }
 
 Tagged<PyObject> Interpreter::caught_exception_tagged() const {
@@ -50,7 +50,7 @@ Tagged<PyObject> Interpreter::caught_exception_tagged() const {
 }
 
 Handle<PyObject> Interpreter::caught_exception() const {
-  return handle(caught_exception_tagged());
+  return handle(caught_exception_tagged(), isolate_);
 }
 
 Tagged<PyObject> Interpreter::pending_exception_tagged() const {
@@ -67,18 +67,18 @@ void Interpreter::ClearPendingException() {
 
 Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
   assert(current_frame_ != nullptr);
-  return current_frame_->globals();
+  return current_frame_->globals(isolate_);
 }
 
 Handle<PyDict> Interpreter::CurrentFrameLocals() const {
   assert(current_frame_ != nullptr);
-  return current_frame_->locals();
+  return current_frame_->locals(isolate_);
 }
 
 Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
   Handle<PyDict> globals = PyDict::New(isolate_);
-  RETURN_ON_EXCEPTION(isolate_,
-                      PyDict::Put(globals, ST(name, isolate_), ST(main, isolate_), isolate_));
+  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(globals, ST(name, isolate_),
+                                            ST(main, isolate_), isolate_));
 
   boilerplate->set_func_globals(globals);
 
@@ -205,8 +205,8 @@ void Interpreter::NormalizeCallable(Handle<PyObject>& callable,
     // 如果传入的已经是待解包的 receiver，理论上不应该再显式传入 receiver。
     assert(receiver.is_null());
     auto method = Handle<MethodObject>::cast(callable);
-    callable = method->func();
-    receiver = method->owner();
+    callable = method->func(isolate_);
+    receiver = method->owner(isolate_);
   }
 }
 
@@ -227,9 +227,8 @@ Maybe<void> Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
           kwarg_keys->Get(kwarg_keys->length() - i - 1);
       Handle<PyObject> actual_arg = actual_args->Get(actual_args_size - i - 1);
 
-      RETURN_ON_EXCEPTION(isolate_,
-                          PyDict::Put(kw_args, kwarg_key, actual_arg,
-                                      isolate_));
+      RETURN_ON_EXCEPTION(
+          isolate_, PyDict::Put(kw_args, kwarg_key, actual_arg, isolate_));
     }
 
     // 从actual_args尾部截去提取出来的参数，剩余部分作为pos_args
@@ -244,14 +243,14 @@ Maybe<void> Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
 
 // private
 Handle<PyObject> Interpreter::ReleaseReturnValue() {
-  auto result = handle(ret_value_);
+  auto result = handle(ret_value_, isolate_);
   ret_value_ = Tagged<PyObject>::null();
   return result;
 }
 
 // private
 Handle<PyTuple> Interpreter::ReleaseKwArgKeys() {
-  auto result = Handle<PyTuple>::cast(handle(kwarg_keys_));
+  auto result = Handle<PyTuple>::cast(handle(kwarg_keys_, isolate_));
   kwarg_keys_ = Tagged<PyObject>::null();
   return result;
 }

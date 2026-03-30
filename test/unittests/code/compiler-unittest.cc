@@ -31,7 +31,8 @@ TEST_F(CompilerTest, CompileSourceKeepsFileName) {
   }
 
   EXPECT_TRUE(
-      IsPyStringEqual(boilerplate->func_code()->file_name(), kFileName));
+      IsPyStringEqual(boilerplate->func_code(isolate_)->file_name(isolate_),
+                      kFileName));
 }
 
 TEST_F(CompilerTest, CompilePycBytesParsesSuccessfully) {
@@ -53,7 +54,8 @@ TEST_F(CompilerTest, CompilePycBytesParsesSuccessfully) {
   ASSERT_FALSE(boilerplate.is_null());
 
   EXPECT_TRUE(
-      IsPyStringEqual(boilerplate->func_code()->file_name(), kFileName));
+      IsPyStringEqual(boilerplate->func_code(isolate_)->file_name(isolate_),
+                      kFileName));
 }
 
 }  // namespace saauso::internal

@@ -192,7 +192,7 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 #endif
   }
 
-  return handle(isolate_->py_none_object());
+  return handle(isolate_->py_none_object(), isolate_);
 }
 
 Maybe<void> ModuleImporter::EnsurePackageForNextSegment(

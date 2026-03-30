@@ -25,20 +25,20 @@ Tagged<PyFunction> PyFunction::cast(Tagged<PyObject> object) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Handle<PyCodeObject> PyFunction::func_code() const {
-  return handle(Tagged<PyCodeObject>::cast(func_code_));
+Handle<PyCodeObject> PyFunction::func_code(Isolate* isolate) const {
+  return handle(Tagged<PyCodeObject>::cast(func_code_), isolate);
 }
 
-Handle<PyString> PyFunction::func_name() const {
-  return handle(Tagged<PyString>::cast(func_name_));
+Handle<PyString> PyFunction::func_name(Isolate* isolate) const {
+  return handle(Tagged<PyString>::cast(func_name_), isolate);
 }
 
 void PyFunction::set_func_name(Handle<PyString> name) {
   func_name_ = *name;
 }
 
-Handle<PyDict> PyFunction::func_globals() const {
-  return handle(Tagged<PyDict>::cast(func_globals_));
+Handle<PyDict> PyFunction::func_globals(Isolate* isolate) const {
+  return handle(Tagged<PyDict>::cast(func_globals_), isolate);
 }
 
 void PyFunction::set_func_globals(Handle<PyDict> func_globals) {
@@ -49,8 +49,8 @@ void PyFunction::set_func_globals(Tagged<PyDict> func_globals) {
   func_globals_ = func_globals;
 }
 
-Handle<PyTuple> PyFunction::default_args() const {
-  return handle(Tagged<PyTuple>::cast(default_args_));
+Handle<PyTuple> PyFunction::default_args(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(default_args_), isolate);
 }
 
 void PyFunction::set_default_args(Handle<PyTuple> default_args) {
@@ -62,8 +62,8 @@ void PyFunction::set_closures(Handle<PyTuple> closures) {
   closures_ = *closures;
 }
 
-Handle<PyTuple> PyFunction::closures() const {
-  return handle(closures_tagged());
+Handle<PyTuple> PyFunction::closures(Isolate* isolate) const {
+  return handle(closures_tagged(), isolate);
 }
 
 Tagged<PyTuple> PyFunction::closures_tagged() const {

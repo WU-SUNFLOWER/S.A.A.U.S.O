@@ -95,7 +95,7 @@ MaybeHandle<PyObject> ReturnPyIntFromDouble(Isolate* isolate,
                         "%s result too large", func_name);
     return kNullMaybe;
   }
-  return handle(PySmi::FromInt(static_cast<int64_t>(v)));
+  return handle(PySmi::FromInt(static_cast<int64_t>(v)), isolate);
 }
 
 }  // namespace

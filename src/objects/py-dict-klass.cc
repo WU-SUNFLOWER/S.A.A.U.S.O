@@ -247,7 +247,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
       isolate, Runtime_InitDictFromArgsKwargs(
                    isolate, Handle<PyDict>::cast(instance), args, kwargs));
 
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 // static

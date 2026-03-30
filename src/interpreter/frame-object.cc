@@ -54,9 +54,9 @@ int FrameObject::StackSize() const {
   return stack_top_;
 }
 
-Handle<PyObject> FrameObject::TopOfStack() const {
+Handle<PyObject> FrameObject::TopOfStack(Isolate* isolate) const {
   assert(0 < stack_top_);
-  return handle(stack()->Get(stack_top_ - 1));
+  return handle(stack(isolate)->Get(stack_top_ - 1), isolate);
 }
 
 Tagged<PyObject> FrameObject::TopOfStackTagged() const {
@@ -69,13 +69,13 @@ void FrameObject::PushToStack(Handle<PyObject> object) {
 }
 
 void FrameObject::PushToStack(Tagged<PyObject> object) {
-  assert(stack_top_ < stack()->capacity());
-  stack()->Set(stack_top_++, object);
+  assert(stack_top_ < Tagged<FixedArray>::cast(stack_)->capacity());
+  Tagged<FixedArray>::cast(stack_)->Set(stack_top_++, object);
 }
 
-Handle<PyObject> FrameObject::PopFromStack() {
+Handle<PyObject> FrameObject::PopFromStack(Isolate* isolate) {
   assert(stack_top_ > 0);
-  return handle(stack()->Get(--stack_top_));
+  return handle(Tagged<FixedArray>::cast(stack_)->Get(--stack_top_), isolate);
 }
 
 Tagged<PyObject> FrameObject::PopFromStackTagged() {
@@ -87,40 +87,40 @@ Tagged<PyObject> FrameObject::StackGetTagged(int index) const {
   return Tagged<FixedArray>::cast(stack_)->Get(index);
 }
 
-Handle<FixedArray> FrameObject::stack() const {
-  return handle(Tagged<FixedArray>::cast(stack_));
+Handle<FixedArray> FrameObject::stack(Isolate* isolate) const {
+  return handle(Tagged<FixedArray>::cast(stack_), isolate);
 }
 
-Handle<PyTuple> FrameObject::consts() const {
-  return handle(Tagged<PyTuple>::cast(consts_));
+Handle<PyTuple> FrameObject::consts(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(consts_), isolate);
 }
 
-Handle<PyTuple> FrameObject::names() const {
-  return handle(Tagged<PyTuple>::cast(names_));
+Handle<PyTuple> FrameObject::names(Isolate* isolate) const {
+  return handle(Tagged<PyTuple>::cast(names_), isolate);
 }
 
-Handle<PyDict> FrameObject::locals() const {
-  return handle(Tagged<PyDict>::cast(locals_));
+Handle<PyDict> FrameObject::locals(Isolate* isolate) const {
+  return handle(Tagged<PyDict>::cast(locals_), isolate);
 }
 
-Handle<FixedArray> FrameObject::localsplus() const {
-  return handle(Tagged<FixedArray>::cast(localsplus_));
+Handle<FixedArray> FrameObject::localsplus(Isolate* isolate) const {
+  return handle(Tagged<FixedArray>::cast(localsplus_), isolate);
 }
 
-Handle<PyDict> FrameObject::globals() const {
-  return handle(Tagged<PyDict>::cast(globals_));
+Handle<PyDict> FrameObject::globals(Isolate* isolate) const {
+  return handle(Tagged<PyDict>::cast(globals_), isolate);
 }
 
-Handle<PyCodeObject> FrameObject::code_object() const {
-  return handle(code_object_tagged());
+Handle<PyCodeObject> FrameObject::code_object(Isolate* isolate) const {
+  return handle(code_object_tagged(), isolate);
 }
 
 Tagged<PyCodeObject> FrameObject::code_object_tagged() const {
   return Tagged<PyCodeObject>::cast(code_object_);
 }
 
-Handle<PyFunction> FrameObject::func() const {
-  return handle(func_tagged());
+Handle<PyFunction> FrameObject::func(Isolate* isolate) const {
+  return handle(func_tagged(), isolate);
 }
 
 Tagged<PyFunction> FrameObject::func_tagged() const {
@@ -128,15 +128,21 @@ Tagged<PyFunction> FrameObject::func_tagged() const {
 }
 
 int FrameObject::GetOpArg() {
-  return code_object()->bytecodes()->buffer()[pc_++] & kByteMask;
+  auto code = Tagged<PyCodeObject>::cast(code_object_);
+  auto bytecodes = Tagged<PyString>::cast(code->bytecodes_);
+  return bytecodes->buffer()[pc_++] & kByteMask;
 }
 
 uint8_t FrameObject::GetOpCode() {
-  return code_object()->bytecodes()->buffer()[pc_++];
+  auto code = Tagged<PyCodeObject>::cast(code_object_);
+  auto bytecodes = Tagged<PyString>::cast(code->bytecodes_);
+  return bytecodes->buffer()[pc_++];
 }
 
 bool FrameObject::HasMoreCodes() {
-  return pc_ < code_object()->bytecodes()->length();
+  auto code = Tagged<PyCodeObject>::cast(code_object_);
+  auto bytecodes = Tagged<PyString>::cast(code->bytecodes_);
+  return pc_ < bytecodes->length();
 }
 
 void FrameObject::Iterate(ObjectVisitor* v) {

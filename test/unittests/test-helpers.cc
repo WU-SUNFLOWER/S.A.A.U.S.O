@@ -78,7 +78,7 @@ void BasicInterpreterTest::SetUpTestSuite() {
 
   HandleScope scope;
   Handle<PyString> func_name = PyString::New(isolate_, "print");
-  Handle<PyDict> builtins = handle(isolate_->builtins());
+  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
 
   FunctionTemplateInfo func_template(isolate_, &Builtin_PrintV, func_name);
   Handle<PyFunction> func;
@@ -175,7 +175,7 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     HandleScope scope;
     PyList::Append(printv_result_.Get(isolate_), args->Get(i), isolate);
   }
-  return handle(isolate->py_none_object());
+  return handle(isolate->py_none_object(), isolate);
 }
 
 void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {

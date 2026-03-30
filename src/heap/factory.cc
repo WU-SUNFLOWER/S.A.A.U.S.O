@@ -243,7 +243,7 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
     PyObject::SetProperties(object, *properties);
   }
 
-  return scope.Escape(handle(object));
+  return scope.Escape(handle(object, isolate_));
 }
 
 Handle<PyTuple> Factory::NewPyTuple(int64_t length) {
@@ -278,13 +278,13 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
 
   if (klass_self->instance_has_properties_dict()) {
     EscapableHandleScope scope;
-    Handle<PyString> str_handle(object);
+    Handle<PyString> str_handle(object, isolate_);
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
     PyObject::SetProperties(*str_handle, *properties);
     return scope.Escape(str_handle);
   }
 
-  return handle(object);
+  return handle(object, isolate_);
 }
 
 Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
@@ -402,7 +402,7 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
 
   object->func_code_ = *code_object;
-  object->func_name_ = *code_object->co_name();
+  object->func_name_ = *code_object->co_name(isolate_);
 
   // 绑定klass
   PyObject::SetKlass(object, PyFunctionKlass::GetInstance(isolate_));
@@ -644,7 +644,8 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
 
 Handle<PyBoolean> Factory::ToPyBoolean(bool condition) {
   return handle(condition ? isolate_->py_true_object()
-                          : isolate_->py_false_object());
+                          : isolate_->py_false_object(),
+                isolate_);
 }
 
 Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {

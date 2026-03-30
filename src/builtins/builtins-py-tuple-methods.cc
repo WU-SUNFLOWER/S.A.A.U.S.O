@@ -118,7 +118,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
     return kNullMaybeHandle;
   }
 
-  return scope.Escape(handle(PySmi::FromInt(result)));
+  return scope.Escape(handle(PySmi::FromInt(result), isolate));
 }
 
 }  // namespace saauso::internal
