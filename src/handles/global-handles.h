@@ -24,12 +24,10 @@ class Global {
         Tagged<PyObject>(object).ptr());
   }
 
-  explicit Global(Tagged<T> object) : Global(Isolate::Current(), object) {}
-
   template <typename S>
-  Global(Handle<S> local)  // NOLINT
+  Global(Isolate* isolate, Handle<S> local)  // NOLINT
     requires(is_subtype_v<S, T>)
-      : Global(Isolate::Current(), Tagged<T>(*local)) {}
+      : Global(isolate, Tagged<T>(*local)) {}
 
   // 类似于std::unique_ptr，禁止拷贝和赋值，避免对应的slot槽位被重复释放
   Global(const Global&) = delete;
