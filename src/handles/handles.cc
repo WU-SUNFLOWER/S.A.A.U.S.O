@@ -64,11 +64,6 @@ Address* HandleScope::CloseAndEscape(Address ptr) {
 }
 
 // static
-Address* HandleScope::CreateHandle(Address ptr) {
-  return CreateHandle(Isolate::Current(), ptr);
-}
-
-// static
 Address* HandleScope::CreateHandle(Isolate* isolate, Address ptr) {
   if (isolate == nullptr) {
     std::printf("Cannot create a handle without an isolate");
