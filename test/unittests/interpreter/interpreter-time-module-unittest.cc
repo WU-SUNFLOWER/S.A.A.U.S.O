@@ -4,7 +4,9 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "test/unittests/test-helpers.h"
@@ -82,10 +84,10 @@ print(c.x.v)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, handle(PySmi::FromInt(111)));
-  AppendExpected(expected, handle(PySmi::FromInt(222)));
-  AppendExpected(expected, handle(PySmi::FromInt(111)));
-  AppendExpected(expected, handle(PySmi::FromInt(222)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(111));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(222));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(111));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(222));
   ExpectPrintResult(expected);
 }
 

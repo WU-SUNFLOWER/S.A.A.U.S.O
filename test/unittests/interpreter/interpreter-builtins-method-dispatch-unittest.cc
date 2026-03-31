@@ -4,7 +4,9 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -53,7 +55,8 @@ print(l[3])
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyString::New(isolate_, "HELLO"));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(233));
   ExpectPrintResult(expected_printv_result);
 }
 

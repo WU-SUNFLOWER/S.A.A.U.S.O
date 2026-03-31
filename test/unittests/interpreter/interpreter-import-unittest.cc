@@ -13,6 +13,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
@@ -100,7 +101,7 @@ print(a.x)
 
   auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::New(isolate_, "a_init"));
-  AppendExpected(expected, handle(PySmi::FromInt(1)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(1));
   ExpectPrintResult(expected);
 }
 
@@ -124,7 +125,7 @@ print(pkg.sub.answer)
 
   auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::New(isolate_, "pkg_init"));
-  AppendExpected(expected, handle(PySmi::FromInt(42)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(42));
   ExpectPrintResult(expected);
 }
 
@@ -211,7 +212,7 @@ import pkg.rel.mod
 
   auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::New(isolate_, "pkg_init"));
-  AppendExpected(expected, handle(PySmi::FromInt(12)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(12));
   ExpectPrintResult(expected);
 }
 
@@ -236,9 +237,9 @@ print(_b)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, handle(PySmi::FromInt(1)));
-  AppendExpected(expected, handle(PySmi::FromInt(99)));
-  AppendExpected(expected, handle(PySmi::FromInt(99)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(99));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(99));
   ExpectPrintResult(expected);
 }
 
@@ -268,7 +269,7 @@ print(pkg.sub.answer)
 
   auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::New(isolate_, "pkg_init"));
-  AppendExpected(expected, handle(PySmi::FromInt(42)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(42));
   ExpectPrintResult(expected);
 }
 
@@ -324,7 +325,7 @@ TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {
 
   auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyString::New(isolate_, "pyc_init"));
-  AppendExpected(expected, handle(PySmi::FromInt(7)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(7));
   ExpectPrintResult(expected);
 
   std::filesystem::remove_all(dir);

@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
@@ -44,18 +46,18 @@ print(t.index(1, 1, 3))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
 
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(0));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
 
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(0));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -80,17 +82,17 @@ print(s.rfind("yy", 0, 2))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(-1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
 
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(-1)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(-1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(4));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(-1));
   ExpectPrintResult(expected_printv_result);
 }
 

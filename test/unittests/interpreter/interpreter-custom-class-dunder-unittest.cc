@@ -7,6 +7,7 @@
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -46,9 +47,9 @@ print(c.value)   # 3
 
   AppendExpected(expected_printv_result,
                  PyString::New(isolate_, "executing operator +"));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -78,8 +79,10 @@ print(len(v2))
 
   auto expected_printv_result = PyList::New(isolate_);
 
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(25)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(52)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(25));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(52));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -127,7 +130,7 @@ print(a["one"]) # Error
 
   AppendExpected(expected_printv_result, PyString::New(isolate_, "hi"));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "fine"));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "Error"));
 
   ExpectPrintResult(expected_printv_result);

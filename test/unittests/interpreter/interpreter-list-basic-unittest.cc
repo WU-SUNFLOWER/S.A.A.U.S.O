@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
@@ -35,7 +37,7 @@ print(lst)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, handle(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(1), isolate_);
   PyList::Append(list, PyString::New(isolate_, "hello"), isolate_);
 
   AppendExpected(expected_printv_result, list);
@@ -55,12 +57,12 @@ print(lst)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, handle(PySmi::FromInt(1)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(2)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(3)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(4)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(5)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(6)), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(1), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(2), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(3), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(4), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(5), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(6), isolate_);
   PyList::Append(list, PyString::New(isolate_, "hello"), isolate_);
 
   AppendExpected(expected_printv_result, list);
@@ -79,7 +81,8 @@ print(lst[1])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(233));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "world"));
   ExpectPrintResult(expected_printv_result);
 }
@@ -115,10 +118,10 @@ for elem in l:
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(4));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -139,8 +142,9 @@ print(l[0], l[1], l[2])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(123));
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 3.14));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "python"));
   ExpectPrintResult(expected_printv_result);
@@ -160,9 +164,9 @@ print(l)
   auto expected_printv_result = PyList::New(isolate_);
 
   auto list = PyList::New(isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(3)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(1)), isolate_);
-  PyList::Append(list, handle(PySmi::FromInt(2)), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(3), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(1), isolate_);
+  PyList::Append(list, isolate_->factory()->NewSmiFromInt(2), isolate_);
 
   AppendExpected(expected_printv_result, list);
   ExpectPrintResult(expected_printv_result);
@@ -186,7 +190,8 @@ print(count)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(10)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(10));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -212,11 +217,11 @@ while i < 5:
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(4));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(0));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -235,8 +240,8 @@ print(len(l4))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(4));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(6));
   ExpectPrintResult(expected_printv_result);
 }
 

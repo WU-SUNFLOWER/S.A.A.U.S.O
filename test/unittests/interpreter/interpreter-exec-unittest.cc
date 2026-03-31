@@ -4,7 +4,9 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -28,7 +30,7 @@ TEST_F(BasicInterpreterTest, ExecPrint) {
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -44,7 +46,8 @@ print(x)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(42)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(42));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -60,7 +63,7 @@ print(d["a"])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(7));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -77,7 +80,8 @@ print(l["y"])
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(11)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(11));
   ExpectPrintResult(expected_printv_result);
 }
 

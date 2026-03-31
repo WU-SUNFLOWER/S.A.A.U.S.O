@@ -3,6 +3,7 @@
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -36,7 +37,7 @@ print(a.value)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(7)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(7));
   ExpectPrintResult(expected_printv_result);
 }
 
