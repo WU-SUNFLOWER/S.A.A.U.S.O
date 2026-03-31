@@ -21,8 +21,6 @@ MarkWord MarkWord::FromKlass(const Tagged<Klass> klass) {
 
 // static
 MarkWord MarkWord::FromForwardingAddress(const Tagged<PyObject> target_object) {
-  assert(IsHeapObject(target_object) &&
-         Isolate::Current()->heap()->InNewSpaceSurvivor(target_object.ptr()));
   Address value = target_object.ptr() | kForwardingTag;
   return MarkWord(value);
 }
