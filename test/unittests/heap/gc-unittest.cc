@@ -296,9 +296,9 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   EXPECT_NE(before, (*list).ptr());
   EXPECT_EQ(list->length(), 2);
 
-  auto elem0 = list->Get(0, isolate_);
+  Tagged<PyObject> elem0 = list->GetTagged(0);
   ASSERT_FALSE(elem0.is_null());
-  EXPECT_EQ((*list).ptr(), (*elem0).ptr());
+  EXPECT_EQ((*list).ptr(), elem0.ptr());
 }
 
 TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
@@ -319,9 +319,9 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
 
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    auto v = list->Get(i, isolate_);
+    auto v = list->GetTagged(i);
     ASSERT_TRUE(IsPySmi(v));
-    EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v)), i);
+    EXPECT_EQ(PySmi::ToInt(Tagged<PySmi>::cast(v)), i);
   }
 }
 
