@@ -33,18 +33,30 @@ Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
 /////////////////////////////////////////////////////////////
 
 Handle<PyObject> PyList::Pop(Isolate* isolate) {
+  return handle(PopTagged(), isolate);
+}
+
+Tagged<PyObject> PyList::PopTagged() {
   assert(!IsEmpty());
-  return handle(array()->Get(--length_), isolate);
+  return array()->Get(--length_);
 }
 
 Handle<PyObject> PyList::Get(int64_t index, Isolate* isolate) const {
+  return handle(GetTagged(index), isolate);
+}
+
+Tagged<PyObject> PyList::GetTagged(int64_t index) const {
   assert(0 <= index && index < length_);
-  return handle(array()->Get(index), isolate);
+  return array()->Get(index);
 }
 
 Handle<PyObject> PyList::GetLast(Isolate* isolate) const {
+  return handle(GetLastTagged(), isolate);
+}
+
+Tagged<PyObject> PyList::GetLastTagged() const {
   assert(!IsEmpty());
-  return handle(array()->Get(length_ - 1), isolate);
+  return array()->Get(length_ - 1);
 }
 
 void PyList::Set(int64_t index, Handle<PyObject> value) {
