@@ -648,6 +648,14 @@ Handle<PyBoolean> Factory::ToPyBoolean(bool condition) {
       isolate_);
 }
 
+Handle<PyBoolean> Factory::py_true_object() const {
+  return handle(isolate_->py_true_object(), isolate_);
+}
+
+Handle<PyBoolean> Factory::py_false_object() const {
+  return handle(isolate_->py_false_object(), isolate_);
+}
+
 Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {
   auto klass = PyBooleanKlass::GetInstance(isolate_);
   auto object = Allocate<PyBoolean>(Heap::AllocationSpace::kMetaSpace);

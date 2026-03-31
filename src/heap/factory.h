@@ -122,6 +122,10 @@ class Factory {
   // - 本 API 仅仅是使用 handle 包装 isolate 实例
   //   持有的常量对象，不涉及实际的内存分配！
   Handle<PyBoolean> ToPyBoolean(bool condition);
+  // 获取 True 单例对象
+  Handle<PyBoolean> py_true_object() const;
+  // 获取 False 单例对象
+  Handle<PyBoolean> py_false_object() const;
   // 在堆上创建一个新的 bool 对象，用于为虚拟机初始化 True 和 False 对象
   Tagged<PyBoolean> NewPyBoolean(bool value);
 
