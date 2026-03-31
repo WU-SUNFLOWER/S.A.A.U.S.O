@@ -40,7 +40,6 @@ class HandleScope {
   Address* CloseAndEscape(Address ptr);
 
  private:
-  static void Extend();
   static void Extend(Isolate* isolate);
 
   void Close();

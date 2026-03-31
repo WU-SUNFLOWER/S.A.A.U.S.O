@@ -95,11 +95,6 @@ Address* HandleScope::CreateHandle(Isolate* isolate, Address ptr) {
 }
 
 // static
-void HandleScope::Extend() {
-  Extend(Isolate::Current());
-}
-
-// static
 void HandleScope::Extend(Isolate* isolate) {
   assert(isolate != nullptr);
   auto* impl = isolate->handle_scope_implementer();
