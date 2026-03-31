@@ -19,9 +19,6 @@ class HandleScope {
     int extension{-1};  // 进入该scope后额外申请的block数量
   };
 
-  // TODO: HandleScope(Isolate* isolate) 铺开后移除该构造函数
-  HandleScope();
-
   explicit HandleScope(Isolate* isolate);
 
   HandleScope(const HandleScope&) = delete;
@@ -58,8 +55,6 @@ class Handle;
 
 class EscapableHandleScope final : public HandleScope {
  public:
-  // TODO: HandleScope(Isolate* isolate) 铺开后移除该构造函数
-  EscapableHandleScope() = default;
   explicit EscapableHandleScope(Isolate* isolate) : HandleScope(isolate) {}
   EscapableHandleScope(const EscapableHandleScope&) = delete;
   EscapableHandleScope& operator=(const EscapableHandleScope&) = delete;

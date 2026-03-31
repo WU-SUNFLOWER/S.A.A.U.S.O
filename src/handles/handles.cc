@@ -12,9 +12,6 @@
 
 namespace saauso::internal {
 
-// 保存父级scope的现场
-HandleScope::HandleScope() : HandleScope(Isolate::Current()) {}
-
 HandleScope::HandleScope(Isolate* isolate) {
   // 将新建的handle scope与当前的isolate绑定
   isolate_ = isolate;
