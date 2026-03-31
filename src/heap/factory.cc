@@ -138,7 +138,7 @@ Handle<FixedArray> Factory::NewFixedArray(int64_t capacity) {
     }
     PyObject::SetKlass(object, klass);
   }
-  return scope.Escape(Handle<FixedArray>(object));
+  return scope.Escape(handle(object, isolate_));
 }
 
 Handle<FixedArray> Factory::CopyFixedArrayAndGrow(Handle<FixedArray> array,

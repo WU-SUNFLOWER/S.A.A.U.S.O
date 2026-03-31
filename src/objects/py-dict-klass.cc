@@ -161,8 +161,8 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Isolate* isolate,
       bool eq;
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, eq,
-          PyObject::EqualBool(isolate, Handle<PyObject>(v1),
-                              Handle<PyObject>(v2_tagged)));
+          PyObject::EqualBool(isolate, handle(v1, isolate),
+                              handle(v2_tagged, isolate)));
 
       if (!eq) {
         return Maybe<bool>(false);

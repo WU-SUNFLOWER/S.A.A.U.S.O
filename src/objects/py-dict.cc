@@ -42,7 +42,7 @@ Maybe<int64_t> FindSlot(DictT dict,
                         bool* found,
                         Isolate* isolate) {
   HandleScope scope;
-  Handle<PyObject> key_handle(key);
+  Handle<PyObject> key_handle(key, isolate);
 
   uint64_t hash = 0;
   if (!PyObject::Hash(isolate, key_handle).To(&hash)) {
@@ -133,13 +133,13 @@ Handle<PyObject> PyDict::ValueAtIndex(int64_t index) const {
 }
 
 Handle<PyTuple> PyDict::ItemAtIndex(int64_t index, Isolate* isolate) const {
-  auto key = KeyAtIndex(index);
+  auto key = handle(data()->Get(index << 1), isolate);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
   auto result = PyTuple::New(isolate, 2);
-  auto value = ValueAtIndex(index);
+  auto value = handle(data()->Get((index << 1) + 1), isolate);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
   return result;
@@ -178,7 +178,7 @@ Maybe<bool> PyDict::Get(Tagged<PyObject> key,
     return Maybe<bool>(false);
   }
 
-  out = handle(GET_DICT_VAL(this, index));
+  out = handle(GET_DICT_VAL(this, index), isolate);
   assert(!out.is_null());
   return Maybe<bool>(true);
 }

@@ -51,7 +51,8 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
     bool valid = true;
 
     auto mro_of_curr_super = Handle<PyList>::cast(mro_of_each_super->Get(i));
-    auto head = handle(Tagged<PyTypeObject>::cast(*mro_of_curr_super->Get(0)));
+    auto head =
+        handle(Tagged<PyTypeObject>::cast(*mro_of_curr_super->Get(0)), isolate);
 
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
       if (j == i) {
@@ -182,7 +183,8 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   } else {
     Handle<PyList> all = PyList::New(isolate, supers()->length());
     for (auto i = 0; i < supers()->length(); ++i) {
-      auto super = handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)));
+      auto super =
+          handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)), isolate);
       PyList::Append(all, C3Impl_Linear(isolate, super), isolate);
     }
     mro_result = C3Impl_Merge(isolate, all);
@@ -191,9 +193,8 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
 
   // 把自己添加到mro序列的开头
   PyList::Insert(mro_result, 0, type_object(), isolate);
-  RETURN_ON_EXCEPTION(isolate,
-                      PyDict::Put(klass_properties(), ST(mro, isolate), mro_result,
-                                  isolate));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Put(klass_properties(), ST(mro, isolate),
+                                           mro_result, isolate));
 
   mro_ = *mro_result;
 

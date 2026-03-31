@@ -272,7 +272,7 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
     Handle<PyString> key_repr;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, key_repr,
-        PyObject::Repr(isolate, Handle<PyObject>(key_tagged)));
+        PyObject::Repr(isolate, handle(key_tagged, isolate)));
     repr.append(key_repr->ToStdString());
     repr.append(": ");
     Handle<PyString> value_repr;

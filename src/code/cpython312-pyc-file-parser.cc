@@ -350,10 +350,10 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = isolate_->factory()->py_none_object();
       break;
     case kTrueObjectFlag:
-      object = Handle<PyBoolean>(isolate_->py_true_object());
+      object = isolate_->factory()->py_true_object();
       break;
     case kFalseObjectFlag:
-      object = Handle<PyBoolean>(isolate_->py_false_object());
+      object = isolate_->factory()->py_false_object();
       break;
     case kBytesFlag:
     case kUnicodeFlag:
