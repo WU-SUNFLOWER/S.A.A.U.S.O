@@ -34,20 +34,17 @@ Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
 
 Handle<PyObject> PyList::Pop(Isolate* isolate) {
   assert(!IsEmpty());
-
-  return Handle<PyObject>(array()->Get(--length_), isolate);
+  return handle(array()->Get(--length_), isolate);
 }
 
 Handle<PyObject> PyList::Get(int64_t index, Isolate* isolate) const {
   assert(0 <= index && index < length_);
-
-  return Handle<PyObject>(array()->Get(index), isolate);
+  return handle(array()->Get(index), isolate);
 }
 
 Handle<PyObject> PyList::GetLast(Isolate* isolate) const {
   assert(!IsEmpty());
-
-  return Handle<PyObject>(array()->Get(length_ - 1), isolate);
+  return handle(array()->Get(length_ - 1), isolate);
 }
 
 void PyList::Set(int64_t index, Handle<PyObject> value) {
@@ -152,7 +149,7 @@ void PyList::ExpandImpl(Handle<PyList> list, Isolate* isolate) {
   int64_t old_capacity = list->capacity();
   int64_t new_capacity = std::max(kMinimumCapacity, old_capacity << 1);
 
-  Handle<FixedArray> old_array(list->array());
+  Handle<FixedArray> old_array(list->array(), isolate);
   Handle<FixedArray> new_array = isolate->factory()->CopyFixedArrayAndGrow(
       old_array, new_capacity - old_capacity);
 

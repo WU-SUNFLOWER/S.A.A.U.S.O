@@ -152,8 +152,8 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2), isolate_), isolate_);
 
   Handle<PyObject> obj(list);
-  Handle<PyObject> index0(PySmi::FromInt(0));
-  Handle<PyObject> index1(PySmi::FromInt(1));
+  Handle<PyObject> index0(PySmi::FromInt(0), isolate_);
+  Handle<PyObject> index1(PySmi::FromInt(1), isolate_);
 
   Handle<PyObject> v0;
   ASSERT_TRUE(PyObject::Subscr(isolate_, obj, index0).ToHandle(&v0));

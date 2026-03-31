@@ -253,7 +253,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   EXPECT_EQ(keys_after_remove->length(), count / 2);
 
   for (int i = 1; i < count; i += 2) {
-    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     EXPECT_TRUE(TupleContains(keys_after_remove, key));
   }
 }

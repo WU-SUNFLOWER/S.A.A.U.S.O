@@ -29,13 +29,6 @@ class HandleBase {
   constexpr HandleBase() = default;
   explicit constexpr HandleBase(Address* location) : location_(location) {}
 
-  // TODO: HandleBase(Address object, Isolate* isolate)铺开后，
-  //       移除该构造函数！
-  explicit constexpr HandleBase(Address object) {
-    if (object != kNullAddress) {
-      location_ = HandleScope::CreateHandle(object);
-    }
-  }
   constexpr HandleBase(Address object, Isolate* isolate) {
     if (object != kNullAddress) {
       location_ = HandleScope::CreateHandle(isolate, object);

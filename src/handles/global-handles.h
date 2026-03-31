@@ -78,7 +78,7 @@ class Global {
       return Handle<T>::null();
     }
     assert(isolate_ == isolate);
-    return Handle<T>(GetDirectionPtr());
+    return Handle<T>(GetDirectionPtr(), isolate);
   }
 
   Isolate* isolate() const { return isolate_; }

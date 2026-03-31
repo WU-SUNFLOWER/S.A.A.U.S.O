@@ -137,7 +137,7 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   HandleScope scope;
 
   Handle<PyObject> s(PyString::New(isolate_, "abc"));
-  Handle<PyObject> index(PySmi::FromInt(1));
+  Handle<PyObject> index(PySmi::FromInt(1), isolate_);
 
   Handle<PyObject> result;
   ASSERT_TRUE(PyObject::Subscr(isolate_, s, index).ToHandle(&result));
@@ -191,7 +191,7 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
   Handle<PyObject> s(PyString::New(isolate_, "Hello World"));
   Handle<PyObject> pat(PyString::New(isolate_, "World"));
   Handle<PyObject> missing(PyString::New(isolate_, "planet"));
-  Handle<PyObject> not_a_string(PySmi::FromInt(1));
+  Handle<PyObject> not_a_string(PySmi::FromInt(1), isolate_);
 
   Handle<PyObject> contains_res;
   ASSERT_TRUE(PyObject::Contains(isolate_, s, pat).ToHandle(&contains_res));
