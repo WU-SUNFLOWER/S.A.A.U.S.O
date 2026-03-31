@@ -67,6 +67,7 @@ class Factory {
 
   Handle<Cell> NewCell();
 
+  Handle<PySmi> NewSmiFromInt(int64_t value);
   Handle<PyFloat> NewPyFloat(double value);
 
   Handle<PyList> NewPyListLike(Tagged<Klass> klass_self, int64_t init_capacity);

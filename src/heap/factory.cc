@@ -35,6 +35,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple-iterator-klass.h"
@@ -172,6 +173,10 @@ Handle<Cell> Factory::NewCell() {
     PyObject::SetKlass(object, CellKlass::GetInstance(isolate_));
   }
   return object;
+}
+
+Handle<PySmi> Factory::NewSmiFromInt(int64_t value) {
+  return handle(PySmi::FromInt(value), isolate_);
 }
 
 Handle<PyFloat> Factory::NewPyFloat(double value) {
