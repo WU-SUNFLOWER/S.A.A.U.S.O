@@ -36,8 +36,12 @@ class HandleBase {
   }
 
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-  void AssertValidLocation() const;
-#endif
+  void CheckDereferenceAllowed() const;
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
+
+#if SAAUSO_ENABLE_CHECK_VALID_LOC_SLOW
+  void CheckValidLocationSlow() const;
+#endif  // SAAUSO_ENABLE_CHECK_VALID_LOC_SLOW
 
  private:
   Address* location_{nullptr};

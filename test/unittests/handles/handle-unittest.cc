@@ -17,9 +17,15 @@
 
 namespace saauso::internal {
 
-#define NR_BLOCKS(nr_handles)                                \
-  ((nr_handles / HandleScopeImplementer::kHandleBlockSize) + \
-   !!((nr_handles % HandleScopeImplementer::kHandleBlockSize)))
+namespace {
+
+size_t ComputeBlockNumber(int handles_number) {
+  return static_cast<size_t>(
+      (handles_number / HandleScopeImplementer::kHandleBlockSize) +
+      !!((handles_number % HandleScopeImplementer::kHandleBlockSize)));
+}
+
+}  // namespace
 
 class HandleTest : public VmTestBase {};
 
@@ -94,20 +100,39 @@ TEST_F(HandleTest, ExplicitIsolateEscapableHandleScopeEscape) {
 
 #if defined(_DEBUG) || defined(ASAN_BUILD)
 TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
-  auto f = []() -> Handle<PyObject> {
+  auto f = []() -> Handle<PyString> {
     HandleScope scope(isolate_);
     return PyString::New(isolate_, "Hello World");
   };
 
-  ASSERT_DEATH_IF_SUPPORTED(
-      {
-        HandleScope scope(isolate_);
-        Handle<PyObject> bad = f();
-        (void)(*bad);
-      },
-      "Invalid handle");
+  {
+    HandleScope scope(isolate_);
+    Handle<PyString> bad = f();
+    ASSERT_DEATH_IF_SUPPORTED({ bad->ToCString(); }, "Invalid handle");
+  }
 }
-#endif
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
+
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+TEST_F(HandleTest,
+       ReturningUnescapedHandleBlockShouldFailFast_WithNonEmptyRootHandle) {
+  auto f = []() -> Handle<PyString> {
+    HandleScope scope(isolate_);
+    return PyString::New(isolate_, "Hello World");
+  };
+
+  {
+    HandleScope scope(isolate_);
+    Handle<PyString> temp1 = PyString::New(isolate_, "temp1");
+    Handle<PyList> temp2 = PyList::New(isolate_);
+    Handle<PyString> bad = f();
+
+    ASSERT_TRUE(IsPyString(temp1));
+    ASSERT_TRUE(IsPyList(temp2));
+    ASSERT_DEATH_IF_SUPPORTED({ bad->ToCString(); }, "Invalid handle");
+  }
+}
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
 
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   HandleScope scope(isolate_);
@@ -116,7 +141,7 @@ TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   auto nr_base_handles =
       isolate_->handle_scope_implementer()->NumberOfHandles();
 
-  EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
+  EXPECT_EQ(nr_base_block, ComputeBlockNumber(nr_base_handles));
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -132,7 +157,7 @@ TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
             nr_expect_handles);
 
   EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
-            NR_BLOCKS(nr_expect_handles));
+            ComputeBlockNumber(nr_expect_handles));
 }
 
 TEST_F(HandleTest, NestedHandleScopes) {
@@ -142,7 +167,7 @@ TEST_F(HandleTest, NestedHandleScopes) {
   auto nr_base_handles =
       isolate_->handle_scope_implementer()->NumberOfHandles();
 
-  EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
+  EXPECT_EQ(nr_base_block, ComputeBlockNumber(nr_base_handles));
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -154,7 +179,7 @@ TEST_F(HandleTest, NestedHandleScopes) {
   EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(),
             outer_handles);
   EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
-            NR_BLOCKS(outer_handles));
+            ComputeBlockNumber(outer_handles));
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -170,7 +195,7 @@ TEST_F(HandleTest, NestedHandleScopes) {
     int n = outer_handles + kNumberOfHandles;
     EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(), n);
     EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
-              NR_BLOCKS(n));
+              ComputeBlockNumber(n));
 
     {
       HandleScope most_inner_scope(isolate_);
@@ -185,13 +210,13 @@ TEST_F(HandleTest, NestedHandleScopes) {
       n += kNestNumberOfHandles;
       EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(), n);
       EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
-                NR_BLOCKS(n));
+                ComputeBlockNumber(n));
       n -= kNestNumberOfHandles;
     }
 
     EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(), n);
     EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
-              NR_BLOCKS(n));
+              ComputeBlockNumber(n));
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -199,7 +224,7 @@ TEST_F(HandleTest, NestedHandleScopes) {
   EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(),
             outer_handles);
   EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
-            NR_BLOCKS(outer_handles));
+            ComputeBlockNumber(outer_handles));
 }
 
 }  // namespace saauso::internal

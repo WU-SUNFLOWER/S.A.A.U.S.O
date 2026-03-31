@@ -15,7 +15,7 @@ class ObjectVisitor;
 class HandleScopeImplementer {
  public:
   // 一个block可以装载的Address数量
-  static constexpr size_t kHandleBlockSize = 512;
+  static constexpr int kHandleBlockSize = 512;
 
   explicit HandleScopeImplementer(Isolate* isolate);
   ~HandleScopeImplementer();

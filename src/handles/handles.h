@@ -8,6 +8,7 @@
 #include <cassert>
 #include <type_traits>
 
+#include "src/common/globals.h"
 #include "src/handles/handle-base.h"
 
 namespace saauso::internal {
@@ -31,9 +32,11 @@ class Handle : public HandleBase {
 
   constexpr T* operator->() const {
     assert(!is_null());
+
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    AssertValidLocation();
-#endif
+    CheckDereferenceAllowed();
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
+
     return Tagged<T>(*location()).operator->();
   }
 
@@ -41,9 +44,11 @@ class Handle : public HandleBase {
     if (is_null()) {
       return Tagged<T>::null();
     }
+
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    AssertValidLocation();
-#endif
+    CheckDereferenceAllowed();
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
+
     return Tagged<T>(*location());
   }
 
@@ -62,7 +67,7 @@ class Handle : public HandleBase {
   constexpr static Handle<T> null() { return Handle<T>(); }
 };
 
- // 工具函数，用于方便地将 Tagged<T> 提升为 Handle<T>
+// 工具函数，用于方便地将 Tagged<T> 提升为 Handle<T>
 template <typename T>
 constexpr Handle<T> handle(Tagged<T> object, Isolate* isolate) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)

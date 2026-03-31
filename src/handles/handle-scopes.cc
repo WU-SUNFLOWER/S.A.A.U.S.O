@@ -2,13 +2,13 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/handles/handles.h"
-
 #include <cstdint>
 
 #include "include/saauso-internal.h"
+#include "src/common/globals.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
+#include "src/handles/handles.h"
 
 namespace saauso::internal {
 
@@ -42,6 +42,15 @@ void HandleScope::Close() {
     impl->ReleaseSpareAndExtendedBlocks(handle_scope_state->extension);
     // 恢复父级scope的现场
     impl->set_handle_scope_state(&previous_);
+
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+    // 恢复父 scope 后，将当前活跃 block 中“父 scope 未使用的尾部区域”做 zap。
+    // 这样内层 scope 中未 Escape 的 handle 若仍指向这段区域，
+    // 后续解引用时通常能以 fail-fast 形式暴露出来。
+    ZapRange(impl->handle_scope_state()->next,
+             impl->handle_scope_state()->limit);
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
+
     // 更新handle scope标志位，避免重复执行释放操作
     is_closed_ = true;
   }
@@ -92,5 +101,23 @@ void HandleScope::Extend(Isolate* isolate) {
   handle_scope_state->limit =
       new_block + HandleScopeImplementer::kHandleBlockSize;
 }
+
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+// static
+void HandleScope::ZapRange(Address* start, Address* end) {
+  if (start == nullptr) {
+    return;
+  }
+
+  assert(start <= end);
+  assert(end - start <= HandleScopeImplementer::kHandleBlockSize);
+
+  // 这里只负责把“仍然可访问的失效 slot”标成 zap。
+  // 对于已经真正释放掉的扩展 block，最终兜底仍依赖 ASAN 的 UAF 检测。
+  for (Address* p = start; p < end; p++) {
+    *p = kHandleZapValue;
+  }
+}
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
 
 }  // namespace saauso::internal

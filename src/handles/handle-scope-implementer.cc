@@ -56,26 +56,28 @@ Address* HandleScopeImplementer::AllocateSpareOrNewBlock() {
     result = NewArray<Address>(kHandleBlockSize);
   }
   blocks_.PushBack(result);
+
   return result;
 }
 
 void HandleScopeImplementer::ReleaseSpareAndExtendedBlocks(int n) {
   assert(n >= 0 && static_cast<size_t>(n) <= blocks_.length());
 
-  // 如果当前HandleScope没有申请任何额外的block，
-  // 则什么也不做。
-  if (n == 0) {
-    return;
-  }
+  while (n-- > 0) {
+    Address* released_block = blocks_.PopBack();
 
-  for (int i = n; i > 1; --i) {
-    DeleteArray<Address>(blocks_.PopBack());
-  }
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+    // released_block 可能仍被某个未 Escape 就越过作用域边界的 Handle 指向。
+    // 因此在 Debug/ASAN 下先做一次 zap，尽量把这类误用转化为更直接的诊断。
+    // 但该 block 后续仍可能被真正释放；若 stale handle 更晚才被解引用，
+    // 最终也可能先表现为 ASAN 捕获到的 use-after-free。
+    HandleScope::ZapRange(released_block, released_block + kHandleBlockSize);
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
 
-  if (spare_ == nullptr) {
-    spare_ = blocks_.PopBack();
-  } else {
-    DeleteArray<Address>(blocks_.PopBack());
+    if (spare_ != nullptr) {
+      DeleteArray<Address>(spare_);
+    }
+    spare_ = released_block;
   }
 }
 
