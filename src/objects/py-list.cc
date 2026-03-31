@@ -32,22 +32,22 @@ Tagged<PyList> PyList::cast(Tagged<PyObject> object) {
 
 /////////////////////////////////////////////////////////////
 
-Handle<PyObject> PyList::Pop() {
+Handle<PyObject> PyList::Pop(Isolate* isolate) {
   assert(!IsEmpty());
 
-  return Handle<PyObject>(array()->Get(--length_));
+  return Handle<PyObject>(array()->Get(--length_), isolate);
 }
 
-Handle<PyObject> PyList::Get(int64_t index) const {
+Handle<PyObject> PyList::Get(int64_t index, Isolate* isolate) const {
   assert(0 <= index && index < length_);
 
-  return Handle<PyObject>(array()->Get(index));
+  return Handle<PyObject>(array()->Get(index), isolate);
 }
 
-Handle<PyObject> PyList::GetLast() const {
+Handle<PyObject> PyList::GetLast(Isolate* isolate) const {
   assert(!IsEmpty());
 
-  return Handle<PyObject>(array()->Get(length_ - 1));
+  return Handle<PyObject>(array()->Get(length_ - 1), isolate);
 }
 
 void PyList::Set(int64_t index, Handle<PyObject> value) {
@@ -103,8 +103,9 @@ Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target,
                                Isolate* isolate) const {
   for (auto i = begin; i < end; ++i) {
     bool is_equal = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
-                               PyObject::EqualBool(isolate, target, Get(i)));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, is_equal,
+        PyObject::EqualBool(isolate, target, Get(i, isolate)));
     if (is_equal) {
       return Maybe<int64_t>(i);
     }

@@ -35,7 +35,7 @@ void KlassVtable::InitializeFromSupers(Isolate* isolate, Tagged<Klass> klass) {
 
   Handle<PyList> mro = klass->mro(isolate);
   for (int64_t i = 1; i < mro->length(); ++i) {
-    auto super = Handle<PyTypeObject>::cast(mro->Get(i));
+    auto super = Handle<PyTypeObject>::cast(mro->Get(i, isolate));
     auto super_klass = super->own_klass();
     CopyInheritedSlotsFromSuper(super_klass);
   }

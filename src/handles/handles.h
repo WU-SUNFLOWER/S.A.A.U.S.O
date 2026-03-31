@@ -59,7 +59,7 @@ class Handle : public HandleBase {
     // 这行代码起到断言的作用
     T::cast(*that);
 #endif  // defined(_DEBUG) || defined(ASAN_BUILD)
-    return Handle<T>(Tagged<T>::cast(*that));
+    return Handle<T>(that.location());
   }
 
   constexpr static Handle<T> null() { return Handle<T>(); }

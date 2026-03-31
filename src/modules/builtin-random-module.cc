@@ -274,7 +274,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
     }
     uint64_t index =
         GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(list->length()));
-    return list->Get(static_cast<int64_t>(index));
+    return list->Get(static_cast<int64_t>(index), isolate);
   }
 
   if (IsPyTuple(seq)) {
@@ -334,8 +334,8 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
     if (static_cast<int64_t>(j) == i) {
       continue;
     }
-    Handle<PyObject> vi = list->Get(i);
-    Handle<PyObject> vj = list->Get(static_cast<int64_t>(j));
+    Handle<PyObject> vi = list->Get(i, isolate);
+    Handle<PyObject> vj = list->Get(static_cast<int64_t>(j), isolate);
     list->Set(i, vj);
     list->Set(static_cast<int64_t>(j), vi);
   }

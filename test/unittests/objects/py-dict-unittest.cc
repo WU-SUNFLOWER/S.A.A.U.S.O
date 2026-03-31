@@ -24,7 +24,7 @@ TEST_F(PyDictTest, GetApiTriState) {
 
   Handle<PyDict> dict = PyDict::New(isolate_);
   Handle<PyObject> key = PyString::New(isolate_, "k");
-  Handle<PyObject> value(PySmi::FromInt(1));
+  Handle<PyObject> value(PySmi::FromInt(1), isolate_);
   ASSERT_FALSE(PyDict::Put(dict, key, value, isolate_).IsNothing());
 
   Handle<PyObject> miss_key = PyString::New(isolate_, "missing");
@@ -39,7 +39,8 @@ TEST_F(PyDictTest, GetApiTriState) {
   EXPECT_TRUE(found);
   EXPECT_FALSE(out_tagged.is_null());
   bool eq = false;
-  ASSERT_TRUE(PyObject::EqualBool(isolate_, handle(out_tagged), value).To(&eq));
+  ASSERT_TRUE(
+      PyObject::EqualBool(isolate_, handle(out_tagged, isolate_), value).To(&eq));
   EXPECT_TRUE(eq);
 
   Handle<PyObject> out_handle;
@@ -62,7 +63,7 @@ TEST_F(PyDictTest, BasicOperations) {
   EXPECT_EQ(dict->occupied(), 0);
 
   Handle<PyObject> key1 = PyString::New(isolate_, "key1");
-  Handle<PyObject> val1(PySmi::FromInt(100));
+  Handle<PyObject> val1(PySmi::FromInt(100), isolate_);
 
   // Put
   ASSERT_FALSE(PyDict::Put(dict, key1, val1, isolate_).IsNothing());
@@ -73,7 +74,7 @@ TEST_F(PyDictTest, BasicOperations) {
   bool found = false;
   ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
   ASSERT_TRUE(found);
-  Handle<PyObject> res1 = handle(res1_tagged);
+  Handle<PyObject> res1 = handle(res1_tagged, isolate_);
   EXPECT_FALSE(res1.is_null());
   Handle<PyObject> eq_res;
   ASSERT_TRUE(PyObject::Equal(isolate_, res1, val1).ToHandle(&eq_res));
@@ -88,12 +89,12 @@ TEST_F(PyDictTest, BasicOperations) {
   EXPECT_TRUE(!contains);
 
   // Update
-  Handle<PyObject> val2(PySmi::FromInt(200));
+  Handle<PyObject> val2(PySmi::FromInt(200), isolate_);
   ASSERT_FALSE(PyDict::Put(dict, key1, val2, isolate_).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
   ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
   ASSERT_TRUE(found);
-  res1 = handle(res1_tagged);
+  res1 = handle(res1_tagged, isolate_);
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, res1, val2).To(&eq));
   EXPECT_TRUE(eq);
@@ -119,8 +120,8 @@ TEST_F(PyDictTest, CollisionAndShift) {
   // Insert multiple items
   int count = 10;
   for (int i = 0; i < count; ++i) {
-    Handle<PyObject> key(PySmi::FromInt(i));
-    Handle<PyObject> val(PySmi::FromInt(i * 10));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
+    Handle<PyObject> val(PySmi::FromInt(i * 10), isolate_);
     ASSERT_FALSE(PyDict::Put(dict, key, val, isolate_).IsNothing());
   }
 
@@ -128,7 +129,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
 
   // Remove every second item
   for (int i = 0; i < count; i += 2) {
-    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool removed = false;
     ASSERT_TRUE(dict->Remove(key, isolate_).To(&removed));
   }
@@ -137,7 +138,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
 
   // Verify remaining items
   for (int i = 1; i < count; i += 2) {
-    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool exists = false;
     ASSERT_TRUE(dict->ContainsKey(key, isolate_).To(&exists));
     EXPECT_TRUE(exists);
@@ -145,13 +146,13 @@ TEST_F(PyDictTest, CollisionAndShift) {
     bool found = false;
     ASSERT_TRUE(dict->GetTagged(key, val_tagged, isolate_).To(&found));
     ASSERT_TRUE(found);
-    Handle<PyObject> val = handle(val_tagged);
+    Handle<PyObject> val = handle(val_tagged, isolate_);
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
   }
 
   // Verify removed items are gone
   for (int i = 0; i < count; i += 2) {
-    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool exists = false;
     ASSERT_TRUE(dict->ContainsKey(key, isolate_).To(&exists));
     EXPECT_TRUE(!exists);
@@ -165,9 +166,9 @@ TEST_F(PyDictTest, Equality) {
   Handle<PyDict> d2 = PyDict::New(isolate_);
 
   Handle<PyObject> k1 = PyString::New(isolate_, "a");
-  Handle<PyObject> v1(PySmi::FromInt(1));
+  Handle<PyObject> v1(PySmi::FromInt(1), isolate_);
   Handle<PyObject> k2 = PyString::New(isolate_, "b");
-  Handle<PyObject> v2(PySmi::FromInt(2));
+  Handle<PyObject> v2(PySmi::FromInt(2), isolate_);
 
   // d1 = {"a": 1, "b": 2}
   ASSERT_FALSE(PyDict::Put(d1, k1, v1, isolate_).IsNothing());
@@ -182,7 +183,7 @@ TEST_F(PyDictTest, Equality) {
   EXPECT_TRUE(eq);
 
   // d2 = {"b": 2, "a": 3} (Different value)
-  Handle<PyObject> v3(PySmi::FromInt(3));
+  Handle<PyObject> v3(PySmi::FromInt(3), isolate_);
   ASSERT_FALSE(PyDict::Put(d2, k1, v3, isolate_).IsNothing());
   ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_FALSE(eq);
@@ -213,8 +214,8 @@ TEST_F(PyDictTest, GetKeyTuple) {
 
   int count = 20;
   for (int i = 0; i < count; ++i) {
-    Handle<PyObject> key(PySmi::FromInt(i));
-    Handle<PyObject> val(PySmi::FromInt(i * 10));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
+    Handle<PyObject> val(PySmi::FromInt(i * 10), isolate_);
     ASSERT_FALSE(PyDict::Put(dict, key, val, isolate_).IsNothing());
   }
 
@@ -223,7 +224,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   EXPECT_EQ(keys->length(), count);
 
   for (int i = 0; i < count; ++i) {
-    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     EXPECT_TRUE(TupleContains(keys, key));
   }
 
@@ -242,7 +243,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   }
 
   for (int i = 0; i < count; i += 2) {
-    Handle<PyObject> key(PySmi::FromInt(i));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool removed = false;
     ASSERT_TRUE(dict->Remove(key, isolate_).To(&removed));
   }
@@ -263,8 +264,8 @@ TEST_F(PyDictTest, IteratorIteratesKeys) {
   Handle<PyDict> dict = PyDict::New(isolate_);
   int count = 50;
   for (int i = 0; i < count; ++i) {
-    Handle<PyObject> key(PySmi::FromInt(i));
-    Handle<PyObject> val(PySmi::FromInt(i * 10));
+    Handle<PyObject> key(PySmi::FromInt(i), isolate_);
+    Handle<PyObject> val(PySmi::FromInt(i * 10), isolate_);
     ASSERT_FALSE(PyDict::Put(dict, key, val, isolate_).IsNothing());
   }
 

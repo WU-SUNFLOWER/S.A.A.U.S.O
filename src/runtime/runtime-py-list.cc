@@ -24,7 +24,7 @@ MaybeHandle<PyString> Runtime_NewListRepr(Isolate* isolate,
     }
     Handle<PyString> elem;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, elem,
-                               PyObject::Repr(isolate, list->Get(i)));
+                               PyObject::Repr(isolate, list->Get(i, isolate)));
     repr.append(elem->ToStdString());
   }
   repr.append("]");

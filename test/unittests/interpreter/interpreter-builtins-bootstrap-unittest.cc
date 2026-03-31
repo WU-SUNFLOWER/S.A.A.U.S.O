@@ -169,7 +169,8 @@ TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
     ASSERT_TRUE(found) << name;
     ASSERT_TRUE(IsPyTypeObject(value)) << name;
 
-    auto type_obj = Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(value));
+    auto type_obj =
+        Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(value), isolate_);
     auto props = type_obj->own_klass()->klass_properties(isolate_);
 
     bool has_repr = false;

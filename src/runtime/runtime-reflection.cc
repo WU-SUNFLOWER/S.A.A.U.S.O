@@ -56,7 +56,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
   if (!supers.is_null()) {
     for (int64_t i = 0; i < supers->length(); ++i) {
-      auto base_type_object = Handle<PyTypeObject>::cast(supers->Get(i));
+      auto base_type_object =
+          Handle<PyTypeObject>::cast(supers->Get(i, isolate));
       Tagged<Klass> base_klass = base_type_object->own_klass();
 
       // 如果是第一个super，那么先把它作为 native_layout_base 和
@@ -93,7 +94,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   klass->set_instance_has_properties_dict(true);
 
   // 建立双向绑定
-  type_object->BindWithKlass(klass);
+  type_object->BindWithKlass(klass, isolate);
 
   // 为klass计算mro
   RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
@@ -111,7 +112,7 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
       PyObject::ResolveObjectKlass(object, isolate)->mro(isolate);
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto curr_type_object = mro_of_object->Get(i);
+    auto curr_type_object = mro_of_object->Get(i, isolate);
 
     bool is_equal;
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -137,7 +138,8 @@ Maybe<bool> Runtime_IsSubtype(Isolate* isolate,
                               Tagged<Klass> super_klass) {
   auto mro_of_derive = derive_klass->mro(isolate);
   for (auto i = 0; i < mro_of_derive->length(); ++i) {
-    auto curr_type_object = Handle<PyTypeObject>::cast(mro_of_derive->Get(i));
+    auto curr_type_object =
+        Handle<PyTypeObject>::cast(mro_of_derive->Get(i, isolate));
     if (curr_type_object->own_klass() == super_klass) {
       return Maybe<bool>(true);
     }
@@ -167,7 +169,8 @@ Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
   // 沿着mro序列进行查找
   Handle<PyList> mro_of_object = klass->mro(isolate);
   for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto type_object = Handle<PyTypeObject>::cast(mro_of_object->Get(i));
+    auto type_object =
+        Handle<PyTypeObject>::cast(mro_of_object->Get(i, isolate));
     auto own_klass = type_object->own_klass();
     auto klass_properties = own_klass->klass_properties(isolate);
 

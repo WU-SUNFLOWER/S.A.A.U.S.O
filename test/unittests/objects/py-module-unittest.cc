@@ -52,7 +52,8 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   EXPECT_TRUE(mirrored_value.is_null());
 
   Handle<PyString> x_name = PyString::New(isolate_, "x");
-  Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)));
+  Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)),
+                                    isolate_);
   ASSERT_FALSE(
       PyObject::SetAttr(isolate_, module_obj, x_name, x_value).IsEmpty());
 

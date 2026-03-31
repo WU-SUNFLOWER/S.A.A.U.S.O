@@ -260,7 +260,7 @@ Handle<PyTuple> Factory::NewPyTupleWithElements(Handle<PyList> elements) {
   auto length = elements->length();
   auto tuple = NewPyTuple(length);
   for (auto i = 0; i < length; ++i) {
-    tuple->SetInternal(i, *elements->Get(i));
+    tuple->SetInternal(i, *elements->Get(i, isolate_));
   }
   return scope.Escape(tuple);
 }

@@ -33,7 +33,7 @@ Handle<PyList> C3Impl_Linear(Isolate* isolate,
   // 因此为了不影响父类的mro序列数据，我们这里需要手工（潜）拷贝
   // 一份父类的mro序列。
   for (auto i = 0; i < mro->length(); ++i) {
-    PyList::Append(result, mro->Get(i), isolate);
+    PyList::Append(result, mro->Get(i, isolate), isolate);
   }
 
   return result;
@@ -50,9 +50,11 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
   for (auto i = 0; i < mro_of_each_super->length(); ++i) {
     bool valid = true;
 
-    auto mro_of_curr_super = Handle<PyList>::cast(mro_of_each_super->Get(i));
+    auto mro_of_curr_super =
+        Handle<PyList>::cast(mro_of_each_super->Get(i, isolate));
     auto head =
-        handle(Tagged<PyTypeObject>::cast(*mro_of_curr_super->Get(0)), isolate);
+        handle(Tagged<PyTypeObject>::cast(*mro_of_curr_super->Get(0, isolate)),
+               isolate);
 
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
       if (j == i) {
@@ -60,7 +62,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
       }
 
       Handle<PyList> mro_of_another_super =
-          Handle<PyList>::cast(mro_of_each_super->Get(j));
+          Handle<PyList>::cast(mro_of_each_super->Get(j, isolate));
       // 如果发现head在其他mro序列的中间（而非开头或不存在），
       // 则当前head不是所求mro序列中的下一个元素！
       int64_t head_pos;
@@ -83,7 +85,8 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
     // 然后递归重复这个过程，直到所有mro列表被清空！
     Handle<PyList> next_mro_of_each_super = PyList::New(isolate);
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
-      auto mro_of_a_super = Handle<PyList>::cast(mro_of_each_super->Get(j));
+      auto mro_of_a_super =
+          Handle<PyList>::cast(mro_of_each_super->Get(j, isolate));
       bool removed;
       ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, removed,
                                        mro_of_a_super->Remove(head, isolate),
@@ -185,7 +188,8 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
     Handle<PyList> all = PyList::New(isolate, supers(isolate)->length());
     for (auto i = 0; i < supers(isolate)->length(); ++i) {
       auto super =
-          handle(Tagged<PyTypeObject>::cast(*supers(isolate)->Get(i)), isolate);
+          handle(Tagged<PyTypeObject>::cast(*supers(isolate)->Get(i, isolate)),
+                 isolate);
       PyList::Append(all, C3Impl_Linear(isolate, super), isolate);
     }
     mro_result = C3Impl_Merge(isolate, all);
@@ -207,7 +211,7 @@ MaybeHandle<PyTypeObject> Klass::CreateAndBindToPyTypeObject(Isolate* isolate) {
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
                              isolate->factory()->NewPyTypeObject());
-  type_object->BindWithKlass(Tagged<Klass>(this));
+  type_object->BindWithKlass(Tagged<Klass>(this), isolate);
 
   return type_object;
 }

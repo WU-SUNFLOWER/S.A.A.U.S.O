@@ -28,7 +28,7 @@ Maybe<ModuleLocation> ModuleFinder::FindModuleLocation(
   std::filesystem::path relative{relative_name->ToStdString()};
 
   for (int64_t i = 0; i < search_path_list->length(); ++i) {
-    Handle<PyObject> elem = search_path_list->Get(i);
+    Handle<PyObject> elem = search_path_list->Get(i, isolate_);
     if (elem.is_null()) {
       continue;
     }
