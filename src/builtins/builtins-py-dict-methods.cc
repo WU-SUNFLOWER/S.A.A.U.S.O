@@ -66,7 +66,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0, isolate);
@@ -111,7 +111,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Str) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (args->length() < 1 || args->length() > 2) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
@@ -135,22 +135,22 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Keys) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   return scope.Escape(isolate->factory()->NewPyDictKeys(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Values) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   return scope.Escape(isolate->factory()->NewPyDictValues(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Items) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   return scope.Escape(isolate->factory()->NewPyDictItems(self));
 }
 
 BUILTIN_METHOD(PyDictBuiltinMethods, Get) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto dict = Handle<PyDict>::cast(self);
   auto key = args->Get(0, isolate);
   Handle<PyObject> default_or_null = Handle<PyObject>::null();

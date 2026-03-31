@@ -18,7 +18,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, ListSubclassInitCanInvokeBaseListInit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class L(list):
@@ -38,7 +38,7 @@ print(l[0] + l[1] + l[2] + l.x)
 }
 
 TEST_F(BasicInterpreterTest, InitSlotBridgeStaysCallableAfterAttributeLoad) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 f = list.__init__
@@ -61,7 +61,7 @@ print(d["x"] + d["y"])
 }
 
 TEST_F(BasicInterpreterTest, BuiltinInitBridgeOnInstancePathWorks) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 a = []
@@ -77,7 +77,7 @@ print(a[0] + a[1] + a[2])
 }
 
 TEST_F(BasicInterpreterTest, BuiltinInitBridgeRejectsWrongReceiverType) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 list.__init__(dict(), [1, 2, 3])
@@ -88,7 +88,7 @@ list.__init__(dict(), [1, 2, 3])
 }
 
 TEST_F(BasicInterpreterTest, NewSlotBridgeStaysCallableAfterAttributeLoad) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 f = list.__new__
@@ -111,7 +111,7 @@ print(d["x"] + d["y"])
 }
 
 TEST_F(BasicInterpreterTest, ObjectNewSlotBridgeSupportsCustomClassReceiver) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -130,7 +130,7 @@ print(isinstance(a, A))
 }
 
 TEST_F(BasicInterpreterTest, BuiltinNewSlotSupportsInstanceStyleAccess) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class D(dict):
@@ -161,7 +161,7 @@ print(isinstance(b, list))
 }
 
 TEST_F(BasicInterpreterTest, BuiltinNewBridgeRejectsWrongReceiverType) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 list.__new__(1)

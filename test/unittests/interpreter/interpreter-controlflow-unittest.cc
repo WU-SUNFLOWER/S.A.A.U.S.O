@@ -23,7 +23,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, IfStatmentTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 x = 4
@@ -59,7 +59,7 @@ else:
 }
 
 TEST_F(BasicInterpreterTest, WhileStatmentTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 a = 1 
@@ -102,7 +102,7 @@ while i < 10:
 }
 
 TEST_F(BasicInterpreterTest, WhileWithBreakTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 i = 0
@@ -132,7 +132,7 @@ print(i)
 }
 
 TEST_F(BasicInterpreterTest, WhileWithContinueTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 i = 0
@@ -160,7 +160,7 @@ while i < 10:
 }
 
 TEST_F(BasicInterpreterTest, WhileStatmentTest2) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 i = 0

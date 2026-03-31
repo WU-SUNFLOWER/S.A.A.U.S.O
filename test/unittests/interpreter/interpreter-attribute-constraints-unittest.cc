@@ -21,7 +21,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, BuiltinObjectRejectsInstanceSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 o = object()
 o.x = 233
@@ -33,7 +33,7 @@ print(o.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinStringRejectsInstanceSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 s = "Hello"
 s.x = 123
@@ -45,7 +45,7 @@ print(s.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinTupleRejectsInstanceSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 t = (1, 2, 3)
 t.x = 233
@@ -57,7 +57,7 @@ print(t.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinListRejectsInstanceSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 l = []
 l.x = 233
@@ -69,7 +69,7 @@ print(l.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinDictRejectsInstanceSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 d = {}
 d.x = 233
@@ -81,7 +81,7 @@ print(d.x)
 }
 
 TEST_F(BasicInterpreterTest, FunctionSupportsDynamicAttributeSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 def foo():
     pass
@@ -97,7 +97,7 @@ print(foo.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinSubclassesSupportDynamicAttributes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class MyList(list):
     pass
@@ -138,7 +138,7 @@ print(s.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinObjectDictAccessorReadFails) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 o = object()
 print(o.__dict__)
@@ -149,7 +149,7 @@ print(o.__dict__)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinListDictAccessorReadFails) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 l = []
 print(l.__dict__)
@@ -160,7 +160,7 @@ print(l.__dict__)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinDictObjectDictAccessorReadFails) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 d = {"x": 1, "y": 2}
 print(d.__dict__)
@@ -172,7 +172,7 @@ print(d.__dict__)
 
 TEST_F(BasicInterpreterTest,
        ClassAccessorPriorityOverridesPropertiesShadowing) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -191,7 +191,7 @@ print(a.__class__ is A)
 }
 
 TEST_F(BasicInterpreterTest, DictAccessorPriorityOverridesPropertiesShadowing) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -210,7 +210,7 @@ print(isinstance(a.__dict__, dict))
 }
 
 TEST_F(BasicInterpreterTest, DictAccessorReturnsStableIdentityAcrossReads) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass

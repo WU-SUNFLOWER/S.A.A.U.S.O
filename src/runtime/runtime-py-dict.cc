@@ -220,7 +220,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
                                         Handle<PyDict> dst_dict,
                                         Handle<PyDict> source_dict,
                                         bool allow_overwriting) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   auto iter = isolate->factory()->NewPyDictItemIterator(source_dict);
   while (true) {
@@ -258,7 +258,7 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
 
 MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
                                           Handle<PyDict> dict) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   std::string repr("{");
   bool first = true;

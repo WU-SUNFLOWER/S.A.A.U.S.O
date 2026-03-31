@@ -12,7 +12,7 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyString> py_name = i::PyString::New(
       i_isolate, name.data(), static_cast<int64_t>(name.size()));
   int64_t callback_addr =
@@ -47,7 +47,7 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
     return MaybeLocal<Value>();
   }
 
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyTuple> py_args = i_isolate->factory()->NewPyTuple(argc);
   for (int i = 0; i < argc; ++i) {
     Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];

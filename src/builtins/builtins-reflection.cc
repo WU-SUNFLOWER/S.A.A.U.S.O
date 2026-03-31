@@ -31,7 +31,7 @@ BUILTIN(Repr) {
 }
 
 BUILTIN(IsInstance) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length != 2) [[unlikely]] {
@@ -82,7 +82,7 @@ BUILTIN(IsInstance) {
 }
 
 BUILTIN(BuildTypeObject) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   const auto args_length = args.is_null() ? 0 : args->length();
   if (args_length < 2) [[unlikely]] {

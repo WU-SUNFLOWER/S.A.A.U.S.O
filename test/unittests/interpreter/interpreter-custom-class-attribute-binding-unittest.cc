@@ -22,7 +22,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, DunderGetAttrSetAttrInterceptsAttributes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 keys = []
@@ -67,7 +67,7 @@ print(b.baz)
 }
 
 TEST_F(BasicInterpreterTest, CustomClassAttributeLookupPriorityAndGetAttrHook) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -96,7 +96,7 @@ print(a.miss)
 }
 
 TEST_F(BasicInterpreterTest, MissingAttributeRaisesAttributeError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -109,7 +109,7 @@ print(a.miss)
 }
 
 TEST_F(BasicInterpreterTest, GetAttrHookMustBeLookedUpFromTypeMro) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -127,7 +127,7 @@ print(a.miss)
 }
 
 TEST_F(BasicInterpreterTest, GetAttrExceptionPropagatesToCaller) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     def __getattr__(self, name):
@@ -141,7 +141,7 @@ print(a.miss)
 }
 
 TEST_F(BasicInterpreterTest, InstanceCallableAttributeDoesNotAutoBindReceiver) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -161,7 +161,7 @@ a.f(a)
 }
 
 TEST_F(BasicInterpreterTest, ClassCallableAttributeAutoBindsReceiver) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -181,7 +181,7 @@ a.f()
 }
 
 TEST_F(BasicInterpreterTest, ClassFunctionLookupOnTypeReturnsOriginalFunction) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass
@@ -200,7 +200,7 @@ print(A.f is f)
 }
 
 TEST_F(BasicInterpreterTest, MethodBindingCallFromInstance) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -223,7 +223,7 @@ f()
 }
 
 TEST_F(BasicInterpreterTest, MethodCallFromClassWithExplicitSelf) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -246,7 +246,7 @@ g(a)
 }
 
 TEST_F(BasicInterpreterTest, ClassFunctionFromTypeRequiresExplicitSelf) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:

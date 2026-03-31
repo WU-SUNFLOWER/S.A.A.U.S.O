@@ -24,7 +24,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, BuildDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {1 : "hello", "world" : 2}
@@ -41,7 +41,7 @@ print(d["world"])
 }
 
 TEST_F(BasicInterpreterTest, BuildDict2) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 a = 1
@@ -60,7 +60,7 @@ print(d[b])
 }
 
 TEST_F(BasicInterpreterTest, StoreValueToDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 x = "hello"
@@ -78,7 +78,7 @@ print(d[x])
 }
 
 TEST_F(BasicInterpreterTest, DictSetDefaultMethod) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {}
@@ -105,7 +105,7 @@ print(d["k"] is v)
 }
 
 TEST_F(BasicInterpreterTest, DictPopMethod) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {1: "x", 2: "y"}
@@ -132,7 +132,7 @@ print(d)
 }
 
 TEST_F(BasicInterpreterTest, DictIterator) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {"x": 1, "y": 2, "z": 3}
@@ -150,7 +150,7 @@ print(sum)
 }
 
 TEST_F(BasicInterpreterTest, DictKeysAndValuesView) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {"x": 1, "y": 2, "z": 3}
@@ -186,7 +186,7 @@ print(42 in d.values())
 }
 
 TEST_F(BasicInterpreterTest, DictItemsView) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {"x": 1, "y": 2, "z": 3}
@@ -214,7 +214,7 @@ print(("q", 1) in d.items())
 }
 
 TEST_F(BasicInterpreterTest, DictConstructorKwargs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = dict(name="Alice", age=30, city="Beijing")
@@ -235,7 +235,7 @@ print(len(d))
 }
 
 TEST_F(BasicInterpreterTest, DictConstructorListOfTuples) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = dict([("one", 1), ("two", 2), ("three", 3)])
@@ -256,7 +256,7 @@ print(len(d))
 }
 
 TEST_F(BasicInterpreterTest, DictConstructorCopyFromDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 old_dict = {"x": 10, "y": 20}
@@ -278,7 +278,7 @@ print(len(new_dict))
 }
 
 TEST_F(BasicInterpreterTest, DictConstructorIterableThenKwOverride) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = dict([("a", 1), ("b", 2)], b=3, c=4)
@@ -299,7 +299,7 @@ print(len(d))
 }
 
 TEST_F(BasicInterpreterTest, DictGetItemUnhashableKeyPropagates) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -314,7 +314,7 @@ print(d[A()])
 }
 
 TEST_F(BasicInterpreterTest, DictSetDefaultUnhashableKeyPropagates) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -329,7 +329,7 @@ print(d.setdefault(A(), 1))
 }
 
 TEST_F(BasicInterpreterTest, DictGetMethodUnhashableKeyPropagates) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -344,7 +344,7 @@ print(d.get(A()))
 }
 
 TEST_F(BasicInterpreterTest, DictKeysContainsUnhashableKeyPropagates) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -359,7 +359,7 @@ print(A() in d.keys())
 }
 
 TEST_F(BasicInterpreterTest, DictItemsContainsUnhashableKeyPropagates) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -374,7 +374,7 @@ print((A(), 1) in d.items())
 }
 
 TEST_F(BasicInterpreterTest, DictGetMethodDefaultUsedOnMiss) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {}
@@ -391,7 +391,7 @@ print(d.get("k"))
 }
 
 TEST_F(BasicInterpreterTest, DictSetDefaultDefaultUsedOnInsert) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {}
@@ -408,7 +408,7 @@ print(d["k"])
 }
 
 TEST_F(BasicInterpreterTest, DictPopDefaultUsedOnMiss) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {}
@@ -423,7 +423,7 @@ print(d.pop("k", 7))
 }
 
 TEST_F(BasicInterpreterTest, SubclassDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(dict):
@@ -452,7 +452,7 @@ print(1 if ("a" in c) else 0)
 }
 
 TEST_F(BasicInterpreterTest, SubclassDictSurvivesSysgc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(dict):
@@ -499,7 +499,7 @@ print(c.x.v)
 }
 
 TEST_F(BasicInterpreterTest, SubclassDictCustomInit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(dict):

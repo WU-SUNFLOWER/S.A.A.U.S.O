@@ -19,7 +19,7 @@ namespace saauso::internal {
 Maybe<ModuleLocation> ModuleFinder::FindModuleLocation(
     Handle<PyList> search_path_list,
     Handle<PyString> relative_name) const {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   ModuleLocation result;
   if (search_path_list.is_null()) {
     return Maybe<ModuleLocation>(result);

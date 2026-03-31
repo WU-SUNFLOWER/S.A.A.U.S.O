@@ -26,7 +26,7 @@ class BuiltinsBootstrapTest : public VmTestBase {
 };
 
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> builtins = isolate_->builtins();
 
@@ -94,7 +94,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
 }
 
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> builtins = isolate_->builtins();
 
@@ -154,7 +154,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
 }
 
 TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyDict> builtins = isolate_->builtins();
 
   const char* const kTypeNames[] = {"object", "list", "dict",

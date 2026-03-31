@@ -9,7 +9,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> dict =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(dict);
@@ -32,7 +32,7 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
     return i::kNullMaybe;
   }
 
-  i::HandleScope handle_scope;
+  i::HandleScope handle_scope(internal_isolate);
   i::Handle<i::PyDict> dict = i::Handle<i::PyDict>::cast(object);
   std::string key_value = key->Value();
   i::Handle<i::PyString> py_key =
@@ -54,7 +54,7 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
 MaybeLocal<Value> Object::Get(Local<String> key) {
   i::Isolate* internal_isolate = i::Isolate::Current();
 
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(internal_isolate);
 
   if (key.IsEmpty()) {
     return MaybeLocal<Value>();
@@ -100,7 +100,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   if (self.is_null()) {
     return MaybeLocal<Value>();
   }
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(internal_isolate);
   std::string name_value = name->Value();
   i::Handle<i::PyString> py_name =
       i::PyString::New(internal_isolate, name_value.data(),

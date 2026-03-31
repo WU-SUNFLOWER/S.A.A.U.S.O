@@ -24,7 +24,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 // ===== 排序基础语义 =====
 
 TEST_F(BasicInterpreterTest, ListSortInt) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [3, 1, 2]
@@ -46,7 +46,7 @@ print(l)
 }
 
 TEST_F(BasicInterpreterTest, ListSortReverse) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [3, 1, 2]
@@ -68,7 +68,7 @@ print(l)
 }
 
 TEST_F(BasicInterpreterTest, ListSortKeyLenAndStability) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = ["aa", "b", "ccc", "dd"]
@@ -100,7 +100,7 @@ print(s)
 }
 
 TEST_F(BasicInterpreterTest, ListSortKey) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [108, 109, 105, 100, 106, 107]
@@ -127,7 +127,7 @@ print(l)
 // ===== 排序错误语义 =====
 
 TEST_F(BasicInterpreterTest, ListSortTypeErrorOnMixedTypes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [1, "a"]

@@ -21,7 +21,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, BuildClassErrors) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -51,7 +51,7 @@ except TypeError as e:
 }
 
 TEST_F(BasicInterpreterTest, BuildClassFuncMustBeFunction) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 __build_class__(1, "A")

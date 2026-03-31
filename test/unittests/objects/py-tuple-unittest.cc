@@ -21,7 +21,7 @@ namespace saauso::internal {
 class PyTupleTest : public VmTestBase {};
 
 TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
@@ -40,7 +40,7 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
 }
 
 TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PyString::New(isolate_, "x")),
@@ -68,7 +68,7 @@ TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {
 }
 
 TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list1 = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::New(isolate_, "x"));
@@ -99,7 +99,7 @@ TEST_F(PyTupleTest, PyObjectContainsAndEqualWork) {
 }
 
 TEST_F(PyTupleTest, PyObjectIterAndNextWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);

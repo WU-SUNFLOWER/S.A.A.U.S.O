@@ -21,7 +21,7 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
   return api::WrapScriptSource(i_isolate, source->Value());
 #else
-  i::HandleScope handle_scope;
+  i::HandleScope handle_scope(i_isolate);
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
       "Script::Compile requires CPython frontend compiler support");
@@ -53,7 +53,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
 
   i::Tagged<i::PyString> source_string =
       i::Tagged<i::PyString>::cast(*script_object);
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(internal_isolate);
   i::Handle<i::PyDict> globals = i::Handle<i::PyDict>::cast(context_object);
   i::MaybeHandle<i::PyObject> maybe_result = i::Runtime_ExecutePythonSourceCode(
       internal_isolate,

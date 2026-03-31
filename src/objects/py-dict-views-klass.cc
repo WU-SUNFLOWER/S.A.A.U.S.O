@@ -37,7 +37,7 @@ template <typename IteratorType, typename Getter>
 Handle<PyObject> NextFromIterator(Isolate* isolate,
                                   Handle<PyObject> self,
                                   Getter getter) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   auto iterator = Handle<IteratorType>::cast(self);
   auto dict = iterator->owner(isolate);
@@ -209,7 +209,7 @@ MaybeHandle<PyObject> PyDictValuesKlass::Virtual_Len(Isolate* isolate,
 Maybe<bool> PyDictValuesKlass::Virtual_Contains(Isolate* isolate,
                                                 Handle<PyObject> self,
                                                 Handle<PyObject> subscr) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   auto dict = Handle<PyDictValues>::cast(self)->owner(isolate);
   for (int64_t i = 0; i < dict->capacity(); ++i) {
@@ -305,7 +305,7 @@ MaybeHandle<PyObject> PyDictItemsKlass::Virtual_Len(Isolate* isolate,
 Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
                                                Handle<PyObject> self,
                                                Handle<PyObject> subscr) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   if (!IsPyTuple(subscr)) {
     return Maybe<bool>(false);

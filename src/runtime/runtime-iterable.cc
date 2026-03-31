@@ -19,7 +19,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     Isolate* isolate,
     Handle<PyList> list,
     Handle<PyObject> iteratable) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   // Fast Path: 直接展开tuple
   if (IsPyTuple(iteratable)) {
@@ -64,7 +64,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
 MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
     Isolate* isolate,
     Handle<PyObject> iterable) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   Handle<PyTuple> tuple;
   // Fast Path: List转Tuple
   if (IsPyList(iterable)) {

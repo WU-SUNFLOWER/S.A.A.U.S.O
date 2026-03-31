@@ -81,7 +81,7 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
 
 MaybeHandle<PyTuple> Runtime_IntrinsicListToTuple(Isolate* isolate,
                                                   Handle<PyObject> object) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (!IsPyList(object)) {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,

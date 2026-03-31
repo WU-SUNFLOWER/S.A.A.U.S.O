@@ -16,7 +16,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, LambdaImmediateCall) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print((lambda x: x + 1)(2))
@@ -30,7 +30,7 @@ print((lambda x: x + 1)(2))
 }
 
 TEST_F(BasicInterpreterTest, LambdaAssignedAndCalled) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 f = lambda a, b: a * 100 + b
@@ -45,7 +45,7 @@ print(f(1, 2))
 }
 
 TEST_F(BasicInterpreterTest, LambdaAsArgument) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def apply(f, x):
@@ -61,7 +61,7 @@ print(apply(lambda y: y * 2, 6))
 }
 
 TEST_F(BasicInterpreterTest, LambdaWithDefaultArgsCapture) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def make(x):

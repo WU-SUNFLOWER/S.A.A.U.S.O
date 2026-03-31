@@ -74,7 +74,7 @@ Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
                                     int64_t init_capacity) {
   assert((init_capacity & (init_capacity - 1)) == 0);
 
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   Handle<PyDict> object(Allocate<PyDict>(Heap::AllocationSpace::kNewSpace),
                         isolate_);
   {
@@ -110,7 +110,7 @@ Handle<PyDict> Factory::NewPyDictWithoutAllocateData() {
 }
 
 Handle<PyDict> Factory::CopyPyDict(Handle<PyDict> dict) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   Handle<PyDict> result = NewPyDictWithoutAllocateData();
   Handle<FixedArray> data = CopyFixedArray(dict->data(isolate_));
@@ -123,7 +123,7 @@ Handle<PyDict> Factory::CopyPyDict(Handle<PyDict> dict) {
 Handle<FixedArray> Factory::NewFixedArray(int64_t capacity) {
   assert(0 <= capacity);
 
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   size_t object_size = FixedArray::ComputeObjectSize(capacity);
   auto klass = FixedArrayKlass::GetInstance(isolate_);
@@ -183,7 +183,7 @@ Handle<PySmi> Factory::NewSmiFromInt(int64_t value) {
 }
 
 Handle<PyFloat> Factory::NewPyFloat(double value) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyFloatKlass::GetInstance(isolate_);
   Handle<PyFloat> object(Allocate<PyFloat>(Heap::AllocationSpace::kNewSpace),
@@ -199,7 +199,7 @@ Handle<PyFloat> Factory::NewPyFloat(double value) {
 
 Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
                                       int64_t init_capacity) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   Handle<PyList> object(Allocate<PyList>(Heap::AllocationSpace::kNewSpace),
                         isolate_);
@@ -224,7 +224,7 @@ Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
 }
 
 Handle<PyList> Factory::NewPyList(int64_t init_capacity) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   return scope.Escape(
       NewPyListLike(PyListKlass::GetInstance(isolate_), init_capacity));
 }
@@ -233,7 +233,7 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
                                         int64_t length) {
   assert(0 <= length);
 
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   size_t object_size = PyTuple::ComputeObjectSize(length);
   Tagged<PyTuple> object(
@@ -261,7 +261,7 @@ Handle<PyTuple> Factory::NewPyTuple(int64_t length) {
 }
 
 Handle<PyTuple> Factory::NewPyTupleWithElements(Handle<PyList> elements) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   auto length = elements->length();
   auto tuple = NewPyTuple(length);
   for (auto i = 0; i < length; ++i) {
@@ -287,7 +287,7 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
   }
 
   if (klass_self->instance_has_properties_dict()) {
-    EscapableHandleScope scope;
+    EscapableHandleScope scope(isolate_);
     Handle<PyString> str_handle(object, isolate_);
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
     PyObject::SetProperties(*str_handle, *properties);
@@ -298,7 +298,7 @@ Handle<PyString> Factory::NewRawStringLike(Tagged<Klass> klass_self,
 }
 
 Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   return scope.Escape(NewRawStringLike(PyStringKlass::GetInstance(isolate_),
                                        str_length, in_meta_space));
 }
@@ -306,7 +306,7 @@ Handle<PyString> Factory::NewRawString(int64_t str_length, bool in_meta_space) {
 Handle<PyString> Factory::NewString(const char* source,
                                     int64_t str_length,
                                     bool in_meta_space) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   Handle<PyString> object = NewRawString(str_length, in_meta_space);
   std::memcpy(object->writable_buffer(), source, str_length);
   return scope.Escape(object);
@@ -315,7 +315,7 @@ Handle<PyString> Factory::NewString(const char* source,
 Handle<PyString> Factory::NewStringLike(Tagged<Klass> klass_self,
                                         const char* source,
                                         int64_t str_length) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   Handle<PyString> object = NewRawStringLike(klass_self, str_length, false);
   std::memcpy(object->writable_buffer(), source, str_length);
   return scope.Escape(object);
@@ -323,7 +323,7 @@ Handle<PyString> Factory::NewStringLike(Tagged<Klass> klass_self,
 
 Handle<PyString> Factory::NewConsString(Handle<PyString> left,
                                         Handle<PyString> right) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto new_length = left->length() + right->length();
   Handle<PyString> new_object =
@@ -337,7 +337,7 @@ Handle<PyString> Factory::NewConsString(Handle<PyString> left,
 }
 
 Handle<PyCodeObject> Factory::NewPyCodeObject() {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyCodeObjectKlass::GetInstance(isolate_);
   Handle<PyCodeObject> object(
@@ -376,7 +376,7 @@ Handle<PyCodeObject> Factory::NewPyCodeObject() {
 }
 
 MaybeHandle<PyFunction> Factory::NewPyFunction() {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyFunctionKlass::GetInstance(isolate_);
   Handle<PyFunction> object(
@@ -406,7 +406,7 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
 
 MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
     Handle<PyCodeObject> code_object) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   Handle<PyFunction> object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
@@ -422,7 +422,7 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
 
 MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
     const FunctionTemplateInfo& func_template) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   Handle<PyFunction> object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
@@ -462,7 +462,7 @@ Handle<MethodObject> Factory::NewMethodObject(Handle<PyObject> func,
 }
 
 MaybeHandle<PyModule> Factory::NewPyModule() {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyModuleKlass::GetInstance(isolate_);
   Handle<PyModule> object(Allocate<PyModule>(Heap::AllocationSpace::kNewSpace),
@@ -483,7 +483,7 @@ MaybeHandle<PyModule> Factory::NewPyModule() {
 }
 
 MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyTypeObjectKlass::GetInstance(isolate_);
   Handle<PyTypeObject> object(
@@ -504,7 +504,7 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
 
 MaybeHandle<PyObject> Factory::NewPythonObject(
     Handle<PyTypeObject> type_object) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyObjectKlass::GetInstance(isolate_);
   Handle<PyObject> object(Allocate<PyObject>(Heap::AllocationSpace::kNewSpace),
@@ -527,7 +527,7 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
 }
 
 Handle<PyListIterator> Factory::NewPyListIterator(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyListIteratorKlass::GetInstance(isolate_);
   Handle<PyListIterator> iterator(
@@ -543,7 +543,7 @@ Handle<PyListIterator> Factory::NewPyListIterator(Handle<PyObject> owner) {
 }
 
 Handle<PyTupleIterator> Factory::NewPyTupleIterator(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyTupleIteratorKlass::GetInstance(isolate_);
   Handle<PyTupleIterator> iterator(
@@ -559,7 +559,7 @@ Handle<PyTupleIterator> Factory::NewPyTupleIterator(Handle<PyObject> owner) {
 }
 
 Handle<PyDictKeys> Factory::NewPyDictKeys(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyDictKeysKlass::GetInstance(isolate_);
   Handle<PyDictKeys> view(
@@ -574,7 +574,7 @@ Handle<PyDictKeys> Factory::NewPyDictKeys(Handle<PyObject> owner) {
 }
 
 Handle<PyDictValues> Factory::NewPyDictValues(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyDictValuesKlass::GetInstance(isolate_);
   Handle<PyDictValues> view(
@@ -589,7 +589,7 @@ Handle<PyDictValues> Factory::NewPyDictValues(Handle<PyObject> owner) {
 }
 
 Handle<PyDictItems> Factory::NewPyDictItems(Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyDictItemsKlass::GetInstance(isolate_);
   Handle<PyDictItems> view(
@@ -605,7 +605,7 @@ Handle<PyDictItems> Factory::NewPyDictItems(Handle<PyObject> owner) {
 
 Handle<PyDictKeyIterator> Factory::NewPyDictKeyIterator(
     Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyDictKeyIteratorKlass::GetInstance(isolate_);
   Handle<PyDictKeyIterator> iterator(
@@ -622,7 +622,7 @@ Handle<PyDictKeyIterator> Factory::NewPyDictKeyIterator(
 
 Handle<PyDictValueIterator> Factory::NewPyDictValueIterator(
     Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyDictValueIteratorKlass::GetInstance(isolate_);
   Handle<PyDictValueIterator> iterator(
@@ -640,7 +640,7 @@ Handle<PyDictValueIterator> Factory::NewPyDictValueIterator(
 
 Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
     Handle<PyObject> owner) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   auto klass = PyDictItemIteratorKlass::GetInstance(isolate_);
   Handle<PyDictItemIterator> iterator(

@@ -16,7 +16,7 @@ namespace saauso::internal {
 
 MaybeHandle<PyString> Runtime_NewTupleRepr(Isolate* isolate,
                                            Handle<PyTuple> tuple) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   std::string repr("(");
   for (int64_t i = 0; i < tuple->length(); ++i) {

@@ -21,7 +21,7 @@ namespace saauso::internal {
 
 MaybeHandle<PyString> Runtime_NewFunctionRepr(Isolate* isolate,
                                               Handle<PyFunction> func) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   std::string repr;
   if (IsNativePyFunction(func, isolate)) {
     repr = "<built-in function ";

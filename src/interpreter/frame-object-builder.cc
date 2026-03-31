@@ -375,7 +375,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
     Handle<PyDict> bound_locals) {
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   // 创建一般的 python 栈帧（慢速路径）。
   FrameBuildContext ctx =
@@ -431,7 +431,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
     Handle<PyDict> bound_locals) {
   // 在build入口设置一个scope。
   // 构建中途需避免再建handle scope，避免FrameBuildContext中的handle失效
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   // 创建一般的 python 栈帧（快速路径）。
   FrameBuildContext ctx =

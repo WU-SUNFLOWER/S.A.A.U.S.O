@@ -24,7 +24,7 @@ namespace saauso::internal {
 
 MaybeHandle<PySmi> Runtime_PyStringToSmi(Isolate* isolate,
                                          Tagged<PyString> py_string) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   std::string_view s(py_string->buffer(),
                      static_cast<size_t>(py_string->length()));
@@ -55,7 +55,7 @@ MaybeHandle<PySmi> Runtime_PyStringToSmi(Isolate* isolate,
 
 MaybeHandle<PySmi> Runtime_PyFloatToSmi(Isolate* isolate,
                                         Tagged<PyFloat> py_float) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   double v = py_float->value();
   if (std::isnan(v)) {
@@ -92,7 +92,7 @@ MaybeHandle<PySmi> Runtime_PyFloatToSmi(Isolate* isolate,
 MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
                                   Handle<PyObject> args,
                                   Handle<PyObject> kwargs) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (!kwargs.is_null() && Handle<PyDict>::cast(kwargs)->occupied() != 0) {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,

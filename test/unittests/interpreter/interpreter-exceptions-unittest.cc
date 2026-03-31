@@ -20,7 +20,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, TryExceptCatch) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -39,7 +39,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryExceptHandlerRangeCoversMiddleOfBlock) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -61,7 +61,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryExceptReraise) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -83,7 +83,7 @@ except ValueError:
 }
 
 TEST_F(BasicInterpreterTest, TryExceptFinally) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -105,7 +105,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryExceptFinally2) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -129,7 +129,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryFinallyNoException) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -149,7 +149,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryFinallyReturnRunsFinally) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def f():
@@ -172,7 +172,7 @@ print(f())
 }
 
 TEST_F(BasicInterpreterTest, TryExceptTupleOfTypes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -191,7 +191,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryExceptSubclassMatch) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -210,7 +210,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, TryExceptMismatchPropagatesButFinallyRuns) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -235,7 +235,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, CheckExcMatchInvalidTupleElementRaisesTypeError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -257,7 +257,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, RaiseInstance) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -276,7 +276,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, RaiseFrom) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -295,7 +295,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, UnwindAcrossFunctionsCatchInCaller) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def g():
@@ -320,7 +320,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, UnwindFinallyOrderIsInnerToOuter) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def g():
@@ -353,7 +353,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, UnwindMismatchPropagatesAcrossFrames) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def g():
@@ -384,7 +384,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, ExceptRaisesNewExceptionAndUnwinds) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -411,7 +411,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, FinallyRaisesOverridesOriginalException) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -437,7 +437,7 @@ print("after")
 // 验证用户自定义迭代器通过 raise StopIteration 终止迭代时，for 循环能正常结束，
 // 且不会将 StopIteration 传播到循环外。
 TEST_F(BasicInterpreterTest, ForLoopConsumesStopIterationFromCustomIterator) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class MyIter:
@@ -471,7 +471,7 @@ print("done")
 // 自定义迭代器无元素时，第一次 __next__ 即 raise StopIteration，for
 // 循环体不执行。
 TEST_F(BasicInterpreterTest, ForLoopCustomIteratorEmptyRaisesStopIteration) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class EmptyIter:
@@ -494,7 +494,7 @@ print("after")
 
 // 迭代过程中若抛出非 StopIteration 的异常，应正常传播到循环外并被捕获。
 TEST_F(BasicInterpreterTest, ForLoopPropagatesNonStopIterationException) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class BadIter:

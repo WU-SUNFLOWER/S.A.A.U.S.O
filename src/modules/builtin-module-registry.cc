@@ -21,7 +21,7 @@ void BuiltinModuleRegistry::Register(Handle<PyString> name,
 }
 
 void BuiltinModuleRegistry::BootstrapAllBuiltinModules() {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
 #define REGISTER_BUILTIN_MODULE(module_name, func_name) \
   Register(PyString::New(isolate_, module_name), &func_name);

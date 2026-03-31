@@ -21,7 +21,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, TupleIndexPropagatesExceptionFromEq) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class X:
@@ -36,7 +36,7 @@ t.index(X())
 }
 
 TEST_F(BasicInterpreterTest, BuildTuple) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = (1,2,3,4)

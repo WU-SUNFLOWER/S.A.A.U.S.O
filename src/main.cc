@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 
   isolate->Enter();
   {
-    HandleScope scope;
+    HandleScope scope(isolate);
 
     if (isolate->initialized()) {
       Handle<PyFunction> boilerplate;

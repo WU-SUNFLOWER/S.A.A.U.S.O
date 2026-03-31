@@ -355,7 +355,7 @@ size_t PyObjectKlass::Generic_InstanceSize(Tagged<PyObject> self) {
 // static
 MaybeHandle<PyObject> PyObjectKlass::Generic_Repr(Isolate* isolate,
                                                   Handle<PyObject> self) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   char buffer[128];
   std::snprintf(buffer, sizeof(buffer), "<%s object at %p>",
                 PyObject::GetTypeName(self, isolate)->buffer(),

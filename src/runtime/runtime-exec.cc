@@ -50,7 +50,7 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
                                                   Handle<PyCodeObject> code,
                                                   Handle<PyDict> locals,
                                                   Handle<PyDict> globals) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (code.is_null()) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
@@ -103,7 +103,7 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
     Handle<PyDict> locals,
     Handle<PyDict> globals,
     std::string_view filename) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
@@ -144,7 +144,7 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
                                                    std::string_view filename,
                                                    Handle<PyDict> locals,
                                                    Handle<PyDict> globals) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (locals.is_null() || globals.is_null()) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,

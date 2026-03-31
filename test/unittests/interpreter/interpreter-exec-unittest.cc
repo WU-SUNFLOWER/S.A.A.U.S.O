@@ -23,7 +23,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, ExecPrint) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(exec('print(1)'))";
 
@@ -35,7 +35,7 @@ TEST_F(BasicInterpreterTest, ExecPrint) {
 }
 
 TEST_F(BasicInterpreterTest, ExecMutateGlobals) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 x = 1
@@ -52,7 +52,7 @@ print(x)
 }
 
 TEST_F(BasicInterpreterTest, ExecWithGlobalsDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {}
@@ -68,7 +68,7 @@ print(d["a"])
 }
 
 TEST_F(BasicInterpreterTest, ExecWithGlobalsAndLocals) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 g = {"x": 10}
@@ -86,7 +86,7 @@ print(l["y"])
 }
 
 TEST_F(BasicInterpreterTest, ExecGlobalsMustBeDictIsCatchable) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:
@@ -105,7 +105,7 @@ except TypeError as e:
 }
 
 TEST_F(BasicInterpreterTest, ExecKeywordsMustBeStringsIsCatchable) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 try:

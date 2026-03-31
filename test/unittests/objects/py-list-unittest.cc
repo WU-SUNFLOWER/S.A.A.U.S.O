@@ -18,7 +18,7 @@ namespace saauso::internal {
 class PyListTest : public VmTestBase {};
 
 TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_);
   EXPECT_EQ(list->length(), 0);
@@ -27,7 +27,7 @@ TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
 }
 
 TEST_F(PyListTest, AppendGetGetTaggedGetLastTaggedPopTaggedWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   auto s1 = Handle<PyObject>(PyString::New(isolate_, "Item 1"));
@@ -48,7 +48,7 @@ TEST_F(PyListTest, AppendGetGetTaggedGetLastTaggedPopTaggedWork) {
 }
 
 TEST_F(PyListTest, SetRemoveClearWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   auto a = Handle<PyObject>(PySmi::FromInt(1), isolate_);
@@ -77,7 +77,7 @@ TEST_F(PyListTest, SetRemoveClearWork) {
 }
 
 TEST_F(PyListTest, InsertWorksInTheMiddle) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   auto a = Handle<PyObject>(PySmi::FromInt(1), isolate_);
@@ -95,7 +95,7 @@ TEST_F(PyListTest, InsertWorksInTheMiddle) {
 }
 
 TEST_F(PyListTest, AppendTriggersExpand) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   const int64_t initial_capacity = list->capacity();
@@ -109,7 +109,7 @@ TEST_F(PyListTest, AppendTriggersExpand) {
 }
 
 TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
@@ -126,7 +126,7 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
 }
 
 TEST_F(PyListTest, PyObjectMulRepeatsList) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
@@ -147,7 +147,7 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
 }
 
 TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
@@ -177,7 +177,7 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
 }
 
 TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::New(isolate_, "x"));
@@ -206,7 +206,7 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
 }
 
 TEST_F(PyListTest, PyObjectLessIsLexicographic) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto a = PyList::New(isolate_, 2);
   PyList::Append(a, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);

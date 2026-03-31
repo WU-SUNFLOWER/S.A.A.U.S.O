@@ -125,7 +125,7 @@ Maybe<int64_t> PyList::IndexOf(Handle<PyObject> target,
 void PyList::Append(Handle<PyList> self,
                     Handle<PyObject> value,
                     Isolate* isolate) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   if (self->IsFull()) {
     ExpandImpl(self, isolate);
@@ -141,7 +141,7 @@ void PyList::Insert(Handle<PyList> self,
                     Isolate* isolate) {
   assert(0 <= index && index <= self->length_);
 
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   if (self->IsFull()) {
     ExpandImpl(self, isolate);

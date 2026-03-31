@@ -348,7 +348,7 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
 /////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("random", InitRandomModule) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(

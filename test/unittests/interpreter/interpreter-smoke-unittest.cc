@@ -24,7 +24,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, HelloWorld) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print("Hello World")
@@ -38,7 +38,7 @@ print("Hello World")
 }
 
 TEST_F(BasicInterpreterTest, MakeAndCallFunction) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo():
@@ -58,7 +58,7 @@ print("after")
 }
 
 TEST_F(BasicInterpreterTest, RunReturnsJustOnSuccess) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print("ok")
@@ -74,7 +74,7 @@ print("ok")
 }
 
 TEST_F(BasicInterpreterTest, RunReturnsNothingOnUnhandledException) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 raise RuntimeError("boom")

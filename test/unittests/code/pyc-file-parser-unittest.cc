@@ -29,7 +29,7 @@ namespace saauso::internal {
 class PycFileParserTest : public VmTestBase {};
 
 TEST_F(PycFileParserTest, CompileAndParseUsingCPython312) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kFileName = "saauso_unittest_input.py";
   constexpr std::string_view kSource = "x = 1\n";

@@ -18,7 +18,7 @@ namespace saauso::internal {
 class PySmiTest : public VmTestBase {};
 
 TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> v0(PySmi::FromInt(0), isolate_);
   Handle<PyObject> v1(PySmi::FromInt(1234), isolate_);
@@ -34,13 +34,13 @@ TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
 }
 
 TEST_F(PySmiTest, IsHeapObjectIsFalseForSmi) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyObject> v(PySmi::FromInt(1), isolate_);
   EXPECT_FALSE(IsHeapObject(v));
 }
 
 TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> a(PySmi::FromInt(7), isolate_);
   Handle<PyObject> b(PySmi::FromInt(3), isolate_);
@@ -71,7 +71,7 @@ TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
 }
 
 TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> a(PySmi::FromInt(-7), isolate_);
   Handle<PyObject> b(PySmi::FromInt(3), isolate_);
@@ -84,7 +84,7 @@ TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
 }
 
 TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> a(PySmi::FromInt(7), isolate_);
   Handle<PyObject> b(PySmi::FromInt(3), isolate_);
@@ -106,7 +106,7 @@ TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
 }
 
 TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> i(PySmi::FromInt(10), isolate_);
   Handle<PyObject> f(PyFloat::New(isolate_, 0.25));
@@ -132,7 +132,7 @@ TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
 }
 
 TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> i(PySmi::FromInt(10), isolate_);
   Handle<PyObject> f1(PyFloat::New(isolate_, 10.0));
@@ -150,7 +150,7 @@ TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
 }
 
 TEST_F(PySmiTest, MixedEqualitySmiWithBool) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> one(PySmi::FromInt(1), isolate_);
   Handle<PyObject> zero(PySmi::FromInt(0), isolate_);

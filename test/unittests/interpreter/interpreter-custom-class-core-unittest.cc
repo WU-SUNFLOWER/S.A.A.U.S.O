@@ -22,7 +22,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, SimpleCustomClass) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -39,7 +39,7 @@ print(A.value)
 }
 
 TEST_F(BasicInterpreterTest, BuildObjectByCustomClass) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 s1 = "Hello"
@@ -68,7 +68,7 @@ print(A.value is a.value)
 }
 
 TEST_F(BasicInterpreterTest, ComplicatedCustomClass) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Vector(object):
@@ -104,7 +104,7 @@ b.say()
 }
 
 TEST_F(BasicInterpreterTest, SimpleClassInheritance) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A(object):
@@ -136,7 +136,7 @@ c.say()    # "I am A"
 }
 
 TEST_F(BasicInterpreterTest, IsInstanceWorksForCustomClassInheritance) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A(object):

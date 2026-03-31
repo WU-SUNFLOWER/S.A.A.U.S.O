@@ -198,7 +198,7 @@ Handle<PyString> CPython312PycFileParser::ParseString(bool is_long_string) {
 }
 
 Handle<PyCodeObject> CPython312PycFileParser::Parse() {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   // .pyc header: magic_number + flags + (timestamp/hash, size/hash)。
   // 解析器当前只需要跳过它们，真正的语义由 marshal payload 决定。
@@ -241,7 +241,7 @@ Handle<PyCodeObject> CPython312PycFileParser::Parse() {
 Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
     Handle<PyList> string_table,
     Handle<PyList> cache) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   // 这里的读取顺序必须严格匹配 CPython3.12 marshal 对 code object 的写入顺序。
   int arg_count = ReadInt32();
@@ -296,7 +296,7 @@ Handle<PyCodeObject> CPython312PycFileParser::ParseCodeObject(
 Handle<PyObject> CPython312PycFileParser::ParseObject(
     Handle<PyList> string_table,
     Handle<PyList> cache) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   // marshal 的每个对象以一个 raw_tag 开始：高 1bit 是 ref_flag，低 7bit 是
   // tag。

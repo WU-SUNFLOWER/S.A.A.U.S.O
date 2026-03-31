@@ -140,7 +140,7 @@ void WriteHandleString(Handle<PyString> value) {
 }  // namespace
 
 BUILTIN(Print) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   PrintOptions options;
   RETURN_ON_EXCEPTION_VALUE(isolate,

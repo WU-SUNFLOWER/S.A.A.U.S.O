@@ -19,7 +19,7 @@ namespace saauso::internal {
 class PyDictTest : public VmTestBase {};
 
 TEST_F(PyDictTest, GetApiTriState) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> dict = PyDict::New(isolate_);
   Handle<PyObject> key = PyString::New(isolate_, "k");
@@ -56,7 +56,7 @@ TEST_F(PyDictTest, GetApiTriState) {
 }
 
 TEST_F(PyDictTest, BasicOperations) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> dict = PyDict::New(isolate_);
   EXPECT_EQ(dict->occupied(), 0);
@@ -111,7 +111,7 @@ TEST_F(PyDictTest, BasicOperations) {
 }
 
 TEST_F(PyDictTest, CollisionAndShift) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   // Create dict with default capacity (min 2, usually expands)
   Handle<PyDict> dict = PyDict::New(isolate_);
@@ -159,7 +159,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
 }
 
 TEST_F(PyDictTest, Equality) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> d1 = PyDict::New(isolate_);
   Handle<PyDict> d2 = PyDict::New(isolate_);
@@ -195,7 +195,7 @@ TEST_F(PyDictTest, Equality) {
 }
 
 TEST_F(PyDictTest, GetKeyTuple) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto TupleContains = [](Handle<PyTuple> tuple, Handle<PyObject> key) -> bool {
     for (auto i = 0; i < tuple->length(); ++i) {
@@ -258,7 +258,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
 }
 
 TEST_F(PyDictTest, IteratorIteratesKeys) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> dict = PyDict::New(isolate_);
   int count = 50;

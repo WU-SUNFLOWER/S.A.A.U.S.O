@@ -28,7 +28,7 @@ BUILTIN(DoNoThing) {
 }
 
 TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
@@ -48,7 +48,7 @@ TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
 }
 
 TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_);
   EXPECT_EQ(list->length(), 0);
@@ -65,7 +65,7 @@ TEST_F(AttributeTest, GetAttrReturnsBoundMethodWithoutCallingIt) {
 }
 
 TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
@@ -92,7 +92,7 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
 }
 
 TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
@@ -111,7 +111,7 @@ TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
 }
 
 TEST_F(AttributeTest, DictAccessorReturnsProperties) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),
@@ -132,7 +132,7 @@ TEST_F(AttributeTest, DictAccessorReturnsProperties) {
 }
 
 TEST_F(AttributeTest, DictAccessorRejectsSetAttr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto func_name = PyString::New(isolate_, "foo");
   FunctionTemplateInfo func_template(isolate_, &BUILTIN_FUNC_NAME(DoNoThing),

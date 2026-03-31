@@ -29,14 +29,14 @@ MaybeHandle<PyObject> DummyNative(Isolate*,
 }  // namespace
 
 TEST_F(CellTest, NewInstanceDefaultsToNullValue) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<Cell> cell = isolate_->factory()->NewCell();
   EXPECT_TRUE(cell->value(isolate_).is_null());
 }
 
 TEST_F(CellTest, SetValueSurvivesMinorGc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<Cell> cell = isolate_->factory()->NewCell();
   Handle<PyString> payload = PyString::New(isolate_, "payload");
@@ -50,7 +50,7 @@ TEST_F(CellTest, SetValueSurvivesMinorGc) {
 }
 
 TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<Cell> cell = isolate_->factory()->NewCell();
   Handle<PyString> payload = PyString::New(isolate_, "payload");

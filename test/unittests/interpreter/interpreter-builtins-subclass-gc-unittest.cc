@@ -22,7 +22,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, SubclassTuple) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(tuple):
@@ -53,7 +53,7 @@ print(c2.index(2))
 }
 
 TEST_F(BasicInterpreterTest, SubclassTupleSurvivesSysgc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(tuple):
@@ -103,7 +103,7 @@ print(c.x.v)
 }
 
 TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithEmptyArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class T(tuple):
@@ -121,7 +121,7 @@ t = T()
 }
 
 TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class T(tuple):
@@ -138,7 +138,7 @@ t = T(1, 2, 3)
 }
 
 TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithIterableArg) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class T(tuple):
@@ -156,7 +156,7 @@ t = T([1, 2, 3])
 }
 
 TEST_F(BasicInterpreterTest, SubclassTupleWithoutCustomInitButWithIterableArg) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class T(tuple):
@@ -177,7 +177,7 @@ for x in t:
 }
 
 TEST_F(BasicInterpreterTest, SubclassStr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class S(str):
@@ -206,7 +206,7 @@ print(s2.upper())
 }
 
 TEST_F(BasicInterpreterTest, SubclassStrSurvivesSysgc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class S(str):
@@ -252,7 +252,7 @@ print(s)
 }
 
 TEST_F(BasicInterpreterTest, SubclassStrCustomInit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class S(str):
@@ -276,7 +276,7 @@ print(len(s.foo()))
 }
 
 TEST_F(BasicInterpreterTest, SubclassStrCustomInitWithMoreParamsAndArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class S(str):
@@ -295,7 +295,7 @@ s1 = S(1,2,3,4)
 }
 
 TEST_F(BasicInterpreterTest, SubclassStrCustomInitWithMoreParams) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class S(str):

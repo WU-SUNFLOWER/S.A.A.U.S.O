@@ -167,7 +167,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
     Isolate* isolate,
     Handle<PyObject> self) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyString> type_name = PyObject::GetTypeName(self, isolate);
   Handle<PyObject> message_obj;
@@ -187,7 +187,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
 
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
                                                         Handle<PyObject> self) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyTuple> exception_args;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, exception_args,

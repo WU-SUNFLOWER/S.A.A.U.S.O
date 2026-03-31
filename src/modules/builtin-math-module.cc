@@ -347,7 +347,7 @@ BUILTIN_MODULE_FUNC(Math_IsInf) {
 /////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("math", InitMathModule) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(

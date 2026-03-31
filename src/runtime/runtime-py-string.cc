@@ -63,7 +63,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
                                           Handle<PyString> str,
                                           Handle<PyObject> sep_or_null,
                                           int64_t maxsplit) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyList> result = PyList::New(isolate);
 
@@ -185,7 +185,7 @@ MaybeHandle<PyList> Runtime_PyStringSplit(Isolate* isolate,
 MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
                                            Handle<PyString> str,
                                            Handle<PyObject> iterable) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (iterable.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,

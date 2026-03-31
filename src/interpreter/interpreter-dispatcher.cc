@@ -78,7 +78,7 @@ void Interpreter::EvalCurrentFrame() {
   }
 
 #define INTERPRETER_HANDLER_WITH_SCOPE(bytecode, ...) \
-  INTERPRETER_HANDLER_DISPATCH(bytecode, HandleScope scope; __VA_ARGS__)
+  INTERPRETER_HANDLER_DISPATCH(bytecode, HandleScope scope(isolate_); __VA_ARGS__)
 
 #define INTERPRETER_HANDLER_NOOP(bytecode) \
   INTERPRETER_HANDLER(bytecode) {          \

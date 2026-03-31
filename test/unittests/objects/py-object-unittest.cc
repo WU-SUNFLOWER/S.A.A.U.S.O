@@ -44,7 +44,7 @@ MaybeHandle<PyObject> DummyMethodTarget(Isolate*,
 }  // namespace
 
 TEST_F(PyObjectTest, GetPropertiesReturnsNullByDefaultAndAcceptsNullSet) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_);
   auto props = PyObject::GetProperties(Handle<PyObject>(list), isolate_);
@@ -56,7 +56,7 @@ TEST_F(PyObjectTest, GetPropertiesReturnsNullByDefaultAndAcceptsNullSet) {
 }
 
 TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto list = PyList::New(isolate_);
   auto dict = PyDict::New(isolate_);
@@ -69,7 +69,7 @@ TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
 }
 
 TEST_F(PyObjectTest, IsHeapObjectReturnsFalseForNullAndSmi) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Tagged<PyObject> null = Tagged<PyObject>::null();
   EXPECT_FALSE(IsHeapObject(null));
@@ -82,7 +82,7 @@ TEST_F(PyObjectTest, IsHeapObjectReturnsFalseForNullAndSmi) {
 }
 
 TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyObject> exact_list(PyList::New(isolate_));
   Handle<PyObject> exact_dict(PyDict::New(isolate_));
   Handle<PyObject> exact_tuple(PyTuple::New(isolate_, 0));
@@ -198,7 +198,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
 }
 
 TEST_F(PyObjectTest, IsExactByKindBuiltinCheckersRemainPrecise) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> type_object(
       PyListKlass::GetInstance(isolate_)->type_object(isolate_));
