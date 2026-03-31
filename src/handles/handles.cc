@@ -35,14 +35,6 @@ HandleScope::~HandleScope() {
 
 void HandleScope::Close() {
   if (!is_closed_) {
-    // 禁止跨线程释放handle scope
-    if (isolate_ != Isolate::Current()) {
-      std::printf(
-          "Can't release a HandleScope in a thread different with the thread "
-          "which created it!!!");
-      std::exit(1);
-    }
-
     auto* impl = isolate_->handle_scope_implementer();
     auto* handle_scope_state = impl->handle_scope_state();
 
