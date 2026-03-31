@@ -41,10 +41,10 @@ print(m[3] is object)
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -77,11 +77,11 @@ print(m[4] is object)
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(5)));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

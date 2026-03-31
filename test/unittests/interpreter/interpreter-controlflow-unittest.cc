@@ -52,7 +52,7 @@ else:
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, -2));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

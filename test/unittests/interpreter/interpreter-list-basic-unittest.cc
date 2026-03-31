@@ -97,9 +97,9 @@ print("python" in l)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

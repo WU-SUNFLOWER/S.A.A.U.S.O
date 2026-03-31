@@ -124,7 +124,7 @@ print(isinstance(a, A))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -152,10 +152,10 @@ print(isinstance(b, list))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

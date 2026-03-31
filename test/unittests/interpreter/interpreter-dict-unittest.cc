@@ -95,10 +95,10 @@ print(d["k"] is v)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyNoneObject());
+  AppendExpected(expected_printv_result, PyNoneObject(isolate_));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "x"));
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -177,9 +177,9 @@ print(42 in d.values())
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -205,9 +205,9 @@ print(("q", 1) in d.items())
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -268,7 +268,7 @@ print(len(new_dict))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(10)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(20)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
@@ -384,7 +384,7 @@ print(d.get("k"))
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
-  AppendExpected(expected_printv_result, PyNoneObject());
+  AppendExpected(expected_printv_result, PyNoneObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

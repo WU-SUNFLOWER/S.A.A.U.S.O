@@ -52,12 +52,12 @@ print(random.choice((7, 8, 9)) in (7, 8, 9))
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyTrueObject());
+  AppendExpected(expected, PyTrueObject(isolate_));
   AppendExpected(expected, handle(PySmi::FromInt(5)));
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
   ExpectPrintResult(expected);
 }
 

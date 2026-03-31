@@ -59,8 +59,8 @@ print(isinstance(obj, Base))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -84,7 +84,7 @@ print(a is b)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -115,8 +115,8 @@ print(isinstance(pet, AnimalFactory))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_false_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -142,8 +142,8 @@ print(red1 is blue)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_false_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -183,10 +183,10 @@ print(isinstance(b, DerivedOverride))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

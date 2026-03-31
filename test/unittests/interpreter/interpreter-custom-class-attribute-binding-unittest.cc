@@ -61,7 +61,7 @@ print(b.baz)
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, isolate_->factory()->py_none_object());
+  AppendExpected(expected_printv_result, PyNoneObject(isolate_));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -155,7 +155,7 @@ a.f(a)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -175,7 +175,7 @@ a.f()
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -194,7 +194,7 @@ print(A.f is f)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -266,7 +266,7 @@ print(ok)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 

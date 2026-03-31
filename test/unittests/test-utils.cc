@@ -19,16 +19,16 @@
 
 namespace saauso::internal {
 
-Handle<PyObject> PyNoneObject() {
-  return Isolate::Current()->factory()->py_none_object();
+Handle<PyObject> PyNoneObject(Isolate* isolate) {
+  return isolate->factory()->py_none_object();
 }
 
-Handle<PyObject> PyTrueObject() {
-  return handle(Isolate::Current()->py_true_object(), Isolate::Current());
+Handle<PyObject> PyTrueObject(Isolate* isolate) {
+  return isolate->factory()->py_true_object();
 }
 
-Handle<PyObject> PyFalseObject() {
-  return handle(Isolate::Current()->py_false_object(), Isolate::Current());
+Handle<PyObject> PyFalseObject(Isolate* isolate) {
+  return isolate->factory()->py_false_object();
 }
 
 ::testing::AssertionResult IsPyStringEqual(Handle<PyString> s,

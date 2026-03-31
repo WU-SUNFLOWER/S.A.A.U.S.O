@@ -36,9 +36,9 @@ print(time.time() > 0)
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
   ExpectPrintResult(expected);
 }
 

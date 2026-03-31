@@ -46,18 +46,18 @@ print(1 != 6)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
 
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
 
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -116,13 +116,13 @@ print(d is not x)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -146,13 +146,13 @@ print(x not in z)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
 
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
   ExpectPrintResult(expected_printv_result);
 }

@@ -61,7 +61,7 @@ print(A.value is a.value)
   auto s = PyString::New(isolate_, "Hello World");
   AppendExpected(expected_printv_result, s);
   AppendExpected(expected_printv_result, s);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -154,10 +154,10 @@ print(isinstance(b, dict))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_true_object()));
-  AppendExpected(expected_printv_result, handle(isolate_->py_false_object()));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
