@@ -32,7 +32,14 @@ class HandleScope {
   Address* CloseAndEscape(Address ptr);
 
  private:
+  friend class HandleScopeImplementer;
+
   static void Extend(Isolate* isolate);
+
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+  // 对指定的 handle block 区域进行毒化
+  static void ZapRange(Address* start, Address* end);
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
 
   void Close();
 
