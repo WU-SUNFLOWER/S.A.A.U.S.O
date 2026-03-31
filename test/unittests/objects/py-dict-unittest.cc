@@ -20,7 +20,6 @@ class PyDictTest : public VmTestBase {};
 
 TEST_F(PyDictTest, GetApiTriState) {
   HandleScope scope;
-  auto* isolate = Isolate::Current();
 
   Handle<PyDict> dict = PyDict::New(isolate_);
   Handle<PyObject> key = PyString::New(isolate_, "k");
@@ -33,7 +32,7 @@ TEST_F(PyDictTest, GetApiTriState) {
   ASSERT_TRUE(dict->GetTagged(miss_key, out_tagged, isolate_).To(&found));
   EXPECT_FALSE(found);
   EXPECT_TRUE(out_tagged.is_null());
-  EXPECT_FALSE(isolate->HasPendingException());
+  EXPECT_FALSE(isolate_->HasPendingException());
 
   ASSERT_TRUE(dict->GetTagged(key, out_tagged, isolate_).To(&found));
   EXPECT_TRUE(found);
@@ -51,9 +50,9 @@ TEST_F(PyDictTest, GetApiTriState) {
   Handle<PyObject> bad_key = PyDict::New(isolate_);
   out_tagged = Tagged<PyObject>::null();
   EXPECT_TRUE(dict->GetTagged(bad_key, out_tagged, isolate_).IsNothing());
-  EXPECT_TRUE(isolate->HasPendingException());
+  EXPECT_TRUE(isolate_->HasPendingException());
   EXPECT_TRUE(out_tagged.is_null());
-  isolate->exception_state()->Clear();
+  isolate_->exception_state()->Clear();
 }
 
 TEST_F(PyDictTest, BasicOperations) {

@@ -42,7 +42,7 @@ TEST_F(CellTest, SetValueSurvivesMinorGc) {
   Handle<PyString> payload = PyString::New(isolate_, "payload");
   cell->set_value(payload);
 
-  Isolate::Current()->heap()->CollectGarbage();
+  isolate_->heap()->CollectGarbage();
 
   Handle<PyObject> cell_value = cell->value(isolate_);
   ASSERT_FALSE(cell_value.is_null());

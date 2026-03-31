@@ -71,6 +71,9 @@ class BasicInterpreterTest : public VmTestBase {
   // 编译并运行指定 Python 源码（CPython 3.12 字节码）。
   static void RunScript(std::string_view source, std::string_view file_name);
 
+  // 将期望值追加到 list（用于构造解释器输出的期望序列）。
+  void AppendExpected(Handle<PyList> list, Handle<PyObject> value);
+
   static std::string ExpectedAndTakePendingExceptionMessage();
 
   static void RunScriptExpectExceptionContains(std::string_view source,

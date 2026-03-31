@@ -123,6 +123,10 @@ void BasicInterpreterTest::RunScript(std::string_view source,
   }
 }
 
+void BasicInterpreterTest::AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
+  PyList::Append(list, value, isolate_);
+}
+
 std::string BasicInterpreterTest::ExpectedAndTakePendingExceptionMessage() {
   HandleScope scope;
 
@@ -189,8 +193,9 @@ void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
 
   // 逐项按 Python 语义相等性比较，便于定位具体哪一项不匹配。
   for (auto i = 0; i < actual->length(); ++i) {
-    EXPECT_TRUE(
-        IsPyObjectEqual(actual->Get(i, isolate_), expected->Get(i, isolate_)));
+    EXPECT_TRUE(IsPyObjectEqual(isolate_,
+                                actual->Get(i, isolate_),
+                                expected->Get(i, isolate_)));
   }
 }
 
