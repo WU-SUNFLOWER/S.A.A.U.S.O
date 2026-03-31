@@ -18,7 +18,7 @@ MaybeLocal<Context> Context::New(Isolate* isolate) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> globals =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
@@ -69,7 +69,7 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
       !i::IsPyDict(context_object)) {
     return i::kNullMaybe;
   }
-  i::HandleScope handle_scope;
+  i::HandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> globals = i::Handle<i::PyDict>::cast(context_object);
   i::Handle<i::PyString> py_key =
       i::PyString::New(i_isolate, key->Value().data(),
@@ -96,7 +96,7 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
       !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> globals = i::Handle<i::PyDict>::cast(context_object);
   i::Handle<i::PyString> py_key =
       i::PyString::New(i_isolate, key->Value().data(),

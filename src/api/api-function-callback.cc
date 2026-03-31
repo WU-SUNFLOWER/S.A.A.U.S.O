@@ -71,7 +71,7 @@ void FunctionCallbackInfo::ThrowRuntimeError(std::string_view message) const {
     return;
   }
 
-  i::HandleScope handle_scope;
+  i::HandleScope handle_scope(i_isolate);
   std::string error(message);
   i::Runtime_ThrowError(i_isolate, i::ExceptionType::kRuntimeError,
                         error.c_str());

@@ -15,7 +15,7 @@ MaybeLocal<List> List::New(Isolate* isolate) {
   auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   assert(i_isolate == i::Isolate::Current());
 
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyList> list =
       i_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(list);
@@ -40,7 +40,7 @@ Maybe<void> List::Push(Local<Value> value) {
   if (object.is_null() || !i::IsPyList(object)) {
     return i::kNullMaybe;
   }
-  i::HandleScope handle_scope;
+  i::HandleScope handle_scope(i_isolate);
   i::Handle<i::PyList> list = i::Handle<i::PyList>::cast(object);
   i::PyList::Append(list, api::ToInternalObject(i_isolate, value), i_isolate);
   if (i_isolate->HasPendingException()) {
@@ -64,7 +64,7 @@ Maybe<void> List::Set(int64_t index, Local<Value> value) {
   if (index < 0 || index >= list_tagged->length()) {
     return i::kNullMaybe;
   }
-  i::HandleScope handle_scope;
+  i::HandleScope handle_scope(i_isolate);
   i::Handle<i::PyList> list = i::Handle<i::PyList>::cast(object);
   list->Set(index, api::ToInternalObject(i_isolate, value));
   if (i_isolate->HasPendingException()) {
@@ -88,7 +88,7 @@ MaybeLocal<Value> List::Get(int64_t index) const {
   if (index < 0 || index >= list_tagged->length()) {
     return MaybeLocal<Value>();
   }
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyList> list = i::Handle<i::PyList>::cast(object);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(list->Get(index, i_isolate));
@@ -96,16 +96,16 @@ MaybeLocal<Value> List::Get(int64_t index) const {
 }
 
 MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
 
   if (isolate == nullptr || argc < 0) {
     return MaybeLocal<Tuple>();
   }
-  i::EscapableHandleScope handle_scope;
-  i::Handle<i::PyTuple> tuple = internal_isolate->factory()->NewPyTuple(argc);
+  i::EscapableHandleScope handle_scope(i_isolate);
+  i::Handle<i::PyTuple> tuple = i_isolate->factory()->NewPyTuple(argc);
   for (int i = 0; i < argc; ++i) {
     Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
-    tuple->SetInternal(i, api::ToInternalObject(internal_isolate, arg));
+    tuple->SetInternal(i, api::ToInternalObject(i_isolate, arg));
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(tuple);
   return i::Utils::ToLocal<api::RawTuple>(escaped);
@@ -133,7 +133,7 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   if (index < 0 || index >= tuple_tagged->length()) {
     return MaybeLocal<Value>();
   }
-  i::EscapableHandleScope handle_scope;
+  i::EscapableHandleScope handle_scope(internal_isolate);
   i::Handle<i::PyTuple> tuple = i::Handle<i::PyTuple>::cast(object);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(tuple->Get(index, internal_isolate));
