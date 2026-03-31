@@ -44,7 +44,7 @@ MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
                                                 const char* source,
                                                 size_t source_size,
                                                 std::string_view filename) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
 #if !SAAUSO_ENABLE_CPYTHON_COMPILER
   Runtime_ThrowError(
@@ -70,7 +70,7 @@ MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
 
 MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
                                              std::vector<uint8_t> bytes) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   CPython312PycFileParser parser(
       std::span<const uint8_t>(bytes.data(), bytes.size()), isolate);
@@ -85,7 +85,7 @@ MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
 
 MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
                                              const char* filename) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   CPython312PycFileParser parser(filename, isolate);
   Handle<PyCodeObject> code = parser.Parse();

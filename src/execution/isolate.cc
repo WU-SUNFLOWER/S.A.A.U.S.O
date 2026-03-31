@@ -150,7 +150,7 @@ void Isolate::Init() {
   // Enter / Exit 操作。
   Enter();
   do {
-    HandleScope scope;
+    HandleScope scope(this);
 
     // 初始化元数据区域（Klasses, Singletons 等）
     if (InitMetaArea().IsNothing()) {
