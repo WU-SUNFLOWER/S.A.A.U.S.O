@@ -5,6 +5,8 @@
 #include <cmath>
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -37,8 +39,8 @@ print(math.pow(2, 3))
 
   auto expected = PyList::New(isolate_);
   AppendExpected(expected, PyFloat::New(isolate_, 3.0));
-  AppendExpected(expected, handle(PySmi::FromInt(1)));
-  AppendExpected(expected, handle(PySmi::FromInt(2)));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(2));
   AppendExpected(expected, PyFloat::New(isolate_, 3.0));
   AppendExpected(expected, PyFloat::New(isolate_, 8.0));
   ExpectPrintResult(expected);

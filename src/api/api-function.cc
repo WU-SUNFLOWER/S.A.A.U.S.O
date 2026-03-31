@@ -18,7 +18,7 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
   int64_t callback_addr =
       static_cast<int64_t>(reinterpret_cast<intptr_t>(callback));
   i::Handle<i::PyObject> closure_data =
-      i::handle(i::PySmi::FromInt(callback_addr), i_isolate);
+      i_isolate->factory()->NewSmiFromInt(callback_addr);
   i::FunctionTemplateInfo template_info(i_isolate, &api::InvokeEmbedderCallback,
                                         py_name, closure_data);
   i::MaybeHandle<i::PyFunction> maybe_function =

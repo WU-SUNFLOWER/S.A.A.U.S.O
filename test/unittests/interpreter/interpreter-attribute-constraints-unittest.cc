@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
@@ -90,7 +92,7 @@ print(foo.x)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(233)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(233));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -128,10 +130,10 @@ print(s.x)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(4)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(4));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -183,8 +185,8 @@ print(a.__class__ is A)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(123));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -202,8 +204,8 @@ print(isinstance(a.__dict__, dict))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(123)));
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(123));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -223,8 +225,8 @@ print(a.x)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
   ExpectPrintResult(expected_printv_result);
 }
 

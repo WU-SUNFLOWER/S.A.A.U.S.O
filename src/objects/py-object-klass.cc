@@ -253,7 +253,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
       isolate, handled_by_accessor,
       AccessorProxy::TrySet(isolate, self, property_name, property_value));
   if (handled_by_accessor) {
-    return handle(isolate->py_none_object(), isolate);
+    return isolate->factory()->py_none_object();
   }
 
   if (properties.is_null()) [[unlikely]] {
@@ -267,7 +267,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(properties, property_name, property_value, isolate));
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 // static
@@ -338,7 +338,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_InitInstance(
     }
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 // static

@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -51,8 +53,8 @@ else:
 
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, -2));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -84,12 +86,12 @@ while i < 10:
   int b = 0;
   int i = 0;
 
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(a)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(b)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(i)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(a));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(b));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(i));
 
   while (i < 10) {
-    AppendExpected(expected_printv_result, handle(PySmi::FromInt(a)));
+    AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(a));
     int t = a;
     a = a + b;
     b = t;
@@ -118,13 +120,13 @@ print(i)
 
   int i = 0;
   while (i < 5) {
-    AppendExpected(expected_printv_result, handle(PySmi::FromInt(i)));
+    AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(i));
     if (i == 3) {
       break;
     }
     i = i + 1;
   }
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(i)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(i));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -151,7 +153,7 @@ while i < 10:
     if (i < 5) {
       continue;
     }
-    AppendExpected(expected_printv_result, handle(PySmi::FromInt(i)));
+    AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(i));
   }
 
   ExpectPrintResult(expected_printv_result);
@@ -191,8 +193,8 @@ print(j)
     j = j + 1;
   }
 
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(i)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(j)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(i));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(j));
   ExpectPrintResult(expected_printv_result);
 }
 

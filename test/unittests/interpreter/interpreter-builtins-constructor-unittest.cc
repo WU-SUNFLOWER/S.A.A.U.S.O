@@ -6,6 +6,7 @@
 
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
@@ -52,9 +53,9 @@ print(str(float("nan")))
   AppendExpected(expected_printv_result, PyString::New(isolate_, "3.0"));
   AppendExpected(expected_printv_result, ST(true_symbol, isolate_));
   AppendExpected(expected_printv_result, ST(none_symbol, isolate_));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(0)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1234)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(255)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(0));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1234));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(255));
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 0.0));
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 10.5));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "nan"));
@@ -129,12 +130,14 @@ print(tuple([1, 2]))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
 
   auto expected_list = PyList::New(isolate_);
-  PyList::Append(expected_list, handle(PySmi::FromInt(1)), isolate_);
-  PyList::Append(expected_list, handle(PySmi::FromInt(2)), isolate_);
+  PyList::Append(expected_list, isolate_->factory()->NewSmiFromInt(1),
+                 isolate_);
+  PyList::Append(expected_list, isolate_->factory()->NewSmiFromInt(2),
+                 isolate_);
   AppendExpected(expected_printv_result, expected_list);
 
   auto expected_tuple = PyTuple::New(isolate_, 2);
@@ -165,10 +168,10 @@ print(t1 is t3) # True
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyFalseObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyFalseObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
 
   ExpectPrintResult(expected_printv_result);
 }
@@ -189,11 +192,11 @@ print(isinstance(o, object))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
-  AppendExpected(expected_printv_result, PyTrueObject());
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
+  AppendExpected(expected_printv_result, PyTrueObject(isolate_));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -210,7 +213,7 @@ print(C.x)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
   ExpectPrintResult(expected_printv_result);
 }
 

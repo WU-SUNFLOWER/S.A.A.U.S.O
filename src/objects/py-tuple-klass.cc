@@ -185,8 +185,8 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Len(Isolate* isolate,
                                                 Handle<PyObject> self) {
-  return Handle<PyObject>(
-      PySmi::FromInt(Handle<PyTuple>::cast(self)->length()));
+  return isolate->factory()->NewSmiFromInt(
+      Handle<PyTuple>::cast(self)->length());
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_Repr(Isolate* isolate,

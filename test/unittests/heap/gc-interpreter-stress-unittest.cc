@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
@@ -85,11 +87,12 @@ print(checksum)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(32)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(32));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "0"));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "31"));
   AppendExpected(expected_printv_result,
-                 handle(PySmi::FromInt(ComputeExpectedChecksumForSysgcLoop())));
+                isolate_->factory()->NewSmiFromInt(
+                    ComputeExpectedChecksumForSysgcLoop()));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -119,7 +122,8 @@ print(work(5, 0))
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6 * 60 * 12)));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(6 * 60 * 12));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -144,8 +148,8 @@ print(cnt)
   RunScript(kSource, kTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(6)));
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(6));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
   ExpectPrintResult(expected_printv_result);
 }
 

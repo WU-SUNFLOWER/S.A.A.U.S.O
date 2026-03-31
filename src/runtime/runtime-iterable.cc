@@ -6,6 +6,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -26,7 +27,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     for (int64_t i = 0; i < tuple->length(); ++i) {
       PyList::Append(list, tuple->Get(i), isolate);
     }
-    return handle(isolate->py_none_object(), isolate);
+    return isolate->factory()->py_none_object();
   }
 
   // Fast Path: 直接展开list
@@ -35,7 +36,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     for (int64_t i = 0; i < source->length(); ++i) {
       PyList::Append(list, source->Get(i), isolate);
     }
-    return handle(isolate->py_none_object(), isolate);
+    return isolate->factory()->py_none_object();
   }
   // Slow Path: 走一般的迭代器调用流程
   Handle<PyObject> iterator;
@@ -57,7 +58,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
     PyList::Append(list, elem, isolate);
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(

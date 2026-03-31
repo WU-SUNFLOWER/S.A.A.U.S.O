@@ -141,8 +141,8 @@ MaybeHandle<PyObject> PyObject::Add(Isolate* isolate,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() +
-                                           PySmi::cast(*other).value()));
+    auto value = PySmi::cast(*self).value() + PySmi::cast(*other).value();
+    return isolate->factory()->NewSmiFromInt(value);
   }
 
   Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
@@ -155,8 +155,8 @@ MaybeHandle<PyObject> PyObject::Sub(Isolate* isolate,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() -
-                                           PySmi::cast(*other).value()));
+    auto result = PySmi::cast(*self).value() - PySmi::cast(*other).value();
+    return isolate->factory()->NewSmiFromInt(result);
   }
 
   Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
@@ -169,8 +169,8 @@ MaybeHandle<PyObject> PyObject::Mul(Isolate* isolate,
                                     Handle<PyObject> other) {
   // 内联Fast Path：两个Smi之间操作
   if (IsPySmi(*self) && IsPySmi(*other)) {
-    return Handle<PyObject>(PySmi::FromInt(PySmi::cast(*self).value() *
-                                           PySmi::cast(*other).value()));
+    auto result = PySmi::cast(*self).value() * PySmi::cast(*other).value();
+    return isolate->factory()->NewSmiFromInt(result);
   }
 
   Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
@@ -194,8 +194,8 @@ MaybeHandle<PyObject> PyObject::FloorDiv(Isolate* isolate,
   if (IsPySmi(self) && IsPySmi(other) &&
       (other_value = PySmi::cast(*other).value()) != 0) {
     int64_t self_value = PySmi::cast(*self).value();
-    return Handle<PyObject>(
-        PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
+    int64_t result = PythonFloorDivide(self_value, other_value);
+    return isolate->factory()->NewSmiFromInt(result);
   }
 
   Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
@@ -217,7 +217,7 @@ MaybeHandle<PyObject> PyObject::Mod(Isolate* isolate,
   if (IsPySmi(self) && IsPySmi(other)) {
     auto result =
         PythonMod(PySmi::cast(*self).value(), PySmi::cast(*other).value());
-    return Handle<PyObject>(PySmi::FromInt(result));
+    return isolate->factory()->NewSmiFromInt(result);
   }
 
   Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
@@ -262,7 +262,8 @@ MaybeHandle<PyBoolean> PyObject::Less(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(
+      isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::LessBool(Isolate* isolate,
@@ -286,7 +287,8 @@ MaybeHandle<PyBoolean> PyObject::Equal(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(
+      isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::EqualBool(Isolate* isolate,
@@ -307,7 +309,8 @@ MaybeHandle<PyBoolean> PyObject::NotEqual(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(
+      isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::NotEqualBool(Isolate* isolate,
@@ -329,7 +332,8 @@ MaybeHandle<PyBoolean> PyObject::GreaterEqual(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(
+      isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::GreaterEqualBool(Isolate* isolate,
@@ -351,7 +355,8 @@ MaybeHandle<PyBoolean> PyObject::LessEqual(Isolate* isolate,
   if (mb.IsNothing()) {
     return MaybeHandle<PyBoolean>();
   }
-  return MaybeHandle<PyBoolean>(isolate->factory()->ToPyBoolean(mb.ToChecked()));
+  return MaybeHandle<PyBoolean>(
+      isolate->factory()->ToPyBoolean(mb.ToChecked()));
 }
 
 Maybe<bool> PyObject::LessEqualBool(Isolate* isolate,

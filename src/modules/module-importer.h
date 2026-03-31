@@ -62,7 +62,7 @@ class ModuleImporter final {
   // 该步骤用于对齐 dotted-name 导入语义，并提升IMPORT_FROM的fast path 命中率。
   //
   // 如果执行绑定的过程中发生异常，返回值为空，需要调用方继续向上传播异常！
-  MaybeHandle<PyObject> BindChildModuleToParentNamespace(
+  Maybe<void> BindChildModuleToParentNamespace(
       Handle<PyObject> parent_module,
       Handle<PyString> child_short_name,
       Handle<PyObject> child_module);

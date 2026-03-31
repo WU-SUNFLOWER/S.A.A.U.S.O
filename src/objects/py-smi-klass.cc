@@ -12,6 +12,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/maybe-handles.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -191,8 +192,10 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
                          "integer division or modulo by zero");
       return kNullMaybeHandle;
     }
-    return handle(PySmi::FromInt(PythonFloorDivide(self_value, other_value)));
+    return isolate->factory()->NewSmiFromInt(
+        PythonFloorDivide(self_value, other_value));
   }
+
   if (IsPyFloat(other)) {
     double other_value = Handle<PyFloat>::cast(other)->value();
     if (other_value == 0) {
@@ -202,6 +205,7 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_FloorDiv(Isolate* isolate,
     }
     return PyFloat::New(isolate, PythonFloorDivide(self_value, other_value));
   }
+
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                       "unsupported operand type(s) for //: 'int' and '%s'",
                       PyObject::GetTypeName(other, isolate)->buffer());

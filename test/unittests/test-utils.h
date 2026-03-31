@@ -27,14 +27,14 @@ class PyList;
 class PyObject;
 class PyString;
 
-// 获取当前 Isolate 的 None 单例（以 Handle 形式返回，便于直接参与 API 调用）。
-Handle<PyObject> PyNoneObject();
+// 获取指定 Isolate 的 None 单例（以 Handle 形式返回，便于直接参与 API 调用）。
+Handle<PyObject> PyNoneObject(Isolate* isolate);
 
-// 获取当前 Isolate 的 True 单例（以 Handle 形式返回，便于直接参与 API 调用）。
-Handle<PyObject> PyTrueObject();
+// 获取指定 Isolate 的 True 单例（以 Handle 形式返回，便于直接参与 API 调用）。
+Handle<PyObject> PyTrueObject(Isolate* isolate);
 
-// 获取当前 Isolate 的 False 单例（以 Handle 形式返回，便于直接参与 API 调用）。
-Handle<PyObject> PyFalseObject();
+// 获取指定 Isolate 的 False 单例（以 Handle 形式返回，便于直接参与 API 调用）。
+Handle<PyObject> PyFalseObject(Isolate* isolate);
 
 // 断言 PyString 与期望文本相等。
 // - s 允许为 null；为 null 时断言失败并给出原因。

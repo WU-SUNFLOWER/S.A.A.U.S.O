@@ -6,6 +6,7 @@
 
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -132,7 +133,7 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
     }
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace saauso::internal

@@ -7,6 +7,7 @@
 #include "src/builtins/builtins-utils.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-string.h"
@@ -31,7 +32,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
                                             Handle<PyDict> kwargs,
                                             PrintOptions& options) {
   if (kwargs.is_null()) {
-    return handle(isolate->py_none_object(), isolate);
+    return isolate->factory()->py_none_object();
   }
 
   auto sep_key = ST(sep, isolate);
@@ -122,7 +123,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 void WriteRawString(const char* buffer, int64_t length) {
@@ -173,7 +174,7 @@ BUILTIN(Print) {
     }
   }
 
-  return scope.Escape(handle(isolate->py_none_object(), isolate));
+  return scope.Escape(isolate->factory()->py_none_object());
 }
 
 }  // namespace saauso::internal

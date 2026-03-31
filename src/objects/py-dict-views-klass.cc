@@ -60,7 +60,7 @@ Handle<PyObject> NextFromIterator(Isolate* isolate,
 template <typename ViewType>
 Handle<PyObject> DictViewLen(Isolate* isolate, Handle<PyObject> self) {
   auto dict = Handle<ViewType>::cast(self)->owner(isolate);
-  return Handle<PyObject>(PySmi::FromInt(dict->occupied()));
+  return isolate->factory()->NewSmiFromInt(dict->occupied());
 }
 
 }  // namespace

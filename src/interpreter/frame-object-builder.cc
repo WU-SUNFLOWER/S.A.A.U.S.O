@@ -288,7 +288,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
   }
 
 ret:
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
@@ -348,7 +348,7 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
   }
 
 ret:
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace

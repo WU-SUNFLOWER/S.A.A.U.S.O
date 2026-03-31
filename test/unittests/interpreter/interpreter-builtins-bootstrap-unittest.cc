@@ -28,7 +28,7 @@ class BuiltinsBootstrapTest : public VmTestBase {
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
   HandleScope scope;
 
-  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
+  Handle<PyDict> builtins = isolate_->builtins();
 
   // 这里的 << 是 Google Test
   // 的流式断言语法，用于在断言失败时输出额外信息（这里是当前遍历到的 name）。
@@ -96,7 +96,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   HandleScope scope;
 
-  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
+  Handle<PyDict> builtins = isolate_->builtins();
 
   const char* const kExceptionTypes[] = {
       "BaseException",  "Exception",  "TypeError", "ValueError",   "NameError",
@@ -155,7 +155,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
 
 TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
   HandleScope scope;
-  Handle<PyDict> builtins = handle(isolate_->builtins(), isolate_);
+  Handle<PyDict> builtins = isolate_->builtins();
 
   const char* const kTypeNames[] = {"object", "list", "dict",
                                     "tuple",  "str",  "type"};

@@ -85,7 +85,8 @@ class Isolate {
   ExceptionState* exception_state() { return &exception_state_; }
   const ExceptionState* exception_state() const { return &exception_state_; }
 
-  Tagged<PyDict> builtins() const;
+  Tagged<PyDict> raw_builtins() const;
+  Handle<PyDict> builtins();
 
   // 获取全局单例对象（None, True, False）
   Tagged<PyNone> py_none_object() const { return py_none_object_; }

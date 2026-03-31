@@ -113,7 +113,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_Iter(Isolate* isolate,
 MaybeHandle<PyObject> PyDictKlass::Virtual_Len(Isolate* isolate,
                                                Handle<PyObject> self) {
   auto value = Handle<PyDict>::cast(self)->occupied();
-  return Handle<PyObject>(PySmi::FromInt(value));
+  return isolate->factory()->NewSmiFromInt(value);
 }
 
 MaybeHandle<PyObject> PyDictKlass::Virtual_Repr(Isolate* isolate,
@@ -247,7 +247,7 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
       isolate, Runtime_InitDictFromArgsKwargs(
                    isolate, Handle<PyDict>::cast(instance), args, kwargs));
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 // static

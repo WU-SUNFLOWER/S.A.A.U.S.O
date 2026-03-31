@@ -10,6 +10,7 @@
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
 #include "test/unittests/test-helpers.h"
+#include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace saauso::internal {
@@ -153,8 +154,8 @@ TEST_F(PySmiTest, MixedEqualitySmiWithBool) {
 
   Handle<PyObject> one(PySmi::FromInt(1));
   Handle<PyObject> zero(PySmi::FromInt(0));
-  Handle<PyObject> t = handle(Isolate::Current()->py_true_object());
-  Handle<PyObject> f = handle(Isolate::Current()->py_false_object());
+  Handle<PyObject> t = PyTrueObject(isolate_);
+  Handle<PyObject> f = PyFalseObject(isolate_);
 
   Handle<PyObject> res;
   ASSERT_TRUE(PyObject::Equal(isolate_, one, t).ToHandle(&res));

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -23,7 +25,7 @@ print((lambda x: x + 1)(2))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -71,7 +73,7 @@ print(f(10))
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, handle(PySmi::FromInt(15)));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(15));
   ExpectPrintResult(expected_printv_result);
 }
 

@@ -33,13 +33,13 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
       isolate, found, globals->ContainsKey(ST(builtins, isolate), isolate));
 
   if (!found) {
-    Handle<PyDict> builtins = handle(isolate->builtins(), isolate);
+    Handle<PyDict> builtins = isolate->builtins();
     RETURN_ON_EXCEPTION_VALUE(
         isolate, PyDict::Put(globals, ST(builtins, isolate), builtins, isolate),
         kNullMaybeHandle);
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace

@@ -39,7 +39,7 @@ TEST_F(AttributeTest, DefaultSetAttrCreatesPropertiesDict) {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   auto key = PyString::New(isolate_, "x");
-  auto value = handle(PySmi::FromInt(42));
+  auto value = isolate_->factory()->NewSmiFromInt(42);
 
   ASSERT_FALSE(PyObject::SetAttr(isolate_, func, key, value).IsEmpty());
   Handle<PyObject> result;
@@ -78,7 +78,7 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
   Handle<PyObject> func_obj(func);
   Handle<PyObject> expected_class(Handle<PyObject>::cast(
       PyObject::ResolveObjectKlass(func_obj, isolate_)->type_object()));
-  Handle<PyObject> fake_class = handle(PySmi::FromInt(7));
+  Handle<PyObject> fake_class = isolate_->factory()->NewSmiFromInt(7);
 
   Handle<PyDict> properties = PyObject::GetProperties(func_obj);
   ASSERT_FALSE(properties.is_null());
@@ -103,7 +103,8 @@ TEST_F(AttributeTest, ClassAccessorRejectsSetAttr) {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   EXPECT_TRUE(
-      PyObject::SetAttr(isolate_, func, ST(class, isolate_), handle(PySmi::FromInt(1)))
+      PyObject::SetAttr(isolate_, func, ST(class, isolate_),
+                        isolate_->factory()->NewSmiFromInt(1))
           .IsEmpty());
   EXPECT_TRUE(isolate_->HasPendingException());
   isolate_->exception_state()->Clear();

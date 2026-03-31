@@ -13,6 +13,7 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -316,7 +317,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = ParseCodeObject(string_table, cache);
       break;
     case kIntegerFlag:
-      object = Handle<PyObject>(PySmi::FromInt(ReadInt32()));
+      object = isolate_->factory()->NewSmiFromInt(ReadInt32());
       break;
     case kLongFlag: {
       int n = ReadInt32();
@@ -339,14 +340,14 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
                      value);
         std::exit(1);
       }
-      object = Handle<PyObject>(PySmi::FromInt(static_cast<int>(value)));
+      object = isolate_->factory()->NewSmiFromInt(value);
       break;
     }
     case kDoubleFlag:
       object = PyFloat::New(isolate_, reader_->ReadDouble());
       break;
     case kNoneObjectFlag:
-      object = Handle<PyNone>(isolate_->py_none_object());
+      object = isolate_->factory()->py_none_object();
       break;
     case kTrueObjectFlag:
       object = Handle<PyBoolean>(isolate_->py_true_object());

@@ -35,6 +35,7 @@
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs-klass.h"
 #include "src/objects/py-oddballs.h"
+#include "src/objects/py-smi.h"
 #include "src/objects/py-string-klass.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple-iterator-klass.h"
@@ -172,6 +173,10 @@ Handle<Cell> Factory::NewCell() {
     PyObject::SetKlass(object, CellKlass::GetInstance(isolate_));
   }
   return object;
+}
+
+Handle<PySmi> Factory::NewSmiFromInt(int64_t value) {
+  return handle(PySmi::FromInt(value), isolate_);
 }
 
 Handle<PyFloat> Factory::NewPyFloat(double value) {
@@ -643,9 +648,17 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
 }
 
 Handle<PyBoolean> Factory::ToPyBoolean(bool condition) {
-  return handle(condition ? isolate_->py_true_object()
-                          : isolate_->py_false_object(),
-                isolate_);
+  return handle(
+      condition ? isolate_->py_true_object() : isolate_->py_false_object(),
+      isolate_);
+}
+
+Handle<PyBoolean> Factory::py_true_object() const {
+  return handle(isolate_->py_true_object(), isolate_);
+}
+
+Handle<PyBoolean> Factory::py_false_object() const {
+  return handle(isolate_->py_false_object(), isolate_);
 }
 
 Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {
@@ -669,6 +682,10 @@ Tagged<PyNone> Factory::NewPyNone() {
     PyObject::SetProperties(object, Tagged<PyDict>::null());
   }
   return object;
+}
+
+Handle<PyNone> Factory::py_none_object() const {
+  return handle(isolate_->py_none_object(), isolate_);
 }
 
 //////////////////////////////////////////////////////////////////////////////

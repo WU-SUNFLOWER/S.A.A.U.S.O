@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/handles/handles.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
@@ -52,12 +54,12 @@ print(random.choice((7, 8, 9)) in (7, 8, 9))
   RunScript(kSource, kTestFileName);
 
   auto expected = PyList::New(isolate_);
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, handle(PySmi::FromInt(5)));
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
-  AppendExpected(expected, PyTrueObject());
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, isolate_->factory()->NewSmiFromInt(5));
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
+  AppendExpected(expected, PyTrueObject(isolate_));
   ExpectPrintResult(expected);
 }
 
