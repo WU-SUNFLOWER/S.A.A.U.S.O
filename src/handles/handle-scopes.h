@@ -58,6 +58,7 @@ class Handle;
 
 class EscapableHandleScope final : public HandleScope {
  public:
+  // TODO: HandleScope(Isolate* isolate) 铺开后移除该构造函数
   EscapableHandleScope() = default;
   explicit EscapableHandleScope(Isolate* isolate) : HandleScope(isolate) {}
   EscapableHandleScope(const EscapableHandleScope&) = delete;
