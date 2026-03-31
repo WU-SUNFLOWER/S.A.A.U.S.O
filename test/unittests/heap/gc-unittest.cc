@@ -27,11 +27,11 @@ namespace saauso::internal {
 
 namespace {
 
-void AllocateEphemeralStrings(int count) {
+void AllocateEphemeralStrings(Isolate* isolate, int count) {
   for (int i = 0; i < count; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate);
     auto s = std::string("ephemeral-").append(std::to_string(i));
-    (void)PyString::New(Isolate::Current(), s.c_str());
+    (void)PyString::New(isolate, s.c_str());
   }
 }
 
@@ -197,7 +197,7 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
   Address true_addr_before = isolate_->py_true_object().ptr();
   Address false_addr_before = isolate_->py_false_object().ptr();
 
-  AllocateEphemeralStrings(2000);
+  AllocateEphemeralStrings(isolate_, 2000);
   isolate_->heap()->CollectGarbage();
   AllocateEphemeralListsWithStrings(isolate_, 200, 8);
   isolate_->heap()->CollectGarbage();
@@ -264,16 +264,16 @@ TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
   // 关键点：
   // - Escape 会把 inner scope 中的 handle “提升”到 outer scope
   // - 在 minor GC 中，handle slot 会被更新为新地址
-  auto create_escaped_string = []() -> Handle<PyString> {
-    EscapableHandleScope inner_scope;
-    auto s = PyString::New(Isolate::Current(), "escaped-string");
+  auto create_escaped_string = [this]() -> Handle<PyString> {
+    EscapableHandleScope inner_scope(isolate_);
+    auto s = PyString::New(isolate_, "escaped-string");
     return inner_scope.Escape(s);
   };
 
   Handle<PyString> escaped = create_escaped_string();
   Address addr_before = (*escaped).ptr();
 
-  AllocateEphemeralStrings(4000);
+  AllocateEphemeralStrings(isolate_, 4000);
   isolate_->heap()->CollectGarbage();
 
   EXPECT_NE(addr_before, (*escaped).ptr());
