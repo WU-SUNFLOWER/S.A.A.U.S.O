@@ -123,6 +123,10 @@ void BasicInterpreterTest::RunScript(std::string_view source,
   }
 }
 
+void BasicInterpreterTest::AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
+  PyList::Append(list, value, isolate_);
+}
+
 std::string BasicInterpreterTest::ExpectedAndTakePendingExceptionMessage() {
   HandleScope scope;
 

@@ -51,9 +51,6 @@ Handle<PyObject> PyFalseObject(Isolate* isolate);
 // - condition 不允许为 null；为 null 则断言失败。
 ::testing::AssertionResult IsPyTrueCondition(Handle<PyObject> condition);
 
-// 将期望值追加到 list（用于构造解释器输出的期望序列）。
-void AppendExpected(Handle<PyList> list, Handle<PyObject> value);
-
 // 以小端序写入 32 位整数到 out。
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v);
 

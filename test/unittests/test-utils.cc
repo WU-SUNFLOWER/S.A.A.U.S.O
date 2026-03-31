@@ -82,10 +82,6 @@ Handle<PyObject> PyFalseObject(Isolate* isolate) {
   return ::testing::AssertionSuccess();
 }
 
-void AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
-  PyList::Append(list, value, Isolate::Current());
-}
-
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v) {
   // 以小端序写入 4 字节。
   out.push_back(static_cast<uint8_t>(v & 0xff));
