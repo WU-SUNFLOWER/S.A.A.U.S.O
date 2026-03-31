@@ -70,6 +70,7 @@ source_set("saauso_core") {
 
     # handles
     "//src/handles/global-handles.h",
+    "//src/handles/handle-base.cc",
     "//src/handles/handle-base.h",
     "//src/handles/handle-scope-implementer.cc",
     "//src/handles/handle-scope-implementer.h",

@@ -32,7 +32,7 @@ class Handle : public HandleBase {
   constexpr T* operator->() const {
     assert(!is_null());
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    HandleScope::AssertValidLocation(location());
+    AssertValidLocation();
 #endif
     return Tagged<T>(*location()).operator->();
   }
@@ -42,7 +42,7 @@ class Handle : public HandleBase {
       return Tagged<T>::null();
     }
 #if defined(_DEBUG) || defined(ASAN_BUILD)
-    HandleScope::AssertValidLocation(location());
+    AssertValidLocation();
 #endif
     return Tagged<T>(*location());
   }

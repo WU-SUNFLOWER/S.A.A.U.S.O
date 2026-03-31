@@ -35,6 +35,10 @@ class HandleBase {
     }
   }
 
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+  void AssertValidLocation() const;
+#endif
+
  private:
   Address* location_{nullptr};
 };

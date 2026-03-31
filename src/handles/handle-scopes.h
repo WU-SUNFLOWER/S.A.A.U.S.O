@@ -28,11 +28,6 @@ class HandleScope {
 
   static Address* CreateHandle(Isolate* isolate, Address ptr);
 
-  // TODO: AssertValidLocation(Isolate* isolate, Address* location)铺开后，
-  //       移除该 API
-  static void AssertValidLocation(Address* location);
-  static void AssertValidLocation(Isolate* isolate, Address* location);
-
  protected:
   Address* CloseAndEscape(Address ptr);
 
