@@ -23,7 +23,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, CallMethodOfBuiltinType) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 s = "hello"
@@ -41,7 +41,7 @@ print(t)
 }
 
 TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObject) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 s = "hello"
@@ -61,7 +61,7 @@ print(l[3])
 }
 
 TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObjectWithoutReceiver) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 str.upper()
@@ -72,7 +72,7 @@ str.upper()
 }
 
 TEST_F(BasicInterpreterTest, CallBuiltinMethodViaTypeObjectWithWrongReceiver) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 list.append(1, 2)

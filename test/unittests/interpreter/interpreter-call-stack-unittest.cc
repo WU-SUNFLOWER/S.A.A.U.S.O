@@ -22,7 +22,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, CallUsesLoadGlobalNullPrefix) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def f():
@@ -38,7 +38,7 @@ f()
 }
 
 TEST_F(BasicInterpreterTest, MethodCallUsesLoadAttrMethodShape) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def f():
@@ -56,7 +56,7 @@ f()
 }
 
 TEST_F(BasicInterpreterTest, ManyMethodCallsDoNotAllocateBoundMethods) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def f():
@@ -77,7 +77,7 @@ f()
 }
 
 TEST_F(BasicInterpreterTest, DecoratorAndCallFunctionExStackLayout) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def deco(f):

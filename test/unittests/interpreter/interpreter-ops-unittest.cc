@@ -24,7 +24,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, CompareOpTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 # group1
@@ -65,7 +65,7 @@ print(1 != 6)
 }
 
 TEST_F(BasicInterpreterTest, FloorDivideOpTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print(7 // 2)
@@ -94,7 +94,7 @@ print(7 // 2.0)
 }
 
 TEST_F(BasicInterpreterTest, IsOpTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 x = "Hello World"
@@ -132,7 +132,7 @@ print(d is not x)
 }
 
 TEST_F(BasicInterpreterTest, ContainsOpTest) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 x = "Hello SAAUSO World"

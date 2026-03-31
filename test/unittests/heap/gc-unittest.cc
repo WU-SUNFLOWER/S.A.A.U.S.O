@@ -39,10 +39,10 @@ void AllocateEphemeralListsWithStrings(Isolate* isolate,
                                        int list_count,
                                        int element_count) {
   for (int i = 0; i < list_count; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate);
     auto list = PyList::New(isolate);
     for (int j = 0; j < element_count; ++j) {
-      HandleScope elem_scope;
+      HandleScope elem_scope(isolate);
       auto s = std::string("l")
                    .append(std::to_string(i))
                    .append("-e")
@@ -58,7 +58,7 @@ class GcTest : public VmTestBase {};
 
 // 测试针对字符串的copy gc
 TEST_F(GcTest, CopyGcTestForPyString) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   char content[] = "Hello World";
 
@@ -79,7 +79,7 @@ TEST_F(GcTest, CopyGcTestForPyString) {
 
 // 测试针对list的copy gc
 TEST_F(GcTest, CopyGcTestForPyList) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr int kLength = 5;
 
   //////////////////////////////////////////
@@ -88,7 +88,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   Address a1 = (*list1).ptr();
 
   for (auto i = 0; i < kLength; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     Handle<PyString> elem = PyString::New(isolate_, std::to_string(i).c_str());
     PyList::Append(list1, elem, isolate_);
   }
@@ -102,7 +102,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
   Handle<PyList> list2 = PyList::New(isolate_, kLength);
 
   for (auto i = 0; i < kLength; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     Handle<PyString> elem = PyString::New(isolate_, std::to_string(i).c_str());
     PyList::Append(list2, elem, isolate_);
   }
@@ -116,7 +116,7 @@ TEST_F(GcTest, CopyGcTestForPyList) {
 }
 
 TEST_F(GcTest, CopyGcTestForForwardingPointer) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyList> list1 = PyList::New(isolate_);
   Handle<PyList> list2 = PyList::New(isolate_);
@@ -145,14 +145,14 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
 }
 
 TEST_F(GcTest, CopyGcTestForPyDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyDict> dict = PyDict::New(isolate_);
   Address dict_addr_before = (*dict).ptr();
 
   constexpr int kCount = 32;
   for (int i = 0; i < kCount; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     Handle<PyObject> key = PyString::New(
         isolate_, std::string("k").append(std::to_string(i)).c_str());
     Handle<PyObject> value = PyString::New(
@@ -166,7 +166,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
   EXPECT_EQ(dict->occupied(), kCount);
 
   for (int i = 0; i < kCount; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     Handle<PyObject> query_key = PyString::New(
         isolate_, std::string("k").append(std::to_string(i)).c_str());
     Handle<PyObject> expected_value = PyString::New(
@@ -187,7 +187,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
 }
 
 TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   // 关键点：
   // - None/True/False 属于 VM 的全局单例，分配在 meta space 上
@@ -211,7 +211,7 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
 }
 
 TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   // 这个用例主要验证“遍历约定（iterate）”是否正确：
   // dict -> fixed_array (entries) -> (key/value) -> list -> fixed_array ->
@@ -222,7 +222,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   Handle<PyList> list = PyList::New(isolate_);
   constexpr int kCount = 64;
   for (int i = 0; i < kCount; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     PyList::Append(list, PyString::New(isolate_, std::to_string(i).c_str()),
                    isolate_);
   }
@@ -249,7 +249,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   EXPECT_EQ(payload_list->length(), kCount);
 
   for (int i = 0; i < kCount; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     auto expected = PyString::New(isolate_, std::to_string(i).c_str());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(PyObject::Equal(isolate_, payload_list->Get(i, isolate_), expected)
@@ -259,7 +259,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
 }
 
 TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   // 关键点：
   // - Escape 会把 inner scope 中的 handle “提升”到 outer scope
@@ -282,7 +282,7 @@ TEST_F(GcTest, EscapedHandleShouldSurviveAcrossGc) {
 }
 
 TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   // 这个用例验证“环形引用”在 Scavenge 下不会造成错误：
   // list[0] 指向 list 本身，GC 需要正确更新该内部指针为新地址。
@@ -302,7 +302,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
 }
 
 TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   // 关键点：
   // - Smi 不是真正的堆对象，不应该被 Scavenge 搬迁
@@ -310,7 +310,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
   Handle<PyList> list = PyList::New(isolate_);
   constexpr int kCount = 50;
   for (int i = 0; i < kCount; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     Handle<PySmi> smi(PySmi::FromInt(i), isolate_);
     PyList::Append(list, Handle<PyObject>(smi), isolate_);
   }
@@ -318,7 +318,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
   isolate_->heap()->CollectGarbage();
 
   for (int i = 0; i < kCount; ++i) {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     auto v = list->GetTagged(i);
     ASSERT_TRUE(IsPySmi(v));
     EXPECT_EQ(PySmi::ToInt(Tagged<PySmi>::cast(v)), i);

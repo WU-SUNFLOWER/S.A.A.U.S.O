@@ -28,7 +28,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, FunctionWithArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def add(a, b): 
@@ -47,7 +47,7 @@ print(add(1, 2))
 }
 
 TEST_F(BasicInterpreterTest, FunctionWithDefaultArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b = 1, c = 2):
@@ -68,7 +68,7 @@ print(foo(100, 20, 30)) # 150
 }
 
 TEST_F(BasicInterpreterTest, FunctionWithDefaultArgs2) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def make_func(x):
@@ -88,7 +88,7 @@ print(add5(10))
 }
 
 TEST_F(BasicInterpreterTest, FunctionWithDefaultArgsWithKwOverride) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b = 1, c = 2):
@@ -112,7 +112,7 @@ print(foo(10, b = 20))     # 32
 }
 
 TEST_F(BasicInterpreterTest, FunctionKeyArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b, c):
@@ -132,7 +132,7 @@ foo(c = 10, b = 2, a = 6)
 }
 
 TEST_F(BasicInterpreterTest, ExtendPosArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def sum(*args):
@@ -151,7 +151,7 @@ print(sum(1, 2, 3, 4))
 }
 
 TEST_F(BasicInterpreterTest, FunctionMixedPosAndKwArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def bar(a, b, c):
@@ -168,7 +168,7 @@ print(bar(1, c = 3, b = 2))
 }
 
 TEST_F(BasicInterpreterTest, ExtendKwArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(**kwargs):
@@ -189,7 +189,7 @@ print(foo(a = 1, b = 4, c = 5))
 }
 
 TEST_F(BasicInterpreterTest, ExtendPosAndKwArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def calc(a, b, c = 89, *args, **kwargs):
@@ -211,7 +211,7 @@ print(calc(1, 2, 3, 4, coeff = 2))
 }
 
 TEST_F(BasicInterpreterTest, ExtendArgsEmptyPack) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def f(a, *args):
@@ -239,7 +239,7 @@ print(h(1))
 }
 
 TEST_F(BasicInterpreterTest, ExtendArgsPackBehavior) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def f(a, *args):
@@ -267,7 +267,7 @@ print(h(1, 2, 3, k = 4))
 }
 
 TEST_F(BasicInterpreterTest, ExtendKwArgsWithNamedParams) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b = 2, **kwargs):
@@ -286,7 +286,7 @@ print(foo(1, b = 3, x = 7))
 }
 
 TEST_F(BasicInterpreterTest, MethodCallInjectSelf) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 a = "hello world"
@@ -302,7 +302,7 @@ print(a.upper())
 }
 
 TEST_F(BasicInterpreterTest, CallWithEmptyStarArgsAndStarKwArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b, c):
@@ -321,7 +321,7 @@ print(foo(1, 2, 3, *(), **{}))
 }
 
 TEST_F(BasicInterpreterTest, CallWithStarArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b, c):
@@ -339,7 +339,7 @@ print(foo(*t))
 }
 
 TEST_F(BasicInterpreterTest, CallWithStarKwArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b, c):
@@ -357,7 +357,7 @@ print(foo(**d))
 }
 
 TEST_F(BasicInterpreterTest, CallWithStarArgsAndStarKwArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b, c):
@@ -376,7 +376,7 @@ print(foo(*t, **d))
 }
 
 TEST_F(BasicInterpreterTest, CallWithMultiStarKwArgsMerge) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(a, b, c):
@@ -397,7 +397,7 @@ print(foo(1, c = 3, **d1))
 }
 
 TEST_F(BasicInterpreterTest, MergeSortRecursion) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def merge(left, right):

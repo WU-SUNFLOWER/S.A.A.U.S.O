@@ -19,7 +19,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 // ===== 异常传播语义 =====
 
 TEST_F(BasicInterpreterTest, ListIndexPropagatesExceptionFromEq) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class X:
@@ -36,7 +36,7 @@ l.index(X())
 // ===== 错误信息语义 =====
 
 TEST_F(BasicInterpreterTest, ListIndexTupleNotFoundValueError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [1,2,3,4,5]

@@ -18,7 +18,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, TypeObjectMroSingleInheritanceIsC3Linearized) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A(object):
@@ -50,7 +50,7 @@ print(m[3] is object)
 }
 
 TEST_F(BasicInterpreterTest, TypeObjectMroDiamondIsC3Linearized) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A(object):
@@ -87,7 +87,7 @@ print(m[4] is object)
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnTypeObjectFindsPropertyFromBaseMro) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A(object):
@@ -112,7 +112,7 @@ print(C.value)
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnTypeObjectMissRaisesAttributeError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A(object):
     pass
@@ -124,7 +124,7 @@ print(A.miss)
 }
 
 TEST_F(BasicInterpreterTest, LoadAttrOnInstanceFallsBackToClassMroProperty) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A(object):
@@ -145,7 +145,7 @@ print(b.x)
 }
 
 TEST_F(BasicInterpreterTest, MultipleNativeLayoutBasesRaiseTypeError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class C(list, dict):
     pass
@@ -156,7 +156,7 @@ class C(list, dict):
 }
 
 TEST_F(BasicInterpreterTest, ClassAssignmentUpdatesClassAndInstanceLookup) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   constexpr std::string_view kSource = R"(
 class A:
     pass

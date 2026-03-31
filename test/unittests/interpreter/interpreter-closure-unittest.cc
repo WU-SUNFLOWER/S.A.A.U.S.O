@@ -19,7 +19,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, SimpleClosure1) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def func():
@@ -39,7 +39,7 @@ f()
 }
 
 TEST_F(BasicInterpreterTest, SimpleClosure2) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def func(x = 5):
@@ -59,7 +59,7 @@ say()
 }
 
 TEST_F(BasicInterpreterTest, NestedClosures) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def foo(x, y):
@@ -92,7 +92,7 @@ baz_instance(14)
 }
 
 TEST_F(BasicInterpreterTest, SimpleDecorator) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def call_cnt(fn):
@@ -124,7 +124,7 @@ print(add(2, 3))
 }
 
 TEST_F(BasicInterpreterTest, UnboundFreeVarFailsFast) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def outer():
@@ -139,7 +139,7 @@ outer()
 }
 
 TEST_F(BasicInterpreterTest, SharedCellAcrossClosures) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def outer():
@@ -170,7 +170,7 @@ print(get())
 }
 
 TEST_F(BasicInterpreterTest, MultiLevelNestedClosure) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def a():

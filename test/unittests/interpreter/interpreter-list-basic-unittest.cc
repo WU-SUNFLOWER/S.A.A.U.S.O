@@ -25,7 +25,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 // ===== 基础构造与访问语义 =====
 
 TEST_F(BasicInterpreterTest, BuildList) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 lst = [1, "hello"]
@@ -45,7 +45,7 @@ print(lst)
 }
 
 TEST_F(BasicInterpreterTest, BuildLongList) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 lst = [1, 2, 3, 4, 5, 6, "hello"]
@@ -70,7 +70,7 @@ print(lst)
 }
 
 TEST_F(BasicInterpreterTest, ListSubscrAccess) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 lst = [233, "world"]
@@ -88,7 +88,7 @@ print(lst[1])
 }
 
 TEST_F(BasicInterpreterTest, ListContainOp) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = ["hello", "world"]
@@ -107,7 +107,7 @@ print("python" in l)
 }
 
 TEST_F(BasicInterpreterTest, ListIterator) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [1,2,3,4]
@@ -128,7 +128,7 @@ for elem in l:
 // ===== 变更操作与运算语义 =====
 
 TEST_F(BasicInterpreterTest, ListAppend) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = []
@@ -151,7 +151,7 @@ print(l[0], l[1], l[2])
 }
 
 TEST_F(BasicInterpreterTest, ListInsert) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = [1, 2]
@@ -173,7 +173,7 @@ print(l)
 }
 
 TEST_F(BasicInterpreterTest, ListPop) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = []
@@ -196,7 +196,7 @@ print(count)
 }
 
 TEST_F(BasicInterpreterTest, ListReverse) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l = []
@@ -226,7 +226,7 @@ while i < 5:
 }
 
 TEST_F(BasicInterpreterTest, ComputeListWithInt) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 l1 = ["Hello", "World"]

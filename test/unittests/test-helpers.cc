@@ -76,7 +76,7 @@ Global<PyList> BasicInterpreterTest::printv_result_;
 void BasicInterpreterTest::SetUpTestSuite() {
   VmTestBase::SetUpTestSuite();
 
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyString> func_name = PyString::New(isolate_, "print");
   Handle<PyDict> builtins = isolate_->builtins();
 
@@ -95,7 +95,7 @@ void BasicInterpreterTest::TearDownTestSuite() {
 }
 
 void BasicInterpreterTest::SetUp() {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   printv_result_ = Global<PyList>(isolate_, PyList::New(isolate_));
   isolate_->interpreter()->ClearPendingException();
 }
@@ -113,7 +113,7 @@ void BasicInterpreterTest::RunScript(std::string_view source,
   }
 
   if (isolate_->HasPendingException()) {
-    HandleScope scope;
+    HandleScope scope(isolate_);
     Handle<PyString> formatted;
     if (!Runtime_FormatPendingExceptionForStderr(isolate_).To(&formatted)) {
       ADD_FAILURE() << "Runtime_FormatPendingExceptionForStderr Failed!"
@@ -128,7 +128,7 @@ void BasicInterpreterTest::AppendExpected(Handle<PyList> list, Handle<PyObject> 
 }
 
 std::string BasicInterpreterTest::ExpectedAndTakePendingExceptionMessage() {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   if (!isolate_->HasPendingException()) {
     ADD_FAILURE() << "Expected pending exception, but none is present";
@@ -151,7 +151,7 @@ void BasicInterpreterTest::RunScriptExpectExceptionContains(
     std::string_view source,
     std::string_view expected_substr,
     std::string_view file_name) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyFunction> boilerplate;
   if (!Compiler::CompileSource(isolate_, source, file_name).To(&boilerplate)) {
@@ -176,14 +176,14 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     Handle<PyTuple> args,
     Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
-    HandleScope scope;
+    HandleScope scope(isolate_);
     PyList::Append(printv_result_.Get(isolate_), args->Get(i, isolate), isolate);
   }
   return PyNoneObject(isolate);
 }
 
 void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyList> actual = printv_result_.Get(isolate_);
 
   ASSERT_FALSE(expected.is_null());

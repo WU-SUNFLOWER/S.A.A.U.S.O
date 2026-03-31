@@ -36,7 +36,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, ImportBuiltinSys) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -51,7 +51,7 @@ print(sys.version)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinModuleMetadataIsStable) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -83,7 +83,7 @@ print(time.__package__)
 }
 
 TEST_F(BasicInterpreterTest, ImportUserModuleIsCached) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -106,7 +106,7 @@ print(a.x)
 }
 
 TEST_F(BasicInterpreterTest, ImportPackageSubmodule) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -130,7 +130,7 @@ print(pkg.sub.answer)
 }
 
 TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   PyList::Append(isolate()->module_manager()->path(),
                  PyString::New(isolate_, "test/python312/import-mvp"),
@@ -188,7 +188,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
 }
 
 TEST_F(BasicInterpreterTest, RelativeImportWorksInsidePackageModule) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -217,7 +217,7 @@ import pkg.rel.mod
 }
 
 TEST_F(BasicInterpreterTest, ImportStarRespectsAllAndSkipsUnderscore) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -244,7 +244,7 @@ print(_b)
 }
 
 TEST_F(BasicInterpreterTest, ImportPackageSubmoduleUnderGcPressure) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import sys
@@ -276,7 +276,7 @@ print(pkg.sub.answer)
 // 无效模块名（如 "a..b"）会设置 ModuleNotFoundError 并返回空 MaybeHandle，不再
 // exit。
 TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyString> invalid = PyString::New(isolate_, "a..b");
 
   MaybeHandle<PyObject> result = isolate()->module_manager()->ImportModule(
@@ -289,7 +289,7 @@ TEST_F(BasicInterpreterTest, ImportRejectsInvalidModuleName) {
 }
 
 TEST_F(BasicInterpreterTest, ImportPycModuleWhenSourceMissing) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   int64_t suffix = static_cast<int64_t>(
       std::chrono::steady_clock::now().time_since_epoch().count());

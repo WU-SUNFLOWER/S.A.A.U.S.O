@@ -22,7 +22,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, ImportBuiltinRandom) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import random
@@ -64,7 +64,7 @@ print(random.choice((7, 8, 9)) in (7, 8, 9))
 }
 
 TEST_F(BasicInterpreterTest, RandomRejectKeywordArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import random

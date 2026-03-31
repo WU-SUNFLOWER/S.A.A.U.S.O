@@ -17,19 +17,19 @@ namespace saauso::internal {
 class PyFloatTest : public VmTestBase {};
 
 TEST_F(PyFloatTest, NewInstanceStoresValue) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   auto f = PyFloat::New(isolate_, 3.14);
   EXPECT_DOUBLE_EQ(f->value(), 3.14);
 }
 
 TEST_F(PyFloatTest, IsHeapObjectIsTrueForFloat) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
   Handle<PyObject> f(PyFloat::New(isolate_, 1.0));
   EXPECT_TRUE(IsHeapObject(f));
 }
 
 TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> a(PyFloat::New(isolate_, 10.0));
   Handle<PyObject> b(PyFloat::New(isolate_, 4.0));
@@ -55,7 +55,7 @@ TEST_F(PyFloatTest, ArithmeticBetweenFloats) {
 }
 
 TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> f(PyFloat::New(isolate_, 3.5));
   Handle<PyObject> i(PySmi::FromInt(2), isolate_);
@@ -84,7 +84,7 @@ TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
 }
 
 TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> f10(PyFloat::New(isolate_, 10.0));
   Handle<PyObject> f11(PyFloat::New(isolate_, 11.0));

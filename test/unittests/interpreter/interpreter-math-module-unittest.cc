@@ -24,7 +24,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, ImportBuiltinMath) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import math
@@ -47,7 +47,7 @@ print(math.pow(2, 3))
 }
 
 TEST_F(BasicInterpreterTest, MathConstants) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import math
@@ -64,7 +64,7 @@ print(math.e)
 }
 
 TEST_F(BasicInterpreterTest, MathRejectKeywordArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import math

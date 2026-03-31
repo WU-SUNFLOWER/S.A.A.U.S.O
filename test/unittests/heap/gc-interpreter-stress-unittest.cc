@@ -42,7 +42,7 @@ int ComputeExpectedChecksumForSysgcLoop() {
 }  // namespace
 
 TEST_F(BasicInterpreterTest, SysgcInLoopShouldNotCorruptListAndDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {}
@@ -97,7 +97,7 @@ print(checksum)
 }
 
 TEST_F(BasicInterpreterTest, SysgcDuringNestedCallsShouldNotCrashOrHang) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 def work(n, acc):
@@ -128,7 +128,7 @@ print(work(5, 0))
 }
 
 TEST_F(BasicInterpreterTest, SysgcInsideDictIterationShouldNotBreakViews) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 d = {"x": 1, "y": 2, "z": 3}

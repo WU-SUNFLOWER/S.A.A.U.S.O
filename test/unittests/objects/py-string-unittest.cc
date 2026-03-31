@@ -23,7 +23,7 @@ namespace saauso::internal {
 class PyStringTest : public VmTestBase {};
 
 TEST_F(PyStringTest, NewInstanceFromCString) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto s = PyString::New(isolate_, "Hello World");
   EXPECT_FALSE(s.is_null());
@@ -31,7 +31,7 @@ TEST_F(PyStringTest, NewInstanceFromCString) {
 }
 
 TEST_F(PyStringTest, NewInstanceWithLengthAndSetGet) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto s = PyString::New(isolate_, 5);
   EXPECT_EQ(s->length(), 5);
@@ -46,7 +46,7 @@ TEST_F(PyStringTest, NewInstanceWithLengthAndSetGet) {
 }
 
 TEST_F(PyStringTest, HashCacheWorks) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto s = PyString::New(isolate_, "hash-me");
   EXPECT_FALSE(s->HasHashCache());
@@ -59,7 +59,7 @@ TEST_F(PyStringTest, HashCacheWorks) {
 }
 
 TEST_F(PyStringTest, EqualityAndOrderingPrimitives) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto a1 = PyString::New(isolate_, "abc");
   auto a2 = PyString::New(isolate_, "abc");
@@ -77,7 +77,7 @@ TEST_F(PyStringTest, EqualityAndOrderingPrimitives) {
 }
 
 TEST_F(PyStringTest, PyObjectComparisonsWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> a(PyString::New(isolate_, "abc"));
   Handle<PyObject> b(PyString::New(isolate_, "abd"));
@@ -99,7 +99,7 @@ TEST_F(PyStringTest, PyObjectComparisonsWork) {
 }
 
 TEST_F(PyStringTest, SliceWorks) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto s = PyString::New(isolate_, "Hello World");
   auto sub = PyString::Slice(s, 0, 4, isolate_);
@@ -110,7 +110,7 @@ TEST_F(PyStringTest, SliceWorks) {
 }
 
 TEST_F(PyStringTest, AppendWorksAndDoesNotMutateInputs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto left = PyString::New(isolate_, "Hello");
   auto right = PyString::New(isolate_, " World");
@@ -123,7 +123,7 @@ TEST_F(PyStringTest, AppendWorksAndDoesNotMutateInputs) {
 }
 
 TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> left(PyString::New(isolate_, "Hello"));
   Handle<PyObject> right(PyString::New(isolate_, " World"));
@@ -134,7 +134,7 @@ TEST_F(PyStringTest, PyObjectAddConcatenatesStrings) {
 }
 
 TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> s(PyString::New(isolate_, "abc"));
   Handle<PyObject> index(PySmi::FromInt(1), isolate_);
@@ -149,7 +149,7 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
 }
 
 TEST_F(PyStringTest, IndexOfAndContainsWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto s = PyString::New(isolate_, "abcabcabcd");
   auto pattern1 = PyString::New(isolate_, "abcabcd");
@@ -169,7 +169,7 @@ TEST_F(PyStringTest, IndexOfAndContainsWork) {
 }
 
 TEST_F(PyStringTest, LastIndexOfWorks) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto s = PyString::New(isolate_, "abcabcabcd");
   auto pattern = PyString::New(isolate_, "abc");
@@ -186,7 +186,7 @@ TEST_F(PyStringTest, LastIndexOfWorks) {
 }
 
 TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> s(PyString::New(isolate_, "Hello World"));
   Handle<PyObject> pat(PyString::New(isolate_, "World"));
@@ -204,7 +204,7 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
 }
 
 TEST_F(PyStringTest, FromIntAndFromDoubleWork) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(isolate_, 0), "0"));
   EXPECT_TRUE(IsPyStringEqual(PyString::FromInt(isolate_, -42), "-42"));
@@ -225,7 +225,7 @@ TEST_F(PyStringTest, FromIntAndFromDoubleWork) {
 }
 
 TEST_F(PyStringTest, StringUpperMethod) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyObject> s(PyString::New(isolate_, "Hello World"));
   Handle<PyObject> attr(PyString::New(isolate_, "upper"));

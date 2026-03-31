@@ -18,7 +18,7 @@ namespace saauso::internal {
 class PyModuleTest : public VmTestBase {};
 
 TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   Handle<PyModule> module;
   if (!isolate_->factory()->NewPyModule().To(&module)) {

@@ -18,7 +18,7 @@ namespace saauso::internal {
 class NativePrintTest : public VmTestBase {};
 
 TEST_F(NativePrintTest, DefaultSepAndEnd) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto args = PyTuple::New(isolate_, 2);
   args->SetInternal(0, PyString::New(isolate_, "a"));
@@ -34,7 +34,7 @@ TEST_F(NativePrintTest, DefaultSepAndEnd) {
 }
 
 TEST_F(NativePrintTest, EndParameter) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto args = PyTuple::New(isolate_, 2);
   args->SetInternal(0, PyString::New(isolate_, "a"));
@@ -53,7 +53,7 @@ TEST_F(NativePrintTest, EndParameter) {
 }
 
 TEST_F(NativePrintTest, EolKeywordRejected) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto args = PyTuple::New(isolate_, 2);
   args->SetInternal(0, PyString::New(isolate_, "a"));
@@ -70,7 +70,7 @@ TEST_F(NativePrintTest, EolKeywordRejected) {
 }
 
 TEST_F(NativePrintTest, SepParameter) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto args = PyTuple::New(isolate_, 3);
   args->SetInternal(0, PyString::New(isolate_, "a"));
@@ -90,7 +90,7 @@ TEST_F(NativePrintTest, SepParameter) {
 }
 
 TEST_F(NativePrintTest, NoArgsUsesEnd) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto args = PyTuple::New(isolate_, 0);
   auto kwargs = PyDict::New(isolate_);
@@ -107,7 +107,7 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
 }
 
 TEST_F(NativePrintTest, ReprBuiltinWorksForStringAndList) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   auto repr_args = PyTuple::New(isolate_, 1);
   repr_args->SetInternal(0, PyString::New(isolate_, "abc"));

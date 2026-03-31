@@ -19,7 +19,7 @@ namespace saauso::internal {
 class CompilerTest : public VmTestBase {};
 
 TEST_F(CompilerTest, CompileSourceKeepsFileName) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kFileName = "saauso_compiler_test.py";
   constexpr std::string_view kSource = "x = 1\n";
@@ -36,7 +36,7 @@ TEST_F(CompilerTest, CompileSourceKeepsFileName) {
 }
 
 TEST_F(CompilerTest, CompilePycBytesParsesSuccessfully) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kFileName = "saauso_compiler_bytes_test.py";
   constexpr std::string_view kSource = "x = 1\n";

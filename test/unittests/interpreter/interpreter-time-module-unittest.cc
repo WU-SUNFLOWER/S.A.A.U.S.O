@@ -22,7 +22,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, ImportBuiltinTime) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import time
@@ -45,7 +45,7 @@ print(time.time() > 0)
 }
 
 TEST_F(BasicInterpreterTest, ListSubclassSurvivesSysgc) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(list):
@@ -92,7 +92,7 @@ print(c.x.v)
 }
 
 TEST_F(BasicInterpreterTest, TimeRejectKeywordArgs) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 import time

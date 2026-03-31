@@ -18,7 +18,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, CustomClassNewCanParticipateInConstruction) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -42,7 +42,7 @@ print(a.value)
 }
 
 TEST_F(BasicInterpreterTest, BaseNewReceivesDerivedTypeAsCls) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Base:
@@ -66,7 +66,7 @@ print(isinstance(obj, Base))
 }
 
 TEST_F(BasicInterpreterTest, CustomNewCanImplementSingletonPattern) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Singleton:
@@ -90,7 +90,7 @@ print(a is b)
 }
 
 TEST_F(BasicInterpreterTest, CustomNewCanReturnOtherTypeInstance) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Dog:
@@ -122,7 +122,7 @@ print(isinstance(pet, AnimalFactory))
 }
 
 TEST_F(BasicInterpreterTest, CustomNewCanCacheInstancesByKey) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Color:
@@ -149,7 +149,7 @@ print(red1 is blue)
 }
 
 TEST_F(BasicInterpreterTest, CustomNewDispatchPrefersNearestOverrideInMro) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Base:
@@ -192,7 +192,7 @@ print(isinstance(b, DerivedOverride))
 }
 
 TEST_F(BasicInterpreterTest, InitMustReturnNone) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -209,7 +209,7 @@ A()
 
 TEST_F(BasicInterpreterTest,
        ObjectInitRejectsArgsWhenTypeDefinesNeitherInitNorNew) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class B:
@@ -225,7 +225,7 @@ object.__init__(b, 1)
 }
 
 TEST_F(BasicInterpreterTest, ObjectInitRejectsArgsWhenTypeOverridesInit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -241,7 +241,7 @@ a = A(1)
 }
 
 TEST_F(BasicInterpreterTest, DiamondMroCallDispatchUsesNearestOverride) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -270,7 +270,7 @@ print(d())
 }
 
 TEST_F(BasicInterpreterTest, CallInstanceMethodImplicit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C:

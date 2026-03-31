@@ -22,7 +22,7 @@
 namespace saauso::internal {
 
 TEST_F(BasicInterpreterTest, DunderAddInvokedByBinaryAdd) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -55,7 +55,7 @@ print(c.value)   # 3
 }
 
 TEST_F(BasicInterpreterTest, DunderLenInvokedByLenBuiltinAndDunderAdd) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class Vector:
@@ -88,7 +88,7 @@ print(len(v2))
 }
 
 TEST_F(BasicInterpreterTest, DunderGetSetDelItemInvokedBySubscriptOps) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class A:
@@ -137,7 +137,7 @@ print(a["one"]) # Error
 }
 
 TEST_F(BasicInterpreterTest, CustomClassStrAndReprWorkForPrintAndBuiltinRepr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"PY(
 class A:

@@ -23,7 +23,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }  // namespace
 
 TEST_F(BasicInterpreterTest, IndexMethod) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 s = "xxyyzz"
@@ -62,7 +62,7 @@ print(t.index(1, 1, 3))
 }
 
 TEST_F(BasicInterpreterTest, FindAndRfindMethods) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 s = "xxyyzz"
@@ -97,7 +97,7 @@ print(s.rfind("yy", 0, 2))
 }
 
 TEST_F(BasicInterpreterTest, SplitMethod) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print("a b  c".split())
@@ -142,7 +142,7 @@ print("a,b".split(sep=","))
 }
 
 TEST_F(BasicInterpreterTest, SplitMethodErrors) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kEmptySep = R"(
 "abc".split("")
@@ -167,7 +167,7 @@ TEST_F(BasicInterpreterTest, SplitMethodErrors) {
 }
 
 TEST_F(BasicInterpreterTest, JoinMethod) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print(",".join(["a", "b"]))
@@ -187,7 +187,7 @@ print("x".join(["a"]))
 }
 
 TEST_F(BasicInterpreterTest, JoinMethodErrors) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kElementNotStr = R"(
 print(",".join(["a", 1]))
@@ -204,7 +204,7 @@ print(",".join(["a", 1]))
 }
 
 TEST_F(BasicInterpreterTest, IndexMethodErrors) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kStrNotFound = R"(
 "abc".index("d")
@@ -231,7 +231,7 @@ TEST_F(BasicInterpreterTest, IndexMethodErrors) {
 }
 
 TEST_F(BasicInterpreterTest, FindAndRfindKeywordErrors) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kFindKeyword = R"(
 "abc".find(sub="a")

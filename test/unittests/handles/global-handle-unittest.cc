@@ -38,21 +38,21 @@ TEST_F(GlobalHandleTest, GlobalHandleShouldSurviveAcrossGc) {
   Address addr_before = kNullAddress;
 
   {
-    HandleScope scope;
+    HandleScope scope(isolate_);
     Handle<PyString> s = PyString::New(isolate_, "global-string");
     addr_before = (*s).ptr();
     g = Global<PyString>(isolate_, s);
   }
 
   {
-    HandleScope scope;
+    HandleScope scope(isolate_);
     isolate_->heap()->CollectGarbage();
     Address addr_after = (*g.Get(isolate_)).ptr();
     EXPECT_NE(addr_before, addr_after);
   }
 
   {
-    HandleScope scope;
+    HandleScope scope(isolate_);
     Handle<PyString> s2 = g.Get(isolate_);
     Handle<PyString> expected = PyString::New(isolate_, "global-string");
     bool eq = false;

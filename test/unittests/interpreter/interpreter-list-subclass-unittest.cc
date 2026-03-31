@@ -23,7 +23,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 // ===== 子类化语义 =====
 
 TEST_F(BasicInterpreterTest, SubclassList) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(list):
@@ -58,7 +58,7 @@ print(1 if last else 0)
 }
 
 TEST_F(BasicInterpreterTest, SubclassListCustomInit) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class C(list):

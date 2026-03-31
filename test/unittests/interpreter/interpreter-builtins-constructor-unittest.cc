@@ -29,7 +29,7 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsBasic) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print(str())
@@ -63,7 +63,7 @@ print(str(float("nan")))
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsFloatParseError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 float("bad")
@@ -74,7 +74,7 @@ float("bad")
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsStrDecodeNotSupported) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 str("abc", "utf-8")
@@ -84,7 +84,7 @@ str("abc", "utf-8")
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntKeywordNotSupported) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 int(x=1)
@@ -94,7 +94,7 @@ int(x=1)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntSmiOverflow) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 int("4611686018427387904")
@@ -104,7 +104,7 @@ int("4611686018427387904")
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsIntInvalidLiteralWithBase) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 int("0x10", 10)
@@ -114,7 +114,7 @@ int("0x10", 10)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsListAndTuple) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 t = (1, 2)
@@ -149,7 +149,7 @@ print(tuple([1, 2]))
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTupleAndTupleLike) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 class T(tuple):
@@ -177,7 +177,7 @@ print(t1 is t3) # True
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsType) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 print(type(1) is int)
@@ -201,7 +201,7 @@ print(isinstance(o, object))
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeCopiesNamespaceDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 ns = {"x": 1}
@@ -218,7 +218,7 @@ print(C.x)
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArgCountError) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 type()
@@ -228,7 +228,7 @@ type()
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg1MustBeStr) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 type(1, (), {})
@@ -238,7 +238,7 @@ type(1, (), {})
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg2MustBeTuple) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 type("C", [], {})
@@ -248,7 +248,7 @@ type("C", [], {})
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeArg3MustBeDict) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 type("C", (), [])
@@ -258,7 +258,7 @@ type("C", (), [])
 }
 
 TEST_F(BasicInterpreterTest, BuiltinsConstructorsTypeBasesMustBeTypes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
 type("C", (1,), {})
