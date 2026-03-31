@@ -91,7 +91,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
 
   auto object = Handle<PyList>::cast(self);
   PyList::Append(object, args->Get(0), isolate);
-  return scope.Escape(handle(isolate->py_none_object(), isolate));
+  return scope.Escape(isolate->factory()->py_none_object());
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Init) {
@@ -137,7 +137,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1), isolate);
-  return scope.Escape(handle(isolate->py_none_object(), isolate));
+  return scope.Escape(isolate->factory()->py_none_object());
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Index) {
@@ -217,7 +217,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
     list->Set(length - i - 1, tmp);
   }
 
-  return scope.Escape(handle(isolate->py_none_object(), isolate));
+  return scope.Escape(isolate->factory()->py_none_object());
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
@@ -226,7 +226,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
           .IsEmpty()) {
     return kNullMaybeHandle;
   }
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
@@ -241,7 +241,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
   auto list = Handle<PyList>::cast(self);
   int64_t expected_length = list->length();
   if (expected_length <= 1) {
-    return scope.Escape(handle(isolate->py_none_object(), isolate));
+    return scope.Escape(isolate->factory()->py_none_object());
   }
 
   Handle<PyObject> key_func;
@@ -378,7 +378,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     }
   }
 
-  return scope.Escape(handle(isolate->py_none_object(), isolate));
+  return scope.Escape(isolate->factory()->py_none_object());
 }
 
 }  // namespace saauso::internal

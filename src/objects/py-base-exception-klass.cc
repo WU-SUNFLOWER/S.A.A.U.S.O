@@ -8,6 +8,7 @@
 #include "src/builtins/builtins-base-exception-methods.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
@@ -25,7 +26,7 @@ namespace saauso::internal {
 namespace {
 
 MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
-                                          Handle<PyTuple> exception_args) {
+                                           Handle<PyTuple> exception_args) {
   if (exception_args.is_null() || exception_args->length() == 0) {
     return PyString::New(isolate, "");
   }
@@ -44,8 +45,8 @@ MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
 
   Handle<PyObject> args_obj;
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             properties->Get(ST(args, isolate), args_obj, isolate));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, found, properties->Get(ST(args, isolate), args_obj, isolate));
   if (!found || !IsPyTuple(args_obj)) {
     return Handle<PyTuple>::null();
   }
@@ -158,7 +159,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
       isolate, PyDict::Put(properties, ST(message, isolate), message, isolate),
       kNullMaybeHandle);
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
@@ -200,8 +201,9 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
   if (!properties.is_null()) {
     Handle<PyObject> message;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               properties->Get(ST(message, isolate), message, isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found,
+        properties->Get(ST(message, isolate), message, isolate));
     if (found && IsPyString(message)) {
       return scope.Escape(Handle<PyString>::cast(message));
     }

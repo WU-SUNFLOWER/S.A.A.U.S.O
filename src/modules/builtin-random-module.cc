@@ -97,7 +97,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
   }
   GetRng(isolate)->SetSeed(seed);
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 BUILTIN_MODULE_FUNC(Random_Random) {
@@ -338,7 +338,7 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
     list->Set(static_cast<int64_t>(j), vi);
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace module_impl

@@ -175,7 +175,7 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     HandleScope scope;
     PyList::Append(printv_result_.Get(isolate_), args->Get(i), isolate);
   }
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {

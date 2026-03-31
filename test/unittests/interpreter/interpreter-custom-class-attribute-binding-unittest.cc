@@ -7,6 +7,7 @@
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -60,7 +61,7 @@ print(b.baz)
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(1)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(2)));
   AppendExpected(expected_printv_result, handle(PySmi::FromInt(3)));
-  AppendExpected(expected_printv_result, handle(isolate_->py_none_object()));
+  AppendExpected(expected_printv_result, isolate_->factory()->py_none_object());
 
   ExpectPrintResult(expected_printv_result);
 }

@@ -10,6 +10,7 @@
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -19,7 +20,7 @@
 namespace saauso::internal {
 
 Handle<PyObject> PyNoneObject() {
-  return handle(Isolate::Current()->py_none_object(), Isolate::Current());
+  return Isolate::Current()->factory()->py_none_object();
 }
 
 Handle<PyObject> PyTrueObject() {
@@ -62,7 +63,8 @@ Handle<PyObject> PyFalseObject() {
   // 等价性以 Python 语义的 __eq__ 路径为准，期望返回 PyTrue。
   Handle<PyObject> result;
   if (!PyObject::Equal(Isolate::Current(), x, y).ToHandle(&result)) {
-    return ::testing::AssertionFailure() << "PyObject::Equal failed (exception)";
+    return ::testing::AssertionFailure()
+           << "PyObject::Equal failed (exception)";
   }
   if (!IsPyTrue(result, Isolate::Current())) {
     return ::testing::AssertionFailure() << "PyObject::Equal returned false";

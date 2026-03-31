@@ -33,7 +33,8 @@ ModulePartScanResult ScanNextPart(Isolate* isolate,
                                   Handle<PyString> fullname,
                                   int64_t segment_start) {
   int64_t fullname_len = fullname->length();
-  int64_t dot = fullname->IndexOf(ST(dot, isolate), segment_start, fullname_len);
+  int64_t dot =
+      fullname->IndexOf(ST(dot, isolate), segment_start, fullname_len);
   if (dot == PyString::kNotFound) {
     dot = fullname_len;
   }
@@ -164,7 +165,7 @@ MaybeHandle<PyList> ModuleImporter::SelectSearchPathList(
   return path;
 }
 
-MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
+Maybe<void> ModuleImporter::BindChildModuleToParentNamespace(
     Handle<PyObject> parent_module,
     Handle<PyString> child_short_name,
     Handle<PyObject> child_module) {
@@ -192,7 +193,7 @@ MaybeHandle<PyObject> ModuleImporter::BindChildModuleToParentNamespace(
 #endif
   }
 
-  return handle(isolate_->py_none_object(), isolate_);
+  return JustVoid();
 }
 
 Maybe<void> ModuleImporter::EnsurePackageForNextSegment(

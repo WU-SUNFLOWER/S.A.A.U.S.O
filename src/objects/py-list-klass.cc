@@ -172,7 +172,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
                                      isolate, Handle<PyList>::cast(instance),
                                      pos_args->Get(0)));
   }
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Isolate* isolate,
@@ -270,7 +270,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Isolate* isolate,
   }
 
   list->Set(decoded_subscr, value);
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Isolate* isolate,
@@ -287,7 +287,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_DelSubscr(Isolate* isolate,
   }
 
   list->RemoveByIndex(decoded_subscr);
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 Maybe<bool> PyListKlass::Virtual_Less(Isolate* isolate,

@@ -128,7 +128,7 @@ BUILTIN_MODULE_FUNC(Time_Sleep) {
   }
 
   std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace module_impl

@@ -81,7 +81,7 @@ MaybeHandle<PyObject> ModuleLoader::LoadAsBuiltinModuleOrNone(
     Handle<PyString> fullname) {
   BuiltinModuleInitFunc builtin_init = builtin_registry_->Find(fullname);
   if (builtin_init == nullptr) {
-    return handle(isolate_->py_none_object(), isolate_);
+    return isolate_->factory()->py_none_object();
   }
 
   Handle<PyModule> module;
@@ -108,7 +108,7 @@ MaybeHandle<PyObject> ModuleLoader::LoadAsFileModuleOrNone(
       finder_->FindModuleLocation(search_path_list, relative_name));
 
   if (loc.origin.empty()) [[unlikely]] {
-    return handle(isolate_->py_none_object(), isolate_);
+    return isolate_->factory()->py_none_object();
   }
 
   return ExecuteModuleOrNoneInternal(fullname, loc);
@@ -131,7 +131,7 @@ MaybeHandle<PyObject> ModuleLoader::ExecuteModuleOrNoneInternal(
     return ExecuteModuleFromPyc(fullname, loc);
   }
 
-  return handle(isolate_->py_none_object(), isolate_);
+  return isolate_->factory()->py_none_object();
 }
 
 MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
@@ -212,7 +212,7 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
                                               pkg_path, isolate_));
   }
 
-  return handle(isolate_->py_none_object(), isolate_);
+  return isolate_->factory()->py_none_object();
 }
 
 }  // namespace saauso::internal

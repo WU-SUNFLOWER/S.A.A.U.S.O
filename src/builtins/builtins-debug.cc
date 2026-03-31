@@ -4,6 +4,7 @@
 
 #include "src/builtins/builtins-utils.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/heap/heap.h"
 #include "src/objects/py-oddballs.h"
 
@@ -11,7 +12,7 @@ namespace saauso::internal {
 
 BUILTIN(Sysgc) {
   isolate->heap()->CollectGarbage();
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace saauso::internal

@@ -1050,7 +1050,7 @@ void Interpreter::EvalCurrentFrame() {
       case UnaryIntrinsic::kImportStar: {
         GOTO_ON_EXCEPTION(Runtime_IntrinsicImportStar(
             isolate_, arg, current_frame_->locals(isolate_)));
-        PUSH(handle(isolate_->py_none_object(), isolate_));
+        PUSH(isolate_->factory()->py_none_object());
         break;
       }
       default:

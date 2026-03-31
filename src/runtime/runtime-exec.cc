@@ -39,7 +39,7 @@ MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
         kNullMaybeHandle);
   }
 
-  return handle(isolate->py_none_object(), isolate);
+  return isolate->factory()->py_none_object();
 }
 
 }  // namespace
