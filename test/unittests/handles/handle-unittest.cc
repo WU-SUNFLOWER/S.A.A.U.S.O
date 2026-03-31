@@ -24,18 +24,18 @@ namespace saauso::internal {
 class HandleTest : public VmTestBase {};
 
 TEST_F(HandleTest, EscapeFromHandleScope) {
-  HandleScope scope;
-  Handle<PyObject> str1 = PyString::New(Isolate::Current(), "Hello World");
+  HandleScope scope(isolate_);
+  Handle<PyObject> str1 = PyString::New(isolate_, "Hello World");
 
   auto f = []() -> Handle<PyObject> {
-    EscapableHandleScope scope;
-    Handle<PyObject> object = PyString::New(Isolate::Current(), "Hello World");
+    EscapableHandleScope scope(isolate_);
+    Handle<PyObject> object = PyString::New(isolate_, "Hello World");
     return scope.Escape(object);
   };
 
-  Handle<PyObject> str2 = PyString::New(Isolate::Current(), "I love you");
+  Handle<PyObject> str2 = PyString::New(isolate_, "I love you");
   Handle<PyObject> str3 = f();
-  Handle<PyObject> str4 = PyString::New(Isolate::Current(), "I love you");
+  Handle<PyObject> str4 = PyString::New(isolate_, "I love you");
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, str1, str3).To(&eq));
@@ -45,18 +45,18 @@ TEST_F(HandleTest, EscapeFromHandleScope) {
 }
 
 TEST_F(HandleTest, EscapableHandleScopeEscape) {
-  HandleScope scope;
-  Handle<PyObject> str1 = PyString::New(Isolate::Current(), "Hello World");
+  HandleScope scope(isolate_);
+  Handle<PyObject> str1 = PyString::New(isolate_, "Hello World");
 
   auto f = []() -> Handle<PyObject> {
-    EscapableHandleScope scope;
-    Handle<PyObject> object = PyString::New(Isolate::Current(), "Hello World");
+    EscapableHandleScope scope(isolate_);
+    Handle<PyObject> object = PyString::New(isolate_, "Hello World");
     return scope.Escape(object);
   };
 
-  Handle<PyObject> str2 = PyString::New(Isolate::Current(), "I love you");
+  Handle<PyObject> str2 = PyString::New(isolate_, "I love you");
   Handle<PyObject> str3 = f();
-  Handle<PyObject> str4 = PyString::New(Isolate::Current(), "I love you");
+  Handle<PyObject> str4 = PyString::New(isolate_, "I love you");
 
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, str1, str3).To(&eq));
@@ -95,13 +95,13 @@ TEST_F(HandleTest, ExplicitIsolateEscapableHandleScopeEscape) {
 #if defined(_DEBUG) || defined(ASAN_BUILD)
 TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
   auto f = []() -> Handle<PyObject> {
-    HandleScope scope;
-    return PyString::New(Isolate::Current(), "Hello World");
+    HandleScope scope(isolate_);
+    return PyString::New(isolate_, "Hello World");
   };
 
   ASSERT_DEATH_IF_SUPPORTED(
       {
-        HandleScope scope;
+        HandleScope scope(isolate_);
         Handle<PyObject> bad = f();
         (void)(*bad);
       },
@@ -110,12 +110,11 @@ TEST_F(HandleTest, ReturningUnescapedHandleShouldFailFast) {
 #endif
 
 TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
-  auto nr_base_block =
-      Isolate::Current()->handle_scope_implementer()->blocks().length();
+  auto nr_base_block = isolate_->handle_scope_implementer()->blocks().length();
   auto nr_base_handles =
-      Isolate::Current()->handle_scope_implementer()->NumberOfHandles();
+      isolate_->handle_scope_implementer()->NumberOfHandles();
 
   EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
 
@@ -129,20 +128,19 @@ TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   }
 
   int nr_expect_handles = nr_base_handles + kNumberOfHandles;
-  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
+  EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(),
             nr_expect_handles);
 
-  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
+  EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
             NR_BLOCKS(nr_expect_handles));
 }
 
 TEST_F(HandleTest, NestedHandleScopes) {
-  HandleScope scope;
+  HandleScope scope(isolate_);
 
-  auto nr_base_block =
-      Isolate::Current()->handle_scope_implementer()->blocks().length();
+  auto nr_base_block = isolate_->handle_scope_implementer()->blocks().length();
   auto nr_base_handles =
-      Isolate::Current()->handle_scope_implementer()->NumberOfHandles();
+      isolate_->handle_scope_implementer()->NumberOfHandles();
 
   EXPECT_EQ(nr_base_block, NR_BLOCKS(nr_base_handles));
 
@@ -153,15 +151,15 @@ TEST_F(HandleTest, NestedHandleScopes) {
   Handle<PySmi> object3(PySmi::FromInt(3), isolate_);
 
   int outer_handles = nr_base_handles + 3;
-  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
+  EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(),
             outer_handles);
-  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
+  EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
             NR_BLOCKS(outer_handles));
 
   //////////////////////////////////////////////////////////////////////////////
 
   {
-    HandleScope inner_scope;
+    HandleScope inner_scope(isolate_);
     constexpr int kInnerBlockNumber = 3;
     constexpr int kNumberOfHandles =
         HandleScopeImplementer::kHandleBlockSize * kInnerBlockNumber + 100;
@@ -170,13 +168,12 @@ TEST_F(HandleTest, NestedHandleScopes) {
     }
 
     int n = outer_handles + kNumberOfHandles;
-    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
-              n);
-    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
+    EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(), n);
+    EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
               NR_BLOCKS(n));
 
     {
-      HandleScope most_inner_scope;
+      HandleScope most_inner_scope(isolate_);
       constexpr int kMostInnerBlockNumber = 3;
       constexpr int kNestNumberOfHandles =
           HandleScopeImplementer::kHandleBlockSize * kMostInnerBlockNumber +
@@ -186,25 +183,22 @@ TEST_F(HandleTest, NestedHandleScopes) {
       }
 
       n += kNestNumberOfHandles;
-      EXPECT_EQ(
-          Isolate::Current()->handle_scope_implementer()->NumberOfHandles(), n);
-      EXPECT_EQ(
-          Isolate::Current()->handle_scope_implementer()->blocks().length(),
-          NR_BLOCKS(n));
+      EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(), n);
+      EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
+                NR_BLOCKS(n));
       n -= kNestNumberOfHandles;
     }
 
-    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
-              n);
-    EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
+    EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(), n);
+    EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
               NR_BLOCKS(n));
   }
 
   //////////////////////////////////////////////////////////////////////////////
 
-  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
+  EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfHandles(),
             outer_handles);
-  EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->blocks().length(),
+  EXPECT_EQ(isolate_->handle_scope_implementer()->blocks().length(),
             NR_BLOCKS(outer_handles));
 }
 
