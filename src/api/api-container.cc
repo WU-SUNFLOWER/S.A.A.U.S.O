@@ -90,7 +90,8 @@ MaybeLocal<Value> List::Get(int64_t index) const {
   }
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyList> list = i::Handle<i::PyList>::cast(object);
-  i::Handle<i::PyObject> escaped = handle_scope.Escape(list->Get(index));
+  i::Handle<i::PyObject> escaped =
+      handle_scope.Escape(list->Get(index, i_isolate));
   return i::Utils::ToLocal<Value>(escaped);
 }
 
@@ -134,7 +135,8 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   }
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyTuple> tuple = i::Handle<i::PyTuple>::cast(object);
-  i::Handle<i::PyObject> escaped = handle_scope.Escape(tuple->Get(index));
+  i::Handle<i::PyObject> escaped =
+      handle_scope.Escape(tuple->Get(index, internal_isolate));
   return i::Utils::ToLocal<Value>(escaped);
 }
 

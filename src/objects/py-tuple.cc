@@ -29,8 +29,8 @@ size_t PyTuple::ComputeObjectSize(int64_t length) {
   return ObjectSizeAlign(sizeof(PyTuple) + length * sizeof(Tagged<PyObject>));
 }
 
-Handle<PyObject> PyTuple::Get(int64_t index) const {
-  return handle(GetTagged(index));
+Handle<PyObject> PyTuple::Get(int64_t index, Isolate* isolate) const {
+  return handle(GetTagged(index), isolate);
 }
 
 Tagged<PyObject> PyTuple::GetTagged(int64_t index) const {
@@ -63,7 +63,7 @@ Maybe<int64_t> PyTuple::IndexOf(Handle<PyObject> target,
                                 int64_t end,
                                 Isolate* isolate) const {
   for (auto i = begin; i < end; ++i) {
-    Maybe<bool> mb = PyObject::EqualBool(isolate, target, Get(i));
+    Maybe<bool> mb = PyObject::EqualBool(isolate, target, Get(i, isolate));
     if (mb.IsNothing()) {
       return kNullMaybe;
     }

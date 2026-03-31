@@ -37,14 +37,14 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
       return kNullMaybeHandle;
     }
 
-    Handle<PyObject> obj = pos_args->Get(0);
+    Handle<PyObject> obj = pos_args->Get(0, isolate);
     return scope.Escape(PyObject::ResolveObjectKlass(obj, isolate)
-                            ->type_object());
+                            ->type_object(isolate));
   }
 
-  Handle<PyObject> name_obj = pos_args->Get(0);
-  Handle<PyObject> bases_obj = pos_args->Get(1);
-  Handle<PyObject> dict_obj = pos_args->Get(2);
+  Handle<PyObject> name_obj = pos_args->Get(0, isolate);
+  Handle<PyObject> bases_obj = pos_args->Get(1, isolate);
+  Handle<PyObject> dict_obj = pos_args->Get(2, isolate);
 
   if (!IsPyString(name_obj)) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
@@ -74,7 +74,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
   if (bases_tuple->length() > 0) {
     supers = PyList::New(isolate, bases_tuple->length());
     for (int64_t i = 0; i < bases_tuple->length(); ++i) {
-      Handle<PyObject> base = bases_tuple->Get(i);
+      Handle<PyObject> base = bases_tuple->Get(i, isolate);
       if (!IsPyTypeObject(base)) {
         Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                            "type() bases must be types");
@@ -96,7 +96,7 @@ MaybeHandle<PyString> Runtime_NewTypeObjectRepr(
     Handle<PyTypeObject> type_object) {
   EscapableHandleScope scope;
 
-  Handle<PyString> type_name = type_object->own_klass()->name();
+  Handle<PyString> type_name = type_object->own_klass()->name(isolate);
   std::string repr = "<class '";
   repr.append(type_name->ToStdString());
   repr.append("'>");

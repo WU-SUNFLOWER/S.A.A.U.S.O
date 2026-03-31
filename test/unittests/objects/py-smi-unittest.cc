@@ -20,9 +20,9 @@ class PySmiTest : public VmTestBase {};
 TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
   HandleScope scope;
 
-  Handle<PyObject> v0(PySmi::FromInt(0));
-  Handle<PyObject> v1(PySmi::FromInt(1234));
-  Handle<PyObject> v2(PySmi::FromInt(-5678));
+  Handle<PyObject> v0(PySmi::FromInt(0), isolate_);
+  Handle<PyObject> v1(PySmi::FromInt(1234), isolate_);
+  Handle<PyObject> v2(PySmi::FromInt(-5678), isolate_);
 
   ASSERT_TRUE(IsPySmi(v0));
   ASSERT_TRUE(IsPySmi(v1));
@@ -35,15 +35,15 @@ TEST_F(PySmiTest, FromIntAndToIntRoundTrip) {
 
 TEST_F(PySmiTest, IsHeapObjectIsFalseForSmi) {
   HandleScope scope;
-  Handle<PyObject> v(PySmi::FromInt(1));
+  Handle<PyObject> v(PySmi::FromInt(1), isolate_);
   EXPECT_FALSE(IsHeapObject(v));
 }
 
 TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
   HandleScope scope;
 
-  Handle<PyObject> a(PySmi::FromInt(7));
-  Handle<PyObject> b(PySmi::FromInt(3));
+  Handle<PyObject> a(PySmi::FromInt(7), isolate_);
+  Handle<PyObject> b(PySmi::FromInt(3), isolate_);
 
   auto add = PyObject::Add(isolate_, a, b);
   auto sub = PyObject::Sub(isolate_, a, b);
@@ -73,8 +73,8 @@ TEST_F(PySmiTest, FastPathArithmeticBetweenSmis) {
 TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
   HandleScope scope;
 
-  Handle<PyObject> a(PySmi::FromInt(-7));
-  Handle<PyObject> b(PySmi::FromInt(3));
+  Handle<PyObject> a(PySmi::FromInt(-7), isolate_);
+  Handle<PyObject> b(PySmi::FromInt(3), isolate_);
   auto mod = PyObject::Mod(isolate_, a, b);
 
   Handle<PyObject> mod_obj;
@@ -86,9 +86,9 @@ TEST_F(PySmiTest, PythonModMatchesPythonSemanticsForNegative) {
 TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
   HandleScope scope;
 
-  Handle<PyObject> a(PySmi::FromInt(7));
-  Handle<PyObject> b(PySmi::FromInt(3));
-  Handle<PyObject> c(PySmi::FromInt(7));
+  Handle<PyObject> a(PySmi::FromInt(7), isolate_);
+  Handle<PyObject> b(PySmi::FromInt(3), isolate_);
+  Handle<PyObject> c(PySmi::FromInt(7), isolate_);
 
   Handle<PyObject> gt;
   ASSERT_TRUE(PyObject::Greater(isolate_, a, b).ToHandle(&gt));
@@ -108,7 +108,7 @@ TEST_F(PySmiTest, FastPathComparisonsBetweenSmis) {
 TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
   HandleScope scope;
 
-  Handle<PyObject> i(PySmi::FromInt(10));
+  Handle<PyObject> i(PySmi::FromInt(10), isolate_);
   Handle<PyObject> f(PyFloat::New(isolate_, 0.25));
 
   Handle<PyObject> r1, r2, r3, r4, r5;
@@ -134,7 +134,7 @@ TEST_F(PySmiTest, MixedArithmeticSmiWithFloat) {
 TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
   HandleScope scope;
 
-  Handle<PyObject> i(PySmi::FromInt(10));
+  Handle<PyObject> i(PySmi::FromInt(10), isolate_);
   Handle<PyObject> f1(PyFloat::New(isolate_, 10.0));
   Handle<PyObject> f2(PyFloat::New(isolate_, 11.0));
 
@@ -152,8 +152,8 @@ TEST_F(PySmiTest, MixedComparisonsSmiWithFloat) {
 TEST_F(PySmiTest, MixedEqualitySmiWithBool) {
   HandleScope scope;
 
-  Handle<PyObject> one(PySmi::FromInt(1));
-  Handle<PyObject> zero(PySmi::FromInt(0));
+  Handle<PyObject> one(PySmi::FromInt(1), isolate_);
+  Handle<PyObject> zero(PySmi::FromInt(0), isolate_);
   Handle<PyObject> t = PyTrueObject(isolate_);
   Handle<PyObject> f = PyFalseObject(isolate_);
 

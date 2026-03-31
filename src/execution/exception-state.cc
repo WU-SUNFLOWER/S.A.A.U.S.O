@@ -9,8 +9,8 @@
 
 namespace saauso::internal {
 
-Handle<PyObject> ExceptionState::pending_exception() const {
-  return handle(pending_exception_);
+Handle<PyObject> ExceptionState::pending_exception(Isolate* isolate) const {
+  return handle(pending_exception_, isolate);
 }
 
 void ExceptionState::Iterate(ObjectVisitor* v) {

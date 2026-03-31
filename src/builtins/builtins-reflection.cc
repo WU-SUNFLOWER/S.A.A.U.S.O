@@ -23,11 +23,11 @@
 namespace saauso::internal {
 
 BUILTIN(Len) {
-  return PyObject::Len(isolate, args->Get(0));
+  return PyObject::Len(isolate, args->Get(0, isolate));
 }
 
 BUILTIN(Repr) {
-  return PyObject::Repr(isolate, args->Get(0));
+  return PyObject::Repr(isolate, args->Get(0, isolate));
 }
 
 BUILTIN(IsInstance) {
@@ -41,8 +41,8 @@ BUILTIN(IsInstance) {
     return kNullMaybeHandle;
   }
 
-  auto object = args->Get(0);
-  auto type_or_tuple = args->Get(1);
+  auto object = args->Get(0, isolate);
+  auto type_or_tuple = args->Get(1, isolate);
   assert(!type_or_tuple.is_null());
 
   bool matched = false;
@@ -54,7 +54,7 @@ BUILTIN(IsInstance) {
   } else if (IsPyTuple(type_or_tuple)) {
     auto tuple = Handle<PyTuple>::cast(type_or_tuple);
     for (auto i = 0; i < tuple->length(); ++i) {
-      auto elem = tuple->Get(i);
+      auto elem = tuple->Get(i, isolate);
       if (!IsPyTypeObject(elem)) [[unlikely]] {
         Runtime_ThrowError(
             isolate, ExceptionType::kTypeError,
@@ -91,7 +91,7 @@ BUILTIN(BuildTypeObject) {
     return kNullMaybeHandle;
   }
 
-  auto class_builder_obj = args->Get(0);
+  auto class_builder_obj = args->Get(0, isolate);
   if (!IsPyFunction(class_builder_obj, isolate)) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "__build_class__: func must be a function");
@@ -99,7 +99,7 @@ BUILTIN(BuildTypeObject) {
   }
   auto class_builder = Handle<PyFunction>::cast(class_builder_obj);
 
-  auto class_name_obj = args->Get(1);
+  auto class_name_obj = args->Get(1, isolate);
   if (!IsPyString(class_name_obj)) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "__build_class__: name is not a string");
@@ -109,7 +109,7 @@ BUILTIN(BuildTypeObject) {
 
   auto class_supers = PyList::New(isolate, args_length - 2);
   for (auto i = 2; i < args_length; ++i) {
-    PyList::Append(class_supers, args->Get(i), isolate);
+    PyList::Append(class_supers, args->Get(i, isolate), isolate);
   }
 
   auto class_properties = PyDict::New(isolate);

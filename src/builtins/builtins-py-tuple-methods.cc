@@ -83,7 +83,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
     return kNullMaybeHandle;
   }
 
-  auto target = args->Get(0);
+  auto target = args->Get(0, isolate);
   int64_t length = tuple->length();
   int64_t begin = 0;
   int64_t end = length;

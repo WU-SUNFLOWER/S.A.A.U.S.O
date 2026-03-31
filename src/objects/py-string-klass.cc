@@ -103,7 +103,8 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(isolate, PyStringBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+                                   isolate, klass_properties,
+                                   type_object(isolate)));
 
   return JustVoid();
 }
@@ -140,7 +141,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
     goto default_return_result;
   }
 
-  input_value = pos_args->Get(0);
+  input_value = pos_args->Get(0, isolate);
   if (argc == 1) {
     if (is_exact_str && IsPyStringExact(input_value, isolate)) {
       return input_value;

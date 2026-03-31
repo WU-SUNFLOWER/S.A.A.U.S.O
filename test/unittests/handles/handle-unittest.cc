@@ -125,7 +125,7 @@ TEST_F(HandleTest, CreateHandlesMoreThanOneBlock) {
   constexpr int kNumberOfHandles =
       HandleScopeImplementer::kHandleBlockSize * kBlockNumber + 100;
   for (int i = 0; i < kNumberOfHandles; ++i) {
-    Handle<PySmi> object(PySmi::FromInt(1234));
+    Handle<PySmi> object(PySmi::FromInt(1234), isolate_);
   }
 
   int nr_expect_handles = nr_base_handles + kNumberOfHandles;
@@ -148,9 +148,9 @@ TEST_F(HandleTest, NestedHandleScopes) {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  Handle<PySmi> object1(PySmi::FromInt(1));
-  Handle<PySmi> object2(PySmi::FromInt(2));
-  Handle<PySmi> object3(PySmi::FromInt(3));
+  Handle<PySmi> object1(PySmi::FromInt(1), isolate_);
+  Handle<PySmi> object2(PySmi::FromInt(2), isolate_);
+  Handle<PySmi> object3(PySmi::FromInt(3), isolate_);
 
   int outer_handles = nr_base_handles + 3;
   EXPECT_EQ(Isolate::Current()->handle_scope_implementer()->NumberOfHandles(),
@@ -166,7 +166,7 @@ TEST_F(HandleTest, NestedHandleScopes) {
     constexpr int kNumberOfHandles =
         HandleScopeImplementer::kHandleBlockSize * kInnerBlockNumber + 100;
     for (int i = 0; i < kNumberOfHandles; ++i) {
-      Handle<PySmi> temp(PySmi::FromInt(666));
+      Handle<PySmi> temp(PySmi::FromInt(666), isolate_);
     }
 
     int n = outer_handles + kNumberOfHandles;
@@ -182,7 +182,7 @@ TEST_F(HandleTest, NestedHandleScopes) {
           HandleScopeImplementer::kHandleBlockSize * kMostInnerBlockNumber +
           100;
       for (int i = 0; i < kNestNumberOfHandles; ++i) {
-        Handle<PySmi> temp(PySmi::FromInt(666));
+        Handle<PySmi> temp(PySmi::FromInt(666), isolate_);
       }
 
       n += kNestNumberOfHandles;

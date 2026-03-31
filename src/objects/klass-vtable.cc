@@ -17,7 +17,7 @@ namespace saauso::internal {
 Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
   HandleScope scope;
 
-  InitializeFromSupers(klass);
+  InitializeFromSupers(isolate, klass);
   RETURN_ON_EXCEPTION(isolate, UpdateOverrideSlots(isolate, klass));
 
   return JustVoid();
@@ -29,13 +29,13 @@ void KlassVtable::Clear() {
 #undef CLEAR_SLOT
 }
 
-void KlassVtable::InitializeFromSupers(Tagged<Klass> klass) {
+void KlassVtable::InitializeFromSupers(Isolate* isolate, Tagged<Klass> klass) {
   // 要求MRO序列必须已经完成初始化
-  assert(!klass->mro().is_null());
+  assert(!klass->mro(isolate).is_null());
 
-  Handle<PyList> mro = klass->mro();
+  Handle<PyList> mro = klass->mro(isolate);
   for (int64_t i = 1; i < mro->length(); ++i) {
-    auto super = Handle<PyTypeObject>::cast(mro->Get(i));
+    auto super = Handle<PyTypeObject>::cast(mro->Get(i, isolate));
     auto super_klass = super->own_klass();
     CopyInheritedSlotsFromSuper(super_klass);
   }
@@ -70,7 +70,7 @@ void KlassVtable::CopyInheritedSlotsFromSuper(Tagged<Klass> super_klass) {
 Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
                                              Tagged<Klass> klass) {
   Handle<PyObject> dummy;
-  Handle<PyDict> klass_properties = klass->klass_properties();
+  Handle<PyDict> klass_properties = klass->klass_properties(isolate);
 
 #define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2, trampoline_name)   \
   do {                                                                       \

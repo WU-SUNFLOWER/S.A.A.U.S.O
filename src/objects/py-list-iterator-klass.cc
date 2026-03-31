@@ -37,7 +37,7 @@ Handle<PyObject> NextImpl(Isolate* isolate, Handle<PyObject> self) {
   auto iter_cnt = iterator->iter_cnt();
   auto result = Handle<PyObject>::null();
   if (iter_cnt < list->length()) {
-    result = list->Get(iter_cnt);
+    result = list->Get(iter_cnt, isolate);
     iterator->increase_iter_cnt();
   }
 
@@ -88,8 +88,9 @@ Maybe<void> PyListIteratorKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 注入内建方法
-  RETURN_ON_EXCEPTION(isolate, PyListIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(
+      isolate, PyListIteratorBuiltinMethods::Install(isolate, klass_properties,
+                                                     type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "list_iterator"));

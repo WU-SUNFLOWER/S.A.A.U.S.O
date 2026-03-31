@@ -173,7 +173,7 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
-    PyList::Append(printv_result_.Get(isolate_), args->Get(i), isolate);
+    PyList::Append(printv_result_.Get(isolate_), args->Get(i, isolate), isolate);
   }
   return PyNoneObject(isolate);
 }
@@ -189,7 +189,8 @@ void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
 
   // 逐项按 Python 语义相等性比较，便于定位具体哪一项不匹配。
   for (auto i = 0; i < actual->length(); ++i) {
-    EXPECT_TRUE(IsPyObjectEqual(actual->Get(i), expected->Get(i)));
+    EXPECT_TRUE(
+        IsPyObjectEqual(actual->Get(i, isolate_), expected->Get(i, isolate_)));
   }
 }
 

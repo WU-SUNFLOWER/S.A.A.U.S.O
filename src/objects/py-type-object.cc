@@ -22,14 +22,14 @@ Tagged<PyTypeObject> PyTypeObject::cast(Tagged<PyObject> object) {
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void PyTypeObject::BindWithKlass(Tagged<Klass> klass) {
-  Handle<PyTypeObject> this_handle(Tagged<PyTypeObject>(this));
+void PyTypeObject::BindWithKlass(Tagged<Klass> klass, Isolate* isolate) {
+  Handle<PyTypeObject> this_handle(Tagged<PyTypeObject>(this), isolate);
   own_klass_ = klass;
   klass->set_type_object(this_handle);
 }
 
-Handle<PyList> PyTypeObject::mro() const {
-  return own_klass()->mro();
+Handle<PyList> PyTypeObject::mro(Isolate* isolate) const {
+  return own_klass()->mro(isolate);
 }
 
 }  // namespace saauso::internal

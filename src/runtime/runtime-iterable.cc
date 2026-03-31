@@ -25,7 +25,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
   if (IsPyTuple(iteratable)) {
     auto tuple = Handle<PyTuple>::cast(iteratable);
     for (int64_t i = 0; i < tuple->length(); ++i) {
-      PyList::Append(list, tuple->Get(i), isolate);
+      PyList::Append(list, tuple->Get(i, isolate), isolate);
     }
     return isolate->factory()->py_none_object();
   }
@@ -34,7 +34,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
   if (IsPyList(iteratable)) {
     auto source = Handle<PyList>::cast(iteratable);
     for (int64_t i = 0; i < source->length(); ++i) {
-      PyList::Append(list, source->Get(i), isolate);
+      PyList::Append(list, source->Get(i, isolate), isolate);
     }
     return isolate->factory()->py_none_object();
   }
@@ -71,7 +71,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
     auto list = Handle<PyList>::cast(iterable);
     tuple = PyTuple::New(isolate, list->length());
     for (auto i = 0; i < list->length(); ++i) {
-      tuple->SetInternal(i, list->Get(i));
+      tuple->SetInternal(i, list->Get(i, isolate));
     }
     return scope.Escape(tuple);
   }
@@ -82,7 +82,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
       isolate, Runtime_ExtendListByItratableObject(isolate, tmp, iterable));
   tuple = PyTuple::New(isolate, tmp->length());
   for (auto i = 0; i < tmp->length(); ++i) {
-    tuple->SetInternal(i, tmp->Get(i));
+    tuple->SetInternal(i, tmp->Get(i, isolate));
   }
   return scope.Escape(tuple);
 }

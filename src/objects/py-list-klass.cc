@@ -104,8 +104,9 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate, PyListBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyListBuiltinMethods::Install(isolate, klass_properties,
+                                                    type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "list"));
@@ -143,7 +144,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass, PyListKlass::GetInstance(isolate)));
+      Runtime_IsSubtype(isolate, instance_klass,
+                        PyListKlass::GetInstance(isolate)));
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
@@ -170,7 +172,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   if (argc == 1) {
     RETURN_ON_EXCEPTION(isolate, Runtime_ExtendListByItratableObject(
                                      isolate, Handle<PyList>::cast(instance),
-                                     pos_args->Get(0)));
+                                     pos_args->Get(0, isolate)));
   }
   return isolate->factory()->py_none_object();
 }
@@ -208,11 +210,11 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Add(Isolate* isolate,
 
   auto new_result = PyList::New(isolate, list1->length() + list2->length());
   for (auto i = 0; i < list1->length(); ++i) {
-    PyList::Append(new_result, list1->Get(i), isolate);
+    PyList::Append(new_result, list1->Get(i, isolate), isolate);
   }
 
   for (auto i = 0; i < list2->length(); ++i) {
-    PyList::Append(new_result, list2->Get(i), isolate);
+    PyList::Append(new_result, list2->Get(i, isolate), isolate);
   }
 
   return new_result;
@@ -235,7 +237,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Mul(Isolate* isolate,
   auto result = PyList::New(isolate, list->length() * decoded_coeff);
   while (decoded_coeff-- > 0) {
     for (int i = 0; i < list->length(); ++i) {
-      PyList::Append(result, list->Get(i), isolate);
+      PyList::Append(result, list->Get(i, isolate), isolate);
     }
   }
 
@@ -253,7 +255,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_Subscr(Isolate* isolate,
   }
 
   auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
-  return Handle<PyList>::cast(self)->Get(decoded_subscr);
+  return Handle<PyList>::cast(self)->Get(decoded_subscr, isolate);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_StoreSubscr(Isolate* isolate,
@@ -306,8 +308,8 @@ Maybe<bool> PyListKlass::Virtual_Less(Isolate* isolate,
   auto min_len = std::min(list_l->length(), list_r->length());
 
   for (auto i = 0; i < min_len; ++i) {
-    auto l = list_l->Get(i);
-    auto r = list_r->Get(i);
+    auto l = list_l->Get(i, isolate);
+    auto r = list_r->Get(i, isolate);
 
     Maybe<bool> less_mb = PyObject::LessBool(isolate, l, r);
     if (less_mb.IsNothing()) {
@@ -334,7 +336,8 @@ Maybe<bool> PyListKlass::Virtual_Contains(Isolate* isolate,
                                           Handle<PyObject> target) {
   auto list = Handle<PyList>::cast(self);
   for (auto i = 0; i < list->length(); ++i) {
-    Maybe<bool> eq = PyObject::EqualBool(isolate, list->Get(i), target);
+    Maybe<bool> eq =
+        PyObject::EqualBool(isolate, list->Get(i, isolate), target);
     if (eq.IsNothing()) {
       return kNullMaybe;
     }
@@ -360,7 +363,8 @@ Maybe<bool> PyListKlass::Virtual_Equal(Isolate* isolate,
   }
 
   for (auto i = 0; i < list1->length(); ++i) {
-    Maybe<bool> eq = PyObject::EqualBool(isolate, list1->Get(i), list2->Get(i));
+    Maybe<bool> eq = PyObject::EqualBool(isolate, list1->Get(i, isolate),
+                                         list2->Get(i, isolate));
     if (eq.IsNothing()) {
       return kNullMaybe;
     }

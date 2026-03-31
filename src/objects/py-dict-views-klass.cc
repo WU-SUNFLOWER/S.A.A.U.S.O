@@ -213,7 +213,7 @@ Maybe<bool> PyDictValuesKlass::Virtual_Contains(Isolate* isolate,
 
   auto dict = Handle<PyDictValues>::cast(self)->owner(isolate);
   for (int64_t i = 0; i < dict->capacity(); ++i) {
-    Handle<PyObject> value = dict->ValueAtIndex(i);
+    Handle<PyObject> value = dict->ValueAtIndex(i, isolate);
     if (value.is_null()) {
       continue;
     }
@@ -317,8 +317,8 @@ Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
   }
 
   auto dict = Handle<PyDictItems>::cast(self)->owner(isolate);
-  auto key = item->Get(0);
-  auto value = item->Get(1);
+  auto key = item->Get(0, isolate);
+  auto value = item->Get(1, isolate);
 
   Handle<PyObject> found_value;
   bool found = false;
@@ -390,8 +390,9 @@ Maybe<void> PyDictKeyIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  RETURN_ON_EXCEPTION(isolate, PyDictKeyIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDictKeyIteratorBuiltinMethods::Install(
+                          isolate, klass_properties, type_object(isolate)));
 
   set_name(PyString::New(isolate, "dict_keyiterator"));
 
@@ -414,7 +415,7 @@ MaybeHandle<PyObject> PyDictKeyIteratorKlass::Virtual_Next(
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictKeyIterator>(
       isolate, self, [](Isolate* isolate, Handle<PyDict> dict, int64_t index) {
-        return dict->KeyAtIndex(index);
+        return dict->KeyAtIndex(index, isolate);
       });
   if (result.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kStopIteration);
@@ -478,8 +479,9 @@ Maybe<void> PyDictItemIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  RETURN_ON_EXCEPTION(isolate, PyDictItemIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDictItemIteratorBuiltinMethods::Install(
+                          isolate, klass_properties, type_object(isolate)));
 
   set_name(PyString::New(isolate, "dict_itemiterator"));
 
@@ -566,8 +568,9 @@ Maybe<void> PyDictValueIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  RETURN_ON_EXCEPTION(isolate, PyDictValueIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDictValueIteratorBuiltinMethods::Install(
+                          isolate, klass_properties, type_object(isolate)));
 
   set_name(PyString::New(isolate, "dict_valueiterator"));
 
@@ -590,7 +593,7 @@ MaybeHandle<PyObject> PyDictValueIteratorKlass::Virtual_Next(
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictValueIterator>(
       isolate, self, [](Isolate* isolate, Handle<PyDict> dict, int64_t index) {
-        return dict->ValueAtIndex(index);
+        return dict->ValueAtIndex(index, isolate);
       });
   if (result.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kStopIteration);

@@ -27,7 +27,7 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 
   Handle<PyObject> module_obj(module);
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj, isolate_);
   ASSERT_FALSE(module_dict.is_null());
 
   // 测试__dict__获取到对象properties的能力
@@ -52,7 +52,8 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   EXPECT_TRUE(mirrored_value.is_null());
 
   Handle<PyString> x_name = PyString::New(isolate_, "x");
-  Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)));
+  Handle<PyObject> x_value = handle(Tagged<PyObject>(PySmi::FromInt(123)),
+                                    isolate_);
   ASSERT_FALSE(
       PyObject::SetAttr(isolate_, module_obj, x_name, x_value).IsEmpty());
 

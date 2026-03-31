@@ -58,8 +58,10 @@ class PyObject : public Object {
   static Handle<PyString> GetTypeName(Handle<PyObject> object,
                                       Isolate* isolate);
 
-  static Handle<PyDict> GetProperties(Tagged<PyObject> object);
-  static Handle<PyDict> GetProperties(Handle<PyObject> object);
+  static Handle<PyDict> GetProperties(Tagged<PyObject> object,
+                                      Isolate* isolate);
+  static Handle<PyDict> GetProperties(Handle<PyObject> object,
+                                      Isolate* isolate);
   static void SetProperties(Tagged<PyObject> object, Tagged<PyDict> properties);
 
   static Tagged<PyObject> cast(Tagged<PyObject> object) { return object; }

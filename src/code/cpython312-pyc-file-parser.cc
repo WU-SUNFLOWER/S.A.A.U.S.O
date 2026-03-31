@@ -350,10 +350,10 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = isolate_->factory()->py_none_object();
       break;
     case kTrueObjectFlag:
-      object = Handle<PyBoolean>(isolate_->py_true_object());
+      object = isolate_->factory()->py_true_object();
       break;
     case kFalseObjectFlag:
-      object = Handle<PyBoolean>(isolate_->py_false_object());
+      object = isolate_->factory()->py_false_object();
       break;
     case kBytesFlag:
     case kUnicodeFlag:
@@ -375,12 +375,12 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       break;
     case kInStringTableObjectFlag: {
       int index = ReadInt32();
-      object = string_table->Get(index);
+      object = string_table->Get(index, isolate_);
       break;
     }
     case kInCacheObjectFlag: {
       int index = ReadInt32();
-      object = cache->Get(index);
+      object = cache->Get(index, isolate_);
       break;
     }
     case kSmallTupleFlag: {

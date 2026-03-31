@@ -206,7 +206,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
   int64_t total_length = 0;
 
   for (int64_t i = 0; i < num_parts; ++i) {
-    Handle<PyObject> item = parts->Get(i);
+    Handle<PyObject> item = parts->Get(i, isolate);
     if (!IsPyString(*item)) {
       auto type_name = PyObject::GetTypeName(item, isolate);
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
@@ -239,7 +239,7 @@ MaybeHandle<PyString> Runtime_PyStringJoin(Isolate* isolate,
 
   int64_t dst_offset = 0;
   for (int64_t i = 0; i < num_parts; ++i) {
-    Handle<PyString> part = Handle<PyString>::cast(parts->Get(i));
+    Handle<PyString> part = Handle<PyString>::cast(parts->Get(i, isolate));
     if (part->length() > 0) {
       std::memcpy(dst + dst_offset, part->buffer(), part->length());
       dst_offset += part->length();

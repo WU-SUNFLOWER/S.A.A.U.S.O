@@ -44,7 +44,7 @@ BUILTIN_METHOD(PyObjectBuiltinMethods, New) {
                        "argument");
     return kNullMaybeHandle;
   }
-  type_object = args->Get(0);
+  type_object = args->Get(0, isolate);
   new_args = Runtime_NewTupleTailOrNull(isolate, args, 1);
 
   if (!IsPyTypeObject(type_object)) {

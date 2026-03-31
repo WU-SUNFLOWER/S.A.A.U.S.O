@@ -137,7 +137,7 @@ TEST_F(PyStringTest, PyObjectSubscrReturnsSingleCharString) {
   HandleScope scope;
 
   Handle<PyObject> s(PyString::New(isolate_, "abc"));
-  Handle<PyObject> index(PySmi::FromInt(1));
+  Handle<PyObject> index(PySmi::FromInt(1), isolate_);
 
   Handle<PyObject> result;
   ASSERT_TRUE(PyObject::Subscr(isolate_, s, index).ToHandle(&result));
@@ -191,7 +191,7 @@ TEST_F(PyStringTest, PyObjectContainsWorksForStrings) {
   Handle<PyObject> s(PyString::New(isolate_, "Hello World"));
   Handle<PyObject> pat(PyString::New(isolate_, "World"));
   Handle<PyObject> missing(PyString::New(isolate_, "planet"));
-  Handle<PyObject> not_a_string(PySmi::FromInt(1));
+  Handle<PyObject> not_a_string(PySmi::FromInt(1), isolate_);
 
   Handle<PyObject> contains_res;
   ASSERT_TRUE(PyObject::Contains(isolate_, s, pat).ToHandle(&contains_res));
@@ -231,13 +231,13 @@ TEST_F(PyStringTest, StringUpperMethod) {
   Handle<PyObject> attr(PyString::New(isolate_, "upper"));
 
   Handle<PyDict> attrs =
-      PyStringKlass::GetInstance(isolate_)->klass_properties();
+      PyStringKlass::GetInstance(isolate_)->klass_properties(isolate_);
 
   bool flag = false;
   Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs, isolate_);
   for (auto i = 0; i < attrs_tuple->length(); ++i) {
     bool eq = false;
-    if (PyObject::EqualBool(isolate_, attr, attrs_tuple->Get(i)).To(&eq) &&
+    if (PyObject::EqualBool(isolate_, attr, attrs_tuple->Get(i, isolate_)).To(&eq) &&
         eq) {
       flag = true;
       break;
@@ -248,7 +248,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
 
   bool contains = false;
   ASSERT_TRUE(PyStringKlass::GetInstance(isolate_)
-                  ->klass_properties()
+                  ->klass_properties(isolate_)
                   ->ContainsKey(attr, isolate_)
                   .To(&contains));
   EXPECT_TRUE(contains);

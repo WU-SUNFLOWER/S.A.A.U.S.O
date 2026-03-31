@@ -52,7 +52,7 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
       continue;
     }
 
-    auto key = item->Get(0);
+    auto key = item->Get(0, isolate);
     if (!IsPyString(key)) {
       Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "keywords must be strings");
@@ -180,7 +180,7 @@ BUILTIN(Exec) {
     return kNullMaybeHandle;
   }
 
-  Handle<PyObject> source_or_code = args->Get(0);
+  Handle<PyObject> source_or_code = args->Get(0, isolate);
 
   // 先按位置参数提取 globals/locals，再用 kwargs 进行覆盖与校验。
   bool globals_from_positional = false;
@@ -188,11 +188,11 @@ BUILTIN(Exec) {
   Handle<PyObject> globals_obj = Handle<PyObject>::null();
   Handle<PyObject> locals_obj = Handle<PyObject>::null();
   if (argc >= 2) {
-    globals_obj = args->Get(1);
+    globals_obj = args->Get(1, isolate);
     globals_from_positional = true;
   }
   if (argc == 3) {
-    locals_obj = args->Get(2);
+    locals_obj = args->Get(2, isolate);
     locals_from_positional = true;
   }
 

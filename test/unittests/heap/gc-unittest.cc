@@ -130,14 +130,17 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
   Handle<PyObject> eq_res;
   ASSERT_TRUE(PyObject::Equal(isolate_, list1, list2).ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0), list2->Get(0))
+  ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0, isolate_),
+                              list2->Get(0, isolate_))
                   .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
   ASSERT_TRUE(
-      PyObject::Equal(isolate_, list1->Get(0), content).ToHandle(&eq_res));
+      PyObject::Equal(isolate_, list1->Get(0, isolate_), content)
+          .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
   ASSERT_TRUE(
-      PyObject::Equal(isolate_, list2->Get(0), content).ToHandle(&eq_res));
+      PyObject::Equal(isolate_, list2->Get(0, isolate_), content)
+          .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
 }
 
@@ -174,7 +177,7 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     ASSERT_TRUE(
         dict->GetTagged(query_key, actual_value_tagged, isolate_).To(&found));
     ASSERT_TRUE(found);
-    auto actual_value = handle(actual_value_tagged);
+    auto actual_value = handle(actual_value_tagged, isolate_);
     ASSERT_FALSE(actual_value.is_null());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(PyObject::Equal(isolate_, actual_value, expected_value)
@@ -240,7 +243,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   bool found = false;
   ASSERT_TRUE(dict->GetTagged(key, payload_tagged, isolate_).To(&found));
   ASSERT_TRUE(found);
-  auto payload = handle(payload_tagged);
+  auto payload = handle(payload_tagged, isolate_);
   ASSERT_FALSE(payload.is_null());
   auto payload_list = Handle<PyList>::cast(payload);
   EXPECT_EQ(payload_list->length(), kCount);
@@ -249,7 +252,7 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
     HandleScope inner_scope;
     auto expected = PyString::New(isolate_, std::to_string(i).c_str());
     Handle<PyObject> eq_res;
-    ASSERT_TRUE(PyObject::Equal(isolate_, payload_list->Get(i), expected)
+    ASSERT_TRUE(PyObject::Equal(isolate_, payload_list->Get(i, isolate_), expected)
                     .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
@@ -293,7 +296,7 @@ TEST_F(GcTest, CopyGcShouldHandleSelfReferenceInContainer) {
   EXPECT_NE(before, (*list).ptr());
   EXPECT_EQ(list->length(), 2);
 
-  auto elem0 = list->Get(0);
+  auto elem0 = list->Get(0, isolate_);
   ASSERT_FALSE(elem0.is_null());
   EXPECT_EQ((*list).ptr(), (*elem0).ptr());
 }
@@ -308,7 +311,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
   constexpr int kCount = 50;
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    Handle<PySmi> smi(PySmi::FromInt(i));
+    Handle<PySmi> smi(PySmi::FromInt(i), isolate_);
     PyList::Append(list, Handle<PyObject>(smi), isolate_);
   }
 
@@ -316,7 +319,7 @@ TEST_F(GcTest, CopyGcShouldNotCorruptSmiValues) {
 
   for (int i = 0; i < kCount; ++i) {
     HandleScope inner_scope;
-    auto v = list->Get(i);
+    auto v = list->Get(i, isolate_);
     ASSERT_TRUE(IsPySmi(v));
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v)), i);
   }

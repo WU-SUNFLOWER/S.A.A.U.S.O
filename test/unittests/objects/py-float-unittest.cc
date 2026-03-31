@@ -58,7 +58,7 @@ TEST_F(PyFloatTest, ArithmeticFloatWithSmiBothDirections) {
   HandleScope scope;
 
   Handle<PyObject> f(PyFloat::New(isolate_, 3.5));
-  Handle<PyObject> i(PySmi::FromInt(2));
+  Handle<PyObject> i(PySmi::FromInt(2), isolate_);
 
   Handle<PyObject> r1, r2, r3, r4, r5, r6;
   ASSERT_TRUE(PyObject::Add(isolate_, f, i).ToHandle(&r1));
@@ -88,7 +88,7 @@ TEST_F(PyFloatTest, ComparisonsFloatWithSmi) {
 
   Handle<PyObject> f10(PyFloat::New(isolate_, 10.0));
   Handle<PyObject> f11(PyFloat::New(isolate_, 11.0));
-  Handle<PyObject> i10(PySmi::FromInt(10));
+  Handle<PyObject> i10(PySmi::FromInt(10), isolate_);
 
   Handle<PyObject> res;
   ASSERT_TRUE(PyObject::Equal(isolate_, f10, i10).ToHandle(&res));

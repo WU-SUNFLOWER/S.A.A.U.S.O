@@ -30,7 +30,7 @@ bool ModuleUtils::IsValidModuleName(Handle<PyString> fullname) {
 
 Maybe<bool> ModuleUtils::IsPackageModule(Isolate* isolate,
                                          Handle<PyObject> module) {
-  Handle<PyDict> dict = PyObject::GetProperties(module);
+  Handle<PyDict> dict = PyObject::GetProperties(module, isolate);
   if (dict.is_null()) {
     return Maybe<bool>(false);
   }
@@ -48,7 +48,7 @@ Maybe<void> ModuleUtils::GetPackagePathList(Isolate* isolate,
                                             Handle<PyList>& out) {
   out = Handle<PyList>::null();
 
-  Handle<PyDict> dict = PyObject::GetProperties(module);
+  Handle<PyDict> dict = PyObject::GetProperties(module, isolate);
   if (dict.is_null()) {
     return JustVoid();
   }

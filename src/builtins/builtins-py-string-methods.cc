@@ -130,7 +130,7 @@ bool ParseStringSearchTarget(Isolate* isolate,
                              Handle<PyString>& target_str,
                              int64_t& begin,
                              int64_t& end) {
-  auto target = args->Get(0);
+  auto target = args->Get(0, isolate);
   if (!IsPyString(target)) [[unlikely]] {
     auto type_name = PyObject::GetTypeName(target, isolate);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
@@ -272,7 +272,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
   int64_t maxsplit = -1;
 
   if (argc >= 1) {
-    sep_obj = args->Get(0);
+    sep_obj = args->Get(0, isolate);
     sep_from_positional = true;
   }
   if (argc == 2) {
@@ -291,7 +291,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
         continue;
       }
 
-      auto key = item->Get(0);
+      auto key = item->Get(0, isolate);
       if (!IsPyString(key)) {
         Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                            "keywords must be strings");
@@ -390,7 +390,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
     return kNullMaybeHandle;
   }
 
-  Handle<PyObject> iterable = args->Get(0);
+  Handle<PyObject> iterable = args->Get(0, isolate);
   Handle<PyString> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result, Runtime_PyStringJoin(isolate, str_object, iterable));

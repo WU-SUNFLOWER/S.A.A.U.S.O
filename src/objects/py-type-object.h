@@ -14,10 +14,10 @@ class PyTypeObject : public PyObject {
   static Tagged<PyTypeObject> cast(Tagged<PyObject> object);
 
   // 建立与klass的双向绑定
-  void BindWithKlass(Tagged<Klass> klass);
+  void BindWithKlass(Tagged<Klass> klass, Isolate* isolate);
   Tagged<Klass> own_klass() const { return own_klass_; };
 
-  Handle<PyList> mro() const;
+  Handle<PyList> mro(Isolate* isolate) const;
 
  private:
   friend class PyTypeObjectKlass;

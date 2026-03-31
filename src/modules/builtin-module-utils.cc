@@ -45,7 +45,7 @@ Maybe<void> BuiltinModuleUtils::InitializeBuiltinModule(
     Handle<PyModule> module,
     const char* module_name,
     const char* package_name) {
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate);
 
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(module_dict, ST(name, isolate),
@@ -86,7 +86,7 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFuncsFromSpec(
     Handle<PyModule> module,
     const BuiltinModuleFuncSpec* specs,
     int64_t spec_count) {
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate);
   for (int64_t i = 0; i < spec_count; ++i) {
     RETURN_ON_EXCEPTION(
         isolate, BuiltinModuleUtils::InstallBuiltinModuleFunc(

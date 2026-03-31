@@ -30,15 +30,16 @@ MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
   if (exception_args.is_null() || exception_args->length() == 0) {
     return PyString::New(isolate, "");
   }
-  if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
-    return Handle<PyString>::cast(exception_args->Get(0));
+  if (exception_args->length() == 1 &&
+      IsPyString(exception_args->Get(0, isolate))) {
+    return Handle<PyString>::cast(exception_args->Get(0, isolate));
   }
   return PyString::New(isolate, "");
 }
 
 MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
                                        Handle<PyObject> self) {
-  Handle<PyDict> properties = PyObject::GetProperties(self);
+  Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
   if (properties.is_null()) {
     return Handle<PyTuple>::null();
   }
@@ -98,8 +99,9 @@ Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate, BaseExceptionMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      BaseExceptionMethods::Install(isolate, klass_properties,
+                                                    type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "BaseException"));
@@ -122,7 +124,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass,
+      Runtime_IsSubtype(isolate, instance_klass,
                         PyBaseExceptionKlass::GetInstance(isolate)));
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
@@ -142,7 +144,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
 
   Handle<PyTuple> init_args =
       args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
-  Handle<PyDict> properties = PyObject::GetProperties(instance);
+  Handle<PyDict> properties = PyObject::GetProperties(instance, isolate);
   if (properties.is_null()) {
     properties = PyDict::New(isolate);
     PyObject::SetProperties(*instance, *properties);
@@ -197,7 +199,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
     return scope.Escape(args_message);
   }
 
-  Handle<PyDict> properties = PyObject::GetProperties(self);
+  Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
   if (!properties.is_null()) {
     Handle<PyObject> message;
     bool found = false;

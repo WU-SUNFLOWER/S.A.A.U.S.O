@@ -31,16 +31,16 @@ TEST_F(PyListTest, AppendGetGetLastPopWork) {
 
   auto list = PyList::New(isolate_, 2);
   auto s1 = Handle<PyObject>(PyString::New(isolate_, "Item 1"));
-  auto i1 = Handle<PyObject>(PySmi::FromInt(100));
+  auto i1 = Handle<PyObject>(PySmi::FromInt(100), isolate_);
 
   PyList::Append(list, s1, isolate_);
   PyList::Append(list, i1, isolate_);
 
   EXPECT_EQ(list->length(), 2);
-  EXPECT_EQ((*list->Get(0)).ptr(), (*s1).ptr());
-  EXPECT_EQ((*list->GetLast()).ptr(), (*i1).ptr());
+  EXPECT_EQ((*list->Get(0, isolate_)).ptr(), (*s1).ptr());
+  EXPECT_EQ((*list->GetLast(isolate_)).ptr(), (*i1).ptr());
 
-  auto popped = list->Pop();
+  auto popped = list->Pop(isolate_);
   EXPECT_EQ((*popped).ptr(), (*i1).ptr());
   EXPECT_EQ(list->length(), 1);
 }
@@ -49,9 +49,9 @@ TEST_F(PyListTest, SetRemoveClearWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  auto a = Handle<PyObject>(PySmi::FromInt(1));
-  auto b = Handle<PyObject>(PySmi::FromInt(2));
-  auto c = Handle<PyObject>(PySmi::FromInt(3));
+  auto a = Handle<PyObject>(PySmi::FromInt(1), isolate_);
+  auto b = Handle<PyObject>(PySmi::FromInt(2), isolate_);
+  auto c = Handle<PyObject>(PySmi::FromInt(3), isolate_);
 
   PyList::Append(list, a, isolate_);
   PyList::Append(list, b, isolate_);
@@ -59,14 +59,14 @@ TEST_F(PyListTest, SetRemoveClearWork) {
 
   list->Set(1, a);
   Handle<PyObject> eq;
-  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1), a).ToHandle(&eq));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1, isolate_), a).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
 
   list->RemoveByIndex(0);
   EXPECT_EQ(list->length(), 2);
-  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(0), a).ToHandle(&eq));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(0, isolate_), a).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
-  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1), c).ToHandle(&eq));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1, isolate_), c).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
 
   list->Clear();
@@ -78,18 +78,18 @@ TEST_F(PyListTest, InsertWorksInTheMiddle) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  auto a = Handle<PyObject>(PySmi::FromInt(1));
-  auto b = Handle<PyObject>(PySmi::FromInt(2));
-  auto c = Handle<PyObject>(PySmi::FromInt(3));
+  auto a = Handle<PyObject>(PySmi::FromInt(1), isolate_);
+  auto b = Handle<PyObject>(PySmi::FromInt(2), isolate_);
+  auto c = Handle<PyObject>(PySmi::FromInt(3), isolate_);
 
   PyList::Append(list, a, isolate_);
   PyList::Append(list, c, isolate_);
 
   PyList::Insert(list, 1, b, isolate_);
   EXPECT_EQ(list->length(), 3);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(0))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(1))), 2);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(2))), 3);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(0, isolate_))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(1, isolate_))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(list->Get(2, isolate_))), 3);
 }
 
 TEST_F(PyListTest, AppendTriggersExpand) {
@@ -98,9 +98,9 @@ TEST_F(PyListTest, AppendTriggersExpand) {
   auto list = PyList::New(isolate_, 2);
   const int64_t initial_capacity = list->capacity();
 
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(3)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2), isolate_), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(3), isolate_), isolate_);
 
   EXPECT_EQ(list->length(), 3);
   EXPECT_GT(list->capacity(), initial_capacity);
@@ -110,8 +110,8 @@ TEST_F(PyListTest, PyObjectAddConcatenatesLists) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2), isolate_), isolate_);
 
   Handle<PyObject> lhs(list);
   Handle<PyObject> rhs(list);
@@ -127,40 +127,40 @@ TEST_F(PyListTest, PyObjectMulRepeatsList) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2), isolate_), isolate_);
 
   Handle<PyObject> lhs(list);
-  Handle<PyObject> coeff(PySmi::FromInt(3));
+  Handle<PyObject> coeff(PySmi::FromInt(3), isolate_);
   Handle<PyObject> repeated;
   ASSERT_TRUE(PyObject::Mul(isolate_, lhs, coeff).ToHandle(&repeated));
   ASSERT_TRUE(IsPyList(repeated));
   auto repeated_list = Handle<PyList>::cast(repeated);
   ASSERT_EQ(repeated_list->length(), 6);
 
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(0))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(1))), 2);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(2))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(3))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(0, isolate_))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(1, isolate_))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(2, isolate_))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(repeated_list->Get(3, isolate_))), 2);
 }
 
 TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(2), isolate_), isolate_);
 
   Handle<PyObject> obj(list);
-  Handle<PyObject> index0(PySmi::FromInt(0));
-  Handle<PyObject> index1(PySmi::FromInt(1));
+  Handle<PyObject> index0(PySmi::FromInt(0), isolate_);
+  Handle<PyObject> index1(PySmi::FromInt(1), isolate_);
 
   Handle<PyObject> v0;
   ASSERT_TRUE(PyObject::Subscr(isolate_, obj, index0).ToHandle(&v0));
   EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(v0)), 1);
 
   ASSERT_FALSE(PyObject::StoreSubscr(isolate_, obj, index1,
-                                     Handle<PyObject>(PySmi::FromInt(42)))
+                                     Handle<PyObject>(PySmi::FromInt(42), isolate_))
                    .IsEmpty());
   Handle<PyObject> v1;
   ASSERT_TRUE(PyObject::Subscr(isolate_, obj, index1).ToHandle(&v1));
@@ -169,7 +169,9 @@ TEST_F(PyListTest, PyObjectSubscrAndStoreAndDeleteWork) {
   ASSERT_FALSE(PyObject::DeletSubscr(isolate_, obj, index0).IsEmpty());
   EXPECT_EQ(Handle<PyList>::cast(obj)->length(), 1);
   EXPECT_EQ(
-      PySmi::ToInt(Handle<PySmi>::cast(Handle<PyList>::cast(obj)->Get(0))), 42);
+      PySmi::ToInt(
+          Handle<PySmi>::cast(Handle<PyList>::cast(obj)->Get(0, isolate_))),
+      42);
 }
 
 TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
@@ -178,21 +180,21 @@ TEST_F(PyListTest, PyObjectContainsAndEqualWork) {
   auto list = PyList::New(isolate_, 2);
   auto s = Handle<PyObject>(PyString::New(isolate_, "x"));
   PyList::Append(list, s, isolate_);
-  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
 
   Handle<PyObject> obj(list);
   Handle<PyObject> contains_res;
   ASSERT_TRUE(PyObject::Contains(isolate_, obj, s).ToHandle(&contains_res));
   EXPECT_TRUE(Handle<PyBoolean>::cast(contains_res)->value());
   ASSERT_TRUE(
-      PyObject::Contains(isolate_, obj, Handle<PyObject>(PySmi::FromInt(2)))
+      PyObject::Contains(isolate_, obj, Handle<PyObject>(PySmi::FromInt(2), isolate_))
           .ToHandle(&contains_res));
   EXPECT_FALSE(Handle<PyBoolean>::cast(contains_res)->value());
 
   auto list2 = PyList::New(isolate_, 2);
   PyList::Append(list2, Handle<PyObject>(PyString::New(isolate_, "x")),
                  isolate_);
-  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
+  PyList::Append(list2, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
 
   Handle<PyObject> equal_res;
   ASSERT_TRUE(
@@ -205,12 +207,12 @@ TEST_F(PyListTest, PyObjectLessIsLexicographic) {
   HandleScope scope;
 
   auto a = PyList::New(isolate_, 2);
-  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
-  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(2)), isolate_);
+  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
+  PyList::Append(a, Handle<PyObject>(PySmi::FromInt(2), isolate_), isolate_);
 
   auto b = PyList::New(isolate_, 2);
-  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(1)), isolate_);
-  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3)), isolate_);
+  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(1), isolate_), isolate_);
+  PyList::Append(b, Handle<PyObject>(PySmi::FromInt(3), isolate_), isolate_);
 
   Handle<PyObject> less_res;
   ASSERT_TRUE(PyObject::Less(isolate_, Handle<PyObject>(a), Handle<PyObject>(b))

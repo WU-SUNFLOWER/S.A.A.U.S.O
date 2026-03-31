@@ -39,13 +39,15 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
 // 判断 derive_type_object 是否是 super_type_object 的派生类型（含自身）。
 // - 基于 derive_type_object 的 klass mro 进行判定。
 // - 命中返回true，未命中返回false，比较过程中出现异常返回empty。
-Maybe<bool> Runtime_IsSubtype(Handle<PyTypeObject> derive_type_object,
+Maybe<bool> Runtime_IsSubtype(Isolate* isolate,
+                              Handle<PyTypeObject> derive_type_object,
                               Handle<PyTypeObject> super_type_object);
 
 // 判断 derive_klass 是否是 super_klass 的派生类型（含自身）。
 // - 基于 derive_klass 的 mro 进行判定。
 // - 命中返回true，未命中返回false。
-Maybe<bool> Runtime_IsSubtype(Tagged<Klass> derive_klass,
+Maybe<bool> Runtime_IsSubtype(Isolate* isolate,
+                              Tagged<Klass> derive_klass,
                               Tagged<Klass> super_klass);
 
 // 沿着实例对象的 type mro 查找属性（Lookup 语义）。

@@ -119,7 +119,8 @@ BUILTIN_MODULE_FUNC(Time_Sleep) {
 
   double seconds = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, seconds,
-                             ExtractSeconds(isolate, args->Get(0), "sleep"));
+                             ExtractSeconds(isolate, args->Get(0, isolate),
+                                            "sleep"));
 
   if (seconds < 0) {
     Runtime_ThrowError(isolate, ExceptionType::kValueError,

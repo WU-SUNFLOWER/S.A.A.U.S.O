@@ -53,7 +53,7 @@ Maybe<void> PyCodeObjectKlass::Initialize(Isolate* isolate) {
   Handle<PyTypeObject> type_object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, type_object,
                              isolate->factory()->NewPyTypeObject());
-  type_object->BindWithKlass(Tagged<Klass>(this));
+  type_object->BindWithKlass(Tagged<Klass>(this), isolate);
 
   // 初始化类字典
   set_klass_properties(PyDict::New(isolate));

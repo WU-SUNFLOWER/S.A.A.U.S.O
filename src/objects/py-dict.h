@@ -20,8 +20,8 @@ class PyDict : public PyObject {
   static Tagged<PyDict> cast(Tagged<PyObject> object);
 
   int64_t capacity() const;
-  Handle<PyObject> KeyAtIndex(int64_t index) const;
-  Handle<PyObject> ValueAtIndex(int64_t index) const;
+  Handle<PyObject> KeyAtIndex(int64_t index, Isolate* isolate) const;
+  Handle<PyObject> ValueAtIndex(int64_t index, Isolate* isolate) const;
   Handle<PyTuple> ItemAtIndex(int64_t index, Isolate* isolate) const;
 
   Maybe<bool> ContainsKey(Handle<PyObject> key, Isolate* isolate) const;
@@ -54,7 +54,7 @@ class PyDict : public PyObject {
                          Isolate* isolate);
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict, Isolate* isolate);
 
-  Handle<FixedArray> data() const;
+  Handle<FixedArray> data(Isolate* isolate) const;
 
  private:
   friend class PyDictKlass;

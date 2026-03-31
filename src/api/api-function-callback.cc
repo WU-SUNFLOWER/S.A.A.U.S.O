@@ -22,7 +22,8 @@ MaybeLocal<Value> FunctionCallbackInfo::operator[](int index) const {
       index >= impl->args->length()) {
     return MaybeLocal<Value>();
   }
-  return api::WrapRuntimeResult(impl->isolate, impl->args->Get(index));
+  return api::WrapRuntimeResult(impl->isolate,
+                                impl->args->Get(index, impl->isolate));
 }
 
 Maybe<int64_t> FunctionCallbackInfo::GetIntegerArg(int index) const {

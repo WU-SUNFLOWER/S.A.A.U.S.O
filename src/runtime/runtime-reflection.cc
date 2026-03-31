@@ -44,7 +44,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   // 如果没有有效的supers列表，那么显式创建一个列表，并将object作为基类添加进去
   if (supers.is_null() || supers->IsEmpty()) {
     supers = PyList::New(isolate, 1);
-    PyList::Append(supers, PyObjectKlass::GetInstance(isolate)->type_object(),
+    PyList::Append(supers,
+                   PyObjectKlass::GetInstance(isolate)->type_object(isolate),
                    isolate);
   }
   klass->set_supers(supers);
@@ -55,7 +56,8 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 
   if (!supers.is_null()) {
     for (int64_t i = 0; i < supers->length(); ++i) {
-      auto base_type_object = Handle<PyTypeObject>::cast(supers->Get(i));
+      auto base_type_object =
+          Handle<PyTypeObject>::cast(supers->Get(i, isolate));
       Tagged<Klass> base_klass = base_type_object->own_klass();
 
       // 如果是第一个super，那么先把它作为 native_layout_base 和
@@ -92,7 +94,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
   klass->set_instance_has_properties_dict(true);
 
   // 建立双向绑定
-  type_object->BindWithKlass(klass);
+  type_object->BindWithKlass(klass, isolate);
 
   // 为klass计算mro
   RETURN_ON_EXCEPTION(isolate, klass->OrderSupers(isolate));
@@ -106,10 +108,11 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
 Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
                                            Handle<PyObject> object,
                                            Handle<PyTypeObject> type_object) {
-  auto mro_of_object = PyObject::ResolveObjectKlass(object, isolate)->mro();
+  auto mro_of_object =
+      PyObject::ResolveObjectKlass(object, isolate)->mro(isolate);
   Handle<PyObject> type_or_tuple = type_object;
   for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto curr_type_object = mro_of_object->Get(i);
+    auto curr_type_object = mro_of_object->Get(i, isolate);
 
     bool is_equal;
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -123,17 +126,20 @@ Maybe<bool> Runtime_IsInstanceOfTypeObject(Isolate* isolate,
   return Maybe<bool>(false);
 }
 
-Maybe<bool> Runtime_IsSubtype(Handle<PyTypeObject> derive_type_object,
+Maybe<bool> Runtime_IsSubtype(Isolate* isolate,
+                              Handle<PyTypeObject> derive_type_object,
                               Handle<PyTypeObject> super_type_object) {
-  return Runtime_IsSubtype(derive_type_object->own_klass(),
+  return Runtime_IsSubtype(isolate, derive_type_object->own_klass(),
                            super_type_object->own_klass());
 }
 
-Maybe<bool> Runtime_IsSubtype(Tagged<Klass> derive_klass,
+Maybe<bool> Runtime_IsSubtype(Isolate* isolate,
+                              Tagged<Klass> derive_klass,
                               Tagged<Klass> super_klass) {
-  auto mro_of_derive = derive_klass->mro();
+  auto mro_of_derive = derive_klass->mro(isolate);
   for (auto i = 0; i < mro_of_derive->length(); ++i) {
-    auto curr_type_object = Handle<PyTypeObject>::cast(mro_of_derive->Get(i));
+    auto curr_type_object =
+        Handle<PyTypeObject>::cast(mro_of_derive->Get(i, isolate));
     if (curr_type_object->own_klass() == super_klass) {
       return Maybe<bool>(true);
     }
@@ -161,11 +167,12 @@ Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
   out_prop_val = Handle<PyObject>::null();
 
   // 沿着mro序列进行查找
-  Handle<PyList> mro_of_object = klass->mro();
+  Handle<PyList> mro_of_object = klass->mro(isolate);
   for (auto i = 0; i < mro_of_object->length(); ++i) {
-    auto type_object = Handle<PyTypeObject>::cast(mro_of_object->Get(i));
+    auto type_object =
+        Handle<PyTypeObject>::cast(mro_of_object->Get(i, isolate));
     auto own_klass = type_object->own_klass();
-    auto klass_properties = own_klass->klass_properties();
+    auto klass_properties = own_klass->klass_properties(isolate);
 
     Handle<PyObject> result;
     bool found = false;
@@ -200,7 +207,7 @@ MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
 
   Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                       "type object '%s' has no attribute '%s'",
-                      klass->name()->buffer(),
+                      klass->name(isolate)->buffer(),
                       Handle<PyString>::cast(prop_name)->buffer());
   return kNullMaybeHandle;
 }

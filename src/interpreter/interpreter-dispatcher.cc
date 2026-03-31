@@ -205,7 +205,7 @@ void Interpreter::EvalCurrentFrame() {
       // 整个tuple都需要完整遍历一遍，
       // 如果出现非法的elem，则直接抛出错误！
       for (auto i = 0; i < tuple->length(); ++i) {
-        auto elem = tuple->Get(i);
+        auto elem = tuple->Get(i, isolate_);
 
         if (IsPyTypeObject(elem)) [[likely]] {
           bool current_matched;
@@ -376,7 +376,7 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg);
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
 
     Handle<PyDict> locals = current_frame_->locals(isolate_);
     // Python中栈帧的locals是按需创建的。
@@ -394,7 +394,7 @@ void Interpreter::EvalCurrentFrame() {
   // 删除一个 name（用于 except ... as e
   // 的清理阶段，确保异常变量不泄漏到外层作用域）。
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteName, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg);
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
 
     Handle<PyDict> locals = current_frame_->locals(isolate_);
     if (locals.is_null()) {
@@ -424,7 +424,7 @@ void Interpreter::EvalCurrentFrame() {
     current_frame_->set_stack_top(old_stack_top + op_arg);
     for (int i = 0; i < op_arg; ++i) {
       current_frame_->stack(isolate_)->Set(old_stack_top + (op_arg - 1 - i),
-                                           tuple->Get(i));
+                                           tuple->Get(i, isolate_));
     }
   })
 
@@ -454,7 +454,8 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreAttr, {
-    Handle<PyObject> attr_name = current_frame_->names(isolate_)->Get(op_arg);
+    Handle<PyObject> attr_name =
+        current_frame_->names(isolate_)->Get(op_arg, isolate_);
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_value = POP();
     GOTO_ON_EXCEPTION(
@@ -462,7 +463,7 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg);
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
     Handle<PyObject> value = POP();
     GOTO_ON_EXCEPTION(
         PyDict::Put(current_frame_->globals(isolate_), key, value, isolate_));
@@ -553,7 +554,7 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(LoadAttr, {
     Handle<PyObject> object = POP();
     Handle<PyObject> attr_name =
-        current_frame_->names(isolate_)->Get(op_arg >> 1);
+        current_frame_->names(isolate_)->Get(op_arg >> 1, isolate_);
 
     // 在python代码中出现了类似于`obj.do_something(arg)`的操作，
     // 即此处可能发生了对象方法调用。
@@ -638,7 +639,8 @@ void Interpreter::EvalCurrentFrame() {
     auto level = Handle<PySmi>::cast(POP());
 
     auto name =
-        Handle<PyString>::cast(current_frame_->names(isolate_)->Get(op_arg));
+        Handle<PyString>::cast(
+            current_frame_->names(isolate_)->Get(op_arg, isolate_));
 
     Handle<PyObject> module;
     ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, module,
@@ -652,7 +654,8 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(ImportFrom, {
     auto parent_module = TOP();
     auto sub_module_name =
-        Handle<PyString>::cast(current_frame_->names(isolate_)->Get(op_arg));
+        Handle<PyString>::cast(
+            current_frame_->names(isolate_)->Get(op_arg, isolate_));
 
     // Fast Path: 如果目标子模块已经被解析过了，直接返回
     Handle<PyObject> value;
@@ -942,7 +945,8 @@ void Interpreter::EvalCurrentFrame() {
     auto result = PyDict::New(isolate_);
     for (auto i = keys->length() - 1; 0 <= i; --i) {
       Handle<PyObject> value = POP();
-      GOTO_ON_EXCEPTION(PyDict::Put(result, keys->Get(i), value, isolate_));
+      GOTO_ON_EXCEPTION(
+          PyDict::Put(result, keys->Get(i, isolate_), value, isolate_));
     }
     PUSH(result);
   })

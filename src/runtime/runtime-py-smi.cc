@@ -112,7 +112,7 @@ MaybeHandle<PySmi> Runtime_NewSmi(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  Handle<PyObject> value = pos_args->Get(0);
+  Handle<PyObject> value = pos_args->Get(0, isolate);
 
   if (argc == 2) {
     if (!IsPyString(value)) {
