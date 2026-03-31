@@ -44,12 +44,14 @@ Handle<PyObject> PyFalseObject(Isolate* isolate);
 
 // 断言两个 PyObject 在 Python 语义下相等（通过 PyObject::Equal）。
 // - x / y 均不允许为 null；任一为 null 则断言失败并标注哪个为空。
-::testing::AssertionResult IsPyObjectEqual(Handle<PyObject> x,
+::testing::AssertionResult IsPyObjectEqual(Isolate* isolate,
+                                           Handle<PyObject> x,
                                            Handle<PyObject> y);
 
 // 断言 condition 为 PyTrue（用于检查内建比较/谓词的返回结果）。
 // - condition 不允许为 null；为 null 则断言失败。
-::testing::AssertionResult IsPyTrueCondition(Handle<PyObject> condition);
+::testing::AssertionResult IsPyTrueCondition(Isolate* isolate,
+                                             Handle<PyObject> condition);
 
 // 以小端序写入 32 位整数到 out。
 void PutInt32LE(std::vector<uint8_t>& out, int32_t v);

@@ -52,7 +52,8 @@ Handle<PyObject> PyFalseObject(Isolate* isolate) {
   return ::testing::AssertionSuccess();
 }
 
-::testing::AssertionResult IsPyObjectEqual(Handle<PyObject> x,
+::testing::AssertionResult IsPyObjectEqual(Isolate* isolate,
+                                           Handle<PyObject> x,
                                            Handle<PyObject> y) {
   if (x.is_null() || y.is_null()) {
     return ::testing::AssertionFailure()
@@ -62,21 +63,22 @@ Handle<PyObject> PyFalseObject(Isolate* isolate) {
 
   // 等价性以 Python 语义的 __eq__ 路径为准，期望返回 PyTrue。
   Handle<PyObject> result;
-  if (!PyObject::Equal(Isolate::Current(), x, y).ToHandle(&result)) {
+  if (!PyObject::Equal(isolate, x, y).ToHandle(&result)) {
     return ::testing::AssertionFailure()
            << "PyObject::Equal failed (exception)";
   }
-  if (!IsPyTrue(result, Isolate::Current())) {
+  if (!IsPyTrue(result, isolate)) {
     return ::testing::AssertionFailure() << "PyObject::Equal returned false";
   }
   return ::testing::AssertionSuccess();
 }
 
-::testing::AssertionResult IsPyTrueCondition(Handle<PyObject> condition) {
+::testing::AssertionResult IsPyTrueCondition(Isolate* isolate,
+                                             Handle<PyObject> condition) {
   if (condition.is_null()) {
     return ::testing::AssertionFailure() << "condition is null";
   }
-  if (!IsPyTrue(condition, Isolate::Current())) {
+  if (!IsPyTrue(condition, isolate)) {
     return ::testing::AssertionFailure() << "condition is not PyTrue";
   }
   return ::testing::AssertionSuccess();
