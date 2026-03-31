@@ -52,9 +52,7 @@ Handle<PyList> C3Impl_Merge(Isolate* isolate,
 
     auto mro_of_curr_super =
         Handle<PyList>::cast(mro_of_each_super->Get(i, isolate));
-    auto head =
-        handle(Tagged<PyTypeObject>::cast(*mro_of_curr_super->Get(0, isolate)),
-               isolate);
+    auto head = Handle<PyTypeObject>::cast(mro_of_curr_super->Get(0, isolate));
 
     for (auto j = 0; j < mro_of_each_super->length(); ++j) {
       if (j == i) {
@@ -187,9 +185,7 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   } else {
     Handle<PyList> all = PyList::New(isolate, supers(isolate)->length());
     for (auto i = 0; i < supers(isolate)->length(); ++i) {
-      auto super =
-          handle(Tagged<PyTypeObject>::cast(*supers(isolate)->Get(i, isolate)),
-                 isolate);
+      auto super = Handle<PyTypeObject>::cast(supers(isolate)->Get(i, isolate));
       PyList::Append(all, C3Impl_Linear(isolate, super), isolate);
     }
     mro_result = C3Impl_Merge(isolate, all);

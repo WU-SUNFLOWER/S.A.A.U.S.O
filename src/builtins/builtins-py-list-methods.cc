@@ -297,7 +297,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   if (key_func.is_null()) {
     for (int64_t i = 0; i < expected_length; ++i) {
-      keys->Set(i, *list->Get(i, isolate));
+      keys->Set(i, list->GetTagged(i));
     }
   } else {
     Handle<PyTuple> key_args = PyTuple::New(isolate, 1);
@@ -364,7 +364,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
 
   Handle<FixedArray> tmp = isolate->factory()->NewFixedArray(expected_length);
   for (int64_t i = 0; i < expected_length; ++i) {
-    tmp->Set(i, *list->Get(indices[static_cast<size_t>(i)], isolate));
+    tmp->Set(i, list->GetTagged(indices[static_cast<size_t>(i)]));
   }
   for (int64_t i = 0; i < expected_length; ++i) {
     list->Set(i, handle(tmp->Get(i), isolate));

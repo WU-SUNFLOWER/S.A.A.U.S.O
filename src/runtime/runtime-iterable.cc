@@ -71,7 +71,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
     auto list = Handle<PyList>::cast(iterable);
     tuple = PyTuple::New(isolate, list->length());
     for (auto i = 0; i < list->length(); ++i) {
-      tuple->SetInternal(i, list->Get(i, isolate));
+      tuple->SetInternal(i, list->GetTagged(i));
     }
     return scope.Escape(tuple);
   }
@@ -82,7 +82,7 @@ MaybeHandle<PyTuple> Runtime_UnpackIterableObjectToTuple(
       isolate, Runtime_ExtendListByItratableObject(isolate, tmp, iterable));
   tuple = PyTuple::New(isolate, tmp->length());
   for (auto i = 0; i < tmp->length(); ++i) {
-    tuple->SetInternal(i, tmp->Get(i, isolate));
+    tuple->SetInternal(i, tmp->GetTagged(i));
   }
   return scope.Escape(tuple);
 }

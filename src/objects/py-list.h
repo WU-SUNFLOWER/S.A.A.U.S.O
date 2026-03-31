@@ -26,14 +26,14 @@ class PyList : public PyObject {
 
   static Tagged<PyList> cast(Tagged<PyObject> object);
 
-  // 以下方法均不会触发GC
-  // 但为了避免调用方拿到Tagged<PyObject>裸指针后意外触发GC，导致裸指针变成悬空指针，
-  // 我们约定所有返回结果必须使用Handle进行包装。
-  // 这样可以强制调用方使用Handle持有堆上对象，缓解悬空指针风险。
   Handle<PyObject> Pop(Isolate* isolate);
+  Tagged<PyObject> PopTagged();
 
   Handle<PyObject> Get(int64_t index, Isolate* isolate) const;
+  Tagged<PyObject> GetTagged(int64_t index) const;
+
   Handle<PyObject> GetLast(Isolate* isolate) const;
+  Tagged<PyObject> GetLastTagged() const;
 
   // 常规的set操作，要求0<=index<length
   void Set(int64_t index, Handle<PyObject> value);

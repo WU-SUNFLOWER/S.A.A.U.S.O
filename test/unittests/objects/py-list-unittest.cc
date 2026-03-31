@@ -26,7 +26,7 @@ TEST_F(PyListTest, NewInstanceHasZeroLengthAndMinimumCapacity) {
   EXPECT_GE(list->capacity(), PyList::kMinimumCapacity);
 }
 
-TEST_F(PyListTest, AppendGetGetLastPopWork) {
+TEST_F(PyListTest, AppendGetGetTaggedGetLastTaggedPopTaggedWork) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_, 2);
@@ -38,10 +38,12 @@ TEST_F(PyListTest, AppendGetGetLastPopWork) {
 
   EXPECT_EQ(list->length(), 2);
   EXPECT_EQ((*list->Get(0, isolate_)).ptr(), (*s1).ptr());
+  EXPECT_EQ(list->GetTagged(0).ptr(), (*s1).ptr());
   EXPECT_EQ((*list->GetLast(isolate_)).ptr(), (*i1).ptr());
+  EXPECT_EQ(list->GetLastTagged().ptr(), (*i1).ptr());
 
-  auto popped = list->Pop(isolate_);
-  EXPECT_EQ((*popped).ptr(), (*i1).ptr());
+  auto popped_tagged = list->PopTagged();
+  EXPECT_EQ(popped_tagged.ptr(), (*i1).ptr());
   EXPECT_EQ(list->length(), 1);
 }
 
