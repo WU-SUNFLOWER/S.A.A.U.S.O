@@ -125,7 +125,10 @@ class Factory {
   // 在堆上创建一个新的 bool 对象，用于为虚拟机初始化 True 和 False 对象
   Tagged<PyBoolean> NewPyBoolean(bool value);
 
+  // 在堆上创建一个新的 None 对象，用于为虚拟机初始化 None 全局单例
   Tagged<PyNone> NewPyNone();
+  // 获取 None 全局单例
+  Handle<PyNone> py_none_object() const;
 
  private:
   Isolate* isolate_{nullptr};

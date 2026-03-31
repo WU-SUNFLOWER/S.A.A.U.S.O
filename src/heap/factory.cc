@@ -643,9 +643,9 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
 }
 
 Handle<PyBoolean> Factory::ToPyBoolean(bool condition) {
-  return handle(condition ? isolate_->py_true_object()
-                          : isolate_->py_false_object(),
-                isolate_);
+  return handle(
+      condition ? isolate_->py_true_object() : isolate_->py_false_object(),
+      isolate_);
 }
 
 Tagged<PyBoolean> Factory::NewPyBoolean(bool value) {
@@ -669,6 +669,10 @@ Tagged<PyNone> Factory::NewPyNone() {
     PyObject::SetProperties(object, Tagged<PyDict>::null());
   }
   return object;
+}
+
+Handle<PyNone> Factory::py_none_object() const {
+  return handle(isolate_->py_none_object(), isolate_);
 }
 
 //////////////////////////////////////////////////////////////////////////////
