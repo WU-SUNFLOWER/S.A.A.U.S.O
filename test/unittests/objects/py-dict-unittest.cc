@@ -50,9 +50,9 @@ TEST_F(PyDictTest, GetApiTriState) {
   Handle<PyObject> bad_key = PyDict::New(isolate_);
   out_tagged = Tagged<PyObject>::null();
   EXPECT_TRUE(dict->GetTagged(bad_key, out_tagged, isolate_).IsNothing());
-  EXPECT_TRUE(isolate->HasPendingException());
+  EXPECT_TRUE(isolate_->HasPendingException());
   EXPECT_TRUE(out_tagged.is_null());
-  isolate->exception_state()->Clear();
+  isolate_->exception_state()->Clear();
 }
 
 TEST_F(PyDictTest, BasicOperations) {
