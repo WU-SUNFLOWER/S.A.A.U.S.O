@@ -61,7 +61,7 @@ BuiltinBootstrapper::BuiltinBootstrapper(Isolate* isolate)
     : isolate_(isolate) {}
 
 MaybeHandle<PyDict> BuiltinBootstrapper::CreateBuiltins() {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   assert(!is_bootstrapped_);
   builtins_ = Global<PyDict>(isolate_, PyDict::New(isolate_));

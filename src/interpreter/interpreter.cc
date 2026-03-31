@@ -124,7 +124,7 @@ MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
                                                   Handle<PyTuple> pos_args,
                                                   Handle<PyDict> kw_args,
                                                   ExtendArgs... extend_args) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   NormalizeCallable(callable, receiver);
 

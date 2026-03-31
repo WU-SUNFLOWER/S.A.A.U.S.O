@@ -23,7 +23,7 @@ namespace saauso::internal {
 // - sys.modules / sys.path 由 ModuleManager 持有并维护，sys 模块仅把它们暴露给
 // Python 层。
 BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(

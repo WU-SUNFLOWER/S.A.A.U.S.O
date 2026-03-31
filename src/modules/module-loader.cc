@@ -40,7 +40,7 @@ ModuleLoader::ModuleLoader(Isolate* isolate,
 MaybeHandle<PyModule> ModuleLoader::LoadModulePart(
     Handle<PyString> fullname,
     Handle<PyList> search_path_list) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   Handle<PyObject> loaded;
   ASSIGN_RETURN_ON_EXCEPTION(

@@ -21,7 +21,7 @@ MaybeHandle<PyModule> BuiltinModuleUtils::NewBuiltinModule(
     Isolate* isolate,
     const char* module_name,
     const char* package_name) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, module,
@@ -65,7 +65,7 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
   // 这里不直接复用 builtins-utils 的安装入口，是为了让 modules 层保持
   // “无 owner_type/access_flag
   // 语义”的最小接口，避免模块函数安装与类型方法安装耦合。
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   Handle<PyString> py_name = PyString::New(isolate, name);
   FunctionTemplateInfo function_template(isolate, func, py_name);

@@ -57,7 +57,7 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
                                                    Handle<PyTuple> fromlist,
                                                    int64_t level,
                                                    Handle<PyDict> globals) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   Handle<PyString> fullname;
   ASSIGN_RETURN_ON_EXCEPTION(

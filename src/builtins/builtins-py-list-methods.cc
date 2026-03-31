@@ -79,7 +79,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Append) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 1) {
@@ -122,7 +122,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Str) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto object = Handle<PyList>::cast(self);
   if (object->IsEmpty()) {
     Runtime_ThrowError(isolate, ExceptionType::kIndexError,
@@ -133,7 +133,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto object = Handle<PyList>::cast(self);
   auto index = Handle<PySmi>::cast(args->Get(0, isolate));
   PyList::Insert(object, PySmi::ToInt(index), args->Get(1, isolate), isolate);
@@ -141,7 +141,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Index) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto list = Handle<PyList>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {
@@ -207,7 +207,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto list = Handle<PyList>::cast(self);
 
   auto length = list->length();
@@ -230,7 +230,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
 }
 
 BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   if (!args.is_null() && args->length() != 0) {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
@@ -344,7 +344,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
                          "list modified during sort");
       return false;
     }
-    HandleScope scope;
+    HandleScope scope(c->isolate);
     Handle<PyObject> ka = handle(c->keys->Get(a), c->isolate);
     Handle<PyObject> kb = handle(c->keys->Get(b), c->isolate);
     Maybe<bool> mb = PyObject::LessBool(c->isolate, ka, kb);

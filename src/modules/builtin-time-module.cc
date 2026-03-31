@@ -137,7 +137,7 @@ BUILTIN_MODULE_FUNC(Time_Sleep) {
 /////////////////////////////////////////////////////////////////////////////////
 
 BUILTIN_MODULE_INIT_FUNC("time", InitTimeModule) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyModule> module;
   ASSIGN_RETURN_ON_EXCEPTION(

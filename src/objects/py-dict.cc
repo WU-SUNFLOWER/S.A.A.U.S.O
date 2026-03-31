@@ -42,7 +42,7 @@ Maybe<int64_t> FindSlot(DictT dict,
                         Tagged<PyObject> key,
                         bool* found,
                         Isolate* isolate) {
-  HandleScope scope;
+  HandleScope scope(isolate);
   Handle<PyObject> key_handle(key, isolate);
 
   uint64_t hash = 0;
@@ -212,7 +212,7 @@ Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
 }
 
 Maybe<bool> PyDict::Remove(Handle<PyObject> key, Isolate* isolate) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   bool found = false;
   int64_t index = 0;
@@ -239,7 +239,7 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
                         Handle<PyObject> key,
                         Handle<PyObject> value,
                         Isolate* isolate) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   assert(!key.is_null());
   assert(!value.is_null());
@@ -268,7 +268,7 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
 
 // static
 Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   int64_t out_length = dict->occupied();
   Handle<PyTuple> keys = PyTuple::New(isolate, out_length);
@@ -292,7 +292,7 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
 
 // static
 Maybe<bool> PyDict::ExpandImpl(Handle<PyDict> dict, Isolate* isolate) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   int64_t new_capacity = dict->capacity() << 1;
   Handle<FixedArray> new_data =

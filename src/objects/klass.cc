@@ -177,7 +177,7 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   // 不允许重复执行C3算法
   assert(mro_.is_null());
 
-  HandleScope scope;
+  HandleScope scope(isolate);
   Handle<PyList> mro_result;
 
   if (supers_.is_null() || supers(isolate)->IsEmpty()) {

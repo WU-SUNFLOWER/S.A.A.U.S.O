@@ -28,7 +28,7 @@ namespace saauso::internal {
 
 namespace {
 Handle<PyObject> NextImpl(Isolate* isolate, Handle<PyObject> self) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   auto iterator = Handle<PyListIterator>::cast(self);
   auto list = iterator->owner(isolate);

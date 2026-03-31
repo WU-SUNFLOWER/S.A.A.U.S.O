@@ -52,7 +52,7 @@ Tagged<PyObject> GetNamesFromLocalsplusNames(
     Handle<PyCodeObject> code_object,
     PyCodeObject::LocalsPlusKind target_kind,
     int num) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   Handle<PyTuple> localsplusnames = code_object->localsplusnames(isolate);
   Handle<PyString> localspluskinds = code_object->localspluskinds(isolate);
@@ -95,7 +95,7 @@ Handle<PyCodeObject> PyCodeObject::New(Isolate* isolate,
                                        int line_no,
                                        Handle<PyString> line_table,
                                        Handle<PyString> exception_table) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyCodeObject> object = isolate->factory()->NewPyCodeObject();
 

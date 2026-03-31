@@ -75,7 +75,7 @@ Handle<PyString> PyString::FromPySmi(Isolate* isolate, Tagged<PySmi> smi) {
 
 // static
 Handle<PyString> PyString::FromInt(Isolate* isolate, int64_t n) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   Int64ToStringView(n, std::string_view(buffer.data(), buffer.size()));
@@ -91,7 +91,7 @@ Handle<PyString> PyString::FromPyFloat(Isolate* isolate,
 
 // static
 Handle<PyString> PyString::FromDouble(Isolate* isolate, double n) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   std::array<char, kNumberToStringBufferSize> buffer{};
   DoubleToStringView(n, std::string_view(buffer.data(), buffer.size()));
@@ -207,7 +207,7 @@ Handle<PyString> PyString::Slice(Handle<PyString> self,
                                  int64_t from,
                                  int64_t to,
                                  Isolate* isolate) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   assert(0 <= from && from <= to && to < self->length_);
 

@@ -60,7 +60,7 @@ BUILTIN_METHOD(PyTupleBuiltinMethods, Str) {
 }
 
 BUILTIN_METHOD(PyTupleBuiltinMethods, Index) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto tuple = Handle<PyTuple>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {

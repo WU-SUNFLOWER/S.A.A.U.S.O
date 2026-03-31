@@ -65,7 +65,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Str) {
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   int64_t argc = args.is_null() ? 0 : args->length();
   if (argc != 0) [[unlikely]] {
@@ -169,7 +169,7 @@ bool ParseStringSearchTarget(Isolate* isolate,
 }  // namespace
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
@@ -199,7 +199,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Index) {
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
@@ -227,7 +227,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Find) {
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = 0;
@@ -255,7 +255,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Rfind) {
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto str_object = Handle<PyString>::cast(self);
 
   int64_t argc = args.is_null() ? 0 : args->length();
@@ -373,7 +373,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 }
 
 BUILTIN_METHOD(PyStringBuiltinMethods, Join) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
   auto str_object = Handle<PyString>::cast(self);
 
   if (!kwargs.is_null() && kwargs->occupied() != 0) {

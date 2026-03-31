@@ -20,7 +20,7 @@ Maybe<void> InstallBuiltinMethodImpl(Isolate* isolate,
                                      const char* method_name,
                                      NativeFuncAccessFlag access_flag,
                                      Handle<PyTypeObject> owner_type) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   auto prop_name = PyString::New(isolate, method_name);
   auto func_template =

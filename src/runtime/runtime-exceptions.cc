@@ -107,7 +107,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Isolate* isolate,
     Handle<PyString> exception_type_name,
     Handle<PyString> message_or_null) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyDict> builtins = isolate->builtins();
 
@@ -167,7 +167,7 @@ void Runtime_ThrowErrorf(Isolate* isolate,
 
 MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     Isolate* isolate) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   auto* state = isolate->exception_state();
   if (!state->HasPendingException()) {
@@ -219,7 +219,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
     return Maybe<bool>(false);
   }
 
-  HandleScope scope;
+  HandleScope scope(isolate);
   Handle<PyObject> pending = state->pending_exception(isolate);
 
   Handle<PyDict> builtins = isolate->builtins();

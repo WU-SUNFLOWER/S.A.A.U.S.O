@@ -25,7 +25,7 @@ MaybeHandle<PyTypeObject> Runtime_CreatePythonClass(
     Handle<PyString> class_name,
     Handle<PyDict> class_properties,
     Handle<PyList> supers) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   assert(!class_name.is_null());
 
@@ -161,7 +161,7 @@ Maybe<bool> Runtime_LookupPropertyInKlassMro(Isolate* isolate,
                                              Tagged<Klass> klass,
                                              Handle<PyObject> prop_name,
                                              Handle<PyObject>& out_prop_val) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   // 预设默认输出
   out_prop_val = Handle<PyObject>::null();
@@ -192,7 +192,7 @@ MaybeHandle<PyObject> Runtime_GetPropertyInKlassMro(
     Isolate* isolate,
     Tagged<Klass> klass,
     Handle<PyObject> prop_name) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyObject> out_prop_val;
   bool found = false;
@@ -226,7 +226,7 @@ MaybeHandle<PyObject> Runtime_InvokeMagicOperationMethod(
     Handle<PyTuple> args,
     Handle<PyDict> kwargs,
     Handle<PyObject> func_name) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyObject> method;
   ASSIGN_RETURN_ON_EXCEPTION(

@@ -81,7 +81,7 @@ bool ExceptionTable::LookupHandler(Isolate* isolate,
                                    Handle<PyCodeObject> code_object,
                                    int instruction_offset_in_bytes,
                                    ExceptionHandlerInfo& out) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   if (instruction_offset_in_bytes < 0) {
     return false;

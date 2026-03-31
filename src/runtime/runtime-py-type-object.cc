@@ -20,7 +20,7 @@ namespace saauso::internal {
 MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
                                       Handle<PyObject> args,
                                       Handle<PyObject> kwargs) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyTuple> pos_args = Handle<PyTuple>::cast(args);
   int64_t argc = pos_args.is_null() ? 0 : pos_args->length();
@@ -94,7 +94,7 @@ MaybeHandle<PyObject> Runtime_NewType(Isolate* isolate,
 MaybeHandle<PyString> Runtime_NewTypeObjectRepr(
     Isolate* isolate,
     Handle<PyTypeObject> type_object) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate);
 
   Handle<PyString> type_name = type_object->own_klass()->name(isolate);
   std::string repr = "<class '";

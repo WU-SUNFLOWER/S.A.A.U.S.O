@@ -15,7 +15,7 @@
 namespace saauso::internal {
 
 Maybe<void> KlassVtable::Initialize(Isolate* isolate, Tagged<Klass> klass) {
-  HandleScope scope;
+  HandleScope scope(isolate);
 
   InitializeFromSupers(isolate, klass);
   RETURN_ON_EXCEPTION(isolate, UpdateOverrideSlots(isolate, klass));

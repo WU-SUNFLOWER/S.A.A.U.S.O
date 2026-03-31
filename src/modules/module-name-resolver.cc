@@ -19,7 +19,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveFullName(
     Handle<PyString> name,
     int64_t level,
     Handle<PyDict> globals) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
   assert(level >= 0);
 
   // 只有在相对导入的情况下，才允许模块 name 为空，例如 `from .. import
@@ -41,7 +41,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     Handle<PyString> name,
     int64_t level,
     Handle<PyDict> globals) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   // 如果不是相对导入，直接返回即可
   if (level <= 0) {
@@ -83,7 +83,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
 
 MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     Handle<PyDict> globals) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   if (globals.is_null()) {
     return scope.Escape(PyString::New(isolate_, ""));
@@ -129,7 +129,7 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
 
 Handle<PyString> ModuleNameResolver::ParentModuleNameOrEmpty(
     Handle<PyString> name) {
-  EscapableHandleScope scope;
+  EscapableHandleScope scope(isolate_);
 
   if (name.is_null() || name->length() == 0) {
     return scope.Escape(PyString::New(isolate_, ""));
