@@ -177,7 +177,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Len(Isolate* isolate,
                                                Handle<PyObject> self) {
-  return Handle<PyObject>(PySmi::FromInt(Handle<PyList>::cast(self)->length()));
+  auto len = Handle<PyList>::cast(self)->length();
+  return isolate->factory()->NewSmiFromInt(len);
 }
 
 MaybeHandle<PyObject> PyListKlass::Virtual_Repr(Isolate* isolate,

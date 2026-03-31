@@ -103,7 +103,7 @@ Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
 template <typename T>
 Local<T> WrapHostInteger(i::Isolate* isolate, int64_t value) {
   i::EscapableHandleScope scope;
-  i::Handle<i::PyObject> smi = i::handle(i::PySmi::FromInt(value), isolate);
+  i::Handle<i::PyObject> smi = isolate->factory()->NewSmiFromInt(value);
   i::Handle<i::PyObject> escaped = scope.Escape(smi);
   return i::Utils::ToLocal<T>(escaped);
 }

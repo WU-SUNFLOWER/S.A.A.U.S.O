@@ -317,7 +317,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
       object = ParseCodeObject(string_table, cache);
       break;
     case kIntegerFlag:
-      object = Handle<PyObject>(PySmi::FromInt(ReadInt32()));
+      object = isolate_->factory()->NewSmiFromInt(ReadInt32());
       break;
     case kLongFlag: {
       int n = ReadInt32();
@@ -340,7 +340,7 @@ Handle<PyObject> CPython312PycFileParser::ParseObject(
                      value);
         std::exit(1);
       }
-      object = Handle<PyObject>(PySmi::FromInt(static_cast<int>(value)));
+      object = isolate_->factory()->NewSmiFromInt(value);
       break;
     }
     case kDoubleFlag:

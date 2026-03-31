@@ -185,8 +185,8 @@ default_return_result:
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Len(Isolate* isolate,
                                                  Handle<PyObject> self) {
-  return Handle<PyObject>(
-      PySmi::FromInt(Handle<PyString>::cast(self)->length()));
+  return isolate->factory()->NewSmiFromInt(
+      Handle<PyString>::cast(self)->length());
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Repr(Isolate* isolate,
