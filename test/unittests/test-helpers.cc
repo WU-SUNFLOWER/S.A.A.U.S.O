@@ -173,7 +173,7 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope;
-    PyList::Append(printv_result_.Get(isolate_), args->Get(i), isolate);
+    PyList::Append(printv_result_.Get(isolate_), args->Get(i, isolate), isolate);
   }
   return PyNoneObject(isolate);
 }

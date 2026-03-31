@@ -28,8 +28,8 @@ void PyTypeObject::BindWithKlass(Tagged<Klass> klass) {
   klass->set_type_object(this_handle);
 }
 
-Handle<PyList> PyTypeObject::mro() const {
-  return own_klass()->mro();
+Handle<PyList> PyTypeObject::mro(Isolate* isolate) const {
+  return own_klass()->mro(isolate);
 }
 
 }  // namespace saauso::internal

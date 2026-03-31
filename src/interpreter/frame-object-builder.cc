@@ -103,17 +103,20 @@ FrameBuildContext PrepareForFunction(Isolate* isolate,
   return ctx;
 }
 
-void LoadPosActualArgsToLocalsplus(FrameBuildContext& ctx,
+void LoadPosActualArgsToLocalsplus(Isolate* isolate,
+                                   FrameBuildContext& ctx,
                                    Handle<PyTuple> actual_args,
                                    int64_t actual_pos_args_cnt) {
   int64_t valid_pos_args_cnt =
       std::min(actual_pos_args_cnt, ctx.formal_pos_arg_cnt);
   for (int64_t i = 0; i < valid_pos_args_cnt; ++i) {
-    ctx.localsplus->Set(ctx.localsplus_idx++, actual_args->Get(i));
+    ctx.localsplus->Set(ctx.localsplus_idx++, actual_args->Get(i, isolate));
   }
 }
 
-void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
+void FillDefaultArgs(Isolate* isolate,
+                     FrameBuildContext& ctx,
+                     Handle<PyTuple> default_args) {
   // 使用默认值填充 localsplus 中的空洞（从尾部形参开始向前回填）。
   if (default_args.is_null()) {
     return;
@@ -124,7 +127,7 @@ void FillDefaultArgs(FrameBuildContext& ctx, Handle<PyTuple> default_args) {
   while (default_arg_cnt > 0) {
     if (ctx.localsplus->Get(arg_list_index).is_null()) {
       ctx.localsplus->Set(arg_list_index,
-                          default_args->Get(default_arg_cnt - 1));
+                          default_args->Get(default_arg_cnt - 1, isolate));
       // 同理，让 localsplus_idx 游标在逻辑上向右移动一下。
       ++ctx.localsplus_idx;
     }
@@ -178,7 +181,7 @@ bool PackExtraPosArgsFromPosArgs(Isolate* isolate,
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
       extend_pos_args->SetInternal(
-          i, actual_pos_args->Get(ctx.formal_pos_arg_cnt + i));
+          i, actual_pos_args->Get(ctx.formal_pos_arg_cnt + i, isolate));
     }
   }
 
@@ -212,7 +215,7 @@ bool PackExtraPosArgsFromActualArgs(Isolate* isolate,
 
     for (int64_t i = 0; i < extra_pos_cnt; ++i) {
       extend_pos_args->SetInternal(
-          i, actual_args->Get(ctx.formal_pos_arg_cnt + i));
+          i, actual_args->Get(ctx.formal_pos_arg_cnt + i, isolate));
     }
   }
 
@@ -258,8 +261,8 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
     }
 
     auto item = Handle<PyTuple>::cast(item_handle);
-    auto key = Handle<PyString>::cast(item->Get(0));
-    auto value = item->Get(1);
+    auto key = Handle<PyString>::cast(item->Get(0, isolate));
+    auto value = item->Get(1, isolate);
     int64_t index_in_var_args;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, index_in_var_args,
@@ -313,9 +316,9 @@ MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
   actual_kw_arg_cnt = kwarg_keys->length();
 
   for (int64_t i = 0; i < actual_kw_arg_cnt; ++i) {
-    auto key =
-        Handle<PyString>::cast(kwarg_keys->Get(actual_kw_arg_cnt - i - 1));
-    auto value = actual_args->Get(actual_arg_cnt - i - 1);
+    auto key = Handle<PyString>::cast(
+        kwarg_keys->Get(actual_kw_arg_cnt - i - 1, isolate));
+    auto value = actual_args->Get(actual_arg_cnt - i - 1, isolate);
 
     int64_t index_in_var_args;
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -380,7 +383,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置实参优先）。
   if (!actual_pos_args.is_null()) {
-    LoadPosActualArgsToLocalsplus(ctx, actual_pos_args,
+    LoadPosActualArgsToLocalsplus(isolate, ctx, actual_pos_args,
                                   actual_pos_args->length());
   }
 
@@ -388,7 +391,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
   RETURN_ON_EXCEPTION(
       isolate, AssignKwArgsFromDict(isolate, ctx, actual_kw_args, kw_args));
 
-  FillDefaultArgs(ctx, func->default_args(isolate));
+  FillDefaultArgs(isolate, ctx, func->default_args(isolate));
   if (!CheckMissingArgs(isolate, ctx)) {
     return kNullMaybe;
   }
@@ -440,7 +443,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
   int64_t actual_kw_arg_cnt = kwarg_keys.is_null() ? 0 : kwarg_keys->length();
 
   // 将与形参对应的函数实参加载到栈帧的 localsplus 上去（位置部分）。
-  LoadPosActualArgsToLocalsplus(ctx, actual_args,
+  LoadPosActualArgsToLocalsplus(isolate, ctx, actual_args,
                                 actual_arg_cnt - actual_kw_arg_cnt);
 
   Handle<PyDict> kw_args;
@@ -448,7 +451,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildFastPath(
       isolate, AssignKwArgsFromActualArgs(isolate, ctx, actual_args, kwarg_keys,
                                           kw_args));
 
-  FillDefaultArgs(ctx, func->default_args(isolate));
+  FillDefaultArgs(isolate, ctx, func->default_args(isolate));
   if (!CheckMissingArgs(isolate, ctx)) {
     return kNullMaybe;
   }

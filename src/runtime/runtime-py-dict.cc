@@ -34,7 +34,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
   }
 
   if (argc == 1) {
-    Handle<PyObject> input = pos_args->Get(0);
+    Handle<PyObject> input = pos_args->Get(0, isolate);
     if (IsPyDict(input)) {
       auto src = Handle<PyDict>::cast(input);
       for (int64_t i = 0; i < src->capacity(); ++i) {
@@ -42,9 +42,10 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         if (item.is_null()) {
           continue;
         }
-        RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, item->Get(0), item->Get(1), isolate),
-            kNullMaybe);
+        RETURN_ON_EXCEPTION_VALUE(isolate,
+                                  PyDict::Put(result, item->Get(0, isolate),
+                                              item->Get(1, isolate), isolate),
+                                  kNullMaybe);
       }
     } else {
       Handle<PyTuple> elements;
@@ -52,7 +53,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
           isolate, elements,
           Runtime_UnpackIterableObjectToTuple(isolate, input));
       for (int64_t i = 0; i < elements->length(); ++i) {
-        Handle<PyObject> elem = elements->Get(i);
+        Handle<PyObject> elem = elements->Get(i, isolate);
         Handle<PyTuple> pair;
         ASSIGN_RETURN_ON_EXCEPTION(
             isolate, pair, Runtime_UnpackIterableObjectToTuple(isolate, elem));
@@ -64,9 +65,10 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
           return kNullMaybe;
         }
 
-        RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, pair->Get(0), pair->Get(1), isolate),
-            kNullMaybe);
+        RETURN_ON_EXCEPTION_VALUE(isolate,
+                                  PyDict::Put(result, pair->Get(0, isolate),
+                                              pair->Get(1, isolate), isolate),
+                                  kNullMaybe);
       }
     }
   }
@@ -80,7 +82,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
           continue;
         }
 
-        Handle<PyObject> key = item->Get(0);
+        Handle<PyObject> key = item->Get(0, isolate);
         if (!IsPyString(key)) {
           Handle<PyString> key_str;
           ASSIGN_RETURN_ON_EXCEPTION(isolate, key_str,
@@ -89,7 +91,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
         }
 
         RETURN_ON_EXCEPTION_VALUE(
-            isolate, PyDict::Put(result, key, item->Get(1), isolate),
+            isolate, PyDict::Put(result, key, item->Get(1, isolate), isolate),
             kNullMaybe);
       }
     }
@@ -235,8 +237,8 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
     }
 
     auto item = Handle<PyTuple>::cast(item_handle);
-    auto key = item->Get(0);
-    auto value = item->Get(1);
+    auto key = item->Get(0, isolate);
+    auto value = item->Get(1, isolate);
 
     bool exists = false;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -261,7 +263,7 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
   std::string repr("{");
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
-    Tagged<PyObject> key_tagged = dict->data()->Get(i << 1);
+    Tagged<PyObject> key_tagged = dict->data(isolate)->Get(i << 1);
     if (key_tagged.is_null()) {
       continue;
     }
@@ -278,8 +280,8 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
     Handle<PyString> value_repr;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, value_repr,
-        PyObject::Repr(isolate,
-                       handle(dict->data()->Get((i << 1) + 1), isolate)));
+        PyObject::Repr(
+            isolate, handle(dict->data(isolate)->Get((i << 1) + 1), isolate)));
     repr.append(value_repr->ToStdString());
   }
   repr.push_back('}');

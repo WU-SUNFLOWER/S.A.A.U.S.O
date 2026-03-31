@@ -58,7 +58,7 @@ Tagged<PyObject> Interpreter::pending_exception_tagged() const {
 }
 
 Handle<PyObject> Interpreter::pending_exception() const {
-  return isolate_->exception_state()->pending_exception();
+  return isolate_->exception_state()->pending_exception(isolate_);
 }
 
 void Interpreter::ClearPendingException() {
@@ -224,8 +224,9 @@ Maybe<void> Interpreter::NormalizeArguments(Handle<PyTuple> actual_args,
 
     for (auto i = 0; i < kwarg_keys->length(); ++i) {
       Handle<PyObject> kwarg_key =
-          kwarg_keys->Get(kwarg_keys->length() - i - 1);
-      Handle<PyObject> actual_arg = actual_args->Get(actual_args_size - i - 1);
+          kwarg_keys->Get(kwarg_keys->length() - i - 1, isolate_);
+      Handle<PyObject> actual_arg =
+          actual_args->Get(actual_args_size - i - 1, isolate_);
 
       RETURN_ON_EXCEPTION(
           isolate_, PyDict::Put(kw_args, kwarg_key, actual_arg, isolate_));

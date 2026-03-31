@@ -58,7 +58,8 @@ Maybe<bool> ImportModulesByAllImpl(Isolate* isolate,
     auto names = Handle<PyTuple>::cast(all);
     for (int64_t i = 0; i < names->length(); ++i) {
       RETURN_ON_EXCEPTION(isolate, ImportNameImpl(isolate, module_dict, locals,
-                                                  names->Get(i), false));
+                                                  names->Get(i, isolate),
+                                                  false));
     }
   } else if (IsPyList(all)) {
     auto names = Handle<PyList>::cast(all);
@@ -104,7 +105,7 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate);
   if (module_dict.is_null()) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                        "module has no __dict__");
@@ -129,7 +130,7 @@ MaybeHandle<PyObject> Runtime_IntrinsicImportStar(Isolate* isolate,
     Handle<PyTuple> keys = PyDict::GetKeyTuple(module_dict, isolate);
     for (int64_t i = 0; i < keys->length(); ++i) {
       RETURN_ON_EXCEPTION(isolate, ImportNameImpl(isolate, module_dict, locals,
-                                                  keys->Get(i), true));
+                                                  keys->Get(i, isolate), true));
     }
   }
 

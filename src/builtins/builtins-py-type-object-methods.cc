@@ -57,7 +57,7 @@ BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Str) {
 }
 
 BUILTIN_METHOD(PyTypeObjectBuiltinMethods, Mro) {
-  return Handle<PyTypeObject>::cast(self)->mro();
+  return Handle<PyTypeObject>::cast(self)->mro(isolate);
 }
 
 }  // namespace saauso::internal

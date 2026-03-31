@@ -31,8 +31,9 @@ MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
   if (exception_args.is_null() || exception_args->length() == 0) {
     return PyString::New(isolate, "");
   }
-  if (exception_args->length() == 1 && IsPyString(exception_args->Get(0))) {
-    return Handle<PyString>::cast(exception_args->Get(0));
+  if (exception_args->length() == 1 &&
+      IsPyString(exception_args->Get(0, isolate))) {
+    return Handle<PyString>::cast(exception_args->Get(0, isolate));
   }
   return PyString::New(isolate, "");
 }
@@ -128,7 +129,7 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
                         init_args, Handle<PyObject>::null()));
 
   if (!message_or_null.is_null()) {
-    Handle<PyDict> properties = PyObject::GetProperties(exception);
+    Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
     if (!properties.is_null()) {
       RETURN_ON_EXCEPTION_VALUE(isolate,
                                 PyDict::Put(properties, ST(message, isolate),
@@ -173,11 +174,11 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(PyString::New(isolate, ""));
   }
 
-  Handle<PyObject> exception = state->pending_exception();
+  Handle<PyObject> exception = state->pending_exception(isolate);
   Handle<PyString> type_name = PyObject::GetTypeName(exception, isolate);
 
   Handle<PyString> message = Handle<PyString>::null();
-  Handle<PyDict> properties = PyObject::GetProperties(exception);
+  Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
   if (!properties.is_null()) {
     Handle<PyObject> args_obj;
     bool found = false;
@@ -219,7 +220,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   }
 
   HandleScope scope;
-  Handle<PyObject> pending = state->pending_exception();
+  Handle<PyObject> pending = state->pending_exception(isolate);
 
   Handle<PyDict> builtins = isolate->builtins();
   Handle<PyObject> stop_iter_type;

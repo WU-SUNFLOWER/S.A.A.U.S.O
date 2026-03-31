@@ -73,7 +73,8 @@ Maybe<void> PyObjectKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(isolate, PyObjectBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+                                   isolate, klass_properties,
+                                   type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "object"));
@@ -120,7 +121,7 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
   // 1. 如果对象存在实例字典（__dict__），
   //    尝试直接在实例字典中查找prop_name
   if (IsHeapObject(self)) {
-    Handle<PyDict> properties = PyObject::GetProperties(self);
+    Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
     if (!properties.is_null()) {
       bool found = false;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
@@ -201,7 +202,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
 
   Handle<PyObject> result;
   if (IsHeapObject(self)) {
-    Handle<PyDict> properties = PyObject::GetProperties(self);
+    Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
     if (!properties.is_null()) {
       bool found = false;
       if (!properties->Get(prop_name, result, isolate).To(&found)) {
@@ -238,7 +239,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_SetAttr(
     Handle<PyObject> self,
     Handle<PyObject> property_name,
     Handle<PyObject> property_value) {
-  auto properties = PyObject::GetProperties(self);
+  auto properties = PyObject::GetProperties(self, isolate);
 
   if (!IsPyString(property_name)) [[unlikely]] {
     Runtime_ThrowErrorf(

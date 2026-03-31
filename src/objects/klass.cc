@@ -27,7 +27,7 @@ namespace {
 Handle<PyList> C3Impl_Linear(Isolate* isolate,
                              Handle<PyTypeObject> type_object) {
   Handle<PyList> result = PyList::New(isolate);
-  Handle<PyList> mro = type_object->mro();
+  Handle<PyList> mro = type_object->mro(isolate);
 
   // 在C3Impl_Merge中我们会不断地从super的mro序列中移除元素，
   // 因此为了不影响父类的mro序列数据，我们这里需要手工（潜）拷贝
@@ -114,24 +114,25 @@ Maybe<void> Klass::InitializeVtable(Isolate* isolate) {
   return vtable_.Initialize(isolate, Tagged<Klass>(this));
 }
 
-Handle<PyString> Klass::name() {
-  return Handle<PyString>(Tagged<PyString>::cast(name_));
+Handle<PyString> Klass::name(Isolate* isolate) {
+  return Handle<PyString>(Tagged<PyString>::cast(name_), isolate);
 }
 
 void Klass::set_name(Handle<PyString> name) {
   name_ = *name;
 }
 
-Handle<PyTypeObject> Klass::type_object() {
-  return Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(type_object_));
+Handle<PyTypeObject> Klass::type_object(Isolate* isolate) {
+  return Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(type_object_),
+                              isolate);
 }
 
 void Klass::set_type_object(Handle<PyTypeObject> type_object) {
   type_object_ = *type_object;
 }
 
-Handle<PyDict> Klass::klass_properties() {
-  return handle(Tagged<PyDict>::cast(klass_properties_));
+Handle<PyDict> Klass::klass_properties(Isolate* isolate) {
+  return handle(Tagged<PyDict>::cast(klass_properties_), isolate);
 }
 
 void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
@@ -139,17 +140,17 @@ void Klass::set_klass_properties(Handle<PyDict> klass_properties) {
   klass_properties_ = *klass_properties;
 }
 
-Handle<PyList> Klass::supers() {
-  return handle(Tagged<PyList>::cast(supers_));
+Handle<PyList> Klass::supers(Isolate* isolate) {
+  return handle(Tagged<PyList>::cast(supers_), isolate);
 }
 
 void Klass::set_supers(Handle<PyList> supers) {
   supers_ = *supers;
 }
 
-Handle<PyList> Klass::mro() {
+Handle<PyList> Klass::mro(Isolate* isolate) {
   assert(!mro_.is_null());  // mro序列初始化完毕前禁止获取
-  return handle(Tagged<PyList>::cast(mro_));
+  return handle(Tagged<PyList>::cast(mro_), isolate);
 }
 
 void Klass::set_mro(Handle<PyList> mro) {
@@ -168,7 +169,7 @@ void Klass::AddSuper(Tagged<Klass> super, Isolate* isolate) {
   if (supers_.is_null()) {
     set_supers(PyList::New(isolate));
   }
-  PyList::Append(supers(), super->type_object(), isolate);
+  PyList::Append(supers(isolate), super->type_object(isolate), isolate);
 }
 
 Maybe<void> Klass::OrderSupers(Isolate* isolate) {
@@ -178,13 +179,13 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   HandleScope scope;
   Handle<PyList> mro_result;
 
-  if (supers_.is_null() || supers()->IsEmpty()) {
+  if (supers_.is_null() || supers(isolate)->IsEmpty()) {
     mro_result = PyList::New(isolate);
   } else {
-    Handle<PyList> all = PyList::New(isolate, supers()->length());
-    for (auto i = 0; i < supers()->length(); ++i) {
+    Handle<PyList> all = PyList::New(isolate, supers(isolate)->length());
+    for (auto i = 0; i < supers(isolate)->length(); ++i) {
       auto super =
-          handle(Tagged<PyTypeObject>::cast(*supers()->Get(i)), isolate);
+          handle(Tagged<PyTypeObject>::cast(*supers(isolate)->Get(i)), isolate);
       PyList::Append(all, C3Impl_Linear(isolate, super), isolate);
     }
     mro_result = C3Impl_Merge(isolate, all);
@@ -192,9 +193,10 @@ Maybe<void> Klass::OrderSupers(Isolate* isolate) {
   }
 
   // 把自己添加到mro序列的开头
-  PyList::Insert(mro_result, 0, type_object(), isolate);
-  RETURN_ON_EXCEPTION(isolate, PyDict::Put(klass_properties(), ST(mro, isolate),
-                                           mro_result, isolate));
+  PyList::Insert(mro_result, 0, type_object(isolate), isolate);
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(klass_properties(isolate), ST(mro, isolate),
+                                  mro_result, isolate));
 
   mro_ = *mro_result;
 

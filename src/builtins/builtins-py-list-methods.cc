@@ -64,7 +64,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, New) {
                        "argument");
     return kNullMaybeHandle;
   }
-  type_object = args->Get(0);
+  type_object = args->Get(0, isolate);
   new_args = Runtime_NewTupleTailOrNull(isolate, args, 1);
 
   if (!IsPyTypeObject(type_object)) {
@@ -90,7 +90,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Append) {
   }
 
   auto object = Handle<PyList>::cast(self);
-  PyList::Append(object, args->Get(0), isolate);
+  PyList::Append(object, args->Get(0, isolate), isolate);
   return scope.Escape(isolate->factory()->py_none_object());
 }
 
@@ -135,8 +135,8 @@ BUILTIN_METHOD(PyListBuiltinMethods, Pop) {
 BUILTIN_METHOD(PyListBuiltinMethods, Insert) {
   EscapableHandleScope scope;
   auto object = Handle<PyList>::cast(self);
-  auto index = Handle<PySmi>::cast(args->Get(0));
-  PyList::Insert(object, PySmi::ToInt(index), args->Get(1), isolate);
+  auto index = Handle<PySmi>::cast(args->Get(0, isolate));
+  PyList::Insert(object, PySmi::ToInt(index), args->Get(1, isolate), isolate);
   return scope.Escape(isolate->factory()->py_none_object());
 }
 
@@ -164,7 +164,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
     return kNullMaybeHandle;
   }
 
-  auto target = args->Get(0);
+  auto target = args->Get(0, isolate);
 
   int64_t length = list->length();
   int64_t begin = 0;
@@ -172,11 +172,13 @@ BUILTIN_METHOD(PyListBuiltinMethods, Index) {
 
   if (argc >= 2) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, begin,
-                               Runtime_DecodeIntLike(isolate, *args->Get(1)));
+                               Runtime_DecodeIntLike(isolate,
+                                                     *args->Get(1, isolate)));
   }
   if (argc >= 3) {
     ASSIGN_RETURN_ON_EXCEPTION(isolate, end,
-                               Runtime_DecodeIntLike(isolate, *args->Get(2)));
+                               Runtime_DecodeIntLike(isolate,
+                                                     *args->Get(2, isolate)));
   }
 
   if (begin < 0) {
@@ -222,7 +224,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Reverse) {
 
 BUILTIN_METHOD(PyListBuiltinMethods, Extend) {
   if (Runtime_ExtendListByItratableObject(isolate, Handle<PyList>::cast(self),
-                                          args->Get(0))
+                                          args->Get(0, isolate))
           .IsEmpty()) {
     return kNullMaybeHandle;
   }
@@ -252,7 +254,7 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     Handle<PyString> reverse_name = PyString::New(isolate, "reverse");
 
     for (int64_t i = 0; i < kwargs->capacity(); ++i) {
-      Handle<PyObject> k = kwargs->KeyAtIndex(i);
+      Handle<PyObject> k = kwargs->KeyAtIndex(i, isolate);
       if (k.is_null()) {
         continue;
       }

@@ -134,7 +134,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   // 第三层校验：
   // 直接检查 BaseException 的类字典，确认关键魔法方法入口已存在。
   // 这里验证的是“类型对象安装正确”，而不是方法行为语义本身。
-  auto base_exception_props = base_exception_klass->klass_properties();
+  auto base_exception_props = base_exception_klass->klass_properties(isolate_);
 
   bool has_init = false;
   ASSERT_TRUE(
@@ -170,7 +170,7 @@ TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
     ASSERT_TRUE(IsPyTypeObject(value)) << name;
 
     auto type_obj = Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(value));
-    auto props = type_obj->own_klass()->klass_properties();
+    auto props = type_obj->own_klass()->klass_properties(isolate_);
 
     bool has_repr = false;
     ASSERT_TRUE(props->ContainsKey(ST(repr, isolate_), isolate_).To(&has_repr))

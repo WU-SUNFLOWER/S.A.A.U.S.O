@@ -134,7 +134,8 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   }
   i::EscapableHandleScope handle_scope;
   i::Handle<i::PyTuple> tuple = i::Handle<i::PyTuple>::cast(object);
-  i::Handle<i::PyObject> escaped = handle_scope.Escape(tuple->Get(index));
+  i::Handle<i::PyObject> escaped =
+      handle_scope.Escape(tuple->Get(index, internal_isolate));
   return i::Utils::ToLocal<Value>(escaped);
 }
 

@@ -45,7 +45,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
     if (item.is_null()) {
       continue;
     }
-    auto key = item->Get(0);
+    auto key = item->Get(0, isolate);
     if (!IsPyString(*key)) {
       Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "keywords must be strings");
@@ -158,7 +158,7 @@ BUILTIN(Print) {
     }
     Handle<PyString> value;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, value,
-                               PyObject::Str(isolate, args->Get(i)));
+                               PyObject::Str(isolate, args->Get(i, isolate)));
     WriteHandleString(value);
   }
 

@@ -144,7 +144,7 @@ MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromSource(
 
   RETURN_ON_EXCEPTION(isolate_, InitializeModuleDict(module, fullname, loc));
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate_);
   RETURN_ON_EXCEPTION(
       isolate_, Runtime_ExecutePythonSourceCode(isolate_, source, module_dict,
                                                 module_dict, loc.origin));
@@ -161,7 +161,7 @@ MaybeHandle<PyModule> ModuleLoader::ExecuteModuleFromPyc(
 
   RETURN_ON_EXCEPTION(isolate_, InitializeModuleDict(module, fullname, loc));
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate_);
   RETURN_ON_EXCEPTION(
       isolate_, Runtime_ExecutePythonPycFile(isolate_, loc.origin, module_dict,
                                              module_dict));
@@ -173,7 +173,7 @@ MaybeHandle<PyObject> ModuleLoader::InitializeModuleDict(
     Handle<PyModule> module,
     Handle<PyString> fullname,
     const ModuleLocation& loc) {
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate_);
 
   RETURN_ON_EXCEPTION(isolate_, PyDict::Put(module_dict, ST(name, isolate_),
                                             fullname, isolate_));

@@ -86,7 +86,7 @@ BUILTIN_MODULE_FUNC(Random_Seed) {
   if (argc == 0) {
     seed = RandomNumberGenerator::NowSeed();
   } else {
-    Handle<PyObject> a = args->Get(0);
+    Handle<PyObject> a = args->Get(0, isolate);
     if (IsPyNone(a, isolate)) {
       seed = RandomNumberGenerator::NowSeed();
     } else {
@@ -126,12 +126,12 @@ BUILTIN_MODULE_FUNC(Random_RandInt) {
                           kModuleName, argc));
 
   int64_t a = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, a,
-                             ExtractSmi(isolate, args->Get(0), "randint"));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, a, ExtractSmi(isolate, args->Get(0, isolate), "randint"));
 
   int64_t b = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, b,
-                             ExtractSmi(isolate, args->Get(1), "randint"));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, b, ExtractSmi(isolate, args->Get(1, isolate), "randint"));
 
   if (a > b) {
     FailArgRangeEmpty(isolate, "randint");
@@ -160,16 +160,18 @@ BUILTIN_MODULE_FUNC(Random_RandRange) {
   int64_t step = 1;
 
   if (argc == 1) {
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, stop,
-                               ExtractSmi(isolate, args->Get(0), "randrange"));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, stop, ExtractSmi(isolate, args->Get(0, isolate), "randrange"));
   } else {
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, start,
-                               ExtractSmi(isolate, args->Get(0), "randrange"));
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, stop,
-                               ExtractSmi(isolate, args->Get(1), "randrange"));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, start,
+        ExtractSmi(isolate, args->Get(0, isolate), "randrange"));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, stop, ExtractSmi(isolate, args->Get(1, isolate), "randrange"));
     if (argc == 3) {
       ASSIGN_RETURN_ON_EXCEPTION(
-          isolate, step, ExtractSmi(isolate, args->Get(2), "randrange"));
+          isolate, step,
+          ExtractSmi(isolate, args->Get(2, isolate), "randrange"));
     }
   }
 
@@ -222,8 +224,8 @@ BUILTIN_MODULE_FUNC(Random_GetRandBits) {
                           kModuleName, argc));
 
   int64_t k = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, k,
-                             ExtractSmi(isolate, args->Get(0), "getrandbits"));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, k, ExtractSmi(isolate, args->Get(0, isolate), "getrandbits"));
 
   if (k < 0) {
     Runtime_ThrowError(isolate, ExceptionType::kValueError,
@@ -255,7 +257,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
                           "%s.choice() takes exactly 1 argument (%" PRId64
                           " given)",
                           kModuleName, argc));
-  Handle<PyObject> seq = args->Get(0);
+  Handle<PyObject> seq = args->Get(0, isolate);
 
   // TODO:
   // 这种设计在未来引入 bytearray 或用户自定义序列时会违反 DRY 和 OCP 原则。
@@ -284,7 +286,7 @@ BUILTIN_MODULE_FUNC(Random_Choice) {
     }
     uint64_t index =
         GetRng(isolate)->NextU64Bounded(static_cast<uint64_t>(tuple->length()));
-    return tuple->Get(static_cast<int64_t>(index));
+    return tuple->Get(static_cast<int64_t>(index), isolate);
   }
 
   if (IsPyString(seq)) {
@@ -317,7 +319,7 @@ BUILTIN_MODULE_FUNC(Random_Shuffle) {
                           "%s.shuffle() takes exactly 1 argument (%" PRId64
                           " given)",
                           kModuleName, argc));
-  Handle<PyObject> x = args->Get(0);
+  Handle<PyObject> x = args->Get(0, isolate);
   if (!IsPyListExact(x, isolate)) {
     Handle<PyString> type_name = PyObject::GetTypeName(x, isolate);
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,

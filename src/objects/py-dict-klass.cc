@@ -96,8 +96,9 @@ Maybe<void> PyDictKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate, PyDictBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDictBuiltinMethods::Install(isolate, klass_properties,
+                                                    type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "dict"));
@@ -147,9 +148,9 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Isolate* isolate,
   }
 
   for (int64_t i = 0; i < d1->capacity(); ++i) {
-    auto k1 = d1->data()->Get(i << 1);
+    auto k1 = d1->data(isolate)->Get(i << 1);
     if (!k1.is_null()) {
-      auto v1 = d1->data()->Get((i << 1) + 1);
+      auto v1 = d1->data(isolate)->Get((i << 1) + 1);
       Tagged<PyObject> v2_tagged;
       bool found = false;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
@@ -232,7 +233,8 @@ MaybeHandle<PyObject> PyDictKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass, PyDictKlass::GetInstance(isolate)));
+      Runtime_IsSubtype(isolate, instance_klass,
+                        PyDictKlass::GetInstance(isolate)));
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(

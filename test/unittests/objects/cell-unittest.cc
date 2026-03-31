@@ -32,7 +32,7 @@ TEST_F(CellTest, NewInstanceDefaultsToNullValue) {
   HandleScope scope;
 
   Handle<Cell> cell = isolate_->factory()->NewCell();
-  EXPECT_TRUE(cell->value().is_null());
+  EXPECT_TRUE(cell->value(isolate_).is_null());
 }
 
 TEST_F(CellTest, SetValueSurvivesMinorGc) {
@@ -44,7 +44,7 @@ TEST_F(CellTest, SetValueSurvivesMinorGc) {
 
   Isolate::Current()->heap()->CollectGarbage();
 
-  Handle<PyObject> cell_value = cell->value();
+  Handle<PyObject> cell_value = cell->value(isolate_);
   ASSERT_FALSE(cell_value.is_null());
   EXPECT_EQ((*cell_value).ptr(), (*payload).ptr());
 }
@@ -73,8 +73,8 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   isolate_->heap()->CollectGarbage();
 
   Handle<PyTuple> closures_after = func->closures(isolate_);
-  Handle<Cell> cell_after = Handle<Cell>::cast(closures_after->Get(0));
-  Handle<PyObject> cell_value = cell_after->value();
+  Handle<Cell> cell_after = Handle<Cell>::cast(closures_after->Get(0, isolate_));
+  Handle<PyObject> cell_value = cell_after->value(isolate_);
   ASSERT_FALSE(cell_value.is_null());
   EXPECT_EQ((*cell_value).ptr(), (*payload).ptr());
 }

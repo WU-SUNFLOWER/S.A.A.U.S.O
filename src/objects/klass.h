@@ -31,19 +31,19 @@ class Klass : public Object {
 
   Maybe<void> InitializeVtable(Isolate* isolate);
 
-  Handle<PyString> name();
+  Handle<PyString> name(Isolate* isolate);
   void set_name(Handle<PyString> name);
 
-  Handle<PyTypeObject> type_object();
+  Handle<PyTypeObject> type_object(Isolate* isolate);
   void set_type_object(Handle<PyTypeObject>);
 
-  Handle<PyDict> klass_properties();
+  Handle<PyDict> klass_properties(Isolate* isolate);
   void set_klass_properties(Handle<PyDict>);
 
-  Handle<PyList> supers();
+  Handle<PyList> supers(Isolate* isolate);
   void set_supers(Handle<PyList>);
 
-  Handle<PyList> mro();
+  Handle<PyList> mro(Isolate* isolate);
   void set_mro(Handle<PyList> mro);
 
   NativeLayoutKind native_layout_kind() const { return native_layout_kind_; }

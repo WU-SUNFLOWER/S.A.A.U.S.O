@@ -162,7 +162,7 @@ class KlassVtable {
 #undef DEFINE_VTABLE_SLOT
 
  private:
-  void InitializeFromSupers(Tagged<Klass> klass);
+  void InitializeFromSupers(Isolate* isolate, Tagged<Klass> klass);
 
   void CopyInheritedSlotsFromSuper(Tagged<Klass> super_klass);
 

@@ -83,7 +83,8 @@ Maybe<void> PyTypeObjectKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   RETURN_ON_EXCEPTION(isolate, PyTypeObjectBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+                                   isolate, klass_properties,
+                                   type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "type"));
@@ -146,7 +147,7 @@ MaybeHandle<PyObject> PyTypeObjectKlass::Virtual_SetAttr(
     Handle<PyObject> prop_name,
     Handle<PyObject> prop_value) {
   auto own_klass = Handle<PyTypeObject>::cast(self)->own_klass();
-  if (PyDict::Put(own_klass->klass_properties(), prop_name, prop_value, isolate)
+  if (PyDict::Put(own_klass->klass_properties(isolate), prop_name, prop_value, isolate)
           .IsNothing()) {
     return kNullMaybeHandle;
   }

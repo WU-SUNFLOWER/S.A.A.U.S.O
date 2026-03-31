@@ -25,12 +25,13 @@ namespace {
 
 constexpr double kMaxLoadFactor = 0.75;
 
-#define GET_DICT_KEY(dict, index) (dict->data()->Get(index << 1))
-#define GET_DICT_VAL(dict, index) (dict->data()->Get((index << 1) + 1))
+#define GET_DICT_KEY(dict, index) (dict->data(isolate)->Get(index << 1))
+#define GET_DICT_VAL(dict, index) (dict->data(isolate)->Get((index << 1) + 1))
 
-#define SET_DICT_KEY(dict, index, key) dict->data()->Set(index << 1, key)
+#define SET_DICT_KEY(dict, index, key) \
+  Tagged<FixedArray>::cast(dict->data_)->Set(index << 1, key)
 #define SET_DICT_VAL(dict, index, value) \
-  dict->data()->Set((index << 1) + 1, value)
+  Tagged<FixedArray>::cast(dict->data_)->Set((index << 1) + 1, value)
 
 uint64_t GetProbe(uint64_t index, uint64_t mask) {
   return (index + 1) & mask;
@@ -121,32 +122,32 @@ Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
 //////////////////////////////////////////////////////////////////////////
 
 int64_t PyDict::capacity() const {
-  return data()->capacity() >> 1;
+  return Tagged<FixedArray>::cast(data_)->capacity() >> 1;
 }
 
-Handle<PyObject> PyDict::KeyAtIndex(int64_t index) const {
-  return handle(data()->Get(index << 1));
+Handle<PyObject> PyDict::KeyAtIndex(int64_t index, Isolate* isolate) const {
+  return handle(data(isolate)->Get(index << 1), isolate);
 }
 
-Handle<PyObject> PyDict::ValueAtIndex(int64_t index) const {
-  return handle(data()->Get((index << 1) + 1));
+Handle<PyObject> PyDict::ValueAtIndex(int64_t index, Isolate* isolate) const {
+  return handle(data(isolate)->Get((index << 1) + 1), isolate);
 }
 
 Handle<PyTuple> PyDict::ItemAtIndex(int64_t index, Isolate* isolate) const {
-  auto key = handle(data()->Get(index << 1), isolate);
+  auto key = handle(data(isolate)->Get(index << 1), isolate);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
   auto result = PyTuple::New(isolate, 2);
-  auto value = handle(data()->Get((index << 1) + 1), isolate);
+  auto value = handle(data(isolate)->Get((index << 1) + 1), isolate);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
   return result;
 }
 
-Handle<FixedArray> PyDict::data() const {
-  return Handle<FixedArray>(Tagged<FixedArray>::cast(data_));
+Handle<FixedArray> PyDict::data(Isolate* isolate) const {
+  return Handle<FixedArray>(Tagged<FixedArray>::cast(data_), isolate);
 }
 
 Maybe<bool> PyDict::ContainsKey(Handle<PyObject> key, Isolate* isolate) const {
@@ -272,7 +273,7 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
   int64_t out_length = dict->occupied();
   Handle<PyTuple> keys = PyTuple::New(isolate, out_length);
 
-  Handle<FixedArray> data = dict->data();
+  Handle<FixedArray> data = dict->data(isolate);
   int64_t out_index = 0;
   for (auto i = 0; i < dict->capacity(); ++i) {
     Tagged<PyObject> key = data->Get(i << 1);

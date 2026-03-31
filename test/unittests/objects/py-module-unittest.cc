@@ -27,7 +27,7 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
 
   Handle<PyObject> module_obj(module);
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module_obj, isolate_);
   ASSERT_FALSE(module_dict.is_null());
 
   // 测试__dict__获取到对象properties的能力

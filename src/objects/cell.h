@@ -20,7 +20,7 @@ class Cell : public PyObject {
  public:
   static Tagged<Cell> cast(Tagged<PyObject> object);
 
-  Handle<PyObject> value();
+  Handle<PyObject> value(Isolate* isolate);
   Tagged<PyObject> value_tagged();
   void set_value(Handle<PyObject> value);
   void set_value(Tagged<PyObject> value);

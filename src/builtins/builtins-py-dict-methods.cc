@@ -51,7 +51,7 @@ BUILTIN_METHOD(PyDictBuiltinMethods, New) {
                        "argument");
     return kNullMaybeHandle;
   }
-  type_object = args->Get(0);
+  type_object = args->Get(0, isolate);
   args = Runtime_NewTupleTailOrNull(isolate, args, 1);
 
   if (!IsPyTypeObject(type_object)) {
@@ -69,10 +69,10 @@ BUILTIN_METHOD(PyDictBuiltinMethods, SetDefault) {
   EscapableHandleScope scope;
 
   auto dict = Handle<PyDict>::cast(self);
-  auto key = args->Get(0);
+  auto key = args->Get(0, isolate);
   Handle<PyObject> default_or_null = Handle<PyObject>::null();
   if (args->length() > 1) {
-    default_or_null = args->Get(1);
+    default_or_null = args->Get(1, isolate);
   }
 
   Handle<PyObject> result;
@@ -121,10 +121,10 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Pop) {
   }
 
   auto dict = Handle<PyDict>::cast(self);
-  auto key = args->Get(0);
+  auto key = args->Get(0, isolate);
   bool has_default = args->length() == 2;
   Handle<PyObject> default_or_null =
-      has_default ? args->Get(1) : Handle<PyObject>::null();
+      has_default ? args->Get(1, isolate) : Handle<PyObject>::null();
 
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
@@ -152,10 +152,10 @@ BUILTIN_METHOD(PyDictBuiltinMethods, Items) {
 BUILTIN_METHOD(PyDictBuiltinMethods, Get) {
   EscapableHandleScope scope;
   auto dict = Handle<PyDict>::cast(self);
-  auto key = args->Get(0);
+  auto key = args->Get(0, isolate);
   Handle<PyObject> default_or_null = Handle<PyObject>::null();
   if (args->length() > 1) {
-    default_or_null = args->Get(1);
+    default_or_null = args->Get(1, isolate);
   }
 
   Handle<PyObject> result;

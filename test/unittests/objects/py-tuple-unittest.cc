@@ -29,14 +29,14 @@ TEST_F(PyTupleTest, NewInstanceFromListCopiesElements) {
 
   auto tuple = isolate_->factory()->NewPyTupleWithElements(list);
   EXPECT_EQ(tuple->length(), 2);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(1))), 2);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0, isolate_))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(1, isolate_))), 2);
 
   ASSERT_FALSE(PyObject::StoreSubscr(isolate_, Handle<PyObject>(list),
                                      Handle<PyObject>(PySmi::FromInt(0)),
                                      Handle<PyObject>(PySmi::FromInt(42)))
                    .IsEmpty());
-  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0))), 1);
+  EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(tuple->Get(0, isolate_))), 1);
 }
 
 TEST_F(PyTupleTest, PyObjectLenAndSubscrWork) {

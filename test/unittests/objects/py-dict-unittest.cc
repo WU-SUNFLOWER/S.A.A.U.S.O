@@ -200,7 +200,8 @@ TEST_F(PyDictTest, GetKeyTuple) {
   auto TupleContains = [](Handle<PyTuple> tuple, Handle<PyObject> key) -> bool {
     for (auto i = 0; i < tuple->length(); ++i) {
       Handle<PyObject> eq_res;
-      if (PyObject::Equal(isolate_, tuple->Get(i), key).ToHandle(&eq_res) &&
+      if (PyObject::Equal(isolate_, tuple->Get(i, isolate_), key)
+              .ToHandle(&eq_res) &&
           Handle<PyBoolean>::cast(eq_res)->value()) {
         return true;
       }
@@ -227,13 +228,14 @@ TEST_F(PyDictTest, GetKeyTuple) {
   }
 
   for (auto i = 0; i < keys->length(); ++i) {
-    EXPECT_FALSE(keys->Get(i).is_null());
+    EXPECT_FALSE(keys->Get(i, isolate_).is_null());
   }
 
   for (auto i = 0; i < keys->length(); ++i) {
     for (auto j = i + 1; j < keys->length(); ++j) {
       Handle<PyObject> eq_res;
-      ASSERT_TRUE(PyObject::Equal(isolate_, keys->Get(i), keys->Get(j))
+      ASSERT_TRUE(PyObject::Equal(isolate_, keys->Get(i, isolate_),
+                                  keys->Get(j, isolate_))
                       .ToHandle(&eq_res));
       EXPECT_FALSE(Handle<PyBoolean>::cast(eq_res)->value());
     }

@@ -155,7 +155,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Handle<PyObject> pkg_module = handle(pkg_module_tagged);
   ASSERT_FALSE(pkg_module.is_null());
 
-  Handle<PyDict> pkg_dict = PyObject::GetProperties(pkg_module);
+  Handle<PyDict> pkg_dict = PyObject::GetProperties(pkg_module, isolate_);
   ASSERT_FALSE(pkg_dict.is_null());
 
   Handle<PyString> sub_short_name = PyString::New(isolate_, "sub");

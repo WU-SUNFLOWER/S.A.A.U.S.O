@@ -104,8 +104,9 @@ Maybe<void> PyListKlass::Initialize(Isolate* isolate) {
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate, PyListBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyListBuiltinMethods::Install(isolate, klass_properties,
+                                                    type_object(isolate)));
 
   // 设置类名
   set_name(PyString::New(isolate, "list"));
@@ -143,7 +144,8 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   bool is_valid_klass = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_valid_klass,
-      Runtime_IsSubtype(instance_klass, PyListKlass::GetInstance(isolate)));
+      Runtime_IsSubtype(isolate, instance_klass,
+                        PyListKlass::GetInstance(isolate)));
 
   if (!is_valid_klass) [[unlikely]] {
     Runtime_ThrowErrorf(
@@ -170,7 +172,7 @@ MaybeHandle<PyObject> PyListKlass::Virtual_InitInstance(
   if (argc == 1) {
     RETURN_ON_EXCEPTION(isolate, Runtime_ExtendListByItratableObject(
                                      isolate, Handle<PyList>::cast(instance),
-                                     pos_args->Get(0)));
+                                     pos_args->Get(0, isolate)));
   }
   return isolate->factory()->py_none_object();
 }

@@ -149,7 +149,7 @@ MaybeHandle<PyObject> PyFloatKlass::Virtual_NewInstance(
     return kNullMaybeHandle;
   }
 
-  Handle<PyObject> value = pos_args->Get(0);
+  Handle<PyObject> value = pos_args->Get(0, isolate);
   if (IsPyFloat(value)) {
     return value;
   }

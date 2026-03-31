@@ -25,7 +25,7 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
   if (IsPyTuple(iteratable)) {
     auto tuple = Handle<PyTuple>::cast(iteratable);
     for (int64_t i = 0; i < tuple->length(); ++i) {
-      PyList::Append(list, tuple->Get(i), isolate);
+      PyList::Append(list, tuple->Get(i, isolate), isolate);
     }
     return isolate->factory()->py_none_object();
   }

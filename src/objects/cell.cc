@@ -18,8 +18,8 @@ Tagged<Cell> Cell::cast(Tagged<PyObject> object) {
   return Tagged<Cell>::cast(object);
 }
 
-Handle<PyObject> Cell::value() {
-  return handle(value_);
+Handle<PyObject> Cell::value(Isolate* isolate) {
+  return handle(value_, isolate);
 }
 
 Tagged<PyObject> Cell::value_tagged() {

@@ -231,13 +231,13 @@ TEST_F(PyStringTest, StringUpperMethod) {
   Handle<PyObject> attr(PyString::New(isolate_, "upper"));
 
   Handle<PyDict> attrs =
-      PyStringKlass::GetInstance(isolate_)->klass_properties();
+      PyStringKlass::GetInstance(isolate_)->klass_properties(isolate_);
 
   bool flag = false;
   Handle<PyTuple> attrs_tuple = PyDict::GetKeyTuple(attrs, isolate_);
   for (auto i = 0; i < attrs_tuple->length(); ++i) {
     bool eq = false;
-    if (PyObject::EqualBool(isolate_, attr, attrs_tuple->Get(i)).To(&eq) &&
+    if (PyObject::EqualBool(isolate_, attr, attrs_tuple->Get(i, isolate_)).To(&eq) &&
         eq) {
       flag = true;
       break;
@@ -248,7 +248,7 @@ TEST_F(PyStringTest, StringUpperMethod) {
 
   bool contains = false;
   ASSERT_TRUE(PyStringKlass::GetInstance(isolate_)
-                  ->klass_properties()
+                  ->klass_properties(isolate_)
                   ->ContainsKey(attr, isolate_)
                   .To(&contains));
   EXPECT_TRUE(contains);

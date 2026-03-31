@@ -91,7 +91,8 @@ Maybe<void> PyTupleKlass::Initialize(Isolate* isolate) {
 
   // 安装内建方法
   RETURN_ON_EXCEPTION(isolate, PyTupleBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+                                   isolate, klass_properties,
+                                   type_object(isolate)));
 
   set_name(PyString::New(isolate, "tuple"));
 
@@ -156,7 +157,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_NewInstance(
 
   Handle<PyTuple> result;
   if (argc == 1) {
-    Handle<PyObject> iterable = pos_args->Get(0);
+    Handle<PyObject> iterable = pos_args->Get(0, isolate);
     // 对齐 CPython 3.12：
     // 如果要创建一个tuple-exact实例，同时传入的参数恰好是一个tuple-exact对象，
     // 那么不分配内存，直接返回即可。
@@ -219,7 +220,7 @@ MaybeHandle<PyObject> PyTupleKlass::Virtual_Subscr(Isolate* isolate,
                        "tuple index out of range\n");
     return kNullMaybeHandle;
   }
-  return tuple->Get(index);
+  return tuple->Get(index, isolate);
 }
 
 MaybeHandle<PyObject> PyTupleKlass::Virtual_StoreSubscr(
@@ -247,7 +248,8 @@ Maybe<bool> PyTupleKlass::Virtual_Contains(Isolate* isolate,
   for (auto i = 0; i < tuple->length(); ++i) {
     bool eq;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, eq, PyObject::EqualBool(isolate, tuple->Get(i), target));
+        isolate, eq,
+        PyObject::EqualBool(isolate, tuple->Get(i, isolate), target));
     if (eq) {
       return Maybe<bool>(true);
     }
@@ -273,7 +275,8 @@ Maybe<bool> PyTupleKlass::Virtual_Equal(Isolate* isolate,
     bool eq;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, eq,
-        PyObject::EqualBool(isolate, tuple1->Get(i), tuple2->Get(i)));
+        PyObject::EqualBool(isolate, tuple1->Get(i, isolate),
+                            tuple2->Get(i, isolate)));
     if (!eq) {
       return Maybe<bool>(false);
     }

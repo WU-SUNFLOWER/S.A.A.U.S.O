@@ -97,18 +97,20 @@ Handle<PyString> PyObject::GetTypeName(Handle<PyObject> object,
 
 Handle<PyString> PyObject::GetTypeName(Tagged<PyObject> object,
                                        Isolate* isolate) {
-  return ResolveObjectKlass(object, isolate)->name();
+  return ResolveObjectKlass(object, isolate)->name(isolate);
 }
 
-Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object) {
-  return GetProperties(*object);
+Handle<PyDict> PyObject::GetProperties(Handle<PyObject> object,
+                                       Isolate* isolate) {
+  return GetProperties(*object, isolate);
 }
 
-Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object) {
+Handle<PyDict> PyObject::GetProperties(Tagged<PyObject> object,
+                                       Isolate* isolate) {
   if (!IsHeapObject(object) || object->properties_.is_null()) {
     return Handle<PyDict>::null();
   }
-  return handle(Tagged<PyDict>::cast(object->properties_));
+  return handle(Tagged<PyDict>::cast(object->properties_), isolate);
 }
 
 void PyObject::SetProperties(Tagged<PyObject> object,

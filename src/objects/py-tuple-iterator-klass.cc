@@ -37,7 +37,7 @@ Handle<PyObject> NextImpl(Isolate* isolate, Handle<PyObject> self) {
   auto result = Handle<PyObject>::null();
   auto iter_cnt = iterator->iter_cnt();
   if (iter_cnt < tuple->length()) {
-    result = tuple->Get(iter_cnt);
+    result = tuple->Get(iter_cnt, isolate);
     iterator->increase_iter_cnt();
   }
 
@@ -89,8 +89,9 @@ Maybe<void> PyTupleIteratorKlass::Initialize(Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       vtable_.Initialize(isolate, Tagged<Klass>(this)));
 
-  RETURN_ON_EXCEPTION(isolate, PyTupleIteratorBuiltinMethods::Install(
-                                   isolate, klass_properties, type_object()));
+  RETURN_ON_EXCEPTION(
+      isolate, PyTupleIteratorBuiltinMethods::Install(isolate, klass_properties,
+                                                      type_object(isolate)));
 
   set_name(PyString::New(isolate, "tuple_iterator"));
 

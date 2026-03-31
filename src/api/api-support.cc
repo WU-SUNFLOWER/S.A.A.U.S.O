@@ -46,7 +46,7 @@ bool CapturePendingException(i::Isolate* isolate) {
   }
 
   i::Handle<i::PyObject> exception =
-      isolate->exception_state()->pending_exception();
+      isolate->exception_state()->pending_exception(isolate);
   ApiAccess::SetTryCatchException(try_catch,
                                   WrapObject<RawValue>(isolate, exception));
   isolate->exception_state()->Clear();

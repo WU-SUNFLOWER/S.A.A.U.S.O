@@ -77,10 +77,10 @@ TEST_F(AttributeTest, ClassAccessorReturnsRuntimeTypeObject) {
 
   Handle<PyObject> func_obj(func);
   Handle<PyObject> expected_class(Handle<PyObject>::cast(
-      PyObject::ResolveObjectKlass(func_obj, isolate_)->type_object()));
+      PyObject::ResolveObjectKlass(func_obj, isolate_)->type_object(isolate_)));
   Handle<PyObject> fake_class = isolate_->factory()->NewSmiFromInt(7);
 
-  Handle<PyDict> properties = PyObject::GetProperties(func_obj);
+  Handle<PyDict> properties = PyObject::GetProperties(func_obj, isolate_);
   ASSERT_FALSE(properties.is_null());
   ASSERT_FALSE(
       PyDict::Put(properties, ST(class, isolate_), fake_class, isolate_).IsNothing());
@@ -122,7 +122,7 @@ TEST_F(AttributeTest, DictAccessorReturnsProperties) {
       isolate_->factory()->NewPyFunctionWithTemplate(func_template).To(&func));
 
   Handle<PyObject> func_obj(func);
-  Handle<PyDict> properties = PyObject::GetProperties(func_obj);
+  Handle<PyDict> properties = PyObject::GetProperties(func_obj, isolate_);
   ASSERT_FALSE(properties.is_null());
 
   Handle<PyObject> got_dict;

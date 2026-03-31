@@ -169,7 +169,7 @@ Maybe<void> ModuleImporter::BindChildModuleToParentNamespace(
     Handle<PyObject> parent_module,
     Handle<PyString> child_short_name,
     Handle<PyObject> child_module) {
-  Handle<PyDict> parent_dict = PyObject::GetProperties(parent_module);
+  Handle<PyDict> parent_dict = PyObject::GetProperties(parent_module, isolate_);
 
   bool exists = false;
   ASSIGN_RETURN_ON_EXCEPTION(

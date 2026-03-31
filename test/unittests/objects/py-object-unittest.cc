@@ -47,11 +47,11 @@ TEST_F(PyObjectTest, GetPropertiesReturnsNullByDefaultAndAcceptsNullSet) {
   HandleScope scope;
 
   auto list = PyList::New(isolate_);
-  auto props = PyObject::GetProperties(Handle<PyObject>(list));
+  auto props = PyObject::GetProperties(Handle<PyObject>(list), isolate_);
   EXPECT_TRUE(props.is_null());
 
   PyObject::SetProperties(*Handle<PyObject>(list), Tagged<PyDict>::null());
-  auto props_after = PyObject::GetProperties(Handle<PyObject>(list));
+  auto props_after = PyObject::GetProperties(Handle<PyObject>(list), isolate_);
   EXPECT_TRUE(props_after.is_null());
 }
 
@@ -62,7 +62,7 @@ TEST_F(PyObjectTest, SetPropertiesStoresDictAndGetPropertiesReturnsIt) {
   auto dict = PyDict::New(isolate_);
 
   PyObject::SetProperties(*Handle<PyObject>(list), *dict);
-  auto props = PyObject::GetProperties(Handle<PyObject>(list));
+  auto props = PyObject::GetProperties(Handle<PyObject>(list), isolate_);
 
   ASSERT_FALSE(props.is_null());
   EXPECT_TRUE(props.is_identical_to(dict));
@@ -116,7 +116,7 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   Handle<PyDict> list_like_props = PyDict::New(isolate_);
   Handle<PyList> list_like_supers = PyList::New(isolate_, 1);
   list_like_supers->SetAndExtendLength(
-      0, PyListKlass::GetInstance(isolate_)->type_object());
+      0, PyListKlass::GetInstance(isolate_)->type_object(isolate_));
   Handle<PyTypeObject> list_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, list_like_name,
                                         list_like_props, list_like_supers)
@@ -131,13 +131,13 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyDict(list_like));
   EXPECT_FALSE(IsPyTuple(list_like));
   EXPECT_FALSE(IsPyString(list_like));
-  EXPECT_FALSE(PyObject::GetProperties(list_like).is_null());
+  EXPECT_FALSE(PyObject::GetProperties(list_like, isolate_).is_null());
 
   Handle<PyString> dict_like_name = PyString::New(isolate_, "DictLikeCase");
   Handle<PyDict> dict_like_props = PyDict::New(isolate_);
   Handle<PyList> dict_like_supers = PyList::New(isolate_, 1);
   dict_like_supers->SetAndExtendLength(
-      0, PyDictKlass::GetInstance(isolate_)->type_object());
+      0, PyDictKlass::GetInstance(isolate_)->type_object(isolate_));
   Handle<PyTypeObject> dict_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, dict_like_name,
                                         dict_like_props, dict_like_supers)
@@ -152,13 +152,13 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyList(dict_like));
   EXPECT_FALSE(IsPyTuple(dict_like));
   EXPECT_FALSE(IsPyString(dict_like));
-  EXPECT_FALSE(PyObject::GetProperties(dict_like).is_null());
+  EXPECT_FALSE(PyObject::GetProperties(dict_like, isolate_).is_null());
 
   Handle<PyString> tuple_like_name = PyString::New(isolate_, "TupleLikeCase");
   Handle<PyDict> tuple_like_props = PyDict::New(isolate_);
   Handle<PyList> tuple_like_supers = PyList::New(isolate_, 1);
   tuple_like_supers->SetAndExtendLength(
-      0, PyTupleKlass::GetInstance(isolate_)->type_object());
+      0, PyTupleKlass::GetInstance(isolate_)->type_object(isolate_));
   Handle<PyTypeObject> tuple_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, tuple_like_name,
                                         tuple_like_props, tuple_like_supers)
@@ -173,13 +173,13 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyList(tuple_like));
   EXPECT_FALSE(IsPyDict(tuple_like));
   EXPECT_FALSE(IsPyString(tuple_like));
-  EXPECT_FALSE(PyObject::GetProperties(tuple_like).is_null());
+  EXPECT_FALSE(PyObject::GetProperties(tuple_like, isolate_).is_null());
 
   Handle<PyString> string_like_name = PyString::New(isolate_, "StringLikeCase");
   Handle<PyDict> string_like_props = PyDict::New(isolate_);
   Handle<PyList> string_like_supers = PyList::New(isolate_, 1);
   string_like_supers->SetAndExtendLength(
-      0, PyStringKlass::GetInstance(isolate_)->type_object());
+      0, PyStringKlass::GetInstance(isolate_)->type_object(isolate_));
   Handle<PyTypeObject> string_like_type;
   ASSERT_TRUE(Runtime_CreatePythonClass(isolate_, string_like_name,
                                         string_like_props, string_like_supers)
@@ -194,14 +194,14 @@ TEST_F(PyObjectTest, IsPyContainerAndStringSupportLikeAndExactSemantics) {
   EXPECT_FALSE(IsPyList(string_like));
   EXPECT_FALSE(IsPyDict(string_like));
   EXPECT_FALSE(IsPyTuple(string_like));
-  EXPECT_FALSE(PyObject::GetProperties(string_like).is_null());
+  EXPECT_FALSE(PyObject::GetProperties(string_like, isolate_).is_null());
 }
 
 TEST_F(PyObjectTest, IsExactByKindBuiltinCheckersRemainPrecise) {
   HandleScope scope;
 
   Handle<PyObject> type_object(
-      PyListKlass::GetInstance(isolate_)->type_object());
+      PyListKlass::GetInstance(isolate_)->type_object(isolate_));
   Handle<PyObject> py_float(PyFloat::New(isolate_, 3.14));
   Handle<PyObject> code_object(isolate_->factory()->NewPyCodeObject());
   Handle<PyObject> fixed_array(isolate_->factory()->NewFixedArray(2));

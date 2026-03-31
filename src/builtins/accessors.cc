@@ -29,7 +29,7 @@ const AccessorDescriptor Accessors::kPyObjectDictAccessor = {
 MaybeHandle<PyObject> Accessors::PyObjectClassGetter(
     Isolate* isolate,
     Handle<PyObject> receiver) {
-  return PyObject::ResolveObjectKlass(receiver, isolate)->type_object();
+  return PyObject::ResolveObjectKlass(receiver, isolate)->type_object(isolate);
 }
 
 MaybeHandle<PyObject> Accessors::PyObjectClassSetter(Isolate* isolate,
@@ -42,7 +42,7 @@ MaybeHandle<PyObject> Accessors::PyObjectClassSetter(Isolate* isolate,
 
 MaybeHandle<PyObject> Accessors::PyObjectDictGetter(Isolate* isolate,
                                                     Handle<PyObject> receiver) {
-  Handle<PyDict> properties = PyObject::GetProperties(receiver);
+  Handle<PyDict> properties = PyObject::GetProperties(receiver, isolate);
   if (properties.is_null()) {
     Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
                         "'%s' object has no attribute '__dict__'",

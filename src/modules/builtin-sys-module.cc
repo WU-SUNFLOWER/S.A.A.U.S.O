@@ -29,7 +29,7 @@ BUILTIN_MODULE_INIT_FUNC("sys", InitSysModule) {
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, module, BuiltinModuleUtils::NewBuiltinModule(isolate, "sys"));
 
-  Handle<PyDict> module_dict = PyObject::GetProperties(module);
+  Handle<PyDict> module_dict = PyObject::GetProperties(module, isolate);
 
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(module_dict, PyString::New(isolate, "modules"),

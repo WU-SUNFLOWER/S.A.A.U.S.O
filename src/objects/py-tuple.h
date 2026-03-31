@@ -34,7 +34,7 @@ class PyTuple : public PyObject {
   void SetInternal(int64_t index, Tagged<PyObject> value);
   void ShrinkInternal(int64_t new_length);
 
-  Handle<PyObject> Get(int64_t index) const;
+  Handle<PyObject> Get(int64_t index, Isolate* isolate) const;
   Tagged<PyObject> GetTagged(int64_t index) const;
 
   Maybe<int64_t> IndexOf(Handle<PyObject> target, Isolate* isolate) const;
