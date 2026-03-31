@@ -20,19 +20,17 @@ class GlobalHandleTest : public VmTestBase {};
 
 TEST_F(GlobalHandleTest, GlobalHandleShouldBeReleasedByDestructor) {
   int base =
-      Isolate::Current()->handle_scope_implementer()->NumberOfGlobalHandles();
+      isolate_->handle_scope_implementer()->NumberOfGlobalHandles();
 
   {
-    HandleScope scope;
-    Global<PyObject> g(isolate_, PyString::New(Isolate::Current(), "x"));
+    HandleScope scope(isolate_);
+    Global<PyObject> g(isolate_, PyString::New(isolate_, "x"));
     EXPECT_EQ(
-        Isolate::Current()->handle_scope_implementer()->NumberOfGlobalHandles(),
+        isolate_->handle_scope_implementer()->NumberOfGlobalHandles(),
         base + 1);
   }
 
-  EXPECT_EQ(
-      Isolate::Current()->handle_scope_implementer()->NumberOfGlobalHandles(),
-      base);
+  EXPECT_EQ(isolate_->handle_scope_implementer()->NumberOfGlobalHandles(), base);
 }
 
 TEST_F(GlobalHandleTest, GlobalHandleShouldSurviveAcrossGc) {
