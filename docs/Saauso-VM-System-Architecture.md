@@ -74,5 +74,5 @@
 ## 9. Embedder API
 
 Embedder API 已有独立文档体系，请阅读：
-- `docs/Saauso-Embedder-API-User-Guide.md`
-- `docs/architecture/Embedder-API-Architecture-Design.md`
+- [Saauso-Embedder-API-User-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Embedder-API-User-Guide.md)
+- [Embedder-API-Architecture-Design.md](file:///e:/MyProject/S.A.A.U.S.O/docs/architecture/Embedder-API-Architecture-Design.md)
