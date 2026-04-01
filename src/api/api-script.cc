@@ -19,7 +19,9 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   }
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
-  return api::WrapScriptSource(i_isolate, source->Value());
+  i::Handle<internal::PyString> script =
+      i::PyString::New(i_isolate, source->Value().c_str());
+  return i::Utils::ToLocal<Script>(script);
 #else
   i::HandleScope handle_scope(i_isolate);
   i::Runtime_ThrowError(

@@ -38,8 +38,8 @@ Maybe<std::string> Value::ToString() const {
     return i::kNullMaybe;
   }
   i::Tagged<i::PyString> py_string = i::Tagged<i::PyString>::cast(*object);
-  return Maybe<std::string>(
-      std::string(py_string->buffer(), static_cast<size_t>(py_string->length())));
+  return Maybe<std::string>(std::string(
+      py_string->buffer(), static_cast<size_t>(py_string->length())));
 }
 
 Maybe<int64_t> Value::ToInteger() const {

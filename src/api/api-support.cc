@@ -9,11 +9,6 @@
 namespace saauso {
 namespace api {
 
-#if SAAUSO_ENABLE_CPYTHON_COMPILER
-Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source) {
-  return WrapHostString<Script>(isolate, std::move(source));
-}
-#endif
 
 i::Handle<i::PyObject> ToInternalObject(i::Isolate* i_isolate,
                                         Local<Value> value) {
