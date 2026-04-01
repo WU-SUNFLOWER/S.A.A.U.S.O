@@ -4,27 +4,31 @@
 
 #include <string>
 
-#include "src/api/api-impl.h"
+#include "include/saauso-value.h"
+#include "src/api/api-support.h"
+#include "src/objects/py-float.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
 
 namespace saauso {
 
 bool Value::IsString() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPyString(object);
 }
 
 bool Value::IsInteger() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPySmi(object);
 }
 
 bool Value::IsFloat() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPyFloat(object);
 }
 
 bool Value::IsBoolean() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null()) {
     return false;
   }
@@ -33,7 +37,7 @@ bool Value::IsBoolean() const {
 }
 
 Maybe<std::string> Value::ToString() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyString(object)) {
     return i::kNullMaybe;
   }
@@ -43,7 +47,7 @@ Maybe<std::string> Value::ToString() const {
 }
 
 Maybe<int64_t> Value::ToInteger() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPySmi(object)) {
     return i::kNullMaybe;
   }
@@ -51,7 +55,7 @@ Maybe<int64_t> Value::ToInteger() const {
 }
 
 Maybe<double> Value::ToFloat() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyFloat(object)) {
     return i::kNullMaybe;
   }
@@ -59,7 +63,7 @@ Maybe<double> Value::ToFloat() const {
 }
 
 Maybe<bool> Value::ToBoolean() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null()) {
     return i::kNullMaybe;
   }

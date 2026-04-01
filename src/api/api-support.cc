@@ -2,13 +2,15 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include <string>
+#include "src/api/api-support.h"
 
-#include "src/api/api-impl.h"
+#include "src/api/api-bridge-access.h"
+#include "src/execution/exception-utils.h"
+#include "src/objects/py-smi.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso {
 namespace api {
-
 
 bool CapturePendingException(i::Isolate* isolate) {
   if (!isolate->HasPendingException()) {
@@ -22,8 +24,8 @@ bool CapturePendingException(i::Isolate* isolate) {
 
   i::Handle<i::PyObject> exception =
       isolate->exception_state()->pending_exception(isolate);
-  ApiAccess::SetTryCatchException(try_catch,
-                                  i::Utils::ToLocal<Value>(exception));
+  ApiBridgeAccess::SetTryCatchException(try_catch,
+                                        api::Utils::ToLocal<Value>(exception));
   isolate->exception_state()->Clear();
   return true;
 }
@@ -56,7 +58,8 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   callback_info_impl.args = args;
 
   FunctionCallbackInfo callback_info;
-  ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
+  ApiBridgeAccess::SetFunctionCallbackInfoImpl(&callback_info,
+                                               &callback_info_impl);
 
   callback(callback_info);
 
@@ -66,7 +69,7 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
 
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
-  return i::Utils::OpenHandle(escaped_ret);
+  return api::Utils::OpenHandle(escaped_ret);
 }
 
 }  // namespace api

@@ -3,8 +3,7 @@
 // found in the LICENSE file.
 
 #include "include/saauso-container.h"
-#include "src/api/api-impl.h"
-#include "src/common/globals.h"
+#include "src/api/api-support.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/objects/py-list.h"
@@ -19,11 +18,11 @@ MaybeLocal<List> List::New(Isolate* isolate) {
   i::Handle<i::PyList> list =
       i_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(list);
-  return i::Utils::ToLocal<List>(escaped);
+  return api::Utils::ToLocal<List>(escaped);
 }
 
 int64_t List::Length() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyList(object)) {
     return 0;
   }
@@ -36,12 +35,12 @@ Maybe<void> List::Push(Local<Value> value) {
 
   i::HandleScope handle_scope(i_isolate);
 
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyList(object)) {
     return i::kNullMaybe;
   }
 
-  i::Handle<i::PyObject> i_value = i::Utils::OpenHandle(value);
+  i::Handle<i::PyObject> i_value = api::Utils::OpenHandle(value);
   if (i_value.is_null()) {
     return i::kNullMaybe;
   }
@@ -58,7 +57,7 @@ Maybe<void> List::Set(int64_t index, Local<Value> value) {
 
   i::HandleScope handle_scope(i_isolate);
 
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyList(object)) {
     return i::kNullMaybe;
   }
@@ -68,7 +67,7 @@ Maybe<void> List::Set(int64_t index, Local<Value> value) {
     return i::kNullMaybe;
   }
 
-  i::Handle<i::PyObject> i_value = i::Utils::OpenHandle(value);
+  i::Handle<i::PyObject> i_value = api::Utils::OpenHandle(value);
   if (i_value.is_null()) {
     return i::kNullMaybe;
   }
@@ -83,7 +82,7 @@ MaybeLocal<Value> List::Get(int64_t index) const {
 
   i::EscapableHandleScope handle_scope(i_isolate);
 
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyList(object)) {
     return MaybeLocal<Value>();
   }
@@ -96,7 +95,7 @@ MaybeLocal<Value> List::Get(int64_t index) const {
   i::Handle<i::PyList> list = i::Handle<i::PyList>::cast(object);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(list->Get(index, i_isolate));
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
@@ -111,17 +110,17 @@ MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
 
   i::Handle<i::PyTuple> tuple = i_isolate->factory()->NewPyTuple(argc);
   for (int i = 0; i < argc; ++i) {
-    i::Handle<i::PyObject> arg = i::Utils::OpenHandle(argv[i]);
+    i::Handle<i::PyObject> arg = api::Utils::OpenHandle(argv[i]);
     assert(!arg.is_null());
     tuple->SetInternal(i, arg);
   }
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(tuple);
-  return i::Utils::ToLocal<Tuple>(escaped);
+  return api::Utils::ToLocal<Tuple>(escaped);
 }
 
 int64_t Tuple::Length() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyTuple(object)) {
     return 0;
   }
@@ -134,7 +133,7 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
   }
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyTuple(object)) {
     return MaybeLocal<Value>();
   }
@@ -146,7 +145,7 @@ MaybeLocal<Value> Tuple::Get(int64_t index) const {
   i::Handle<i::PyTuple> tuple = i::Handle<i::PyTuple>::cast(object);
   i::Handle<i::PyObject> escaped =
       handle_scope.Escape(tuple->Get(index, internal_isolate));
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

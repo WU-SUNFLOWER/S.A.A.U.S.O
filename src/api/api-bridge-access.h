@@ -2,39 +2,35 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#ifndef SAAUSO_API_API_INL_H_
-#define SAAUSO_API_API_INL_H_
+#ifndef SAAUSO_API_API_BRIDGE_ACCESS_H_
+#define SAAUSO_API_API_BRIDGE_ACCESS_H_
 
-#include <vector>
+#include <cassert>
 
-#include "include/saauso-context.h"
 #include "include/saauso-exception.h"
 #include "include/saauso-function-callback.h"
-#include "include/saauso-isolate.h"
 #include "include/saauso-local-handle.h"
-#include "src/common/globals.h"
-#include "src/execution/isolate.h"
+#include "include/saauso-value.h"
 
 namespace saauso {
+namespace api {
 
-struct ApiAccess {
+class ApiBridgeAccess final {
+ public:
   static void SetFunctionCallbackInfoImpl(FunctionCallbackInfo* info,
                                           void* impl) {
-    if (info == nullptr) {
-      return;
-    }
+    assert(info != nullptr);
     info->impl_ = impl;
   }
 
   static void SetTryCatchException(TryCatch* try_catch,
                                    Local<Value> exception) {
-    if (try_catch == nullptr) {
-      return;
-    }
+    assert(try_catch != nullptr);
     try_catch->exception_ = exception;
   }
 };
 
+}  // namespace api
 }  // namespace saauso
 
-#endif  // SAAUSO_API_API_INL_H_
+#endif  // SAAUSO_API_API_BRIDGE_ACCESS_H_

@@ -2,7 +2,12 @@
 
 #include "include/saauso-function.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-impl.h"
+#include "src/api/api-support.h"
+#include "src/heap/factory.h"
+#include "src/objects/py-function.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
+#include "src/objects/templates.h"
 
 namespace saauso {
 
@@ -29,7 +34,7 @@ MaybeLocal<Function> Function::New(Isolate* isolate,
     return MaybeLocal<Function>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(function);
-  return i::Utils::ToLocal<Function>(escaped);
+  return api::Utils::ToLocal<Function>(escaped);
 }
 
 MaybeLocal<Value> Function::Call(Local<Context> context,
@@ -45,7 +50,7 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
     return MaybeLocal<Value>();
   }
 
-  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(context);
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(context);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
@@ -55,20 +60,20 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
     assert(argv != nullptr);
     py_args = i_isolate->factory()->NewPyTuple(argc);
     for (int i = 0; i < argc; ++i) {
-      i::Handle<i::PyObject> py_arg = i::Utils::OpenHandle(argv[i]);
+      i::Handle<i::PyObject> py_arg = api::Utils::OpenHandle(argv[i]);
       assert(!py_arg.is_null());
       py_args->SetInternal(i, *py_arg);
     }
   }
 
-  i::Handle<i::PyObject> function_object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> function_object = api::Utils::OpenHandle(this);
   if (function_object.is_null()) {
     return MaybeLocal<Value>();
   }
 
   i::Handle<i::PyObject> py_receiver = receiver.IsEmpty()
                                            ? i::Handle<i::PyObject>::null()
-                                           : i::Utils::OpenHandle(receiver);
+                                           : api::Utils::OpenHandle(receiver);
 
   i::MaybeHandle<i::PyObject> maybe_result =
       i::PyObject::Call(i_isolate, function_object, py_receiver, py_args,
@@ -80,7 +85,7 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
   }
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

@@ -4,7 +4,9 @@
 
 #include "include/saauso-function-callback.h"
 #include "include/saauso-maybe.h"
-#include "src/api/api-impl.h"
+#include "include/saauso-value.h"
+#include "src/api/api-support.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso {
 
@@ -22,7 +24,7 @@ MaybeLocal<Value> FunctionCallbackInfo::operator[](int index) const {
       index >= impl->args->length()) {
     return MaybeLocal<Value>();
   }
-  return i::Utils::ToLocal<Value>(impl->args->Get(index, impl->isolate));
+  return api::Utils::ToLocal<Value>(impl->args->Get(index, impl->isolate));
 }
 
 Maybe<int64_t> FunctionCallbackInfo::GetIntegerArg(int index) const {
@@ -48,7 +50,7 @@ MaybeLocal<Value> FunctionCallbackInfo::Receiver() const {
   if (impl == nullptr) {
     return MaybeLocal<Value>();
   }
-  return i::Utils::ToLocal<Value>(impl->receiver);
+  return api::Utils::ToLocal<Value>(impl->receiver);
 }
 
 Isolate* FunctionCallbackInfo::GetIsolate() const {

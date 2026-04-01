@@ -1,39 +1,20 @@
-#ifndef SAAUSO_API_API_IMPL_H_
-#define SAAUSO_API_API_IMPL_H_
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
 
-#include <cstdint>
-#include <string>
-#include <unordered_map>
+#ifndef SAAUSO_API_API_SUPPORT_H_
+#define SAAUSO_API_API_SUPPORT_H_
 
-#include "include/saauso-container.h"
-#include "include/saauso-exception.h"
 #include "include/saauso-local-handle.h"
-#include "include/saauso-object.h"
-#include "include/saauso-script.h"
-#include "include/saauso-value.h"
-#include "src/api/api-inl.h"
-#include "src/common/globals.h"
-#include "src/execution/exception-types.h"
-#include "src/handles/handle-scopes.h"
-#include "src/heap/factory.h"
-#include "src/objects/object-checkers.h"
+#include "src/execution/isolate.h"
+#include "src/handles/handles.h"
 #include "src/objects/py-dict.h"
-#include "src/objects/py-float.h"
-#include "src/objects/py-function.h"
-#include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
-#include "src/objects/py-oddballs.h"
-#include "src/objects/py-smi.h"
-#include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
-#include "src/objects/templates.h"
-#include "src/runtime/runtime-exceptions.h"
-#include "src/runtime/runtime-exec.h"
-#include "src/runtime/runtime-py-function.h"
 
 namespace saauso {
+namespace api {
 
-namespace internal {
 class Utils {
  public:
   template <typename T>
@@ -55,9 +36,14 @@ class Utils {
     return Local<T>::FromSlot(handle.location());
   }
 };
-}  // namespace internal
 
-namespace api {
+//////////////////////////////////////////////////////////////////////////
+// Exception API 实现相关支持
+
+bool CapturePendingException(i::Isolate* isolate);
+
+//////////////////////////////////////////////////////////////////////////
+// Function Callback API 实现相关支持
 
 struct FunctionCallbackInfoImpl {
   i::Isolate* isolate{nullptr};
@@ -65,8 +51,6 @@ struct FunctionCallbackInfoImpl {
   i::Handle<i::PyTuple> args;
   Local<Value> return_value;
 };
-
-bool CapturePendingException(i::Isolate* isolate);
 
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
     i::Isolate* internal_isolate,
@@ -78,4 +62,4 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
 }  // namespace api
 }  // namespace saauso
 
-#endif  // SAAUSO_API_API_IMPL_H_
+#endif  // SAAUSO_API_API_SUPPORT_H_

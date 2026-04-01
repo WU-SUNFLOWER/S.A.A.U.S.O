@@ -4,9 +4,10 @@
 
 #include "include/saauso-primitive.h"
 #include "include/saauso-script.h"
-#include "src/api/api-impl.h"
-#include "src/common/globals.h"
+#include "src/api/api-support.h"
 #include "src/execution/isolate.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/runtime-exec.h"
 
 namespace saauso {
 
@@ -21,7 +22,7 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
   i::Handle<internal::PyString> script =
       i::PyString::New(i_isolate, source->Value().c_str());
-  return i::Utils::ToLocal<Script>(script);
+  return api::Utils::ToLocal<Script>(script);
 #else
   i::HandleScope handle_scope(i_isolate);
   i::Runtime_ThrowError(
@@ -43,12 +44,12 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     return MaybeLocal<Value>();
   }
 
-  i::Handle<i::PyObject> script_object = internal::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> script_object = api::Utils::OpenHandle(this);
   if (script_object.is_null() || !i::IsPyString(script_object)) {
     return MaybeLocal<Value>();
   }
 
-  i::Handle<i::PyObject> context_object = internal::Utils::OpenHandle(context);
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(context);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
@@ -68,7 +69,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

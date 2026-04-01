@@ -1,7 +1,10 @@
 #include <string>
 
+#include "include/saauso-object.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-impl.h"
+#include "src/api/api-support.h"
+#include "src/heap/factory.h"
+#include "src/objects/py-string.h"
 
 namespace saauso {
 
@@ -13,7 +16,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
   i::Handle<i::PyDict> dict =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(dict);
-  return i::Utils::ToLocal<Object>(escaped);
+  return api::Utils::ToLocal<Object>(escaped);
 }
 
 Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
@@ -26,7 +29,7 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
     return i::kNullMaybe;
   }
 
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyDict(object)) {
     return i::kNullMaybe;
   }
@@ -36,7 +39,7 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
   std::string key_value = key->Value();
   i::Handle<i::PyString> py_key = i::PyString::New(
       i_isolate, key_value.data(), static_cast<int64_t>(key_value.size()));
-  i::Handle<i::PyObject> py_value = i::Utils::OpenHandle(value);
+  i::Handle<i::PyObject> py_value = api::Utils::OpenHandle(value);
 
   auto maybe_put = i::PyDict::Put(dict, py_key, py_value, i_isolate);
   if (maybe_put.IsNothing()) {
@@ -58,7 +61,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
   }
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyDict(object)) {
     return MaybeLocal<Value>();
   }
@@ -77,7 +80,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Value> Object::CallMethod(Local<Context> context,
@@ -93,7 +96,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
     return MaybeLocal<Value>();
   }
 
-  i::Handle<i::PyObject> self = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> self = api::Utils::OpenHandle(this);
   if (self.is_null()) {
     return MaybeLocal<Value>();
   }
@@ -117,7 +120,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
     py_args = i_isolate->factory()->NewPyTuple(argc);
     for (int i = 0; i < argc; ++i) {
       assert(!argv[i].IsEmpty());
-      py_args->SetInternal(i, i::Utils::OpenHandle(argv[i]));
+      py_args->SetInternal(i, api::Utils::OpenHandle(argv[i]));
     }
   }
 
@@ -131,7 +134,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   }
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

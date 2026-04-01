@@ -4,8 +4,9 @@
 
 #include <cassert>
 
+#include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-impl.h"
+#include "src/api/api-support.h"
 
 namespace saauso {
 
@@ -37,7 +38,7 @@ void Isolate::ThrowException(Local<Value> exception) {
     return;
   }
 
-  i::Handle<i::PyObject> py_exception = i::Utils::OpenHandle(exception);
+  i::Handle<i::PyObject> py_exception = api::Utils::OpenHandle(exception);
   assert(!py_exception.is_null());
 
   i_isolate->exception_state()->Throw(*py_exception);

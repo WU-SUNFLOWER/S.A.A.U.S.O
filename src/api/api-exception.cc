@@ -4,7 +4,6 @@
 
 #include "include/saauso-exception.h"
 #include "include/saauso-primitive.h"
-#include "src/common/globals.h"
 #include "src/execution/isolate.h"
 
 namespace saauso {
@@ -37,19 +36,16 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
 //////////////////////////////////////////////////////////////////////////////////
 // TryCatch
 
-TryCatch::TryCatch(Isolate* isolate) : isolate_(isolate) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
-  assert(i_isolate == i::Isolate::Current());
-
-  previous_ = i_isolate->try_catch_top();
-  i_isolate->set_try_catch_top(this);
+TryCatch::TryCatch(Isolate* isolate)
+    : i_isolate_(reinterpret_cast<i::Isolate*>(isolate)) {
+  assert(i_isolate_ == i::Isolate::Current());
+  previous_ = i_isolate_->try_catch_top();
+  i_isolate_->set_try_catch_top(this);
 }
 
 TryCatch::~TryCatch() {
   Reset();
-
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate_);
-  i_isolate->set_try_catch_top(previous_);
+  i_isolate_->set_try_catch_top(previous_);
 }
 
 bool TryCatch::HasCaught() const {

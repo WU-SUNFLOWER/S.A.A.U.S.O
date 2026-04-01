@@ -15,7 +15,7 @@ namespace saauso {
 class Isolate;
 class Value;
 
-namespace internal {
+namespace api {
 class Utils;
 }
 
@@ -78,7 +78,7 @@ class Local {
  private:
   template <typename>
   friend class Local;
-  friend class internal::Utils;
+  friend class api::Utils;
 
   static Local<T> FromSlot(internal::Address* location) {
     return Local<T>(location);

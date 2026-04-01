@@ -4,7 +4,7 @@
 
 #include "include/saauso-local-handle.h"
 #include "include/saauso-value.h"
-#include "src/api/api-impl.h"
+#include "src/api/api-support.h"
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
 
@@ -61,8 +61,8 @@ Local<Value> EscapableHandleScope::Escape(Local<Value> value) {
     return Local<Value>();
   }
   i::Handle<i::PyObject> escaped =
-      impl->handle_scope.Escape(i::Utils::OpenHandle(value));
-  return i::Utils::ToLocal<Value>(escaped);
+      impl->handle_scope.Escape(api::Utils::OpenHandle(value));
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

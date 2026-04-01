@@ -5,8 +5,7 @@
 #include "include/saauso-context.h"
 #include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-impl.h"
-#include "src/common/globals.h"
+#include "src/api/api-support.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
@@ -23,7 +22,7 @@ MaybeLocal<Context> Context::New(Isolate* isolate) {
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(globals);
-  return i::Utils::ToLocal<Context>(escaped);
+  return api::Utils::ToLocal<Context>(escaped);
 }
 
 void Context::Enter() {
@@ -63,7 +62,7 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
 
   i::HandleScope handle_scope(i_isolate);
 
-  i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return i::kNullMaybe;
   }
@@ -77,7 +76,7 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
   i::Handle<i::PyString> i_key =
       i::PyString::New(i_isolate, key->Value().data(),
                        static_cast<int64_t>(key->Value().size()));
-  i::Handle<i::PyObject> i_value = i::Utils::OpenHandle(value);
+  i::Handle<i::PyObject> i_value = api::Utils::OpenHandle(value);
 
   auto maybe_set = i::PyDict::Put(globals, i_key, i_value, i_isolate);
   if (maybe_set.IsNothing()) {
@@ -95,7 +94,7 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
 
   i::Isolate* i_isolate = i::Isolate::Current();
 
-  i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
   if (i_isolate == nullptr || context_object.is_null() ||
       !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
@@ -115,15 +114,15 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Object> Context::Global() {
-  i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Object>();
   }
-  return i::Utils::ToLocal<Object>(context_object);
+  return api::Utils::ToLocal<Object>(context_object);
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {

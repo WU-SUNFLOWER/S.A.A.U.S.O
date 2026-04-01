@@ -32,7 +32,7 @@ class Context final : public Value {
  private:
   friend class Isolate;
   friend class Script;
-  friend struct ApiAccess;
+  friend class ApiBridgeAccess;
 };
 
 class ContextScope {

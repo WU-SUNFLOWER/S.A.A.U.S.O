@@ -44,7 +44,7 @@
 
 ### 不纳入本轮的内容
 
-* `internal::Utils::OpenHandle(...)`、`ToLocal(...)`、`reinterpret_cast<i::Isolate*>` 这类 API/内部边界桥接仍是当前 Embedder API 设计的一部分，不属于本轮“可直接删除的冗余转换”。
+* `api::Utils::OpenHandle(...)`、`ToLocal(...)`、`reinterpret_cast<i::Isolate*>` 这类 API/内部边界桥接仍是当前 Embedder API 设计的一部分，不属于本轮“可直接删除的冗余转换”。
 
 * `api-value.cc`、`api-primitive.cc` 中仅用于读取原始字段值的 `Tagged::cast(*object)` 暂不处理；这些调用不是“Handle 与 Tagged 来回绕行”，而是直接读取对象布局。
 

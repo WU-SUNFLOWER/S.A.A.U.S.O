@@ -17,6 +17,10 @@ namespace saauso {
 class Value;
 class Isolate;
 
+namespace api {
+class ApiBridgeAccess;
+}
+
 class FunctionCallbackInfo {
  public:
   FunctionCallbackInfo() = default;
@@ -36,9 +40,9 @@ class FunctionCallbackInfo {
   void SetReturnValue(Local<Value> value);
 
  private:
-  void* impl_{nullptr};
+  friend class api::ApiBridgeAccess;
 
-  friend struct ApiAccess;
+  void* impl_{nullptr};
 };
 
 using FunctionCallback = void (*)(FunctionCallbackInfo& info);
