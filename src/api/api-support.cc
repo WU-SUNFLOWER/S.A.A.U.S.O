@@ -27,14 +27,6 @@ i::Handle<i::PyObject> ToInternalObject(i::Isolate* i_isolate,
   return object;
 }
 
-Local<Value> WrapRuntimeResult(i::Isolate* isolate,
-                               i::Handle<i::PyObject> result) {
-  if (result.is_null()) {
-    return Local<Value>();
-  }
-  return i::Utils::ToLocal<Value>(result);
-}
-
 bool CapturePendingException(i::Isolate* isolate) {
   if (!isolate->HasPendingException()) {
     return false;

@@ -68,8 +68,6 @@ struct FunctionCallbackInfoImpl {
 
 i::Handle<i::PyObject> ToInternalObject(i::Isolate* isolate,
                                         Local<Value> value);
-Local<Value> WrapRuntimeResult(i::Isolate* isolate,
-                               i::Handle<i::PyObject> result);
 bool CapturePendingException(i::Isolate* isolate);
 
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
