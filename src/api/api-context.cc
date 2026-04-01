@@ -119,7 +119,7 @@ MaybeLocal<Object> Context::Global() {
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Object>();
   }
-  return i::Utils::ToLocal<api::RawObject>(context_object);
+  return i::Utils::ToLocal<Object>(context_object);
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {

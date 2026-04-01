@@ -19,7 +19,7 @@ MaybeLocal<List> List::New(Isolate* isolate) {
   i::Handle<i::PyList> list =
       i_isolate->factory()->NewPyList(i::PyList::kMinimumCapacity);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(list);
-  return i::Utils::ToLocal<api::RawList>(escaped);
+  return i::Utils::ToLocal<List>(escaped);
 }
 
 int64_t List::Length() const {
@@ -108,7 +108,7 @@ MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
     tuple->SetInternal(i, api::ToInternalObject(i_isolate, arg));
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(tuple);
-  return i::Utils::ToLocal<api::RawTuple>(escaped);
+  return i::Utils::ToLocal<Tuple>(escaped);
 }
 
 int64_t Tuple::Length() const {

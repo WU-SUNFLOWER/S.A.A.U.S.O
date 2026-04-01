@@ -32,7 +32,7 @@ Local<Value> WrapRuntimeResult(i::Isolate* isolate,
   if (result.is_null()) {
     return Local<Value>();
   }
-  return WrapObject<RawValue>(isolate, result);
+  return WrapObject<Value>(isolate, result);
 }
 
 bool CapturePendingException(i::Isolate* isolate) {
@@ -48,7 +48,7 @@ bool CapturePendingException(i::Isolate* isolate) {
   i::Handle<i::PyObject> exception =
       isolate->exception_state()->pending_exception(isolate);
   ApiAccess::SetTryCatchException(try_catch,
-                                  WrapObject<RawValue>(isolate, exception));
+                                  WrapObject<Value>(isolate, exception));
   isolate->exception_state()->Clear();
   return true;
 }

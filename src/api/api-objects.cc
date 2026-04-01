@@ -13,7 +13,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
   i::Handle<i::PyDict> dict =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
   i::Handle<i::PyObject> escaped = handle_scope.Escape(dict);
-  return i::Utils::ToLocal<api::RawObject>(escaped);
+  return i::Utils::ToLocal<Object>(escaped);
 }
 
 Maybe<void> Object::Set(Local<String> key, Local<Value> value) {

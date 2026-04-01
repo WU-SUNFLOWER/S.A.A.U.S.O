@@ -59,11 +59,6 @@ class Utils {
 
 namespace api {
 
-class RawValue final : public Value {};
-class RawObject final : public Object {};
-class RawList final : public List {};
-class RawTuple final : public Tuple {};
-
 struct FunctionCallbackInfoImpl {
   i::Isolate* isolate{nullptr};
   i::Handle<i::PyObject> receiver;
