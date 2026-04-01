@@ -151,19 +151,26 @@ TEST(EmbedderContractDeathTest, ExplicitIsolateMismatchShouldDie) {
   ASSERT_NE(isolate_a, nullptr);
   ASSERT_NE(isolate_b, nullptr);
 
-  Isolate::Scope isolate_scope(isolate_a);
-  HandleScope scope(isolate_a);
+  {
+    Isolate::Scope isolate_scope(isolate_a);
+    HandleScope scope(isolate_a);
 
-  Local<String> source = String::New(isolate_a, "x=1");
-  ASSERT_FALSE(source.IsEmpty());
+    Local<String> source = String::New(isolate_a, "x=1");
+    ASSERT_FALSE(source.IsEmpty());
 
-  // 当前 Isolate::Current 指向 isolate_a，严禁直接使用 isolate_b
-  ASSERT_DEATH_IF_SUPPORTED(
-      {
-        Local<String> source2 = String::New(isolate_b, "x=1");
-        (void)source2;
-      },
-      "");
+    // 当前 Isolate::Current 指向 isolate_a，严禁直接使用 isolate_b
+    ASSERT_DEATH_IF_SUPPORTED(
+        {
+          Local<String> source2 = String::New(isolate_b, "x=1");
+          (void)source2;
+        },
+        "");
+  }
+
+  isolate_a->Dispose();
+  isolate_b->Dispose();
+
+  Saauso::Dispose();
 }
 
 TEST(EmbedderContractDeathTest, ExplicitNestedIsolate) {
@@ -177,21 +184,28 @@ TEST(EmbedderContractDeathTest, ExplicitNestedIsolate) {
   ASSERT_NE(isolate_a, nullptr);
   ASSERT_NE(isolate_b, nullptr);
 
-  Isolate::Scope isolate_a_scope(isolate_a);
-  HandleScope scope_a(isolate_a);
-
-  Local<String> source = String::New(isolate_a, "x=1");
-  ASSERT_FALSE(source.IsEmpty());
-
   {
-    Isolate::Scope isolate_b_scope(isolate_b);
-    HandleScope scope_b(isolate_b);
-    Local<String> source2 = String::New(isolate_b, "x=2");
-    ASSERT_FALSE(source2.IsEmpty());
+    Isolate::Scope isolate_a_scope(isolate_a);
+    HandleScope scope_a(isolate_a);
+
+    Local<String> source = String::New(isolate_a, "x=1");
+    ASSERT_FALSE(source.IsEmpty());
+
+    {
+      Isolate::Scope isolate_b_scope(isolate_b);
+      HandleScope scope_b(isolate_b);
+      Local<String> source2 = String::New(isolate_b, "x=2");
+      ASSERT_FALSE(source2.IsEmpty());
+    }
+
+    Local<String> source3 = String::New(isolate_a, "x=3");
+    ASSERT_FALSE(source3.IsEmpty());
   }
 
-  Local<String> source3 = String::New(isolate_a, "x=3");
-  ASSERT_FALSE(source3.IsEmpty());
+  isolate_a->Dispose();
+  isolate_b->Dispose();
+
+  Saauso::Dispose();
 }
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER

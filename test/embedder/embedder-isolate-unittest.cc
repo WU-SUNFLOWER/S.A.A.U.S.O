@@ -75,6 +75,8 @@ TEST(EmbedderContractDeathTest, ExplicitApiButNotEnterIsolateShouldDie) {
         (void)value;
       },
       "");
+  isolate->Dispose();
+  Saauso::Dispose();
 }
 
 TEST(EmbedderContractDeathTest, CrossThreadUseIsolateShouldDie) {
@@ -84,25 +86,34 @@ TEST(EmbedderContractDeathTest, CrossThreadUseIsolateShouldDie) {
 
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
-  Isolate::Scope isolate_scope(isolate);
-  HandleScope scope(isolate);
 
-  // 在本线程调用 API，不会有任何问题
-  Local<String> value = String::New(isolate, "In the correct thread");
-  ASSERT_TRUE(!value.IsEmpty());
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
 
-  // 绝对不允许跨线程使用 isolate
-  ASSERT_DEATH_IF_SUPPORTED(
-      {
-        std::thread worker([&]() {
-          Isolate::Scope isolate_scope(isolate);
-          HandleScope scope(isolate);
-          Local<String> value = String::New(isolate, "cross-thread");
-          (void)value;
-        });
-        worker.join();
-      },
-      "");
+    // 在本线程调用 API，不会有任何问题
+    Local<String> value = String::New(isolate, "In the correct thread");
+    ASSERT_TRUE(!value.IsEmpty());
+
+    // 绝对不允许 isolate 被一个线程占用的同时，
+    // 有另外一个线程尝试去占用并使用该 isolate！
+    auto worker_func = [&]() {
+      Isolate::Scope isolate_scope(isolate);
+      HandleScope scope(isolate);
+      Local<String> value = String::New(isolate, "cross-thread");
+      (void)value;
+    };
+
+    ASSERT_DEATH_IF_SUPPORTED(
+        {
+          std::thread worker(worker_func);
+          worker.join();
+        },
+        "");
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
 }
 
 }  // namespace saauso
