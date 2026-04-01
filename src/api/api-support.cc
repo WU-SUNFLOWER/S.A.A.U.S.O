@@ -9,7 +9,6 @@
 namespace saauso {
 namespace api {
 
-
 i::Handle<i::PyObject> ToInternalObject(i::Isolate* i_isolate,
                                         Local<Value> value) {
   if (value.IsEmpty()) {

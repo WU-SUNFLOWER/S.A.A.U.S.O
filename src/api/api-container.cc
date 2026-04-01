@@ -32,21 +32,19 @@ int64_t List::Length() const {
 
 Maybe<void> List::Push(Local<Value> value) {
   i::Isolate* i_isolate = i::Isolate::Current();
-  if (i_isolate == nullptr) {
-    return i::kNullMaybe;
-  }
+  assert(i_isolate != nullptr);
+
+  i::HandleScope handle_scope(i_isolate);
 
   i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
-  if (object.is_null() || !i::IsPyList(object)) {
-    return i::kNullMaybe;
-  }
-  i::HandleScope handle_scope(i_isolate);
+  assert(i::IsPyList(object));
+
+  i::Handle<i::PyObject> i_value = i::Utils::OpenHandle(value);
+  assert(!i_value.is_null());
+
   i::Handle<i::PyList> list = i::Handle<i::PyList>::cast(object);
-  i::PyList::Append(list, api::ToInternalObject(i_isolate, value), i_isolate);
-  if (i_isolate->HasPendingException()) {
-    api::CapturePendingException(i_isolate);
-    return i::kNullMaybe;
-  }
+  i::PyList::Append(list, i_value, i_isolate);
+
   return JustVoid();
 }
 
