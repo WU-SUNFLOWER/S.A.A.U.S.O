@@ -83,11 +83,6 @@ Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source);
 #endif
 
 template <typename T>
-Local<T> WrapObject(i::Isolate* isolate, i::Handle<i::PyObject> object) {
-  return i::Utils::ToLocal<T>(object);
-}
-
-template <typename T>
 Local<T> WrapHostString(i::Isolate* isolate, std::string value) {
   i::EscapableHandleScope scope(isolate);
   i::Handle<i::PyString> py_string = i::PyString::New(
