@@ -84,47 +84,52 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
                                      Local<String> name,
                                      int argc,
                                      Local<Value> argv[]) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = i::Isolate::Current();
+  assert(i_isolate != nullptr);
+
+  i::EscapableHandleScope handle_scope(i_isolate);
 
   if (context.IsEmpty() || name.IsEmpty() || argc < 0) {
     return MaybeLocal<Value>();
   }
-  if (internal_isolate == nullptr) {
-    return MaybeLocal<Value>();
-  }
+
   i::Handle<i::PyObject> self = i::Utils::OpenHandle(this);
   if (self.is_null()) {
     return MaybeLocal<Value>();
   }
-  i::EscapableHandleScope handle_scope(internal_isolate);
+
   std::string name_value = name->Value();
-  i::Handle<i::PyString> py_name =
-      i::PyString::New(internal_isolate, name_value.data(),
-                       static_cast<int64_t>(name_value.size()));
+  i::Handle<i::PyString> py_name = i::PyString::New(
+      i_isolate, name_value.data(), static_cast<int64_t>(name_value.size()));
+
   i::Handle<i::PyObject> self_or_null;
-  i::MaybeHandle<i::PyObject> maybe_callee = i::PyObject::GetAttrForCall(
-      internal_isolate, self, py_name, self_or_null);
   i::Handle<i::PyObject> callee;
+
+  i::MaybeHandle<i::PyObject> maybe_callee =
+      i::PyObject::GetAttrForCall(i_isolate, self, py_name, self_or_null);
   if (!maybe_callee.ToHandle(&callee)) {
-    api::CapturePendingException(internal_isolate);
+    api::CapturePendingException(i_isolate);
     return MaybeLocal<Value>();
   }
-  i::Handle<i::PyTuple> py_args = internal_isolate->factory()->NewPyTuple(argc);
-  for (int i = 0; i < argc; ++i) {
-    Local<Value> arg = argv == nullptr ? Local<Value>() : argv[i];
-    py_args->SetInternal(i, api::ToInternalObject(internal_isolate, arg));
+
+  i::Handle<i::PyTuple> py_args;
+  if (argc > 0) {
+    py_args = i_isolate->factory()->NewPyTuple(argc);
+    for (int i = 0; i < argc; ++i) {
+      assert(!argv[i].IsEmpty());
+      py_args->SetInternal(i, i::Utils::OpenHandle(argv[i]));
+    }
   }
-  i::Handle<i::PyDict> py_kwargs =
-      internal_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
   i::MaybeHandle<i::PyObject> maybe_result = i::PyObject::Call(
-      internal_isolate, callee, self_or_null, py_args, py_kwargs);
+      i_isolate, callee, self_or_null, py_args, i::Handle<i::PyObject>::null());
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(internal_isolate);
+    api::CapturePendingException(i_isolate);
     return MaybeLocal<Value>();
   }
+
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
   return i::Utils::ToLocal<Value>(escaped);
 }
