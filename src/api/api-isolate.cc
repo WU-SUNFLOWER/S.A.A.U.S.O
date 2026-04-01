@@ -30,21 +30,16 @@ void Isolate::Dispose() {
 }
 
 void Isolate::ThrowException(Local<Value> exception) {
-  if (exception.IsEmpty()) {
-    return;
-  }
-
   auto* i_isolate = reinterpret_cast<i::Isolate*>(this);
+  assert(i_isolate != nullptr);
 
   if (i_isolate == nullptr) {
     return;
   }
 
-  i::Handle<i::PyObject> py_exception =
-      api::ToInternalObject(i_isolate, exception);
-  if (py_exception.is_null()) {
-    return;
-  }
+  i::Handle<i::PyObject> py_exception = i::Utils::OpenHandle(exception);
+  assert(!py_exception.is_null());
+
   i_isolate->exception_state()->Throw(*py_exception);
   api::CapturePendingException(i_isolate);
 }
