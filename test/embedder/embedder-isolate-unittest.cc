@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <thread>
+
 #include "saauso.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
