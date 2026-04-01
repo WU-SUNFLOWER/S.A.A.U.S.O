@@ -30,7 +30,7 @@
 
 ## 2. 建议阅读路线（快速上手）
 
-- 外部嵌入视角：从 [saauso.h](file:///e:/MyProject/S.A.A.U.S.O/include/saauso.h) 和 `docs/Embedder-API-*.md` 建立公共 API 的分层与生命周期心智模型，再进入 [src/api/](file:///e:/MyProject/S.A.A.U.S.O/src/api) 看桥接实现。
+- 外部嵌入视角：从 [saauso.h](file:///e:/MyProject/S.A.A.U.S.O/include/saauso.h) 与 Embedder 文档体系（[Saauso-Embedder-API-User-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Embedder-API-User-Guide.md)、[Embedder-API-Architecture-Design.md](file:///e:/MyProject/S.A.A.U.S.O/docs/architecture/Embedder-API-Architecture-Design.md)）建立公共 API 的分层与生命周期心智模型，再进入 [src/api/](file:///e:/MyProject/S.A.A.U.S.O/src/api) 看桥接实现。
 - 生命周期与 CLI 入口：从 [main.cc](file:///e:/MyProject/S.A.A.U.S.O/src/main.cc) 看开发调试入口；开启前端时默认跑内嵌源码 demo，关闭 `saauso_enable_cpython_compiler` 时走 `.pyc` 执行路径。
 - 全局运行时初始化：读 [saauso.cc](file:///e:/MyProject/S.A.A.U.S.O/src/init/saauso.cc)（嵌入式 CPython312 前端生命周期）。
 - 编译链路：读 [compiler.cc](file:///e:/MyProject/S.A.A.U.S.O/src/code/compiler.cc)（source -> pyc bytes -> PyCodeObject）。
@@ -43,4 +43,3 @@
 - 对象模型与属性查找：读 [py-object.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-object.cc) 与 [klass.cc](file:///e:/MyProject/S.A.A.U.S.O/src/objects/klass.cc)。
 - 异常表（exception table）：读 [exception-table.h](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/exception-table.h) 与 [py-code-object.h](file:///e:/MyProject/S.A.A.U.S.O/src/objects/py-code-object.h)（`co_exceptiontable` 的保存与解释器侧查找）。
 - 堆与新生代 GC：读 [heap.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/heap.cc) / [spaces.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/spaces.cc) / [scavenge-visitor.cc](file:///e:/MyProject/S.A.A.U.S.O/src/heap/scavenge-visitor.cc)。
-
