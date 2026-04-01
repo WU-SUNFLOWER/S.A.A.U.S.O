@@ -1,12 +1,10 @@
 # S.A.A.U.S.O VM 系统架构
 
-本文档收口 S.A.A.U.S.O 的系统架构指南，用于解释模块分层、依赖边界、错误传播约定、关键执行协议与核心子系统（GC、解释器、模块系统、前端等）的职责分配与实现索引。
+本文档为 S.A.A.U.S.O 的系统架构指南，用于介绍解释模块分层、依赖边界、错误传播约定、关键执行协议与核心子系统（GC、解释器、模块系统、前端等）的职责分配，并提供实现索引。
 
-## 3. 架构指南
+## 1. 分层与依赖方向（V8-like）
 
 本项目的架构设计深度借鉴了 V8 和 HotSpot。
-
-### 3.0. 分层与依赖方向（V8-like）
 
 - **目标**：让“对象表示/运行时语义/执行引擎/系统装配”各司其职，避免 `src/objects` 因承载高层语义而膨胀，并把变化点（语义/报错/协议）收敛在更合适的层。
 - **utils (`src/utils/`)**：纯工具层；严禁依赖 VM 上层能力（对象/堆/句柄/解释器/运行时/模块系统等）。
@@ -17,7 +15,7 @@
 - **runtime (`src/runtime/`)**：跨类型语义层；承载可复用流程（iterable unpack、`str(x)`、magic method invoke、建类/反射等）。
 - **interpreter (`src/interpreter/`)**：执行层；依赖 objects/runtime/builtins；负责字节码调度、调用协议与栈帧，并消费 Isolate::ExceptionState 做异常展开。
 
-#### 3.0.1. Architecture Boundaries（必须遵守）
+### 1.1. Architecture Boundaries（必须遵守）
 
 - **禁止**：`src/runtime` 与 `src/builtins` 直接 include 或调用 `src/interpreter`（包括 `#include "src/interpreter/interpreter.h"`、`Isolate::Current()->interpreter()->...` 等）。
 - **允许**：`src/runtime` 与 `src/builtins` 通过 execution/runtime 提供的门面 API 完成调用与抛错：
@@ -29,7 +27,7 @@
   - 降低后续演进成本：未来引入其他执行器（AOT/JIT）时，只需要调整 execution 门面的实现，而不是全仓库逐点替换调用。
   - 控制职责边界：Isolate 负责状态（如 ExceptionState 与 builtins），Execution 负责门面（Call/CurrentFrame*），interpreter 负责算法（dispatch/unwind）。
 
-#### 3.0.2. Error Conventions（必须遵守）
+### 1.2. Error Conventions（必须遵守）
 
 - **Fallible API（可能抛 Python 异常）**：
   - 返回对象句柄时使用 `MaybeHandle<T>`；返回状态值时使用 `Maybe<T>`/`Maybe<void>`
@@ -47,7 +45,7 @@
   - 需要抛出 Python 异常时统一使用 `Runtime_Throw*`（`src/runtime/runtime-exceptions.h`）
   - 建议优先使用 `ASSIGN_RETURN_ON_EXCEPTION*` 宏处理“调用失败即向上返回”的样板代码，该宏约定返回 `kNullMaybe`（可被隐式转换为“空 MaybeHandle”）
 
-#### 3.0.3. dict API Conventions（必须遵守）
+### 1.3. dict API Conventions（必须遵守）
 
 - **优先使用 runtime 语义入口**（当你需要 Python 语言层语义时）：
   - `Runtime_DictGetItem/Runtime_DictSetItem/Runtime_DictDelItem`：对应 `d[key]`/写入/删除的 KeyError 语义，并保证 `__hash__/__eq__` 异常原样传播。
@@ -58,7 +56,7 @@
   - 即便是 key 可证明为 interned `PyString`（例如 `ST(...)` / 字节码 names 表），也必须使用 `Put/Get/GetTagged/...`。
   - 若调用点没有异常传播通道，可显式忽略返回值，但不得恢复旧 API。
 
-### 3.1. 对象系统 (`src/objects`)
+## 2. 对象系统 (`src/objects`)
 
 - **PyObject**: 所有堆对象的基类。
 - **Klass**: 表示对象的类型/元信息（类似于 V8 的 Map 或 HotSpot 的 Klass）。数据（`PyObject`）与行为（`Klass`）严格分离。
@@ -73,7 +71,7 @@
     - `false`：未命中属性，`out` 为 null；若 `is_try=false`，实现必须设置 `AttributeError` 并返回 `Nothing`
   - 比较、`contains` 与算数/下标等可能抛异常的热点 slot 已统一使用 `Maybe<bool>` / `MaybeHandle<PyObject>`；调用方必须区分“正常 false”和“异常失败”，避免把 pending exception 误判为普通 miss。
 
-#### 3.1.1. 内建类型构造函数（`new_instance/init_instance`）的原理与写法
+### 2.1. 内建类型构造函数（`new_instance/init_instance`）的原理与写法
 
 本项目中，“调用一个 type object”（例如 `list(...)` / `dict(...)` / 自定义类 `C(...)`）会统一走两阶段构造：`new_instance`（分配/构造对象） + `init_instance`（初始化与 `__init__` 调用）。
 
@@ -148,7 +146,7 @@
   - 堆对象：依赖对齐保证低位为 `0`（当前对齐为 8 字节，`kObjectAlignmentBits = 3`），不使用额外 tag 位。
   - 重要：`Tagged<T>::Cast` 的语义相当于 `reinterpret_cast`，只能在“你确信类型正确”时使用；类型断言通常由 `T::Cast(...)` 或 `IsPyXxx(...)` 承担。
 
-### 3.2. 内存管理 (`src/heap`)
+## 3. 内存管理 (`src/heap`)
 
 - **垃圾回收 (GC)**: 当前实现以新生代 Scavenge 为主。
   - **NewSpace**: 复制算法（Eden + Survivor，Flip）。注意：当前 `NewSpace::Contains()` 仅判断 Eden；涉及空间判定时优先使用 `Heap::InNewSpaceEden()` / `Heap::InNewSpaceSurvivor()` 或直接对 `eden_space()/survivor_space()` 做 Contains。
@@ -171,7 +169,7 @@
   - 永久区对象（例如 `Isolate::py_none_object()` / `py_true_object()` / `py_false_object()`）分配在 `kMetaSpace`，不会被回收移动，通常可以直接用 `Tagged<T>` 返回/保存。
 - **TODO**: 如果虚拟机的基础功能开发完毕后仍有多余时间，再进行分代式 GC 的开发。当前的目标是实现一个仅含有新生代 scavenge GC 的 MVP 版本。
 
-### 3.3. 执行与隔离 (`src/execution`)
+## 4. 执行与隔离 (`src/execution`)
 
 - **Isolate**: 独立的虚拟机实例容器，封装堆 (Heap)、对象工厂 (Factory)、句柄作用域实现 (HandleScopeImplementer)、解释器 (Interpreter)、模块管理器 (ModuleManager)、字符串表 (StringTable)、各内建 `Klass` 指针，以及全局单例（`None/True/False`）。
 - **Current 绑定模型**: `Isolate::Current()` 通过 `thread_local` 保存当前线程绑定的 Isolate；进入/退出必须使用 `Isolate::Scope`（或显式 `Enter/Exit`），禁止手动设置 Current。
@@ -192,7 +190,7 @@
   - 再依次销毁 `StringTable`、`Interpreter`、`ModuleManager`、`HandleScopeImplementer`、最后销毁 `Heap` 与 `mutex`，并清空 `klass_list_` 与 `None/True/False` 引用（当前实现不保证严格与初始化逆序一致）。
 - **全局运行时初始化**: `saauso::Saauso::{Initialize,Dispose}` 位于 `src/init/`，用于嵌入式 CPython312 编译器前端的 Setup/TearDown。
 
-#### 3.3.1. Runtime helpers (`src/runtime`)
+## 5. Runtime helpers (`src/runtime`)
 
 - **builtins（内建函数）**: 实现在 `src/builtins/`，并由 `BuiltinBootstrapper` 在 `Isolate` 初始化阶段构建后挂到 `isolate->builtins()`（而非放在 `src/runtime/` 或由 `Interpreter` 自身持有）。
 - **runtime**: 可复用的运行时 helper（例如 unpack iterable、扩展 list 等）。上层类型实现优先复用此处 helper，减少重复迭代/拆包逻辑。
@@ -206,7 +204,7 @@
     - 反射/MRO/property find/magic method invoke 放在 `runtime-reflection.cc`。
     - exec/source/code 执行入口放在 `runtime-exec.cc`。
 
-### 3.4. 字节码解释器 (`src/interpreter`)
+## 6. 字节码解释器 (`src/interpreter`)
 
 - **Interpreter**：字节码执行入口与跨语言调用入口；负责维护当前栈帧链、异常展开状态与 computed-goto 的 dispatch table。`builtins` 字典本身归属 `Isolate`，Interpreter 按需读取。
 - **builtins 字典（行为对齐用）**：
@@ -224,7 +222,7 @@
   - `CALL + KW_NAMES`：按 CPython3.12 “双槽位调用协议”组织 operand stack（见下文），`KW_NAMES` 提供 `kwarg_keys`；`CALL_FUNCTION_EX` 处理 `f(*args, **kwargs)`；`DICT_MERGE` 处理 kwargs dict 合并。
   - `CALL_INTRINSIC_1`：当前至少支持 `INTRINSIC_LIST_TO_TUPLE` 与 `INTRINSIC_IMPORT_STAR`；新增 intrinsic 时需同步检查 dispatch、错误传播与解释器回归测试。
 
-#### 3.4.1. CPython3.12 Call 双槽位调用协议（关键）
+### 6.1. CPython3.12 Call 双槽位调用协议（关键）
 
 CPython 3.12 为了优化“方法调用（obj.meth(...)）”的热点路径，引入了一个在字节码层面可表达的约定：把“是否需要隐式注入 self”编码到 operand stack 的两个前缀槽位中，从而让 `CALL` 在运行时只做非常轻量的栈调整。
 
@@ -289,14 +287,14 @@ if (method != NULL) {
 
 - 如果未来引入更完整的 descriptor/`__get__` 协议，需要同步扩展 `GetAttrForCall` 的“是否可拆成 (method,self)”判定规则；目前仅对 `PyFunction/PyNativeFunction` 做了特判优化。
 
-### 3.5. 代码加载 / 前端 (`src/code`)
+## 7. 代码加载 / 前端 (`src/code`)
 
 - **Compiler**：编译入口，提供 `CompileSource/CompilePyc` 等 API。`CompileSource` 的默认实现为“嵌入式 CPython312 编译成 pyc bytes，再解析为 `PyCodeObject`”。
 - **cpython312-pyc-file-parser**：解析 CPython 3.12 `.pyc` 并构建 `PyCodeObject`。
 - **cpython312-pyc-compiler（可选）**：通过嵌入式 CPython 3.12 生成 `.pyc`（对应 GN 目标 `saauso_cpython312_compiler`）。
 - **BinaryFileReader**：二进制读取工具，位于 `src/utils/`，供 pyc parser 等模块复用。
 
-### 3.6. 模块系统（import，`src/modules`）
+## 8. 模块系统（import，`src/modules`）
 
 - **分层职责（按“语义编排/定位/加载/状态”拆分）**：
   - `ModuleManager`：模块系统门面与状态持有者，维护 `sys.modules`（dict）与 `sys.path`（list），并向解释器暴露统一入口 `ImportModule(...)`（见 [module-manager.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/module-manager.h)）。
@@ -319,3 +317,13 @@ if (method != NULL) {
 - **内建模块（builtin）**：
   - 内建模块通过注册表机制优先命中（见 [builtin-module.h](file:///e:/MyProject/S.A.A.U.S.O/src/modules/builtin-module.h)）。当前内建模块列表含 `sys/math/random/time`；`sys.modules/sys.path` 指向 `ModuleManager` 持有对象（见 [builtin-sys-module.cc](file:///e:/MyProject/S.A.A.U.S.O/src/modules/builtin-sys-module.cc)）。
 
+## 9. Embedder API
+
+阅读与落地建议（AI 与人类程序员通用）：
+- 入门与使用约定：先读 `docs/Embedder-API-User-Guide.md`（概念、示例、错误处理、限制）。
+- 架构与边界：再读 `docs/Embedder-API-Architecture-Design.md`（分层、生命周期、互调链路、源码索引）。
+- 代码导航顺序：
+  1. 公共 ABI：`include/saauso.h` 与 `include/saauso-*.h`
+  2. 桥接层实现：`src/api/`
+  3. VM 侧关键互调：`src/runtime/runtime-py-function.cc`、`src/objects/py-function-klass.cc`
+  4. 示例与回归：`samples/`、`test/embedder/`
