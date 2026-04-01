@@ -661,7 +661,7 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ```powershell
 # 构建测试目标
 .\depot_tools\gn.exe gen out/ut --args="is_asan=true"
-.\depot_tools\ninja.exe -C out/ut ut
+.\depot_tools\ninja.exe -C out/ut all_ut
 
 # 运行测试
 .\out\ut\ut.exe
