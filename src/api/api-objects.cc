@@ -17,13 +17,12 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
 }
 
 Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = i::Isolate::Current();
+  assert(i_isolate == nullptr);
 
-  if (key.IsEmpty()) {
-    return i::kNullMaybe;
-  }
+  i::HandleScope handle_scope(i_isolate);
 
-  if (internal_isolate == nullptr) {
+  if (key.IsEmpty() || value.IsEmpty()) {
     return i::kNullMaybe;
   }
 
@@ -32,22 +31,19 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
     return i::kNullMaybe;
   }
 
-  i::HandleScope handle_scope(internal_isolate);
   i::Handle<i::PyDict> dict = i::Handle<i::PyDict>::cast(object);
+
   std::string key_value = key->Value();
-  i::Handle<i::PyString> py_key =
-      i::PyString::New(internal_isolate, key_value.data(),
-                       static_cast<int64_t>(key_value.size()));
-  i::Handle<i::PyObject> py_value =
-      api::ToInternalObject(internal_isolate, value);
-  auto maybe_put = i::PyDict::Put(dict, py_key, py_value, internal_isolate);
+  i::Handle<i::PyString> py_key = i::PyString::New(
+      i_isolate, key_value.data(), static_cast<int64_t>(key_value.size()));
+  i::Handle<i::PyObject> py_value = i::Utils::OpenHandle(value);
+
+  auto maybe_put = i::PyDict::Put(dict, py_key, py_value, i_isolate);
   if (maybe_put.IsNothing()) {
-    api::CapturePendingException(internal_isolate);
+    api::CapturePendingException(i_isolate);
     return i::kNullMaybe;
   }
-  if (!maybe_put.ToChecked()) {
-    return i::kNullMaybe;
-  }
+
   return JustVoid();
 }
 
