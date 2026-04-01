@@ -18,7 +18,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
 
 Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
   i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate == nullptr);
+  assert(i_isolate != nullptr);
 
   i::HandleScope handle_scope(i_isolate);
 
