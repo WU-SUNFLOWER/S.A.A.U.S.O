@@ -10,6 +10,7 @@ executable("embedder_ut") {
     "./embedder-isolate-locker.cc",
     "./embedder-isolate-unittest.cc",
     "./embedder-script-unittest.cc",
+    "./lsan-suppressions.cc",
   ]
   deps = [
     "//:embedder_api",
