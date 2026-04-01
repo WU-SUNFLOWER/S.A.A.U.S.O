@@ -9,17 +9,6 @@
 namespace saauso {
 namespace api {
 
-i::Handle<i::PyObject> ToInternalObject(i::Isolate* i_isolate,
-                                        Local<Value> value) {
-  if (value.IsEmpty()) {
-    return i_isolate->factory()->py_none_object();
-  }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(value);
-  if (object.is_null()) {
-    return i_isolate->factory()->py_none_object();
-  }
-  return object;
-}
 
 bool CapturePendingException(i::Isolate* isolate) {
   if (!isolate->HasPendingException()) {
@@ -77,7 +66,7 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
 
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
-  return ToInternalObject(i_isolate, escaped_ret);
+  return i::Utils::OpenHandle(escaped_ret);
 }
 
 }  // namespace api
