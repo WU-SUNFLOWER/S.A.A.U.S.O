@@ -66,11 +66,10 @@ void Isolate::Dispose(Isolate* isolate) {
   if (isolate == nullptr) {
     return;
   }
-  if (isolate->entry_count_ != 0) {
-    // 错误：试图销毁一个正在被使用的 Isolate。
-    // 必须确保所有线程都已退出该 Isolate（即 entry_count_ 为 0）才能销毁它。
-    assert(0);
-  }
+
+  // 必须确保所有线程都已退出该 Isolate，才能销毁它。
+  assert(!isolate->IsInUse());
+
   isolate->TearDown();
   delete isolate;
 }
