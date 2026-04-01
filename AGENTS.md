@@ -23,15 +23,15 @@
 ### 0.2. Top 10 必守规则（AI Checklist）
 
 1. 修改前先在仓库中搜索同类实现与既有模式，再决定具体写法（见 0.1）。
-2. 禁止在接口上传递 `PyObject*`；对外暴露与内部调用使用 `Tagged<PyObject>` 或 `Handle<PyObject>`（见 6.1）。
-3. 栈上持有 GC-able 对象必须使用 `Handle<T>`；跨 `HandleScope` 返回必须使用 `EscapableHandleScope::Escape`（见 6.1）。
-4. 分配 `PyObject` 派生对象禁止使用 `new`；必须优先通过 `Isolate::Current()->factory()->NewXxx(...)` 进入统一工厂路径（见 6.2）。
-5. 不依赖构造函数写默认值：`Allocate/AllocateRaw` 不清零且不调用构造函数，默认值应在工厂函数中手工写入（见 6.2）。
+2. 禁止在接口上传递 `PyObject*`；对外暴露与内部调用使用 `Tagged<PyObject>` 或 `Handle<PyObject>`（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
+3. 栈上持有 GC-able 对象必须使用 `Handle<T>`；跨 `HandleScope` 返回必须使用 `EscapableHandleScope::Escape`（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
+4. 分配 `PyObject` 派生对象禁止使用 `new`；必须优先通过 `Isolate::Current()->factory()->NewXxx(...)` 进入统一工厂路径（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
+5. 不依赖构造函数写默认值：`Allocate/AllocateRaw` 不清零且不调用构造函数，默认值应在工厂函数中手工写入（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 3.1）。
-7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 3.1、6.3）。
-8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 2）。
+7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 3.1 与 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
+8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循代码风格指南 [Saauso-Coding-Style-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Coding-Style-Guide.md) 的命名与注释规范（必须包含必要的简体中文注释）。
-10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 5.3）。
+10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 [Saauso-Build-and-Test-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)）。
 
 ## 1. 项目概览
 
@@ -452,197 +452,10 @@ if (method != NULL) {
 
 ## 5. 开发工作流
 
-### 5.1. 构建
-
-根 `BUILD.gn` 当前主要提供：
-
-- `saauso_core`：核心实现 `source_set`（虚拟机主体）。
-- `saauso_cpython312_compiler`：嵌入式 CPython 3.12 编译器前端的可选依赖门面（开关关闭时不引入任何 CPython 依赖）。
-- `embedder_api`：公共 Embedder API 目标，暴露 `include/` 头并链接 `src/api/` 桥接实现。
-- `vm`：示例入口（见 `src/main.cc`）。
-- `embedder_hello_world` / `embedder_game_engine_demo`：Embedder API 示例程序。
-- `all_ut`：统一测试入口（聚合 `//test/unittests:ut` 与 `//test/embedder:embedder_ut`）。
-
-构建开关：
-
-- `saauso_enable_cpython_compiler`（默认 `true`）：控制是否启用“内嵌 CPython 3.12 编译器前端”。
-  - 该开关会注入 C++ 宏 `SAAUSO_ENABLE_CPYTHON_COMPILER=0/1`，用于隔离依赖 `Python.h` 的代码路径。
-  - 当关闭时：
-    - `Compiler::CompileSource`、`Runtime_ExecutePythonSourceCode` 与 `exec(str)` 会 fail-fast（提示需要开启该开关）。
-    - import 路径不再搜索 `.py`（仅搜索 `.pyc`）；若未命中则按常规导入错误抛出 `ModuleNotFoundError`。
-    - `CompilePyc` 与导入 `.pyc` 仍可用。
-    - 单元测试会自动剔除依赖源码编译的解释器端到端用例与编译器前端用例，仅保留纯后端相关用例用于回归。
-  - 开关默认值与宏注入位置：
-    - 默认值：`build/config/BUILDCONFIG.gn`
-    - 宏注入：`build/BUILD.gn`
-
-项目本地包含了 `depot_tools`（Windows/Linux amd64），可直接调用其中的 `gn`/`ninja`。
-
-注意：仓库脚本 `build.sh` 默认直接调用 `gn`/`ninja`（Windows 下为 `gn.exe`/`ninja.exe`），因此需要确保它们在 PATH 中可用。
-
-- 推荐做法：在 Bash 环境中把 `depot_tools/` 加入 PATH（或自行安装并配置 gn/ninja）。
-- 若不想配置 PATH：在 Windows PowerShell 下可以直接使用本文档下方的 `.\depot_tools\gn.exe` / `.\depot_tools\ninja.exe` 命令手动构建。
-
-Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/`），ASan 链接依赖 `llvm_lib_path`（默认 `D:\LLVM\lib\clang\21\lib\windows`）。如果你本地 LLVM 安装路径不同，请通过 `gn args` 或 `--args="llvm_lib_path=... is_asan=true"` 覆盖。
-
-为增强跨平台兼容性检查，本项目在 Windows 与 Linux 的编译配置中均启用了较严格的警告集合（例如 `-Wextra/-Wshadow/-Wunreachable-code`）并将警告视为错误（`-Werror`）。这要求新增代码在两端都保持“零警告构建”（Clean Build）。
-
-推荐优先使用仓库自带脚本（需要 Bash 环境，如 Git Bash/MSYS2/WSL）：
-
-```bash
-./build.sh release
-./build.sh debug
-./build.sh asan
-./build.sh ut
-./build.sh ut_backend
-```
-
-在 Windows PowerShell 下可直接手动执行（常用目标名为 `vm`/`all_ut`；其中 `ut.exe` 与 `embedder_ut.exe` 是分别运行的测试二进制）：
-
-```powershell
-# 生成构建文件
-.\depot_tools\gn.exe gen out/debug --args="is_debug=true"
-
-# 构建
-.\depot_tools\ninja.exe -C out/debug vm
-
-# 导出 compile_commands.json (供 clangd/IDE 使用)
-.\depot_tools\gn.exe gen out/debug --args="is_debug=true" --export-compile-commands
-```
-
-### 5.2. 测试
-
-测试分为三层：
-
-- `test/unittests/`：核心 VM 的 GTest 单元测试。
-- `test/embedder/`：Embedder API 的 GTest 测试。
-- `test/python312/`：不依赖 GTest 的 Python 脚本回归样例。
-
-根 `BUILD.gn` 只负责聚合测试入口 `all_ut`；真正可执行的测试二进制仍然分别位于 `test/unittests:ut` 与 `test/embedder:embedder_ut`。
-
-```powershell
-# 构建统一测试入口
-.\depot_tools\gn.exe gen out/ut --args="is_asan=true"
-.\depot_tools\ninja.exe -C out/ut all_ut
-
-# 分别运行两套 GTest
-.\out\ut\ut.exe
-.\out\ut\embedder_ut.exe
-```
-
-### 5.3. 单元测试架构
-
-- **公共测试代码（当前布局）**：
-  - `test/unittests/test-helpers.{h,cc}`：提供带生命周期的测试夹具基类（负责 `Saauso::Initialize/Dispose`、`Isolate` 创建与 Enter/Exit 等）与解释器输出捕获夹具。
-  - `test/unittests/test-utils.{h,cc}`：提供无状态的小工具与断言谓词（例如 `IsPyStringEqual`、`AppendExpected`、pyc 字节构造器等）。
-- **测试目录分层（按模块分类）**：
-  - `test/unittests/interpreter/`：解释器相关用例，已按专题拆分为较细的测试矩阵，覆盖 builtins bootstrap、constructor/method dispatch、自定义类、import、异常、容器、模块、控制流、闭包、lambda、调用协议等；专项文件如 `native-print-unittest.cc` 单独承载原生桥接行为。
-    - 该目录内部复杂度最高。新增用例前，务必先阅读文档 `test/unittests/interpreter/README.md`，优先归入已有专题文件，避免继续堆叠到“大杂烩”文件中。
-  - `test/unittests/objects/`：对象系统与容器/属性相关用例（`py-*-unittest.cc`、`attribute-unittest.cc`）。
-  - `test/unittests/heap/`：GC/堆相关用例（如 `gc-unittest.cc`）。
-  - `test/unittests/handles/`：句柄与并发相关用例（如 `handle-*-unittest.cc`、`global-handle-unittest.cc`）。
-  - `test/unittests/code/`：pyc 解析/编译前端相关用例（如 `pyc-file-parser-unittest.cc`）。
-  - `test/unittests/utils/`：纯工具/算法相关用例（如 `string-search-unittest.cc`、`random-number-generator-unittest.cc`）。
-- **统一夹具基类**：
-  - `VmTestBase`：适用于绝大多数“需要完整虚拟机环境”的单测。
-  - `IsolateOnlyTestBase`：仅创建/销毁 `Isolate`（不 Enter），用于线程隔离类测试。
-- **解释器端到端测试**：
-  - 统一使用 `BasicInterpreterTest` 夹具（print 注入 + 输出捕获）。
-  - 用例按主题拆分到 `interpreter-*-unittest.cc`，避免单文件职责膨胀。
-- **前端开关对测试的影响**：
-  - 当 `saauso_enable_cpython_compiler=false` 时，`test/unittests/BUILD.gn` 会自动剔除依赖源码编译的解释器端到端用例与编译器前端用例，仅保留纯后端相关用例用于回归（对应脚本模式 `./build.sh ut_backend`）。
-- **LSan 抑制**：
-  - `__lsan_default_suppressions()` 统一放在 `test/unittests/lsan-suppressions.cc`，避免多处重复定义。
-- **新增测试文件的接入点**：
-  - 新增 `test/unittests/**/**.cc` 后，需要同步将其加入 `test/unittests/BUILD.gn` 的 `ut` 目标 `sources` 列表。
-  - 新增 `test/embedder/*.cc` 后，需要同步将其加入 `test/embedder/BUILD.gn` 的 `embedder_ut` 目标 `sources` 列表。
-  - 根 `BUILD.gn` 仅保留 `group("all_ut")` 作为统一入口，避免测试 sources 污染根构建文件。
+构建、测试与单测架构：
+- [Saauso-Build-and-Test-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)
 
 ## 6. 给 AI Agent 的关键实现细节
 
-### 6.1. Handle / Tagged 使用规则（非常重要）
-
-- **禁止在接口上传递** **`PyObject*`**：`PyObject` 语义上可能承载 Smi（并非真实对象指针），传裸指针会导致 C++ UB；对外暴露与内部调用都应使用 `Tagged<PyObject>` 或 `Handle<PyObject>`。
-- 该约束在源码注释中被视为“设计硬性前提”，相关说明集中在 `src/objects/py-object.h`。
-- **栈上持有 GC-able 对象必须用 Handle**：只要对象可能在新生代中被复制移动，就必须用 `Handle<T>` 防止悬垂引用。
-- **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `EscapableHandleScope scope;`，然后 `return scope.Escape(result);`。
-- **HandleScope 依赖 Isolate::Current()**：在创建 `HandleScope`/使用 `Handle` 或 `Global::Get()` 前，应先进入对应的 `Isolate::Scope`（多线程场景再配合 `Isolate::Locker`），避免在未绑定的线程上访问句柄系统。
-- **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中；如果需要跨作用域/长期持有，请使用 `Global<T>`。
-
-#### Global（长期句柄，类似 v8::Global）
-
-`Global<T>` 用于长期持有 GC-able 的 Python 对象引用，它不受 `HandleScope` 生命周期影响，但自身遵循 C++ RAII：析构或 `Reset()` 时自动释放对对象的引用。
-
-- 头文件：`src/handles/global-handles.h`
-- 语义要点：
-  - `Global<T>` 是 move-only（不可拷贝），避免双重释放。
-  - `Global<T>` 会被纳入 GC roots，minor GC 后其内部 slot 会自动更新到新地址。
-  - `Global<T>::Get()` 用于把全局句柄临时“降级”为栈上 `Handle<T>` 参与常规 API 调用；要求当前线程处于同一个 `Isolate::Current()`，且必须在某个 `HandleScope` 内调用。
-
-用法示例：
-
-```cpp
-#include "src/handles/global-handles.h"
-#include "src/handles/handles.h"
-
-using namespace saauso::internal;
-
-void Example() {
-  HandleScope scope;
-  Handle<PyString> s = PyString::NewInstance("hello");
-
-  Global<PyString> g(s);
-
-  {
-    HandleScope inner;
-    Handle<PyString> local = g.Get();
-    (void)local;
-  }
-
-  g.Reset();
-}
-```
-
-### 6.2. 分配与初始化
-
-- **堆对象分配**：不要对 `PyObject` 派生对象使用 `new`；业务代码应优先走 `Isolate::Current()->factory()->NewXxx(...)`。仅在 `Factory` 内部才直接触达 `Heap::Allocate*`。
-- **分配不调用构造函数**：
-  - `Heap::Allocate/AllocateRaw` 只返回原始内存（不保证分配得到的内存块已清零），不会执行 C++ 构造函数
-  - 因此不要依赖构造函数为对象/表结构写入默认值。
-  - 一般地，写入默认值操作在 `Factory::NewXxx(...)` 与对应对象 `XXX::NewInstance(...)` 路径中手工完成。
-- **初始化阶段分配约束**：`Factory` 在“先写哨兵字段、后续再做可能分配动作”的关键路径使用 `DisallowHeapAllocation`，避免对象半初始化状态下触发二次分配。
-- **永久区单例**：`None/True/False` 通过 `kMetaSpace` 分配并保存在 `Isolate`，通常不需要 `Handle` 保护。
-
-### 6.3. GC 与遍历约定
-
-- **对象大小**：GC 扫描依赖 `Klass::vtable_.instance_size(self)` 返回正确实例大小。
-- **引用遍历**：每个可回收对象类型必须在 `Klass::vtable_.iterate(self, v)` 中准确访问其内部所有 `Tagged<PyObject>` 字段；否则会出现对象丢失或悬垂。
-- **Forwarding**：新生代复制时，旧对象 `MarkWord` 会暂存 forwarding 地址（tag `0b10`），判断逻辑在 `MarkWord` 中。
-
-### 6.4. 新增一个内建对象类型的最小步骤
-
-- 在 `src/objects/` 新增 `py-xxx.{h,cc}` 与 `py-xxx-klass.{h,cc}`（文件名使用 `kebab-case`）。
-- 如果对象在堆上有实体，加入 `PY_TYPE_IN_HEAP_LIST`（位于 `src/objects/object-type-list.h`），以便自动生成 `IsPyXxx(...)` 等检查器。
-- `PY_TYPE_*` 与 `ISOLATE_KLASS_LIST` 是“同域不同职责”：前者服务 checker/类型清单复用，后者服务 Isolate klass 槽位与初始化流程。
-- 在对应 `Klass::PreInitialize()` 填充 vtable（至少需要 `instance_size` 与 `iterate`），并在 `Finalize()` 做必要清理。
-- 将该类型加入 `src/execution/isolate-klass-list.h` 的 `ISOLATE_KLASS_LIST`，保证：
-  - `Isolate` 拥有对应的 `*_klass()` accessor 与字段；
-  - `Isolate::InitMetaArea()` 会自动执行该 Klass 的 `InitializeVTable/PreInitialize/Initialize`；
-  - `Isolate::TearDown()` 会自动执行该 Klass 的 `Finalize`。
-- 将新文件加入根 [BUILD.gn](file:///e:/MyProject/S.A.A.U.S.O/BUILD.gn) 的 `saauso_core.sources` 列表，保证目标可链接。
-- （可选）在 [builtin-bootstrapper.cc](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/builtin-bootstrapper.cc) 的 `InstallBuiltinTypes()` 中注册该类型的 `type_object()`，并加入 `builtins` 字典。
-  - 这步不是必须选项，只有当我们希望将这种类型泄露到 Python 语言中，允许用户代码中使用 `type(...)` 或 `isinstance(..., ...)` 等操作时才需要。
-  - 例如在Python中，NoneType这种类型就没有被泄漏到Python语言环境，因此它不需要注册到`builtins`字典中。
-
-### 6.5. `src/utils/` 的依赖边界（判定口径）
-
-- **目标**：将 `src/utils/` 维持为“纯工具层”，避免引入虚拟机上层耦合，降低编译期依赖与循环依赖风险。
-- **允许依赖**：
-  - `src/build/` 中的编译控制宏（如 `BUILDFLAG`、`IS_WIN`、`IS_LINUX`等）。
-  - `src/utils/` 目录内的其它工具模块。
-  - `third_party/` 中的第三方库。
-  - C++ 标准库。
-- **禁止依赖**：
-  - `src/runtime/`、`src/heap/`、`src/handles/`、`src/objects/`、`src/interpreter/` 及其暴露的能力。
-  - 直接或间接访问 `Isolate::Current()`、`HandleScope`、`Heap::Allocate` 等会把 `utils` 变成“VM 上层的一部分”的接口。
-- **例外处理**：若确需跨模块共享基础类型或小型工具，优先下沉到 `include/` 或在 `src/utils/` 内提供与 VM 无关的抽象接口，再由上层实现适配。
+与 VM 正确性强相关的工程约束和编程范式（Handle/Tagged、对象分配与初始化、GC 遍历、utils 依赖边界、新增内建类型 checklist）：
+- [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)
