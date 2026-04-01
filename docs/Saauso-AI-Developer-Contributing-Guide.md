@@ -25,8 +25,8 @@
 3. 栈上持有 GC-able 对象必须使用 `Handle<T>`；跨 `HandleScope` 返回必须使用 `EscapableHandleScope::Escape`（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 4. 分配 `PyObject` 派生对象禁止使用 `new`；必须优先通过 `Isolate::Current()->factory()->NewXxx(...)` 进入统一工厂路径（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 5. 不依赖构造函数写默认值：`Allocate/AllocateRaw` 不清零且不调用构造函数，默认值应在工厂函数中手工写入（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
-6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 [Saauso-VM-System-Architecture.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-System-Architecture.md)）。
-7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 [Saauso-VM-System-Architecture.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-System-Architecture.md) 与 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
+6. 新增/重写 `Klass::vtable_` 的 slot 时必须显式指向默认实现，或确保所有调用点对 `nullptr` 可处理（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
+7. `instance_size` 必须为“不可触发 GC”的纯计算；`iterate` 必须遍历对象内全部 `Tagged<PyObject>` 引用字段（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循代码风格指南 [Saauso-Coding-Style-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Coding-Style-Guide.md) 的命名与注释规范（必须包含必要的简体中文注释）。
 10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 [Saauso-Build-and-Test-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)）。
@@ -38,4 +38,3 @@
 - VM 工程约束与正确性红线：见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)。
 - 构建、测试与单测接入：见 [Saauso-Build-and-Test-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)。
 - 仓库结构与阅读路线：见 [Saauso-Project-Structure-And-Reading-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Project-Structure-And-Reading-Guide.md)。
-
