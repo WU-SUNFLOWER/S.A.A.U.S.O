@@ -9,6 +9,7 @@
 #include "include/saauso-exception.h"
 #include "include/saauso-local-handle.h"
 #include "include/saauso-object.h"
+#include "include/saauso-script.h"
 #include "include/saauso-value.h"
 #include "src/api/api-inl.h"
 #include "src/common/globals.h"

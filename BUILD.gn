@@ -412,7 +412,7 @@ executable("embedder_game_engine_demo") {
 # 说明：
 # - 保留既有 test/unittests:ut 作为主回归集合。
 # - 额外纳入 Embedder Phase0/1 的边界检查与单测，确保演进不回退。
-group("ut") {
+group("all_ut") {
   testonly = true
   deps = [
     "//test/embedder:embedder_ut",

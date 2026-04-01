@@ -53,12 +53,12 @@ case $MODE in
     ut)
         OUT_DIR="out/ut"
         GN_ARGS="is_asan=true"
-        TARGET="ut"
+        TARGET="all_ut"
         ;;
     ut_backend)
         OUT_DIR="out/ut_backend"
         GN_ARGS="is_asan=true saauso_enable_cpython_compiler=false"
-        TARGET="ut"
+        TARGET="all_ut"
         ;;
     *)
         echo "错误: 未知的模式 '$MODE'"

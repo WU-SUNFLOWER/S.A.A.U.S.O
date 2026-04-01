@@ -42,6 +42,9 @@ TEST(HandleThreadTest, HandleScopeStateIsThreadLocalAndCleansUpAfterThread) {
             base_handles);
   EXPECT_EQ(i_isolate->handle_scope_implementer()->blocks().length(),
             base_blocks);
+
+  isolate->Dispose();
+  Saauso::Dispose();
 }
 
 }  // namespace saauso

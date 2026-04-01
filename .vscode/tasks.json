@@ -55,7 +55,7 @@
             "args": [
                 "-C",
                 "${workspaceFolder}/out/ut",
-                "ut"
+                "all_ut"
             ],
             "group": {
                 "kind": "build",

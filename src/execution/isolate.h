@@ -117,6 +117,8 @@ class Isolate {
   ThreadId owner_thread() const { return owner_thread_; }
   int entry_count() const { return entry_count_; }
 
+  bool IsInUse() const { return entry_count_ != 0; }
+
  private:
   Isolate() = default;
 
