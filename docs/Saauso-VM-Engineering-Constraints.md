@@ -94,3 +94,46 @@ void Example() {
   - 直接或间接访问 `Isolate::Current()`、`HandleScope`、`Heap::Allocate` 等会把 `utils` 变成“VM 上层的一部分”的接口。
 - **例外处理**：若确需跨模块共享基础类型或小型工具，优先下沉到 `include/` 或在 `src/utils/` 内提供与 VM 无关的抽象接口，再由上层实现适配。
 
+## 6. 架构边界（必须遵守）
+
+- **禁止**：`src/runtime` 与 `src/builtins` 直接 include 或调用 `src/interpreter`（包括 `#include "src/interpreter/interpreter.h"`、`Isolate::Current()->interpreter()->...` 等）。
+- **允许**：`src/runtime` 与 `src/builtins` 通过 execution/runtime 提供的门面 API 完成调用与抛错：
+  - 执行/调用入口：使用 `src/execution/execution.h` 的 `Execution::*`
+  - 抛错与错误格式化：使用 `src/runtime/runtime-exceptions.h` 的 `Runtime_Throw*` / `Runtime_FormatPendingExceptionForStderr`
+  - error indicator：由 `Isolate::exception_state()` 统一持有与传播
+- **理由**：
+  - 让依赖方向保持单向：`runtime/builtins -> execution -> interpreter`，避免循环依赖与“runtime 变半个解释器”。
+  - 降低后续演进成本：未来引入其他执行器（AOT/JIT）时，只需要调整 execution 门面的实现，而不是全仓库逐点替换调用。
+  - 控制职责边界：Isolate 负责状态（如 ExceptionState 与 builtins），Execution 负责门面（Call/CurrentFrame\*），interpreter 负责算法（dispatch/unwind）。
+
+## 7. 错误传播契约（必须遵守）
+
+### 7.1 Error Conventions（必须遵守）
+
+- **Fallible API（可能抛 Python 异常）**：
+  - 返回对象句柄时使用 `MaybeHandle<T>`；返回状态值时使用 `Maybe<T>`/`Maybe<void>`
+  - 失败时必须返回空值（`kNullMaybeHandle` 或 `kNullMaybe`），并且必须已设置 `Isolate::exception_state()` 的 pending exception
+  - 调用方必须显式检查失败态（`IsEmpty()/ToHandle(...)` 或 `IsNothing()`）并继续向上返回失败或进入 unwind
+- **Try/Lookup API（miss 不是异常，但过程仍可能抛异常）**：
+  - miss 必须可继续执行（不得设置 pending exception）
+  - 若查询过程可能触发 Python 代码/异常（例如 `__getattr__`、`__hash__/__eq__` 等），必须使用 `Maybe<T>`（三态）消除“未命中 vs 异常”的二义性
+  - 推荐模式：返回 `Maybe<bool>` + out 参数
+    - `Nothing`：查询过程中发生异常（已设置 pending exception，out 为 null）
+    - `true`：命中（out 非 null）
+    - `false`：未命中（out 为 null，且不得设置 pending exception）
+- **执行入口**：
+  - 调用 Python（CallPython/执行 code）统一走 `Execution::*` 与 `MaybeHandle`
+  - 需要抛出 Python 异常时统一使用 `Runtime_Throw*`（`src/runtime/runtime-exceptions.h`）
+  - 建议优先使用 `ASSIGN_RETURN_ON_EXCEPTION*` 宏处理“调用失败即向上返回”的样板代码，该宏约定返回 `kNullMaybe`（可被隐式转换为“空 MaybeHandle”）
+
+### 7.2 dict API Conventions（必须遵守）
+
+- **优先使用 runtime 语义入口**（当你需要 Python 语言层语义时）：
+  - `Runtime_DictGetItem/Runtime_DictSetItem/Runtime_DictDelItem`：对应 `d[key]`/写入/删除的 KeyError 语义，并保证 `__hash__/__eq__` 异常原样传播。
+- **允许直接使用 PyDict 原语的场景**（当你实现的是解释器更高层语义时）：
+  - 例如 `LOAD_NAME/LOAD_GLOBAL` 的 locals→globals→builtins 链式查找（miss 继续，最终 `NameError`），该语义不等价于 `d[key]`。
+  - 这类场景必须使用 fallible API：`Get/GetTagged/Put/Remove/ContainsKey`，并在失败时立即传播 pending exception。
+- **内部初始化路径的约束**：
+  - 即便是 key 可证明为 interned `PyString`（例如 `ST(...)` / 字节码 names 表），也必须使用 `Put/Get/GetTagged/...`。
+  - 若调用点没有异常传播通道，可显式忽略返回值，但不得恢复旧 API。
+
