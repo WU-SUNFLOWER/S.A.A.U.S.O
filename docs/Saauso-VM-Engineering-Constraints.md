@@ -137,3 +137,35 @@ void Example() {
   - 即便是 key 可证明为 interned `PyString`（例如 `ST(...)` / 字节码 names 表），也必须使用 `Put/Get/GetTagged/...`。
   - 若调用点没有异常传播通道，可显式忽略返回值，但不得恢复旧 API。
 
+## 8. 对象系统约束（必须遵守）
+
+本节收口对象系统（`src/objects`）中与正确性强相关的约束：vtable slot 契约、cast like/exact 语义、对象布局与 Tagged/Smi 编码。
+
+### 8.1 VirtualTable（slot 表）契约
+
+- `Klass::vtable_` 保存各类操作的函数指针，新增/重写 slot 时：要么显式指向默认实现，要么确保所有调用点在 `nullptr` 时可处理（否则会空函数指针调用崩溃）。
+- `getattr` 采用四参形式：`getattr(self, name, is_try, out)`，返回 `Maybe<bool>`（三态）：
+  - `Nothing`：查询过程中发生异常（已设置 pending exception）
+  - `true`：命中属性，`out` 写入属性值（非 null）
+  - `false`：未命中属性，`out` 为 null；若 `is_try=false`，实现必须设置 `AttributeError` 并返回 `Nothing`
+- 与 GC 遍历相关的硬约束（避免悬垂/对象丢失）请同时遵守本文件的 `## 3. GC 与遍历约定`。
+
+### 8.2 `cast` 语义与 checker 边界
+
+- `Handle<T>::cast` 依赖 `T::cast(...)` 做断言；若某类型未提供该断言函数，需要在 T 类型的 .h 及 .cc 文件中分别补充 `Tagged<T> T::cast(Tagged<PyObject> object)` 方法的定义与实现。
+- 对 `list/str/tuple/dict` 这类“已建立 native layout 继承链”的内建容器，`T::cast` 的断言语义采用 like（布局兼容）而不是 exact（klass 全等）。
+  - 判定 API 统一使用 `IsPyXxx`（like）与 `IsPyXxxExact`（exact）。
+  - `IsPyString/IsPyList/IsPyDict/IsPyTuple` 默认是 like；若某调用点确实需要 exact 类型语义，必须显式使用 `IsPyStringExact/IsPyListExact/IsPyDictExact/IsPyTupleExact`。
+- checker 模块边界：
+  - 声明/实现位于 `src/objects/object-checkers.h/.cc`
+  - 类型基建 list 位于 `src/objects/object-type-list.h`
+  - `py-object.h` 通过 include 暴露 checker API，`py-object.cc` 不再承载 checker 定义
+
+### 8.3 对象布局与 Tagged/Smi 编码
+
+- `MarkWord` 必须位于对象内存布局起始位置；GC 与类型信息读取依赖它。
+  - `MarkWord` 语义：要么保存 `Klass` 指针，要么在 GC 期间保存 forwarding 地址（tag 为 `0b10`）。
+- `Tagged<T>` 统一表达“可能是堆对象，也可能是 Smi”的引用语义。
+  - Smi：`Address` 末位为 `1`，值编码为 `SmiToAddress(v) = (v << 1) | 1`（见 `include/saauso-internal.h`）。
+  - 堆对象：依赖对齐保证低位为 `0`（当前对齐为 8 字节，`kObjectAlignmentBits = 3`），不使用额外 tag 位。
+  - `Tagged<T>::Cast` 的语义相当于 `reinterpret_cast`，只能在“你确信类型正确”时使用；类型断言通常由 `T::Cast(...)` 或 `IsPyXxx(...)` 承担。
