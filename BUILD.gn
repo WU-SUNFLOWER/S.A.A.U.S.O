@@ -356,7 +356,7 @@ source_set("saauso_cpython312_compiler") {
       "//third_party/cpython312",
     ]
 
-    public_configs = [
+    configs += [
       ":saauso_includes",
       "//third_party/cpython312:python312_config",
     ]
