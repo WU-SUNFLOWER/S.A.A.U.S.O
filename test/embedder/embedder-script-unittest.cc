@@ -67,20 +67,30 @@ TEST(EmbedderPhase2Test, Context_Is_Valid_Value) {
   Saauso::Dispose();
 }
 
-TEST(EmbedderPhase2Test, EscapableHandleScope_EscapeValueSurvivesOuterUse) {
+TEST(EmbedderPhase2Test, EscapedLocalCrossingHandleScopeShouldSurvive) {
   Saauso::Initialize();
+
   Isolate* isolate = Isolate::New();
   ASSERT_NE(isolate, nullptr);
+
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
+
+    // 先从内部 HandleScope 分配一个 Local<String>，
+    // 并让它正确逃逸到外部 HandleScope。
     Local<String> escaped = CreateEscapedString(isolate, "escaped-value");
     ASSERT_FALSE(escaped.IsEmpty());
+
+    // 继续向虚拟机堆申请大量内存，制造一些噪音
     for (int i = 0; i < 10000; ++i) {
       HandleScope inner_scope(isolate);
       Local<String> text = String::New(isolate, "leak-check");
       ASSERT_FALSE(text.IsEmpty());
     }
+
+    // 验证从内部 HandleScope 逃逸 Local<String>，
+    // 当前仍然存活在堆上。
     Maybe<std::string> escaped_value = Local<Value>::Cast(escaped)->ToString();
     ASSERT_FALSE(escaped_value.IsNothing());
     EXPECT_EQ(escaped_value.ToChecked(), "escaped-value");
@@ -90,7 +100,7 @@ TEST(EmbedderPhase2Test, EscapableHandleScope_EscapeValueSurvivesOuterUse) {
   Saauso::Dispose();
 }
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) || defined(ASAN_BUILD)
 // 一个 Local<String> 若在内部 HandleScope 中创建
 // 且 没有经过 EscapableHandleScope::Escape()
 // 那么它越过该作用域边界后再被解引用，应在 debug 下 fail-fast
@@ -102,21 +112,21 @@ TEST(EmbedderContractDeathTest, UnescapedLocalCrossingHandleScopeShouldDie) {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
+
+    // 先验证当前虚拟机堆可以正常使用
     Local<String> guard = String::New(isolate, "guard");
     ASSERT_FALSE(guard.IsEmpty());
+    EXPECT_EQ(guard->Value(), "guard");
+
+    // 再验证我们预期的 fail-fast
     Local<String> bad = CreateUnescapedString(isolate, "bad");
-    ASSERT_DEATH_IF_SUPPORTED(
-        {
-          std::string value = bad->Value();
-          (void)value;
-        },
-        "Invalid handle");
+    ASSERT_DEATH_IF_SUPPORTED({ bad->Value(); }, "Invalid handle");
   }
 
   isolate->Dispose();
   Saauso::Dispose();
 }
-#endif  // defined(_DEBUG)
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
 
 TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
   Saauso::Initialize();
