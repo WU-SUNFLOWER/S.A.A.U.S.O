@@ -8,7 +8,7 @@
 #include <cassert>
 #include <type_traits>
 
-#include "include/saauso-internal.h"
+#include "saauso-internal.h"
 
 namespace saauso {
 
