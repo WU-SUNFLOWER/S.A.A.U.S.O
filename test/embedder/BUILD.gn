@@ -16,6 +16,7 @@ executable("embedder_ut") {
   ]
   deps = [
     "//:embedder_api",
+    "//build:build_helper_headers",
     "//testing/gtest",
   ]
   configs += [ "//:saauso_includes" ]

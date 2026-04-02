@@ -32,7 +32,17 @@ config("saauso_public_api_includes") {
 }
 
 # -----------------------------------------------------------------------------
-# 核心 VM 目标
+# 供 VN 内核和上层依赖方公用的基础设施头文件
+# -----------------------------------------------------------------------------
+source_set("saauso_infra_public_headers") {
+  sources = [
+    "//include/saauso-initialization.h",
+    "//include/saauso-maybe.h",
+  ]
+}
+
+# -----------------------------------------------------------------------------
+# VM 虚拟机内核
 # -----------------------------------------------------------------------------
 # 采用 source_set：在 Chromium/GN 体系中便于快速增量构建，不直接产出静态库文件。
 source_set("saauso_core") {
@@ -305,10 +315,15 @@ source_set("saauso_core") {
     "//third_party/rapidhash/rapidhash.h",
   ]
 
-  deps = [ "//build:build_helper_headers" ]
+  deps = []
   if (saauso_enable_cpython_compiler) {
     deps += [ ":saauso_cpython312_compiler" ]
   }
+
+  public_deps = [
+    ":saauso_infra_public_headers",
+    "//build:build_helper_headers",
+  ]
 
   public_configs = [ ":saauso_includes" ]
 }
@@ -320,7 +335,15 @@ source_set("saauso_core") {
 # - true : 启用 pyc 编译前端相关实现并链接 third_party/cpython312
 # - false: 仅保留后端执行链路，适合纯后端回归和无 Python 开发库环境
 source_set("saauso_cpython312_compiler") {
-  visibility = [ "//:saauso_core" ]
+  # 理论上 saauso_cpython312_compiler 作为基础组件，
+  # 不应该对除虚拟机内核 saauso_core 之外的任何依赖开放！
+  #
+  # 不过 ut 是一个特例，因为它其中包含了针对
+  # saauso_cpython312_compiler 的单测！
+  visibility = [
+    "//:saauso_core",
+    "//test/unittests:ut",
+  ]
 
   if (saauso_enable_cpython_compiler) {
     sources = [
@@ -360,8 +383,6 @@ source_set("embedder_api") {
     "//include/saauso-exception.h",
     "//include/saauso-function-callback.h",
     "//include/saauso-function.h",
-    "//include/saauso-initialization.h",
-    "//include/saauso-internal.h",
     "//include/saauso-isolate.h",
     "//include/saauso-local-handle.h",
     "//include/saauso-locker.h",
@@ -386,6 +407,7 @@ source_set("embedder_api") {
     "//src/api/api-isolate-utils.h",
     "//src/api/api-isolate.cc",
     "//src/api/api-local-handle.cc",
+    "//src/api/api-locker.cc",
     "//src/api/api-objects.cc",
     "//src/api/api-primitive.cc",
     "//src/api/api-script.cc",

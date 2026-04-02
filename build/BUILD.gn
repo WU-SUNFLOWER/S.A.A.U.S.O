@@ -2,6 +2,7 @@
 # Use of this source code is governed by a GNU-style license that can be
 # found in the LICENSE file.
 
+# 0. 构建辅助头文件集合
 source_set("build_helper_headers") {
   sources = [
     "./build_config.h",

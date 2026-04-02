@@ -4,6 +4,7 @@
 
 #include <cassert>
 
+#include "include/saauso-initialization.h"
 #include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
 #include "src/api/api-exception-support.h"
@@ -12,6 +13,9 @@
 namespace saauso {
 
 Isolate* Isolate::New(const IsolateCreateParams&) {
+  // 在创建 Isolate 之前，必须先调用 saauso::Saauso::Initialize()。
+  assert(Saauso::IsInitialized() && "vm isn't initialized");
+
   i::Isolate* i_isolate = i::Isolate::New();
   return reinterpret_cast<Isolate*>(i_isolate);
 }

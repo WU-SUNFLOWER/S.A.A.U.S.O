@@ -4,7 +4,7 @@
 
 #include "test/unittests/test-helpers.h"
 
-#include "include/saauso.h"
+#include "include/saauso-initialization.h"
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
@@ -123,7 +123,8 @@ void BasicInterpreterTest::RunScript(std::string_view source,
   }
 }
 
-void BasicInterpreterTest::AppendExpected(Handle<PyList> list, Handle<PyObject> value) {
+void BasicInterpreterTest::AppendExpected(Handle<PyList> list,
+                                          Handle<PyObject> value) {
   PyList::Append(list, value, isolate_);
 }
 
@@ -177,7 +178,8 @@ MaybeHandle<PyObject> BasicInterpreterTest::Builtin_PrintV(
     Handle<PyDict> kwargs) {
   for (auto i = 0; i < args->length(); ++i) {
     HandleScope scope(isolate_);
-    PyList::Append(printv_result_.Get(isolate_), args->Get(i, isolate), isolate);
+    PyList::Append(printv_result_.Get(isolate_), args->Get(i, isolate),
+                   isolate);
   }
   return PyNoneObject(isolate);
 }
@@ -193,8 +195,7 @@ void BasicInterpreterTest::ExpectPrintResult(Handle<PyList> expected) {
 
   // 逐项按 Python 语义相等性比较，便于定位具体哪一项不匹配。
   for (auto i = 0; i < actual->length(); ++i) {
-    EXPECT_TRUE(IsPyObjectEqual(isolate_,
-                                actual->Get(i, isolate_),
+    EXPECT_TRUE(IsPyObjectEqual(isolate_, actual->Get(i, isolate_),
                                 expected->Get(i, isolate_)));
   }
 }

@@ -6,8 +6,8 @@
 #include <chrono>
 #include <thread>
 
-#include "saauso.h"
 #include "gtest/gtest.h"
+#include "saauso.h"
 
 namespace saauso {
 

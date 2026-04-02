@@ -2,10 +2,10 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "include/saauso.h"
-
 #include <atomic>
 #include <cstdlib>
+
+#include "include/saauso-initialization.h"
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 #include "src/code/cpython312-pyc-compiler.h"

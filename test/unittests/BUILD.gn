@@ -1,10 +1,14 @@
+# Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+# Use of this source code is governed by a GNU-style license that can be
+# found in the LICENSE file.
+
 executable("ut") {
   testonly = true
 
   sources = [
     "./handles/global-handle-unittest.cc",
-    "./handles/handle-unittest.cc",
     "./handles/handle-thread-unittest.cc",
+    "./handles/handle-unittest.cc",
     "./heap/gc-unittest.cc",
     "./lsan-suppressions.cc",
     "./objects/attribute-unittest.cc",
@@ -23,6 +27,11 @@ executable("ut") {
     "./utils/number-conversion-unittest.cc",
     "./utils/random-number-generator-unittest.cc",
     "./utils/string-search-unittest.cc",
+  ]
+
+  deps = [
+    "//:saauso_core",
+    "//testing/gtest",
   ]
 
   if (saauso_enable_cpython_compiler) {
@@ -64,10 +73,7 @@ executable("ut") {
       "./interpreter/interpreter-tuple-unittest.cc",
       "./interpreter/native-print-unittest.cc",
     ]
-  }
 
-  deps = [
-    "//:saauso_core",
-    "//testing/gtest",
-  ]
+    deps += [ "//:saauso_cpython312_compiler" ]
+  }
 }
