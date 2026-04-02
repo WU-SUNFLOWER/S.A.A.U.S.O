@@ -9,6 +9,14 @@
 
 namespace saauso {
 
+namespace api {
+class ApiBridgeAccess;
+}
+
+namespace internal {
+class Isolate;
+}  // namespace internal
+
 class String;
 
 class Exception {
@@ -32,11 +40,11 @@ class TryCatch {
   MaybeLocal<Value> Exception() const;
 
  private:
-  Isolate* isolate_{nullptr};
+  friend class api::ApiBridgeAccess;
+
+  internal::Isolate* i_isolate_{nullptr};
   TryCatch* previous_{nullptr};
   Local<Value> exception_;
-
-  friend struct ApiAccess;
 };
 
 }  // namespace saauso

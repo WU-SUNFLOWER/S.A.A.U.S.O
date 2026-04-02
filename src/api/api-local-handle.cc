@@ -4,7 +4,8 @@
 
 #include "include/saauso-local-handle.h"
 #include "include/saauso-value.h"
-#include "src/api/api-impl.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
 
@@ -33,7 +34,7 @@ struct EscapableHandleScopeImpl {
 }  // namespace api
 
 HandleScope::HandleScope(Isolate* isolate) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
   impl_ = new api::HandleScopeImpl(i_isolate);
 }
 
@@ -43,7 +44,7 @@ HandleScope::~HandleScope() {
 }
 
 EscapableHandleScope::EscapableHandleScope(Isolate* isolate) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
   impl_ = new api::EscapableHandleScopeImpl(i_isolate);
 }
 
@@ -61,8 +62,8 @@ Local<Value> EscapableHandleScope::Escape(Local<Value> value) {
     return Local<Value>();
   }
   i::Handle<i::PyObject> escaped =
-      impl->handle_scope.Escape(i::Utils::OpenHandle(value));
-  return i::Utils::ToLocal<Value>(escaped);
+      impl->handle_scope.Escape(api::Utils::OpenHandle(value));
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso

@@ -4,46 +4,51 @@
 
 #include <string>
 
-#include "src/api/api-impl.h"
+#include "include/saauso-value.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
+#include "src/objects/py-float.h"
+#include "src/objects/py-smi.h"
+#include "src/objects/py-string.h"
 
 namespace saauso {
 
 bool Value::IsString() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPyString(object);
 }
 
 bool Value::IsInteger() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPySmi(object);
 }
 
 bool Value::IsFloat() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   return !object.is_null() && i::IsPyFloat(object);
 }
 
 bool Value::IsBoolean() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null()) {
     return false;
   }
-  i::Isolate* isolate = i::Isolate::Current();
+  i::Isolate* isolate = api::RequireCurrentIsolate();
   return i::IsPyTrue(object, isolate) || i::IsPyFalse(object, isolate);
 }
 
 Maybe<std::string> Value::ToString() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyString(object)) {
     return i::kNullMaybe;
   }
   i::Tagged<i::PyString> py_string = i::Tagged<i::PyString>::cast(*object);
-  return Maybe<std::string>(
-      std::string(py_string->buffer(), static_cast<size_t>(py_string->length())));
+  return Maybe<std::string>(std::string(
+      py_string->buffer(), static_cast<size_t>(py_string->length())));
 }
 
 Maybe<int64_t> Value::ToInteger() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPySmi(object)) {
     return i::kNullMaybe;
   }
@@ -51,7 +56,7 @@ Maybe<int64_t> Value::ToInteger() const {
 }
 
 Maybe<double> Value::ToFloat() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyFloat(object)) {
     return i::kNullMaybe;
   }
@@ -59,11 +64,11 @@ Maybe<double> Value::ToFloat() const {
 }
 
 Maybe<bool> Value::ToBoolean() const {
-  i::Handle<i::PyObject> object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null()) {
     return i::kNullMaybe;
   }
-  i::Isolate* isolate = i::Isolate::Current();
+  i::Isolate* isolate = api::RequireCurrentIsolate();
   if (i::IsPyTrue(object, isolate)) {
     return Maybe<bool>(true);
   }

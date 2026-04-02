@@ -5,8 +5,9 @@
 #include "include/saauso-context.h"
 #include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-impl.h"
-#include "src/common/globals.h"
+#include "src/api/api-exception-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/objects/py-dict.h"
@@ -15,19 +16,18 @@
 namespace saauso {
 
 MaybeLocal<Context> Context::New(Isolate* isolate) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> globals =
       i_isolate->factory()->NewPyDict(i::PyDict::kMinimumCapacity);
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(globals);
-  return i::Utils::ToLocal<Context>(escaped);
+  return api::Utils::ToLocal<Context>(escaped);
 }
 
 void Context::Enter() {
-  auto* i_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   auto& entered_contexts = i_isolate->entered_contexts();
 
@@ -38,7 +38,7 @@ void Context::Enter() {
 }
 
 void Context::Exit() {
-  auto* i_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
   auto& entered_contexts = i_isolate->entered_contexts();
 
   if (entered_contexts.IsEmpty()) {
@@ -58,24 +58,27 @@ void Context::Exit() {
 }
 
 Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
-  if (key.IsEmpty()) {
-    return i::kNullMaybe;
-  }
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
-  i::Isolate* i_isolate = i::Isolate::Current();
-
-  i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
-  if (i_isolate == nullptr || context_object.is_null() ||
-      !i::IsPyDict(context_object)) {
-    return i::kNullMaybe;
-  }
   i::HandleScope handle_scope(i_isolate);
+
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
+  if (context_object.is_null() || !i::IsPyDict(context_object)) {
+    return i::kNullMaybe;
+  }
+
   i::Handle<i::PyDict> globals = i::Handle<i::PyDict>::cast(context_object);
-  i::Handle<i::PyString> py_key =
+
+  if (key.IsEmpty() || value.IsEmpty()) {
+    return i::kNullMaybe;
+  }
+
+  i::Handle<i::PyString> i_key =
       i::PyString::New(i_isolate, key->Value().data(),
                        static_cast<int64_t>(key->Value().size()));
-  i::Handle<i::PyObject> py_value = api::ToInternalObject(i_isolate, value);
-  auto maybe_set = i::PyDict::Put(globals, py_key, py_value, i_isolate);
+  i::Handle<i::PyObject> i_value = api::Utils::OpenHandle(value);
+
+  auto maybe_set = i::PyDict::Put(globals, i_key, i_value, i_isolate);
   if (maybe_set.IsNothing()) {
     api::CapturePendingException(i_isolate);
     return i::kNullMaybe;
@@ -89,11 +92,10 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
 
-  i::Isolate* i_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
-  i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
-  if (i_isolate == nullptr || context_object.is_null() ||
-      !i::IsPyDict(context_object)) {
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
+  if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
   i::EscapableHandleScope handle_scope(i_isolate);
@@ -111,15 +113,15 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> escaped = handle_scope.Escape(out);
-  return i::Utils::ToLocal<Value>(escaped);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 MaybeLocal<Object> Context::Global() {
-  i::Handle<i::PyObject> context_object = i::Utils::OpenHandle(this);
+  i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
   if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Object>();
   }
-  return i::Utils::ToLocal<api::RawObject>(context_object);
+  return api::Utils::ToLocal<Object>(context_object);
 }
 
 ContextScope::ContextScope(Local<Context> context) : context_(context) {

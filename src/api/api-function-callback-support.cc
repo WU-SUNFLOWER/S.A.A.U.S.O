@@ -2,56 +2,17 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include <string>
+#include "src/api/api-function-callback-support.h"
 
-#include "src/api/api-impl.h"
+#include "include/saauso-function-callback.h"
+#include "src/api/api-bridge-access.h"
+#include "src/api/api-handle-utils.h"
+#include "src/execution/isolate.h"
+#include "src/objects/py-smi.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso {
 namespace api {
-
-#if SAAUSO_ENABLE_CPYTHON_COMPILER
-Local<Script> WrapScriptSource(i::Isolate* isolate, std::string source) {
-  return WrapHostString<Script>(isolate, std::move(source));
-}
-#endif
-
-i::Handle<i::PyObject> ToInternalObject(i::Isolate* i_isolate,
-                                        Local<Value> value) {
-  if (value.IsEmpty()) {
-    return i_isolate->factory()->py_none_object();
-  }
-  i::Handle<i::PyObject> object = internal::Utils::OpenHandle(value);
-  if (object.is_null()) {
-    return i_isolate->factory()->py_none_object();
-  }
-  return object;
-}
-
-Local<Value> WrapRuntimeResult(i::Isolate* isolate,
-                               i::Handle<i::PyObject> result) {
-  if (result.is_null()) {
-    return Local<Value>();
-  }
-  return WrapObject<RawValue>(isolate, result);
-}
-
-bool CapturePendingException(i::Isolate* isolate) {
-  if (!isolate->HasPendingException()) {
-    return false;
-  }
-
-  TryCatch* try_catch = isolate->try_catch_top();
-  if (try_catch == nullptr) {
-    return true;
-  }
-
-  i::Handle<i::PyObject> exception =
-      isolate->exception_state()->pending_exception(isolate);
-  ApiAccess::SetTryCatchException(try_catch,
-                                  WrapObject<RawValue>(isolate, exception));
-  isolate->exception_state()->Clear();
-  return true;
-}
 
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
     i::Isolate* i_isolate,
@@ -81,7 +42,8 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
   callback_info_impl.args = args;
 
   FunctionCallbackInfo callback_info;
-  ApiAccess::SetFunctionCallbackInfoImpl(&callback_info, &callback_info_impl);
+  ApiBridgeAccess::SetFunctionCallbackInfoImpl(&callback_info,
+                                               &callback_info_impl);
 
   callback(callback_info);
 
@@ -91,7 +53,7 @@ i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
 
   Local<Value> escaped_ret =
       escapable_scope.Escape(callback_info_impl.return_value);
-  return ToInternalObject(i_isolate, escaped_ret);
+  return api::Utils::OpenHandle(escaped_ret);
 }
 
 }  // namespace api
