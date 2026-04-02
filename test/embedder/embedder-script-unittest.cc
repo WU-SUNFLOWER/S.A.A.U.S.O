@@ -15,6 +15,11 @@ Local<String> CreateEscapedString(Isolate* isolate, std::string_view value) {
   return Local<String>::Cast(scope.Escape(Local<Value>::Cast(text)));
 }
 
+Local<String> CreateUnescapedString(Isolate* isolate, std::string_view value) {
+  HandleScope scope(isolate);
+  return String::New(isolate, value);
+}
+
 }  // namespace
 
 TEST(EmbedderPhase2Test, StringAndIntegerRoundTrip) {
@@ -84,6 +89,34 @@ TEST(EmbedderPhase2Test, EscapableHandleScope_EscapeValueSurvivesOuterUse) {
   isolate->Dispose();
   Saauso::Dispose();
 }
+
+#if defined(_DEBUG)
+// 一个 Local<String> 若在内部 HandleScope 中创建
+// 且 没有经过 EscapableHandleScope::Escape()
+// 那么它越过该作用域边界后再被解引用，应在 debug 下 fail-fast
+TEST(EmbedderContractDeathTest, UnescapedLocalCrossingHandleScopeShouldDie) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    Local<String> guard = String::New(isolate, "guard");
+    ASSERT_FALSE(guard.IsEmpty());
+    Local<String> bad = CreateUnescapedString(isolate, "bad");
+    ASSERT_DEATH_IF_SUPPORTED(
+        {
+          std::string value = bad->Value();
+          (void)value;
+        },
+        "Invalid handle");
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+#endif  // defined(_DEBUG)
 
 TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
   Saauso::Initialize();
