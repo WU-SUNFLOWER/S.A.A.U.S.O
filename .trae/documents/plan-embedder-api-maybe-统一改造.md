@@ -134,7 +134,7 @@
 
   * `Set` 改 `Maybe<void>`（成功 `JustVoid()`，失败 `kNullMaybe`）。
 
-  * `ContextScope` 内部适配 `MaybeLocal<Context>` 新调用方式。
+  * `Context::Scope` 内部适配 `MaybeLocal<Context>` 新调用方式。
 
 * 修改 [api-objects.cc](file:///e:/MyProject/S.A.A.U.S.O/src/api/api-objects.cc)
 

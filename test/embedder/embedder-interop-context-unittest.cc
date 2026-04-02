@@ -33,9 +33,9 @@ TEST(EmbedderPhase3Test, Context_Get_Miss_Test) {
 
     HandleScope scope(isolate);
 
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    Local<Context> context = maybe_context.ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
     TryCatch try_catch(isolate);
     MaybeLocal<Value> miss = context->Get(String::New(isolate, "missing_key"));
     EXPECT_TRUE(miss.IsEmpty());
@@ -54,9 +54,9 @@ TEST(EmbedderPhase4Test, Context_Global_ObjectBridge) {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    Local<Context> context = maybe_context.ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
     MaybeLocal<Object> maybe_global = context->Global();
     ASSERT_FALSE(maybe_global.IsEmpty());
     Local<Object> global = maybe_global.ToLocalChecked();

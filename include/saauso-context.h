@@ -15,8 +15,19 @@ class String;
 
 class Context final : public Value {
  public:
+  class Scope {
+   public:
+    explicit Scope(Local<Context> context);
+    Scope(const Scope&) = delete;
+    Scope& operator=(const Scope&) = delete;
+    ~Scope();
+
+   private:
+    Local<Context> context_;
+  };
+
   // 创建上下文；创建失败返回 Nothing。
-  static MaybeLocal<Context> New(Isolate* isolate);
+  static Local<Context> New(Isolate* isolate);
 
   // 进入当前上下文。
   void Enter();
@@ -33,17 +44,6 @@ class Context final : public Value {
   friend class Isolate;
   friend class Script;
   friend class ApiBridgeAccess;
-};
-
-class ContextScope {
- public:
-  explicit ContextScope(Local<Context> context);
-  ContextScope(const ContextScope&) = delete;
-  ContextScope& operator=(const ContextScope&) = delete;
-  ~ContextScope();
-
- private:
-  Local<Context> context_;
 };
 
 }  // namespace saauso

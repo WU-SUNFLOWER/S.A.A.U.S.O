@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <cassert>
+
 #include "include/saauso-context.h"
 #include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
@@ -15,7 +17,23 @@
 
 namespace saauso {
 
-MaybeLocal<Context> Context::New(Isolate* isolate) {
+///////////////////////////////////////////////////////////////////////
+// Context::Scope 实现
+
+Context::Scope::Scope(Local<Context> context) : context_(context) {
+  assert(!context_.IsEmpty());
+  context_->Enter();
+}
+
+Context::Scope::~Scope() {
+  assert(!context_.IsEmpty());
+  context_->Exit();
+}
+
+///////////////////////////////////////////////////////////////////////
+// Context 本体实现
+
+Local<Context> Context::New(Isolate* isolate) {
   i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
@@ -28,12 +46,7 @@ MaybeLocal<Context> Context::New(Isolate* isolate) {
 
 void Context::Enter() {
   i::Isolate* i_isolate = api::RequireCurrentIsolate();
-
   auto& entered_contexts = i_isolate->entered_contexts();
-
-  if (entered_contexts.IsEmpty()) {
-    i_isolate->Enter();
-  }
   entered_contexts.PushBack(this);
 }
 
@@ -52,9 +65,6 @@ void Context::Exit() {
   }
 
   entered_contexts.PopBack();
-  if (entered_contexts.IsEmpty()) {
-    i_isolate->Exit();
-  }
 }
 
 Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
@@ -122,18 +132,6 @@ MaybeLocal<Object> Context::Global() {
     return MaybeLocal<Object>();
   }
   return api::Utils::ToLocal<Object>(context_object);
-}
-
-ContextScope::ContextScope(Local<Context> context) : context_(context) {
-  if (!context_.IsEmpty()) {
-    context_->Enter();
-  }
-}
-
-ContextScope::~ContextScope() {
-  if (!context_.IsEmpty()) {
-    context_->Exit();
-  }
 }
 
 }  // namespace saauso

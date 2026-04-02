@@ -79,11 +79,10 @@ TEST(EmbedderPhase4Test, Object_CallMethod_Miss_Captured) {
     ASSERT_FALSE(maybe_obj.IsEmpty());
     Local<Object> obj = maybe_obj.ToLocalChecked();
     TryCatch try_catch(isolate);
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    MaybeLocal<Value> out =
-        obj->CallMethod(maybe_context.ToLocalChecked(),
-                        String::New(isolate, "missing_method"), 0, nullptr);
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+    MaybeLocal<Value> out = obj->CallMethod(
+        context, String::New(isolate, "missing_method"), 0, nullptr);
     EXPECT_TRUE(out.IsEmpty());
     EXPECT_TRUE(try_catch.HasCaught());
   }
@@ -101,9 +100,9 @@ TEST(EmbedderPhase4Test, Object_CallMethod_PythonInstanceMethod) {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    Local<Context> context = maybe_context.ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
     MaybeLocal<Object> maybe_obj = Object::New(isolate);
     ASSERT_FALSE(maybe_obj.IsEmpty());
     Local<Object> obj = maybe_obj.ToLocalChecked();
