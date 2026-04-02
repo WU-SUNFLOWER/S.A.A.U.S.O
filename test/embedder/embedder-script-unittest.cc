@@ -7,6 +7,21 @@
 
 namespace saauso {
 
+namespace {
+
+Local<String> CreateEscapedString(Isolate* isolate, std::string_view value) {
+  EscapableHandleScope scope(isolate);
+  Local<String> text = String::New(isolate, value);
+  return Local<String>::Cast(scope.Escape(Local<Value>::Cast(text)));
+}
+
+Local<String> CreateUnescapedString(Isolate* isolate, std::string_view value) {
+  HandleScope scope(isolate);
+  return String::New(isolate, value);
+}
+
+}  // namespace
+
 TEST(EmbedderPhase2Test, StringAndIntegerRoundTrip) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
@@ -52,24 +67,66 @@ TEST(EmbedderPhase2Test, Context_Is_Valid_Value) {
   Saauso::Dispose();
 }
 
-TEST(EmbedderPhase2Test, HandleScope_Prevents_Memory_Leak) {
+TEST(EmbedderPhase2Test, EscapedLocalCrossingHandleScopeShouldSurvive) {
   Saauso::Initialize();
+
   Isolate* isolate = Isolate::New();
   ASSERT_NE(isolate, nullptr);
+
   {
     Isolate::Scope isolate_scope(isolate);
-    const size_t baseline = isolate->ValueRegistrySizeForTesting();
+    HandleScope scope(isolate);
+
+    // 先从内部 HandleScope 分配一个 Local<String>，
+    // 并让它正确逃逸到外部 HandleScope。
+    Local<String> escaped = CreateEscapedString(isolate, "escaped-value");
+    ASSERT_FALSE(escaped.IsEmpty());
+
+    // 继续向虚拟机堆申请大量内存，制造一些噪音
     for (int i = 0; i < 10000; ++i) {
-      HandleScope scope(isolate);
+      HandleScope inner_scope(isolate);
       Local<String> text = String::New(isolate, "leak-check");
       ASSERT_FALSE(text.IsEmpty());
     }
-    EXPECT_EQ(isolate->ValueRegistrySizeForTesting(), baseline);
+
+    // 验证从内部 HandleScope 逃逸 Local<String>，
+    // 当前仍然存活在堆上。
+    Maybe<std::string> escaped_value = Local<Value>::Cast(escaped)->ToString();
+    ASSERT_FALSE(escaped_value.IsNothing());
+    EXPECT_EQ(escaped_value.ToChecked(), "escaped-value");
   }
 
   isolate->Dispose();
   Saauso::Dispose();
 }
+
+#if defined(_DEBUG) || defined(ASAN_BUILD)
+// 一个 Local<String> 若在内部 HandleScope 中创建
+// 且 没有经过 EscapableHandleScope::Escape()
+// 那么它越过该作用域边界后再被解引用，应在 debug 下 fail-fast
+TEST(EmbedderContractDeathTest, UnescapedLocalCrossingHandleScopeShouldDie) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+
+    // 先验证当前虚拟机堆可以正常使用
+    Local<String> guard = String::New(isolate, "guard");
+    ASSERT_FALSE(guard.IsEmpty());
+    EXPECT_EQ(guard->Value(), "guard");
+
+    // 再验证我们预期的 fail-fast
+    Local<String> bad = CreateUnescapedString(isolate, "bad");
+    ASSERT_DEATH_IF_SUPPORTED({ bad->Value(); }, "Invalid handle");
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+#endif  // defined(_DEBUG) || defined(ASAN_BUILD)
 
 TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
   Saauso::Initialize();

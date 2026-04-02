@@ -43,7 +43,6 @@ class Isolate {
 
   void Dispose();
   void ThrowException(Local<Value> exception);
-  size_t ValueRegistrySizeForTesting() const;
 
   void* operator new(size_t size) = delete;
   void* operator new[](size_t size) = delete;
