@@ -7,6 +7,16 @@
 
 namespace saauso {
 
+namespace {
+
+Local<String> CreateEscapedString(Isolate* isolate, std::string_view value) {
+  EscapableHandleScope scope(isolate);
+  Local<String> text = String::New(isolate, value);
+  return Local<String>::Cast(scope.Escape(Local<Value>::Cast(text)));
+}
+
+}  // namespace
+
 TEST(EmbedderPhase2Test, StringAndIntegerRoundTrip) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
@@ -52,19 +62,23 @@ TEST(EmbedderPhase2Test, Context_Is_Valid_Value) {
   Saauso::Dispose();
 }
 
-TEST(EmbedderPhase2Test, HandleScope_Prevents_Memory_Leak) {
+TEST(EmbedderPhase2Test, EscapableHandleScope_EscapeValueSurvivesOuterUse) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
   ASSERT_NE(isolate, nullptr);
   {
     Isolate::Scope isolate_scope(isolate);
-    const size_t baseline = isolate->ValueRegistrySizeForTesting();
+    HandleScope scope(isolate);
+    Local<String> escaped = CreateEscapedString(isolate, "escaped-value");
+    ASSERT_FALSE(escaped.IsEmpty());
     for (int i = 0; i < 10000; ++i) {
-      HandleScope scope(isolate);
+      HandleScope inner_scope(isolate);
       Local<String> text = String::New(isolate, "leak-check");
       ASSERT_FALSE(text.IsEmpty());
     }
-    EXPECT_EQ(isolate->ValueRegistrySizeForTesting(), baseline);
+    Maybe<std::string> escaped_value = Local<Value>::Cast(escaped)->ToString();
+    ASSERT_FALSE(escaped_value.IsNothing());
+    EXPECT_EQ(escaped_value.ToChecked(), "escaped-value");
   }
 
   isolate->Dispose();

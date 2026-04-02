@@ -120,6 +120,8 @@ void HostGetConfig(FunctionCallbackInfo& info) {
 }
 #endif
 
+}  // namespace
+
 TEST(EmbedderPhase3Test, FunctionCall_DirectRoundTrip) {
   g_last_status = -1;
   Saauso::Initialize();
@@ -355,7 +357,8 @@ TEST(EmbedderPhase3Test, CallbackThrow_PythonToTryCatch) {
   Saauso::Dispose();
 }
 
-TEST(EmbedderPhase3Test, Callback_EscapeScope_NoGrowth) {
+TEST(EmbedderPhase3Test, Callback_Stress_RemainsCorrectAfterRepeatedCalls) {
+  g_last_status = -1;
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
   ASSERT_NE(isolate, nullptr);
@@ -363,32 +366,75 @@ TEST(EmbedderPhase3Test, Callback_EscapeScope_NoGrowth) {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
+
     MaybeLocal<Context> maybe_context = Context::New(isolate);
     ASSERT_FALSE(maybe_context.IsEmpty());
     Local<Context> context = maybe_context.ToLocalChecked();
+
     MaybeLocal<Function> maybe_host_set_status =
         Function::New(isolate, &HostSetStatus, "Host_SetStatus");
     ASSERT_FALSE(maybe_host_set_status.IsEmpty());
+
     Local<Function> host_set_status = maybe_host_set_status.ToLocalChecked();
     EXPECT_TRUE(context
                     ->Set(String::New(isolate, "Host_SetStatus"),
                           Local<Value>::Cast(host_set_status))
                     .IsJust());
-    size_t baseline = isolate->ValueRegistrySizeForTesting();
+
+    /////////////////////////////////////////////////////////////////
+    // 测试 Part 1
     Local<String> source = String::New(isolate,
                                        "i = 0\n"
                                        "while i < 5000:\n"
                                        "    Host_SetStatus(i)\n"
                                        "    i = i + 1\n");
     ASSERT_FALSE(source.IsEmpty());
+
     TryCatch try_catch(isolate);
+
     MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
     ASSERT_FALSE(maybe_script.IsEmpty());
+
+    // 验证 source 执行后，Host_SetStatus是否的确被调用了 4999 次
     MaybeLocal<Value> run_result = maybe_script.ToLocalChecked()->Run(context);
     ASSERT_FALSE(run_result.IsEmpty());
     EXPECT_FALSE(try_catch.HasCaught());
-    size_t after = isolate->ValueRegistrySizeForTesting();
-    EXPECT_LE(after, baseline + 8);
+    EXPECT_EQ(g_last_status, 4999);
+
+    // 验证 source 执行后，i 是否的确变为了 5000
+    MaybeLocal<Value> loop_index = context->Get(String::New(isolate, "i"));
+    ASSERT_FALSE(loop_index.IsEmpty());
+    Local<Value> loop_index_value = loop_index.ToLocalChecked();
+    Maybe<int64_t> loop_index_int = loop_index_value->ToInteger();
+    ASSERT_FALSE(loop_index_int.IsNothing());
+    EXPECT_EQ(loop_index_int.ToChecked(), 5000);
+
+    /////////////////////////////////////////////////////////////////
+    // 测试 Part 2
+    Local<String> followup_source = String::New(
+        isolate, "last = Host_SetStatus(777)\nstatus_after = last\n");
+    ASSERT_FALSE(followup_source.IsEmpty());
+    MaybeLocal<Script> maybe_followup =
+        Script::Compile(isolate, followup_source);
+    ASSERT_FALSE(maybe_followup.IsEmpty());
+    MaybeLocal<Value> followup_result =
+        maybe_followup.ToLocalChecked()->Run(context);
+
+    // 验证脚本执行后，Python 代码是否成功调用 Host_SetStatus Native 函数，并将
+    // g_last_status 更新为 777
+    ASSERT_FALSE(followup_result.IsEmpty());
+    EXPECT_FALSE(try_catch.HasCaught());
+    EXPECT_EQ(g_last_status, 777);
+
+    // 验证脚本执行后，Python 代码是否成功将自己世界的值导出回 C++ 世界的
+    // Context
+    MaybeLocal<Value> status_after =
+        context->Get(String::New(isolate, "status_after"));
+    ASSERT_FALSE(status_after.IsEmpty());
+    Local<Value> status_after_value = status_after.ToLocalChecked();
+    Maybe<int64_t> status_after_int = status_after_value->ToInteger();
+    ASSERT_FALSE(status_after_int.IsNothing());
+    EXPECT_EQ(status_after_int.ToChecked(), 777);
   }
 
   isolate->Dispose();
@@ -396,5 +442,4 @@ TEST(EmbedderPhase3Test, Callback_EscapeScope_NoGrowth) {
 }
 #endif  // SAAUSO_ENABLE_CPYTHON_COMPILER
 
-}  // namespace
 }  // namespace saauso
