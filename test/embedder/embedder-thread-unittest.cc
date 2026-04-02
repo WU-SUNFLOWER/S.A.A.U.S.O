@@ -20,11 +20,10 @@ bool RunThreadRoundTrip(Isolate* isolate,
   HandleScope scope(isolate);
   TryCatch try_catch(isolate);
 
-  MaybeLocal<Context> maybe_context = Context::New(isolate);
-  if (maybe_context.IsEmpty()) {
+  Local<Context> context = Context::New(isolate);
+  if (context.IsEmpty()) {
     return false;
   }
-  Local<Context> context = maybe_context.ToLocalChecked();
 
   if (!context
            ->Set(String::New(isolate, "score"),
@@ -80,9 +79,9 @@ TEST(EmbedderThreadTest, IsolateCanBeReusedSeriallyByMultipleThreads) {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
 
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    Local<Context> context = maybe_context.ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
     EXPECT_TRUE(context
                     ->Set(String::New(isolate, "score"),
                           Local<Value>::Cast(Integer::New(isolate, 11)))

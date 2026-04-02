@@ -16,7 +16,7 @@ class String;
 class Context final : public Value {
  public:
   // 创建上下文；创建失败返回 Nothing。
-  static MaybeLocal<Context> New(Isolate* isolate);
+  static Local<Context> New(Isolate* isolate);
 
   // 进入当前上下文。
   void Enter();

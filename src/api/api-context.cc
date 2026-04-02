@@ -15,7 +15,7 @@
 
 namespace saauso {
 
-MaybeLocal<Context> Context::New(Isolate* isolate) {
+Local<Context> Context::New(Isolate* isolate) {
   i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);

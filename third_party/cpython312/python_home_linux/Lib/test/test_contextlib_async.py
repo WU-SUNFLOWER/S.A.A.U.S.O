@@ -380,13 +380,13 @@ class AsyncContextManagerTestCase(unittest.TestCase):
         entered = False
 
         @asynccontextmanager
-        async def context():
+        async def context:
             nonlocal entered
             entered = True
             yield
             entered = False
 
-        @context()
+        @context
         async def test():
             self.assertTrue(entered)
 
@@ -399,7 +399,7 @@ class AsyncContextManagerTestCase(unittest.TestCase):
         entered = False
 
         @asynccontextmanager
-        async def context():
+        async def context:
             nonlocal entered
             try:
                 entered = True
@@ -407,7 +407,7 @@ class AsyncContextManagerTestCase(unittest.TestCase):
             finally:
                 entered = False
 
-        @context()
+        @context
         async def test():
             self.assertTrue(entered)
             raise NameError('foo')
@@ -421,13 +421,13 @@ class AsyncContextManagerTestCase(unittest.TestCase):
     async def test_decorating_method(self):
 
         @asynccontextmanager
-        async def context():
+        async def context:
             yield
 
 
         class Test(object):
 
-            @context()
+            @context
             async def method(self, a, b, c=None):
                 self.a = a
                 self.b = b

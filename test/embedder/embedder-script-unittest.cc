@@ -56,9 +56,9 @@ TEST(EmbedderPhase2Test, Context_Is_Valid_Value) {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    Local<Context> context = maybe_context.ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
     Local<Value> value = Local<Value>::Cast(context);
     EXPECT_FALSE(value->IsString());
   }
@@ -138,9 +138,9 @@ TEST(EmbedderGCTest, LocalSurvivesMovingGC) {
     HandleScope scope(isolate);
     Local<String> source = String::New(isolate, "gc-safe");
     ASSERT_FALSE(source.IsEmpty());
-    MaybeLocal<Context> maybe_context = Context::New(isolate);
-    ASSERT_FALSE(maybe_context.IsEmpty());
-    Local<Context> context = maybe_context.ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
     MaybeLocal<Script> maybe_gc_script =
         Script::Compile(isolate, String::New(isolate, "sysgc()\n"));
     ASSERT_FALSE(maybe_gc_script.IsEmpty());
@@ -170,10 +170,10 @@ TEST(EmbedderPhase2Test, TryCatch_Nested_Capture) {
     ASSERT_FALSE(maybe_script.IsEmpty());
     {
       TryCatch inner_try_catch(isolate);
-      MaybeLocal<Context> maybe_context = Context::New(isolate);
-      ASSERT_FALSE(maybe_context.IsEmpty());
+      Local<Context> context = Context::New(isolate);
+      ASSERT_FALSE(context.IsEmpty());
       MaybeLocal<Value> run_result =
-          maybe_script.ToLocalChecked()->Run(maybe_context.ToLocalChecked());
+          maybe_script.ToLocalChecked()->Run(context);
       EXPECT_TRUE(run_result.IsEmpty());
       EXPECT_TRUE(inner_try_catch.HasCaught());
       EXPECT_FALSE(inner_try_catch.Exception().IsEmpty());
@@ -281,8 +281,8 @@ TEST(EmbedderPhase2Test, ScriptRunSucceedsWithFrontendCompiler) {
     MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
     ASSERT_FALSE(maybe_script.IsEmpty());
 
-    MaybeLocal<Value> run_result = maybe_script.ToLocalChecked()->Run(
-        Context::New(isolate).ToLocalChecked());
+    MaybeLocal<Value> run_result =
+        maybe_script.ToLocalChecked()->Run(Context::New(isolate));
     EXPECT_FALSE(run_result.IsEmpty());
     EXPECT_FALSE(try_catch.HasCaught());
 

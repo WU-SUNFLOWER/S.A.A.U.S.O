@@ -25,9 +25,9 @@ TEST(EmbedderPhase1Test, CreateHandleScopeAndContext) {
     Isolate::Scope isolate_scope(isolate);
     for (int i = 0; i < 1000; ++i) {
       HandleScope scope(isolate);
-      MaybeLocal<Context> maybe_context = Context::New(isolate);
-      ASSERT_FALSE(maybe_context.IsEmpty());
-      ContextScope context_scope(maybe_context.ToLocalChecked());
+      Local<Context> context = Context::New(isolate);
+      ASSERT_FALSE(context.IsEmpty());
+      ContextScope context_scope(context);
     }
   }
 
