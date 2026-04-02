@@ -76,6 +76,8 @@ Handle<PyDict> Interpreter::CurrentFrameLocals() const {
 }
 
 Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
+  // 创建默认的 globals 全局字典
+  // 注意，对于根栈帧来说，它的局部作用域字典（locals）直接指向 globals！
   Handle<PyDict> globals = PyDict::New(isolate_);
   RETURN_ON_EXCEPTION(isolate_, PyDict::Put(globals, ST(name, isolate_),
                                             ST(main, isolate_), isolate_));
