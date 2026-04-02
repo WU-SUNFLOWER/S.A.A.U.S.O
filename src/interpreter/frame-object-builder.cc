@@ -235,10 +235,10 @@ void InjectVarArgsAndKwArgs(FrameBuildContext& ctx,
   }
 }
 
-MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
-                                           FrameBuildContext& ctx,
-                                           Handle<PyDict> actual_kw_args,
-                                           Handle<PyDict>& out_kw_args) {
+Maybe<void> AssignKwArgsFromDict(Isolate* isolate,
+                                 FrameBuildContext& ctx,
+                                 Handle<PyDict> actual_kw_args,
+                                 Handle<PyDict>& out_kw_args) {
   Handle<PyObject> iter;
 
   // 如果函数支持接收 **kwargs，在这里初始化它。
@@ -257,7 +257,7 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
       if (Runtime_ConsumePendingStopIterationIfSet(isolate).ToChecked()) {
         break;
       }
-      return kNullMaybeHandle;
+      return kNullMaybe;
     }
 
     auto item = Handle<PyTuple>::cast(item_handle);
@@ -273,25 +273,25 @@ MaybeHandle<PyObject> AssignKwArgsFromDict(Isolate* isolate,
         Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                             "%s() got multiple values for argument '%s'",
                             ctx.func_name->buffer(), key->buffer());
-        return kNullMaybeHandle;
+        return kNullMaybe;
       }
 
       ctx.localsplus->Set(index_in_var_args, value);
       ++ctx.localsplus_idx;
     } else if (!out_kw_args.is_null()) {
       if (PyDict::Put(out_kw_args, key, value, isolate).IsNothing()) {
-        return kNullMaybeHandle;
+        return kNullMaybe;
       }
     } else {
       Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
                           "%s() got an unexpected keyword argument '%s'",
                           ctx.func_name->buffer(), key->buffer());
-      return kNullMaybeHandle;
+      return kNullMaybe;
     }
   }
 
 ret:
-  return isolate->factory()->py_none_object();
+  return JustVoid();
 }
 
 MaybeHandle<PyObject> AssignKwArgsFromActualArgs(Isolate* isolate,
