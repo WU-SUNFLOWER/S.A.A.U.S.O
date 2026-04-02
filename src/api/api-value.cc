@@ -32,7 +32,7 @@ bool Value::IsBoolean() const {
   if (object.is_null()) {
     return false;
   }
-  i::Isolate* isolate = i::Isolate::Current();
+  i::Isolate* isolate = api::RequireCurrentIsolate();
   return i::IsPyTrue(object, isolate) || i::IsPyFalse(object, isolate);
 }
 
@@ -67,7 +67,7 @@ Maybe<bool> Value::ToBoolean() const {
   if (object.is_null()) {
     return i::kNullMaybe;
   }
-  i::Isolate* isolate = i::Isolate::Current();
+  i::Isolate* isolate = api::RequireCurrentIsolate();
   if (i::IsPyTrue(object, isolate)) {
     return Maybe<bool>(true);
   }

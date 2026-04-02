@@ -14,8 +14,7 @@
 namespace saauso {
 
 MaybeLocal<Context> Context::New(Isolate* isolate) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> globals =
@@ -26,7 +25,7 @@ MaybeLocal<Context> Context::New(Isolate* isolate) {
 }
 
 void Context::Enter() {
-  auto* i_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   auto& entered_contexts = i_isolate->entered_contexts();
 
@@ -37,7 +36,7 @@ void Context::Enter() {
 }
 
 void Context::Exit() {
-  auto* i_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
   auto& entered_contexts = i_isolate->entered_contexts();
 
   if (entered_contexts.IsEmpty()) {
@@ -57,8 +56,7 @@ void Context::Exit() {
 }
 
 Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
-  i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::HandleScope handle_scope(i_isolate);
 
@@ -92,11 +90,10 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
     return MaybeLocal<Value>();
   }
 
-  i::Isolate* i_isolate = i::Isolate::Current();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
-  if (i_isolate == nullptr || context_object.is_null() ||
-      !i::IsPyDict(context_object)) {
+  if (context_object.is_null() || !i::IsPyDict(context_object)) {
     return MaybeLocal<Value>();
   }
   i::EscapableHandleScope handle_scope(i_isolate);

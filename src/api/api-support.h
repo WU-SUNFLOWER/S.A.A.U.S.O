@@ -5,6 +5,8 @@
 #ifndef SAAUSO_API_API_SUPPORT_H_
 #define SAAUSO_API_API_SUPPORT_H_
 
+#include <cassert>
+
 #include "include/saauso-local-handle.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -36,6 +38,19 @@ class Utils {
     return Local<T>::FromSlot(handle.location());
   }
 };
+
+inline i::Isolate* RequireCurrentIsolate() {
+  i::Isolate* isolate = i::Isolate::Current();
+  assert(isolate != nullptr);
+  return isolate;
+}
+
+inline i::Isolate* RequireExplicitIsolate(Isolate* isolate) {
+  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  assert(internal_isolate != nullptr);
+  assert(internal_isolate == i::Isolate::Current());
+  return internal_isolate;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Exception API 实现相关支持

@@ -33,7 +33,7 @@ struct EscapableHandleScopeImpl {
 }  // namespace api
 
 HandleScope::HandleScope(Isolate* isolate) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
   impl_ = new api::HandleScopeImpl(i_isolate);
 }
 
@@ -43,7 +43,7 @@ HandleScope::~HandleScope() {
 }
 
 EscapableHandleScope::EscapableHandleScope(Isolate* isolate) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
   impl_ = new api::EscapableHandleScopeImpl(i_isolate);
 }
 

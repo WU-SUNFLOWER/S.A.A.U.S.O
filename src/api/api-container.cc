@@ -11,8 +11,7 @@
 namespace saauso {
 
 MaybeLocal<List> List::New(Isolate* isolate) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyList> list =
@@ -30,8 +29,7 @@ int64_t List::Length() const {
 }
 
 Maybe<void> List::Push(Local<Value> value) {
-  i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::HandleScope handle_scope(i_isolate);
 
@@ -52,8 +50,7 @@ Maybe<void> List::Push(Local<Value> value) {
 }
 
 Maybe<void> List::Set(int64_t index, Local<Value> value) {
-  i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::HandleScope handle_scope(i_isolate);
 
@@ -77,8 +74,7 @@ Maybe<void> List::Set(int64_t index, Local<Value> value) {
 }
 
 MaybeLocal<Value> List::Get(int64_t index) const {
-  i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::EscapableHandleScope handle_scope(i_isolate);
 
@@ -99,8 +95,7 @@ MaybeLocal<Value> List::Get(int64_t index) const {
 }
 
 MaybeLocal<Tuple> Tuple::New(Isolate* isolate, int argc, Local<Value> argv[]) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
 
@@ -128,11 +123,7 @@ int64_t Tuple::Length() const {
 }
 
 MaybeLocal<Value> Tuple::Get(int64_t index) const {
-  i::Isolate* internal_isolate = i::Isolate::Current();
-
-  if (internal_isolate == nullptr) {
-    return MaybeLocal<Value>();
-  }
+  i::Isolate* internal_isolate = api::RequireCurrentIsolate();
   i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   if (object.is_null() || !i::IsPyTuple(object)) {
     return MaybeLocal<Value>();

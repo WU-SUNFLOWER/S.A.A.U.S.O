@@ -12,8 +12,7 @@
 namespace saauso {
 
 MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
-  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   if (source.IsEmpty()) {
     return MaybeLocal<Script>();
@@ -34,11 +33,7 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
 }
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
-
-  if (internal_isolate == nullptr) {
-    return MaybeLocal<Value>();
-  }
+  i::Isolate* internal_isolate = api::RequireCurrentIsolate();
 
   if (context.IsEmpty()) {
     return MaybeLocal<Value>();

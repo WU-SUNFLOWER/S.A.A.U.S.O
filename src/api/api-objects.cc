@@ -9,8 +9,7 @@
 namespace saauso {
 
 MaybeLocal<Object> Object::New(Isolate* isolate) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> dict =
@@ -20,8 +19,7 @@ MaybeLocal<Object> Object::New(Isolate* isolate) {
 }
 
 Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
-  i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::HandleScope handle_scope(i_isolate);
 
@@ -51,14 +49,11 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
 }
 
 MaybeLocal<Value> Object::Get(Local<String> key) {
-  i::Isolate* internal_isolate = i::Isolate::Current();
+  i::Isolate* internal_isolate = api::RequireCurrentIsolate();
 
   i::EscapableHandleScope handle_scope(internal_isolate);
 
   if (key.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
-  if (internal_isolate == nullptr) {
     return MaybeLocal<Value>();
   }
   i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
@@ -87,8 +82,7 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
                                      Local<String> name,
                                      int argc,
                                      Local<Value> argv[]) {
-  i::Isolate* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::EscapableHandleScope handle_scope(i_isolate);
 

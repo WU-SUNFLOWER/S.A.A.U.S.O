@@ -4,6 +4,7 @@
 
 #include "include/saauso-exception.h"
 #include "include/saauso-primitive.h"
+#include "src/api/api-support.h"
 #include "src/execution/isolate.h"
 
 namespace saauso {
@@ -16,7 +17,7 @@ MaybeLocal<Value> Exception::TypeError(Local<String> msg) {
     return MaybeLocal<Value>();
   }
 
-  i::Isolate* isolate = i::Isolate::Current();
+  i::Isolate* isolate = api::RequireCurrentIsolate();
   Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
                                   "[TypeError] " + msg->Value());
   return out;
@@ -27,7 +28,7 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
     return MaybeLocal<Value>();
   }
 
-  i::Isolate* isolate = i::Isolate::Current();
+  i::Isolate* isolate = api::RequireCurrentIsolate();
   Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
                                   "[RuntimeError] " + msg->Value());
   return out;
@@ -37,8 +38,7 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
 // TryCatch
 
 TryCatch::TryCatch(Isolate* isolate)
-    : i_isolate_(reinterpret_cast<i::Isolate*>(isolate)) {
-  assert(i_isolate_ == i::Isolate::Current());
+    : i_isolate_(api::RequireExplicitIsolate(isolate)) {
   previous_ = i_isolate_->try_catch_top();
   i_isolate_->set_try_catch_top(this);
 }

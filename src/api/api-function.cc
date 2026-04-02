@@ -14,8 +14,7 @@ namespace saauso {
 MaybeLocal<Function> Function::New(Isolate* isolate,
                                    FunctionCallback callback,
                                    std::string_view name) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyString> py_name = i::PyString::New(
@@ -41,8 +40,7 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
                                  Local<Value> receiver,
                                  int argc,
                                  Local<Value> argv[]) {
-  auto* i_isolate = i::Isolate::Current();
-  assert(i_isolate != nullptr);
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   i::EscapableHandleScope handle_scope(i_isolate);
 

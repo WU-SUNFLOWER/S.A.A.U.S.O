@@ -13,8 +13,7 @@
 namespace saauso {
 
 Local<String> String::New(Isolate* isolate, std::string_view value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::Handle<i::PyString> py_string = i::PyString::New(
       i_isolate, value.data(), static_cast<int64_t>(value.size()));
@@ -32,8 +31,7 @@ std::string String::Value() const {
 }
 
 Local<Integer> Integer::New(Isolate* isolate, int64_t value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::Handle<i::PyObject> smi = i_isolate->factory()->NewSmiFromInt(value);
 
@@ -48,8 +46,7 @@ int64_t Integer::Value() const {
 }
 
 Local<Float> Float::New(Isolate* isolate, double value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::Handle<i::PyFloat> py_float = i_isolate->factory()->NewPyFloat(value);
 
@@ -64,8 +61,7 @@ double Float::Value() const {
 }
 
 Local<Boolean> Boolean::New(Isolate* isolate, bool value) {
-  auto* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  assert(i_isolate == i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
 
   i::Handle<i::PyObject> py_bool = i_isolate->factory()->ToPyBoolean(value);
 
@@ -76,7 +72,8 @@ bool Boolean::Value() const {
   i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
   assert(!object.is_null());
 
-  return i::IsPyTrue(object, i::Isolate::Current());
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
+  return i::IsPyTrue(object, i_isolate);
 }
 
 }  // namespace saauso
