@@ -41,8 +41,8 @@ source_set("saauso_core") {
     "//include/saauso-internal.h",
 
     # build (配置头文件)
-    "//src/build/build_config.h",
-    "//src/build/buildflag.h",
+    "//build/build_config.h",
+    "//build/buildflag.h",
 
     # utils
     "//src/utils/allocation.cc",

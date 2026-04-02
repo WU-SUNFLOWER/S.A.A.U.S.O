@@ -6,8 +6,8 @@
 
 #include <cassert>
 
-#include "src/build/build_config.h"
-#include "src/build/buildflag.h"
+#include "build/build_config.h"
+#include "build/buildflag.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
