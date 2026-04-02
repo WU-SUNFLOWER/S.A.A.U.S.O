@@ -5,13 +5,13 @@
 executable("embedder_ut") {
   testonly = true
   sources = [
-    "./embedder-handle-thread-unittest.cc",
     "./embedder-interop-callback-unittest.cc",
     "./embedder-interop-context-unittest.cc",
     "./embedder-interop-value-unittest.cc",
     "./embedder-isolate-locker.cc",
     "./embedder-isolate-unittest.cc",
     "./embedder-script-unittest.cc",
+    "./embedder-thread-unittest.cc",
     "./lsan-suppressions.cc",
   ]
   deps = [
