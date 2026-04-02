@@ -7,7 +7,6 @@
 #include <thread>
 #include <vector>
 
-#include "include/saauso.h"
 #include "src/execution/thread-state-infras.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
@@ -51,12 +50,6 @@ thread_local std::vector<Isolate*> g_entered_isolates;
 thread_local Isolate* Isolate::current_ = nullptr;
 
 Isolate* Isolate::New() {
-  if (!saauso::Saauso::IsInitialized()) {
-    // 错误：S.A.A.U.S.O 虚拟机全局环境未初始化。
-    // 在创建 Isolate 之前，必须先调用 saauso::Saauso::Initialize()。
-    assert(0 && "vm isn't initialized");
-    return nullptr;
-  }
   auto* isolate = new Isolate();
   isolate->Init();
   return isolate;

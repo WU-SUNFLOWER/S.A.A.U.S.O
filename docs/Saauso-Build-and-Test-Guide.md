@@ -51,6 +51,8 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 ./build.sh ut_backend
 ```
 
+`build.sh` 在 `gn gen` 后会自动执行一次 `gn check`，用于检查 `BUILD.gn` 中的 `deps/public_deps/visibility`、头文件可达性与 include 合法性；若该步骤失败，应先修复依赖边界问题，再继续编译。
+
 ### 1.4 Windows PowerShell 手动构建
 
 在 Windows PowerShell 下可直接手动执行（常用目标名为 `vm`/`all_ut`；其中 `ut.exe` 与 `embedder_ut.exe` 是分别运行的测试二进制）：
@@ -59,12 +61,17 @@ Windows 上默认使用 Clang/LLD 工具链（见 `build/` 与 `build/toolchain/
 # 生成构建文件
 .\depot_tools\gn.exe gen out/debug --args="is_debug=true"
 
+# 检查依赖、可见性与 include 合法性
+.\depot_tools\gn.exe check out/debug
+
 # 构建
 .\depot_tools\ninja.exe -C out/debug vm
 
 # 导出 compile_commands.json (供 clangd/IDE 使用)
 .\depot_tools\gn.exe gen out/debug --args="is_debug=true" --export-compile-commands
 ```
+
+无论是人类开发者还是 AI 助手，只要完成了代码、头文件、`BUILD.gn`、`deps/public_deps/visibility` 或新增源文件的修改，在交付前都应至少执行一次 `gn check`；若使用 `build.sh`，该检查会自动完成。
 
 ## 2. 测试
 
