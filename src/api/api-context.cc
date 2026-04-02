@@ -28,12 +28,7 @@ Local<Context> Context::New(Isolate* isolate) {
 
 void Context::Enter() {
   i::Isolate* i_isolate = api::RequireCurrentIsolate();
-
   auto& entered_contexts = i_isolate->entered_contexts();
-
-  if (entered_contexts.IsEmpty()) {
-    i_isolate->Enter();
-  }
   entered_contexts.PushBack(this);
 }
 
@@ -52,9 +47,6 @@ void Context::Exit() {
   }
 
   entered_contexts.PopBack();
-  if (entered_contexts.IsEmpty()) {
-    i_isolate->Exit();
-  }
 }
 
 Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
