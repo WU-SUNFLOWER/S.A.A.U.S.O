@@ -62,7 +62,7 @@ for a in []:  # type: int
 """
 
 withstmt = """\
-with context as a:  # type: int
+with context() as a:  # type: int
     pass
 """
 
