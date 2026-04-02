@@ -67,7 +67,7 @@ Context 采用每 Isolate 一条 LIFO 栈语义：
 1. `Context::Enter`：将当前 Context 压入该 Isolate 的 entered-context 栈；
 2. `Context::Exit`：仅允许退出栈顶 Context，保证 Enter/Exit 配对；
 3. 当前实现中，首次入栈会尝试进入内部 Isolate，栈清空时退出内部 Isolate；
-4. `ContextScope` 为 `Enter/Exit` 的 RAII 门面，推荐优先使用。
+4. `Context::Scope` 为 `Enter/Exit` 的 RAII 门面，推荐优先使用。
 
 该设计把“上下文切换顺序正确性”收敛为统一约束，降低了跨层调用时的状态错乱风险。
 但它不替代 Embedder 层显式 `Isolate::Scope` 契约。

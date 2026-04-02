@@ -21,7 +21,7 @@ int main() {
     saauso::Local<saauso::Context> context =
         saauso::Context::New(isolate).ToLocalChecked();
 
-    saauso::ContextScope context_scope(context);
+    saauso::Context::Scope context_scope(context);
 
     saauso::TryCatch try_catch(isolate);
 

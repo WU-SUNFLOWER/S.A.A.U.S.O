@@ -201,8 +201,8 @@ int main() {
 
 2. `Enter/Exit` 语义
    - 每个 Isolate 内维护 Context 栈，`Enter` 入栈，`Exit` 只允许退出栈顶 Context（LIFO）。
-   - `ContextScope` 是 RAII 版本：构造时 `Enter`，析构时 `Exit`。
-   - 建议优先使用 `ContextScope`，避免手动配对错误。
+   - `Context::Scope` 是 RAII 版本：构造时 `Enter`，析构时 `Exit`。
+   - 建议优先使用 `Context::Scope`，避免手动配对错误。
 
 3. 隔离效果
    - 变量隔离：`context_a` 的全局变量不会出现在 `context_b`。
@@ -276,6 +276,6 @@ int main() {
 1. 先用 `samples/hello-world.cc` 跑通 `Isolate::Scope + HandleScope` 生命周期。
 2. 再跑 `samples/game-engine-demo.cc` 验证互调能力。
 3. 一组隔离业务使用多个 `Context`，不要复用同一个 globals 承载不同租户状态。
-4. 统一使用 `ContextScope` 管理 Enter/Exit，避免手工错序退出。
+4. 统一使用 `Context::Scope` 管理 Enter/Exit，避免手工错序退出。
 5. 在业务代码里统一封装 `TryCatch` + `MaybeLocal` 判空模板，避免漏判。
 6. 对宿主回调参数做显式校验，错误统一走 `ThrowRuntimeError` 或 `Exception` 工厂。

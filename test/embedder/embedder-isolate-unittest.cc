@@ -27,7 +27,7 @@ TEST(EmbedderPhase1Test, CreateHandleScopeAndContext) {
       HandleScope scope(isolate);
       Local<Context> context = Context::New(isolate);
       ASSERT_FALSE(context.IsEmpty());
-      ContextScope context_scope(context);
+      Context::Scope context_scope(context);
     }
   }
 
@@ -50,7 +50,7 @@ TEST(EmbedderPhase1Test, ContextScope_NestedLifo) {
     Local<Context> context_a = maybe_context_a.ToLocalChecked();
     Local<Context> context_b = maybe_context_b.ToLocalChecked();
     {
-      ContextScope scope_a(context_a);
+      Context::Scope scope_a(context_a);
       context_b->Enter();
       context_b->Exit();
     }

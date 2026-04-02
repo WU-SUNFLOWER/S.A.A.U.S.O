@@ -2,6 +2,8 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <cassert>
+
 #include "include/saauso-context.h"
 #include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
@@ -14,6 +16,22 @@
 #include "src/objects/py-string.h"
 
 namespace saauso {
+
+///////////////////////////////////////////////////////////////////////
+// Context::Scope 实现
+
+Context::Scope::Scope(Local<Context> context) : context_(context) {
+  assert(!context_.IsEmpty());
+  context_->Enter();
+}
+
+Context::Scope::~Scope() {
+  assert(!context_.IsEmpty());
+  context_->Exit();
+}
+
+///////////////////////////////////////////////////////////////////////
+// Context 本体实现
 
 Local<Context> Context::New(Isolate* isolate) {
   i::Isolate* i_isolate = api::RequireExplicitIsolate(isolate);
@@ -114,18 +132,6 @@ MaybeLocal<Object> Context::Global() {
     return MaybeLocal<Object>();
   }
   return api::Utils::ToLocal<Object>(context_object);
-}
-
-ContextScope::ContextScope(Local<Context> context) : context_(context) {
-  if (!context_.IsEmpty()) {
-    context_->Enter();
-  }
-}
-
-ContextScope::~ContextScope() {
-  if (!context_.IsEmpty()) {
-    context_->Exit();
-  }
 }
 
 }  // namespace saauso
