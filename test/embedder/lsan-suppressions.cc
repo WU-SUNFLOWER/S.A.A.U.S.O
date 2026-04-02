@@ -9,4 +9,4 @@
 extern "C" const char* __lsan_default_suppressions() {
   return "leak:PyUnicode_New\n";
 }
-#endif
+#endif  // BUILDFLAG(IS_LINUX)

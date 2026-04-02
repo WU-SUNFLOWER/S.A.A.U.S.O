@@ -70,8 +70,4 @@ executable("ut") {
     "//:saauso_core",
     "//testing/gtest",
   ]
-
-  if (saauso_enable_cpython_compiler) {
-    deps += [ "//:saauso_cpython312_compiler" ]
-  }
 }

@@ -2,6 +2,13 @@
 # Use of this source code is governed by a GNU-style license that can be
 # found in the LICENSE file.
 
+source_set("build_helper_headers") {
+  sources = [
+    "./build_config.h",
+    "./buildflag.h",
+  ]
+}
+
 # 1. 基础配置
 config("compiler_defaults") {
   if (is_win) {
