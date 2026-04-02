@@ -76,14 +76,17 @@ else
     $GN_EXE gen "$OUT_DIR" --args="$GN_ARGS"
 fi
 
-# 2. 执行编译
+# 2. 依赖与可见性检查
+$GN_EXE check "$OUT_DIR"
+
+# 3. 执行编译
 
 # 清理ninja缓存，会导致所有.cc文件重新编译
 # $NINJA_EXE -C "$OUT_DIR" -t clean
 
 $NINJA_EXE -C "$OUT_DIR" "$TARGET"
 
-# 3. 导出编译命令 (用于 IDE 补全)
+# 4. 导出编译命令 (用于 IDE 补全)
 $GN_EXE gen "$OUT_DIR" --export-compile-commands
 
 echo "----------------------------"

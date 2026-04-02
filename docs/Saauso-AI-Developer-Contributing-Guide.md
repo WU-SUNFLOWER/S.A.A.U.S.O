@@ -18,7 +18,7 @@
   3. 若约束仍不明确，优先保证行为正确与可测试性，再逐步收敛风格。
 - **用户指令优先**：当用户的最新明确指令与本文档冲突时，以用户指令为准；但应在交付说明中点出偏离点与潜在风险，并尽量把偏离范围限制在最小。
 
-## 2. Top 10 必守规则（AI Checklist）
+## 2. 必守规则（AI Checklist）
 
 1. 修改前先在仓库中搜索同类实现与既有模式，再决定具体写法（见本文件第 1 节）。
 2. 禁止在接口上传递 `PyObject*`；对外暴露与内部调用使用 `Tagged<PyObject>` 或 `Handle<PyObject>`（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
@@ -30,6 +30,7 @@
 8. `src/utils/` 严禁依赖虚拟机上层能力；不确定时先查同目录既有代码并保持依赖方向单向（见 [Saauso-VM-Engineering-Constraints.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-Engineering-Constraints.md)）。
 9. 所有内部代码必须位于 `namespace saauso::internal`，并遵循代码风格指南 [Saauso-Coding-Style-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Coding-Style-Guide.md) 的命名与注释规范（必须包含必要的简体中文注释）。
 10. 新增单元测试文件后必须同步加入 `test/unittests/BUILD.gn` 的 `sources` 列表（见 [Saauso-Build-and-Test-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)）。
+11. 变更完成后，交付前必须至少执行一次 `gn check`；尤其是修改 `BUILD.gn`、头文件 include、`deps/public_deps/visibility` 或新增源文件时，不得跳过该检查（见 [Saauso-Build-and-Test-Guide.md](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)）。
 
 ## 3. 与其他文档的分工
 
