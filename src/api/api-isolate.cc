@@ -46,8 +46,4 @@ void Isolate::ThrowException(Local<Value> exception) {
   api::CapturePendingException(i_isolate);
 }
 
-size_t Isolate::ValueRegistrySizeForTesting() const {
-  return 0;
-}
-
 }  // namespace saauso
