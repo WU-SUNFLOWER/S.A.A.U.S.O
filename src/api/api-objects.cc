@@ -2,9 +2,14 @@
 
 #include "include/saauso-object.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-support.h"
+#include "src/api/api-exception-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/heap/factory.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
+#include "src/objects/py-tuple.h"
 
 namespace saauso {
 

@@ -5,7 +5,9 @@
 #include "include/saauso-function-callback.h"
 #include "include/saauso-maybe.h"
 #include "include/saauso-value.h"
-#include "src/api/api-support.h"
+#include "src/api/api-function-callback-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
 
 namespace saauso {

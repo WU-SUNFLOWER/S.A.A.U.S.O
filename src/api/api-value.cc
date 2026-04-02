@@ -5,7 +5,8 @@
 #include <string>
 
 #include "include/saauso-value.h"
-#include "src/api/api-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"

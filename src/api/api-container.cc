@@ -3,10 +3,12 @@
 // found in the LICENSE file.
 
 #include "include/saauso-container.h"
-#include "src/api/api-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-tuple.h"
 
 namespace saauso {
 

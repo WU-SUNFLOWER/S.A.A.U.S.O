@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 #include "include/saauso-primitive.h"
-#include "src/api/api-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/heap/factory.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-oddballs.h"

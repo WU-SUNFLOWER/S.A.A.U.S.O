@@ -4,8 +4,7 @@
 
 #include "include/saauso-exception.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-support.h"
-#include "src/execution/isolate.h"
+#include "src/api/api-isolate-utils.h"
 
 namespace saauso {
 

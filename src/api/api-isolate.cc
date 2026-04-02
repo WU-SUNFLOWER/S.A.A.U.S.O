@@ -6,7 +6,8 @@
 
 #include "include/saauso-isolate.h"
 #include "include/saauso-primitive.h"
-#include "src/api/api-support.h"
+#include "src/api/api-exception-support.h"
+#include "src/api/api-handle-utils.h"
 
 namespace saauso {
 

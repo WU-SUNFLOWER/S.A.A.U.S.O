@@ -4,8 +4,11 @@
 
 #include "include/saauso-primitive.h"
 #include "include/saauso-script.h"
-#include "src/api/api-support.h"
+#include "src/api/api-exception-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/execution/isolate.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-string.h"
 #include "src/runtime/runtime-exec.h"
 

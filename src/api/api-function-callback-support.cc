@@ -2,33 +2,17 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
-#include "src/api/api-support.h"
+#include "src/api/api-function-callback-support.h"
 
+#include "include/saauso-function-callback.h"
 #include "src/api/api-bridge-access.h"
-#include "src/execution/exception-utils.h"
+#include "src/api/api-handle-utils.h"
+#include "src/execution/isolate.h"
 #include "src/objects/py-smi.h"
 #include "src/runtime/runtime-exceptions.h"
 
 namespace saauso {
 namespace api {
-
-bool CapturePendingException(i::Isolate* isolate) {
-  if (!isolate->HasPendingException()) {
-    return false;
-  }
-
-  TryCatch* try_catch = isolate->try_catch_top();
-  if (try_catch == nullptr) {
-    return true;
-  }
-
-  i::Handle<i::PyObject> exception =
-      isolate->exception_state()->pending_exception(isolate);
-  ApiBridgeAccess::SetTryCatchException(try_catch,
-                                        api::Utils::ToLocal<Value>(exception));
-  isolate->exception_state()->Clear();
-  return true;
-}
 
 i::MaybeHandle<i::PyObject> InvokeEmbedderCallback(
     i::Isolate* i_isolate,

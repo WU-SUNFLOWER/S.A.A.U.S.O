@@ -4,7 +4,8 @@
 
 #include "include/saauso-local-handle.h"
 #include "include/saauso-value.h"
-#include "src/api/api-support.h"
+#include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
 #include "src/common/globals.h"
 #include "src/handles/handles.h"
 
