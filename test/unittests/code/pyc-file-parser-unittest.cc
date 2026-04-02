@@ -10,8 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "src/build/build_config.h"
-#include "src/build/buildflag.h"
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
 #include "src/objects/py-code-object.h"

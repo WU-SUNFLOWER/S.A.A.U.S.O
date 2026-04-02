@@ -5,8 +5,6 @@
 #ifndef SAAUSO_RUNTIME_STRING_TABLE_H_
 #define SAAUSO_RUNTIME_STRING_TABLE_H_
 
-#include "src/build/build_config.h"
-#include "src/build/buildflag.h"
 #include "src/execution/exception-types.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -48,18 +46,9 @@ class ObjectVisitor;
   V(func_sysgc, "sysgc")                 \
   V(func_exec, "exec")
 
-#if BUILDFLAG(IS_WIN)
-#define LIB_EXT ".dll"
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_LINUX)
-#define LIB_EXT ".so"
-#endif  // BUILDFLAG(IS_LINUX)
 
 #define STRING_IN_TABLE_LIST(V) \
-  V(lib, "lib/")                \
   V(pyc, ".pyc")                \
-  V(so, LIB_EXT)                \
   V(builtins, "__builtins__")   \
   V(file, "__file__")           \
   V(args, "args")               \

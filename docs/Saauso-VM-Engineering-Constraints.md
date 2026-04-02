@@ -85,7 +85,7 @@ void Example() {
 
 - **目标**：将 `src/utils/` 维持为“纯工具层”，避免引入虚拟机上层耦合，降低编译期依赖与循环依赖风险。
 - **允许依赖**
-  - `src/build/` 中的编译控制宏（如 `BUILDFLAG`、`IS_WIN`、`IS_LINUX` 等）。
+  - `build/` 中的编译控制宏（如 `BUILDFLAG`、`IS_WIN`、`IS_LINUX` 等）。
   - `src/utils/` 目录内的其它工具模块。
   - `third_party/` 中的第三方库。
   - C++ 标准库。

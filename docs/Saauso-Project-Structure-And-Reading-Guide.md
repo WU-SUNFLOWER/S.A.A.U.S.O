@@ -10,7 +10,7 @@
 - `src/execution/`：运行时容器（`Isolate`）与隔离性/多线程访问控制（`thread_local` Current + `Isolate::Scope/Locker`），并编排各 `Klass` 的初始化顺序；同时包含执行门面 `Execution`（AllStatic）与异常类型清单 `exception-types.h`。
 - `src/builtins/`：内建函数与“内建类型方法集合”的实现层；内建函数统一使用 `Builtin_*` 函数签名；内建类型方法集合通常由各 `PyXxxKlass::Initialize()` 安装到 type dict（例如 `str/list/dict/tuple/type` 及其 iterator/view 的 methods）；此外包含 Accessor 子系统（`accessor-proxy`/`accessors`），用于 `__class__`/`__dict__` 等保留属性访问代理与约束处理。
 - `src/code/`：编译/`.pyc` 解析前端（`Compiler`、`cpython312-pyc-file-parser`、`cpython312-pyc-compiler` 等）。
-- `src/build/`：构建配置与编译控制宏（如 `BUILDFLAG`、`IS_WIN` 等）。
+- `build/`：构建配置、工具链与编译控制宏（如 `BUILDFLAG`、`IS_WIN` 等）；同时包含 GN 工具链配置与 Embedder include 边界检查脚本。
 - `src/common/`：跨模块共享的轻量公共定义（当前以 `globals.h` 等为主）。
 - `src/interpreter/`：字节码解释器（bytecode dispatcher、`FrameObject` 栈帧、参数归一化与调用入口）。
 - `src/modules/`：模块系统（import）：`ModuleManager` 持有 `sys.modules/sys.path` 并作为解释器入口；`ModuleImporter` 编排 dotted-name/fromlist/相对导入；`ModuleNameResolver` 解析相对导入基准；`ModuleFinder` 只做文件系统定位；`ModuleLoader` 负责创建模块对象并执行模块体；`ModuleUtils` 提供模块名合法性、package 判定与 `__path__` 提取等通用小工具；`BuiltinModuleRegistry` 管理内建模块注册表。
