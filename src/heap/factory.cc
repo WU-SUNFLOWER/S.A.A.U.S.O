@@ -79,7 +79,7 @@ Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->occupied_ = 0;
+    object->set_occupied(0);
     PyDict::SetKlass(object, klass_self);
     object->set_data(Tagged<FixedArray>::null());
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
@@ -102,7 +102,7 @@ Handle<PyDict> Factory::NewPyDictWithoutAllocateData() {
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->occupied_ = 0;
+    object->set_occupied(0);
     PyDict::SetKlass(object, klass);
     object->set_data(Tagged<FixedArray>::null());
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
@@ -115,7 +115,7 @@ Handle<PyDict> Factory::CopyPyDict(Handle<PyDict> dict) {
 
   Handle<PyDict> result = NewPyDictWithoutAllocateData();
   Handle<FixedArray> data = CopyFixedArray(dict->data(isolate_));
-  result->occupied_ = dict->occupied();
+  result->set_occupied(dict->occupied());
   result->set_data(data);
 
   return scope.Escape(result);
