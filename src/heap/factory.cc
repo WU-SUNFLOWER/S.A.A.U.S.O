@@ -206,7 +206,7 @@ Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->length_ = 0;
+    object->set_length(0);
     object->set_array(Tagged<FixedArray>::null());
     PyObject::SetKlass(object, klass_self);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
@@ -390,10 +390,10 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
     object->set_func_globals(Tagged<PyDict>::null());
     object->set_default_args(Tagged<PyTuple>::null());
     object->set_closures(Tagged<PyTuple>::null());
-    object->native_func_ = nullptr;
-    object->native_func_with_closure_ = nullptr;
+    object->set_native_func(nullptr);
+    object->set_native_func_with_closure(nullptr);
     object->set_native_closure_data(Tagged<PyObject>::null());
-    object->native_access_flag_ = NativeFuncAccessFlag::kStatic;
+    object->set_native_access_flag(NativeFuncAccessFlag::kStatic);
     object->set_native_owner_type(Tagged<PyTypeObject>::null());
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
@@ -430,12 +430,12 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
 
   assert(func_template.function() != nullptr ||
          func_template.function_with_closure() != nullptr);
-  object->native_func_ = func_template.function();
-  object->native_func_with_closure_ = func_template.function_with_closure();
+  object->set_native_func(func_template.function());
+  object->set_native_func_with_closure(func_template.function_with_closure());
   object->set_native_closure_data(func_template.closure_data().is_null()
                                       ? Tagged<PyObject>::null()
                                       : *func_template.closure_data());
-  object->native_access_flag_ = func_template.native_access_flag();
+  object->set_native_access_flag(func_template.native_access_flag());
   object->set_native_owner_type(func_template.native_owner_type().is_null()
                                     ? Tagged<PyTypeObject>::null()
                                     : *func_template.native_owner_type());

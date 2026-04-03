@@ -38,12 +38,20 @@ class PyFunction : public PyObject {
   Tagged<PyTuple> closures_tagged() const;
 
   NativeFuncPointer native_func() const { return native_func_; }
+  void set_native_func(NativeFuncPointer native_func) {
+    native_func_ = native_func;
+  }
+
   NativeFuncPointerWithClosure native_func_with_closure() const {
     return native_func_with_closure_;
+  }
+  void set_native_func_with_closure(NativeFuncPointerWithClosure native_func) {
+    native_func_with_closure_ = native_func;
   }
   bool has_closure_native_func() const {
     return native_func_with_closure_ != nullptr;
   }
+
   Handle<PyObject> native_closure_data(Isolate* isolate) const {
     return handle(native_closure_data_, isolate);
   }
@@ -68,7 +76,6 @@ class PyFunction : public PyObject {
  private:
   friend class PyFunctionKlass;
   friend class NativeFunctionKlass;
-  friend class Factory;
 
   static Handle<PyFunction> NewInstanceInternal();
 
@@ -103,7 +110,9 @@ class MethodObject : public PyObject {
 
   void set_owner(Handle<PyObject> owner);
   void set_owner(Tagged<PyObject> owner);
-  Handle<PyObject> owner(Isolate* isolate) const { return handle(owner_, isolate); }
+  Handle<PyObject> owner(Isolate* isolate) const {
+    return handle(owner_, isolate);
+  }
 
   void set_func(Handle<PyObject> func);
   void set_func(Tagged<PyObject> func);
