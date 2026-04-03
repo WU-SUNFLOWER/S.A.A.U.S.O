@@ -80,6 +80,8 @@ class PyList : public PyObject {
                      Isolate* isolate);
 
   Tagged<FixedArray> array() const { return Tagged<FixedArray>::cast(array_); }
+  void set_array(Handle<FixedArray> array);
+  void set_array(Tagged<FixedArray> array);
 
   static void ExtendByItratableObject(Handle<PyList> list,
                                       Handle<PyObject> source);

@@ -28,10 +28,9 @@ constexpr double kMaxLoadFactor = 0.75;
 #define GET_DICT_KEY(dict, index) (dict->data(isolate)->Get(index << 1))
 #define GET_DICT_VAL(dict, index) (dict->data(isolate)->Get((index << 1) + 1))
 
-#define SET_DICT_KEY(dict, index, key) \
-  Tagged<FixedArray>::cast(dict->data_)->Set(index << 1, key)
+#define SET_DICT_KEY(dict, index, key) (dict->data(isolate)->Set(index << 1, key))
 #define SET_DICT_VAL(dict, index, value) \
-  Tagged<FixedArray>::cast(dict->data_)->Set((index << 1) + 1, value)
+  (dict->data(isolate)->Set((index << 1) + 1, value))
 
 uint64_t GetProbe(uint64_t index, uint64_t mask) {
   return (index + 1) & mask;
@@ -150,6 +149,15 @@ Handle<FixedArray> PyDict::data(Isolate* isolate) const {
   return Handle<FixedArray>(Tagged<FixedArray>::cast(data_), isolate);
 }
 
+void PyDict::set_data(Handle<FixedArray> data) {
+  set_data(*data);
+}
+
+void PyDict::set_data(Tagged<FixedArray> data) {
+  data_ = data;
+  WRITE_BARRIER(Tagged<PyObject>(this), &data_, data);
+}
+
 Maybe<bool> PyDict::ContainsKey(Handle<PyObject> key, Isolate* isolate) const {
   Tagged<PyObject> value;
   bool found = false;
@@ -229,7 +237,7 @@ Maybe<bool> PyDict::Remove(Handle<PyObject> key, Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       RehashInto(this, new_data, new_mask, index, isolate));
 
-  data_ = *new_data;
+  set_data(new_data);
   --occupied_;
   return Maybe<bool>(true);
 }
@@ -302,7 +310,7 @@ Maybe<bool> PyDict::ExpandImpl(Handle<PyDict> dict, Isolate* isolate) {
   RETURN_ON_EXCEPTION(isolate,
                       RehashInto(dict, new_data, new_mask, -1, isolate));
 
-  dict->data_ = *new_data;
+  dict->set_data(new_data);
   return Maybe<bool>(true);
 }
 

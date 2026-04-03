@@ -10,6 +10,8 @@
 namespace saauso::internal {
 
 class Isolate;
+class FixedArray;
+class PyTuple;
 
 class PyDict : public PyObject {
  public:
@@ -55,6 +57,8 @@ class PyDict : public PyObject {
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict, Isolate* isolate);
 
   Handle<FixedArray> data(Isolate* isolate) const;
+  void set_data(Handle<FixedArray> data);
+  void set_data(Tagged<FixedArray> data);
 
  private:
   friend class PyDictKlass;
