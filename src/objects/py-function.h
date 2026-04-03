@@ -113,7 +113,6 @@ class MethodObject : public PyObject {
 
  private:
   friend class MethodObjectKlass;
-  friend class Factory;
 
   Tagged<PyObject> owner_;
   Tagged<PyObject> func_;
