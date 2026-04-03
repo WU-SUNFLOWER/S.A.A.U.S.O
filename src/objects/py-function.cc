@@ -74,7 +74,6 @@ void PyFunction::set_default_args(Handle<PyTuple> default_args) {
 }
 
 void PyFunction::set_default_args(Tagged<PyTuple> default_args) {
-  assert(default_args_.is_null());
   default_args_ = default_args;
   WRITE_BARRIER(Tagged<PyObject>(this), &default_args_,
                 default_args);
