@@ -24,8 +24,12 @@ Tagged<PyTypeObject> PyTypeObject::cast(Tagged<PyObject> object) {
 
 void PyTypeObject::BindWithKlass(Tagged<Klass> klass, Isolate* isolate) {
   Handle<PyTypeObject> this_handle(Tagged<PyTypeObject>(this), isolate);
-  own_klass_ = klass;
+  set_own_klass(klass);
   klass->set_type_object(this_handle);
+}
+
+void PyTypeObject::set_own_klass(Tagged<Klass> klass) {
+  own_klass_ = klass;
 }
 
 Handle<PyList> PyTypeObject::mro(Isolate* isolate) const {

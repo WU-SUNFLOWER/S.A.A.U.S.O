@@ -59,6 +59,15 @@ Tagged<PyObject> PyList::GetLastTagged() const {
   return array()->Get(length_ - 1);
 }
 
+void PyList::set_array(Handle<FixedArray> array) {
+  set_array(*array);
+}
+
+void PyList::set_array(Tagged<FixedArray> array) {
+  array_ = array;
+  WRITE_BARRIER(Tagged<PyObject>(this), &array_, array);
+}
+
 void PyList::Set(int64_t index, Handle<PyObject> value) {
   assert(0 <= index && index < length_);
 
@@ -165,7 +174,7 @@ void PyList::ExpandImpl(Handle<PyList> list, Isolate* isolate) {
   Handle<FixedArray> new_array = isolate->factory()->CopyFixedArrayAndGrow(
       old_array, new_capacity - old_capacity);
 
-  list->array_ = *new_array;
+  list->set_array(new_array);
 }
 
 }  // namespace saauso::internal

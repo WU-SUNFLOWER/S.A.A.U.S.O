@@ -79,14 +79,14 @@ Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->occupied_ = 0;
+    object->set_occupied(0);
     PyDict::SetKlass(object, klass_self);
-    object->data_ = Tagged<FixedArray>::null();
+    object->set_data(Tagged<FixedArray>::null());
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
   Handle<FixedArray> data = NewFixedArray(init_capacity * 2);
-  object->data_ = *data;
+  object->set_data(data);
 
   if (klass_self->instance_has_properties_dict()) {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
@@ -102,8 +102,9 @@ Handle<PyDict> Factory::NewPyDictWithoutAllocateData() {
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->occupied_ = 0;
+    object->set_occupied(0);
     PyDict::SetKlass(object, klass);
+    object->set_data(Tagged<FixedArray>::null());
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
   return object;
@@ -114,8 +115,8 @@ Handle<PyDict> Factory::CopyPyDict(Handle<PyDict> dict) {
 
   Handle<PyDict> result = NewPyDictWithoutAllocateData();
   Handle<FixedArray> data = CopyFixedArray(dict->data(isolate_));
-  result->occupied_ = dict->occupied();
-  result->data_ = *data;
+  result->set_occupied(dict->occupied());
+  result->set_data(data);
 
   return scope.Escape(result);
 }
@@ -172,7 +173,7 @@ Handle<Cell> Factory::NewCell() {
   {
     DisallowHeapAllocation disallow(isolate_);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
-    object->value_ = Tagged<PyObject>(kNullAddress);
+    object->set_value(Tagged<PyObject>(kNullAddress));
     PyObject::SetKlass(object, CellKlass::GetInstance(isolate_));
   }
   return object;
@@ -205,15 +206,15 @@ Handle<PyList> Factory::NewPyListLike(Tagged<Klass> klass_self,
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->length_ = 0;
-    object->array_ = Tagged<FixedArray>::null();
+    object->set_length(0);
+    object->set_array(Tagged<FixedArray>::null());
     PyObject::SetKlass(object, klass_self);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
   Handle<FixedArray> array =
       NewFixedArray(std::max(PyList::kMinimumCapacity, init_capacity));
-  object->array_ = *array;
+  object->set_array(array);
 
   if (klass_self->instance_has_properties_dict()) {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
@@ -384,16 +385,16 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
 
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->func_code_ = Tagged<PyObject>::null();
-    object->func_name_ = Tagged<PyObject>::null();
-    object->func_globals_ = Tagged<PyObject>::null();
-    object->default_args_ = Tagged<PyObject>::null();
-    object->closures_ = Tagged<PyObject>::null();
-    object->native_func_ = nullptr;
-    object->native_func_with_closure_ = nullptr;
-    object->native_closure_data_ = Tagged<PyObject>::null();
-    object->native_access_flag_ = NativeFuncAccessFlag::kStatic;
-    object->native_owner_type_ = Tagged<PyObject>::null();
+    object->set_func_code(Tagged<PyCodeObject>::null());
+    object->set_func_name(Tagged<PyString>::null());
+    object->set_func_globals(Tagged<PyDict>::null());
+    object->set_default_args(Tagged<PyTuple>::null());
+    object->set_closures(Tagged<PyTuple>::null());
+    object->set_native_func(nullptr);
+    object->set_native_func_with_closure(nullptr);
+    object->set_native_closure_data(Tagged<PyObject>::null());
+    object->set_native_access_flag(NativeFuncAccessFlag::kStatic);
+    object->set_native_owner_type(Tagged<PyTypeObject>::null());
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
@@ -411,8 +412,8 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
   Handle<PyFunction> object;
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
 
-  object->func_code_ = *code_object;
-  object->func_name_ = *code_object->co_name(isolate_);
+  object->set_func_code(code_object);
+  object->set_func_name(code_object->co_name(isolate_));
 
   // 绑定klass
   PyObject::SetKlass(object, PyFunctionKlass::GetInstance(isolate_));
@@ -429,14 +430,18 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
 
   assert(func_template.function() != nullptr ||
          func_template.function_with_closure() != nullptr);
-  object->native_func_ = func_template.function();
-  object->native_func_with_closure_ = func_template.function_with_closure();
-  object->native_closure_data_ = *func_template.closure_data();
-  object->native_access_flag_ = func_template.native_access_flag();
-  object->native_owner_type_ = *func_template.native_owner_type();
+  object->set_native_func(func_template.function());
+  object->set_native_func_with_closure(func_template.function_with_closure());
+  object->set_native_closure_data(func_template.closure_data().is_null()
+                                      ? Tagged<PyObject>::null()
+                                      : *func_template.closure_data());
+  object->set_native_access_flag(func_template.native_access_flag());
+  object->set_native_owner_type(func_template.native_owner_type().is_null()
+                                    ? Tagged<PyTypeObject>::null()
+                                    : *func_template.native_owner_type());
 
   assert(!func_template.name().is_null());
-  object->func_name_ = *func_template.name();
+  object->set_func_name(*func_template.name());
 
   // 绑定klass
   PyObject::SetKlass(object, NativeFunctionKlass::GetInstance(isolate_));
@@ -451,13 +456,13 @@ Handle<MethodObject> Factory::NewMethodObject(Handle<PyObject> func,
       Allocate<MethodObject>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    object->owner_ = Tagged<PyObject>::null();
-    object->func_ = Tagged<PyObject>::null();
+    object->set_owner(Tagged<PyObject>::null());
+    object->set_func(Tagged<PyObject>::null());
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
-  object->owner_ = *owner;
-  object->func_ = *func;
+  object->set_owner(owner);
+  object->set_func(func);
   return object;
 }
 
@@ -492,7 +497,7 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   {
     DisallowHeapAllocation disallow(isolate_);
     PyObject::SetKlass(object, klass);
-    object->own_klass_ = Tagged<Klass>::null();
+    object->set_own_klass(Tagged<Klass>::null());
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 

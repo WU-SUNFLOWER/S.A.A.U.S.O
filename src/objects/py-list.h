@@ -53,7 +53,8 @@ class PyList : public PyObject {
   void Clear();
 
   int64_t capacity() const;
-  int64_t length() const { return length_; };
+  int64_t length() const { return length_; }
+  void set_length(int64_t length) { length_ = length; }
 
   bool IsEmpty() const { return length_ == 0; };
   bool IsFull() const {
@@ -80,13 +81,14 @@ class PyList : public PyObject {
                      Isolate* isolate);
 
   Tagged<FixedArray> array() const { return Tagged<FixedArray>::cast(array_); }
+  void set_array(Handle<FixedArray> array);
+  void set_array(Tagged<FixedArray> array);
 
   static void ExtendByItratableObject(Handle<PyList> list,
                                       Handle<PyObject> source);
 
  private:
   friend class PyListKlass;
-  friend class Factory;
 
   static void ExpandImpl(Handle<PyList> list, Isolate* isolate);
 

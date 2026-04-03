@@ -16,12 +16,12 @@ class PyTypeObject : public PyObject {
   // 建立与klass的双向绑定
   void BindWithKlass(Tagged<Klass> klass, Isolate* isolate);
   Tagged<Klass> own_klass() const { return own_klass_; };
+  void set_own_klass(Tagged<Klass> klass);
 
   Handle<PyList> mro(Isolate* isolate) const;
 
  private:
   friend class PyTypeObjectKlass;
-  friend class Factory;
 
   Tagged<Klass> own_klass_;
 };

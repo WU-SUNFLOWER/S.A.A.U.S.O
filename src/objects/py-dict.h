@@ -10,16 +10,20 @@
 namespace saauso::internal {
 
 class Isolate;
+class FixedArray;
+class PyTuple;
 
 class PyDict : public PyObject {
  public:
   static constexpr int64_t kMinimumCapacity = 8;
 
-  static Handle<PyDict> New(Isolate* isolate,int64_t init_capacity = kMinimumCapacity);
+  static Handle<PyDict> New(Isolate* isolate,
+                            int64_t init_capacity = kMinimumCapacity);
 
   static Tagged<PyDict> cast(Tagged<PyObject> object);
 
   int64_t capacity() const;
+
   Handle<PyObject> KeyAtIndex(int64_t index, Isolate* isolate) const;
   Handle<PyObject> ValueAtIndex(int64_t index, Isolate* isolate) const;
   Handle<PyTuple> ItemAtIndex(int64_t index, Isolate* isolate) const;
@@ -47,6 +51,7 @@ class PyDict : public PyObject {
   Maybe<bool> Remove(Handle<PyObject> key, Isolate* isolate);
 
   int64_t occupied() const { return occupied_; }
+  void set_occupied(int64_t occupied) { occupied_ = occupied; }
 
   static Maybe<bool> Put(Handle<PyDict> dict,
                          Handle<PyObject> key,
@@ -55,10 +60,11 @@ class PyDict : public PyObject {
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict, Isolate* isolate);
 
   Handle<FixedArray> data(Isolate* isolate) const;
+  void set_data(Handle<FixedArray> data);
+  void set_data(Tagged<FixedArray> data);
 
  private:
   friend class PyDictKlass;
-  friend class Factory;
 
   static Maybe<bool> ExpandImpl(Handle<PyDict> dict, Isolate* isolate);
 
