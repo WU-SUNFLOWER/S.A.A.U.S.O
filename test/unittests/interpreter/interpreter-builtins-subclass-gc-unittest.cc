@@ -102,6 +102,56 @@ print(c.x.v)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, SubclassTupleConstructionSurvivesSysgcPressure) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+class C(tuple):
+  pass
+
+class Box:
+  pass
+
+def make():
+  i = 0
+  last = None
+  while i < 120:
+    tmp = []
+    j = 0
+    while j < 80:
+      tmp.append([i, j, str(i + j)])
+      j = j + 1
+    sysgc()
+    box = Box()
+    box.v = i
+    t = C((box, i, i + 1))
+    t.x = i + 1000
+    last = t
+    i = i + 1
+  return last
+
+t = make()
+sysgc()
+print(t[0].v)
+print(t[1])
+print(t[2])
+print(t.x)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(119));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(119));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(120));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(1119));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, SubclassTupleCustomInitWithEmptyArgs) {
   HandleScope scope(isolate_);
 
