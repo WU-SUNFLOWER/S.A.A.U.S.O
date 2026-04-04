@@ -83,16 +83,19 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
 
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found,
-                                   kwargs->Get(sep_key, options.sep, isolate),
+                                   PyDict::Get(kwargs, sep_key, options.sep,
+                                               isolate),
                                    kNullMaybeHandle);
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found,
-                                   kwargs->Get(end_key, options.end, isolate),
+                                   PyDict::Get(kwargs, end_key, options.end,
+                                               isolate),
                                    kNullMaybeHandle);
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, found,
-                                   kwargs->Get(file_key, options.file, isolate),
+                                   PyDict::Get(kwargs, file_key, options.file,
+                                               isolate),
                                    kNullMaybeHandle);
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found, kwargs->Get(flush_key, options.flush, isolate),
+      isolate, found, PyDict::Get(kwargs, flush_key, options.flush, isolate),
       kNullMaybeHandle);
 
   if (!options.sep.is_null() && !IsPyNone(options.sep, isolate)) {

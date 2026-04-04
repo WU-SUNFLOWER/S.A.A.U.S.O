@@ -273,13 +273,14 @@ BUILTIN_METHOD(PyListBuiltinMethods, Sort) {
     // 查找关键字提取函数
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               kwargs->Get(key_name, key_func, isolate));
+                               PyDict::Get(kwargs, key_name, key_func, isolate));
     assert(!found || !key_func.is_null());
 
     // 查找倒序排序控制参数
     Handle<PyObject> reverse_flag;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found, kwargs->Get(reverse_name, reverse_flag, isolate));
+        isolate, found,
+        PyDict::Get(kwargs, reverse_name, reverse_flag, isolate));
     if (found) {
       assert(!reverse_flag.is_null());
       reverse = Runtime_PyObjectIsTrue(isolate, reverse_flag);

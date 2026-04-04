@@ -114,7 +114,7 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
       i::PyString::New(i_isolate, key->Value().data(),
                        static_cast<int64_t>(key->Value().size()));
   i::Handle<i::PyObject> out;
-  auto maybe_found = globals->Get(py_key, out, i_isolate);
+  auto maybe_found = i::PyDict::Get(globals, py_key, out, i_isolate);
   if (maybe_found.IsNothing()) {
     api::CapturePendingException(i_isolate);
     return MaybeLocal<Value>();

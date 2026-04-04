@@ -35,10 +35,10 @@ Maybe<bool> ModuleUtils::IsPackageModule(Isolate* isolate,
     return Maybe<bool>(false);
   }
 
-  Tagged<PyObject> path;
+  Handle<PyObject> path;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             dict->GetTagged(ST(path, isolate), path, isolate));
+                             PyDict::Get(dict, ST(path, isolate), path, isolate));
 
   return Maybe<bool>(found && IsPyList(path));
 }
@@ -53,16 +53,17 @@ Maybe<void> ModuleUtils::GetPackagePathList(Isolate* isolate,
     return JustVoid();
   }
 
-  Tagged<PyObject> path_obj;
+  Handle<PyObject> path_obj;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             dict->GetTagged(ST(path, isolate), path_obj, isolate));
+                             PyDict::Get(dict, ST(path, isolate), path_obj,
+                                         isolate));
 
   if (!found || !IsPyList(path_obj)) {
     return JustVoid();
   }
 
-  out = Handle<PyList>::cast(handle(path_obj, isolate));
+  out = Handle<PyList>::cast(path_obj);
   return JustVoid();
 }
 

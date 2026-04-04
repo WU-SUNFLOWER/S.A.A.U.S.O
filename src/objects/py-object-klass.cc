@@ -125,7 +125,8 @@ Maybe<bool> PyObjectKlass::Generic_GetAttr(Isolate* isolate,
     if (!properties.is_null()) {
       bool found = false;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                                 properties->Get(prop_name, result, isolate));
+                                 PyDict::Get(properties, prop_name, result,
+                                             isolate));
       if (found) {
         assert(!result.is_null());
         goto found;
@@ -205,7 +206,7 @@ MaybeHandle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
     Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
     if (!properties.is_null()) {
       bool found = false;
-      if (!properties->Get(prop_name, result, isolate).To(&found)) {
+      if (!PyDict::Get(properties, prop_name, result, isolate).To(&found)) {
         return kNullMaybeHandle;
       }
       if (found) {

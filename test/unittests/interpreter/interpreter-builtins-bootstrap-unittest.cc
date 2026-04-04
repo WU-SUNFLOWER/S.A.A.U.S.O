@@ -40,9 +40,9 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
     ASSERT_TRUE(PyDict::ContainsKey(builtins, key, isolate_).To(&exists))
         << name;
     ASSERT_TRUE(exists) << name;
-    Tagged<PyObject> value;
+    Handle<PyObject> value;
     bool found = false;
-    ASSERT_TRUE(builtins->GetTagged(key, value, isolate_).To(&found)) << name;
+    ASSERT_TRUE(PyDict::Get(builtins, key, value, isolate_).To(&found)) << name;
     ASSERT_TRUE(found) << name;
     EXPECT_TRUE(IsPyTypeObject(value)) << name;
   }
@@ -55,20 +55,23 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
         << name;
     ASSERT_TRUE(exists) << name;
   }
-  Tagged<PyObject> value;
+  Handle<PyObject> value;
   bool found = false;
-  ASSERT_TRUE(builtins->GetTagged(ST(true_symbol, isolate_), value, isolate_)
-                  .To(&found));
+  ASSERT_TRUE(
+      PyDict::Get(builtins, ST(true_symbol, isolate_), value, isolate_)
+          .To(&found));
   ASSERT_TRUE(found);
-  EXPECT_EQ(value, isolate_->py_true_object());
-  ASSERT_TRUE(builtins->GetTagged(ST(false_symbol, isolate_), value, isolate_)
-                  .To(&found));
+  EXPECT_EQ(*value, isolate_->py_true_object());
+  ASSERT_TRUE(
+      PyDict::Get(builtins, ST(false_symbol, isolate_), value, isolate_)
+          .To(&found));
   ASSERT_TRUE(found);
-  EXPECT_EQ(value, isolate_->py_false_object());
-  ASSERT_TRUE(builtins->GetTagged(ST(none_symbol, isolate_), value, isolate_)
-                  .To(&found));
+  EXPECT_EQ(*value, isolate_->py_false_object());
+  ASSERT_TRUE(
+      PyDict::Get(builtins, ST(none_symbol, isolate_), value, isolate_)
+          .To(&found));
   ASSERT_TRUE(found);
-  EXPECT_EQ(value, isolate_->py_none_object());
+  EXPECT_EQ(*value, isolate_->py_none_object());
 
   const char* const kBuiltinFunctions[] = {
       "print", "repr", "len", "isinstance", "build_class", "sysgc", "exec"};
@@ -81,7 +84,7 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
     ASSERT_TRUE(PyDict::ContainsKey(builtins, key, isolate_).To(&exists))
         << name;
     ASSERT_TRUE(exists) << name;
-    ASSERT_TRUE(builtins->GetTagged(key, value, isolate_).To(&found)) << name;
+    ASSERT_TRUE(PyDict::Get(builtins, key, value, isolate_).To(&found)) << name;
     ASSERT_TRUE(found) << name;
     EXPECT_TRUE(IsPyFunction(value, isolate_)) << name;
   }
@@ -91,10 +94,10 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainCoreEntries) {
       PyDict::ContainsKey(builtins, ST(builtins, isolate_), isolate_)
           .To(&exists));
   ASSERT_TRUE(exists);
-  ASSERT_TRUE(
-      builtins->GetTagged(ST(builtins, isolate_), value, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(builtins, ST(builtins, isolate_), value, isolate_)
+                  .To(&found));
   ASSERT_TRUE(found);
-  EXPECT_EQ(value, *builtins);
+  EXPECT_EQ(*value, *builtins);
 }
 
 TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
@@ -116,23 +119,22 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
     ASSERT_TRUE(PyDict::ContainsKey(builtins, key, isolate_).To(&exists))
         << name;
     ASSERT_TRUE(exists) << name;
-    Tagged<PyObject> value;
+    Handle<PyObject> value;
     bool found = false;
-    ASSERT_TRUE(builtins->GetTagged(key, value, isolate_).To(&found)) << name;
+    ASSERT_TRUE(PyDict::Get(builtins, key, value, isolate_).To(&found)) << name;
     ASSERT_TRUE(found) << name;
     EXPECT_TRUE(IsPyTypeObject(value)) << name;
   }
 
-  Tagged<PyObject> base_exception_value;
+  Handle<PyObject> base_exception_value;
   bool found = false;
-  ASSERT_TRUE(builtins
-                  ->GetTagged(PyString::New(isolate_, "BaseException"),
-                              base_exception_value, isolate_)
+  ASSERT_TRUE(PyDict::Get(builtins, PyString::New(isolate_, "BaseException"),
+                          base_exception_value, isolate_)
                   .To(&found));
   ASSERT_TRUE(found);
 
   // 第二层校验：校验 BaseException 的 klass 指向正确
-  auto base_exception_type = Tagged<PyTypeObject>::cast(base_exception_value);
+  auto base_exception_type = Handle<PyTypeObject>::cast(base_exception_value);
   auto base_exception_klass = base_exception_type->own_klass();
   EXPECT_EQ(base_exception_klass, PyBaseExceptionKlass::GetInstance(isolate_));
 
@@ -168,17 +170,16 @@ TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
   const char* const kTypeNames[] = {"object", "list", "dict",
                                     "tuple",  "str",  "type"};
   for (const char* name : kTypeNames) {
-    Tagged<PyObject> value;
+    Handle<PyObject> value;
     bool found = false;
     ASSERT_TRUE(
-        builtins->GetTagged(PyString::New(isolate_, name), value, isolate_)
+        PyDict::Get(builtins, PyString::New(isolate_, name), value, isolate_)
             .To(&found))
         << name;
     ASSERT_TRUE(found) << name;
     ASSERT_TRUE(IsPyTypeObject(value)) << name;
 
-    auto type_obj =
-        Handle<PyTypeObject>(Tagged<PyTypeObject>::cast(value), isolate_);
+    auto type_obj = Handle<PyTypeObject>::cast(value);
     auto props = type_obj->own_klass()->klass_properties(isolate_);
 
     bool has_repr = false;

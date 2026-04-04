@@ -168,21 +168,19 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinExceptionTypes() {
   RETURN_ON_EXCEPTION(isolate_, InstallBuiltinBasicExceptionTypes());
 
   auto builtins_handle = builtins_.Get(isolate_);
-  Tagged<PyObject> exception_type_tagged;
+  Handle<PyObject> exception_type;
 
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate_, found,
-      builtins_handle->GetTagged(ST(exception, isolate_), exception_type_tagged,
-                                 isolate_));
+      PyDict::Get(builtins_handle, ST(exception, isolate_), exception_type,
+                  isolate_));
 
   if (!found) {
     Runtime_ThrowError(isolate_, ExceptionType::kRuntimeError,
                        "can't find exception type");
     return kNullMaybe;
   }
-
-  Handle<PyObject> exception_type = handle(exception_type_tagged, isolate_);
 
 #define REGISTER_NORMAL_EXCEPTION_TYPE(ignore1, name_in_string_table, ignore2) \
   RETURN_ON_EXCEPTION(                                                         \

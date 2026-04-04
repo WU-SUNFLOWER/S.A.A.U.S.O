@@ -43,7 +43,7 @@ TEST_F(PyDictTest, GetApiTriState) {
   EXPECT_TRUE(eq);
 
   Handle<PyObject> out_handle;
-  ASSERT_TRUE(dict->Get(key, out_handle, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, key, out_handle, isolate_).To(&found));
   EXPECT_TRUE(found);
   EXPECT_FALSE(out_handle.is_null());
 

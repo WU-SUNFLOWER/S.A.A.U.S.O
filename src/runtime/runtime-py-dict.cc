@@ -105,7 +105,7 @@ MaybeHandle<PyObject> Runtime_DictGetItem(Isolate* isolate,
                                           Handle<PyObject> key) {
   Handle<PyObject> value;
   bool found = false;
-  if (!dict->Get(key, value, isolate).To(&found)) {
+  if (!PyDict::Get(dict, key, value, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (!found) {
@@ -148,7 +148,7 @@ MaybeHandle<PyObject> Runtime_DictGet(Isolate* isolate,
                                       Handle<PyObject> default_or_null) {
   Handle<PyObject> value;
   bool found = false;
-  if (!dict->Get(key, value, isolate).To(&found)) {
+  if (!PyDict::Get(dict, key, value, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (found) {
@@ -167,7 +167,7 @@ MaybeHandle<PyObject> Runtime_DictSetDefault(Isolate* isolate,
                                              Handle<PyObject> default_or_null) {
   Handle<PyObject> existing;
   bool found = false;
-  if (!dict->Get(key, existing, isolate).To(&found)) {
+  if (!PyDict::Get(dict, key, existing, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (found) {
@@ -192,7 +192,7 @@ MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
                                       bool has_default) {
   Handle<PyObject> value;
   bool found = false;
-  if (!dict->Get(key, value, isolate).To(&found)) {
+  if (!PyDict::Get(dict, key, value, isolate).To(&found)) {
     return kNullMaybeHandle;
   }
   if (found) {

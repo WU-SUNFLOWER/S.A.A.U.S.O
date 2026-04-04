@@ -41,12 +41,14 @@ TEST_F(PyModuleTest, ModuleHasDictAndSupportsAttrReadWrite) {
   Handle<PyObject> mirrored_value;
   bool mirrored_found = true;
   ASSERT_TRUE(
-      module_dict->Get(ST(dict, isolate_), mirrored_value, isolate_).To(&mirrored_found));
+      PyDict::Get(module_dict, ST(dict, isolate_), mirrored_value, isolate_)
+          .To(&mirrored_found));
   EXPECT_FALSE(mirrored_found);
   EXPECT_TRUE(mirrored_value.is_null());
 
   // 同理，__class__也查询不到
-  ASSERT_TRUE(module_dict->Get(ST(class, isolate_), mirrored_value, isolate_)
+  ASSERT_TRUE(PyDict::Get(module_dict, ST(class, isolate_), mirrored_value,
+                          isolate_)
                   .To(&mirrored_found));
   EXPECT_FALSE(mirrored_found);
   EXPECT_TRUE(mirrored_value.is_null());
