@@ -132,6 +132,7 @@ Handle<PyObject> PyDict::ValueAtIndex(int64_t index, Isolate* isolate) const {
   return handle(data_tagged()->Get((index << 1) + 1), isolate);
 }
 
+// static
 Handle<PyTuple> PyDict::ItemAtIndex(Handle<PyDict> dict,
                                     int64_t index,
                                     Isolate* isolate) {
