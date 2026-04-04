@@ -327,13 +327,12 @@ Handle<PyString> Factory::NewStringLike(Tagged<Klass> klass_self,
 
 Handle<PyString> Factory::NewCopiedSubstring(Handle<PyString> str,
                                              int64_t begin,
-                                             int64_t length,
-                                             bool in_meta_space) {
+                                             int64_t length) {
   EscapableHandleScope scope(isolate_);
 
   assert(begin + length <= str->length());
 
-  Handle<PyString> object = NewRawString(length, in_meta_space);
+  Handle<PyString> object = NewRawString(length, false);
   std::memcpy(object->writable_buffer(), str->buffer() + begin, length);
 
   return scope.Escape(object);

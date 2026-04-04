@@ -102,9 +102,9 @@ Maybe<void> PyStringKlass::Initialize(Isolate* isolate) {
   set_name(PyString::New(isolate, "str"));
 
   // 安装内建方法
-  RETURN_ON_EXCEPTION(isolate, PyStringBuiltinMethods::Install(
-                                   isolate, klass_properties,
-                                   type_object(isolate)));
+  RETURN_ON_EXCEPTION(isolate,
+                      PyStringBuiltinMethods::Install(isolate, klass_properties,
+                                                      type_object(isolate)));
 
   return JustVoid();
 }
@@ -307,7 +307,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Isolate* isolate,
                                                     Handle<PyObject> subscr) {
   auto s = Handle<PyString>::cast(self);
 
-  auto decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
+  int64_t decoded_subscr = PySmi::ToInt(Handle<PySmi>::cast(subscr));
   if (!InRangeWithRightOpen(decoded_subscr, static_cast<int64_t>(0),
                             s->length())) [[unlikely]] {
     Runtime_ThrowError(isolate, ExceptionType::kIndexError,
@@ -315,8 +315,8 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_Subscr(Isolate* isolate,
     return kNullMaybeHandle;
   }
 
-  return PyString::New(isolate, s->buffer() + decoded_subscr,
-                       static_cast<int64_t>(1));
+  return isolate->factory()->NewCopiedSubstring(s, decoded_subscr,
+                                                static_cast<int64_t>(1));
 }
 
 MaybeHandle<PyObject> PyStringKlass::Virtual_Add(Isolate* isolate,

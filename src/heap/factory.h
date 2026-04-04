@@ -93,8 +93,7 @@ class Factory {
 
   Handle<PyString> NewCopiedSubstring(Handle<PyString> str,
                                       int64_t begin,
-                                      int64_t length,
-                                      bool in_meta_space);
+                                      int64_t length);
 
   Handle<PyCodeObject> NewPyCodeObject();
 
