@@ -356,15 +356,15 @@ void Interpreter::EvalCurrentFrame() {
     PUSH(iterator);
   })
 
-  INTERPRETER_HANDLER_DISPATCH(LoadBuildClass, {
-    Tagged<PyObject> value;
+  INTERPRETER_HANDLER_WITH_SCOPE(LoadBuildClass, {
+    Handle<PyObject> value;
     bool found = false;
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, isolate_->builtins()->GetTagged(
-                   ST_TAGGED(func_build_class, isolate_), value, isolate_));
+        found, PyDict::Get(isolate_->builtins(), ST(func_build_class, isolate_),
+                           value, isolate_));
     assert(found);
     assert(!value.is_null());
-    PUSH(handle(value, isolate_));
+    PUSH(value);
   })
 
   INTERPRETER_HANDLER_DISPATCH(ReturnValue, {
@@ -473,13 +473,14 @@ void Interpreter::EvalCurrentFrame() {
       LoadConst, { PUSH(current_frame_->consts(isolate_)->GetTagged(op_arg)); })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
-    Tagged<PyObject> key = current_frame_->names(isolate_)->GetTagged(op_arg);
-    Tagged<PyObject> value;
+    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
+    Handle<PyObject> value;
     bool found = false;
 
     // 1. 查local符号表
-    ASSIGN_GOTO_ON_EXCEPTION(found, current_frame_->locals(isolate_)->GetTagged(
-                                        key, value, isolate_));
+    ASSIGN_GOTO_ON_EXCEPTION(
+        found, PyDict::Get(current_frame_->locals(isolate_), key, value,
+                           isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -487,8 +488,8 @@ void Interpreter::EvalCurrentFrame() {
 
     // 2. 查global符号表
     ASSIGN_GOTO_ON_EXCEPTION(
-        found,
-        current_frame_->globals(isolate_)->GetTagged(key, value, isolate_));
+        found, PyDict::Get(current_frame_->globals(isolate_), key, value,
+                           isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -496,7 +497,7 @@ void Interpreter::EvalCurrentFrame() {
 
     // 3. 查builtin符号表
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, isolate_->builtins()->GetTagged(key, value, isolate_));
+        found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -505,7 +506,7 @@ void Interpreter::EvalCurrentFrame() {
     // 4. 还没找到，抛错误
     Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
                         "name '%s' is not defined",
-                        Tagged<PyString>::cast(key)->buffer());
+                        Handle<PyString>::cast(key)->buffer());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BuildTuple, {
@@ -731,21 +732,21 @@ void Interpreter::EvalCurrentFrame() {
       PUSH(Tagged<PyObject>::null());
     }
 
-    Tagged<PyObject> key =
-        current_frame_->names(isolate_)->GetTagged(op_arg >> 1);
-    Tagged<PyObject> value;
+    Handle<PyObject> key =
+        current_frame_->names(isolate_)->Get(op_arg >> 1, isolate_);
+    Handle<PyObject> value;
     bool found = false;
 
     ASSIGN_GOTO_ON_EXCEPTION(
-        found,
-        current_frame_->globals(isolate_)->GetTagged(key, value, isolate_));
+        found, PyDict::Get(current_frame_->globals(isolate_), key, value,
+                           isolate_));
     if (found) {
       PUSH(value);
       break;
     }
 
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, isolate_->builtins()->GetTagged(key, value, isolate_));
+        found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -753,7 +754,7 @@ void Interpreter::EvalCurrentFrame() {
 
     Runtime_ThrowErrorf(isolate_, ExceptionType::kNameError,
                         "name '%s' is not defined",
-                        Tagged<PyString>::cast(key)->buffer());
+                        Handle<PyString>::cast(key)->buffer());
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ContainsOp, {

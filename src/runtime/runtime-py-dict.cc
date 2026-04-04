@@ -38,7 +38,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
     if (IsPyDict(input)) {
       auto src = Handle<PyDict>::cast(input);
       for (int64_t i = 0; i < src->capacity(); ++i) {
-        Handle<PyTuple> item = src->ItemAtIndex(i, isolate);
+        Handle<PyTuple> item = PyDict::ItemAtIndex(src, i, isolate);
         if (item.is_null()) {
           continue;
         }
@@ -77,7 +77,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
     Handle<PyDict> kw = Handle<PyDict>::cast(kwargs);
     if (!kw.is_null() && kw->occupied() != 0) {
       for (int64_t i = 0; i < kw->capacity(); ++i) {
-        Handle<PyTuple> item = kw->ItemAtIndex(i, isolate);
+        Handle<PyTuple> item = PyDict::ItemAtIndex(kw, i, isolate);
         if (item.is_null()) {
           continue;
         }
@@ -264,29 +264,32 @@ MaybeHandle<PyString> Runtime_NewDictRepr(Isolate* isolate,
   EscapableHandleScope scope(isolate);
 
   std::string repr("{");
+
   bool first = true;
   for (int64_t i = 0; i < dict->capacity(); ++i) {
-    Tagged<PyObject> key_tagged = dict->data(isolate)->Get(i << 1);
-    if (key_tagged.is_null()) {
+    Handle<PyObject> key = dict->KeyAtIndex(i, isolate);
+    if (key.is_null()) {
       continue;
     }
+
     if (!first) {
       repr.append(", ");
     }
     first = false;
+
+    Handle<PyObject> value = dict->ValueAtIndex(i, isolate);
+
     Handle<PyString> key_repr;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, key_repr,
-        PyObject::Repr(isolate, handle(key_tagged, isolate)));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, key_repr, PyObject::Repr(isolate, key));
     repr.append(key_repr->ToStdString());
     repr.append(": ");
+
     Handle<PyString> value_repr;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, value_repr,
-        PyObject::Repr(
-            isolate, handle(dict->data(isolate)->Get((i << 1) + 1), isolate)));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, value_repr,
+                               PyObject::Repr(isolate, value));
     repr.append(value_repr->ToStdString());
   }
+
   repr.push_back('}');
 
   return scope.Escape(PyString::FromStdString(isolate, repr));

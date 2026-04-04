@@ -504,7 +504,7 @@ MaybeHandle<PyObject> PyDictItemIteratorKlass::Virtual_Next(
     Handle<PyObject> self) {
   Handle<PyObject> result = NextFromIterator<PyDictItemIterator>(
       isolate, self, [](Isolate* isolate, Handle<PyDict> dict, int64_t index) {
-        return dict->ItemAtIndex(index, isolate);
+        return PyDict::ItemAtIndex(dict, index, isolate);
       });
   if (result.is_null()) {
     Runtime_ThrowError(isolate, ExceptionType::kStopIteration);

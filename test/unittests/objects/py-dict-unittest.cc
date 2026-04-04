@@ -27,31 +27,29 @@ TEST_F(PyDictTest, GetApiTriState) {
   ASSERT_FALSE(PyDict::Put(dict, key, value, isolate_).IsNothing());
 
   Handle<PyObject> miss_key = PyString::New(isolate_, "missing");
-  Tagged<PyObject> out_tagged;
+  Handle<PyObject> out_handle;
   bool found = true;
-  ASSERT_TRUE(dict->GetTagged(miss_key, out_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, miss_key, out_handle, isolate_).To(&found));
   EXPECT_FALSE(found);
-  EXPECT_TRUE(out_tagged.is_null());
+  EXPECT_TRUE(out_handle.is_null());
   EXPECT_FALSE(isolate_->HasPendingException());
 
-  ASSERT_TRUE(dict->GetTagged(key, out_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, key, out_handle, isolate_).To(&found));
   EXPECT_TRUE(found);
-  EXPECT_FALSE(out_tagged.is_null());
+  EXPECT_FALSE(out_handle.is_null());
   bool eq = false;
-  ASSERT_TRUE(
-      PyObject::EqualBool(isolate_, handle(out_tagged, isolate_), value).To(&eq));
+  ASSERT_TRUE(PyObject::EqualBool(isolate_, out_handle, value).To(&eq));
   EXPECT_TRUE(eq);
 
-  Handle<PyObject> out_handle;
   ASSERT_TRUE(PyDict::Get(dict, key, out_handle, isolate_).To(&found));
   EXPECT_TRUE(found);
   EXPECT_FALSE(out_handle.is_null());
 
   Handle<PyObject> bad_key = PyDict::New(isolate_);
-  out_tagged = Tagged<PyObject>::null();
-  EXPECT_TRUE(dict->GetTagged(bad_key, out_tagged, isolate_).IsNothing());
+  out_handle = Handle<PyObject>::null();
+  EXPECT_TRUE(PyDict::Get(dict, bad_key, out_handle, isolate_).IsNothing());
   EXPECT_TRUE(isolate_->HasPendingException());
-  EXPECT_TRUE(out_tagged.is_null());
+  EXPECT_TRUE(out_handle.is_null());
   isolate_->exception_state()->Clear();
 }
 
@@ -69,11 +67,10 @@ TEST_F(PyDictTest, BasicOperations) {
   EXPECT_EQ(dict->occupied(), 1);
 
   // Get
-  Tagged<PyObject> res1_tagged;
+  Handle<PyObject> res1;
   bool found = false;
-  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, key1, res1, isolate_).To(&found));
   ASSERT_TRUE(found);
-  Handle<PyObject> res1 = handle(res1_tagged, isolate_);
   EXPECT_FALSE(res1.is_null());
   Handle<PyObject> eq_res;
   ASSERT_TRUE(PyObject::Equal(isolate_, res1, val1).ToHandle(&eq_res));
@@ -91,9 +88,8 @@ TEST_F(PyDictTest, BasicOperations) {
   Handle<PyObject> val2(PySmi::FromInt(200), isolate_);
   ASSERT_FALSE(PyDict::Put(dict, key1, val2, isolate_).IsNothing());
   EXPECT_EQ(dict->occupied(), 1);  // Size shouldn't change
-  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, key1, res1, isolate_).To(&found));
   ASSERT_TRUE(found);
-  res1 = handle(res1_tagged, isolate_);
   bool eq = false;
   ASSERT_TRUE(PyObject::EqualBool(isolate_, res1, val2).To(&eq));
   EXPECT_TRUE(eq);
@@ -105,9 +101,9 @@ TEST_F(PyDictTest, BasicOperations) {
   EXPECT_EQ(dict->occupied(), 0);
   ASSERT_TRUE(PyDict::ContainsKey(dict, key1, isolate_).To(&contains));
   EXPECT_TRUE(!contains);
-  ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, key1, res1, isolate_).To(&found));
   EXPECT_FALSE(found);
-  EXPECT_TRUE(res1_tagged.is_null());
+  EXPECT_TRUE(res1.is_null());
 }
 
 TEST_F(PyDictTest, CollisionAndShift) {
@@ -141,11 +137,10 @@ TEST_F(PyDictTest, CollisionAndShift) {
     bool exists = false;
     ASSERT_TRUE(PyDict::ContainsKey(dict, key, isolate_).To(&exists));
     EXPECT_TRUE(exists);
-    Tagged<PyObject> val_tagged;
+    Handle<PyObject> val;
     bool found = false;
-    ASSERT_TRUE(dict->GetTagged(key, val_tagged, isolate_).To(&found));
+    ASSERT_TRUE(PyDict::Get(dict, key, val, isolate_).To(&found));
     ASSERT_TRUE(found);
-    Handle<PyObject> val = handle(val_tagged, isolate_);
     EXPECT_EQ(PySmi::ToInt(Handle<PySmi>::cast(val)), i * 10);
   }
 

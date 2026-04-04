@@ -25,73 +25,69 @@ namespace {
 
 constexpr double kMaxLoadFactor = 0.75;
 
-#define GET_DICT_KEY(dict, index) (dict->data(isolate)->Get(index << 1))
-#define GET_DICT_VAL(dict, index) (dict->data(isolate)->Get((index << 1) + 1))
+void SetDictKey(Handle<PyDict> dict, int64_t index, Handle<PyObject> key) {
+  dict->data_tagged()->Set(index << 1, key);
+}
 
-#define SET_DICT_KEY(dict, index, key) \
-  (dict->data(isolate)->Set(index << 1, key))
-#define SET_DICT_VAL(dict, index, value) \
-  (dict->data(isolate)->Set((index << 1) + 1, value))
+void SetDictVal(Handle<PyDict> dict, int64_t index, Handle<PyObject> value) {
+  dict->data_tagged()->Set((index << 1) + 1, value);
+}
 
 uint64_t GetProbe(uint64_t index, uint64_t mask) {
   return (index + 1) & mask;
 }
 
-template <typename DictT>
-Maybe<int64_t> FindSlot(DictT dict,
-                        Tagged<PyObject> key,
+Maybe<int64_t> FindSlot(Handle<PyDict> dict,
+                        Handle<PyObject> key,
                         bool* found,
                         Isolate* isolate) {
   HandleScope scope(isolate);
-  Handle<PyObject> key_handle(key, isolate);
 
   uint64_t hash = 0;
-  if (!PyObject::Hash(isolate, key_handle).To(&hash)) {
+  if (!PyObject::Hash(isolate, key).To(&hash)) {
     return kNullMaybe;
   }
 
   uint64_t mask = dict->capacity() - 1;
   uint64_t index = hash & mask;
 
-  Tagged<PyObject> curr_key = GET_DICT_KEY(dict, index);
+  Handle<PyObject> curr_key = dict->KeyAtIndex(index, isolate);
   while (!curr_key.is_null()) {
     bool is_equal = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, is_equal,
-        PyObject::EqualBool(isolate, handle(curr_key, isolate), key_handle));
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, is_equal,
+                               PyObject::EqualBool(isolate, curr_key, key));
 
     if (is_equal) {
       *found = true;
       return Maybe<int64_t>(static_cast<int64_t>(index));
     }
     index = GetProbe(index, mask);
-    curr_key = GET_DICT_KEY(dict, index);
+    curr_key = dict->KeyAtIndex(index, isolate);
   }
 
   *found = false;
   return Maybe<int64_t>(static_cast<int64_t>(index));
 }
 
-template <typename DictT>
-Maybe<bool> RehashInto(DictT dict,
+Maybe<bool> RehashInto(Handle<PyDict> dict,
                        Handle<FixedArray> new_data,
                        uint64_t new_mask,
                        int64_t skip_index,
                        Isolate* isolate) {
+  HandleScope scope(isolate);
+
   for (int64_t i = 0; i < dict->capacity(); ++i) {
     if (i == skip_index) {
       continue;
     }
 
-    Tagged<PyObject> key = GET_DICT_KEY(dict, i);
+    Handle<PyObject> key = dict->KeyAtIndex(i, isolate);
     if (key.is_null()) {
       continue;
     }
 
     uint64_t hash = 0;
-    if (!PyObject::Hash(isolate, handle(key, isolate)).To(&hash)) {
-      return kNullMaybe;
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, hash, PyObject::Hash(isolate, key));
 
     uint64_t new_index = hash & new_mask;
     while (!new_data->Get(new_index << 1).is_null()) {
@@ -99,8 +95,9 @@ Maybe<bool> RehashInto(DictT dict,
     }
 
     new_data->Set(new_index << 1, key);
-    new_data->Set((new_index << 1) + 1, GET_DICT_VAL(dict, i));
+    new_data->Set((new_index << 1) + 1, dict->ValueAtIndex(i, isolate));
   }
+
   return Maybe<bool>(true);
 }
 
@@ -122,32 +119,42 @@ Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
 //////////////////////////////////////////////////////////////////////////
 
 int64_t PyDict::capacity() const {
-  return Tagged<FixedArray>::cast(data_)->capacity() >> 1;
+  return data_tagged()->capacity() >> 1;
 }
 
 Handle<PyObject> PyDict::KeyAtIndex(int64_t index, Isolate* isolate) const {
-  return handle(data(isolate)->Get(index << 1), isolate);
+  DisallowHeapAllocation no_alloc(isolate);
+  return handle(data_tagged()->Get(index << 1), isolate);
 }
 
 Handle<PyObject> PyDict::ValueAtIndex(int64_t index, Isolate* isolate) const {
-  return handle(data(isolate)->Get((index << 1) + 1), isolate);
+  DisallowHeapAllocation no_alloc(isolate);
+  return handle(data_tagged()->Get((index << 1) + 1), isolate);
 }
 
-Handle<PyTuple> PyDict::ItemAtIndex(int64_t index, Isolate* isolate) const {
-  auto key = handle(data(isolate)->Get(index << 1), isolate);
+// static
+Handle<PyTuple> PyDict::ItemAtIndex(Handle<PyDict> dict,
+                                    int64_t index,
+                                    Isolate* isolate) {
+  Handle<PyObject> key = dict->KeyAtIndex(index, isolate);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
-  auto result = PyTuple::New(isolate, 2);
-  auto value = handle(data(isolate)->Get((index << 1) + 1), isolate);
+
+  Handle<PyTuple> result = PyTuple::New(isolate, 2);
+  Handle<PyObject> value = dict->ValueAtIndex(index, isolate);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
   return result;
 }
 
 Handle<FixedArray> PyDict::data(Isolate* isolate) const {
-  return Handle<FixedArray>(Tagged<FixedArray>::cast(data_), isolate);
+  return handle(data_tagged(), isolate);
+}
+
+Tagged<FixedArray> PyDict::data_tagged() const {
+  return Tagged<FixedArray>::cast(data_);
 }
 
 void PyDict::set_data(Handle<FixedArray> data) {
@@ -164,7 +171,7 @@ Maybe<bool> PyDict::ContainsKey(Handle<PyDict> dict,
                                 Handle<PyObject> key,
                                 Isolate* isolate) {
   bool found = false;
-  RETURN_ON_EXCEPTION(isolate, FindSlot(dict, *key, &found, isolate));
+  RETURN_ON_EXCEPTION(isolate, FindSlot(dict, key, &found, isolate));
   return Maybe<bool>(found);
 }
 
@@ -180,62 +187,15 @@ Maybe<bool> PyDict::Get(Handle<PyDict> dict,
   bool found = false;
   int64_t index = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(dict, *key, &found, isolate));
+                             FindSlot(dict, key, &found, isolate));
 
   if (!found) {
     return Maybe<bool>(false);
   }
 
-  out = handle(GET_DICT_VAL(dict, index), isolate);
+  out = dict->ValueAtIndex(index, isolate);
   assert(!out.is_null());
-  return Maybe<bool>(true);
-}
 
-Maybe<bool> PyDict::Get(Tagged<PyObject> key,
-                        Handle<PyObject>& out,
-                        Isolate* isolate) const {
-  assert(!key.is_null());
-
-  out = Handle<PyObject>::null();
-
-  bool found = false;
-  int64_t index = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(this, key, &found, isolate));
-
-  if (!found) {
-    return Maybe<bool>(false);
-  }
-
-  out = handle(GET_DICT_VAL(this, index), isolate);
-  assert(!out.is_null());
-  return Maybe<bool>(true);
-}
-
-Maybe<bool> PyDict::GetTagged(Handle<PyObject> key,
-                              Tagged<PyObject>& out,
-                              Isolate* isolate) const {
-  return GetTagged(*key, out, isolate);
-}
-
-Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
-                              Tagged<PyObject>& out,
-                              Isolate* isolate) const {
-  assert(!key.is_null());
-
-  out = Tagged<PyObject>::null();
-
-  bool found = false;
-  int64_t index = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(this, key, &found, isolate));
-
-  if (!found) {
-    return Maybe<bool>(false);
-  }
-
-  out = GET_DICT_VAL(this, index);
-  assert(!out.is_null());
   return Maybe<bool>(true);
 }
 
@@ -248,7 +208,7 @@ Maybe<bool> PyDict::Remove(Handle<PyDict> dict,
   bool found = false;
   int64_t index = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(dict, *key, &found, isolate));
+                             FindSlot(dict, key, &found, isolate));
   if (!found) {
     return Maybe<bool>(false);
   }
@@ -284,16 +244,21 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
   bool found = false;
   int64_t index = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(dict, *key, &found, isolate));
+                             FindSlot(dict, key, &found, isolate));
 
-  if (found) {
-    SET_DICT_VAL(dict, index, *value);
-    return Maybe<bool>(false);
+  {
+    DisallowHeapAllocation no_alloc(isolate);
+
+    if (found) {
+      SetDictVal(dict, index, value);
+      return Maybe<bool>(false);
+    }
+
+    SetDictKey(dict, index, key);
+    SetDictVal(dict, index, value);
+    ++dict->occupied_;
   }
 
-  SET_DICT_KEY(dict, index, *key);
-  SET_DICT_VAL(dict, index, *value);
-  ++dict->occupied_;
   return Maybe<bool>(true);
 }
 
@@ -304,10 +269,9 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
   int64_t out_length = dict->occupied();
   Handle<PyTuple> keys = PyTuple::New(isolate, out_length);
 
-  Handle<FixedArray> data = dict->data(isolate);
   int64_t out_index = 0;
   for (auto i = 0; i < dict->capacity(); ++i) {
-    Tagged<PyObject> key = data->Get(i << 1);
+    Handle<PyObject> key = dict->KeyAtIndex(i, isolate);
     if (key.is_null()) {
       continue;
     }

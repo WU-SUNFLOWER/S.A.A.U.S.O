@@ -172,12 +172,11 @@ TEST_F(GcTest, CopyGcTestForPyDict) {
     Handle<PyObject> expected_value = PyString::New(
         isolate_, std::string("v").append(std::to_string(i)).c_str());
 
-    Tagged<PyObject> actual_value_tagged;
+    Handle<PyObject> actual_value;
     bool found = false;
     ASSERT_TRUE(
-        dict->GetTagged(query_key, actual_value_tagged, isolate_).To(&found));
+        PyDict::Get(dict, query_key, actual_value, isolate_).To(&found));
     ASSERT_TRUE(found);
-    auto actual_value = handle(actual_value_tagged, isolate_);
     ASSERT_FALSE(actual_value.is_null());
     Handle<PyObject> eq_res;
     ASSERT_TRUE(PyObject::Equal(isolate_, actual_value, expected_value)
@@ -239,11 +238,10 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
   EXPECT_NE(dict_addr_before, (*dict).ptr());
   EXPECT_NE(list_addr_before, (*list).ptr());
 
-  Tagged<PyObject> payload_tagged;
+  Handle<PyObject> payload;
   bool found = false;
-  ASSERT_TRUE(dict->GetTagged(key, payload_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(dict, key, payload, isolate_).To(&found));
   ASSERT_TRUE(found);
-  auto payload = handle(payload_tagged, isolate_);
   ASSERT_FALSE(payload.is_null());
   auto payload_list = Handle<PyList>::cast(payload);
   EXPECT_EQ(payload_list->length(), kCount);

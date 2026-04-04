@@ -26,7 +26,9 @@ class PyDict : public PyObject {
 
   Handle<PyObject> KeyAtIndex(int64_t index, Isolate* isolate) const;
   Handle<PyObject> ValueAtIndex(int64_t index, Isolate* isolate) const;
-  Handle<PyTuple> ItemAtIndex(int64_t index, Isolate* isolate) const;
+  static Handle<PyTuple> ItemAtIndex(Handle<PyDict> dict,
+                                     int64_t index,
+                                     Isolate* isolate);
 
   static Maybe<bool> ContainsKey(Handle<PyDict> dict,
                                  Handle<PyObject> key,
@@ -41,15 +43,6 @@ class PyDict : public PyObject {
                          Handle<PyObject> key,
                          Handle<PyObject>& out,
                          Isolate* isolate);
-  Maybe<bool> Get(Tagged<PyObject> key,
-                  Handle<PyObject>& out,
-                  Isolate* isolate) const;
-  Maybe<bool> GetTagged(Handle<PyObject> key,
-                        Tagged<PyObject>& out,
-                        Isolate* isolate) const;
-  Maybe<bool> GetTagged(Tagged<PyObject> key,
-                        Tagged<PyObject>& out,
-                        Isolate* isolate) const;
 
   static Maybe<bool> Remove(Handle<PyDict> dict,
                             Handle<PyObject> key,
@@ -65,6 +58,7 @@ class PyDict : public PyObject {
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict, Isolate* isolate);
 
   Handle<FixedArray> data(Isolate* isolate) const;
+  Tagged<FixedArray> data_tagged() const;
   void set_data(Handle<FixedArray> data);
   void set_data(Tagged<FixedArray> data);
 

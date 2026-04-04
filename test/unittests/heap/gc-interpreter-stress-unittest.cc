@@ -153,4 +153,151 @@ print(cnt)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, SysgcInsideCustomHashShouldNotBreakDictOperations) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+class K:
+  def __init__(self, value):
+    self.value = value
+
+  def __hash__(self):
+    tmp = []
+    i = 0
+    while i < 80:
+      tmp.append(str(self.value + i))
+      i += 1
+    sysgc()
+    return self.value
+
+  def __eq__(self, other):
+    return self.value == other.value
+
+d = {}
+i = 0
+while i < 40:
+  d[K(i)] = i * 10
+  i += 1
+
+print(len(d))
+print(d[K(7)])
+print(d.pop(K(7)))
+print(len(d))
+print(d[K(39)])
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(40));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(70));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(70));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(39));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(390));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SysgcInsideCustomReprShouldNotBreakDictRepr) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+repr_calls = 0
+
+class K:
+  def __hash__(self):
+    return 1
+
+  def __repr__(self):
+    global repr_calls
+    tmp = []
+    i = 0
+    while i < 80:
+      tmp.append(str(i))
+      i += 1
+    sysgc()
+    repr_calls += 1
+    return "K"
+
+class V:
+  def __repr__(self):
+    global repr_calls
+    tmp = []
+    i = 0
+    while i < 80:
+      tmp.append(str(i + 1))
+      i += 1
+    sysgc()
+    repr_calls += 10
+    return "V"
+
+d = {K(): V()}
+s = repr(d)
+print(repr_calls)
+print(len(s))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(11));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(6));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SysgcInsideDictKeysIterationShouldNotBreakViews) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+d = {"x": 1, "y": 2, "z": 3}
+view = d.keys()
+sysgc()
+total = 0
+cnt = 0
+for k in view:
+  t = []
+  t.append(k)
+  t.append(str(cnt))
+  sysgc()
+  total += len(k)
+  cnt += 1
+print(total)
+print(cnt)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, SysgcInsideDictItemsIterationShouldNotBreakViews) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+d = {"x": 1, "y": 2, "z": 3}
+view = d.items()
+sysgc()
+sum = 0
+cnt = 0
+for item in view:
+  t = []
+  t.append(str(item[0]))
+  t.append(str(item[1]))
+  sysgc()
+  sum += item[1]
+  cnt += 1
+print(sum)
+print(cnt)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(6));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

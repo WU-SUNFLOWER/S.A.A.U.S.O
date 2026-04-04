@@ -47,7 +47,7 @@ MaybeHandle<PyObject> ValidateExecKeywordArguments(
     Handle<PyObject> globals_key,
     Handle<PyObject> locals_key) {
   for (auto i = 0; i < kwargs->capacity(); ++i) {
-    auto item = kwargs->ItemAtIndex(i, isolate);
+    auto item = PyDict::ItemAtIndex(kwargs, i, isolate);
     if (item.is_null()) {
       continue;
     }
