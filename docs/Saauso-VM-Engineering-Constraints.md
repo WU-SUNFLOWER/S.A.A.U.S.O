@@ -10,6 +10,7 @@
 - **跨 HandleScope 返回要 Escape**：常见模式是在函数内创建 `EscapableHandleScope scope;`，然后 `return scope.Escape(result);`。
 - **Handle 系统依赖具体的 Isolate 实例**：在创建 `HandleScope`/ `Handle`，或使用 `Global::Get()` 时，必须提供有效的 Isolate 实例指针，并确保 `Handle` 所指对象的确位于该 Isolate 的虚拟机堆上。
 - **Tagged 等价于“带额外语义的裸指针”**：除永久区对象与短生命周期临时值外，不要把 `Tagged` 长时间放在栈/全局中；如果需要跨作用域/长期持有，请使用 `Global<T>`。
+- **只要路径可能触发 Python 代码、分配或异常传播，就不得依赖裸 `this`、裸 `Tagged`、裸 `buffer` 或裸尾随元素指针跨该路径存活**：这条原则适用于基础容器、字符串、对象属性访问与所有 runtime helper。
 
 ### 1.1 Global（长期句柄，类似 v8::Global）
 
