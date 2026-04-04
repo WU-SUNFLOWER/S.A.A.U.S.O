@@ -160,6 +160,10 @@
 - 当前依赖的假设：
 - 字符串常量主要驻留在 MetaSpace，因此 minor GC 不需要主动遍历它
 
+- 当前决议：
+- Phase 0 保持这条根扫描关闭
+- 通过测试与文档显式保护“`StringTable` 条目驻留 MetaSpace”这一前提，而不是提前扩大 root closure
+
 - 风险：
 - 这是当前最典型的“未来 major GC 会出问题”的入口之一
 - 只要字符串对象分配策略变化，这里就必须立刻打开显式 root tracing
@@ -173,12 +177,11 @@
 
 - 当前状态：
 - `TryCatch` 自身通过 `try_catch_top_` 形成链表
-- 捕获到的异常值保存为 `Local<Value>`
+- 捕获到的异常值当前已经升级为内部长期句柄持有
 
 - 风险：
-- `Local<Value>` 本质是 handle slot 地址，不是 `Global`
-- 它的安全性依赖外层 handle scope 生命周期，而不是 `Heap::IterateRoots()` 的直接成员扫描
-- 这在 future major GC / API 边界 / 跨层异常传播中必须持续复核
+- 原先 `Local<Value>` 路线存在 GC 安全隐患；Phase 0 已通过长期句柄改造予以收口
+- 后续仍需复核 `try_catch_top_` 链表本身的语义边界，但异常对象保活不再依赖外层局部 handle 生命周期
 
 ## 5. 容器持有审计
 
