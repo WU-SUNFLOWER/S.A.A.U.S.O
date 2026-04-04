@@ -95,12 +95,12 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
     Handle<PyObject>& locals,
     bool globals_from_positional,
     bool locals_from_positional) {
-  Tagged<PyObject> globals_from_kwargs;
+  Handle<PyObject> globals_from_kwargs;
 
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, found,
-      kwargs->GetTagged(globals_key, globals_from_kwargs, isolate));
+      PyDict::Get(kwargs, globals_key, globals_from_kwargs, isolate));
 
   if (found) {
     if (globals_from_positional) {
@@ -108,7 +108,7 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
                          "exec() got multiple values for argument 'globals'");
       return kNullMaybeHandle;
     }
-    globals = handle(globals_from_kwargs, isolate);
+    globals = globals_from_kwargs;
   }
 
   Handle<PyObject> locals_from_kwargs;

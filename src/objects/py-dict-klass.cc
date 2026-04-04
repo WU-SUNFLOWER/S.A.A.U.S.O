@@ -148,28 +148,30 @@ Maybe<bool> PyDictKlass::Virtual_Equal(Isolate* isolate,
   }
 
   for (int64_t i = 0; i < d1->capacity(); ++i) {
-    auto k1 = d1->data(isolate)->Get(i << 1);
+    HandleScope scope(isolate);
+
+    Handle<PyObject> k1 = d1->KeyAtIndex(i, isolate);
     if (!k1.is_null()) {
-      auto v1 = d1->data(isolate)->Get((i << 1) + 1);
-      Tagged<PyObject> v2_tagged;
+      Handle<PyObject> v1 = d1->ValueAtIndex(i, isolate);
+
+      Handle<PyObject> v2;
       bool found = false;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                                 d2->GetTagged(k1, v2_tagged, isolate));
+                                 PyDict::Get(d2, k1, v2, isolate));
       if (!found) {
         return Maybe<bool>(false);
       }
 
       bool eq;
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate, eq,
-          PyObject::EqualBool(isolate, handle(v1, isolate),
-                              handle(v2_tagged, isolate)));
+      ASSIGN_RETURN_ON_EXCEPTION(isolate, eq,
+                                 PyObject::EqualBool(isolate, v1, v2));
 
       if (!eq) {
         return Maybe<bool>(false);
       }
     }
   }
+
   return Maybe<bool>(true);
 }
 

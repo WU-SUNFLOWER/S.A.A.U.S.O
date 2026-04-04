@@ -76,7 +76,8 @@ MaybeHandle<PyString> ModuleNameResolver::ResolveRelativeImportName(
     return scope.Escape(base);
   }
 
-  Handle<PyString> fullname = PyString::Append(base, ST(dot, isolate_), isolate_);
+  Handle<PyString> fullname =
+      PyString::Append(base, ST(dot, isolate_), isolate_);
   fullname = PyString::Append(fullname, name, isolate_);
   return scope.Escape(fullname);
 }
@@ -104,23 +105,24 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
     return scope.Escape(Handle<PyString>::cast(package_obj));
   }
 
-  Tagged<PyObject> name_obj;
-  if (!globals->GetTagged(ST(name, isolate_), name_obj, isolate_).To(&found)) {
-    return kNullMaybe;
-  }
+  Handle<PyObject> name_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, found,
+      PyDict::Get(globals, ST(name, isolate_), name_obj, isolate_));
+
   if (!found || !IsPyString(name_obj)) {
     Runtime_ThrowError(isolate_, ExceptionType::kImportError,
                        "missing __name__ in globals");
     return kNullMaybe;
   }
 
-  Handle<PyString> name_str =
-      Handle<PyString>::cast(handle(name_obj, isolate_));
+  Handle<PyString> name_str = Handle<PyString>::cast(name_obj);
 
-  Tagged<PyObject> path_obj;
-  if (!globals->GetTagged(ST(path, isolate_), path_obj, isolate_).To(&found)) {
-    return kNullMaybe;
-  }
+  Handle<PyObject> path_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, found,
+      PyDict::Get(globals, ST(path, isolate_), path_obj, isolate_));
+
   bool is_package = found;
   if (is_package) {
     return scope.Escape(name_str);

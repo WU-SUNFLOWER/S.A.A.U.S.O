@@ -145,14 +145,12 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   ASSERT_FALSE(imported_module.IsEmpty());
 
   Handle<PyDict> modules = isolate()->module_manager()->modules();
-  Tagged<PyObject> pkg_module_tagged;
+  Handle<PyObject> pkg_module;
   bool found = false;
-  ASSERT_TRUE(modules
-                  ->GetTagged(PyString::New(isolate_, "pkg"), pkg_module_tagged,
-                              isolate_)
+  ASSERT_TRUE(PyDict::Get(modules, PyString::New(isolate_, "pkg"), pkg_module,
+                          isolate_)
                   .To(&found));
   ASSERT_TRUE(found);
-  Handle<PyObject> pkg_module = handle(pkg_module_tagged, isolate_);
   ASSERT_FALSE(pkg_module.is_null());
 
   Handle<PyDict> pkg_dict = PyObject::GetProperties(pkg_module, isolate_);
@@ -161,25 +159,22 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
   Handle<PyString> sub_short_name = PyString::New(isolate_, "sub");
   bool removed = false;
   ASSERT_TRUE(PyDict::Remove(pkg_dict, sub_short_name, isolate_).To(&removed));
-  Tagged<PyObject> bound_tagged;
-  ASSERT_TRUE(
-      pkg_dict->GetTagged(sub_short_name, bound_tagged, isolate_).To(&found));
+  Handle<PyObject> bound;
+  ASSERT_TRUE(PyDict::Get(pkg_dict, sub_short_name, bound, isolate_)
+                  .To(&found));
   EXPECT_FALSE(found);
-  EXPECT_TRUE(bound_tagged.is_null());
+  EXPECT_TRUE(bound.is_null());
 
   imported_module = isolate()->module_manager()->ImportModule(
       name, non_empty_fromlist, 0, Handle<PyDict>::null());
   ASSERT_FALSE(imported_module.IsEmpty());
 
-  Tagged<PyObject> pkg_sub_module_tagged;
-  ASSERT_TRUE(
-      modules->GetTagged(name, pkg_sub_module_tagged, isolate_).To(&found));
+  Handle<PyObject> pkg_sub_module;
+  ASSERT_TRUE(PyDict::Get(modules, name, pkg_sub_module, isolate_).To(&found));
   ASSERT_TRUE(found);
-  Handle<PyObject> pkg_sub_module = handle(pkg_sub_module_tagged, isolate_);
-  ASSERT_TRUE(
-      pkg_dict->GetTagged(sub_short_name, bound_tagged, isolate_).To(&found));
+  ASSERT_TRUE(PyDict::Get(pkg_dict, sub_short_name, bound, isolate_)
+                  .To(&found));
   ASSERT_TRUE(found);
-  Handle<PyObject> bound = handle(bound_tagged, isolate_);
   ASSERT_FALSE(pkg_sub_module.is_null());
   ASSERT_FALSE(bound.is_null());
   bool eq = false;
