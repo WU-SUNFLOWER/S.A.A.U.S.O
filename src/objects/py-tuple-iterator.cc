@@ -26,4 +26,13 @@ Handle<PyTuple> PyTupleIterator::owner(Isolate* isolate) const {
   return Handle<PyTuple>::cast(handle(owner_, isolate));
 }
 
+void PyTupleIterator::set_owner(Handle<PyTuple> owner) {
+  set_owner(*owner);
+}
+
+void PyTupleIterator::set_owner(Tagged<PyTuple> owner) {
+  owner_ = owner;
+  WRITE_BARRIER(Tagged<PyObject>(this), &owner_, owner);
+}
+
 }  // namespace saauso::internal
