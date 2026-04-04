@@ -81,10 +81,10 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Contains
   bool contains = false;
-  ASSERT_TRUE(dict->ContainsKey(key1, isolate_).To(&contains));
+  ASSERT_TRUE(PyDict::ContainsKey(dict, key1, isolate_).To(&contains));
   EXPECT_TRUE(contains);
   Handle<PyObject> key2 = PyString::New(isolate_, "key2");
-  ASSERT_TRUE(dict->ContainsKey(key2, isolate_).To(&contains));
+  ASSERT_TRUE(PyDict::ContainsKey(dict, key2, isolate_).To(&contains));
   EXPECT_TRUE(!contains);
 
   // Update
@@ -100,10 +100,10 @@ TEST_F(PyDictTest, BasicOperations) {
 
   // Remove
   bool removed = false;
-  ASSERT_TRUE(dict->Remove(key1, isolate_).To(&removed));
+  ASSERT_TRUE(PyDict::Remove(dict, key1, isolate_).To(&removed));
   ASSERT_TRUE(removed);
   EXPECT_EQ(dict->occupied(), 0);
-  ASSERT_TRUE(dict->ContainsKey(key1, isolate_).To(&contains));
+  ASSERT_TRUE(PyDict::ContainsKey(dict, key1, isolate_).To(&contains));
   EXPECT_TRUE(!contains);
   ASSERT_TRUE(dict->GetTagged(key1, res1_tagged, isolate_).To(&found));
   EXPECT_FALSE(found);
@@ -130,7 +130,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool removed = false;
-    ASSERT_TRUE(dict->Remove(key, isolate_).To(&removed));
+    ASSERT_TRUE(PyDict::Remove(dict, key, isolate_).To(&removed));
   }
 
   EXPECT_EQ(dict->occupied(), count / 2);
@@ -139,7 +139,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 1; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool exists = false;
-    ASSERT_TRUE(dict->ContainsKey(key, isolate_).To(&exists));
+    ASSERT_TRUE(PyDict::ContainsKey(dict, key, isolate_).To(&exists));
     EXPECT_TRUE(exists);
     Tagged<PyObject> val_tagged;
     bool found = false;
@@ -153,7 +153,7 @@ TEST_F(PyDictTest, CollisionAndShift) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool exists = false;
-    ASSERT_TRUE(dict->ContainsKey(key, isolate_).To(&exists));
+    ASSERT_TRUE(PyDict::ContainsKey(dict, key, isolate_).To(&exists));
     EXPECT_TRUE(!exists);
   }
 }
@@ -189,7 +189,7 @@ TEST_F(PyDictTest, Equality) {
 
   // d2 = {"b": 2} (Different size)
   bool removed = false;
-  ASSERT_TRUE(d2->Remove(k1, isolate_).To(&removed));
+  ASSERT_TRUE(PyDict::Remove(d2, k1, isolate_).To(&removed));
   ASSERT_TRUE(PyObject::EqualBool(isolate_, d1, d2).To(&eq));
   EXPECT_FALSE(eq);
 }
@@ -244,7 +244,7 @@ TEST_F(PyDictTest, GetKeyTuple) {
   for (int i = 0; i < count; i += 2) {
     Handle<PyObject> key(PySmi::FromInt(i), isolate_);
     bool removed = false;
-    ASSERT_TRUE(dict->Remove(key, isolate_).To(&removed));
+    ASSERT_TRUE(PyDict::Remove(dict, key, isolate_).To(&removed));
   }
 
   Handle<PyTuple> keys_after_remove = PyDict::GetKeyTuple(dict, isolate_);
