@@ -215,6 +215,7 @@ TEST_F(GcTest, StringTableEntriesStayReachableAcrossGc) {
 
   Handle<PyString> before = ST(builtins, isolate_);
   Address before_addr = (*before).ptr();
+  EXPECT_TRUE(isolate_->heap()->meta_space().Contains(before_addr));
 
   AllocateEphemeralStrings(isolate_, 2000);
   isolate_->heap()->CollectGarbage();
@@ -223,6 +224,7 @@ TEST_F(GcTest, StringTableEntriesStayReachableAcrossGc) {
 
   Handle<PyString> after = ST(builtins, isolate_);
   EXPECT_EQ(before_addr, (*after).ptr());
+  EXPECT_TRUE(isolate_->heap()->meta_space().Contains((*after).ptr()));
   EXPECT_EQ(std::strncmp(after->buffer(), "__builtins__", after->length()), 0);
 }
 
