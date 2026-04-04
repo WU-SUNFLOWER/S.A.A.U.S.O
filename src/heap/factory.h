@@ -91,6 +91,11 @@ class Factory {
 
   Handle<PyString> NewConsString(Handle<PyString> left, Handle<PyString> right);
 
+  Handle<PyString> NewCopiedSubstring(Handle<PyString> str,
+                                      int64_t begin,
+                                      int64_t length,
+                                      bool in_meta_space);
+
   Handle<PyCodeObject> NewPyCodeObject();
 
   MaybeHandle<PyFunction> NewPyFunction();
