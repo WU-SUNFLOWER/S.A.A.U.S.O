@@ -300,4 +300,92 @@ print(cnt)
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, StringSubscrShouldRemainStableUnderAllocationPressure) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+s = "abcdef"
+checksum = 0
+i = 0
+while i < 200:
+  tmp = []
+  j = 0
+  while j < 120:
+    tmp.append(str(i + j))
+    j += 1
+  ch = s[3]
+  checksum += len(ch)
+  i += 1
+print(ch)
+print(checksum)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "d"));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(200));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, StringUpperShouldRemainStableUnderAllocationPressure) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+s = "hello"
+checksum = 0
+i = 0
+while i < 200:
+  tmp = []
+  j = 0
+  while j < 120:
+    tmp.append(str(i + j))
+    j += 1
+  upper_s = s.upper()
+  checksum += len(upper_s)
+  i += 1
+print(upper_s)
+print(checksum)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "HELLO"));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1000));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest,
+       SubclassStringCopyShouldRemainStableUnderAllocationPressure) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+class S(str):
+  pass
+
+base = "clone-me"
+checksum = 0
+i = 0
+while i < 200:
+  tmp = []
+  j = 0
+  while j < 120:
+    tmp.append(str(i + j))
+    j += 1
+  copied = S(base)
+  checksum += len(copied)
+  i += 1
+print(copied)
+print(checksum)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "clone-me"));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1600));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal

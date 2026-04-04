@@ -58,14 +58,6 @@ Handle<PyString> PyString::New(Isolate* isolate,
                                        in_meta_space);
 }
 
-// static
-Handle<PyString> PyString::Clone(Isolate* isolate,
-                                 Handle<PyString> other,
-                                 bool in_meta_space) {
-  return isolate->factory()->NewString(other->buffer(), other->length(),
-                                       in_meta_space);
-}
-
 ////////////////////////////////////////////////////////////
 
 // static
@@ -207,15 +199,7 @@ Handle<PyString> PyString::Slice(Handle<PyString> self,
                                  int64_t from,
                                  int64_t to,
                                  Isolate* isolate) {
-  EscapableHandleScope scope(isolate);
-
-  assert(0 <= from && from <= to && to < self->length_);
-
-  int sliced_length = to - from + 1;
-  Handle<PyString> result = PyString::New(isolate, sliced_length);
-
-  std::memcpy(result->writable_buffer(), self->buffer() + from, sliced_length);
-  return scope.Escape(result);
+  return isolate->factory()->NewCopiedSubstring(self, from, to - from + 1);
 }
 
 Handle<PyString> PyString::Append(Handle<PyString> self,

@@ -10,6 +10,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
@@ -75,9 +76,9 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Upper) {
     return kNullMaybeHandle;
   }
 
-  auto str_object = Handle<PyString>::cast(self);
-  auto result =
-      PyString::New(isolate, str_object->buffer(), str_object->length());
+  Handle<PyString> str_object = Handle<PyString>::cast(self);
+  Handle<PyString> result = isolate->factory()->NewCopiedSubstring(
+      str_object, 0, str_object->length());
 
   for (auto i = 0; i < result->length(); ++i) {
     char ch = result->Get(i);

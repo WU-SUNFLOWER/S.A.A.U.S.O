@@ -317,11 +317,24 @@ Handle<PyString> Factory::NewString(const char* source,
 }
 
 Handle<PyString> Factory::NewStringLike(Tagged<Klass> klass_self,
-                                        const char* source,
-                                        int64_t str_length) {
+                                        Handle<PyString> source) {
   EscapableHandleScope scope(isolate_);
-  Handle<PyString> object = NewRawStringLike(klass_self, str_length, false);
-  std::memcpy(object->writable_buffer(), source, str_length);
+  int64_t length = source->length();
+  Handle<PyString> object = NewRawStringLike(klass_self, length, false);
+  std::memcpy(object->writable_buffer(), source->buffer(), length);
+  return scope.Escape(object);
+}
+
+Handle<PyString> Factory::NewCopiedSubstring(Handle<PyString> str,
+                                             int64_t begin,
+                                             int64_t length) {
+  EscapableHandleScope scope(isolate_);
+
+  assert(begin + length <= str->length());
+
+  Handle<PyString> object = NewRawString(length, false);
+  std::memcpy(object->writable_buffer(), str->buffer() + begin, length);
+
   return scope.Escape(object);
 }
 

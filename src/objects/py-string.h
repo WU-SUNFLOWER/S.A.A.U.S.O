@@ -32,10 +32,6 @@ class PyString : public PyObject {
                               int64_t str_length,
                               bool in_meta_space = false);
 
-  static Handle<PyString> Clone(Isolate* isolate,
-                                Handle<PyString> other,
-                                bool in_meta_space = false);
-
   static Handle<PyString> FromPySmi(Isolate* isolate, Tagged<PySmi> smi);
   static Handle<PyString> FromInt(Isolate* isolate, int64_t n);
   static Handle<PyString> FromPyFloat(Isolate* isolate,
@@ -47,6 +43,10 @@ class PyString : public PyObject {
 
   static size_t ComputeObjectSize(int64_t str_length);
 
+  // 特别提醒：
+  // - 不同于C++中的std::string，在Python中，
+  //   字符串是不可变对象，无法通过下标设置字符串中的元素值！
+  // - PyString::Set仅限于虚拟机内部方便时使用，严禁泄露到Python语义层！
   void Set(int64_t index, char value);
   char Get(int64_t index) const;
 
@@ -97,6 +97,12 @@ class PyString : public PyObject {
                                 int64_t from,
                                 int64_t to,
                                 Isolate* isolate);
+
+  // 特别提醒：
+  // - 与C++中std::string的语义不太一样，
+  //   PyString::Append的语义更接近Python中字符串的"+="操作！
+  // - 即每次调用PyString::Append后，都会得到一个全新的字符串对象，
+  //   而非对原先字符串对象的缓冲区进行扩充！
   static Handle<PyString> Append(Handle<PyString> self,
                                  Handle<PyString> other,
                                  Isolate* isolate);
