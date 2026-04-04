@@ -245,4 +245,27 @@ print(len(l4))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, ExtendListWithItself) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+l1 = [1, 2, 3]
+l1.extend(l1)
+print(len(l1))
+
+sum = 0
+for elem in l1:
+  sum += elem
+print(sum)
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(6));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(12));
+  ExpectPrintResult(expected_printv_result);
+}
+
 }  // namespace saauso::internal
