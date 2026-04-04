@@ -28,7 +28,8 @@ constexpr double kMaxLoadFactor = 0.75;
 #define GET_DICT_KEY(dict, index) (dict->data(isolate)->Get(index << 1))
 #define GET_DICT_VAL(dict, index) (dict->data(isolate)->Get((index << 1) + 1))
 
-#define SET_DICT_KEY(dict, index, key) (dict->data(isolate)->Set(index << 1, key))
+#define SET_DICT_KEY(dict, index, key) \
+  (dict->data(isolate)->Set(index << 1, key))
 #define SET_DICT_VAL(dict, index, value) \
   (dict->data(isolate)->Set((index << 1) + 1, value))
 
@@ -158,10 +159,12 @@ void PyDict::set_data(Tagged<FixedArray> data) {
   WRITE_BARRIER(Tagged<PyObject>(this), &data_, data);
 }
 
-Maybe<bool> PyDict::ContainsKey(Handle<PyObject> key, Isolate* isolate) const {
-  Tagged<PyObject> value;
+// static
+Maybe<bool> PyDict::ContainsKey(Handle<PyDict> dict,
+                                Handle<PyObject> key,
+                                Isolate* isolate) {
   bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, found, GetTagged(*key, value, isolate));
+  RETURN_ON_EXCEPTION(isolate, FindSlot(dict, *key, &found, isolate));
   return Maybe<bool>(found);
 }
 
@@ -219,26 +222,29 @@ Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
   return Maybe<bool>(true);
 }
 
-Maybe<bool> PyDict::Remove(Handle<PyObject> key, Isolate* isolate) {
+// static
+Maybe<bool> PyDict::Remove(Handle<PyDict> dict,
+                           Handle<PyObject> key,
+                           Isolate* isolate) {
   HandleScope scope(isolate);
 
   bool found = false;
   int64_t index = 0;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(this, *key, &found, isolate));
+                             FindSlot(dict, *key, &found, isolate));
   if (!found) {
     return Maybe<bool>(false);
   }
 
   Handle<FixedArray> new_data =
-      isolate->factory()->NewFixedArray(capacity() * 2);
-  uint64_t new_mask = capacity() - 1;
+      isolate->factory()->NewFixedArray(dict->capacity() << 1);
+  uint64_t new_mask = dict->capacity() - 1;
 
   RETURN_ON_EXCEPTION(isolate,
-                      RehashInto(this, new_data, new_mask, index, isolate));
+                      RehashInto(dict, new_data, new_mask, index, isolate));
 
-  set_data(new_data);
-  --occupied_;
+  dict->set_data(new_data);
+  --dict->occupied_;
   return Maybe<bool>(true);
 }
 
