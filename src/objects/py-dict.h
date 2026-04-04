@@ -28,7 +28,9 @@ class PyDict : public PyObject {
   Handle<PyObject> ValueAtIndex(int64_t index, Isolate* isolate) const;
   Handle<PyTuple> ItemAtIndex(int64_t index, Isolate* isolate) const;
 
-  Maybe<bool> ContainsKey(Handle<PyObject> key, Isolate* isolate) const;
+  static Maybe<bool> ContainsKey(Handle<PyDict> dict,
+                                 Handle<PyObject> key,
+                                 Isolate* isolate);
 
   // 根据 key 查 value 系列 API
   // - 返回 true : 成功查询到 value，通过 out 输出。
@@ -48,7 +50,9 @@ class PyDict : public PyObject {
                         Tagged<PyObject>& out,
                         Isolate* isolate) const;
 
-  Maybe<bool> Remove(Handle<PyObject> key, Isolate* isolate);
+  static Maybe<bool> Remove(Handle<PyDict> dict,
+                            Handle<PyObject> key,
+                            Isolate* isolate);
 
   int64_t occupied() const { return occupied_; }
   void set_occupied(int64_t occupied) { occupied_ = occupied; }

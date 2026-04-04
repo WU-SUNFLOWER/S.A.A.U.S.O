@@ -131,7 +131,7 @@ Maybe<bool> PyDictKeysKlass::Virtual_Contains(Isolate* isolate,
                                               Handle<PyObject> self,
                                               Handle<PyObject> subscr) {
   auto dict = Handle<PyDictKeys>::cast(self)->owner(isolate);
-  return dict->ContainsKey(subscr, isolate);
+  return PyDict::ContainsKey(dict, subscr, isolate);
 }
 
 size_t PyDictKeysKlass::Virtual_InstanceSize(Tagged<PyObject> self) {

@@ -173,7 +173,8 @@ Maybe<void> ModuleImporter::BindChildModuleToParentNamespace(
 
   bool exists = false;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, exists, parent_dict->ContainsKey(child_short_name, isolate_));
+      isolate_, exists,
+      PyDict::ContainsKey(parent_dict, child_short_name, isolate_));
 
   if (!exists) {
     RETURN_ON_EXCEPTION(isolate_, PyDict::Put(parent_dict, child_short_name,

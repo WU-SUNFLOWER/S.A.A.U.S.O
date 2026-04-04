@@ -131,9 +131,9 @@ MaybeHandle<PyObject> Runtime_DictDelItem(Isolate* isolate,
                                           Handle<PyDict> dict,
                                           Handle<PyObject> key) {
   bool removed = false;
-  if (!dict->Remove(key, isolate).To(&removed)) {
-    return kNullMaybeHandle;
-  }
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, removed,
+                             PyDict::Remove(dict, key, isolate));
+
   if (!removed) {
     Runtime_ThrowError(isolate, ExceptionType::kKeyError,
                        "key not found in dict");
@@ -197,10 +197,11 @@ MaybeHandle<PyObject> Runtime_DictPop(Isolate* isolate,
   }
   if (found) {
     assert(!value.is_null());
+
     bool removed = false;
-    if (!dict->Remove(key, isolate).To(&removed)) {
-      return kNullMaybeHandle;
-    }
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, removed,
+                               PyDict::Remove(dict, key, isolate));
+
     if (!removed) {
       Runtime_ThrowError(isolate, ExceptionType::kKeyError, nullptr);
       return kNullMaybeHandle;
@@ -242,7 +243,9 @@ MaybeHandle<PyObject> Runtime_MergeDict(Isolate* isolate,
 
     bool exists = false;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-        isolate, exists, dst_dict->ContainsKey(key, isolate), kNullMaybeHandle);
+        isolate, exists, PyDict::ContainsKey(dst_dict, key, isolate),
+        kNullMaybeHandle);
+
     if (!allow_overwriting && exists) {
       Runtime_ThrowError(isolate, ExceptionType::kTypeError,
                          "got multiple values for keyword argument");

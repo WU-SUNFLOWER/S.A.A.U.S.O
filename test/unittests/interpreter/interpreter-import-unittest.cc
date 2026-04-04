@@ -160,7 +160,7 @@ TEST_F(BasicInterpreterTest, ImportPackageSubmoduleBindsChildOnCacheHit) {
 
   Handle<PyString> sub_short_name = PyString::New(isolate_, "sub");
   bool removed = false;
-  ASSERT_TRUE(pkg_dict->Remove(sub_short_name, isolate_).To(&removed));
+  ASSERT_TRUE(PyDict::Remove(pkg_dict, sub_short_name, isolate_).To(&removed));
   Tagged<PyObject> bound_tagged;
   ASSERT_TRUE(
       pkg_dict->GetTagged(sub_short_name, bound_tagged, isolate_).To(&found));
