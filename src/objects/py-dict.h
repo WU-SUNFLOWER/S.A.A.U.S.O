@@ -41,15 +41,6 @@ class PyDict : public PyObject {
                          Handle<PyObject> key,
                          Handle<PyObject>& out,
                          Isolate* isolate);
-  Maybe<bool> Get(Tagged<PyObject> key,
-                  Handle<PyObject>& out,
-                  Isolate* isolate) const;
-  Maybe<bool> GetTagged(Handle<PyObject> key,
-                        Tagged<PyObject>& out,
-                        Isolate* isolate) const;
-  Maybe<bool> GetTagged(Tagged<PyObject> key,
-                        Tagged<PyObject>& out,
-                        Isolate* isolate) const;
 
   static Maybe<bool> Remove(Handle<PyDict> dict,
                             Handle<PyObject> key,

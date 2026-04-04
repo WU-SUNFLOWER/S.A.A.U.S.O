@@ -191,54 +191,6 @@ Maybe<bool> PyDict::Get(Handle<PyDict> dict,
   return Maybe<bool>(true);
 }
 
-Maybe<bool> PyDict::Get(Tagged<PyObject> key,
-                        Handle<PyObject>& out,
-                        Isolate* isolate) const {
-  assert(!key.is_null());
-
-  out = Handle<PyObject>::null();
-
-  bool found = false;
-  int64_t index = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(this, key, &found, isolate));
-
-  if (!found) {
-    return Maybe<bool>(false);
-  }
-
-  out = handle(GET_DICT_VAL(this, index), isolate);
-  assert(!out.is_null());
-  return Maybe<bool>(true);
-}
-
-Maybe<bool> PyDict::GetTagged(Handle<PyObject> key,
-                              Tagged<PyObject>& out,
-                              Isolate* isolate) const {
-  return GetTagged(*key, out, isolate);
-}
-
-Maybe<bool> PyDict::GetTagged(Tagged<PyObject> key,
-                              Tagged<PyObject>& out,
-                              Isolate* isolate) const {
-  assert(!key.is_null());
-
-  out = Tagged<PyObject>::null();
-
-  bool found = false;
-  int64_t index = 0;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
-                             FindSlot(this, key, &found, isolate));
-
-  if (!found) {
-    return Maybe<bool>(false);
-  }
-
-  out = GET_DICT_VAL(this, index);
-  assert(!out.is_null());
-  return Maybe<bool>(true);
-}
-
 // static
 Maybe<bool> PyDict::Remove(Handle<PyDict> dict,
                            Handle<PyObject> key,
