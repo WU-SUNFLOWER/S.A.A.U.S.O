@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "src/execution/isolate.h"
+#include "src/objects/fixed-array.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
@@ -45,6 +46,7 @@ TEST_F(PyListTest, AppendGetGetTaggedGetLastTaggedPopTaggedWork) {
   auto popped_tagged = list->PopTagged();
   EXPECT_EQ(popped_tagged.ptr(), (*i1).ptr());
   EXPECT_EQ(list->length(), 1);
+  EXPECT_TRUE(list->array()->Get(1).is_null());
 }
 
 TEST_F(PyListTest, SetRemoveClearWork) {
@@ -70,10 +72,14 @@ TEST_F(PyListTest, SetRemoveClearWork) {
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
   ASSERT_TRUE(PyObject::Equal(isolate_, list->Get(1, isolate_), c).ToHandle(&eq));
   EXPECT_TRUE(Handle<PyBoolean>::cast(eq)->value());
+  EXPECT_TRUE(list->array()->Get(2).is_null());
 
   list->Clear();
   EXPECT_EQ(list->length(), 0);
   EXPECT_TRUE(list->IsEmpty());
+  EXPECT_TRUE(list->array()->Get(0).is_null());
+  EXPECT_TRUE(list->array()->Get(1).is_null());
+  EXPECT_TRUE(list->array()->Get(2).is_null());
 }
 
 TEST_F(PyListTest, InsertWorksInTheMiddle) {

@@ -38,7 +38,11 @@ Handle<PyObject> PyList::Pop(Isolate* isolate) {
 
 Tagged<PyObject> PyList::PopTagged() {
   assert(!IsEmpty());
-  return array()->Get(--length_);
+  int64_t last_index = length_ - 1;
+  Tagged<PyObject> result = array()->Get(last_index);
+  array()->Set(last_index, Tagged<PyObject>::null());
+  --length_;
+  return result;
 }
 
 Handle<PyObject> PyList::Get(int64_t index, Isolate* isolate) const {
@@ -88,6 +92,7 @@ void PyList::RemoveByIndex(int64_t index) {
     array()->Set(i, array()->Get(i + 1));
   }
 
+  array()->Set(length_ - 1, Tagged<PyObject>::null());
   --length_;
 }
 
@@ -103,6 +108,9 @@ Maybe<bool> PyList::Remove(Handle<PyObject> target, Isolate* isolate) {
 }
 
 void PyList::Clear() {
+  for (int64_t i = 0; i < length_; ++i) {
+    array()->Set(i, Tagged<PyObject>::null());
+  }
   length_ = 0;
 }
 
