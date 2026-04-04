@@ -322,7 +322,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     Handle<PyObject> sep_from_kwargs;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               kwargs->Get(sep_key, sep_from_kwargs, isolate));
+                               PyDict::Get(kwargs, sep_key, sep_from_kwargs,
+                                           isolate));
     if (found) {
       assert(!sep_from_kwargs.is_null());
       if (sep_from_positional) {
@@ -337,7 +338,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     Handle<PyObject> maxsplit_from_kwargs;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, found,
-        kwargs->Get(maxsplit_key, maxsplit_from_kwargs, isolate));
+        PyDict::Get(kwargs, maxsplit_key, maxsplit_from_kwargs, isolate));
     if (found) {
       assert(!maxsplit_from_kwargs.is_null());
       if (maxsplit_from_positional) {

@@ -168,10 +168,27 @@ Maybe<bool> PyDict::ContainsKey(Handle<PyDict> dict,
   return Maybe<bool>(found);
 }
 
-Maybe<bool> PyDict::Get(Handle<PyObject> key,
+// static
+Maybe<bool> PyDict::Get(Handle<PyDict> dict,
+                        Handle<PyObject> key,
                         Handle<PyObject>& out,
-                        Isolate* isolate) const {
-  return Get(*key, out, isolate);
+                        Isolate* isolate) {
+  assert(!key.is_null());
+
+  out = Handle<PyObject>::null();
+
+  bool found = false;
+  int64_t index = 0;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, index,
+                             FindSlot(dict, *key, &found, isolate));
+
+  if (!found) {
+    return Maybe<bool>(false);
+  }
+
+  out = handle(GET_DICT_VAL(dict, index), isolate);
+  assert(!out.is_null());
+  return Maybe<bool>(true);
 }
 
 Maybe<bool> PyDict::Get(Tagged<PyObject> key,

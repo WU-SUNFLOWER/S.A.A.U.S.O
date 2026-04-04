@@ -129,7 +129,8 @@ MaybeHandle<PyModule> ModuleImporter::GetOrLoadModulePart(
   Handle<PyObject> cached;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, found, modules_dict()->Get(part_fullname, cached, isolate_));
+      isolate_, found,
+      PyDict::Get(modules_dict(), part_fullname, cached, isolate_));
   if (found) {
     assert(!cached.is_null());
     return Handle<PyModule>::cast(cached);
@@ -187,7 +188,7 @@ Maybe<void> ModuleImporter::BindChildModuleToParentNamespace(
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate_, found,
-        parent_dict->Get(child_short_name, existing, isolate_));
+        PyDict::Get(parent_dict, child_short_name, existing, isolate_));
     assert(found);
     assert(!existing.is_null());
     assert(existing.is_identical_to(child_module));
@@ -226,7 +227,8 @@ MaybeHandle<PyModule> ModuleImporter::ApplyImportReturnSemantics(
     Handle<PyObject> top_module;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate_, found, modules_dict()->Get(top_name, top_module, isolate_));
+        isolate_, found,
+        PyDict::Get(modules_dict(), top_name, top_module, isolate_));
     assert(found);
     assert(!top_module.is_null());
 

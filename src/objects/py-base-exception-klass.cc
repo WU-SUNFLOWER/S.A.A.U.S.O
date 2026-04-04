@@ -47,7 +47,8 @@ MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
   Handle<PyObject> args_obj;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, found, properties->Get(ST(args, isolate), args_obj, isolate));
+      isolate, found,
+      PyDict::Get(properties, ST(args, isolate), args_obj, isolate));
   if (!found || !IsPyTuple(args_obj)) {
     return Handle<PyTuple>::null();
   }
@@ -205,7 +206,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, found,
-        properties->Get(ST(message, isolate), message, isolate));
+        PyDict::Get(properties, ST(message, isolate), message, isolate));
     if (found && IsPyString(message)) {
       return scope.Escape(Handle<PyString>::cast(message));
     }

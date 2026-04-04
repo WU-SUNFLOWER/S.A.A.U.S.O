@@ -113,7 +113,8 @@ MaybeHandle<PyObject> ApplyExecKeywordArgumentOverrides(
 
   Handle<PyObject> locals_from_kwargs;
   ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, found, kwargs->Get(locals_key, locals_from_kwargs, isolate));
+      isolate, found,
+      PyDict::Get(kwargs, locals_key, locals_from_kwargs, isolate));
 
   if (found) {
     if (locals_from_positional) {

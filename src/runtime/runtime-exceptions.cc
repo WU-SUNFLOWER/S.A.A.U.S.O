@@ -113,7 +113,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
 
   Handle<PyObject> exception_type;
   RETURN_ON_EXCEPTION(
-      isolate, builtins->Get(exception_type_name, exception_type, isolate));
+      isolate, PyDict::Get(builtins, exception_type_name, exception_type,
+                           isolate));
   assert(!exception_type.is_null());
 
   Handle<PyTuple> init_args = Handle<PyTuple>::null();
@@ -183,7 +184,8 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     Handle<PyObject> args_obj;
     bool found = false;
     ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found, properties->Get(ST(args, isolate), args_obj, isolate));
+        isolate, found,
+        PyDict::Get(properties, ST(args, isolate), args_obj, isolate));
     if (found && IsPyTuple(args_obj)) {
       ASSIGN_RETURN_ON_EXCEPTION(
           isolate, message,
@@ -194,7 +196,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     found = false;
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, found,
-        properties->Get(ST(message, isolate), msg_obj, isolate));
+        PyDict::Get(properties, ST(message, isolate), msg_obj, isolate));
     if ((message.is_null() || message->IsEmpty()) && found &&
         IsPyString(msg_obj)) {
       message = Handle<PyString>::cast(msg_obj);
@@ -227,7 +229,7 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
       isolate, found,
-      builtins->Get(ST(stop_iter, isolate), stop_iter_type, isolate),
+      PyDict::Get(builtins, ST(stop_iter, isolate), stop_iter_type, isolate),
       kNullMaybe);
   assert(found);
   assert(!stop_iter_type.is_null());

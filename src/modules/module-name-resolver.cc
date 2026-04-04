@@ -91,7 +91,8 @@ MaybeHandle<PyString> ModuleNameResolver::ResolvePackageFromGlobals(
 
   Handle<PyObject> package_obj;
   bool found = false;
-  if (!globals->Get(ST(package, isolate_), package_obj, isolate_).To(&found)) {
+  if (!PyDict::Get(globals, ST(package, isolate_), package_obj, isolate_)
+           .To(&found)) {
     return kNullMaybe;
   }
   if (found) {

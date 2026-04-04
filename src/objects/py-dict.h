@@ -37,9 +37,10 @@ class PyDict : public PyObject {
   // - 返回 false : 未查询到 value，out 输出 null。
   // - 返回空 Maybe : 查询过程中抛出异常，需要通知调用者向上传播异常，out 输出
   //   null。
-  Maybe<bool> Get(Handle<PyObject> key,
-                  Handle<PyObject>& out,
-                  Isolate* isolate) const;
+  static Maybe<bool> Get(Handle<PyDict> dict,
+                         Handle<PyObject> key,
+                         Handle<PyObject>& out,
+                         Isolate* isolate);
   Maybe<bool> Get(Tagged<PyObject> key,
                   Handle<PyObject>& out,
                   Isolate* isolate) const;

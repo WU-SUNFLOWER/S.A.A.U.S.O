@@ -71,7 +71,7 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
       i::PyString::New(internal_isolate, key_value.data(),
                        static_cast<int64_t>(key_value.size()));
   i::Handle<i::PyObject> out;
-  auto maybe_found = dict->Get(py_key, out, internal_isolate);
+  auto maybe_found = i::PyDict::Get(dict, py_key, out, internal_isolate);
   if (maybe_found.IsNothing()) {
     api::CapturePendingException(internal_isolate);
     return MaybeLocal<Value>();

@@ -323,7 +323,7 @@ Maybe<bool> PyDictItemsKlass::Virtual_Contains(Isolate* isolate,
   Handle<PyObject> found_value;
   bool found = false;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                             dict->Get(key, found_value, isolate));
+                             PyDict::Get(dict, key, found_value, isolate));
 
   if (!found) {
     return Maybe<bool>(false);
