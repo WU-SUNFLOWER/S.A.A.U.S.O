@@ -58,14 +58,6 @@ Handle<PyString> PyString::New(Isolate* isolate,
                                        in_meta_space);
 }
 
-// static
-Handle<PyString> PyString::Clone(Isolate* isolate,
-                                 Handle<PyString> other,
-                                 bool in_meta_space) {
-  return isolate->factory()->NewString(other->buffer(), other->length(),
-                                       in_meta_space);
-}
-
 ////////////////////////////////////////////////////////////
 
 // static
