@@ -154,8 +154,7 @@ MaybeHandle<PyObject> PyStringKlass::Virtual_NewInstance(
       return resolved;
     }
 
-    result = isolate->factory()->NewStringLike(
-        receiver_klass, resolved->buffer(), resolved->length());
+    result = isolate->factory()->NewStringLike(receiver_klass, resolved);
     goto default_return_result;
   }
 

@@ -86,8 +86,7 @@ class Factory {
                              int64_t str_length,
                              bool in_meta_space);
   Handle<PyString> NewStringLike(Tagged<Klass> klass_self,
-                                 const char* source,
-                                 int64_t str_length);
+                                 Handle<PyString> source);
 
   Handle<PyString> NewConsString(Handle<PyString> left, Handle<PyString> right);
 
