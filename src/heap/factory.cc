@@ -237,8 +237,10 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
   EscapableHandleScope scope(isolate_);
 
   size_t object_size = PyTuple::ComputeObjectSize(length);
+
   Tagged<PyTuple> object(
       AllocateRaw(object_size, Heap::AllocationSpace::kNewSpace));
+
   {
     DisallowHeapAllocation disallow(isolate_);
     object->length_ = length;
@@ -249,12 +251,13 @@ Handle<PyTuple> Factory::NewPyTupleLike(Tagged<Klass> klass_self,
     }
   }
 
+  Handle<PyTuple> object_handle = handle(object, isolate_);
   if (klass_self->instance_has_properties_dict()) {
     Handle<PyDict> properties = NewPyDict(PyDict::kMinimumCapacity);
-    PyObject::SetProperties(object, *properties);
+    PyObject::SetProperties(*object_handle, *properties);
   }
 
-  return scope.Escape(handle(object, isolate_));
+  return scope.Escape(object_handle);
 }
 
 Handle<PyTuple> Factory::NewPyTuple(int64_t length) {
