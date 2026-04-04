@@ -55,12 +55,13 @@ class PyDict : public PyObject {
                          Isolate* isolate);
   static Handle<PyTuple> GetKeyTuple(Handle<PyDict> dict, Isolate* isolate);
 
-  Handle<FixedArray> data(Isolate* isolate) const;
+  Tagged<FixedArray> data() const;
   void set_data(Handle<FixedArray> data);
   void set_data(Tagged<FixedArray> data);
 
  private:
   friend class PyDictKlass;
+
 
   static Maybe<bool> ExpandImpl(Handle<PyDict> dict, Isolate* isolate);
 
