@@ -26,7 +26,9 @@ class PyDict : public PyObject {
 
   Handle<PyObject> KeyAtIndex(int64_t index, Isolate* isolate) const;
   Handle<PyObject> ValueAtIndex(int64_t index, Isolate* isolate) const;
-  Handle<PyTuple> ItemAtIndex(int64_t index, Isolate* isolate) const;
+  static Handle<PyTuple> ItemAtIndex(Handle<PyDict> dict,
+                                     int64_t index,
+                                     Isolate* isolate);
 
   static Maybe<bool> ContainsKey(Handle<PyDict> dict,
                                  Handle<PyObject> key,

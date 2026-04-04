@@ -286,7 +286,7 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
     Handle<PyObject> maxsplit_key = PyString::New(isolate, "maxsplit");
 
     for (auto i = 0; i < kwargs->capacity(); ++i) {
-      auto item = kwargs->ItemAtIndex(i, isolate);
+      auto item = PyDict::ItemAtIndex(kwargs, i, isolate);
       if (item.is_null()) {
         continue;
       }
@@ -321,9 +321,8 @@ BUILTIN_METHOD(PyStringBuiltinMethods, Split) {
 
     Handle<PyObject> sep_from_kwargs;
     bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, found,
-                               PyDict::Get(kwargs, sep_key, sep_from_kwargs,
-                                           isolate));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, found, PyDict::Get(kwargs, sep_key, sep_from_kwargs, isolate));
     if (found) {
       assert(!sep_from_kwargs.is_null());
       if (sep_from_positional) {

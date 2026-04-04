@@ -38,7 +38,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
     if (IsPyDict(input)) {
       auto src = Handle<PyDict>::cast(input);
       for (int64_t i = 0; i < src->capacity(); ++i) {
-        Handle<PyTuple> item = src->ItemAtIndex(i, isolate);
+        Handle<PyTuple> item = PyDict::ItemAtIndex(src, i, isolate);
         if (item.is_null()) {
           continue;
         }
@@ -77,7 +77,7 @@ Maybe<void> Runtime_InitDictFromArgsKwargs(Isolate* isolate,
     Handle<PyDict> kw = Handle<PyDict>::cast(kwargs);
     if (!kw.is_null() && kw->occupied() != 0) {
       for (int64_t i = 0; i < kw->capacity(); ++i) {
-        Handle<PyTuple> item = kw->ItemAtIndex(i, isolate);
+        Handle<PyTuple> item = PyDict::ItemAtIndex(kw, i, isolate);
         if (item.is_null()) {
           continue;
         }

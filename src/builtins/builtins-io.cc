@@ -41,7 +41,7 @@ MaybeHandle<PyObject> NormalizePrintOptions(Isolate* isolate,
   auto flush_key = ST(flush, isolate);
 
   for (int64_t i = 0; i < kwargs->capacity(); ++i) {
-    auto item = kwargs->ItemAtIndex(i, isolate);
+    auto item = PyDict::ItemAtIndex(kwargs, i, isolate);
     if (item.is_null()) {
       continue;
     }

@@ -132,14 +132,17 @@ Handle<PyObject> PyDict::ValueAtIndex(int64_t index, Isolate* isolate) const {
   return handle(data_tagged()->Get((index << 1) + 1), isolate);
 }
 
-Handle<PyTuple> PyDict::ItemAtIndex(int64_t index, Isolate* isolate) const {
-  auto key = handle(data_tagged()->Get(index << 1), isolate);
+Handle<PyTuple> PyDict::ItemAtIndex(Handle<PyDict> dict,
+                                    int64_t index,
+                                    Isolate* isolate) {
+  Handle<PyObject> key = dict->KeyAtIndex(index, isolate);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
-  auto result = PyTuple::New(isolate, 2);
-  auto value = handle(data_tagged()->Get((index << 1) + 1), isolate);
+
+  Handle<PyTuple> result = PyTuple::New(isolate, 2);
+  Handle<PyObject> value = dict->ValueAtIndex(index, isolate);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
   return result;
