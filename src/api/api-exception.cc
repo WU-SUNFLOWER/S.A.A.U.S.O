@@ -4,9 +4,16 @@
 
 #include "include/saauso-exception.h"
 #include "include/saauso-primitive.h"
+#include "src/api/api-handle-utils.h"
 #include "src/api/api-isolate-utils.h"
+#include "src/handles/global-handles.h"
+#include "src/objects/py-object.h"
 
 namespace saauso {
+
+struct TryCatch::Impl {
+  i::Global<i::PyObject> exception_;
+};
 
 //////////////////////////////////////////////////////////////////////////////////
 // Exception
@@ -37,7 +44,8 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
 // TryCatch
 
 TryCatch::TryCatch(Isolate* isolate)
-    : i_isolate_(api::RequireExplicitIsolate(isolate)) {
+    : i_isolate_(api::RequireExplicitIsolate(isolate)),
+      impl_(std::make_unique<Impl>()) {
   previous_ = i_isolate_->try_catch_top();
   i_isolate_->set_try_catch_top(this);
 }
@@ -48,15 +56,23 @@ TryCatch::~TryCatch() {
 }
 
 bool TryCatch::HasCaught() const {
-  return !exception_.IsEmpty();
+  return !impl_->exception_.IsEmpty();
+}
+
+void TryCatch::SetException(i::Handle<i::PyObject> exception) {
+  impl_->exception_ = i::Global<i::PyObject>(i_isolate_, exception);
 }
 
 void TryCatch::Reset() {
-  exception_ = Local<Value>();
+  impl_->exception_.Reset();
 }
 
 MaybeLocal<Value> TryCatch::Exception() const {
-  return exception_;
+  i::Handle<i::PyObject> exception = impl_->exception_.Get(i_isolate_);
+  if (exception.is_null()) {
+    return MaybeLocal<Value>();
+  }
+  return api::Utils::ToLocal<Value>(exception);
 }
 
 }  // namespace saauso

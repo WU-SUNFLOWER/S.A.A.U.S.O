@@ -5,6 +5,8 @@
 #ifndef INCLUDE_SAAUSO_EXCEPTION_H_
 #define INCLUDE_SAAUSO_EXCEPTION_H_
 
+#include <memory>
+
 #include "saauso-local-handle.h"
 
 namespace saauso {
@@ -15,6 +17,9 @@ class ApiBridgeAccess;
 
 namespace internal {
 class Isolate;
+template <typename T>
+class Handle;
+class PyObject;
 }  // namespace internal
 
 class String;
@@ -40,11 +45,13 @@ class TryCatch {
   MaybeLocal<Value> Exception() const;
 
  private:
+  struct Impl;
   friend class api::ApiBridgeAccess;
+  void SetException(internal::Handle<internal::PyObject> exception);
 
   internal::Isolate* i_isolate_{nullptr};
   TryCatch* previous_{nullptr};
-  Local<Value> exception_;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace saauso

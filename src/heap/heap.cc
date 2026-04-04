@@ -199,10 +199,9 @@ void Heap::IterateRoots(ObjectVisitor* v) {
   // 遍历 Isolate 级别的异常状态（pending exception）。
   isolate_->exception_state()->Iterate(v);
 
-  // 现阶段string table中所有的字符串都保存在meta space，暂时不需要开放GC!
-  // if (isolate_->string_table() != nullptr) {
-  //   isolate_->string_table()->Iterate(v);
-  // }
+  if (isolate_->string_table() != nullptr) {
+    isolate_->string_table()->Iterate(v);
+  }
 
   // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
   // 遍历记忆集 (Remembered Set)，处理跨代引用
