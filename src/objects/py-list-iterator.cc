@@ -26,4 +26,13 @@ Handle<PyList> PyListIterator::owner(Isolate* isolate) const {
   return handle(Tagged<PyList>::cast(owner_), isolate);
 }
 
+void PyListIterator::set_owner(Handle<PyList> owner) {
+  set_owner(*owner);
+}
+
+void PyListIterator::set_owner(Tagged<PyList> owner) {
+  owner_ = owner;
+  WRITE_BARRIER(Tagged<PyObject>(this), &owner_, owner);
+}
+
 }  // namespace saauso::internal

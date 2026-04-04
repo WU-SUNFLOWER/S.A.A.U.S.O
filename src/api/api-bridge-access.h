@@ -11,6 +11,8 @@
 #include "include/saauso-function-callback.h"
 #include "include/saauso-local-handle.h"
 #include "include/saauso-value.h"
+#include "src/handles/handles.h"
+#include "src/objects/py-object.h"
 
 namespace saauso {
 namespace api {
@@ -24,9 +26,9 @@ class ApiBridgeAccess final {
   }
 
   static void SetTryCatchException(TryCatch* try_catch,
-                                   Local<Value> exception) {
+                                   i::Handle<internal::PyObject> exception) {
     assert(try_catch != nullptr);
-    try_catch->exception_ = exception;
+    try_catch->SetException(exception);
   }
 };
 

@@ -22,8 +22,7 @@ bool CapturePendingException(i::Isolate* isolate) {
 
   i::Handle<i::PyObject> exception =
       isolate->exception_state()->pending_exception(isolate);
-  ApiBridgeAccess::SetTryCatchException(try_catch,
-                                        api::Utils::ToLocal<Value>(exception));
+  ApiBridgeAccess::SetTryCatchException(try_catch, exception);
   isolate->exception_state()->Clear();
   return true;
 }

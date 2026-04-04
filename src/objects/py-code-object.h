@@ -54,11 +54,19 @@ class PyCodeObject : public PyObject {
   static Tagged<PyCodeObject> cast(Tagged<PyObject> object);
 
   Handle<PyString> bytecodes(Isolate* isolate) const;
+  void set_bytecodes(Handle<PyString> bytecodes);
+  void set_bytecodes(Tagged<PyString> bytecodes);
 
   Handle<PyTuple> consts(Isolate* isolate) const;
+  void set_consts(Handle<PyTuple> consts);
+  void set_consts(Tagged<PyTuple> consts);
 
   Handle<PyString> co_name(Isolate* isolate) const;
+  void set_co_name(Handle<PyString> co_name);
+  void set_co_name(Tagged<PyString> co_name);
   Handle<PyString> file_name(Isolate* isolate) const;
+  void set_file_name(Handle<PyString> file_name);
+  void set_file_name(Tagged<PyString> file_name);
 
   int flags() const { return flags_; }
   int stack_size() const { return stack_size_; }
@@ -90,9 +98,17 @@ class PyCodeObject : public PyObject {
   // 对应到解释器栈帧当中，就是localplus元组。这种设计可以进一步节约空间，还能提升cpu
   // cache的命中率。
   Handle<PyTuple> names(Isolate* isolate) const;
+  void set_names(Handle<PyTuple> names);
+  void set_names(Tagged<PyTuple> names);
   Handle<PyTuple> var_names(Isolate* isolate) const;
+  void set_var_names(Handle<PyTuple> var_names);
+  void set_var_names(Tagged<PyTuple> var_names);
   Handle<PyTuple> cell_vars(Isolate* isolate) const;
+  void set_cell_vars(Handle<PyTuple> cell_vars);
+  void set_cell_vars(Tagged<PyTuple> cell_vars);
   Handle<PyTuple> free_vars(Isolate* isolate) const;
+  void set_free_vars(Handle<PyTuple> free_vars);
+  void set_free_vars(Tagged<PyTuple> free_vars);
 
   // 解释器栈帧中实际localsplus的长度
   int nlocalsplus() const { return nlocalsplus_; }
@@ -104,8 +120,20 @@ class PyCodeObject : public PyObject {
   int nfreevars() const { return nfreevars_; }
 
   Handle<PyTuple> localsplusnames(Isolate* isolate) const;
+  void set_localsplusnames(Handle<PyTuple> localsplusnames);
+  void set_localsplusnames(Tagged<PyTuple> localsplusnames);
   Handle<PyString> localspluskinds(Isolate* isolate) const;
+  void set_localspluskinds(Handle<PyString> localspluskinds);
+  void set_localspluskinds(Tagged<PyString> localspluskinds);
   Handle<PyString> exception_table(Isolate* isolate) const;
+  void set_line_table(Handle<PyString> line_table);
+  void set_line_table(Tagged<PyString> line_table);
+  void set_exception_table(Handle<PyString> exception_table);
+  void set_exception_table(Tagged<PyString> exception_table);
+  void set_qual_name(Handle<PyString> qual_name);
+  void set_qual_name(Tagged<PyString> qual_name);
+  void set_no_table(Handle<PyString> no_table);
+  void set_no_table(Tagged<PyString> no_table);
 
  private:
   friend class PyCodeObjectKlass;

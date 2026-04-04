@@ -363,20 +363,20 @@ Handle<PyCodeObject> Factory::NewPyCodeObject() {
     DisallowHeapAllocation disallow(isolate_);
     PyObject::SetKlass(object, klass);
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
-    object->bytecodes_ = Tagged<PyObject>::null();
-    object->consts_ = Tagged<PyObject>::null();
-    object->localsplusnames_ = Tagged<PyObject>::null();
-    object->localspluskinds_ = Tagged<PyObject>::null();
-    object->names_ = Tagged<PyObject>::null();
-    object->var_names_ = Tagged<PyObject>::null();
-    object->free_vars_ = Tagged<PyObject>::null();
-    object->cell_vars_ = Tagged<PyObject>::null();
-    object->file_name_ = Tagged<PyObject>::null();
-    object->co_name_ = Tagged<PyObject>::null();
-    object->qual_name_ = Tagged<PyObject>::null();
-    object->line_table_ = Tagged<PyObject>::null();
-    object->exception_table_ = Tagged<PyObject>::null();
-    object->no_table_ = Tagged<PyObject>::null();
+    object->set_bytecodes(Tagged<PyString>::null());
+    object->set_consts(Tagged<PyTuple>::null());
+    object->set_localsplusnames(Tagged<PyTuple>::null());
+    object->set_localspluskinds(Tagged<PyString>::null());
+    object->set_names(Tagged<PyTuple>::null());
+    object->set_var_names(Tagged<PyTuple>::null());
+    object->set_free_vars(Tagged<PyTuple>::null());
+    object->set_cell_vars(Tagged<PyTuple>::null());
+    object->set_file_name(Tagged<PyString>::null());
+    object->set_co_name(Tagged<PyString>::null());
+    object->set_qual_name(Tagged<PyString>::null());
+    object->set_line_table(Tagged<PyString>::null());
+    object->set_exception_table(Tagged<PyString>::null());
+    object->set_no_table(Tagged<PyString>::null());
     object->arg_count_ = 0;
     object->posonly_arg_count_ = 0;
     object->kwonly_arg_count_ = 0;
@@ -555,8 +555,9 @@ Handle<PyListIterator> Factory::NewPyListIterator(Handle<PyObject> owner) {
       Allocate<PyListIterator>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-    iterator->iter_cnt_ = 0;
+    iterator->set_owner(owner.is_null() ? Tagged<PyList>::null()
+                                        : Tagged<PyList>::cast(*owner));
+    iterator->set_iter_cnt(0);
     PyObject::SetKlass(iterator, klass);
     PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
   }
@@ -571,8 +572,9 @@ Handle<PyTupleIterator> Factory::NewPyTupleIterator(Handle<PyObject> owner) {
       Allocate<PyTupleIterator>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-    iterator->iter_cnt_ = 0;
+    iterator->set_owner(owner.is_null() ? Tagged<PyTuple>::null()
+                                        : Tagged<PyTuple>::cast(*owner));
+    iterator->set_iter_cnt(0);
     PyObject::SetKlass(iterator, klass);
     PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
   }
@@ -587,7 +589,8 @@ Handle<PyDictKeys> Factory::NewPyDictKeys(Handle<PyObject> owner) {
       Allocate<PyDictKeys>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    view->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
+    view->set_owner(owner.is_null() ? Tagged<PyDict>::null()
+                                    : Tagged<PyDict>::cast(*owner));
     PyObject::SetKlass(view, klass);
     PyObject::SetProperties(*view, Tagged<PyDict>::null());
   }
@@ -602,7 +605,8 @@ Handle<PyDictValues> Factory::NewPyDictValues(Handle<PyObject> owner) {
       Allocate<PyDictValues>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    view->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
+    view->set_owner(owner.is_null() ? Tagged<PyDict>::null()
+                                    : Tagged<PyDict>::cast(*owner));
     PyObject::SetKlass(view, klass);
     PyObject::SetProperties(*view, Tagged<PyDict>::null());
   }
@@ -617,7 +621,8 @@ Handle<PyDictItems> Factory::NewPyDictItems(Handle<PyObject> owner) {
       Allocate<PyDictItems>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    view->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
+    view->set_owner(owner.is_null() ? Tagged<PyDict>::null()
+                                    : Tagged<PyDict>::cast(*owner));
     PyObject::SetKlass(view, klass);
     PyObject::SetProperties(*view, Tagged<PyDict>::null());
   }
@@ -633,8 +638,9 @@ Handle<PyDictKeyIterator> Factory::NewPyDictKeyIterator(
       Allocate<PyDictKeyIterator>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-    iterator->iter_index_ = 0;
+    iterator->set_owner(owner.is_null() ? Tagged<PyDict>::null()
+                                        : Tagged<PyDict>::cast(*owner));
+    iterator->set_iter_index(0);
     PyObject::SetKlass(iterator, klass);
     PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
   }
@@ -651,8 +657,9 @@ Handle<PyDictValueIterator> Factory::NewPyDictValueIterator(
       isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-    iterator->iter_index_ = 0;
+    iterator->set_owner(owner.is_null() ? Tagged<PyDict>::null()
+                                        : Tagged<PyDict>::cast(*owner));
+    iterator->set_iter_index(0);
     PyObject::SetKlass(iterator, klass);
     PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
   }
@@ -668,8 +675,9 @@ Handle<PyDictItemIterator> Factory::NewPyDictItemIterator(
       Allocate<PyDictItemIterator>(Heap::AllocationSpace::kNewSpace), isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
-    iterator->owner_ = owner.is_null() ? Tagged<PyObject>::null() : *owner;
-    iterator->iter_index_ = 0;
+    iterator->set_owner(owner.is_null() ? Tagged<PyDict>::null()
+                                        : Tagged<PyDict>::cast(*owner));
+    iterator->set_iter_index(0);
     PyObject::SetKlass(iterator, klass);
     PyObject::SetProperties(*iterator, Tagged<PyDict>::null());
   }

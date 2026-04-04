@@ -16,12 +16,14 @@ class PyTupleIterator : public PyObject {
   static Tagged<PyTupleIterator> cast(Tagged<PyObject> object);
 
   Handle<PyTuple> owner(Isolate* isolate) const;
+  void set_owner(Handle<PyTuple> owner);
+  void set_owner(Tagged<PyTuple> owner);
   int64_t iter_cnt() const { return iter_cnt_; }
+  void set_iter_cnt(int64_t iter_cnt) { iter_cnt_ = iter_cnt; }
   void increase_iter_cnt() { ++iter_cnt_; }
 
  private:
   friend class PyTupleIteratorKlass;
-  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_cnt_;

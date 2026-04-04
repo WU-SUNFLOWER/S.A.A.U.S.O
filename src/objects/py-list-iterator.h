@@ -16,12 +16,14 @@ class PyListIterator : public PyObject {
   static Tagged<PyListIterator> cast(Tagged<PyObject> object);
 
   Handle<PyList> owner(Isolate* isolate) const;
+  void set_owner(Handle<PyList> owner);
+  void set_owner(Tagged<PyList> owner);
   int64_t iter_cnt() const { return iter_cnt_; }
+  void set_iter_cnt(int64_t iter_cnt) { iter_cnt_ = iter_cnt; }
   void increase_iter_cnt() { ++iter_cnt_; }
 
  private:
   friend class PyListIteratorKlass;
-  friend class Factory;
 
   Tagged<PyObject> owner_{kNullAddress};
   int64_t iter_cnt_;

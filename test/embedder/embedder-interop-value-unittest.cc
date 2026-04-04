@@ -207,5 +207,51 @@ TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, TryCatch_ExceptionSurvivesInnerScopeAndGcPressure) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    TryCatch try_catch(isolate);
+
+    {
+      HandleScope inner_scope(isolate);
+      MaybeLocal<Value> error =
+          Exception::RuntimeError(String::New(isolate, "survive-gc"));
+      ASSERT_FALSE(error.IsEmpty());
+      isolate->ThrowException(error.ToLocalChecked());
+      ASSERT_TRUE(try_catch.HasCaught());
+    }
+
+    {
+      Local<Value> exception;
+      ASSERT_TRUE(try_catch.Exception().ToLocal(&exception));
+      Maybe<std::string> message = exception->ToString();
+      ASSERT_FALSE(message.IsNothing());
+      EXPECT_EQ(message.ToChecked(), "[RuntimeError] survive-gc");
+    }
+
+    for (int i = 0; i < 4000; ++i) {
+      HandleScope inner_scope(isolate);
+      Local<String> noise = String::New(isolate, "gc-pressure");
+      ASSERT_FALSE(noise.IsEmpty());
+    }
+
+    {
+      Local<Value> exception;
+      ASSERT_TRUE(try_catch.Exception().ToLocal(&exception));
+      Maybe<std::string> message = exception->ToString();
+      ASSERT_FALSE(message.IsNothing());
+      EXPECT_EQ(message.ToChecked(), "[RuntimeError] survive-gc");
+    }
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 }  // namespace
 }  // namespace saauso
