@@ -33,7 +33,12 @@ MaybeHandle<PyObject> Runtime_ExtendListByItratableObject(
   // Fast Path: 直接展开list
   if (IsPyList(iteratable)) {
     auto source = Handle<PyList>::cast(iteratable);
-    for (int64_t i = 0; i < source->length(); ++i) {
+
+    // 为了正确处理 source 和 list 是同一个对象的边界情况，
+    // 必须先提前把 source 的初始长度存下来!
+    int64_t source_len = source->length();
+
+    for (int64_t i = 0; i < source_len; ++i) {
       PyList::Append(list, source->Get(i, isolate), isolate);
     }
     return isolate->factory()->py_none_object();
