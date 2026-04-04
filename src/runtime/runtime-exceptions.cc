@@ -112,9 +112,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
   Handle<PyDict> builtins = isolate->builtins();
 
   Handle<PyObject> exception_type;
-  RETURN_ON_EXCEPTION(
-      isolate, PyDict::Get(builtins, exception_type_name, exception_type,
-                           isolate));
+  RETURN_ON_EXCEPTION(isolate, PyDict::Get(builtins, exception_type_name,
+                                           exception_type, isolate));
   assert(!exception_type.is_null());
 
   Handle<PyTuple> init_args = Handle<PyTuple>::null();
@@ -207,7 +206,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(type_name);
   }
 
-  Handle<PyString> formatted = PyString::Clone(isolate, type_name);
+  Handle<PyString> formatted = type_name;
   formatted =
       PyString::Append(formatted, PyString::New(isolate, ": "), isolate);
   formatted = PyString::Append(formatted, message, isolate);

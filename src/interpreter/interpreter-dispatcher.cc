@@ -77,8 +77,9 @@ void Interpreter::EvalCurrentFrame() {
     DISPATCH();                                     \
   }
 
-#define INTERPRETER_HANDLER_WITH_SCOPE(bytecode, ...) \
-  INTERPRETER_HANDLER_DISPATCH(bytecode, HandleScope scope(isolate_); __VA_ARGS__)
+#define INTERPRETER_HANDLER_WITH_SCOPE(bytecode, ...)                 \
+  INTERPRETER_HANDLER_DISPATCH(bytecode, HandleScope scope(isolate_); \
+                               __VA_ARGS__)
 
 #define INTERPRETER_HANDLER_NOOP(bytecode) \
   INTERPRETER_HANDLER(bytecode) {          \
@@ -376,7 +377,8 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
+    Handle<PyObject> key =
+        current_frame_->names(isolate_)->Get(op_arg, isolate_);
 
     Handle<PyDict> locals = current_frame_->locals(isolate_);
     // Python中栈帧的locals是按需创建的。
@@ -394,7 +396,8 @@ void Interpreter::EvalCurrentFrame() {
   // 删除一个 name（用于 except ... as e
   // 的清理阶段，确保异常变量不泄漏到外层作用域）。
   INTERPRETER_HANDLER_WITH_SCOPE(DeleteName, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
+    Handle<PyObject> key =
+        current_frame_->names(isolate_)->Get(op_arg, isolate_);
 
     Handle<PyDict> locals = current_frame_->locals(isolate_);
     if (locals.is_null()) {
@@ -463,7 +466,8 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
+    Handle<PyObject> key =
+        current_frame_->names(isolate_)->Get(op_arg, isolate_);
     Handle<PyObject> value = POP();
     GOTO_ON_EXCEPTION(
         PyDict::Put(current_frame_->globals(isolate_), key, value, isolate_));
@@ -473,14 +477,15 @@ void Interpreter::EvalCurrentFrame() {
       LoadConst, { PUSH(current_frame_->consts(isolate_)->GetTagged(op_arg)); })
 
   INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
-    Handle<PyObject> key = current_frame_->names(isolate_)->Get(op_arg, isolate_);
+    Handle<PyObject> key =
+        current_frame_->names(isolate_)->Get(op_arg, isolate_);
     Handle<PyObject> value;
     bool found = false;
 
     // 1. 查local符号表
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, PyDict::Get(current_frame_->locals(isolate_), key, value,
-                           isolate_));
+        found,
+        PyDict::Get(current_frame_->locals(isolate_), key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -488,8 +493,8 @@ void Interpreter::EvalCurrentFrame() {
 
     // 2. 查global符号表
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, PyDict::Get(current_frame_->globals(isolate_), key, value,
-                           isolate_));
+        found,
+        PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
@@ -639,9 +644,8 @@ void Interpreter::EvalCurrentFrame() {
     // `from ..os import path`的level是2。
     auto level = Handle<PySmi>::cast(POP());
 
-    auto name =
-        Handle<PyString>::cast(
-            current_frame_->names(isolate_)->Get(op_arg, isolate_));
+    auto name = Handle<PyString>::cast(
+        current_frame_->names(isolate_)->Get(op_arg, isolate_));
 
     Handle<PyObject> module;
     ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, module,
@@ -654,9 +658,8 @@ void Interpreter::EvalCurrentFrame() {
 
   INTERPRETER_HANDLER_WITH_SCOPE(ImportFrom, {
     auto parent_module = TOP();
-    auto sub_module_name =
-        Handle<PyString>::cast(
-            current_frame_->names(isolate_)->Get(op_arg, isolate_));
+    auto sub_module_name = Handle<PyString>::cast(
+        current_frame_->names(isolate_)->Get(op_arg, isolate_));
 
     // Fast Path: 如果目标子模块已经被解析过了，直接返回
     Handle<PyObject> value;
@@ -679,12 +682,10 @@ void Interpreter::EvalCurrentFrame() {
       goto pending_exception_unwind;
     }
 
-    auto parent_module_name = Handle<PyString>::cast(parent_module_name_obj);
-
     // 拼接目标子模块的完整符号名
     // 如`from os import path`，则目标子模块`path`的
     // 完整符号名为`os.path`。
-    auto sub_module_fullname = PyString::Clone(isolate_, parent_module_name);
+    auto sub_module_fullname = Handle<PyString>::cast(parent_module_name_obj);
     sub_module_fullname =
         PyString::Append(sub_module_fullname, ST(dot, isolate_), isolate_);
     sub_module_fullname =
@@ -738,8 +739,8 @@ void Interpreter::EvalCurrentFrame() {
     bool found = false;
 
     ASSIGN_GOTO_ON_EXCEPTION(
-        found, PyDict::Get(current_frame_->globals(isolate_), key, value,
-                           isolate_));
+        found,
+        PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
     if (found) {
       PUSH(value);
       break;
