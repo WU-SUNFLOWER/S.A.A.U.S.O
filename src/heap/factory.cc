@@ -114,7 +114,7 @@ Handle<PyDict> Factory::CopyPyDict(Handle<PyDict> dict) {
   EscapableHandleScope scope(isolate_);
 
   Handle<PyDict> result = NewPyDictWithoutAllocateData();
-  Handle<FixedArray> data = CopyFixedArray(handle(dict->data(), isolate_));
+  Handle<FixedArray> data = CopyFixedArray(dict->data(isolate_));
   result->set_occupied(dict->occupied());
   result->set_data(data);
 

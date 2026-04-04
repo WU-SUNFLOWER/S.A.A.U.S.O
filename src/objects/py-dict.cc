@@ -25,9 +25,13 @@ namespace {
 
 constexpr double kMaxLoadFactor = 0.75;
 
-#define SET_DICT_KEY(dict, index, key) (dict->data()->Set(index << 1, key))
-#define SET_DICT_VAL(dict, index, value) \
-  (dict->data()->Set((index << 1) + 1, value))
+void SetDictKey(Handle<PyDict> dict, int64_t index, Handle<PyObject> key) {
+  dict->data_tagged()->Set(index << 1, key);
+}
+
+void SetDictVal(Handle<PyDict> dict, int64_t index, Handle<PyObject> value) {
+  dict->data_tagged()->Set((index << 1) + 1, value);
+}
 
 uint64_t GetProbe(uint64_t index, uint64_t mask) {
   return (index + 1) & mask;
@@ -115,31 +119,37 @@ Tagged<PyDict> PyDict::cast(Tagged<PyObject> object) {
 //////////////////////////////////////////////////////////////////////////
 
 int64_t PyDict::capacity() const {
-  return Tagged<FixedArray>::cast(data_)->capacity() >> 1;
+  return data_tagged()->capacity() >> 1;
 }
 
 Handle<PyObject> PyDict::KeyAtIndex(int64_t index, Isolate* isolate) const {
-  return handle(data()->Get(index << 1), isolate);
+  DisallowHeapAllocation no_alloc(isolate);
+  return handle(data_tagged()->Get(index << 1), isolate);
 }
 
 Handle<PyObject> PyDict::ValueAtIndex(int64_t index, Isolate* isolate) const {
-  return handle(data()->Get((index << 1) + 1), isolate);
+  DisallowHeapAllocation no_alloc(isolate);
+  return handle(data_tagged()->Get((index << 1) + 1), isolate);
 }
 
 Handle<PyTuple> PyDict::ItemAtIndex(int64_t index, Isolate* isolate) const {
-  auto key = handle(data()->Get(index << 1), isolate);
+  auto key = handle(data_tagged()->Get(index << 1), isolate);
   // 如果当前槽位没有有效的键值对，直接返回null
   if (key.is_null()) {
     return Handle<PyTuple>::null();
   }
   auto result = PyTuple::New(isolate, 2);
-  auto value = handle(data()->Get((index << 1) + 1), isolate);
+  auto value = handle(data_tagged()->Get((index << 1) + 1), isolate);
   result->SetInternal(0, key);
   result->SetInternal(1, value);
   return result;
 }
 
-Tagged<FixedArray> PyDict::data() const {
+Handle<FixedArray> PyDict::data(Isolate* isolate) const {
+  return handle(data_tagged(), isolate);
+}
+
+Tagged<FixedArray> PyDict::data_tagged() const {
   return Tagged<FixedArray>::cast(data_);
 }
 
@@ -236,12 +246,12 @@ Maybe<bool> PyDict::Put(Handle<PyDict> object,
     DisallowHeapAllocation no_alloc(isolate);
 
     if (found) {
-      SET_DICT_VAL(dict, index, value);
+      SetDictVal(dict, index, value);
       return Maybe<bool>(false);
     }
 
-    SET_DICT_KEY(dict, index, key);
-    SET_DICT_VAL(dict, index, value);
+    SetDictKey(dict, index, key);
+    SetDictVal(dict, index, value);
     ++dict->occupied_;
   }
 
@@ -255,22 +265,18 @@ Handle<PyTuple> PyDict::GetKeyTuple(Handle<PyDict> dict, Isolate* isolate) {
   int64_t out_length = dict->occupied();
   Handle<PyTuple> keys = PyTuple::New(isolate, out_length);
 
-  {
-    DisallowHeapAllocation no_alloc(isolate);
-
-    int64_t out_index = 0;
-    for (auto i = 0; i < dict->capacity(); ++i) {
-      Tagged<PyObject> key = dict->data()->Get(i << 1);
-      if (key.is_null()) {
-        continue;
-      }
-      keys->SetInternal(out_index++, key);
-      if (out_index == out_length) {
-        break;
-      }
+  int64_t out_index = 0;
+  for (auto i = 0; i < dict->capacity(); ++i) {
+    Handle<PyObject> key = dict->KeyAtIndex(i, isolate);
+    if (key.is_null()) {
+      continue;
     }
-    assert(out_index == out_length);
+    keys->SetInternal(out_index++, key);
+    if (out_index == out_length) {
+      break;
+    }
   }
+  assert(out_index == out_length);
 
   return scope.Escape(keys);
 }
