@@ -2,9 +2,14 @@
 // Use of this source code is governed by a GNU-style license that can be
 // found in the LICENSE file.
 
+#include <vector>
+
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-dict.h"
+#include "src/objects/py-list-iterator-klass.h"
+#include "src/objects/py-list-iterator.h"
 #include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -13,6 +18,43 @@ namespace saauso::internal {
 
 namespace {
 class OldSpaceTest : public VmTestBase {};
+
+struct ScanResult {
+  std::vector<Address> addresses;
+  std::vector<size_t> sizes;
+};
+
+void CollectAllocatedObject(Address addr, size_t size_in_bytes, void* data) {
+  auto* result = reinterpret_cast<ScanResult*>(data);
+  result->addresses.push_back(addr);
+  result->sizes.push_back(size_in_bytes);
+}
+
+struct LiveAddressSet {
+  Address first;
+  Address second;
+};
+
+bool MatchLiveAddresses(Address addr, size_t, void* data) {
+  auto* live = reinterpret_cast<LiveAddressSet*>(data);
+  return addr == live->first || addr == live->second;
+}
+
+Address AllocateInitializedOldListIterator(Isolate* isolate) {
+  Address addr = isolate->heap()->AllocateRaw(sizeof(PyListIterator),
+                                              Heap::AllocationSpace::kOldSpace);
+  if (addr == kNullAddress) {
+    return kNullAddress;
+  }
+
+  Tagged<PyListIterator> iterator(addr);
+  PyObject::SetKlass(Tagged<PyObject>(iterator),
+                     PyListIteratorKlass::GetInstance(isolate));
+  PyObject::SetProperties(Tagged<PyObject>(iterator), Tagged<PyDict>::null());
+  iterator->set_owner(Tagged<PyList>::null());
+  iterator->set_iter_cnt(0);
+  return addr;
+}
 }  // namespace
 
 TEST_F(OldSpaceTest, OldSpaceShouldAllocatePagedObjects) {
@@ -120,6 +162,37 @@ TEST_F(OldSpaceTest, OldPageFreeListShouldReuseFreedBlock) {
   EXPECT_EQ(page->GetFreeListLengthSlow(), 0u);
 }
 
+TEST_F(OldSpaceTest, OldPageShouldIterateAllocatedObjectsLinearly) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  Address old_base = old_space.base();
+  size_t old_size = old_space.end() - old_base;
+  old_space.TearDown();
+  old_space.Setup(old_base, OldSpace::kPageSizeInBytes);
+
+  Address first = AllocateInitializedOldListIterator(isolate_);
+  Address second = AllocateInitializedOldListIterator(isolate_);
+  Address third = AllocateInitializedOldListIterator(isolate_);
+  ASSERT_NE(first, kNullAddress);
+  ASSERT_NE(second, kNullAddress);
+  ASSERT_NE(third, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(first);
+  ASSERT_NE(page, nullptr);
+
+  ScanResult result;
+  page->IterateAllocatedObjects(CollectAllocatedObject, &result);
+
+  ASSERT_EQ(result.addresses.size(), 3u);
+  EXPECT_EQ(result.addresses[0], first);
+  EXPECT_EQ(result.addresses[1], second);
+  EXPECT_EQ(result.addresses[2], third);
+
+  old_space.TearDown();
+  old_space.Setup(old_base, old_size);
+}
+
 TEST_F(OldSpaceTest, OldPageFreeListShouldSplitLargeBlock) {
   HandleScope scope(isolate_);
 
@@ -212,6 +285,43 @@ TEST_F(OldSpaceTest, OldPageSweepShouldBuildMergedFreeList) {
   EXPECT_EQ(reused_front, first);
   Address reused_tail = old_space.AllocateRaw(block_size);
   EXPECT_EQ(reused_tail, third);
+
+  old_space.TearDown();
+  old_space.Setup(old_base, old_size);
+}
+
+TEST_F(OldSpaceTest, OldPageSweepFromPredicateShouldBuildFreeList) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  Address old_base = old_space.base();
+  size_t old_size = old_space.end() - old_base;
+  old_space.TearDown();
+  old_space.Setup(old_base, OldSpace::kPageSizeInBytes);
+
+  size_t block_size = ObjectSizeAlign(sizeof(PyListIterator));
+  Address first = AllocateInitializedOldListIterator(isolate_);
+  Address second = AllocateInitializedOldListIterator(isolate_);
+  Address third = AllocateInitializedOldListIterator(isolate_);
+  ASSERT_NE(first, kNullAddress);
+  ASSERT_NE(second, kNullAddress);
+  ASSERT_NE(third, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(first);
+  ASSERT_NE(page, nullptr);
+
+  LiveAddressSet live{second, third};
+  page->SweepFromPredicate(MatchLiveAddresses, &live);
+
+  EXPECT_TRUE(page->HasFlag(OldPage::Flag::kSwept));
+  EXPECT_EQ(page->live_bytes(), block_size << 1);
+  EXPECT_EQ(page->GetFreeListLengthSlow(), 1u);
+  ASSERT_NE(page->free_list_head(), nullptr);
+  EXPECT_EQ(reinterpret_cast<Address>(page->free_list_head()), first);
+  EXPECT_EQ(page->free_list_head()->size(), block_size);
+
+  Address reused = old_space.AllocateRaw(block_size);
+  EXPECT_EQ(reused, first);
 
   old_space.TearDown();
   old_space.Setup(old_base, old_size);

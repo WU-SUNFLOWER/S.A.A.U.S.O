@@ -4,6 +4,8 @@
 
 #include "src/heap/spaces.h"
 
+#include "src/objects/py-object.h"
+
 #include <cassert>
 
 #include "include/saauso-internal.h"
@@ -199,6 +201,22 @@ Address OldPage::TryAllocateFromFreeList(size_t size_in_bytes) {
   return kNullAddress;
 }
 
+void OldPage::IterateAllocatedObjects(OldAllocatedObjectCallback callback,
+                                      void* data) const {
+  assert(callback != nullptr);
+
+  Address cursor = area_start_;
+  while (cursor < allocation_top_) {
+    Tagged<PyObject> object(cursor);
+    size_t object_size = ObjectSizeAlign(PyObject::GetInstanceSize(object));
+    assert(object_size != 0);
+    assert(cursor + object_size <= allocation_top_);
+
+    callback(cursor, object_size, data);
+    cursor += object_size;
+  }
+}
+
 void OldPage::SweepAndBuildFreeList(const LiveObjectVector& live_objects) {
   ClearFlag(Flag::kSwept);
   SetFlag(Flag::kNeedsSweep);
@@ -232,6 +250,30 @@ void OldPage::SweepAndBuildFreeList(const LiveObjectVector& live_objects) {
   live_bytes_ = live_bytes;
   ClearFlag(Flag::kNeedsSweep);
   SetFlag(Flag::kSwept);
+}
+
+namespace {
+struct SweepFromPredicateContext {
+  OldPage* page;
+  OldLiveObjectPredicate predicate;
+  void* data;
+  OldPage::LiveObjectVector live_objects;
+};
+
+void CollectLiveObject(Address addr, size_t size_in_bytes, void* raw_data) {
+  auto* context = reinterpret_cast<SweepFromPredicateContext*>(raw_data);
+  if (context->predicate(addr, size_in_bytes, context->data)) {
+    context->live_objects.PushBack({addr, size_in_bytes});
+  }
+}
+}  // namespace
+
+void OldPage::SweepFromPredicate(OldLiveObjectPredicate predicate, void* data) {
+  assert(predicate != nullptr);
+
+  SweepFromPredicateContext context{this, predicate, data, LiveObjectVector()};
+  IterateAllocatedObjects(CollectLiveObject, &context);
+  SweepAndBuildFreeList(context.live_objects);
 }
 
 Address OldSpace::PageBase(Address addr) {

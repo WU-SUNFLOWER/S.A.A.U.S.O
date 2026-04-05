@@ -92,6 +92,9 @@ struct OldLiveObjectInfo {
   size_t size_in_bytes;
 };
 
+using OldAllocatedObjectCallback = void (*)(Address, size_t, void*);
+using OldLiveObjectPredicate = bool (*)(Address, size_t, void*);
+
 class OldPage {
  public:
   using RememberedSet = Vector<Address*>;
@@ -139,7 +142,10 @@ class OldPage {
   void ClearFreeList();
   void AddFreeBlock(Address addr, size_t size_in_bytes);
   Address TryAllocateFromFreeList(size_t size_in_bytes);
+  void IterateAllocatedObjects(OldAllocatedObjectCallback callback,
+                               void* data) const;
   void SweepAndBuildFreeList(const LiveObjectVector& live_objects);
+  void SweepFromPredicate(OldLiveObjectPredicate predicate, void* data);
 
  protected:
   uint32_t magic_;
