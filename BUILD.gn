@@ -97,6 +97,8 @@ source_set("saauso_core") {
     "//src/heap/factory.h",
     "//src/heap/heap.cc",
     "//src/heap/heap.h",
+    "//src/heap/mark-sweep-collector.cc",
+    "//src/heap/mark-sweep-collector.h",
     "//src/heap/scavenge-visitor.cc",
     "//src/heap/scavenge-visitor.h",
     "//src/heap/spaces.cc",

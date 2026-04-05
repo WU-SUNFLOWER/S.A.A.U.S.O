@@ -4,8 +4,6 @@
 
 #include "src/heap/spaces.h"
 
-#include "src/objects/py-object.h"
-
 #include <cassert>
 
 #include "include/saauso-internal.h"
@@ -201,81 +199,6 @@ Address OldPage::TryAllocateFromFreeList(size_t size_in_bytes) {
   return kNullAddress;
 }
 
-void OldPage::IterateAllocatedObjects(OldAllocatedObjectCallback callback,
-                                      void* data) const {
-  assert(callback != nullptr);
-
-  Address cursor = area_start_;
-  while (cursor < allocation_top_) {
-    Tagged<PyObject> object(cursor);
-    size_t object_size = ObjectSizeAlign(PyObject::GetInstanceSize(object));
-    assert(object_size != 0);
-    assert(cursor + object_size <= allocation_top_);
-
-    callback(cursor, object_size, data);
-    cursor += object_size;
-  }
-}
-
-void OldPage::SweepAndBuildFreeList(const LiveObjectVector& live_objects) {
-  ClearFlag(Flag::kSwept);
-  SetFlag(Flag::kNeedsSweep);
-  ClearFreeList();
-
-  Address cursor = area_start_;
-  size_t live_bytes = 0;
-  for (size_t i = 0; i < live_objects.length(); ++i) {
-    const OldLiveObjectInfo& live_object = live_objects.Get(i);
-    Address live_addr = live_object.addr;
-    size_t live_size = ObjectSizeAlign(live_object.size_in_bytes);
-
-    assert(area_start_ <= live_addr);
-    assert(live_addr + live_size <= allocation_top_);
-    assert(cursor <= live_addr);
-
-    size_t dead_size = live_addr - cursor;
-    if (dead_size >= OldFreeBlock::kMinimumSizeInBytes) {
-      AddFreeBlock(cursor, dead_size);
-    }
-
-    cursor = live_addr + live_size;
-    live_bytes += live_size;
-  }
-
-  size_t tail_dead_size = allocation_top_ - cursor;
-  if (tail_dead_size >= OldFreeBlock::kMinimumSizeInBytes) {
-    AddFreeBlock(cursor, tail_dead_size);
-  }
-
-  live_bytes_ = live_bytes;
-  ClearFlag(Flag::kNeedsSweep);
-  SetFlag(Flag::kSwept);
-}
-
-namespace {
-struct SweepFromPredicateContext {
-  OldPage* page;
-  OldLiveObjectPredicate predicate;
-  void* data;
-  OldPage::LiveObjectVector live_objects;
-};
-
-void CollectLiveObject(Address addr, size_t size_in_bytes, void* raw_data) {
-  auto* context = reinterpret_cast<SweepFromPredicateContext*>(raw_data);
-  if (context->predicate(addr, size_in_bytes, context->data)) {
-    context->live_objects.PushBack({addr, size_in_bytes});
-  }
-}
-}  // namespace
-
-void OldPage::SweepFromPredicate(OldLiveObjectPredicate predicate, void* data) {
-  assert(predicate != nullptr);
-
-  SweepFromPredicateContext context{this, predicate, data, LiveObjectVector()};
-  IterateAllocatedObjects(CollectLiveObject, &context);
-  SweepAndBuildFreeList(context.live_objects);
-}
-
 Address OldSpace::PageBase(Address addr) {
   return addr & ~(static_cast<Address>(kPageSizeInBytes) - 1);
 }
@@ -392,41 +315,6 @@ Address OldSpace::AllocateRaw(size_t size_in_bytes) {
   page->allocated_bytes_ += aligned_size;
   current_page_ = page;
   return result;
-}
-
-OldSpaceSweepStats OldSpace::SweepFromPredicate(OldLiveObjectPredicate predicate,
-                                                void* data) {
-  assert(predicate != nullptr);
-
-  OldSpaceSweepStats stats{0, 0};
-  for (OldPage* page = first_page_; page != nullptr; page = page->next_) {
-    page->SweepFromPredicate(predicate, data);
-    ++stats.swept_pages;
-    stats.live_bytes += page->live_bytes();
-  }
-  current_page_ = first_page_;
-  return stats;
-}
-
-OldSpaceSweepStats OldSpace::SweepFromLiveObjects(
-    const LiveObjectVector& live_objects) {
-  OldSpaceSweepStats stats{0, 0};
-  for (OldPage* page = first_page_; page != nullptr; page = page->next_) {
-    OldPage::LiveObjectVector page_live_objects;
-    for (size_t i = 0; i < live_objects.length(); ++i) {
-      const OldLiveObjectInfo& live_object = live_objects.Get(i);
-      if (page->area_start() <= live_object.addr &&
-          live_object.addr < page->allocation_top()) {
-        page_live_objects.PushBack(live_object);
-      }
-    }
-
-    page->SweepAndBuildFreeList(page_live_objects);
-    ++stats.swept_pages;
-    stats.live_bytes += page->live_bytes();
-  }
-  current_page_ = first_page_;
-  return stats;
 }
 
 bool OldSpace::Contains(Address addr) {

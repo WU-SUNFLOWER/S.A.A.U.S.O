@@ -12,6 +12,7 @@
 namespace saauso::internal {
 
 class Isolate;
+class MarkSweepCollector;
 class ObjectVisitor;
 class VirtualMemory;
 
@@ -47,6 +48,7 @@ class Heap {
   NewSpace& new_space() { return new_space_; }
   OldSpace& old_space() { return old_space_; }
   MetaSpace& meta_space() { return meta_space_; }
+  MarkSweepCollector& mark_sweep_collector() { return *mark_sweep_collector_; }
 
   void IncrementAllocationDisallowedDepth();
   void DecrementAllocationDisallowedDepth();
@@ -84,6 +86,7 @@ class Heap {
   // TODO: 实现大块虚拟内存的灵活生长和收缩
   size_t initial_size_;
   VirtualMemory* initial_chunk_;
+  MarkSweepCollector* mark_sweep_collector_{nullptr};
 
   Isolate* isolate_{nullptr};
   int allocation_disallowed_depth_{0};

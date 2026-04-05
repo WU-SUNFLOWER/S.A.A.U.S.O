@@ -7,6 +7,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
+#include "src/heap/mark-sweep-collector.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-iterator.h"
@@ -182,7 +183,8 @@ TEST_F(OldSpaceTest, OldPageShouldIterateAllocatedObjectsLinearly) {
   ASSERT_NE(page, nullptr);
 
   ScanResult result;
-  page->IterateAllocatedObjects(CollectAllocatedObject, &result);
+  isolate_->heap()->mark_sweep_collector().IterateAllocatedObjectsInPage(
+      page, CollectAllocatedObject, &result);
 
   ASSERT_EQ(result.addresses.size(), 3u);
   EXPECT_EQ(result.addresses[0], first);
@@ -272,9 +274,10 @@ TEST_F(OldSpaceTest, OldPageSweepShouldBuildMergedFreeList) {
   OldPage* page = OldSpace::FromAddress(first);
   ASSERT_NE(page, nullptr);
 
-  OldPage::LiveObjectVector live_objects;
+  MarkSweepCollector::LiveObjectVector live_objects;
   live_objects.PushBack({second, block_size});
-  page->SweepAndBuildFreeList(live_objects);
+  isolate_->heap()->mark_sweep_collector().SweepPageFromLiveObjects(
+      page, live_objects);
 
   EXPECT_TRUE(page->HasFlag(OldPage::Flag::kSwept));
   EXPECT_FALSE(page->HasFlag(OldPage::Flag::kNeedsSweep));
@@ -311,7 +314,8 @@ TEST_F(OldSpaceTest, OldPageSweepFromPredicateShouldBuildFreeList) {
   ASSERT_NE(page, nullptr);
 
   LiveAddressSet live{second, third};
-  page->SweepFromPredicate(MatchLiveAddresses, &live);
+  isolate_->heap()->mark_sweep_collector().SweepPageFromPredicate(
+      page, MatchLiveAddresses, &live);
 
   EXPECT_TRUE(page->HasFlag(OldPage::Flag::kSwept));
   EXPECT_EQ(page->live_bytes(), block_size << 1);
@@ -354,7 +358,9 @@ TEST_F(OldSpaceTest, OldSpaceSweepShouldDispatchAcrossPages) {
             OldSpace::FromAddress(second_page_first));
 
   LiveAddressSet live{first_page_live, second_page_live};
-  OldSpaceSweepStats stats = old_space.SweepFromPredicate(MatchLiveAddresses, &live);
+  OldSpaceSweepStats stats =
+      isolate_->heap()->mark_sweep_collector().SweepOldSpaceFromPredicate(
+          MatchLiveAddresses, &live);
 
   EXPECT_EQ(stats.swept_pages, 2u);
   EXPECT_EQ(stats.live_bytes, ObjectSizeAlign(sizeof(PyListIterator)) << 1);
@@ -399,13 +405,15 @@ TEST_F(OldSpaceTest, OldSpaceSweepFromLiveObjectsShouldDispatchAcrossPages) {
   ASSERT_EQ(OldSpace::FromAddress(second_page_live),
             OldSpace::FromAddress(second_page_first));
 
-  OldSpace::LiveObjectVector live_objects;
+  MarkSweepCollector::LiveObjectVector live_objects;
   live_objects.PushBack({first_page_live,
                          ObjectSizeAlign(sizeof(PyListIterator))});
   live_objects.PushBack({second_page_live,
                          ObjectSizeAlign(sizeof(PyListIterator))});
 
-  OldSpaceSweepStats stats = old_space.SweepFromLiveObjects(live_objects);
+  OldSpaceSweepStats stats =
+      isolate_->heap()->mark_sweep_collector().SweepOldSpaceFromLiveObjects(
+          live_objects);
 
   EXPECT_EQ(stats.swept_pages, 2u);
   EXPECT_EQ(stats.live_bytes, ObjectSizeAlign(sizeof(PyListIterator)) << 1);

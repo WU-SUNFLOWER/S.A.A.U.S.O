@@ -12,6 +12,7 @@
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
+#include "src/heap/mark-sweep-collector.h"
 #include "src/heap/scavenge-visitor.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
@@ -53,9 +54,13 @@ void Heap::Setup(size_t young_generation_size,
 
   meta_space_.Setup(chunk_start_addr, meta_space_size);
   chunk_start_addr += meta_space_size;
+
+  mark_sweep_collector_ = new MarkSweepCollector(this);
 }
 
 void Heap::TearDown() {
+  delete mark_sweep_collector_;
+  mark_sweep_collector_ = nullptr;
   initial_chunk_->Uncommit(initial_chunk_->address(), initial_size_);
   delete initial_chunk_;
 }

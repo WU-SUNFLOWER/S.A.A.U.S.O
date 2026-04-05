@@ -10,6 +10,8 @@
 
 namespace saauso::internal {
 
+class MarkSweepCollector;
+
 class Space {
  public:
   virtual void Setup(Address start, size_t size) = 0;
@@ -87,23 +89,9 @@ class OldFreeBlock {
   OldFreeBlock* next_;
 };
 
-struct OldLiveObjectInfo {
-  Address addr;
-  size_t size_in_bytes;
-};
-
-using OldAllocatedObjectCallback = void (*)(Address, size_t, void*);
-using OldLiveObjectPredicate = bool (*)(Address, size_t, void*);
-
-struct OldSpaceSweepStats {
-  size_t swept_pages;
-  size_t live_bytes;
-};
-
 class OldPage {
  public:
   using RememberedSet = Vector<Address*>;
-  using LiveObjectVector = Vector<OldLiveObjectInfo>;
 
   enum class Flag : uintptr_t {
     kNoFlags = 0u,
@@ -147,10 +135,6 @@ class OldPage {
   void ClearFreeList();
   void AddFreeBlock(Address addr, size_t size_in_bytes);
   Address TryAllocateFromFreeList(size_t size_in_bytes);
-  void IterateAllocatedObjects(OldAllocatedObjectCallback callback,
-                               void* data) const;
-  void SweepAndBuildFreeList(const LiveObjectVector& live_objects);
-  void SweepFromPredicate(OldLiveObjectPredicate predicate, void* data);
 
  protected:
   uint32_t magic_;
@@ -169,13 +153,12 @@ class OldPage {
 
  private:
   friend class OldSpace;
+  friend class MarkSweepCollector;
 };
 
 // TODO: 实现分代式GC
 class OldSpace : public Space {
  public:
-  using LiveObjectVector = Vector<OldLiveObjectInfo>;
-
   static constexpr size_t kPageSizeInBytes = OldPage::kSizeInBytes;
   static constexpr size_t kMaxRegularHeapObjectSizeInBytes =
       (kPageSizeInBytes - sizeof(OldPage)) >> 1;
@@ -185,9 +168,6 @@ class OldSpace : public Space {
 
   Address AllocateRaw(size_t size_in_bytes) override;
   bool Contains(Address addr) override;
-  OldSpaceSweepStats SweepFromPredicate(OldLiveObjectPredicate predicate,
-                                        void* data);
-  OldSpaceSweepStats SweepFromLiveObjects(const LiveObjectVector& live_objects);
 
   static Address PageBase(Address addr);
   static OldPage* FromAddress(Address addr);
@@ -198,6 +178,7 @@ class OldSpace : public Space {
   OldPage* current_page() const { return current_page_; }
 
  private:
+  friend class MarkSweepCollector;
   static OldPage* FindPageWithLinearAllocationArea(OldPage* start_page,
                                                    OldPage* first_page,
                                                    size_t aligned_size);
