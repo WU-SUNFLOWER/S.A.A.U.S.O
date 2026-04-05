@@ -327,4 +327,50 @@ TEST_F(OldSpaceTest, OldPageSweepFromPredicateShouldBuildFreeList) {
   old_space.Setup(old_base, old_size);
 }
 
+TEST_F(OldSpaceTest, OldSpaceSweepShouldDispatchAcrossPages) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  Address old_base = old_space.base();
+  size_t old_size = old_space.end() - old_base;
+  old_space.TearDown();
+  old_space.Setup(old_base, OldSpace::kPageSizeInBytes << 1);
+
+  Address first_page_live = AllocateInitializedOldListIterator(isolate_);
+  ASSERT_NE(first_page_live, kNullAddress);
+
+  Address second_page_first = kNullAddress;
+  while (second_page_first == kNullAddress) {
+    Address addr = AllocateInitializedOldListIterator(isolate_);
+    ASSERT_NE(addr, kNullAddress);
+    if (OldSpace::FromAddress(addr) != OldSpace::FromAddress(first_page_live)) {
+      second_page_first = addr;
+    }
+  }
+
+  Address second_page_live = AllocateInitializedOldListIterator(isolate_);
+  ASSERT_NE(second_page_live, kNullAddress);
+  ASSERT_EQ(OldSpace::FromAddress(second_page_live),
+            OldSpace::FromAddress(second_page_first));
+
+  LiveAddressSet live{first_page_live, second_page_live};
+  OldSpaceSweepStats stats = old_space.SweepFromPredicate(MatchLiveAddresses, &live);
+
+  EXPECT_EQ(stats.swept_pages, 2u);
+  EXPECT_EQ(stats.live_bytes, ObjectSizeAlign(sizeof(PyListIterator)) << 1);
+  EXPECT_EQ(old_space.current_page(), old_space.first_page());
+
+  OldPage* first_page = OldSpace::FromAddress(first_page_live);
+  OldPage* second_page = OldSpace::FromAddress(second_page_live);
+  ASSERT_NE(first_page, nullptr);
+  ASSERT_NE(second_page, nullptr);
+  EXPECT_TRUE(first_page->HasFlag(OldPage::Flag::kSwept));
+  EXPECT_TRUE(second_page->HasFlag(OldPage::Flag::kSwept));
+  EXPECT_EQ(first_page->live_bytes(), ObjectSizeAlign(sizeof(PyListIterator)));
+  EXPECT_EQ(second_page->live_bytes(), ObjectSizeAlign(sizeof(PyListIterator)));
+
+  old_space.TearDown();
+  old_space.Setup(old_base, old_size);
+}
+
 }  // namespace saauso::internal

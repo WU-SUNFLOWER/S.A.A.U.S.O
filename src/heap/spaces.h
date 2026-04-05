@@ -95,6 +95,11 @@ struct OldLiveObjectInfo {
 using OldAllocatedObjectCallback = void (*)(Address, size_t, void*);
 using OldLiveObjectPredicate = bool (*)(Address, size_t, void*);
 
+struct OldSpaceSweepStats {
+  size_t swept_pages;
+  size_t live_bytes;
+};
+
 class OldPage {
  public:
   using RememberedSet = Vector<Address*>;
@@ -178,6 +183,8 @@ class OldSpace : public Space {
 
   Address AllocateRaw(size_t size_in_bytes) override;
   bool Contains(Address addr) override;
+  OldSpaceSweepStats SweepFromPredicate(OldLiveObjectPredicate predicate,
+                                        void* data);
 
   static Address PageBase(Address addr);
   static OldPage* FromAddress(Address addr);

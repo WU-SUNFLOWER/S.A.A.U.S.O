@@ -394,6 +394,20 @@ Address OldSpace::AllocateRaw(size_t size_in_bytes) {
   return result;
 }
 
+OldSpaceSweepStats OldSpace::SweepFromPredicate(OldLiveObjectPredicate predicate,
+                                                void* data) {
+  assert(predicate != nullptr);
+
+  OldSpaceSweepStats stats{0, 0};
+  for (OldPage* page = first_page_; page != nullptr; page = page->next_) {
+    page->SweepFromPredicate(predicate, data);
+    ++stats.swept_pages;
+    stats.live_bytes += page->live_bytes();
+  }
+  current_page_ = first_page_;
+  return stats;
+}
+
 bool OldSpace::Contains(Address addr) {
   if (addr < base_ || addr >= end_) {
     return false;
