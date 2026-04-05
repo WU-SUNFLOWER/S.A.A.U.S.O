@@ -6,11 +6,16 @@ executable("ut") {
   testonly = true
 
   sources = [
+    # Handle
     "./handles/global-handle-unittest.cc",
     "./handles/handle-thread-unittest.cc",
     "./handles/handle-unittest.cc",
+
+    # Heap
     "./heap/gc-unittest.cc",
-    "./lsan-suppressions.cc",
+    "./heap/old-space-unittests.cc",
+
+    # Object
     "./objects/attribute-unittest.cc",
     "./objects/cell-unittest.cc",
     "./objects/factory-boundary-unittest.cc",
@@ -22,11 +27,16 @@ executable("ut") {
     "./objects/py-smi-unittest.cc",
     "./objects/py-string-unittest.cc",
     "./objects/py-tuple-unittest.cc",
-    "./test-helpers.cc",
-    "./test-utils.cc",
+
+    # Utils
     "./utils/number-conversion-unittest.cc",
     "./utils/random-number-generator-unittest.cc",
     "./utils/string-search-unittest.cc",
+
+    # Infra
+    "./lsan-suppressions.cc",
+    "./test-helpers.cc",
+    "./test-utils.cc",
   ]
 
   deps = [
