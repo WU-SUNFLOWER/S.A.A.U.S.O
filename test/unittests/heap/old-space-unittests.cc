@@ -101,4 +101,42 @@ TEST_F(OldSpaceTest, OldPageRememberedSetShouldTrackOldToNewSlots) {
   EXPECT_EQ(page->remembered_set_length(), 1u);
 }
 
+TEST_F(OldSpaceTest, OldPageFreeListShouldReuseFreedBlock) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  size_t block_size = ObjectSizeAlign(sizeof(PyString));
+  Address block = old_space.AllocateRaw(block_size);
+  ASSERT_NE(block, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(block);
+  ASSERT_NE(page, nullptr);
+  page->AddFreeBlock(block, block_size);
+
+  EXPECT_EQ(page->GetFreeListLengthSlow(), 1u);
+
+  Address reused = old_space.AllocateRaw(block_size);
+  EXPECT_EQ(reused, block);
+  EXPECT_EQ(page->GetFreeListLengthSlow(), 0u);
+}
+
+TEST_F(OldSpaceTest, OldPageFreeListShouldSplitLargeBlock) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  size_t block_size = OldFreeBlock::kMinimumSizeInBytes << 1;
+  Address block = old_space.AllocateRaw(block_size);
+  ASSERT_NE(block, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(block);
+  ASSERT_NE(page, nullptr);
+  page->AddFreeBlock(block, block_size);
+
+  Address reused = old_space.AllocateRaw(OldFreeBlock::kMinimumSizeInBytes);
+  EXPECT_EQ(reused, block);
+  ASSERT_NE(page->free_list_head(), nullptr);
+  EXPECT_EQ(page->GetFreeListLengthSlow(), 1u);
+  EXPECT_EQ(page->free_list_head()->size(), OldFreeBlock::kMinimumSizeInBytes);
+}
+
 }  // namespace saauso::internal

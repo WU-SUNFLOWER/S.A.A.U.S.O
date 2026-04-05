@@ -71,6 +71,22 @@ class MetaSpace : public SemiSpace {};
 
 class OldSpace;
 
+class OldFreeBlock {
+ public:
+  static constexpr size_t kMinimumSizeInBytes =
+      (sizeof(size_t) + sizeof(OldFreeBlock*) + kObjectAlignmentMask) &
+      ~kObjectAlignmentMask;
+
+  size_t size() const { return size_; }
+  OldFreeBlock* next() const { return next_; }
+
+ private:
+  friend class OldPage;
+
+  size_t size_;
+  OldFreeBlock* next_;
+};
+
 class OldPage {
  public:
   using RememberedSet = Vector<Address*>;
@@ -101,16 +117,20 @@ class OldPage {
   Address allocation_limit() const { return allocation_limit_; }
   size_t allocated_bytes() const { return allocated_bytes_; }
   size_t live_bytes() const { return live_bytes_; }
-  
+
   RememberedSet* remembered_set() const { return remembered_set_; }
   size_t remembered_set_length() const {
     return remembered_set_ == nullptr ? 0 : remembered_set_->length();
   }
+  OldFreeBlock* free_list_head() const { return free_list_head_; }
+  size_t GetFreeListLengthSlow() const;
 
   bool HasFlag(Flag flag) const;
   void SetFlag(Flag flag);
   void ClearFlag(Flag flag);
   void AddRememberedSlot(Address* slot);
+  void AddFreeBlock(Address addr, size_t size_in_bytes);
+  Address TryAllocateFromFreeList(size_t size_in_bytes);
 
  protected:
   uint32_t magic_;
@@ -125,7 +145,7 @@ class OldPage {
   size_t allocated_bytes_;
   size_t live_bytes_;
   RememberedSet* remembered_set_;
-  void* free_list_head_;
+  OldFreeBlock* free_list_head_;
 
  private:
   friend class OldSpace;

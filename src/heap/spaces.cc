@@ -90,6 +90,60 @@ void OldPage::AddRememberedSlot(Address* slot) {
   remembered_set_->PushBack(slot);
 }
 
+size_t OldPage::GetFreeListLengthSlow() const {
+  size_t length = 0;
+  for (OldFreeBlock* block = free_list_head_; block != nullptr;
+       block = block->next()) {
+    ++length;
+  }
+  return length;
+}
+
+void OldPage::AddFreeBlock(Address addr, size_t size_in_bytes) {
+  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
+  assert(aligned_size >= OldFreeBlock::kMinimumSizeInBytes);
+  assert(area_start_ <= addr);
+  assert(addr + aligned_size <= allocation_top_);
+
+  auto* block = reinterpret_cast<OldFreeBlock*>(addr);
+  block->size_ = aligned_size;
+  block->next_ = free_list_head_;
+  free_list_head_ = block;
+}
+
+Address OldPage::TryAllocateFromFreeList(size_t size_in_bytes) {
+  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
+  OldFreeBlock* prev = nullptr;
+  OldFreeBlock* block = free_list_head_;
+
+  while (block != nullptr) {
+    if (block->size_ >= aligned_size) {
+      Address result = reinterpret_cast<Address>(block);
+      size_t remainder = block->size_ - aligned_size;
+      if (remainder >= OldFreeBlock::kMinimumSizeInBytes) {
+        Address next_block_addr = result + aligned_size;
+        auto* next_block = reinterpret_cast<OldFreeBlock*>(next_block_addr);
+        next_block->size_ = remainder;
+        next_block->next_ = block->next_;
+        if (prev == nullptr) {
+          free_list_head_ = next_block;
+        } else {
+          prev->next_ = next_block;
+        }
+      } else if (prev == nullptr) {
+        free_list_head_ = block->next_;
+      } else {
+        prev->next_ = block->next_;
+      }
+      return result;
+    }
+    prev = block;
+    block = block->next_;
+  }
+
+  return kNullAddress;
+}
+
 Address OldSpace::PageBase(Address addr) {
   return addr & ~(static_cast<Address>(kPageSizeInBytes) - 1);
 }
@@ -180,8 +234,23 @@ Address OldSpace::AllocateRaw(size_t size_in_bytes) {
   size_t aligned_size = ObjectSizeAlign(size_in_bytes);
   assert(aligned_size <= kMaxRegularHeapObjectSizeInBytes);
 
-  OldPage* page = FindPageWithLinearAllocationArea(current_page_, first_page_,
-                                                   aligned_size);
+  if (current_page_ == nullptr) {
+    return kNullAddress;
+  }
+
+  OldPage* start_page = current_page_;
+  OldPage* page = start_page;
+  do {
+    Address result = page->TryAllocateFromFreeList(aligned_size);
+    if (result != kNullAddress) {
+      current_page_ = page;
+      return result;
+    }
+    page = page->next_ != nullptr ? page->next_ : first_page_;
+  } while (page != start_page);
+
+  page = FindPageWithLinearAllocationArea(current_page_, first_page_,
+                                          aligned_size);
   if (page == nullptr) {
     return kNullAddress;
   }
