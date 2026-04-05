@@ -174,6 +174,8 @@ class OldPage {
 // TODO: 实现分代式GC
 class OldSpace : public Space {
  public:
+  using LiveObjectVector = Vector<OldLiveObjectInfo>;
+
   static constexpr size_t kPageSizeInBytes = OldPage::kSizeInBytes;
   static constexpr size_t kMaxRegularHeapObjectSizeInBytes =
       (kPageSizeInBytes - sizeof(OldPage)) >> 1;
@@ -185,6 +187,7 @@ class OldSpace : public Space {
   bool Contains(Address addr) override;
   OldSpaceSweepStats SweepFromPredicate(OldLiveObjectPredicate predicate,
                                         void* data);
+  OldSpaceSweepStats SweepFromLiveObjects(const LiveObjectVector& live_objects);
 
   static Address PageBase(Address addr);
   static OldPage* FromAddress(Address addr);
