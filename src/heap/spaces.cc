@@ -71,6 +71,25 @@ void NewSpace::Flip() {
 ////////////////////////////////////////////////////////////
 // OldSpace相关实现
 
+bool OldPage::HasFlag(Flag flag) const {
+  return (flags_ & static_cast<uintptr_t>(flag)) != 0;
+}
+
+void OldPage::SetFlag(Flag flag) {
+  flags_ |= static_cast<uintptr_t>(flag);
+}
+
+void OldPage::ClearFlag(Flag flag) {
+  flags_ &= ~static_cast<uintptr_t>(flag);
+}
+
+void OldPage::AddRememberedSlot(Address* slot) {
+  if (remembered_set_ == nullptr) {
+    remembered_set_ = new RememberedSet();
+  }
+  remembered_set_->PushBack(slot);
+}
+
 Address OldSpace::PageBase(Address addr) {
   return addr & ~(static_cast<Address>(kPageSizeInBytes) - 1);
 }
@@ -78,6 +97,23 @@ Address OldSpace::PageBase(Address addr) {
 // static
 OldPage* OldSpace::FromAddress(Address addr) {
   return reinterpret_cast<OldPage*>(PageBase(addr));
+}
+
+// static
+OldPage* OldSpace::FindPageWithLinearAllocationArea(OldPage* start_page,
+                                                    OldPage* first_page,
+                                                    size_t aligned_size) {
+  assert(start_page != nullptr);
+
+  OldPage* page = start_page;
+  do {
+    if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
+      return page;
+    }
+    page = page->next_ != nullptr ? page->next_ : first_page;
+  } while (page != start_page);
+
+  return nullptr;
 }
 
 // static
@@ -130,6 +166,7 @@ void OldSpace::TearDown() {
     page->magic_ = 0;
     page->flags_ = static_cast<uintptr_t>(OldPage::Flag::kNoFlags);
     page->owner_ = nullptr;
+    delete page->remembered_set_;
     page->remembered_set_ = nullptr;
     page->free_list_head_ = nullptr;
   }
@@ -143,26 +180,17 @@ Address OldSpace::AllocateRaw(size_t size_in_bytes) {
   size_t aligned_size = ObjectSizeAlign(size_in_bytes);
   assert(aligned_size <= kMaxRegularHeapObjectSizeInBytes);
 
-  if (current_page_ == nullptr) {
+  OldPage* page = FindPageWithLinearAllocationArea(current_page_, first_page_,
+                                                   aligned_size);
+  if (page == nullptr) {
     return kNullAddress;
   }
 
-  OldPage* start_page = current_page_;
-  OldPage* page = start_page;
-  do {
-    Address result = page->allocation_top_;
-    Address new_top = result + aligned_size;
-    if (new_top <= page->allocation_limit_) {
-      page->allocation_top_ = new_top;
-      page->allocated_bytes_ += aligned_size;
-      current_page_ = page;
-      return result;
-    }
-
-    page = page->next_ != nullptr ? page->next_ : first_page_;
-  } while (page != start_page);
-
-  return kNullAddress;
+  Address result = page->allocation_top_;
+  page->allocation_top_ += aligned_size;
+  page->allocated_bytes_ += aligned_size;
+  current_page_ = page;
+  return result;
 }
 
 bool OldSpace::Contains(Address addr) {

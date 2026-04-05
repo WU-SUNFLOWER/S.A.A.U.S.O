@@ -143,11 +143,45 @@ void Heap::RecordWrite(Tagged<PyObject> object,
   }
 
   // 4. 记录到记忆集 (Old -> New)
+  if (InOldSpace(object.ptr())) {
+    OldSpace::FromAddress(object.ptr())->AddRememberedSlot(slot);
+    return;
+  }
+
+  // 5. 记录到全局记忆集 (Meta -> New 等场景)
   // 简单去重：这里暂不判重，依靠Scavenge时的清理
   remembered_set_.PushBack(reinterpret_cast<Tagged<PyObject>*>(slot));
 }
 
 void Heap::IterateRememberedSet(ObjectVisitor* v) {
+  for (OldPage* page = old_space_.first_page(); page != nullptr;
+       page = page->next()) {
+    auto* remembered_set = page->remembered_set();
+    if (remembered_set == nullptr) {
+      continue;
+    }
+
+    size_t new_size = 0;
+    for (size_t i = 0; i < remembered_set->length(); ++i) {
+      Address* slot = remembered_set->Get(i);
+      Tagged<PyObject>* tagged_slot = reinterpret_cast<Tagged<PyObject>*>(slot);
+      Tagged<PyObject> object = *tagged_slot;
+      assert(!object.is_null());
+      assert(!object.IsSmi());
+      assert(InNewSpaceEden(object.ptr()) || InNewSpaceSurvivor(object.ptr()));
+
+      v->VisitPointer(tagged_slot);
+
+      Tagged<PyObject> new_object = *tagged_slot;
+      // 如果经过处理后，tagged_slot处指向的object仍然在新生代，那么再次回收进记录集
+      if (InNewSpaceEden(new_object.ptr()) ||
+          InNewSpaceSurvivor(new_object.ptr())) {
+        remembered_set->Set(new_size++, slot);
+      }
+    }
+    remembered_set->Resize(new_size);
+  }
+
   // 使用双指针法原地清理无效的记录
   size_t new_size = 0;
   for (size_t i = 0; i < remembered_set_.length(); ++i) {

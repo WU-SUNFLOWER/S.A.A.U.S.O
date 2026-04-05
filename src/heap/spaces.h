@@ -6,6 +6,7 @@
 #define SAAUSO_HEAP_SPACES_H_
 
 #include "include/saauso-internal.h"
+#include "src/utils/vector.h"
 
 namespace saauso::internal {
 
@@ -72,6 +73,8 @@ class OldSpace;
 
 class OldPage {
  public:
+  using RememberedSet = Vector<Address*>;
+
   enum class Flag : uintptr_t {
     kNoFlags = 0u,
     kOldPage = 1u << 0,
@@ -96,6 +99,18 @@ class OldPage {
 
   Address allocation_top() const { return allocation_top_; }
   Address allocation_limit() const { return allocation_limit_; }
+  size_t allocated_bytes() const { return allocated_bytes_; }
+  size_t live_bytes() const { return live_bytes_; }
+  
+  RememberedSet* remembered_set() const { return remembered_set_; }
+  size_t remembered_set_length() const {
+    return remembered_set_ == nullptr ? 0 : remembered_set_->length();
+  }
+
+  bool HasFlag(Flag flag) const;
+  void SetFlag(Flag flag);
+  void ClearFlag(Flag flag);
+  void AddRememberedSlot(Address* slot);
 
  protected:
   uint32_t magic_;
@@ -109,7 +124,7 @@ class OldPage {
   Address allocation_limit_;
   size_t allocated_bytes_;
   size_t live_bytes_;
-  void* remembered_set_;
+  RememberedSet* remembered_set_;
   void* free_list_head_;
 
  private:
@@ -138,6 +153,9 @@ class OldSpace : public Space {
   OldPage* current_page() const { return current_page_; }
 
  private:
+  static OldPage* FindPageWithLinearAllocationArea(OldPage* start_page,
+                                                   OldPage* first_page,
+                                                   size_t aligned_size);
   static void InitializePage(OldPage* page,
                              OldSpace* owner,
                              Address page_start);

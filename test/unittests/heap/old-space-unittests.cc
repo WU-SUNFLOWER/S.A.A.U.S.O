@@ -47,6 +47,7 @@ TEST_F(OldSpaceTest, OldSpaceShouldAdvanceToNextPageWhenCurrentPageIsFull) {
 
   OldSpace& old_space = isolate_->heap()->old_space();
   Address old_base = old_space.base();
+  size_t old_size = old_space.end() - old_base;
   old_space.TearDown();
   old_space.Setup(old_base, OldSpace::kPageSizeInBytes);
 
@@ -54,16 +55,19 @@ TEST_F(OldSpaceTest, OldSpaceShouldAdvanceToNextPageWhenCurrentPageIsFull) {
   ASSERT_NE(single_page, nullptr);
   ASSERT_EQ(single_page->next(), nullptr);
 
-  size_t kStepSize = ObjectSizeAlign(sizeof(PyString));
-  while (single_page->allocation_top() + kStepSize <=
+  size_t step_size = ObjectSizeAlign(sizeof(PyString));
+  while (single_page->allocation_top() + step_size <=
          single_page->allocation_limit()) {
-    Address filler = old_space.AllocateRaw(kStepSize);
+    Address filler = old_space.AllocateRaw(step_size);
     ASSERT_NE(filler, kNullAddress);
     EXPECT_EQ(OldSpace::FromAddress(filler), single_page);
   }
 
   Address next = old_space.AllocateRaw(sizeof(PyString));
   EXPECT_EQ(next, kNullAddress);
+
+  old_space.TearDown();
+  old_space.Setup(old_base, old_size);
 }
 
 TEST_F(OldSpaceTest, OldSpaceShouldRejectTooLargeRegularObject) {
@@ -73,6 +77,28 @@ TEST_F(OldSpaceTest, OldSpaceShouldRejectTooLargeRegularObject) {
                    OldSpace::kMaxRegularHeapObjectSizeInBytes + 1,
                    Heap::AllocationSpace::kOldSpace),
                "");
+}
+
+TEST_F(OldSpaceTest, OldPageRememberedSetShouldTrackOldToNewSlots) {
+  HandleScope scope(isolate_);
+
+  Address host = isolate_->heap()->AllocateRaw(
+      sizeof(PyString), Heap::AllocationSpace::kOldSpace);
+  ASSERT_NE(host, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(host);
+  ASSERT_NE(page, nullptr);
+  EXPECT_EQ(page->remembered_set_length(), 0u);
+
+  Handle<PyString> young_value = PyString::New(isolate_, "young-value");
+  Tagged<PyObject> slot_value = *young_value;
+
+  isolate_->heap()->RecordWrite(Tagged<PyObject>(host),
+                                reinterpret_cast<Address*>(&slot_value),
+                                *young_value);
+
+  ASSERT_NE(page->remembered_set(), nullptr);
+  EXPECT_EQ(page->remembered_set_length(), 1u);
 }
 
 }  // namespace saauso::internal
