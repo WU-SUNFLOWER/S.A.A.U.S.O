@@ -87,9 +87,15 @@ class OldFreeBlock {
   OldFreeBlock* next_;
 };
 
+struct OldLiveObjectInfo {
+  Address addr;
+  size_t size_in_bytes;
+};
+
 class OldPage {
  public:
   using RememberedSet = Vector<Address*>;
+  using LiveObjectVector = Vector<OldLiveObjectInfo>;
 
   enum class Flag : uintptr_t {
     kNoFlags = 0u,
@@ -124,13 +130,16 @@ class OldPage {
   }
   OldFreeBlock* free_list_head() const { return free_list_head_; }
   size_t GetFreeListLengthSlow() const;
+  bool IsValidFreeBlockSlow(Address addr, size_t size_in_bytes) const;
 
   bool HasFlag(Flag flag) const;
   void SetFlag(Flag flag);
   void ClearFlag(Flag flag);
   void AddRememberedSlot(Address* slot);
+  void ClearFreeList();
   void AddFreeBlock(Address addr, size_t size_in_bytes);
   Address TryAllocateFromFreeList(size_t size_in_bytes);
+  void SweepAndBuildFreeList(const LiveObjectVector& live_objects);
 
  protected:
   uint32_t magic_;

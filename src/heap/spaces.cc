@@ -99,16 +99,71 @@ size_t OldPage::GetFreeListLengthSlow() const {
   return length;
 }
 
+bool OldPage::IsValidFreeBlockSlow(Address addr, size_t size_in_bytes) const {
+  if (size_in_bytes < OldFreeBlock::kMinimumSizeInBytes) {
+    return false;
+  }
+  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
+  if (aligned_size < OldFreeBlock::kMinimumSizeInBytes) {
+    return false;
+  }
+  if ((addr & kObjectAlignmentMask) != 0) {
+    return false;
+  }
+  if (addr < area_start_ || addr + aligned_size > allocation_top_) {
+    return false;
+  }
+
+  for (OldFreeBlock* block = free_list_head_; block != nullptr;
+       block = block->next()) {
+    Address block_addr = reinterpret_cast<Address>(block);
+    Address block_end = block_addr + block->size();
+    if (!(addr + aligned_size <= block_addr || block_end <= addr)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void OldPage::ClearFreeList() {
+  free_list_head_ = nullptr;
+}
+
 void OldPage::AddFreeBlock(Address addr, size_t size_in_bytes) {
   size_t aligned_size = ObjectSizeAlign(size_in_bytes);
-  assert(aligned_size >= OldFreeBlock::kMinimumSizeInBytes);
-  assert(area_start_ <= addr);
-  assert(addr + aligned_size <= allocation_top_);
+  assert(IsValidFreeBlockSlow(addr, aligned_size));
+
+  OldFreeBlock* prev = nullptr;
+  OldFreeBlock* next = free_list_head_;
+  while (next != nullptr && reinterpret_cast<Address>(next) < addr) {
+    prev = next;
+    next = next->next();
+  }
 
   auto* block = reinterpret_cast<OldFreeBlock*>(addr);
   block->size_ = aligned_size;
-  block->next_ = free_list_head_;
-  free_list_head_ = block;
+  block->next_ = next;
+
+  if (prev == nullptr) {
+    free_list_head_ = block;
+  } else {
+    prev->next_ = block;
+  }
+
+  if (prev != nullptr &&
+      reinterpret_cast<Address>(prev) + prev->size_ ==
+          reinterpret_cast<Address>(block)) {
+    prev->size_ += block->size_;
+    prev->next_ = block->next_;
+    block = prev;
+  }
+
+  if (next != nullptr &&
+      reinterpret_cast<Address>(block) + block->size_ ==
+          reinterpret_cast<Address>(next)) {
+    block->size_ += next->size_;
+    block->next_ = next->next_;
+  }
 }
 
 Address OldPage::TryAllocateFromFreeList(size_t size_in_bytes) {
@@ -142,6 +197,41 @@ Address OldPage::TryAllocateFromFreeList(size_t size_in_bytes) {
   }
 
   return kNullAddress;
+}
+
+void OldPage::SweepAndBuildFreeList(const LiveObjectVector& live_objects) {
+  ClearFlag(Flag::kSwept);
+  SetFlag(Flag::kNeedsSweep);
+  ClearFreeList();
+
+  Address cursor = area_start_;
+  size_t live_bytes = 0;
+  for (size_t i = 0; i < live_objects.length(); ++i) {
+    const OldLiveObjectInfo& live_object = live_objects.Get(i);
+    Address live_addr = live_object.addr;
+    size_t live_size = ObjectSizeAlign(live_object.size_in_bytes);
+
+    assert(area_start_ <= live_addr);
+    assert(live_addr + live_size <= allocation_top_);
+    assert(cursor <= live_addr);
+
+    size_t dead_size = live_addr - cursor;
+    if (dead_size >= OldFreeBlock::kMinimumSizeInBytes) {
+      AddFreeBlock(cursor, dead_size);
+    }
+
+    cursor = live_addr + live_size;
+    live_bytes += live_size;
+  }
+
+  size_t tail_dead_size = allocation_top_ - cursor;
+  if (tail_dead_size >= OldFreeBlock::kMinimumSizeInBytes) {
+    AddFreeBlock(cursor, tail_dead_size);
+  }
+
+  live_bytes_ = live_bytes;
+  ClearFlag(Flag::kNeedsSweep);
+  SetFlag(Flag::kSwept);
 }
 
 Address OldSpace::PageBase(Address addr) {

@@ -139,4 +139,82 @@ TEST_F(OldSpaceTest, OldPageFreeListShouldSplitLargeBlock) {
   EXPECT_EQ(page->free_list_head()->size(), OldFreeBlock::kMinimumSizeInBytes);
 }
 
+TEST_F(OldSpaceTest, OldPageFreeListShouldMergeAdjacentBlocks) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  size_t block_size = OldFreeBlock::kMinimumSizeInBytes;
+  Address first = old_space.AllocateRaw(block_size);
+  Address second = old_space.AllocateRaw(block_size);
+  ASSERT_NE(first, kNullAddress);
+  ASSERT_NE(second, kNullAddress);
+  ASSERT_EQ(first + block_size, second);
+
+  OldPage* page = OldSpace::FromAddress(first);
+  ASSERT_NE(page, nullptr);
+
+  page->AddFreeBlock(second, block_size);
+  page->AddFreeBlock(first, block_size);
+
+  ASSERT_NE(page->free_list_head(), nullptr);
+  EXPECT_EQ(page->GetFreeListLengthSlow(), 1u);
+  EXPECT_EQ(page->free_list_head()->size(), block_size << 1);
+}
+
+TEST_F(OldSpaceTest, OldPageShouldRejectInvalidFreeBlock) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  size_t block_size = ObjectSizeAlign(sizeof(PyString));
+  Address block = old_space.AllocateRaw(block_size);
+  ASSERT_NE(block, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(block);
+  ASSERT_NE(page, nullptr);
+
+  EXPECT_TRUE(page->IsValidFreeBlockSlow(block, block_size));
+  EXPECT_FALSE(page->IsValidFreeBlockSlow(block + 1, block_size));
+  EXPECT_FALSE(page->IsValidFreeBlockSlow(block, OldFreeBlock::kMinimumSizeInBytes - 1));
+  page->AddFreeBlock(block, block_size);
+  EXPECT_FALSE(page->IsValidFreeBlockSlow(block, block_size));
+}
+
+TEST_F(OldSpaceTest, OldPageSweepShouldBuildMergedFreeList) {
+  HandleScope scope(isolate_);
+
+  OldSpace& old_space = isolate_->heap()->old_space();
+  Address old_base = old_space.base();
+  size_t old_size = old_space.end() - old_base;
+  old_space.TearDown();
+  old_space.Setup(old_base, OldSpace::kPageSizeInBytes);
+
+  size_t block_size = ObjectSizeAlign(sizeof(PyString));
+  Address first = old_space.AllocateRaw(block_size);
+  Address second = old_space.AllocateRaw(block_size);
+  Address third = old_space.AllocateRaw(block_size);
+  ASSERT_NE(first, kNullAddress);
+  ASSERT_NE(second, kNullAddress);
+  ASSERT_NE(third, kNullAddress);
+
+  OldPage* page = OldSpace::FromAddress(first);
+  ASSERT_NE(page, nullptr);
+
+  OldPage::LiveObjectVector live_objects;
+  live_objects.PushBack({second, block_size});
+  page->SweepAndBuildFreeList(live_objects);
+
+  EXPECT_TRUE(page->HasFlag(OldPage::Flag::kSwept));
+  EXPECT_FALSE(page->HasFlag(OldPage::Flag::kNeedsSweep));
+  EXPECT_EQ(page->live_bytes(), block_size);
+  EXPECT_EQ(page->GetFreeListLengthSlow(), 2u);
+
+  Address reused_front = old_space.AllocateRaw(block_size);
+  EXPECT_EQ(reused_front, first);
+  Address reused_tail = old_space.AllocateRaw(block_size);
+  EXPECT_EQ(reused_tail, third);
+
+  old_space.TearDown();
+  old_space.Setup(old_base, old_size);
+}
+
 }  // namespace saauso::internal
