@@ -113,6 +113,10 @@ bool Heap::InNewSpaceSurvivor(Address addr) {
   return new_space().survivor_space().Contains(addr);
 }
 
+bool Heap::InOldSpace(Address addr) {
+  return old_space().Contains(addr);
+}
+
 void Heap::CollectGarbage() {
   gc_state_ = GcState::kScavenage;
   DoScavenge();

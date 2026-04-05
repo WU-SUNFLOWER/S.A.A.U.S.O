@@ -71,17 +71,113 @@ void NewSpace::Flip() {
 ////////////////////////////////////////////////////////////
 // OldSpace相关实现
 
-void OldSpace::Setup(Address start, size_t size) {}
-void OldSpace::TearDown() {}
+Address OldSpace::PageBase(Address addr) {
+  return addr & ~(static_cast<Address>(kPageSizeInBytes) - 1);
+}
+
+// static
+OldPage* OldSpace::FromAddress(Address addr) {
+  return reinterpret_cast<OldPage*>(PageBase(addr));
+}
+
+// static
+void OldSpace::InitializePage(OldPage* page,
+                              OldSpace* owner,
+                              Address page_start) {
+  page->magic_ = OldPage::kMagicHeader;
+  page->flags_ = static_cast<uintptr_t>(OldPage::Flag::kOldPage);
+  page->owner_ = owner;
+  page->next_ = nullptr;
+  page->prev_ = nullptr;
+  page->area_start_ = page_start + ObjectSizeAlign(sizeof(OldPage));
+  page->area_end_ = page_start + kPageSizeInBytes;
+  page->allocation_top_ = page->area_start_;
+  page->allocation_limit_ = page->area_end_;
+  page->allocated_bytes_ = 0;
+  page->live_bytes_ = 0;
+  page->remembered_set_ = nullptr;
+  page->free_list_head_ = nullptr;
+}
+
+void OldSpace::Setup(Address start, size_t size) {
+  assert((kPageSizeInBytes & (kPageSizeInBytes - 1)) == 0);
+  assert(start != kNullAddress);
+  assert(size >= kPageSizeInBytes);
+  Address mask = static_cast<Address>(kPageSizeInBytes - 1);
+  Address reserved_end = start + size;
+  base_ = (start + mask) & ~mask;
+  end_ = reserved_end & ~mask;
+  assert(base_ < end_);
+
+  first_page_ = reinterpret_cast<OldPage*>(base_);
+  current_page_ = first_page_;
+
+  OldPage* prev = nullptr;
+  for (Address page_start = base_; page_start < end_;
+       page_start += kPageSizeInBytes) {
+    auto* page = reinterpret_cast<OldPage*>(page_start);
+    InitializePage(page, this, page_start);
+    page->prev_ = prev;
+    if (prev != nullptr) {
+      prev->next_ = page;
+    }
+    prev = page;
+  }
+}
+
+void OldSpace::TearDown() {
+  for (OldPage* page = first_page_; page != nullptr; page = page->next_) {
+    page->magic_ = 0;
+    page->flags_ = static_cast<uintptr_t>(OldPage::Flag::kNoFlags);
+    page->owner_ = nullptr;
+    page->remembered_set_ = nullptr;
+    page->free_list_head_ = nullptr;
+  }
+  base_ = kNullAddress;
+  end_ = kNullAddress;
+  first_page_ = nullptr;
+  current_page_ = nullptr;
+}
 
 Address OldSpace::AllocateRaw(size_t size_in_bytes) {
-  assert(0);
+  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
+  assert(aligned_size <= kMaxRegularHeapObjectSizeInBytes);
+
+  if (current_page_ == nullptr) {
+    return kNullAddress;
+  }
+
+  OldPage* start_page = current_page_;
+  OldPage* page = start_page;
+  do {
+    Address result = page->allocation_top_;
+    Address new_top = result + aligned_size;
+    if (new_top <= page->allocation_limit_) {
+      page->allocation_top_ = new_top;
+      page->allocated_bytes_ += aligned_size;
+      current_page_ = page;
+      return result;
+    }
+
+    page = page->next_ != nullptr ? page->next_ : first_page_;
+  } while (page != start_page);
+
   return kNullAddress;
 }
 
 bool OldSpace::Contains(Address addr) {
-  assert(0);
-  return false;
+  if (addr < base_ || addr >= end_) {
+    return false;
+  }
+
+  OldPage* page = FromAddress(addr);
+  if (page->magic_ != OldPage::kMagicHeader) {
+    return false;
+  }
+  if (page->owner_ != this) {
+    return false;
+  }
+  return page->area_start_ <= addr && addr < page->allocation_top_;
 }
 
 }  // namespace saauso::internal

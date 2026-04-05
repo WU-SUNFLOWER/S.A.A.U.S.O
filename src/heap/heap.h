@@ -40,6 +40,7 @@ class Heap {
 
   bool InNewSpaceEden(Address raw_addr);
   bool InNewSpaceSurvivor(Address raw_addr);
+  bool InOldSpace(Address raw_addr);
 
   void CollectGarbage();
 
