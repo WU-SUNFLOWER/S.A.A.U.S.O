@@ -9,6 +9,8 @@
 
 namespace saauso::internal {
 
+class NewSpace;
+
 class NewPage : public BasePage {
  public:
   static constexpr uint32_t kMagicHeader = BasePage::kMagicHeader;

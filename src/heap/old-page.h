@@ -10,6 +10,8 @@
 
 namespace saauso::internal {
 
+class OldSpace;
+
 class OldFreeBlock {
  public:
   static constexpr size_t kMinimumSizeInBytes =

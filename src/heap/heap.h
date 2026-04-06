@@ -11,13 +11,15 @@
 namespace saauso::internal {
 
 class Isolate;
-class MarkSweepCollector;
 class ObjectVisitor;
 class VirtualMemory;
 
 class NewSpace;
 class OldSpace;
 class MetaSpace;
+
+class ScavengerCollector;
+class MarkSweepCollector;
 
 class Heap {
  public:
