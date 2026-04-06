@@ -254,19 +254,22 @@ future barrier 的理想形态应当是：
   - 或 collector 的 sweep 统计结构
   - 而不是一开始塞进 `BasePage`
 
-### 8.3 为什么 `owner_` 应升级为 `Space*`
+### 8.3 为什么 `owner_` 应升级为 `PagedSpace*`
 
 当前 `OldPage` 的 `owner_` 是 `OldSpace*`。  
-一旦引入 `NewPage`，若仍各自保留不同类型 owner，就会破坏公共抽象。
+一旦引入 `NewPage`，若仍各自保留不同类型 owner，就会破坏公共抽象。  
+但若直接放宽成 `Space*`，类型约束又太弱，会把 future 非 page 化空间也混入统一 owner 语义。
 
 因此建议：
 
-- `BasePage::owner_` 统一使用 `Space*`
+- 引入过渡基类 `class PagedSpace : public Space`
+- `BasePage::owner_` 统一使用 `PagedSpace*`
 
 这样：
 
 - `NewPage` 可归属于 `NewSpace`
 - `OldPage` 可归属于 `OldSpace`
+- `MetaPage` 未来也可归属于 `MetaSpace`
 
 同时仍保留调试断言和归属校验能力。
 
@@ -322,7 +325,7 @@ future barrier 的理想形态应当是：
 
 - 成为 young page 的显式类型
 - 拥有和 `OldPage` 对称的公共 page 元属性
-- 通过 flags 表达 from / to 角色
+- 通过 flags 表达 `eden / survivor` 角色
 
 ### 10.2 第一版建议
 
@@ -331,8 +334,8 @@ future barrier 的理想形态应当是：
 - 继承 `BasePage`
 - 不额外引入复杂字段
 - 只依赖 `flags_` 区分：
-  - `kFromPage`
-  - `kToPage`
+  - `kEdenPage`
+  - `kSurvivorPage`
 
 ### 10.3 为什么这是合理的
 
@@ -374,7 +377,7 @@ future barrier 的理想形态应当是：
 - 页总数固定
 - VM 启动后不扩容
 
-### 12.2 从“裸半区”改成“半区页集合”
+### 12.2 从“裸半区”改成“页化的 `eden/survivor` 集合”
 
 当前：
 
@@ -383,13 +386,15 @@ future barrier 的理想形态应当是：
 
 改造后建议变成：
 
-- `from_pages_`
-- `to_pages_`
+- `eden_pages_`
+- `survivor_pages_`
 
-或者保留原命名但底层改成 page 集合，两者皆可。  
-从 future scavenger 语义一致性看，我更建议：
+第一版继续沿用现有 `eden/survivor` 术语，不强制改成 `from/to`。  
+理由：
 
-- **直接改成 `from/to` 术语**
+- 更符合 S.A.A.U.S.O 当前代码与术语习惯
+- 对当前教学型 / 工程型 VM 的可读性更友好
+- 不会因为术语切换而把 page 化改造与 scavenger 解耦工作缠在一起
 
 ### 12.3 第一版管理方式
 
@@ -397,8 +402,8 @@ future barrier 的理想形态应当是：
 
 - young 总地址范围在 `Heap::Setup()` 时仍一次性切出
 - 再把这块范围按固定 page size 切成若干 `NewPage`
-- 前半作为 `from_pages`
-- 后半作为 `to_pages`
+- 前半作为 `eden_pages`
+- 后半作为 `survivor_pages`
 
 ### 12.4 为什么这样可行
 
@@ -412,7 +417,7 @@ future barrier 的理想形态应当是：
 - young page metadata
 - 通过地址反推 page 的能力
 
-## 13. page size 选择
+## 13. page size 与底层对齐前提
 
 ### 13.1 建议
 
@@ -425,6 +430,30 @@ future barrier 的理想形态应当是：
 - 与当前 `OldPage` 保持一致，便于统一 `BasePage::FromAddress()`
 - 统一页对齐掩码，减少 future barrier 与 collector 复杂度
 - 在默认 young size 下，页数适中，测试中更容易触发跨页边界
+
+### 13.3 必须补齐的物理前提
+
+`BasePage::FromAddress()` 若采用掩码方式：
+
+```cpp
+page_base = addr & ~(kPageSize - 1)
+```
+
+则它成立的前提不是“代码里写了这个函数”，而是：
+
+- **底层虚拟内存分配必须按页大小对齐**
+
+因此本方案要求在真正推进 page 化之前，先补齐底层原语：
+
+- `VirtualMemory::AllocateAligned(size, alignment)`
+- 或等价的按 `256 KB` 对齐保留/提交内存能力
+
+否则：
+
+- `FromAddress()` 会计算出错误页基址
+- 进一步读取 `BasePage` 头时会直接造成崩溃
+
+这项能力属于 **Step 0 前置基建**，不是可选优化项。
 
 ## 14. 对写屏障的直接收益
 
@@ -463,9 +492,12 @@ future barrier 的理想入口可变成：
 
 ### 15.2 但必须预留
 
-本次改造完成后，下一步就应当是：
+本次改造完成后，不要求立刻拆 `ScavengerCollector`。  
+更稳妥的顺序是：
 
-- 把 `Heap::DoScavenge()` 里的复制 / 转发 / flip 逻辑逐步迁移到 `ScavengerCollector`
+- 先完成 YoungSpace page 化
+- 再完成 MetaSpace page 化或至少建立 page metadata 安全闭环
+- 然后将 `Heap::DoScavenge()` 中的复制 / 转发 / flip 逻辑单独开一个后续任务迁移到 `ScavengerCollector`
 
 ### 15.3 最终目标
 
@@ -476,11 +508,20 @@ future barrier 的理想入口可变成：
 
 ## 16. 推荐分步落地路径
 
+### 16.0 Step 0：补齐底层对齐分配原语
+
+目标：
+
+- 在 `VirtualMemory` 或等价底层抽象中提供按 `256 KB` 对齐的分配能力
+- 保证 `BasePage::FromAddress()` 的掩码反推在物理上成立
+- 为后续 `BasePage`、`NewPage`、`MetaPage` 奠定可执行前提
+
 ### 16.1 第一步：抽 `BasePage`
 
 目标：
 
 - 从当前 `OldPage` 中抽出公共 page 元字段
+- 引入 `PagedSpace`
 - 不改变 old-gen 行为
 
 ### 16.2 第二步：让 `OldPage` 继承 `BasePage`
@@ -495,22 +536,35 @@ future barrier 的理想入口可变成：
 目标：
 
 - 定义 young page 类型
-- 建立 `kYoungPage / kFromPage / kToPage`
+- 建立 `kEdenPage / kSurvivorPage`
 
-### 16.4 第四步：把 `NewSpace` 改成固定 young page 集合
+### 16.4 第四步：将 `MetaSpace` 纳入 page metadata 闭环
+
+目标：
+
+- 让堆内对象所属的所有主要空间，都能够安全执行 `BasePage::FromAddress()`
+- 避免 future barrier 拿到 `MetaSpace` 地址时，因为没有合法页头而崩溃
+
+说明：
+
+- 最优路线是让 `MetaSpace` 也 page 化并打上 `kMetaPage`
+- 若短期不做完整 page 化，则至少必须提供足够廉价且可靠的前置地址过滤
+- 但从长期结构完整性看，更推荐直接纳入 page metadata 体系
+
+### 16.5 第五步：把 `NewSpace` 改成固定 young page 集合
 
 目标：
 
 - 不改 scavenger 算法语义
 - 只改底层物理布局与空间判定模型
 
-### 16.5 第五步：统一地址 → page 判定入口
+### 16.6 第六步：统一地址 → page 判定入口
 
 目标：
 
 - 让 future barrier 不再依赖 `Isolate::Current()`
 
-### 16.6 第六步：再解耦 `ScavengerCollector`
+### 16.7 第七步：再解耦 `ScavengerCollector`
 
 目标：
 
@@ -518,10 +572,13 @@ future barrier 的理想入口可变成：
 
 ## 17. 本阶段必须完成
 
+- Step 0 对齐分配原语
+- `PagedSpace`
 - `BasePage`
 - `NewPage`
 - `OldPage` 继承 `BasePage`
 - `flags_` 的 young/old/meta/from/to 基础判定能力
+- `MetaSpace` page metadata 闭环
 - fixed-size page-based `NewSpace`
 - 统一 `FromAddress()` 入口
 
@@ -564,26 +621,29 @@ future barrier 的理想入口可变成：
 
 1. `BasePage::owner_` 是否应统一为 `Space*`？
   - 人类架构师意见：可以引入一个过度类`class PagedSpace : public Space { ... }`，然后将`BasePage::owner_`统一为 `PagedSpace*`
-  - Gemini意见：（TODO）
+  - Gemini意见：支持引入 `PagedSpace`，比直接放宽到 `Space*` 更严谨
 2. `BasePage` 是否应承担 `magic_` 与 `allocated_bytes_ / live_bytes_`？
   - 人类架构师意见：`magic_` 与 `allocated_bytes_` 保留在 `BasePage`；`live_bytes_` 不进入第一版 `BasePage`
-  - Gemini意见：（TODO）
+  - Gemini意见：支持，不建议把 `live_bytes_` 放入第一版 `BasePage`
 3. young page 与 old page 是否应统一 `256 KB` 页大小？
-  - Gemini意见：（TODO）
+  - Gemini意见：建议接受统一 `256 KB`
 4. `NewSpace` 第一版是否应直接从 `eden/survivor` 术语切到 `from/to`？
   - 人类架构师意见：建议继续沿用 `eden/survivor` 术语。个人感觉比 V8 中的 `from/to` 更加清晰直白，可读性更好。
-  - Gemini意见：（TODO）
+  - Gemini意见：支持继续沿用 `eden/survivor`
 5. 是否需要在第一版就把 `MetaSpace` 纳入 page metadata 闭环？
-  - Gemini意见：（TODO）
+  - Gemini意见：必须同步纳入，或至少提供极其廉价的地址范围过滤；最佳路线是纳入 page metadata 体系
 6. `ScavengerCollector` 是否应在 YoungSpace page 化之后立刻开始拆？
   - 人类架构师意见：建议放在 YoungSpace page 化和 MetaSpace page 化之后，单独开一个 Issue/MergeRequest 来做
-  - Gemini意见：（TODO）
+  - Gemini意见：支持延后拆分
 
 ## 21. 最终建议
 
 S.A.A.U.S.O 当前最正确的下一步，不是继续在现有裸 `SemiSpace` 之上打补丁，而是：
 
 - **尽快建立统一的 `BasePage` 元信息体系**
+- **先补齐底层按页对齐分配原语，确保 `BasePage::FromAddress()` 在物理上成立**
+- **通过 `PagedSpace + BasePage` 建立统一 page 所有权与元信息模型**
+- **让 `MetaSpace` 也进入 page metadata 闭环，避免 future barrier 对非 page 化空间解引用崩溃**
 - **让 `NewSpace` 与 `OldSpace` 共享地址 → page metadata 的 O(1) 闭环**
 - **在保持 fixed-size young generation 的前提下，完成 young page 化**
 - **为 future 写屏障与 `ScavengerCollector` 解耦扫清结构障碍**
