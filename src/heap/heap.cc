@@ -23,6 +23,26 @@
 
 namespace saauso::internal {
 
+namespace {
+
+size_t AlignSizeToPage(size_t size) {
+  size_t mask = BasePage::kPageSizeInBytes - 1;
+  return (size + mask) & ~mask;
+}
+
+NewPage* NextSurvivorPage(NewPage* page) {
+  if (page == nullptr) {
+    return nullptr;
+  }
+  NewPage* next = page->next();
+  if (next == nullptr || !next->HasFlag(BasePage::Flag::kSurvivorPage)) {
+    return nullptr;
+  }
+  return next;
+}
+
+}  // namespace
+
 DisallowHeapAllocation::DisallowHeapAllocation(Isolate* isolate)
     : DisallowHeapAllocation(isolate->heap()) {}
 
@@ -38,22 +58,24 @@ void Heap::DecrementAllocationDisallowedDepth() {
 void Heap::Setup(size_t young_generation_size,
                  size_t old_generation_size,
                  size_t meta_space_size) {
-  // TODO: 实现大块虚拟内存的灵活生长和收缩
-  initial_size_ =
-      (young_generation_size * 2) + old_generation_size + meta_space_size;
-  initial_chunk_ = new VirtualMemory(initial_size_);
+  size_t aligned_young_generation_size = AlignSizeToPage(young_generation_size);
+  size_t aligned_old_generation_size = AlignSizeToPage(old_generation_size);
+  size_t aligned_meta_space_size = AlignSizeToPage(meta_space_size);
+  size_t total_young_generation_size = aligned_young_generation_size * 2;
+
+  initial_size_ = total_young_generation_size + aligned_old_generation_size +
+                  aligned_meta_space_size;
+  initial_chunk_ = new VirtualMemory(initial_size_, BasePage::kPageSizeInBytes);
   initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
 
-  // 初始化各个空间
   auto chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
-  new_space_.Setup(chunk_start_addr, young_generation_size * 2);
-  chunk_start_addr += young_generation_size * 2;
+  new_space_.Setup(chunk_start_addr, total_young_generation_size);
+  chunk_start_addr += total_young_generation_size;
 
-  old_space_.Setup(chunk_start_addr, old_generation_size);
-  chunk_start_addr += old_generation_size;
+  old_space_.Setup(chunk_start_addr, aligned_old_generation_size);
+  chunk_start_addr += aligned_old_generation_size;
 
-  meta_space_.Setup(chunk_start_addr, meta_space_size);
-  chunk_start_addr += meta_space_size;
+  meta_space_.Setup(chunk_start_addr, aligned_meta_space_size);
 
   mark_sweep_collector_ = new MarkSweepCollector(this);
 }
@@ -61,8 +83,12 @@ void Heap::Setup(size_t young_generation_size,
 void Heap::TearDown() {
   delete mark_sweep_collector_;
   mark_sweep_collector_ = nullptr;
+  new_space_.TearDown();
+  old_space_.TearDown();
+  meta_space_.TearDown();
   initial_chunk_->Uncommit(initial_chunk_->address(), initial_size_);
   delete initial_chunk_;
+  initial_chunk_ = nullptr;
 }
 
 Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
@@ -111,11 +137,11 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
 }
 
 bool Heap::InNewSpaceEden(Address addr) {
-  return new_space().eden_space().Contains(addr);
+  return new_space().ContainsInEden(addr);
 }
 
 bool Heap::InNewSpaceSurvivor(Address addr) {
-  return new_space().survivor_space().Contains(addr);
+  return new_space().ContainsInSurvivor(addr);
 }
 
 bool Heap::InOldSpace(Address addr) {
@@ -258,15 +284,17 @@ void Heap::DoScavenge() {
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   IterateRoots(&visitor);
 
-  // 此时：
-  // new_space_->SurvivorSpaceBase() 指向第一个被拷贝的root对象
-  // new_space_->SurvivorSpaceTop() 指向最后一个被拷贝的root对象的末尾
-  Address scan_ptr = ObjectSizeAlign(new_space_.SurvivorSpaceBase());
-  Address threshold = new_space_.SurvivorSpaceTop();
+  NewPage* scan_page = new_space_.survivor_first_page();
+  Address scan_ptr =
+      scan_page == nullptr ? kNullAddress : scan_page->area_start();
 
-  // 只要scan_ptr还没追上threshold，说明还有对象没被扫描
-  while (scan_ptr < threshold) {
-    // 获取当前要扫描的对象
+  while (scan_page != nullptr) {
+    if (scan_ptr >= scan_page->allocation_top()) {
+      scan_page = NextSurvivorPage(scan_page);
+      scan_ptr = scan_page == nullptr ? kNullAddress : scan_page->area_start();
+      continue;
+    }
+
     Tagged<PyObject> object(scan_ptr);
     size_t instance_size = PyObject::GetInstanceSize(object);
 
@@ -275,16 +303,10 @@ void Heap::DoScavenge() {
 
     // 移动scan_ptr指针，准备扫描下一个对象
     scan_ptr += instance_size;
-
-    // 可能又有新的对象被拷贝到survivor空间了，再次更新threshold
-    threshold = new_space_.SurvivorSpaceTop();
   }
 
   // 交换空间
   new_space_.Flip();
-
-  // 重置survivor空间的内部指针
-  new_space_.survivor_space().Reset();
 }
 
 }  // namespace saauso::internal

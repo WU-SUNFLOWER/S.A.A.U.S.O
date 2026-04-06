@@ -104,7 +104,7 @@ OldSpaceSweepStats MarkSweepCollector::SweepOldSpaceFromPredicate(
 
   OldSpaceSweepStats stats{0, 0};
   OldSpace& old_space = heap_->old_space();
-  for (OldPage* page = old_space.first_page_; page != nullptr; page = page->next_) {
+  for (OldPage* page = old_space.first_page_; page != nullptr; page = page->next()) {
     SweepPageFromPredicate(page, predicate, data);
     ++stats.swept_pages;
     stats.live_bytes += page->live_bytes();
@@ -143,7 +143,7 @@ OldSpaceSweepStats MarkSweepCollector::SweepOldSpaceFromLiveObjects(
     const LiveObjectVector& live_objects) const {
   OldSpaceSweepStats stats{0, 0};
   OldSpace& old_space = heap_->old_space();
-  for (OldPage* page = old_space.first_page_; page != nullptr; page = page->next_) {
+  for (OldPage* page = old_space.first_page_; page != nullptr; page = page->next()) {
     LiveObjectVector page_live_objects;
     CollectLiveObjectsForPage(page, live_objects, &page_live_objects);
     SweepPageFromLiveObjects(page, page_live_objects);

@@ -83,8 +83,8 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 
 Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
   Address target_addr =
-      isolate()->heap()->new_space().survivor_space().AllocateRaw(size);
-  // survivor space中理论上一定有剩余的空间
+      isolate()->heap()->new_space().AllocateInSurvivorSpace(size);
+  // // survivor space中理论上一定有可供分配的空间
   assert(target_addr != kNullAddress &&
          "survivor space must have enough space!!!");
   return target_addr;

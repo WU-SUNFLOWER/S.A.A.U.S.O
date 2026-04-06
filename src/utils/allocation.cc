@@ -5,6 +5,7 @@
 #include "src/utils/allocation.h"
 
 #include <cassert>
+#include <cstdint>
 
 #include "build/build_config.h"
 #include "build/buildflag.h"
@@ -34,9 +35,54 @@ void* VirtualMemory::address() {
 }
 
 #if BUILDFLAG(IS_WIN)
-VirtualMemory::VirtualMemory(size_t size) {
-  address_ = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+VirtualMemory::VirtualMemory(size_t size) { Reserve(size, 0); }
+
+VirtualMemory::VirtualMemory(size_t size, size_t alignment) {
+  Reserve(size, alignment);
+}
+
+void VirtualMemory::Reserve(size_t size, size_t alignment) {
   size_ = size;
+  address_ = nullptr;
+
+  if (alignment == 0) {
+    address_ = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+    return;
+  }
+
+  assert((alignment & (alignment - 1)) == 0);
+  constexpr int kMaxAttempts = 64;
+  for (int i = 0; i < kMaxAttempts; ++i) {
+    void* probe = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+    if (probe == nullptr) {
+      return;
+    }
+    if ((reinterpret_cast<uintptr_t>(probe) & (alignment - 1)) == 0) {
+      address_ = probe;
+      return;
+    }
+
+    uintptr_t probe_addr = reinterpret_cast<uintptr_t>(probe);
+    VirtualFree(probe, 0, MEM_RELEASE);
+
+    uintptr_t aligned_up = (probe_addr + alignment - 1) & ~(alignment - 1);
+    void* aligned = VirtualAlloc(reinterpret_cast<void*>(aligned_up), size,
+                                 MEM_RESERVE, PAGE_NOACCESS);
+    if (aligned != nullptr) {
+      address_ = aligned;
+      return;
+    }
+
+    uintptr_t aligned_down = probe_addr & ~(alignment - 1);
+    if (aligned_down != 0 && aligned_down != aligned_up) {
+      aligned = VirtualAlloc(reinterpret_cast<void*>(aligned_down), size,
+                             MEM_RESERVE, PAGE_NOACCESS);
+      if (aligned != nullptr) {
+        address_ = aligned;
+        return;
+      }
+    }
+  }
 }
 
 VirtualMemory::~VirtualMemory() {
@@ -66,11 +112,43 @@ bool VirtualMemory::Uncommit(void* address, size_t size) {
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
-VirtualMemory::VirtualMemory(size_t size) {
-  address_ =
-      mmap(NULL, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-           kMmapFd, kMmapFdOffset);
+VirtualMemory::VirtualMemory(size_t size) { Reserve(size, 0); }
+
+VirtualMemory::VirtualMemory(size_t size, size_t alignment) {
+  Reserve(size, alignment);
+}
+
+void VirtualMemory::Reserve(size_t size, size_t alignment) {
   size_ = size;
+  if (alignment == 0) {
+    address_ =
+        mmap(nullptr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
+             kMmapFd, kMmapFdOffset);
+    return;
+  }
+
+  assert((alignment & (alignment - 1)) == 0);
+  void* reservation = mmap(nullptr, size + alignment, PROT_NONE,
+                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
+                           kMmapFd, kMmapFdOffset);
+  if (reservation == MAP_FAILED) {
+    address_ = MAP_FAILED;
+    return;
+  }
+
+  uintptr_t reservation_addr = reinterpret_cast<uintptr_t>(reservation);
+  uintptr_t aligned_addr = (reservation_addr + alignment - 1) & ~(alignment - 1);
+  size_t prefix_size = aligned_addr - reservation_addr;
+  size_t suffix_size =
+      (reservation_addr + size + alignment) - (aligned_addr + size);
+
+  if (prefix_size != 0) {
+    munmap(reservation, prefix_size);
+  }
+  if (suffix_size != 0) {
+    munmap(reinterpret_cast<void*>(aligned_addr + size), suffix_size);
+  }
+  address_ = reinterpret_cast<void*>(aligned_addr);
 }
 
 VirtualMemory::~VirtualMemory() {

@@ -6,7 +6,9 @@
 #define SAAUSO_HEAP_HEAP_H_
 
 #include "src/handles/tagged.h"
-#include "src/heap/spaces.h"
+#include "src/heap/meta-space.h"
+#include "src/heap/new-space.h"
+#include "src/heap/old-space.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
