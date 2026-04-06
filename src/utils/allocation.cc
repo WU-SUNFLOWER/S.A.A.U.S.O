@@ -22,11 +22,17 @@
 namespace saauso::internal {
 
 namespace {
+
 #if BUILDFLAG(IS_LINUX)
 // Constants used for mmap.
 constexpr int kMmapFd = -1;
 constexpr int kMmapFdOffset = 0;
 #endif  // BUILDFLAG(IS_LINUX)
+
+uintptr_t RoundUp(uintptr_t addr, size_t alignment) {
+  return (addr + alignment - 1) & ~(alignment - 1);
+}
+
 }  // namespace
 
 void* VirtualMemory::address() {
@@ -35,7 +41,9 @@ void* VirtualMemory::address() {
 }
 
 #if BUILDFLAG(IS_WIN)
-VirtualMemory::VirtualMemory(size_t size) { Reserve(size, 0); }
+VirtualMemory::VirtualMemory(size_t size) {
+  Reserve(size, 0);
+}
 
 VirtualMemory::VirtualMemory(size_t size, size_t alignment) {
   Reserve(size, alignment);
@@ -45,44 +53,79 @@ void VirtualMemory::Reserve(size_t size, size_t alignment) {
   size_ = size;
   address_ = nullptr;
 
+  void* base;
+  uintptr_t base_addr;
+  uintptr_t aligned_addr;
+  BOOL free_result;
+  size_t padded_size;
+  constexpr int kMaxAttempts = 3;
+
+  // 0. 如果没有对齐需求，那么直接申请一块虚拟内存并返回
   if (alignment == 0) {
     address_ = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
-    return;
+    goto ret;
   }
 
+  // 如果有对齐要求，对齐长度必须是2的幂次
   assert((alignment & (alignment - 1)) == 0);
-  constexpr int kMaxAttempts = 64;
+
+  // 1. 先尝试直接按原大小分配，如果碰巧对齐了，直接返回
+  base = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+  if (base == nullptr) [[unlikely]] {
+    goto ret;
+  }
+
+  base_addr = reinterpret_cast<uintptr_t>(base);
+  aligned_addr = RoundUp(base_addr, alignment);
+  if (aligned_addr == base_addr) {
+    address_ = base;
+    goto ret;
+  }
+
+  // 没有对齐，释放掉
+  free_result = VirtualFree(base, 0, MEM_RELEASE);
+  if (!free_result) [[unlikely]] {
+    goto ret_with_free_failed;
+  }
+
+  // 2. 采用 V8 的 "Padding 机制" 保证分配区间内必存在对齐地址
+  // 增加 alignment 作为 padding，保证其中必有一段连续的 size 满足对齐要求
+  padded_size = size + alignment;
+
   for (int i = 0; i < kMaxAttempts; ++i) {
-    void* probe = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
-    if (probe == nullptr) {
-      return;
-    }
-    if ((reinterpret_cast<uintptr_t>(probe) & (alignment - 1)) == 0) {
-      address_ = probe;
-      return;
+    base = VirtualAlloc(nullptr, padded_size, MEM_RESERVE, PAGE_NOACCESS);
+    if (base == nullptr) [[unlikely]] {
+      goto ret;
     }
 
-    uintptr_t probe_addr = reinterpret_cast<uintptr_t>(probe);
-    VirtualFree(probe, 0, MEM_RELEASE);
+    base_addr = reinterpret_cast<uintptr_t>(base);
+    aligned_addr = RoundUp(base_addr, alignment);
 
-    uintptr_t aligned_up = (probe_addr + alignment - 1) & ~(alignment - 1);
-    void* aligned = VirtualAlloc(reinterpret_cast<void*>(aligned_up), size,
-                                 MEM_RESERVE, PAGE_NOACCESS);
-    if (aligned != nullptr) {
-      address_ = aligned;
-      return;
+    // 核心：释放整个 Padded 内存块。
+    // Windows VirtualFree(MEM_RELEASE) 必须传分配时的首地址，且不能部分释放。
+    free_result = VirtualFree(base, 0, MEM_RELEASE);
+    if (!free_result) [[unlikely]] {
+      goto ret_with_free_failed;
     }
 
-    uintptr_t aligned_down = probe_addr & ~(alignment - 1);
-    if (aligned_down != 0 && aligned_down != aligned_up) {
-      aligned = VirtualAlloc(reinterpret_cast<void*>(aligned_down), size,
-                             MEM_RESERVE, PAGE_NOACCESS);
-      if (aligned != nullptr) {
-        address_ = aligned;
-        return;
-      }
+    // 立即在算好的对齐地址上重新精确分配 size 大小。
+    // 这里存在极小概率的 Race Condition（释放后瞬间被其他线程抢占），因此需要
+    // kMaxAttempts 循环重试。
+    base = VirtualAlloc(reinterpret_cast<void*>(aligned_addr), size,
+                        MEM_RESERVE, PAGE_NOACCESS);
+    if (base != nullptr) [[likely]] {
+      address_ = base;
+      goto ret;
     }
   }
+
+ret:
+  assert(address_ != nullptr && "VirtualMemory OOM!");
+  return;
+
+ret_with_free_failed:
+  assert(!free_result && "fail to call VirtualFree");
+  return;
 }
 
 VirtualMemory::~VirtualMemory() {
@@ -112,7 +155,9 @@ bool VirtualMemory::Uncommit(void* address, size_t size) {
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
-VirtualMemory::VirtualMemory(size_t size) { Reserve(size, 0); }
+VirtualMemory::VirtualMemory(size_t size) {
+  Reserve(size, 0);
+}
 
 VirtualMemory::VirtualMemory(size_t size, size_t alignment) {
   Reserve(size, alignment);
@@ -121,23 +166,24 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment) {
 void VirtualMemory::Reserve(size_t size, size_t alignment) {
   size_ = size;
   if (alignment == 0) {
-    address_ =
-        mmap(nullptr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-             kMmapFd, kMmapFdOffset);
+    address_ = mmap(nullptr, size, PROT_NONE,
+                    MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, kMmapFd,
+                    kMmapFdOffset);
     return;
   }
 
   assert((alignment & (alignment - 1)) == 0);
-  void* reservation = mmap(nullptr, size + alignment, PROT_NONE,
-                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
-                           kMmapFd, kMmapFdOffset);
+  void* reservation =
+      mmap(nullptr, size + alignment, PROT_NONE,
+           MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, kMmapFd, kMmapFdOffset);
   if (reservation == MAP_FAILED) {
     address_ = MAP_FAILED;
     return;
   }
 
   uintptr_t reservation_addr = reinterpret_cast<uintptr_t>(reservation);
-  uintptr_t aligned_addr = (reservation_addr + alignment - 1) & ~(alignment - 1);
+  uintptr_t aligned_addr =
+      (reservation_addr + alignment - 1) & ~(alignment - 1);
   size_t prefix_size = aligned_addr - reservation_addr;
   size_t suffix_size =
       (reservation_addr + size + alignment) - (aligned_addr + size);
