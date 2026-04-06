@@ -17,26 +17,27 @@ void MetaSpace::InitializePage(MetaPage* page,
 
 MetaPage* MetaSpace::FindPageWithLinearAllocationArea(MetaPage* start_page,
                                                       MetaPage* first_page,
-                                                      size_t aligned_size) {
+                                                      size_t size_in_bytes) {
   assert(start_page != nullptr);
   MetaPage* page = start_page;
   do {
-    if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
+    if (page->allocation_top_ + size_in_bytes <= page->allocation_limit_) {
       return page;
     }
-    page = page->next() != nullptr ? page->next() : first_page;
+    page = page->next();
   } while (page != start_page);
   return nullptr;
 }
 
 void MetaSpace::Setup(Address start, size_t size) {
   assert(start != kNullAddress);
+  assert(IsAddressAlignedToPage(start));
+
   assert(size >= BasePage::kPageSizeInBytes);
+  assert(IsSizeAlignedToPage(size));
 
   base_ = AlignAddressToPage(start);
-  end_ =
-      (start + size) & ~(static_cast<Address>(BasePage::kPageSizeInBytes) - 1);
-  assert(base_ < end_);
+  end_ = base_ + size;
 
   MetaPage* prev = nullptr;
   for (Address page_start = base_; page_start < end_;
@@ -49,31 +50,39 @@ void MetaSpace::Setup(Address start, size_t size) {
     }
     prev = page;
   }
+
   first_page_ = reinterpret_cast<MetaPage*>(base_);
   current_page_ = first_page_;
+
+  // 链接第一页和最后一页，形成环形链表
+  first_page_->prev_ = prev;
+  prev->next_ = first_page_;
 }
 
 void MetaSpace::TearDown() {
-  for (MetaPage* page = first_page_; page != nullptr; page = page->next()) {
+  MetaPage* page = first_page_;
+  do {
     PagedSpace::ResetPageHeader(page);
-  }
+    page = page->next();
+  } while (page != first_page_);
+
   base_ = kNullAddress;
   end_ = kNullAddress;
+
   first_page_ = nullptr;
   current_page_ = nullptr;
 }
 
 Address MetaSpace::AllocateRaw(size_t size_in_bytes) {
-  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
   MetaPage* page = FindPageWithLinearAllocationArea(current_page_, first_page_,
-                                                    aligned_size);
+                                                    size_in_bytes);
   // 已经没有更多内存可以分配，返回 null
   if (page == nullptr) {
     return kNullAddress;
   }
 
   current_page_ = page;
-  return page->AllocateAndUpdateTop(aligned_size);
+  return page->AllocateAndUpdateTop(size_in_bytes);
 }
 
 bool MetaSpace::Contains(Address addr) {
