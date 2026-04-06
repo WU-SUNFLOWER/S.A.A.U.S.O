@@ -111,6 +111,8 @@ source_set("saauso_core") {
     "//src/heap/old-space.h",
     "//src/heap/scavenge-visitor.cc",
     "//src/heap/scavenge-visitor.h",
+    "//src/heap/scavenger-collector.cc",
+    "//src/heap/scavenger-collector.h",
     "//src/heap/spaces.cc",
     "//src/heap/spaces.h",
 

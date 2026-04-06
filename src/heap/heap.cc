@@ -4,20 +4,15 @@
 
 #include "src/heap/heap.h"
 
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <vector>
-
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/heap/mark-sweep-collector.h"
-#include "src/heap/scavenge-visitor.h"
+#include "src/heap/scavenger-collector.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/klass.h"
-#include "src/objects/py-object.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/allocation.h"
 
@@ -28,17 +23,6 @@ namespace {
 size_t AlignSizeToPage(size_t size) {
   size_t mask = BasePage::kPageSizeInBytes - 1;
   return (size + mask) & ~mask;
-}
-
-NewPage* NextSurvivorPage(NewPage* page) {
-  if (page == nullptr) {
-    return nullptr;
-  }
-  NewPage* next = page->next();
-  if (next == nullptr || !next->HasFlag(BasePage::Flag::kSurvivorPage)) {
-    return nullptr;
-  }
-  return next;
 }
 
 }  // namespace
@@ -77,15 +61,20 @@ void Heap::Setup(size_t young_generation_size,
 
   meta_space_.Setup(chunk_start_addr, aligned_meta_space_size);
 
+  scavenger_collector_ = new ScavengerCollector(this);
   mark_sweep_collector_ = new MarkSweepCollector(this);
 }
 
 void Heap::TearDown() {
+  delete scavenger_collector_;
+  scavenger_collector_ = nullptr;
   delete mark_sweep_collector_;
   mark_sweep_collector_ = nullptr;
+
   new_space_.TearDown();
   old_space_.TearDown();
   meta_space_.TearDown();
+
   initial_chunk_->Uncommit(initial_chunk_->address(), initial_size_);
   delete initial_chunk_;
   initial_chunk_ = nullptr;
@@ -150,7 +139,7 @@ bool Heap::InOldSpace(Address addr) {
 
 void Heap::CollectGarbage() {
   gc_state_ = GcState::kScavenage;
-  DoScavenge();
+  scavenger_collector_->CollectGarbage();
   gc_state_ = GcState::kNotInGc;
 }
 
@@ -276,37 +265,6 @@ void Heap::IterateRoots(ObjectVisitor* v) {
   // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
   // 遍历记忆集 (Remembered Set)，处理跨代引用
   // IterateRememberedSet(v);
-}
-
-void Heap::DoScavenge() {
-  ScavenageVisitor visitor(isolate_);
-
-  // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
-  IterateRoots(&visitor);
-
-  NewPage* scan_page = new_space_.survivor_first_page();
-  Address scan_ptr =
-      scan_page == nullptr ? kNullAddress : scan_page->area_start();
-
-  while (scan_page != nullptr) {
-    if (scan_ptr >= scan_page->allocation_top()) {
-      scan_page = NextSurvivorPage(scan_page);
-      scan_ptr = scan_page == nullptr ? kNullAddress : scan_page->area_start();
-      continue;
-    }
-
-    Tagged<PyObject> object(scan_ptr);
-    size_t instance_size = PyObject::GetInstanceSize(object);
-
-    // 扫描该对象，将该对象持有引用的子对象全部拷贝到survivor空间
-    PyObject::Iterate(object, &visitor);
-
-    // 移动scan_ptr指针，准备扫描下一个对象
-    scan_ptr += instance_size;
-  }
-
-  // 交换空间
-  new_space_.Flip();
 }
 
 }  // namespace saauso::internal

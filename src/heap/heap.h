@@ -65,14 +65,15 @@ class Heap {
                    Tagged<PyObject> value);
 
  private:
+  friend class ScavengerCollector;
+  friend class MarkSweepCollector;
+
   enum class GcState { kNotInGc, kScavenage, kMarkCompact };
 
   Address AllocateRawImpl(size_t size_in_bytes, AllocationSpace space);
 
   void IterateRoots(ObjectVisitor* v);
   void IterateRememberedSet(ObjectVisitor* v);
-
-  void DoScavenge();
 
   NewSpace new_space_;
   OldSpace old_space_;
@@ -88,6 +89,8 @@ class Heap {
   // TODO: 实现大块虚拟内存的灵活生长和收缩
   size_t initial_size_;
   VirtualMemory* initial_chunk_;
+
+  ScavengerCollector* scavenger_collector_{nullptr};
   MarkSweepCollector* mark_sweep_collector_{nullptr};
 
   Isolate* isolate_{nullptr};
