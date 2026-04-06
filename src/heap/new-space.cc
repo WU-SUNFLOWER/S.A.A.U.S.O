@@ -24,6 +24,14 @@ void NewSpace::InitializePage(NewPage* page,
 // static
 NewPage* NewSpace::FindPageWithLinearAllocationArea(NewPage* start_page,
                                                     size_t aligned_size) {
+  // 特别说明：
+  // - 理论上来说，由于页内碎片的存在，如果遍历到最后一个内存页如果还未找到
+  //   可分配的区域，应该回到第一个内存页重新开始找（可能会找到正好能塞下待分配大小的页），
+  //   直至重新遍历到 start_page。
+  // - 但出现这种情况，大概率意味着新生代的分配压力已经比较大了。
+  //   即所有内存页的空间都大致被分配出去了。
+  // - 我们理解出现这种情况，当务之急是触发新生代GC，而不是再去尝试找一个
+  //   能塞下当前待分配大小的页内碎片。
   for (NewPage* page = start_page; page != nullptr; page = page->next()) {
     if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
       return page;
@@ -78,15 +86,11 @@ void NewSpace::Setup(Address start, size_t size) {
 
   // 设置 eden 空间指针
   eden_first_page_ = reinterpret_cast<NewPage*>(base_);
-  eden_last_page_ = reinterpret_cast<NewPage*>(
-      base_ + (semi_page_count - 1) * BasePage::kPageSizeInBytes);
   eden_current_page_ = eden_first_page_;
 
   // 设置 survivor 空间指针
   survivor_first_page_ = reinterpret_cast<NewPage*>(
       base_ + semi_page_count * BasePage::kPageSizeInBytes);
-  survivor_last_page_ = reinterpret_cast<NewPage*>(
-      base_ + (page_count - 1) * BasePage::kPageSizeInBytes);
   survivor_current_page_ = survivor_first_page_;
 }
 
@@ -100,11 +104,9 @@ void NewSpace::TearDown() {
   end_ = kNullAddress;
 
   eden_first_page_ = nullptr;
-  eden_last_page_ = nullptr;
   eden_current_page_ = nullptr;
 
   survivor_first_page_ = nullptr;
-  survivor_last_page_ = nullptr;
   survivor_current_page_ = nullptr;
 }
 
@@ -220,7 +222,6 @@ void NewSpace::ResetPageAllocateStatesInSemiSpace(NewPage* first) {
 void NewSpace::Flip() {
   // 交换 eden 和 survivor 空间的指针
   std::swap(eden_first_page_, survivor_first_page_);
-  std::swap(eden_last_page_, survivor_last_page_);
 
   // 原先的 survivor 空间接下来要被当做 eden 空间使用了，
   // 把它的分配状态（即当前哪个页正在准备继续被分配）转移给 eden 空间。

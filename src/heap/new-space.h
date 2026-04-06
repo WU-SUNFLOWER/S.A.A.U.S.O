@@ -73,11 +73,9 @@ class NewSpace : public PagedSpace {
   static void ResetPageAllocateStatesInSemiSpace(NewPage* first);
 
   NewPage* eden_first_page_{nullptr};
-  NewPage* eden_last_page_{nullptr};
   NewPage* eden_current_page_{nullptr};
 
   NewPage* survivor_first_page_{nullptr};
-  NewPage* survivor_last_page_{nullptr};
   NewPage* survivor_current_page_{nullptr};
 };
 
