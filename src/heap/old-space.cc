@@ -103,7 +103,6 @@ Address OldSpace::AllocateRaw(size_t size_in_bytes) {
 
   Address result = page->allocation_top_;
   page->allocation_top_ += aligned_size;
-  page->allocated_bytes_ += aligned_size;
   current_page_ = page;
   return result;
 }

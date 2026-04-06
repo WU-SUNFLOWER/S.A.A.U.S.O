@@ -30,7 +30,6 @@ NewPage* NewSpace::FindPageWithLinearAllocationArea(NewPage* start_page,
 
 void NewSpace::ResetPage(NewPage* page) {
   page->allocation_top_ = page->area_start_;
-  page->allocated_bytes_ = 0;
 }
 
 void NewSpace::ResetPageRange(NewPage* first, NewPage* last) {
@@ -130,7 +129,6 @@ Address NewSpace::AllocateRaw(size_t size_in_bytes) {
 
   Address result = page->allocation_top_;
   page->allocation_top_ += aligned_size;
-  page->allocated_bytes_ += aligned_size;
   eden_current_page_ = page;
   return result;
 }
@@ -145,7 +143,6 @@ Address NewSpace::AllocateInSurvivorSpace(size_t size_in_bytes) {
 
   Address result = page->allocation_top_;
   page->allocation_top_ += aligned_size;
-  page->allocated_bytes_ += aligned_size;
   survivor_current_page_ = page;
   return result;
 }

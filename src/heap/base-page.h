@@ -35,7 +35,6 @@ class BasePage {
 
   Address allocation_top() const { return allocation_top_; }
   Address allocation_limit() const { return allocation_limit_; }
-  size_t allocated_bytes() const { return allocated_bytes_; }
 
   bool HasFlag(uintptr_t flag) const;
   void SetFlag(uintptr_t flag);
@@ -66,7 +65,6 @@ class BasePage {
   Address area_end_{kNullAddress};
   Address allocation_top_{kNullAddress};
   Address allocation_limit_{kNullAddress};
-  size_t allocated_bytes_{0};
 };
 
 }  // namespace saauso::internal

@@ -46,7 +46,6 @@ void PagedSpace::InitializePageHeader(BasePage* page,
   page->area_end_ = page_start + BasePage::kPageSizeInBytes;
   page->allocation_top_ = page->area_start_;
   page->allocation_limit_ = page->area_end_;
-  page->allocated_bytes_ = 0;
 }
 
 // static
@@ -61,7 +60,6 @@ void PagedSpace::ResetPageHeader(BasePage* page) {
   page->area_end_ = kNullAddress;
   page->allocation_top_ = kNullAddress;
   page->allocation_limit_ = kNullAddress;
-  page->allocated_bytes_ = 0;
 }
 
 }  // namespace saauso::internal
