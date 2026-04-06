@@ -62,8 +62,9 @@ void MetaSpace::Setup(Address start, size_t size) {
 void MetaSpace::TearDown() {
   MetaPage* page = first_page_;
   do {
+    MetaPage* next_page = page->next();
     PagedSpace::ResetPageHeader(page);
-    page = page->next();
+    page = next_page;
   } while (page != first_page_);
 
   base_ = kNullAddress;
