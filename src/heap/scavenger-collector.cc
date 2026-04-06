@@ -11,23 +11,6 @@
 
 namespace saauso::internal {
 
-namespace {
-
-NewPage* NextSurvivorPage(NewPage* page) {
-  if (page == nullptr) {
-    return nullptr;
-  }
-  NewPage* next = page->next();
-  if (next == nullptr || !next->HasFlag(BasePage::Flag::kSurvivorPage)) {
-    return nullptr;
-  }
-  return next;
-}
-
-}  // namespace
-
-///////////////////////////////////////////////////////////////////////////////
-
 void ScavengerCollector::CollectGarbage() {
   ScavenageVisitor visitor(heap_);
 
@@ -35,16 +18,23 @@ void ScavengerCollector::CollectGarbage() {
   heap_->IterateRoots(&visitor);
 
   NewPage* scan_page = heap_->new_space_->survivor_first_page();
-  Address scan_ptr =
-      scan_page == nullptr ? kNullAddress : scan_page->area_start();
+  Address scan_ptr = scan_page->area_start();
 
   while (scan_page != nullptr) {
+    // 如果碰到一个没有被分配过的页，那么说明BFS队列中的所有就绪对象都已经被清空。
+    // 因此不用继续往下扫描了，直接退出
+    if (scan_page->area_start() == scan_page->allocation_top()) {
+      break;
+    }
+
+    // 如果已经将一页扫描完毕了，那么切换到下一页继续扫描
     if (scan_ptr >= scan_page->allocation_top()) {
-      scan_page = NextSurvivorPage(scan_page);
+      scan_page = scan_page->next() ? scan_page->next() : nullptr;
       scan_ptr = scan_page == nullptr ? kNullAddress : scan_page->area_start();
       continue;
     }
 
+    // 获取当前要扫描的对象
     Tagged<PyObject> object(scan_ptr);
     size_t instance_size = PyObject::GetInstanceSize(object);
 
@@ -55,7 +45,7 @@ void ScavengerCollector::CollectGarbage() {
     scan_ptr += instance_size;
   }
 
-  // 交换空间
+  // 交换 eden 和 survivor 空间，并重置 survivor 空间的分配状态
   heap_->new_space()->Flip();
 }
 
