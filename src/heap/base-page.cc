@@ -8,24 +8,70 @@
 
 namespace saauso::internal {
 
-bool BasePage::HasFlag(Flag flag) const {
-  return (flags_ & static_cast<uintptr_t>(flag)) != 0;
+namespace {
+
+void CheckValidAddressInPageOnlyForDebug(BasePage* page, Address addr) {
+  assert(page->magic() == BasePage::kMagicHeader);
+  assert(page->area_start() <= addr && addr < page->allocation_top());
 }
 
-void BasePage::SetFlag(Flag flag) {
-  flags_ |= static_cast<uintptr_t>(flag);
+}  // namespace
+
+bool BasePage::HasFlag(uintptr_t flag) const {
+  return (flags_ & flag) != 0;
 }
 
-void BasePage::ClearFlag(Flag flag) {
-  flags_ &= ~static_cast<uintptr_t>(flag);
+void BasePage::SetFlag(uintptr_t flag) {
+  flags_ |= flag;
 }
 
+void BasePage::ClearFlag(uintptr_t flag) {
+  flags_ &= ~flag;
+}
+
+// static
 Address BasePage::PageBase(Address addr) {
   return addr & ~(static_cast<Address>(kPageSizeInBytes) - 1);
 }
 
+// static
 BasePage* BasePage::FromAddress(Address addr) {
   return reinterpret_cast<BasePage*>(PageBase(addr));
+}
+
+// static
+bool BasePage::InEdenPage(Address addr_in_page) {
+  BasePage* page = FromAddress(addr_in_page);
+  CheckValidAddressInPageOnlyForDebug(page, addr_in_page);
+  return page->HasFlag(Flag::kEdenPage);
+}
+
+// static
+bool BasePage::InSurvivorPage(Address addr_in_page) {
+  BasePage* page = FromAddress(addr_in_page);
+  CheckValidAddressInPageOnlyForDebug(page, addr_in_page);
+  return page->HasFlag(Flag::kSurvivorPage);
+}
+
+// static
+bool BasePage::InYoungPage(Address addr_in_page) {
+  BasePage* page = FromAddress(addr_in_page);
+  CheckValidAddressInPageOnlyForDebug(page, addr_in_page);
+  return page->HasFlag(Flag::kSurvivorPage | Flag::kEdenPage);
+}
+
+// static
+bool BasePage::InOldPage(Address addr_in_page) {
+  BasePage* page = FromAddress(addr_in_page);
+  CheckValidAddressInPageOnlyForDebug(page, addr_in_page);
+  return page->HasFlag(Flag::kOldPage);
+}
+
+// static
+bool BasePage::InMetaPage(Address addr_in_page) {
+  BasePage* page = FromAddress(addr_in_page);
+  CheckValidAddressInPageOnlyForDebug(page, addr_in_page);
+  return page->HasFlag(Flag::kMetaPage);
 }
 
 }  // namespace saauso::internal

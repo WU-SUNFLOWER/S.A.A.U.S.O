@@ -13,7 +13,7 @@ class PagedSpace;
 
 class BasePage {
  public:
-  enum class Flag : uintptr_t {
+  enum Flag : uintptr_t {
     kNoFlags = 0u,
     kEdenPage = 1u << 0,
     kSurvivorPage = 1u << 1,
@@ -37,12 +37,18 @@ class BasePage {
   Address allocation_limit() const { return allocation_limit_; }
   size_t allocated_bytes() const { return allocated_bytes_; }
 
-  bool HasFlag(Flag flag) const;
-  void SetFlag(Flag flag);
-  void ClearFlag(Flag flag);
+  bool HasFlag(uintptr_t flag) const;
+  void SetFlag(uintptr_t flag);
+  void ClearFlag(uintptr_t flag);
 
   static Address PageBase(Address addr);
   static BasePage* FromAddress(Address addr);
+
+  static bool InEdenPage(Address addr_in_page);
+  static bool InSurvivorPage(Address addr_in_page);
+  static bool InYoungPage(Address addr_in_page);
+  static bool InOldPage(Address addr_in_page);
+  static bool InMetaPage(Address addr_in_page);
 
  protected:
   friend class MarkSweepCollector;
