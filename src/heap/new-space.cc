@@ -63,14 +63,15 @@ void NewSpace::SetPageRangeFlag(NewPage* first,
 
 void NewSpace::Setup(Address start, size_t size) {
   assert(start != kNullAddress);
+  assert(IsAddressAlignedToPage(start));
+
   assert(size >= BasePage::kPageSizeInBytes * 2);
+  assert(IsSizeAlignedToPage(size));
 
-  base_ = AlignToPage(start);
-  end_ =
-      (start + size) & ~(static_cast<Address>(BasePage::kPageSizeInBytes) - 1);
-  assert(base_ < end_);
+  base_ = start;
+  end_ = start + size;
 
-  size_t page_count = (end_ - base_) / BasePage::kPageSizeInBytes;
+  size_t page_count = size / BasePage::kPageSizeInBytes;
   assert(page_count >= 2);
   assert((page_count & 1) == 0);
 
@@ -92,11 +93,12 @@ void NewSpace::Setup(Address start, size_t size) {
   eden_first_page_ = reinterpret_cast<NewPage*>(base_);
   eden_last_page_ = reinterpret_cast<NewPage*>(
       base_ + (eden_page_count - 1) * BasePage::kPageSizeInBytes);
+  eden_current_page_ = eden_first_page_;
+
   survivor_first_page_ = reinterpret_cast<NewPage*>(
       base_ + eden_page_count * BasePage::kPageSizeInBytes);
   survivor_last_page_ = reinterpret_cast<NewPage*>(
       base_ + (page_count - 1) * BasePage::kPageSizeInBytes);
-  eden_current_page_ = eden_first_page_;
   survivor_current_page_ = survivor_first_page_;
 }
 
@@ -108,9 +110,11 @@ void NewSpace::TearDown() {
   }
   base_ = kNullAddress;
   end_ = kNullAddress;
+
   eden_first_page_ = nullptr;
   eden_last_page_ = nullptr;
   eden_current_page_ = nullptr;
+
   survivor_first_page_ = nullptr;
   survivor_last_page_ = nullptr;
   survivor_current_page_ = nullptr;

@@ -28,8 +28,11 @@ class PagedSpace : public Space {
   Address base() const { return base_; }
   Address end() const { return end_; }
 
-  static size_t AlignInitialSizeToPage(size_t size);
-  static Address AlignToPage(Address addr);
+  static size_t AlignSizeToPage(size_t size);
+  static Address AlignAddressToPage(Address addr);
+
+  static bool IsSizeAlignedToPage(size_t size);
+  static bool IsAddressAlignedToPage(Address addr);
 
  protected:
   static void InitializePageHeader(BasePage* page,

@@ -52,11 +52,10 @@ void Heap::SetUpSpaces(size_t young_generation_size,
   meta_space_ = new MetaSpace();
 
   size_t aligned_young_generation_size =
-      PagedSpace::AlignInitialSizeToPage(young_generation_size);
+      PagedSpace::AlignSizeToPage(young_generation_size);
   size_t aligned_old_generation_size =
-      PagedSpace::AlignInitialSizeToPage(old_generation_size);
-  size_t aligned_meta_space_size =
-      PagedSpace::AlignInitialSizeToPage(meta_space_size);
+      PagedSpace::AlignSizeToPage(old_generation_size);
+  size_t aligned_meta_space_size = PagedSpace::AlignSizeToPage(meta_space_size);
   size_t total_young_generation_size = aligned_young_generation_size * 2;
 
   // 向操作系统申请虚拟内存
@@ -79,6 +78,7 @@ void Heap::SetUpSpaces(size_t young_generation_size,
 
   // 初始化 Meta 空间
   meta_space_->Setup(chunk_start_addr, aligned_meta_space_size);
+  chunk_start_addr += aligned_meta_space_size;
 }
 
 void Heap::TearDown() {

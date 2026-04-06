@@ -33,7 +33,7 @@ void MetaSpace::Setup(Address start, size_t size) {
   assert(start != kNullAddress);
   assert(size >= BasePage::kPageSizeInBytes);
 
-  base_ = AlignToPage(start);
+  base_ = AlignAddressToPage(start);
   end_ =
       (start + size) & ~(static_cast<Address>(BasePage::kPageSizeInBytes) - 1);
   assert(base_ < end_);

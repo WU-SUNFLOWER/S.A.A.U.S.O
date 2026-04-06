@@ -13,7 +13,6 @@ class NewSpace;
 
 class NewPage : public BasePage {
  public:
-  static constexpr uint32_t kMagicHeader = BasePage::kMagicHeader;
   static constexpr size_t kSizeInBytes = BasePage::kPageSizeInBytes;
 
   NewSpace* owner() const { return reinterpret_cast<NewSpace*>(owner_); }
@@ -80,6 +79,7 @@ class NewSpace : public PagedSpace {
   NewPage* eden_first_page_{nullptr};
   NewPage* eden_last_page_{nullptr};
   NewPage* eden_current_page_{nullptr};
+
   NewPage* survivor_first_page_{nullptr};
   NewPage* survivor_last_page_{nullptr};
   NewPage* survivor_current_page_{nullptr};

@@ -9,15 +9,25 @@
 namespace saauso::internal {
 
 // static
-size_t PagedSpace::AlignInitialSizeToPage(size_t size) {
+size_t PagedSpace::AlignSizeToPage(size_t size) {
   size_t mask = BasePage::kPageSizeInBytes - 1;
   return (size + mask) & ~mask;
 }
 
 // static
-Address PagedSpace::AlignToPage(Address addr) {
+Address PagedSpace::AlignAddressToPage(Address addr) {
   Address mask = static_cast<Address>(BasePage::kPageSizeInBytes - 1);
   return (addr + mask) & ~mask;
+}
+
+// static
+bool PagedSpace::IsSizeAlignedToPage(size_t size) {
+  return AlignSizeToPage(size) == size;
+}
+
+// static
+bool PagedSpace::IsAddressAlignedToPage(Address addr) {
+  return AlignAddressToPage(addr) == addr;
 }
 
 // static
