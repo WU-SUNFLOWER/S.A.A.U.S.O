@@ -50,6 +50,10 @@ inline size_t ObjectSizeAlign(size_t size) {
   return (size + kObjectAlignmentMask) & ~kObjectAlignmentMask;
 }
 
+inline bool IsObjectSizeAligned(size_t size) {
+  return (size & kObjectAlignmentMask) == 0;
+}
+
 }  // namespace saauso::internal
 
 #endif  // INCLUDE_SAAUSO_INTERNAL_H_

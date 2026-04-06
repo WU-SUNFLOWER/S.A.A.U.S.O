@@ -37,6 +37,7 @@ void ScavengerCollector::CollectGarbage() {
     // 获取当前要扫描的对象
     Tagged<PyObject> object(scan_ptr);
     size_t instance_size = PyObject::GetInstanceSize(object);
+    assert(IsObjectSizeAligned(instance_size));
 
     // 扫描该对象，将该对象持有引用的子对象全部拷贝到survivor空间
     PyObject::Iterate(object, &visitor);
