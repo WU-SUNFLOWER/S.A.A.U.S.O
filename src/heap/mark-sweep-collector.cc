@@ -9,6 +9,8 @@
 #include <vector>
 
 #include "src/heap/heap.h"
+#include "src/heap/old-page.h"
+#include "src/heap/old-space.h"
 #include "src/objects/py-object.h"
 
 namespace saauso::internal {
@@ -21,7 +23,9 @@ struct SweepFromPredicateContext {
   MarkSweepCollector::LiveObjectVector live_objects;
 };
 
-void CollectAllocatedObject(Address addr, size_t size_in_bytes, void* raw_data) {
+void CollectAllocatedObject(Address addr,
+                            size_t size_in_bytes,
+                            void* raw_data) {
   auto* context = reinterpret_cast<SweepFromPredicateContext*>(raw_data);
   if (context->predicate(addr, size_in_bytes, context->data)) {
     context->live_objects.PushBack({addr, size_in_bytes});
@@ -50,7 +54,8 @@ void MarkSweepCollector::IterateAllocatedObjectsInPage(
 }
 
 void MarkSweepCollector::SweepPageFromLiveObjects(
-    OldPage* page, const LiveObjectVector& live_objects) const {
+    OldPage* page,
+    const LiveObjectVector& live_objects) const {
   assert(page != nullptr);
 
   page->ClearFlag(OldPage::Flag::kSwept);
@@ -87,9 +92,10 @@ void MarkSweepCollector::SweepPageFromLiveObjects(
   page->SetFlag(OldPage::Flag::kSwept);
 }
 
-void MarkSweepCollector::SweepPageFromPredicate(OldPage* page,
-                                                OldLiveObjectPredicate predicate,
-                                                void* data) const {
+void MarkSweepCollector::SweepPageFromPredicate(
+    OldPage* page,
+    OldLiveObjectPredicate predicate,
+    void* data) const {
   assert(page != nullptr);
   assert(predicate != nullptr);
 
@@ -99,17 +105,19 @@ void MarkSweepCollector::SweepPageFromPredicate(OldPage* page,
 }
 
 OldSpaceSweepStats MarkSweepCollector::SweepOldSpaceFromPredicate(
-    OldLiveObjectPredicate predicate, void* data) const {
+    OldLiveObjectPredicate predicate,
+    void* data) const {
   assert(predicate != nullptr);
 
   OldSpaceSweepStats stats{0, 0};
-  OldSpace& old_space = heap_->old_space();
-  for (OldPage* page = old_space.first_page_; page != nullptr; page = page->next()) {
+  OldSpace* old_space = heap_->old_space();
+  for (OldPage* page = old_space->first_page_; page != nullptr;
+       page = page->next()) {
     SweepPageFromPredicate(page, predicate, data);
     ++stats.swept_pages;
     stats.live_bytes += page->live_bytes();
   }
-  old_space.current_page_ = old_space.first_page_;
+  old_space->current_page_ = old_space->first_page_;
   return stats;
 }
 
@@ -142,15 +150,16 @@ void MarkSweepCollector::CollectLiveObjectsForPage(
 OldSpaceSweepStats MarkSweepCollector::SweepOldSpaceFromLiveObjects(
     const LiveObjectVector& live_objects) const {
   OldSpaceSweepStats stats{0, 0};
-  OldSpace& old_space = heap_->old_space();
-  for (OldPage* page = old_space.first_page_; page != nullptr; page = page->next()) {
+  OldSpace* old_space = heap_->old_space();
+  for (OldPage* page = old_space->first_page_; page != nullptr;
+       page = page->next()) {
     LiveObjectVector page_live_objects;
     CollectLiveObjectsForPage(page, live_objects, &page_live_objects);
     SweepPageFromLiveObjects(page, page_live_objects);
     ++stats.swept_pages;
     stats.live_bytes += page->live_bytes();
   }
-  old_space.current_page_ = old_space.first_page_;
+  old_space->current_page_ = old_space->first_page_;
   return stats;
 }
 

@@ -9,6 +9,8 @@
 #include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
+#include "src/heap/meta-space.h"
+#include "src/heap/new-space.h"
 #include "src/heap/spaces.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
@@ -209,22 +211,21 @@ TEST_F(GcTest, MetaSingletonShouldNotMoveInMinorGc) {
 TEST_F(GcTest, PagedHeapMetadataShouldBeClosedForYoungAndMetaSpaces) {
   HandleScope scope(isolate_);
 
-  NewSpace& new_space = isolate_->heap()->new_space();
-  MetaSpace& meta_space = isolate_->heap()->meta_space();
+  NewSpace* new_space = isolate_->heap()->new_space();
+  MetaSpace* meta_space = isolate_->heap()->meta_space();
 
-  ASSERT_NE(new_space.eden_first_page(), nullptr);
-  ASSERT_NE(new_space.survivor_first_page(), nullptr);
-  EXPECT_TRUE(new_space.eden_first_page()->HasFlag(BasePage::Flag::kEdenPage));
+  ASSERT_NE(new_space->eden_first_page(), nullptr);
+  ASSERT_NE(new_space->survivor_first_page(), nullptr);
+  EXPECT_TRUE(new_space->eden_first_page()->HasFlag(BasePage::Flag::kEdenPage));
   EXPECT_TRUE(
-      new_space.survivor_first_page()->HasFlag(BasePage::Flag::kSurvivorPage));
-  EXPECT_EQ(new_space.eden_first_page()->owner(), &new_space);
-  EXPECT_EQ(new_space.survivor_first_page()->owner(), &new_space);
+      new_space->survivor_first_page()->HasFlag(BasePage::Flag::kSurvivorPage));
+  EXPECT_EQ(new_space->eden_first_page()->owner(), new_space);
+  EXPECT_EQ(new_space->survivor_first_page()->owner(), new_space);
 
-  BasePage* none_page =
-      BasePage::FromAddress(isolate_->py_none_object().ptr());
+  BasePage* none_page = BasePage::FromAddress(isolate_->py_none_object().ptr());
   EXPECT_TRUE(none_page->HasFlag(BasePage::Flag::kMetaPage));
-  EXPECT_EQ(none_page->owner(), &meta_space);
-  EXPECT_TRUE(meta_space.Contains(isolate_->py_none_object().ptr()));
+  EXPECT_EQ(none_page->owner(), meta_space);
+  EXPECT_TRUE(meta_space->Contains(isolate_->py_none_object().ptr()));
 }
 
 TEST_F(GcTest, StringTableEntriesStayReachableAcrossGc) {
@@ -232,7 +233,7 @@ TEST_F(GcTest, StringTableEntriesStayReachableAcrossGc) {
 
   Handle<PyString> before = ST(builtins, isolate_);
   Address before_addr = (*before).ptr();
-  EXPECT_TRUE(isolate_->heap()->meta_space().Contains(before_addr));
+  EXPECT_TRUE(isolate_->heap()->meta_space()->Contains(before_addr));
 
   AllocateEphemeralStrings(isolate_, 2000);
   isolate_->heap()->CollectGarbage();
@@ -241,7 +242,7 @@ TEST_F(GcTest, StringTableEntriesStayReachableAcrossGc) {
 
   Handle<PyString> after = ST(builtins, isolate_);
   EXPECT_EQ(before_addr, (*after).ptr());
-  EXPECT_TRUE(isolate_->heap()->meta_space().Contains((*after).ptr()));
+  EXPECT_TRUE(isolate_->heap()->meta_space()->Contains((*after).ptr()));
   EXPECT_EQ(std::strncmp(after->buffer(), "__builtins__", after->length()), 0);
 }
 
@@ -266,10 +267,10 @@ TEST_F(GcTest, CopyGcShouldScanAcrossMultipleSurvivorPages) {
     auto child = Handle<PyList>::cast(root->Get(index, isolate_));
     ASSERT_EQ(child->length(), 1);
     Handle<PyObject> eq_res;
-    ASSERT_TRUE(PyObject::Equal(
-                    isolate_, child->Get(0, isolate_),
-                    PyString::New(isolate_, std::to_string(index).c_str()))
-                    .ToHandle(&eq_res));
+    ASSERT_TRUE(
+        PyObject::Equal(isolate_, child->Get(0, isolate_),
+                        PyString::New(isolate_, std::to_string(index).c_str()))
+            .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
 }

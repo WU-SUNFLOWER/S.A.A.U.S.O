@@ -11,6 +11,7 @@
 #include "src/execution/isolate.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/heap/new-space.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-object.h"
@@ -82,7 +83,7 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 }
 
 Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
-  Address target_addr = heap_->new_space().AllocateInSurvivorSpace(size);
+  Address target_addr = heap_->new_space()->AllocateInSurvivorSpace(size);
   // // survivor space中理论上一定有可供分配的空间
   assert(target_addr != kNullAddress &&
          "survivor space must have enough space!!!");

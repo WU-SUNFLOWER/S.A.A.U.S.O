@@ -5,6 +5,7 @@
 #include "src/heap/scavenger-collector.h"
 
 #include "src/heap/heap.h"
+#include "src/heap/new-space.h"
 #include "src/heap/scavenge-visitor.h"
 #include "src/objects/py-object.h"
 
@@ -33,7 +34,7 @@ void ScavengerCollector::CollectGarbage() {
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   heap_->IterateRoots(&visitor);
 
-  NewPage* scan_page = heap_->new_space_.survivor_first_page();
+  NewPage* scan_page = heap_->new_space_->survivor_first_page();
   Address scan_ptr =
       scan_page == nullptr ? kNullAddress : scan_page->area_start();
 
@@ -55,7 +56,7 @@ void ScavengerCollector::CollectGarbage() {
   }
 
   // 交换空间
-  heap_->new_space().Flip();
+  heap_->new_space()->Flip();
 }
 
 }  // namespace saauso::internal
