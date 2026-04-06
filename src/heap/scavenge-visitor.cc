@@ -17,7 +17,8 @@
 
 namespace saauso::internal {
 
-ScavenageVisitor::ScavenageVisitor(Isolate* isolate) : ObjectVisitor(isolate) {}
+ScavenageVisitor::ScavenageVisitor(Heap* heap)
+    : ObjectVisitor(heap->isolate()), heap_(heap) {}
 
 void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
                                      Tagged<PyObject>* end) {
@@ -49,8 +50,7 @@ bool ScavenageVisitor::CanEvacuate(Tagged<PyObject> object) {
   // 对于已经被拷贝过的对象，即 MarkWord 已被更新成 Forwarding Address 的对象，
   // 这里不能排除掉。
   // 因为我们需要通过执行 Evacuate 操作来更新当前遍历到的 slot。
-  return IsHeapObject(object) &&
-         isolate()->heap()->InNewSpaceEden(object.ptr());
+  return IsHeapObject(object) && Heap::InNewSpaceEdenFast(object.ptr());
 }
 
 void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
@@ -82,8 +82,7 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 }
 
 Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
-  Address target_addr =
-      isolate()->heap()->new_space().AllocateInSurvivorSpace(size);
+  Address target_addr = heap_->new_space().AllocateInSurvivorSpace(size);
   // // survivor space中理论上一定有可供分配的空间
   assert(target_addr != kNullAddress &&
          "survivor space must have enough space!!!");

@@ -28,7 +28,7 @@ NewPage* NextSurvivorPage(NewPage* page) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ScavengerCollector::CollectGarbage() {
-  ScavenageVisitor visitor(heap_->isolate_);
+  ScavenageVisitor visitor(heap_);
 
   // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
   heap_->IterateRoots(&visitor);
