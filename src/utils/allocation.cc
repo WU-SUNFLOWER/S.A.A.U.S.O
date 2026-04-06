@@ -121,14 +121,14 @@ void VirtualMemory::Reserve(size_t size, size_t alignment) {
 
 ret:
   if (address_ == nullptr) [[unlikely]] {
-    std::printf("VirtualMemory OOM!");
+    std::printf("VirtualMemory OOM!\n");
     std::exit(1);
   }
   return;
 
 ret_with_free_failed:
   if (!free_result) {
-    std::printf("fail to call VirtualFree!");
+    std::printf("fail to call VirtualFree!\n");
     std::exit(1);
   }
   return;
