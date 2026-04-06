@@ -5,19 +5,16 @@
 #include <cstring>
 #include <string>
 
-#include "gtest/gtest.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
-#include "src/heap/heap.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-oddballs.h"
 #include "src/objects/py-smi.h"
-#include "src/objects/py-string.h"
 #include "src/runtime/string-table.h"
 #include "test/unittests/test-helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -135,13 +132,11 @@ TEST_F(GcTest, CopyGcTestForForwardingPointer) {
                               list2->Get(0, isolate_))
                   .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(
-      PyObject::Equal(isolate_, list1->Get(0, isolate_), content)
-          .ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list1->Get(0, isolate_), content)
+                  .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
-  ASSERT_TRUE(
-      PyObject::Equal(isolate_, list2->Get(0, isolate_), content)
-          .ToHandle(&eq_res));
+  ASSERT_TRUE(PyObject::Equal(isolate_, list2->Get(0, isolate_), content)
+                  .ToHandle(&eq_res));
   EXPECT_PY_TRUE(*eq_res);
 }
 
@@ -269,8 +264,9 @@ TEST_F(GcTest, CopyGcShouldPreserveDeepObjectGraph) {
     HandleScope inner_scope(isolate_);
     auto expected = PyString::New(isolate_, std::to_string(i).c_str());
     Handle<PyObject> eq_res;
-    ASSERT_TRUE(PyObject::Equal(isolate_, payload_list->Get(i, isolate_), expected)
-                    .ToHandle(&eq_res));
+    ASSERT_TRUE(
+        PyObject::Equal(isolate_, payload_list->Get(i, isolate_), expected)
+            .ToHandle(&eq_res));
     EXPECT_PY_TRUE(*eq_res);
   }
 }
