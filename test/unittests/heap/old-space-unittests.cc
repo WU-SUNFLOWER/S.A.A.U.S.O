@@ -8,6 +8,7 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap.h"
 #include "src/heap/mark-sweep-collector.h"
+#include "src/heap/old-space.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list-iterator-klass.h"
 #include "src/objects/py-list-iterator.h"
@@ -65,7 +66,8 @@ TEST_F(OldSpaceTest, OldSpaceShouldAllocatePagedObjects) {
       sizeof(PyString), Heap::AllocationSpace::kOldSpace);
 
   EXPECT_NE(addr, kNullAddress);
-  EXPECT_TRUE(isolate_->heap()->InOldSpace(addr));
+  EXPECT_TRUE(isolate_->heap()->InOldSpaceFast(addr));
+  EXPECT_TRUE(isolate_->heap()->old_space().Contains(addr));
 
   OldPage* page = OldSpace::FromAddress(addr);
   ASSERT_NE(page, nullptr);
@@ -249,7 +251,8 @@ TEST_F(OldSpaceTest, OldPageShouldRejectInvalidFreeBlock) {
 
   EXPECT_TRUE(page->IsValidFreeBlockSlow(block, block_size));
   EXPECT_FALSE(page->IsValidFreeBlockSlow(block + 1, block_size));
-  EXPECT_FALSE(page->IsValidFreeBlockSlow(block, OldFreeBlock::kMinimumSizeInBytes - 1));
+  EXPECT_FALSE(
+      page->IsValidFreeBlockSlow(block, OldFreeBlock::kMinimumSizeInBytes - 1));
   page->AddFreeBlock(block, block_size);
   EXPECT_FALSE(page->IsValidFreeBlockSlow(block, block_size));
 }
@@ -406,10 +409,10 @@ TEST_F(OldSpaceTest, OldSpaceSweepFromLiveObjectsShouldDispatchAcrossPages) {
             OldSpace::FromAddress(second_page_first));
 
   MarkSweepCollector::LiveObjectVector live_objects;
-  live_objects.PushBack({first_page_live,
-                         ObjectSizeAlign(sizeof(PyListIterator))});
-  live_objects.PushBack({second_page_live,
-                         ObjectSizeAlign(sizeof(PyListIterator))});
+  live_objects.PushBack(
+      {first_page_live, ObjectSizeAlign(sizeof(PyListIterator))});
+  live_objects.PushBack(
+      {second_page_live, ObjectSizeAlign(sizeof(PyListIterator))});
 
   OldSpaceSweepStats stats =
       isolate_->heap()->mark_sweep_collector().SweepOldSpaceFromLiveObjects(
