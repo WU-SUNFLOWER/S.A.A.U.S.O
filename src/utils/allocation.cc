@@ -29,6 +29,10 @@ constexpr int kMmapFd = -1;
 constexpr int kMmapFdOffset = 0;
 #endif  // BUILDFLAG(IS_LINUX)
 
+bool IsPowerOfTwo(size_t n) {
+  return (n & (n - 1)) == 0;
+}
+
 uintptr_t RoundUp(uintptr_t addr, size_t alignment) {
   return (addr + alignment - 1) & ~(alignment - 1);
 }
@@ -67,7 +71,7 @@ void VirtualMemory::Reserve(size_t size, size_t alignment) {
   }
 
   // 如果有对齐要求，对齐长度必须是2的幂次
-  assert((alignment & (alignment - 1)) == 0);
+  assert(IsPowerOfTwo(alignment));
 
   // 1. 先尝试直接按原大小分配，如果碰巧对齐了，直接返回
   base = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
@@ -171,29 +175,63 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment) {
 
 void VirtualMemory::Reserve(size_t size, size_t alignment) {
   size_ = size;
+  address_ = MAP_FAILED;
+
+  void* base;
+  uintptr_t base_addr;
+
+  void* reservation;
+  uintptr_t reservation_addr;
+  uintptr_t aligned_addr;
+  size_t prefix_size;
+  size_t suffix_size;
+
+  // 0. 如果没有对齐需求，那么直接申请一块虚拟内存并返回
   if (alignment == 0) {
     address_ = mmap(nullptr, size, PROT_NONE,
                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, kMmapFd,
                     kMmapFdOffset);
-    return;
+    goto ret;
   }
 
-  assert((alignment & (alignment - 1)) == 0);
-  void* reservation =
+  // 如果有对齐要求，对齐长度必须是2的幂次
+  assert(IsPowerOfTwo(alignment));
+
+  // 1. 先尝试精准分配原大小，如果碰巧对齐，可省去后续的 2 次 munmap
+  base =
+      mmap(nullptr, size, PROT_NONE,
+           MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, kMmapFd, kMmapFdOffset);
+  if (base == MAP_FAILED) [[unlikely]] {
+    goto ret;
+  }
+
+  base_addr = reinterpret_cast<uintptr_t>(base);
+  if (RoundUp(base_addr, alignment) == base_addr) {
+    address_ = base;
+    goto ret;
+  }
+
+  // 没有对齐，释放掉
+  munmap(base, size);
+
+  // 2. 采用 Linux 典型的 Padded Allocation
+  // mmap 必定返回页对齐(通常 4KB)的地址，因此最大 misalignment 是 alignment -
+  // page_size。 为了不强依赖外部 page_size 常量，这里直接用 size + alignment
+  // 作为 padding 也是完全安全且正确的。
+  reservation =
       mmap(nullptr, size + alignment, PROT_NONE,
            MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, kMmapFd, kMmapFdOffset);
-  if (reservation == MAP_FAILED) {
-    address_ = MAP_FAILED;
-    return;
+  if (reservation == MAP_FAILED) [[unlikely]] {
+    goto ret;
   }
 
-  uintptr_t reservation_addr = reinterpret_cast<uintptr_t>(reservation);
-  uintptr_t aligned_addr =
-      (reservation_addr + alignment - 1) & ~(alignment - 1);
-  size_t prefix_size = aligned_addr - reservation_addr;
-  size_t suffix_size =
-      (reservation_addr + size + alignment) - (aligned_addr + size);
+  reservation_addr = reinterpret_cast<uintptr_t>(reservation);
+  aligned_addr = RoundUp(reservation_addr, alignment);
+  prefix_size = aligned_addr - reservation_addr;
+  suffix_size = (reservation_addr + size + alignment) - (aligned_addr + size);
 
+  // Linux 允许局部释放 (Partial Unmap)，这是与 Windows 最大的不同。
+  // 我们直接将首尾多余的部分归还给 OS，中间留下的就是完美对齐的 size 大小内存。
   if (prefix_size != 0) {
     munmap(reservation, prefix_size);
   }
@@ -201,6 +239,13 @@ void VirtualMemory::Reserve(size_t size, size_t alignment) {
     munmap(reinterpret_cast<void*>(aligned_addr + size), suffix_size);
   }
   address_ = reinterpret_cast<void*>(aligned_addr);
+
+ret:
+  if (address_ == MAP_FAILED) [[unlikely]] {
+    std::printf("VirtualMemory OOM!\n");
+    std::exit(1);
+  }
+  return;
 }
 
 VirtualMemory::~VirtualMemory() {
