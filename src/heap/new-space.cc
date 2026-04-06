@@ -23,7 +23,7 @@ void NewSpace::InitializePage(NewPage* page,
 
 // static
 NewPage* NewSpace::FindPageWithLinearAllocationArea(NewPage* start_page,
-                                                    size_t aligned_size) {
+                                                    size_t size_in_bytes) {
   // 特别说明：
   // - 理论上来说，由于页内碎片的存在，如果遍历到最后一个内存页如果还未找到
   //   可分配的区域，应该回到第一个内存页重新开始找（可能会找到正好能塞下待分配大小的页），
@@ -33,7 +33,7 @@ NewPage* NewSpace::FindPageWithLinearAllocationArea(NewPage* start_page,
   // - 我们理解出现这种情况，当务之急是触发新生代GC，而不是再去尝试找一个
   //   能塞下当前待分配大小的页内碎片。
   for (NewPage* page = start_page; page != nullptr; page = page->next()) {
-    if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
+    if (page->allocation_top_ + size_in_bytes <= page->allocation_limit_) {
       return page;
     }
   }
@@ -111,9 +111,8 @@ void NewSpace::TearDown() {
 }
 
 Address NewSpace::AllocateRaw(size_t size_in_bytes) {
-  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
   NewPage* page =
-      FindPageWithLinearAllocationArea(eden_current_page_, aligned_size);
+      FindPageWithLinearAllocationArea(eden_current_page_, size_in_bytes);
   // 发生 OOM，返回 null 以触发 GC
   if (page == nullptr) {
     return kNullAddress;
@@ -124,16 +123,15 @@ Address NewSpace::AllocateRaw(size_t size_in_bytes) {
 }
 
 Address NewSpace::AllocateInSurvivorSpace(size_t size_in_bytes) {
-  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
   NewPage* page =
-      FindPageWithLinearAllocationArea(survivor_current_page_, aligned_size);
+      FindPageWithLinearAllocationArea(survivor_current_page_, size_in_bytes);
   // 发生 OOM，返回 null 以触发 GC
   if (page == nullptr) {
     return kNullAddress;
   }
 
   survivor_current_page_ = page;
-  return page->AllocateAndUpdateTop(aligned_size);
+  return page->AllocateAndUpdateTop(size_in_bytes);
 }
 
 bool NewSpace::Contains(Address addr) {
