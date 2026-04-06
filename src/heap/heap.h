@@ -41,9 +41,10 @@ class Heap {
     return Tagged<T>(AllocateRaw(sizeof(T), space));
   }
 
-  bool InNewSpaceEden(Address raw_addr);
-  bool InNewSpaceSurvivor(Address raw_addr);
-  bool InOldSpace(Address raw_addr);
+  static bool InNewSpaceFast(Address addr_in_heap);
+  static bool InNewSpaceEdenFast(Address addr_in_heap);
+  static bool InNewSpaceSurvivorFast(Address addr_in_heap);
+  static bool InOldSpaceFast(Address addr);
 
   void CollectGarbage();
 
@@ -63,6 +64,8 @@ class Heap {
   void RecordWrite(Tagged<PyObject> object,
                    Address* slot,
                    Tagged<PyObject> value);
+
+  Isolate* isolate() const { return isolate_; }
 
  private:
   friend class ScavengerCollector;

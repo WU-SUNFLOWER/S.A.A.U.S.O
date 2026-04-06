@@ -125,16 +125,24 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
   return result;
 }
 
-bool Heap::InNewSpaceEden(Address addr) {
-  return new_space().ContainsInEden(addr);
+// static
+bool Heap::InNewSpaceEdenFast(Address addr_in_heap) {
+  return NewSpace::ContainsInEdenFast(addr_in_heap);
 }
 
-bool Heap::InNewSpaceSurvivor(Address addr) {
-  return new_space().ContainsInSurvivor(addr);
+// static
+bool Heap::InNewSpaceSurvivorFast(Address addr_in_heap) {
+  return NewSpace::ContainsInSurvivorFast(addr_in_heap);
 }
 
-bool Heap::InOldSpace(Address addr) {
-  return old_space().Contains(addr);
+// static
+bool Heap::InNewSpaceFast(Address addr_in_heap) {
+  return NewSpace::ContainsFast(addr_in_heap);
+}
+
+// static
+bool Heap::InOldSpaceFast(Address addr) {
+  return OldSpace::ContainsFast(addr);
 }
 
 void Heap::CollectGarbage() {
@@ -147,24 +155,22 @@ void Heap::RecordWrite(Tagged<PyObject> object,
                        Address* slot,
                        Tagged<PyObject> value) {
   // 1. 如果写入的是Smi或NULL，忽略
-  if (value.is_null() || value.IsSmi()) {
+  if (!IsHeapObject(value)) {
     return;
   }
 
-  // 2. 如果value不在NewSpace，忽略（OldSpace/MetaSpace对象不需要Scavenge）
-  // 注意：这里假设NewSpace的判断是准确的（包含Eden和Survivor）
-  if (!InNewSpaceEden(value.ptr()) && !InNewSpaceSurvivor(value.ptr())) {
-    return;
-  }
+  Address object_addr = object.ptr();
+  Address value_addr = value.ptr();
 
-  // 3. 如果host对象本身就在NewSpace，忽略（Scavenge会自动扫描整个NewSpace）
-  if (InNewSpaceEden(object.ptr()) || InNewSpaceSurvivor(object.ptr())) {
+  // 2. 我们只对 Old（object）-> New（value）的边感兴趣。
+  //    也就是说，如果 object 不在 OldSpace，或者 value 不在 NewSpace，则忽略！
+  if (InNewSpaceFast(object_addr) || !InNewSpaceFast(value_addr)) {
     return;
   }
 
   // 4. 记录到记忆集 (Old -> New)
-  if (InOldSpace(object.ptr())) {
-    OldSpace::FromAddress(object.ptr())->AddRememberedSlot(slot);
+  if (InOldSpaceFast(object_addr)) {
+    OldSpace::FromAddress(object_addr)->AddRememberedSlot(slot);
     return;
   }
 
@@ -188,14 +194,13 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
       Tagged<PyObject> object = *tagged_slot;
       assert(!object.is_null());
       assert(!object.IsSmi());
-      assert(InNewSpaceEden(object.ptr()) || InNewSpaceSurvivor(object.ptr()));
+      assert(InNewSpaceFast(object.ptr()));
 
       v->VisitPointer(tagged_slot);
 
       Tagged<PyObject> new_object = *tagged_slot;
       // 如果经过处理后，tagged_slot处指向的object仍然在新生代，那么再次回收进记录集
-      if (InNewSpaceEden(new_object.ptr()) ||
-          InNewSpaceSurvivor(new_object.ptr())) {
+      if (InNewSpaceFast(new_object.ptr())) {
         remembered_set->Set(new_size++, slot);
       }
     }
@@ -210,8 +215,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 再次检查：如果slot中的对象已经不是NewSpace对象了（可能被重写，或者晋升了）
     // 则移除该记录
-    if (object.IsSmi() || object.is_null() ||
-        (!InNewSpaceEden(object.ptr()) && !InNewSpaceSurvivor(object.ptr()))) {
+    if (!IsHeapObject(object) || !InNewSpaceFast(object.ptr())) {
       continue;
     }
 
@@ -221,9 +225,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 访问后再次检查：如果更新后的对象还在NewSpace，保留记录；否则（晋升）移除
     Tagged<PyObject> new_object = *slot;
-    if (!new_object.IsSmi() && !new_object.is_null() &&
-        (InNewSpaceEden(new_object.ptr()) ||
-         InNewSpaceSurvivor(new_object.ptr()))) {
+    if (!IsHeapObject(new_object) && InNewSpaceFast(new_object.ptr())) {
       remembered_set_.Set(new_size++, slot);
     }
   }
