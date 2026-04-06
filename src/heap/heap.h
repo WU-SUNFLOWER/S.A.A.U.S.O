@@ -74,6 +74,10 @@ class Heap {
 
   enum class GcState { kNotInGc, kScavenage, kMarkCompact };
 
+  void SetUpSpaces(size_t young_generation_size,
+                   size_t old_generation_size,
+                   size_t meta_space_size);
+
   Address AllocateRawImpl(size_t size_in_bytes, AllocationSpace space);
 
   void IterateRoots(ObjectVisitor* v);

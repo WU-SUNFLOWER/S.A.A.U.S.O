@@ -21,15 +21,6 @@
 
 namespace saauso::internal {
 
-namespace {
-
-size_t AlignSizeToPage(size_t size) {
-  size_t mask = BasePage::kPageSizeInBytes - 1;
-  return (size + mask) & ~mask;
-}
-
-}  // namespace
-
 DisallowHeapAllocation::DisallowHeapAllocation(Isolate* isolate)
     : DisallowHeapAllocation(isolate->heap()) {}
 
@@ -45,31 +36,49 @@ void Heap::DecrementAllocationDisallowedDepth() {
 void Heap::Setup(size_t young_generation_size,
                  size_t old_generation_size,
                  size_t meta_space_size) {
+  // 初始化各个子空间
+  SetUpSpaces(young_generation_size, old_generation_size, meta_space_size);
+
+  // 初始化垃圾回收器
+  scavenger_collector_ = new ScavengerCollector(this);
+  mark_sweep_collector_ = new MarkSweepCollector(this);
+}
+
+void Heap::SetUpSpaces(size_t young_generation_size,
+                       size_t old_generation_size,
+                       size_t meta_space_size) {
   new_space_ = new NewSpace();
   old_space_ = new OldSpace();
   meta_space_ = new MetaSpace();
 
-  size_t aligned_young_generation_size = AlignSizeToPage(young_generation_size);
-  size_t aligned_old_generation_size = AlignSizeToPage(old_generation_size);
-  size_t aligned_meta_space_size = AlignSizeToPage(meta_space_size);
+  size_t aligned_young_generation_size =
+      PagedSpace::AlignInitialSizeToPage(young_generation_size);
+  size_t aligned_old_generation_size =
+      PagedSpace::AlignInitialSizeToPage(old_generation_size);
+  size_t aligned_meta_space_size =
+      PagedSpace::AlignInitialSizeToPage(meta_space_size);
   size_t total_young_generation_size = aligned_young_generation_size * 2;
 
+  // 向操作系统申请虚拟内存
   initial_size_ = total_young_generation_size + aligned_old_generation_size +
                   aligned_meta_space_size;
   initial_chunk_ = new VirtualMemory(initial_size_, BasePage::kPageSizeInBytes);
+
+  // 目前 S.A.A.U.S.O 不支持堆内存自动生长，
+  // 这里直接一次性要求操作系统分配所有刚才申请的虚拟内存！
   initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
 
+  // 初始化新生代空间
   auto chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
   new_space_->Setup(chunk_start_addr, total_young_generation_size);
   chunk_start_addr += total_young_generation_size;
 
+  // 初始化老生代空间
   old_space_->Setup(chunk_start_addr, aligned_old_generation_size);
   chunk_start_addr += aligned_old_generation_size;
 
+  // 初始化 Meta 空间
   meta_space_->Setup(chunk_start_addr, aligned_meta_space_size);
-
-  scavenger_collector_ = new ScavengerCollector(this);
-  mark_sweep_collector_ = new MarkSweepCollector(this);
 }
 
 void Heap::TearDown() {
