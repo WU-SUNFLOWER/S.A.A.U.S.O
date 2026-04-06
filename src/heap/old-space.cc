@@ -122,4 +122,9 @@ bool OldSpace::Contains(Address addr) {
   return base_page->area_start() <= addr && addr < base_page->allocation_top();
 }
 
+// static
+bool OldSpace::ContainsFast(Address addr) {
+  return BasePage::InOldPage(addr);
+}
+
 }  // namespace saauso::internal

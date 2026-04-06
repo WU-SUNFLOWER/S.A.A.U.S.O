@@ -30,10 +30,20 @@ class NewSpace : public PagedSpace {
   void TearDown() override;
 
   Address AllocateRaw(size_t size_in_bytes) override;
-  bool Contains(Address addr) override;
 
-  bool ContainsInEden(Address addr) const;
-  bool ContainsInSurvivor(Address addr) const;
+  // 针对任意地址，判定它是否属于当前 NewSpace。
+  // 因为涉及到读取 NewSpace 实例内部的状态信息，属于慢路径。
+  bool Contains(Address addr) override;
+  bool ContainsInEdenConsistency(Address addr) const;
+  bool ContainsInSurvivorConsistency(Address addr) const;
+
+  // - 在 GC 等热路径上，如果**明确知道一个有效堆上内存页内部地址**，
+  //   可直接走 Fast API 进行快速判定。
+  // - 在 Debug 模式下，如果传入的 addr 非法（如指向非内存页已分配区域），
+  //   则可能会直接触发断言崩溃！
+  static bool ContainsFast(Address addr);
+  static bool ContainsInEdenFast(Address addr);
+  static bool ContainsInSurvivorFast(Address addr);
 
   Address EdenSpaceBase() const;
   Address EdenSpaceTop() const;

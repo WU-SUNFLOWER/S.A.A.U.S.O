@@ -20,7 +20,16 @@ class OldSpace : public PagedSpace {
   void TearDown() override;
 
   Address AllocateRaw(size_t size_in_bytes) override;
+
+  // 针对任意地址，判定它是否属于当前 OldSpace。
+  // 因为涉及到读取 NewSpace 实例内部的状态信息，属于慢路径。
   bool Contains(Address addr) override;
+
+  // - 在 GC 等热路径上，如果**明确知道一个有效堆上内存页内部地址**，
+  //   可直接走 Fast API 进行快速判定。
+  // - 在 Debug 模式下，如果传入的 addr 非法（如指向非内存页已分配区域），
+  //   则可能会直接触发断言崩溃！
+  static bool ContainsFast(Address addr);
 
   static Address PageBase(Address addr);
   static OldPage* FromAddress(Address addr);

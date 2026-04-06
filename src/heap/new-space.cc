@@ -147,23 +147,23 @@ Address NewSpace::AllocateInSurvivorSpace(size_t size_in_bytes) {
 }
 
 bool NewSpace::Contains(Address addr) {
-  return ContainsInEden(addr) || ContainsInSurvivor(addr);
+  return ContainsInEdenConsistency(addr) || ContainsInSurvivorConsistency(addr);
 }
 
-bool NewSpace::ContainsInEden(Address addr) const {
+bool NewSpace::ContainsInEdenConsistency(Address addr) const {
   if (addr < base_ || addr >= end_) {
     return false;
   }
   BasePage* base_page = BasePage::FromAddress(addr);
   if (base_page->magic() != BasePage::kMagicHeader ||
-      base_page->owner() != this ||
-      !base_page->HasFlag(BasePage::Flag::kEdenPage)) {
+      !base_page->HasFlag(BasePage::Flag::kEdenPage) ||
+      base_page->owner() != this) {
     return false;
   }
   return base_page->area_start() <= addr && addr < base_page->allocation_top();
 }
 
-bool NewSpace::ContainsInSurvivor(Address addr) const {
+bool NewSpace::ContainsInSurvivorConsistency(Address addr) const {
   if (addr < base_ || addr >= end_) {
     return false;
   }
@@ -174,6 +174,21 @@ bool NewSpace::ContainsInSurvivor(Address addr) const {
     return false;
   }
   return base_page->area_start() <= addr && addr < base_page->allocation_top();
+}
+
+// static
+bool NewSpace::ContainsFast(Address addr) {
+  return BasePage::InYoungPage(addr);
+}
+
+// static
+bool NewSpace::ContainsInEdenFast(Address addr) {
+  return BasePage::InEdenPage(addr);
+}
+
+// static
+bool NewSpace::ContainsInSurvivorFast(Address addr) {
+  return BasePage::InSurvivorPage(addr);
 }
 
 Address NewSpace::EdenSpaceBase() const {
