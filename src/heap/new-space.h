@@ -21,8 +21,6 @@ class NewPage : public BasePage {
 
  private:
   friend class NewSpace;
-
-  Address AllocateAndUpdateTop(size_t size_in_bytes);
 };
 
 class NewSpace : public PagedSpace {

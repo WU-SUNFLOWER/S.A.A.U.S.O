@@ -10,16 +10,6 @@
 namespace saauso::internal {
 
 ///////////////////////////////////////////////////////////////////////////////
-// NewPage 实现开始
-
-Address NewPage::AllocateAndUpdateTop(size_t size_in_bytes) {
-  assert(allocation_top_ + size_in_bytes <= allocation_limit_);
-  Address result = allocation_top_;
-  allocation_top_ += size_in_bytes;
-  return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // NewSpace 实现开始
 
 // static
@@ -101,11 +91,11 @@ void NewSpace::Setup(Address start, size_t size) {
 }
 
 void NewSpace::TearDown() {
-  for (NewPage* page = reinterpret_cast<NewPage*>(base_);
-       page != nullptr && reinterpret_cast<Address>(page) < end_;
-       page = page->next()) {
+  for (; base_ < end_; base_ += NewPage::kSizeInBytes) {
+    NewPage* page = reinterpret_cast<NewPage*>(base_);
     PagedSpace::ResetPageHeader(page);
   }
+
   base_ = kNullAddress;
   end_ = kNullAddress;
 

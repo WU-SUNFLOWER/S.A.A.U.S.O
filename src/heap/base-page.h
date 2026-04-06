@@ -56,6 +56,9 @@ class BasePage {
   friend class OldSpace;
   friend class PagedSpace;
 
+  // 从可分配区域的头部申请内存
+  Address AllocateAndUpdateTop(size_t size_in_bytes);
+
   uint32_t magic_{0};
   uintptr_t flags_{0};
   PagedSpace* owner_{nullptr};

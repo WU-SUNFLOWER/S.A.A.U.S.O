@@ -65,20 +65,15 @@ void MetaSpace::TearDown() {
 
 Address MetaSpace::AllocateRaw(size_t size_in_bytes) {
   size_t aligned_size = ObjectSizeAlign(size_in_bytes);
-  if (current_page_ == nullptr) {
-    return kNullAddress;
-  }
-
   MetaPage* page = FindPageWithLinearAllocationArea(current_page_, first_page_,
                                                     aligned_size);
+  // 已经没有更多内存可以分配，返回 null
   if (page == nullptr) {
     return kNullAddress;
   }
 
-  Address result = page->allocation_top_;
-  page->allocation_top_ += aligned_size;
   current_page_ = page;
-  return result;
+  return page->AllocateAndUpdateTop(aligned_size);
 }
 
 bool MetaSpace::Contains(Address addr) {
@@ -92,6 +87,11 @@ bool MetaSpace::Contains(Address addr) {
     return false;
   }
   return base_page->area_start() <= addr && addr < base_page->allocation_top();
+}
+
+// static
+bool MetaSpace::ContainsFast(Address addr) {
+  return BasePage::InMetaPage(addr);
 }
 
 }  // namespace saauso::internal
