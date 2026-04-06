@@ -11,9 +11,9 @@ namespace saauso::internal {
 
 class Heap;
 
-class ScavenageVisitor : public ObjectVisitor {
+class ScavengeVisitor : public ObjectVisitor {
  public:
-  ScavenageVisitor(Heap* heap);
+  ScavengeVisitor(Heap* heap);
 
   void VisitPointers(Tagged<PyObject>* start, Tagged<PyObject>* end) override;
   void VisitKlass(Tagged<Klass>* p) override;

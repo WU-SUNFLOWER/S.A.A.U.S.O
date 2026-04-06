@@ -18,11 +18,11 @@
 
 namespace saauso::internal {
 
-ScavenageVisitor::ScavenageVisitor(Heap* heap)
+ScavengeVisitor::ScavengeVisitor(Heap* heap)
     : ObjectVisitor(heap->isolate()), heap_(heap) {}
 
-void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
-                                     Tagged<PyObject>* end) {
+void ScavengeVisitor::VisitPointers(Tagged<PyObject>* start,
+                                    Tagged<PyObject>* end) {
   for (Tagged<PyObject>* p = start; p < end; ++p) {
     Tagged<PyObject> object = *p;
 
@@ -35,7 +35,7 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
   }
 }
 
-void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
+void ScavengeVisitor::VisitKlass(Tagged<Klass>* p) {
   assert(p != nullptr);
   if (p->is_null()) {
     return;
@@ -43,7 +43,7 @@ void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
   (*p)->Iterate(this);
 }
 
-bool ScavenageVisitor::CanEvacuate(Tagged<PyObject> object) {
+bool ScavengeVisitor::CanEvacuate(Tagged<PyObject> object) {
   // object 必须是位于 NewSpace 的有效堆上对象，
   // 才可以执行 Evacuate 操作。
   //
@@ -54,7 +54,7 @@ bool ScavenageVisitor::CanEvacuate(Tagged<PyObject> object) {
   return IsHeapObject(object) && Heap::InNewSpaceEdenFast(object.ptr());
 }
 
-void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
+void ScavengeVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   Tagged<PyObject> object = *slot_ptr;
 
   // 如果当前slot处指针指向的对象已经被转发
@@ -82,7 +82,7 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   // 这将在Scavenage算法的主循环中完成 (无递归)
 }
 
-Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
+Address ScavengeVisitor::AllocateInSurvivorSpace(size_t size) {
   Address target_addr = heap_->new_space()->AllocateInSurvivorSpace(size);
   // // survivor space中理论上一定有可供分配的空间
   assert(target_addr != kNullAddress &&
