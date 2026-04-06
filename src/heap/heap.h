@@ -6,9 +6,6 @@
 #define SAAUSO_HEAP_HEAP_H_
 
 #include "src/handles/tagged.h"
-#include "src/heap/meta-space.h"
-#include "src/heap/new-space.h"
-#include "src/heap/old-space.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
@@ -17,6 +14,10 @@ class Isolate;
 class MarkSweepCollector;
 class ObjectVisitor;
 class VirtualMemory;
+
+class NewSpace;
+class OldSpace;
+class MetaSpace;
 
 class Heap {
  public:
@@ -48,9 +49,9 @@ class Heap {
 
   void CollectGarbage();
 
-  NewSpace& new_space() { return new_space_; }
-  OldSpace& old_space() { return old_space_; }
-  MetaSpace& meta_space() { return meta_space_; }
+  NewSpace* new_space() { return new_space_; }
+  OldSpace* old_space() { return old_space_; }
+  MetaSpace* meta_space() { return meta_space_; }
   MarkSweepCollector& mark_sweep_collector() { return *mark_sweep_collector_; }
 
   void IncrementAllocationDisallowedDepth();
@@ -78,9 +79,9 @@ class Heap {
   void IterateRoots(ObjectVisitor* v);
   void IterateRememberedSet(ObjectVisitor* v);
 
-  NewSpace new_space_;
-  OldSpace old_space_;
-  MetaSpace meta_space_;
+  NewSpace* new_space_;
+  OldSpace* old_space_;
+  MetaSpace* meta_space_;
 
   // 记忆集：记录从老生代指向新生代的指针
   // 简单实现：使用std::vector作为Sequential Store Buffer

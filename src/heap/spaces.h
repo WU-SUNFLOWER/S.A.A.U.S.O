@@ -18,8 +18,7 @@ class Space {
   virtual Address AllocateRaw(size_t size_in_bytes) = 0;
   virtual bool Contains(Address addr) = 0;
 
- protected:
-  ~Space() = default;
+  virtual ~Space() = default;
 };
 
 class PagedSpace : public Space {

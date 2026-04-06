@@ -8,6 +8,9 @@
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/heap/mark-sweep-collector.h"
+#include "src/heap/meta-space.h"
+#include "src/heap/new-space.h"
+#include "src/heap/old-space.h"
 #include "src/heap/scavenger-collector.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
@@ -42,6 +45,10 @@ void Heap::DecrementAllocationDisallowedDepth() {
 void Heap::Setup(size_t young_generation_size,
                  size_t old_generation_size,
                  size_t meta_space_size) {
+  new_space_ = new NewSpace();
+  old_space_ = new OldSpace();
+  meta_space_ = new MetaSpace();
+
   size_t aligned_young_generation_size = AlignSizeToPage(young_generation_size);
   size_t aligned_old_generation_size = AlignSizeToPage(old_generation_size);
   size_t aligned_meta_space_size = AlignSizeToPage(meta_space_size);
@@ -53,13 +60,13 @@ void Heap::Setup(size_t young_generation_size,
   initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
 
   auto chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
-  new_space_.Setup(chunk_start_addr, total_young_generation_size);
+  new_space_->Setup(chunk_start_addr, total_young_generation_size);
   chunk_start_addr += total_young_generation_size;
 
-  old_space_.Setup(chunk_start_addr, aligned_old_generation_size);
+  old_space_->Setup(chunk_start_addr, aligned_old_generation_size);
   chunk_start_addr += aligned_old_generation_size;
 
-  meta_space_.Setup(chunk_start_addr, aligned_meta_space_size);
+  meta_space_->Setup(chunk_start_addr, aligned_meta_space_size);
 
   scavenger_collector_ = new ScavengerCollector(this);
   mark_sweep_collector_ = new MarkSweepCollector(this);
@@ -71,9 +78,17 @@ void Heap::TearDown() {
   delete mark_sweep_collector_;
   mark_sweep_collector_ = nullptr;
 
-  new_space_.TearDown();
-  old_space_.TearDown();
-  meta_space_.TearDown();
+  new_space_->TearDown();
+  delete new_space_;
+  new_space_ = nullptr;
+
+  old_space_->TearDown();
+  delete old_space_;
+  old_space_ = nullptr;
+
+  meta_space_->TearDown();
+  delete meta_space_;
+  meta_space_ = nullptr;
 
   initial_chunk_->Uncommit(initial_chunk_->address(), initial_size_);
   delete initial_chunk_;
@@ -105,13 +120,13 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
   Address result = kNullAddress;
   switch (space) {
     case AllocationSpace::kNewSpace:
-      result = new_space_.AllocateRaw(size_in_bytes);
+      result = new_space_->AllocateRaw(size_in_bytes);
       break;
     case AllocationSpace::kOldSpace:
-      result = old_space_.AllocateRaw(size_in_bytes);
+      result = old_space_->AllocateRaw(size_in_bytes);
       break;
     case AllocationSpace::kMetaSpace:
-      result = meta_space_.AllocateRaw(size_in_bytes);
+      result = meta_space_->AllocateRaw(size_in_bytes);
       break;
     default:
       assert(0 && "unknown heap space!!!");
@@ -180,7 +195,7 @@ void Heap::RecordWrite(Tagged<PyObject> object,
 }
 
 void Heap::IterateRememberedSet(ObjectVisitor* v) {
-  for (OldPage* page = old_space_.first_page(); page != nullptr;
+  for (OldPage* page = old_space_->first_page(); page != nullptr;
        page = page->next()) {
     auto* remembered_set = page->remembered_set();
     if (remembered_set == nullptr) {
