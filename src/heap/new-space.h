@@ -21,6 +21,8 @@ class NewPage : public BasePage {
 
  private:
   friend class NewSpace;
+
+  Address AllocateAndUpdateTop(size_t size_in_bytes);
 };
 
 class NewSpace : public PagedSpace {
@@ -53,7 +55,6 @@ class NewSpace : public PagedSpace {
   Address SurvivorSpaceTop() const;
 
   void Flip();
-  void ResetSurvivorSpace();
 
   Address AllocateInSurvivorSpace(size_t size_in_bytes);
 
@@ -68,13 +69,10 @@ class NewSpace : public PagedSpace {
                              Address page_start,
                              BasePage::Flag flag);
   static NewPage* FindPageWithLinearAllocationArea(NewPage* start_page,
-                                                   BasePage::Flag flag,
                                                    size_t aligned_size);
-  static void ResetPage(NewPage* page);
-  static void ResetPageRange(NewPage* first, NewPage* last);
-  static void SetPageRangeFlag(NewPage* first,
-                               NewPage* last,
-                               BasePage::Flag flag);
+
+  static void SetPagesFlagInSemiSpace(NewPage* first, BasePage::Flag flag);
+  static void ResetPageAllocateStatesInSemiSpace(NewPage* first);
 
   NewPage* eden_first_page_{nullptr};
   NewPage* eden_last_page_{nullptr};

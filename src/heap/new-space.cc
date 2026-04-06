@@ -4,10 +4,25 @@
 
 #include "src/heap/new-space.h"
 
+#include <algorithm>
 #include <cassert>
 
 namespace saauso::internal {
 
+///////////////////////////////////////////////////////////////////////////////
+// NewPage 实现开始
+
+Address NewPage::AllocateAndUpdateTop(size_t size_in_bytes) {
+  assert(allocation_top_ + size_in_bytes <= allocation_limit_);
+  Address result = allocation_top_;
+  allocation_top_ += size_in_bytes;
+  return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// NewSpace 实现开始
+
+// static
 void NewSpace::InitializePage(NewPage* page,
                               NewSpace* owner,
                               Address page_start,
@@ -16,48 +31,15 @@ void NewSpace::InitializePage(NewPage* page,
                                    sizeof(NewPage));
 }
 
+// static
 NewPage* NewSpace::FindPageWithLinearAllocationArea(NewPage* start_page,
-                                                    BasePage::Flag flag,
                                                     size_t aligned_size) {
-  for (NewPage* page = start_page;
-       page != nullptr && page->BasePage::HasFlag(flag); page = page->next()) {
+  for (NewPage* page = start_page; page != nullptr; page = page->next()) {
     if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
       return page;
     }
   }
   return nullptr;
-}
-
-void NewSpace::ResetPage(NewPage* page) {
-  page->allocation_top_ = page->area_start_;
-}
-
-void NewSpace::ResetPageRange(NewPage* first, NewPage* last) {
-  if (first == nullptr || last == nullptr) {
-    return;
-  }
-  for (NewPage* page = first; page != nullptr; page = page->next()) {
-    ResetPage(page);
-    if (page == last) {
-      return;
-    }
-  }
-}
-
-void NewSpace::SetPageRangeFlag(NewPage* first,
-                                NewPage* last,
-                                BasePage::Flag flag) {
-  if (first == nullptr || last == nullptr) {
-    return;
-  }
-  for (NewPage* page = first; page != nullptr; page = page->next()) {
-    page->ClearFlag(BasePage::Flag::kEdenPage);
-    page->ClearFlag(BasePage::Flag::kSurvivorPage);
-    page->SetFlag(flag);
-    if (page == last) {
-      return;
-    }
-  }
 }
 
 void NewSpace::Setup(Address start, size_t size) {
@@ -71,17 +53,19 @@ void NewSpace::Setup(Address start, size_t size) {
   end_ = start + size;
 
   size_t page_count = size / BasePage::kPageSizeInBytes;
+  // 页面总数必须是>=2的偶数，便于 eden 和 survivor 空间对半分
   assert(page_count >= 2);
   assert((page_count & 1) == 0);
 
-  size_t eden_page_count = page_count >> 1;
+  size_t semi_page_count = page_count >> 1;
   BasePage* prev = nullptr;
-  for (size_t i = 0; i < page_count; ++i) {
-    Address page_start = base_ + i * BasePage::kPageSizeInBytes;
+
+  // 初始化 eden 空间的内存页
+  size_t curr_page_count = 0;
+  for (; curr_page_count < semi_page_count; ++curr_page_count) {
+    Address page_start = base_ + curr_page_count * BasePage::kPageSizeInBytes;
     auto* page = reinterpret_cast<NewPage*>(page_start);
-    BasePage::Flag flag = i < eden_page_count ? BasePage::Flag::kEdenPage
-                                              : BasePage::Flag::kSurvivorPage;
-    InitializePage(page, this, page_start, flag);
+    InitializePage(page, this, page_start, BasePage::Flag::kEdenPage);
     page->prev_ = prev;
     if (prev != nullptr) {
       prev->next_ = page;
@@ -89,13 +73,28 @@ void NewSpace::Setup(Address start, size_t size) {
     prev = page;
   }
 
+  // 初始化 survivor 空间的内存页
+  prev = nullptr;
+  for (; curr_page_count < page_count; ++curr_page_count) {
+    Address page_start = base_ + curr_page_count * BasePage::kPageSizeInBytes;
+    auto* page = reinterpret_cast<NewPage*>(page_start);
+    InitializePage(page, this, page_start, BasePage::Flag::kSurvivorPage);
+    page->prev_ = prev;
+    if (prev != nullptr) {
+      prev->next_ = page;
+    }
+    prev = page;
+  }
+
+  // 设置 eden 空间指针
   eden_first_page_ = reinterpret_cast<NewPage*>(base_);
   eden_last_page_ = reinterpret_cast<NewPage*>(
-      base_ + (eden_page_count - 1) * BasePage::kPageSizeInBytes);
+      base_ + (semi_page_count - 1) * BasePage::kPageSizeInBytes);
   eden_current_page_ = eden_first_page_;
 
+  // 设置 survivor 空间指针
   survivor_first_page_ = reinterpret_cast<NewPage*>(
-      base_ + eden_page_count * BasePage::kPageSizeInBytes);
+      base_ + semi_page_count * BasePage::kPageSizeInBytes);
   survivor_last_page_ = reinterpret_cast<NewPage*>(
       base_ + (page_count - 1) * BasePage::kPageSizeInBytes);
   survivor_current_page_ = survivor_first_page_;
@@ -121,30 +120,28 @@ void NewSpace::TearDown() {
 
 Address NewSpace::AllocateRaw(size_t size_in_bytes) {
   size_t aligned_size = ObjectSizeAlign(size_in_bytes);
-  NewPage* page = FindPageWithLinearAllocationArea(
-      eden_current_page_, BasePage::Flag::kEdenPage, aligned_size);
+  NewPage* page =
+      FindPageWithLinearAllocationArea(eden_current_page_, aligned_size);
+  // 发生 OOM，返回 null 以触发 GC
   if (page == nullptr) {
     return kNullAddress;
   }
 
-  Address result = page->allocation_top_;
-  page->allocation_top_ += aligned_size;
   eden_current_page_ = page;
-  return result;
+  return page->AllocateAndUpdateTop(size_in_bytes);
 }
 
 Address NewSpace::AllocateInSurvivorSpace(size_t size_in_bytes) {
   size_t aligned_size = ObjectSizeAlign(size_in_bytes);
-  NewPage* page = FindPageWithLinearAllocationArea(
-      survivor_current_page_, BasePage::Flag::kSurvivorPage, aligned_size);
+  NewPage* page =
+      FindPageWithLinearAllocationArea(survivor_current_page_, aligned_size);
+  // 发生 OOM，返回 null 以触发 GC
   if (page == nullptr) {
     return kNullAddress;
   }
 
-  Address result = page->allocation_top_;
-  page->allocation_top_ += aligned_size;
   survivor_current_page_ = page;
-  return result;
+  return page->AllocateAndUpdateTop(aligned_size);
 }
 
 bool NewSpace::Contains(Address addr) {
@@ -193,49 +190,59 @@ bool NewSpace::ContainsInSurvivorFast(Address addr) {
 }
 
 Address NewSpace::EdenSpaceBase() const {
-  return eden_first_page_ == nullptr ? kNullAddress
-                                     : eden_first_page_->area_start();
+  assert(eden_first_page_ != nullptr);
+  return eden_first_page_->area_start();
 }
 
 Address NewSpace::EdenSpaceTop() const {
-  return eden_current_page_ == nullptr ? kNullAddress
-                                       : eden_current_page_->allocation_top();
+  assert(eden_current_page_ != nullptr);
+  return eden_current_page_->allocation_top();
 }
 
 Address NewSpace::SurvivorSpaceBase() const {
-  return survivor_first_page_ == nullptr ? kNullAddress
-                                         : survivor_first_page_->area_start();
+  assert(survivor_first_page_ != nullptr);
+  return survivor_first_page_->area_start();
 }
 
 Address NewSpace::SurvivorSpaceTop() const {
-  return survivor_current_page_ == nullptr
-             ? kNullAddress
-             : survivor_current_page_->allocation_top();
+  assert(survivor_current_page_ != nullptr);
+  return survivor_current_page_->allocation_top();
 }
 
-void NewSpace::ResetSurvivorSpace() {
-  ResetPageRange(survivor_first_page_, survivor_last_page_);
-  survivor_current_page_ = survivor_first_page_;
+// static
+void NewSpace::SetPagesFlagInSemiSpace(NewPage* first, BasePage::Flag flag) {
+  assert(first != nullptr);
+  for (NewPage* page = first; page != nullptr; page = page->next()) {
+    page->ClearFlag(BasePage::Flag::kEdenPage | BasePage::Flag::kSurvivorPage);
+    page->SetFlag(flag);
+  }
+}
+
+// static
+void NewSpace::ResetPageAllocateStatesInSemiSpace(NewPage* first) {
+  assert(first != nullptr);
+  for (NewPage* page = first; page != nullptr; page = page->next()) {
+    // 将内存页的 bump 指针重新拨回分配区头部
+    page->allocation_top_ = page->area_start_;
+  }
 }
 
 void NewSpace::Flip() {
-  NewPage* old_eden_first = eden_first_page_;
-  NewPage* old_eden_last = eden_last_page_;
-  NewPage* old_survivor_first = survivor_first_page_;
-  NewPage* old_survivor_last = survivor_last_page_;
-  NewPage* old_survivor_current = survivor_current_page_;
+  // 交换 eden 和 survivor 空间的指针
+  std::swap(eden_first_page_, survivor_first_page_);
+  std::swap(eden_last_page_, survivor_last_page_);
 
-  eden_first_page_ = old_survivor_first;
-  eden_last_page_ = old_survivor_last;
-  eden_current_page_ = old_survivor_current;
-  survivor_first_page_ = old_eden_first;
-  survivor_last_page_ = old_eden_last;
+  // 原先的 survivor 空间接下来要被当做 eden 空间使用了，
+  // 把它的分配状态（即当前哪个页正在准备继续被分配）转移给 eden 空间。
+  eden_current_page_ = survivor_current_page_;
 
-  SetPageRangeFlag(eden_first_page_, eden_last_page_,
-                   BasePage::Flag::kEdenPage);
-  SetPageRangeFlag(survivor_first_page_, survivor_last_page_,
-                   BasePage::Flag::kSurvivorPage);
-  ResetSurvivorSpace();
+  // 分别重新设置 eden 和 survivor 空间内存页的 flag
+  SetPagesFlagInSemiSpace(eden_first_page_, BasePage::Flag::kEdenPage);
+  SetPagesFlagInSemiSpace(survivor_first_page_, BasePage::Flag::kSurvivorPage);
+
+  // 清空 survivor 空间的分配状态，以便下一次 GC 时使用
+  ResetPageAllocateStatesInSemiSpace(survivor_first_page_);
+  survivor_current_page_ = survivor_first_page_;
 }
 
 }  // namespace saauso::internal
