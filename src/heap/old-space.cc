@@ -12,11 +12,11 @@ OldPage* OldSpace::FromAddress(Address addr) {
 
 OldPage* OldSpace::FindPageWithLinearAllocationArea(OldPage* start_page,
                                                     OldPage* first_page,
-                                                    size_t aligned_size) {
+                                                    size_t size_in_bytes) {
   assert(start_page != nullptr);
   OldPage* page = start_page;
   do {
-    if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
+    if (page->allocation_top_ + size_in_bytes <= page->allocation_limit_) {
       return page;
     }
     page = page->next();
