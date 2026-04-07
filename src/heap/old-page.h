@@ -54,9 +54,6 @@ class OldPage : public BasePage {
   size_t GetFreeListLengthSlow() const;
   bool IsValidFreeBlockSlow(Address addr, size_t size_in_bytes) const;
 
-  bool HasFlag(Flag flag) const;
-  void SetFlag(Flag flag);
-  void ClearFlag(Flag flag);
   void AddRememberedSlot(Address* slot);
   void ClearFreeList();
   void AddFreeBlock(Address addr, size_t size_in_bytes);

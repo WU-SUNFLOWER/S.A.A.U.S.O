@@ -6,18 +6,6 @@
 
 namespace saauso::internal {
 
-bool OldPage::HasFlag(Flag flag) const {
-  return (flags_ & static_cast<uintptr_t>(flag)) != 0;
-}
-
-void OldPage::SetFlag(Flag flag) {
-  flags_ |= static_cast<uintptr_t>(flag);
-}
-
-void OldPage::ClearFlag(Flag flag) {
-  flags_ &= ~static_cast<uintptr_t>(flag);
-}
-
 void OldPage::AddRememberedSlot(Address* slot) {
   if (remembered_set_ == nullptr) {
     remembered_set_ = new RememberedSet();
