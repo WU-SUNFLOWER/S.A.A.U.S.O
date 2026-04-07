@@ -39,8 +39,6 @@ config("compiler_defaults") {
       "-std=c++20",
       "-Wall",  # 开启常用警告
       "-Wextra",  # 开启更多警告
-      "-Wno-unused-parameter",  # 忽略未使用的参数警告
-                                # (接口实现常见)
       "-Wshadow",  # 检查变量遮蔽
       "-Wunreachable-code",  # 警告不可达代码
       "-Werror",  # 强制将警告视为编译错误
@@ -63,15 +61,17 @@ config("compiler_defaults") {
 
 # 2. Debug 配置
 config("debug") {
+  cflags = [ "-Wno-unused-parameter" ]
+
   if (is_win) {
-    cflags = [
+    cflags += [
       "/Od",
       "/Zi",
       "/MDd",
     ]
     ldflags = [ "/DEBUG" ]
   } else if (is_linux) {
-    cflags = [
+    cflags += [
       "-O0",  # 禁用优化
       "-g",  # 生成调试信息 (DWARF)
       "-fsanitize=undefined",
@@ -117,8 +117,10 @@ config("release") {
 
 # 4. ASan 配置
 config("asan") {
+  cflags = [ "-Wno-unused-parameter" ]
+
   if (is_win) {
-    cflags = [
+    cflags += [
       "/Od",
       "/Zi",
       "/MD",
@@ -134,7 +136,7 @@ config("asan") {
   } else if (is_linux) {
     # Linux 下 Clang 配置 ASan 非常简单
     # 只需要编译和链接时都带上 -fsanitize=address
-    cflags = [
+    cflags += [
       "-O0",
       "-g",  # 需要调试信息
       "-fno-omit-frame-pointer",  # 保留帧指针，获得准确的堆栈

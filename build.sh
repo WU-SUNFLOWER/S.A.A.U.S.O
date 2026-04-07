@@ -63,7 +63,7 @@ case $MODE in
         ;;
     demo)
         OUT_DIR="out/demo"
-        GN_ARGS="is_asan=true"
+        GN_ARGS=""
         TARGET="embedder_hello_world embedder_game_engine_demo"
         ;;
     *)
