@@ -21,8 +21,10 @@ void ScavengerCollector::CollectGarbage() {
   Address scan_ptr = scan_page->area_start();
 
   while (scan_page != nullptr) {
-    // 如果碰到一个没有被分配过的页，那么说明BFS队列中的所有就绪对象都已经被清空。
-    // 因此不用继续往下扫描了，直接退出
+    // - 当前 survivor 分配始终采用“从第一页开始、按页顺序线性向后推进”的策略：
+    //   一旦遇到第一张空页，后续页就不可能再出现已分配对象。
+    // - 也就是说，BFS队列中的所有就绪对象都已经被清空。
+    //   因此不用继续往下扫描了，直接退出
     if (scan_page->area_start() == scan_page->allocation_top()) {
       break;
     }
