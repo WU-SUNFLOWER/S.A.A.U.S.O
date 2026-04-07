@@ -265,7 +265,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 访问后再次检查：如果更新后的对象还在NewSpace，保留记录；否则（晋升）移除
     Tagged<PyObject> new_object = *slot;
-    if (!IsHeapObject(new_object) && InNewSpaceFast(new_object.ptr())) {
+    if (IsHeapObject(new_object) && InNewSpaceFast(new_object.ptr())) {
       remembered_set_.Set(new_size++, slot);
     }
   }
