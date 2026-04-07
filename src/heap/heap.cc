@@ -59,16 +59,26 @@ void Heap::SetUpSpaces(size_t young_generation_size,
   size_t total_young_generation_size = aligned_young_generation_size * 2;
 
   // 向操作系统申请虚拟内存
+  bool commit_result = false;
+  Address chunk_start_addr = kNullAddress;
+
   initial_size_ = total_young_generation_size + aligned_old_generation_size +
                   aligned_meta_space_size;
   initial_chunk_ = new VirtualMemory(initial_size_, BasePage::kPageSizeInBytes);
+  if (!initial_chunk_->IsReserved()) {
+    goto ret_with_virtual_memory_oom;
+  }
 
   // 目前 S.A.A.U.S.O 不支持堆内存自动生长，
   // 这里直接一次性要求操作系统分配所有刚才申请的虚拟内存！
-  initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
+  commit_result =
+      initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
+  if (!commit_result) {
+    goto ret_with_virtual_memory_oom;
+  }
 
   // 初始化新生代空间
-  auto chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
+  chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
   new_space_->Setup(chunk_start_addr, total_young_generation_size);
   chunk_start_addr += total_young_generation_size;
 
@@ -79,6 +89,12 @@ void Heap::SetUpSpaces(size_t young_generation_size,
   // 初始化 Meta 空间
   meta_space_->Setup(chunk_start_addr, aligned_meta_space_size);
   chunk_start_addr += aligned_meta_space_size;
+  return;
+
+ret_with_virtual_memory_oom:
+  std::printf("Virtual Memory OOM!!!");
+  std::exit(1);
+  return;
 }
 
 void Heap::TearDown() {
