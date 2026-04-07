@@ -31,7 +31,6 @@ class OldSpace : public PagedSpace {
   //   则可能会直接触发断言崩溃！
   static bool ContainsFast(Address addr);
 
-  static Address PageBase(Address addr);
   static OldPage* FromAddress(Address addr);
 
   Address base() const { return base_; }
@@ -47,9 +46,8 @@ class OldSpace : public PagedSpace {
   static void InitializePage(OldPage* page,
                              OldSpace* owner,
                              Address page_start);
+  static void FinalizePage(OldPage* page);
 
-  Address base_{kNullAddress};
-  Address end_{kNullAddress};
   OldPage* first_page_{nullptr};
   OldPage* current_page_{nullptr};
 };
