@@ -11,6 +11,8 @@ namespace saauso::internal {
 
 class PagedSpace;
 
+// TODO:
+// 引入V8风格的PageIterator来统一针对Page链表的遍历操作约定
 class BasePage {
  public:
   enum Flag : uintptr_t {

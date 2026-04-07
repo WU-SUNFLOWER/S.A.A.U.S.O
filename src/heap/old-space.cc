@@ -6,24 +6,20 @@
 
 namespace saauso::internal {
 
-Address OldSpace::PageBase(Address addr) {
-  return BasePage::PageBase(addr);
-}
-
 OldPage* OldSpace::FromAddress(Address addr) {
   return reinterpret_cast<OldPage*>(BasePage::FromAddress(addr));
 }
 
 OldPage* OldSpace::FindPageWithLinearAllocationArea(OldPage* start_page,
                                                     OldPage* first_page,
-                                                    size_t aligned_size) {
+                                                    size_t size_in_bytes) {
   assert(start_page != nullptr);
   OldPage* page = start_page;
   do {
-    if (page->allocation_top_ + aligned_size <= page->allocation_limit_) {
+    if (page->allocation_top_ + size_in_bytes <= page->allocation_limit_) {
       return page;
     }
-    page = page->next() != nullptr ? page->next() : first_page;
+    page = page->next();
   } while (page != start_page);
   return nullptr;
 }
@@ -38,16 +34,23 @@ void OldSpace::InitializePage(OldPage* page,
   page->free_list_head_ = nullptr;
 }
 
+void OldSpace::FinalizePage(OldPage* page) {
+  delete page->remembered_set_;
+  page->remembered_set_ = nullptr;
+  page->free_list_head_ = nullptr;
+  page->live_bytes_ = 0;
+  PagedSpace::ResetPageHeader(page);
+}
+
 void OldSpace::Setup(Address start, size_t size) {
   assert(start != kNullAddress);
+  assert(IsAddressAlignedToPage(start));
+
   assert(size >= kPageSizeInBytes);
+  assert(IsSizeAlignedToPage(size));
 
-  base_ = AlignAddressToPage(start);
-  end_ = (start + size) & ~(static_cast<Address>(kPageSizeInBytes) - 1);
-  assert(base_ < end_);
-
-  first_page_ = reinterpret_cast<OldPage*>(base_);
-  current_page_ = first_page_;
+  base_ = start;
+  end_ = start + size;
 
   OldPage* prev = nullptr;
   for (Address page_start = base_; page_start < end_;
@@ -60,16 +63,23 @@ void OldSpace::Setup(Address start, size_t size) {
     }
     prev = page;
   }
+
+  first_page_ = reinterpret_cast<OldPage*>(base_);
+  current_page_ = first_page_;
+
+  // 链接第一页和最后一页，形成环形链表
+  first_page_->prev_ = prev;
+  prev->next_ = first_page_;
 }
 
 void OldSpace::TearDown() {
-  for (OldPage* page = first_page_; page != nullptr; page = page->next()) {
-    delete page->remembered_set_;
-    page->remembered_set_ = nullptr;
-    page->free_list_head_ = nullptr;
-    page->live_bytes_ = 0;
-    PagedSpace::ResetPageHeader(page);
-  }
+  OldPage* page = first_page_;
+  do {
+    OldPage* next_page = page->next();
+    FinalizePage(page);
+    page = next_page;
+  } while (page != first_page_);
+
   base_ = kNullAddress;
   end_ = kNullAddress;
   first_page_ = nullptr;
@@ -77,8 +87,7 @@ void OldSpace::TearDown() {
 }
 
 Address OldSpace::AllocateRaw(size_t size_in_bytes) {
-  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
-  assert(aligned_size <= kMaxRegularHeapObjectSizeInBytes);
+  assert(size_in_bytes <= kMaxRegularHeapObjectSizeInBytes);
 
   if (current_page_ == nullptr) {
     return kNullAddress;
@@ -87,24 +96,22 @@ Address OldSpace::AllocateRaw(size_t size_in_bytes) {
   OldPage* start_page = current_page_;
   OldPage* page = start_page;
   do {
-    Address result = page->TryAllocateFromFreeList(aligned_size);
+    Address result = page->TryAllocateFromFreeList(size_in_bytes);
     if (result != kNullAddress) {
       current_page_ = page;
       return result;
     }
-    page = page->next() != nullptr ? page->next() : first_page_;
+    page = page->next();
   } while (page != start_page);
 
   page = FindPageWithLinearAllocationArea(current_page_, first_page_,
-                                          aligned_size);
+                                          size_in_bytes);
   if (page == nullptr) {
     return kNullAddress;
   }
 
-  Address result = page->allocation_top_;
-  page->allocation_top_ += aligned_size;
   current_page_ = page;
-  return result;
+  return page->AllocateAndUpdateTop(size_in_bytes);
 }
 
 bool OldSpace::Contains(Address addr) {

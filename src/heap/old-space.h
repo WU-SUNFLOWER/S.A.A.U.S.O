@@ -19,6 +19,8 @@ class OldSpace : public PagedSpace {
   void Setup(Address start, size_t size) override;
   void TearDown() override;
 
+  // 调用该方法会严格按照传入的 size_in_bytes 执行分配，
+  // 不会做任何内部隐式的大小对齐操作！
   Address AllocateRaw(size_t size_in_bytes) override;
 
   // 针对任意地址，判定它是否属于当前 OldSpace。
@@ -31,7 +33,6 @@ class OldSpace : public PagedSpace {
   //   则可能会直接触发断言崩溃！
   static bool ContainsFast(Address addr);
 
-  static Address PageBase(Address addr);
   static OldPage* FromAddress(Address addr);
 
   Address base() const { return base_; }
@@ -47,9 +48,8 @@ class OldSpace : public PagedSpace {
   static void InitializePage(OldPage* page,
                              OldSpace* owner,
                              Address page_start);
+  static void FinalizePage(OldPage* page);
 
-  Address base_{kNullAddress};
-  Address end_{kNullAddress};
   OldPage* first_page_{nullptr};
   OldPage* current_page_{nullptr};
 };

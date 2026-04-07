@@ -58,8 +58,6 @@ void MarkSweepCollector::SweepPageFromLiveObjects(
     const LiveObjectVector& live_objects) const {
   assert(page != nullptr);
 
-  page->ClearFlag(OldPage::Flag::kSwept);
-  page->SetFlag(OldPage::Flag::kNeedsSweep);
   page->ClearFreeList();
 
   Address cursor = page->area_start_;
@@ -88,8 +86,6 @@ void MarkSweepCollector::SweepPageFromLiveObjects(
   }
 
   page->live_bytes_ = live_bytes;
-  page->ClearFlag(OldPage::Flag::kNeedsSweep);
-  page->SetFlag(OldPage::Flag::kSwept);
 }
 
 void MarkSweepCollector::SweepPageFromPredicate(
@@ -111,12 +107,16 @@ OldSpaceSweepStats MarkSweepCollector::SweepOldSpaceFromPredicate(
 
   OldSpaceSweepStats stats{0, 0};
   OldSpace* old_space = heap_->old_space();
-  for (OldPage* page = old_space->first_page_; page != nullptr;
-       page = page->next()) {
+
+  OldPage* first_page = old_space->first_page_;
+  OldPage* page = first_page;
+  do {
     SweepPageFromPredicate(page, predicate, data);
     ++stats.swept_pages;
     stats.live_bytes += page->live_bytes();
-  }
+    page = page->next();
+  } while (page != first_page);
+
   old_space->current_page_ = old_space->first_page_;
   return stats;
 }
@@ -151,14 +151,18 @@ OldSpaceSweepStats MarkSweepCollector::SweepOldSpaceFromLiveObjects(
     const LiveObjectVector& live_objects) const {
   OldSpaceSweepStats stats{0, 0};
   OldSpace* old_space = heap_->old_space();
-  for (OldPage* page = old_space->first_page_; page != nullptr;
-       page = page->next()) {
+
+  OldPage* first_page = old_space->first_page_;
+  OldPage* page = first_page;
+  do {
     LiveObjectVector page_live_objects;
     CollectLiveObjectsForPage(page, live_objects, &page_live_objects);
     SweepPageFromLiveObjects(page, page_live_objects);
     ++stats.swept_pages;
     stats.live_bytes += page->live_bytes();
-  }
+    page = page->next();
+  } while (page != first_page);
+
   old_space->current_page_ = old_space->first_page_;
   return stats;
 }

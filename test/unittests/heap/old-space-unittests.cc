@@ -98,7 +98,7 @@ TEST_F(OldSpaceTest, OldSpaceShouldAdvanceToNextPageWhenCurrentPageIsFull) {
 
   OldPage* single_page = old_space->first_page();
   ASSERT_NE(single_page, nullptr);
-  ASSERT_EQ(single_page->next(), nullptr);
+  ASSERT_EQ(single_page->next(), single_page);
 
   size_t step_size = ObjectSizeAlign(sizeof(PyString));
   while (single_page->allocation_top() + step_size <=
@@ -281,9 +281,7 @@ TEST_F(OldSpaceTest, OldPageSweepShouldBuildMergedFreeList) {
   live_objects.PushBack({second, block_size});
   isolate_->heap()->mark_sweep_collector().SweepPageFromLiveObjects(
       page, live_objects);
-
-  EXPECT_TRUE(page->HasFlag(OldPage::Flag::kSwept));
-  EXPECT_FALSE(page->HasFlag(OldPage::Flag::kNeedsSweep));
+      
   EXPECT_EQ(page->live_bytes(), block_size);
   EXPECT_EQ(page->GetFreeListLengthSlow(), 2u);
 
@@ -320,7 +318,6 @@ TEST_F(OldSpaceTest, OldPageSweepFromPredicateShouldBuildFreeList) {
   isolate_->heap()->mark_sweep_collector().SweepPageFromPredicate(
       page, MatchLiveAddresses, &live);
 
-  EXPECT_TRUE(page->HasFlag(OldPage::Flag::kSwept));
   EXPECT_EQ(page->live_bytes(), block_size << 1);
   EXPECT_EQ(page->GetFreeListLengthSlow(), 1u);
   ASSERT_NE(page->free_list_head(), nullptr);
@@ -373,8 +370,6 @@ TEST_F(OldSpaceTest, OldSpaceSweepShouldDispatchAcrossPages) {
   OldPage* second_page = OldSpace::FromAddress(second_page_live);
   ASSERT_NE(first_page, nullptr);
   ASSERT_NE(second_page, nullptr);
-  EXPECT_TRUE(first_page->HasFlag(OldPage::Flag::kSwept));
-  EXPECT_TRUE(second_page->HasFlag(OldPage::Flag::kSwept));
   EXPECT_EQ(first_page->live_bytes(), ObjectSizeAlign(sizeof(PyListIterator)));
   EXPECT_EQ(second_page->live_bytes(), ObjectSizeAlign(sizeof(PyListIterator)));
 
@@ -426,8 +421,6 @@ TEST_F(OldSpaceTest, OldSpaceSweepFromLiveObjectsShouldDispatchAcrossPages) {
   OldPage* second_page = OldSpace::FromAddress(second_page_live);
   ASSERT_NE(first_page, nullptr);
   ASSERT_NE(second_page, nullptr);
-  EXPECT_TRUE(first_page->HasFlag(OldPage::Flag::kSwept));
-  EXPECT_TRUE(second_page->HasFlag(OldPage::Flag::kSwept));
   EXPECT_EQ(first_page->live_bytes(), ObjectSizeAlign(sizeof(PyListIterator)));
   EXPECT_EQ(second_page->live_bytes(), ObjectSizeAlign(sizeof(PyListIterator)));
 

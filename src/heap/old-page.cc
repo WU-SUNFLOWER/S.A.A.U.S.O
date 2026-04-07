@@ -6,18 +6,6 @@
 
 namespace saauso::internal {
 
-bool OldPage::HasFlag(Flag flag) const {
-  return (flags_ & static_cast<uintptr_t>(flag)) != 0;
-}
-
-void OldPage::SetFlag(Flag flag) {
-  flags_ |= static_cast<uintptr_t>(flag);
-}
-
-void OldPage::ClearFlag(Flag flag) {
-  flags_ &= ~static_cast<uintptr_t>(flag);
-}
-
 void OldPage::AddRememberedSlot(Address* slot) {
   if (remembered_set_ == nullptr) {
     remembered_set_ = new RememberedSet();
@@ -38,14 +26,10 @@ bool OldPage::IsValidFreeBlockSlow(Address addr, size_t size_in_bytes) const {
   if (size_in_bytes < OldFreeBlock::kMinimumSizeInBytes) {
     return false;
   }
-  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
-  if (aligned_size < OldFreeBlock::kMinimumSizeInBytes) {
-    return false;
-  }
   if ((addr & kObjectAlignmentMask) != 0) {
     return false;
   }
-  if (addr < area_start_ || addr + aligned_size > allocation_top_) {
+  if (addr < area_start_ || addr + size_in_bytes > allocation_top_) {
     return false;
   }
 
@@ -53,7 +37,7 @@ bool OldPage::IsValidFreeBlockSlow(Address addr, size_t size_in_bytes) const {
        block = block->next()) {
     Address block_addr = reinterpret_cast<Address>(block);
     Address block_end = block_addr + block->size();
-    if (!(addr + aligned_size <= block_addr || block_end <= addr)) {
+    if (!(addr + size_in_bytes <= block_addr || block_end <= addr)) {
       return false;
     }
   }
@@ -100,16 +84,15 @@ void OldPage::AddFreeBlock(Address addr, size_t size_in_bytes) {
 }
 
 Address OldPage::TryAllocateFromFreeList(size_t size_in_bytes) {
-  size_t aligned_size = ObjectSizeAlign(size_in_bytes);
   OldFreeBlock* prev = nullptr;
   OldFreeBlock* block = free_list_head_;
 
   while (block != nullptr) {
-    if (block->size_ >= aligned_size) {
+    if (block->size_ >= size_in_bytes) {
       Address result = reinterpret_cast<Address>(block);
-      size_t remainder = block->size_ - aligned_size;
+      size_t remainder = block->size_ - size_in_bytes;
       if (remainder >= OldFreeBlock::kMinimumSizeInBytes) {
-        Address next_block_addr = result + aligned_size;
+        Address next_block_addr = result + size_in_bytes;
         auto* next_block = reinterpret_cast<OldFreeBlock*>(next_block_addr);
         next_block->size_ = remainder;
         next_block->next_ = block->next_;

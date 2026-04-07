@@ -30,6 +30,8 @@ class NewSpace : public PagedSpace {
   void Setup(Address start, size_t size) override;
   void TearDown() override;
 
+  // 调用该方法会严格按照传入的 size_in_bytes 执行分配，
+  // 不会做任何内部隐式的大小对齐操作！
   Address AllocateRaw(size_t size_in_bytes) override;
 
   // 针对任意地址，判定它是否属于当前 NewSpace。
