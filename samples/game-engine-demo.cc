@@ -37,12 +37,12 @@ void HostGetPlayerHealth(FunctionCallbackInfo& info) {
 
 // 宿主 API：让脚本回写玩家状态。
 void HostSetPlayerStatus(FunctionCallbackInfo& info) {
-  std::string status;
-  if (!info.GetStringArg(0, &status)) {
+  Maybe<std::string> maybe_status = info.GetStringArg(0);
+  if (maybe_status.IsNothing()) {
     info.ThrowRuntimeError("SetPlayerStatus expects string argument");
     return;
   }
-  g_game_state.player_status = status;
+  g_game_state.player_status = maybe_status.ToChecked();
   info.SetReturnValue(Local<Value>::Cast(
       String::New(info.GetIsolate(), g_game_state.player_status)));
 }
@@ -59,7 +59,7 @@ int main() {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
-    Local<Context> context = Context::New(isolate).ToLocalChecked();
+    Local<Context> context = Context::New(isolate);
     if (context.IsEmpty()) {
       return 1;
     }
@@ -104,7 +104,7 @@ int main() {
     for (int frame = 1; frame <= 6; ++frame) {
       TryCatch call_try_catch(isolate);
       MaybeLocal<Value> call_result =
-          on_update->Call(context, Local<Value>(), 0, nullptr);
+          on_update->Call(context, Local<Value>(), 0, nullptr);                                                                                                                                                                                                                                                                                                                                                                                                                  
       if (call_result.IsEmpty() || call_try_catch.HasCaught()) {
         std::cout << "on_update() call failed, switch to script fallback"
                   << std::endl;

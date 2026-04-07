@@ -9,31 +9,33 @@
 
 int main() {
   saauso::Saauso::Initialize();
+  // 创建虚拟机实例
   saauso::Isolate* isolate = saauso::Isolate::New();
-  if (isolate == nullptr) {
-    return 1;
-  }
 
   {
     saauso::Isolate::Scope isolate_scope(isolate);
     saauso::HandleScope scope(isolate);
 
-    saauso::Local<saauso::Context> context =
-        saauso::Context::New(isolate).ToLocalChecked();
-
+    // 创建一个默认的全局环境
+    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
     saauso::Context::Scope context_scope(context);
 
+    // 创建一个虚拟机异常捕获器
     saauso::TryCatch try_catch(isolate);
 
+    // 创建并编译一段Python脚本
     saauso::MaybeLocal<saauso::Script> maybe_script = saauso::Script::Compile(
         isolate, saauso::String::New(isolate, "print('Hello World')\n"));
+    // 如果编译发生错误，退出
     if (maybe_script.IsEmpty() || try_catch.HasCaught()) {
       return 1;
     }
 
+    // 运行编译好的Python脚本
     maybe_script.ToLocalChecked()->Run(context);
   }
 
+  // 销毁虚拟机实例
   isolate->Dispose();
   saauso::Saauso::Dispose();
   return 0;

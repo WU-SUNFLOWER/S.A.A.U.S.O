@@ -17,13 +17,14 @@ esac
 
 # 定义帮助信息
 usage() {
-    echo "使用方法: $0 [release | debug | asan | ut | ut_backend]"
+    echo "使用方法: $0 [release | debug | asan | ut | ut_backend | demo]"
     echo "------------------------------------------------"
     echo "  release  : 默认发布版本"
     echo "  debug    : 调试版本 (is_debug=true)"
     echo "  asan     : 内存检测版本 (is_asan=true)"
     echo "  ut       : 单元测试版本 (is_asan=true, 编译 ut)"
     echo "  ut_backend: 纯后端单元测试版本 (is_asan=true, saauso_enable_cpython_compiler=false, 编译 ut)"
+    echo "  demo     : 演示版本 (快速编译 samples 中的两个 Embedder demo)"
     exit 1
 }
 
@@ -60,6 +61,11 @@ case $MODE in
         GN_ARGS="is_asan=true saauso_enable_cpython_compiler=false"
         TARGET="all_ut"
         ;;
+    demo)
+        OUT_DIR="out/demo"
+        GN_ARGS="is_asan=true"
+        TARGET="embedder_hello_world embedder_game_engine_demo"
+        ;;
     *)
         echo "错误: 未知的模式 '$MODE'"
         usage
@@ -84,7 +90,7 @@ $GN_EXE check "$OUT_DIR"
 # 清理ninja缓存，会导致所有.cc文件重新编译
 # $NINJA_EXE -C "$OUT_DIR" -t clean
 
-$NINJA_EXE -C "$OUT_DIR" "$TARGET"
+$NINJA_EXE -C "$OUT_DIR" $TARGET
 
 # 4. 导出编译命令 (用于 IDE 补全)
 $GN_EXE gen "$OUT_DIR" --export-compile-commands
