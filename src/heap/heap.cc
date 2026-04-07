@@ -4,20 +4,18 @@
 
 #include "src/heap/heap.h"
 
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <vector>
-
 #include "include/saauso-internal.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/heap/mark-sweep-collector.h"
-#include "src/heap/scavenge-visitor.h"
+#include "src/heap/meta-space.h"
+#include "src/heap/new-space.h"
+#include "src/heap/old-space.h"
+#include "src/heap/scavenger-collector.h"
 #include "src/interpreter/interpreter.h"
 #include "src/modules/module-manager.h"
 #include "src/objects/klass.h"
-#include "src/objects/py-object.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/string-table.h"
 #include "src/utils/allocation.h"
 
@@ -38,31 +36,88 @@ void Heap::DecrementAllocationDisallowedDepth() {
 void Heap::Setup(size_t young_generation_size,
                  size_t old_generation_size,
                  size_t meta_space_size) {
-  // TODO: 实现大块虚拟内存的灵活生长和收缩
-  initial_size_ =
-      (young_generation_size * 2) + old_generation_size + meta_space_size;
-  initial_chunk_ = new VirtualMemory(initial_size_);
-  initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
+  // 初始化各个子空间
+  SetUpSpaces(young_generation_size, old_generation_size, meta_space_size);
 
-  // 初始化各个空间
-  auto chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
-  new_space_.Setup(chunk_start_addr, young_generation_size * 2);
-  chunk_start_addr += young_generation_size * 2;
-
-  old_space_.Setup(chunk_start_addr, old_generation_size);
-  chunk_start_addr += old_generation_size;
-
-  meta_space_.Setup(chunk_start_addr, meta_space_size);
-  chunk_start_addr += meta_space_size;
-
+  // 初始化垃圾回收器
+  scavenger_collector_ = new ScavengerCollector(this);
   mark_sweep_collector_ = new MarkSweepCollector(this);
 }
 
+void Heap::SetUpSpaces(size_t young_generation_size,
+                       size_t old_generation_size,
+                       size_t meta_space_size) {
+  new_space_ = new NewSpace();
+  old_space_ = new OldSpace();
+  meta_space_ = new MetaSpace();
+
+  size_t aligned_young_generation_size =
+      PagedSpace::AlignSizeToPage(young_generation_size);
+  size_t aligned_old_generation_size =
+      PagedSpace::AlignSizeToPage(old_generation_size);
+  size_t aligned_meta_space_size = PagedSpace::AlignSizeToPage(meta_space_size);
+  size_t total_young_generation_size = aligned_young_generation_size * 2;
+
+  // 向操作系统申请虚拟内存
+  bool commit_result = false;
+  Address chunk_start_addr = kNullAddress;
+
+  initial_size_ = total_young_generation_size + aligned_old_generation_size +
+                  aligned_meta_space_size;
+  initial_chunk_ = new VirtualMemory(initial_size_, BasePage::kPageSizeInBytes);
+  if (!initial_chunk_->IsReserved()) {
+    goto ret_with_virtual_memory_oom;
+  }
+
+  // 目前 S.A.A.U.S.O 不支持堆内存自动生长，
+  // 这里直接一次性要求操作系统分配所有刚才申请的虚拟内存！
+  commit_result =
+      initial_chunk_->Commit(initial_chunk_->address(), initial_size_, false);
+  if (!commit_result) {
+    goto ret_with_virtual_memory_oom;
+  }
+
+  // 初始化新生代空间
+  chunk_start_addr = reinterpret_cast<Address>(initial_chunk_->address());
+  new_space_->Setup(chunk_start_addr, total_young_generation_size);
+  chunk_start_addr += total_young_generation_size;
+
+  // 初始化老生代空间
+  old_space_->Setup(chunk_start_addr, aligned_old_generation_size);
+  chunk_start_addr += aligned_old_generation_size;
+
+  // 初始化 Meta 空间
+  meta_space_->Setup(chunk_start_addr, aligned_meta_space_size);
+  chunk_start_addr += aligned_meta_space_size;
+  return;
+
+ret_with_virtual_memory_oom:
+  std::printf("Virtual Memory OOM!!!");
+  std::exit(1);
+  return;
+}
+
 void Heap::TearDown() {
+  delete scavenger_collector_;
+  scavenger_collector_ = nullptr;
   delete mark_sweep_collector_;
   mark_sweep_collector_ = nullptr;
+
+  new_space_->TearDown();
+  delete new_space_;
+  new_space_ = nullptr;
+
+  old_space_->TearDown();
+  delete old_space_;
+  old_space_ = nullptr;
+
+  meta_space_->TearDown();
+  delete meta_space_;
+  meta_space_ = nullptr;
+
   initial_chunk_->Uncommit(initial_chunk_->address(), initial_size_);
   delete initial_chunk_;
+  initial_chunk_ = nullptr;
 }
 
 Address Heap::AllocateRaw(size_t size_in_bytes, AllocationSpace space) {
@@ -90,13 +145,13 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
   Address result = kNullAddress;
   switch (space) {
     case AllocationSpace::kNewSpace:
-      result = new_space_.AllocateRaw(size_in_bytes);
+      result = new_space_->AllocateRaw(size_in_bytes);
       break;
     case AllocationSpace::kOldSpace:
-      result = old_space_.AllocateRaw(size_in_bytes);
+      result = old_space_->AllocateRaw(size_in_bytes);
       break;
     case AllocationSpace::kMetaSpace:
-      result = meta_space_.AllocateRaw(size_in_bytes);
+      result = meta_space_->AllocateRaw(size_in_bytes);
       break;
     default:
       assert(0 && "unknown heap space!!!");
@@ -110,21 +165,29 @@ Address Heap::AllocateRawImpl(size_t size_in_bytes, AllocationSpace space) {
   return result;
 }
 
-bool Heap::InNewSpaceEden(Address addr) {
-  return new_space().eden_space().Contains(addr);
+// static
+bool Heap::InNewSpaceEdenFast(Address addr_in_heap) {
+  return NewSpace::ContainsInEdenFast(addr_in_heap);
 }
 
-bool Heap::InNewSpaceSurvivor(Address addr) {
-  return new_space().survivor_space().Contains(addr);
+// static
+bool Heap::InNewSpaceSurvivorFast(Address addr_in_heap) {
+  return NewSpace::ContainsInSurvivorFast(addr_in_heap);
 }
 
-bool Heap::InOldSpace(Address addr) {
-  return old_space().Contains(addr);
+// static
+bool Heap::InNewSpaceFast(Address addr_in_heap) {
+  return NewSpace::ContainsFast(addr_in_heap);
+}
+
+// static
+bool Heap::InOldSpaceFast(Address addr) {
+  return OldSpace::ContainsFast(addr);
 }
 
 void Heap::CollectGarbage() {
   gc_state_ = GcState::kScavenage;
-  DoScavenge();
+  scavenger_collector_->CollectGarbage();
   gc_state_ = GcState::kNotInGc;
 }
 
@@ -132,24 +195,22 @@ void Heap::RecordWrite(Tagged<PyObject> object,
                        Address* slot,
                        Tagged<PyObject> value) {
   // 1. 如果写入的是Smi或NULL，忽略
-  if (value.is_null() || value.IsSmi()) {
+  if (!IsHeapObject(value)) {
     return;
   }
 
-  // 2. 如果value不在NewSpace，忽略（OldSpace/MetaSpace对象不需要Scavenge）
-  // 注意：这里假设NewSpace的判断是准确的（包含Eden和Survivor）
-  if (!InNewSpaceEden(value.ptr()) && !InNewSpaceSurvivor(value.ptr())) {
-    return;
-  }
+  Address object_addr = object.ptr();
+  Address value_addr = value.ptr();
 
-  // 3. 如果host对象本身就在NewSpace，忽略（Scavenge会自动扫描整个NewSpace）
-  if (InNewSpaceEden(object.ptr()) || InNewSpaceSurvivor(object.ptr())) {
+  // 2. 我们只对 Old（object）-> New（value）的边感兴趣。
+  //    也就是说，如果 object 不在 OldSpace，或者 value 不在 NewSpace，则忽略！
+  if (InNewSpaceFast(object_addr) || !InNewSpaceFast(value_addr)) {
     return;
   }
 
   // 4. 记录到记忆集 (Old -> New)
-  if (InOldSpace(object.ptr())) {
-    OldSpace::FromAddress(object.ptr())->AddRememberedSlot(slot);
+  if (InOldSpaceFast(object_addr)) {
+    OldSpace::FromAddress(object_addr)->AddRememberedSlot(slot);
     return;
   }
 
@@ -159,7 +220,7 @@ void Heap::RecordWrite(Tagged<PyObject> object,
 }
 
 void Heap::IterateRememberedSet(ObjectVisitor* v) {
-  for (OldPage* page = old_space_.first_page(); page != nullptr;
+  for (OldPage* page = old_space_->first_page(); page != nullptr;
        page = page->next()) {
     auto* remembered_set = page->remembered_set();
     if (remembered_set == nullptr) {
@@ -173,14 +234,13 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
       Tagged<PyObject> object = *tagged_slot;
       assert(!object.is_null());
       assert(!object.IsSmi());
-      assert(InNewSpaceEden(object.ptr()) || InNewSpaceSurvivor(object.ptr()));
+      assert(InNewSpaceFast(object.ptr()));
 
       v->VisitPointer(tagged_slot);
 
       Tagged<PyObject> new_object = *tagged_slot;
       // 如果经过处理后，tagged_slot处指向的object仍然在新生代，那么再次回收进记录集
-      if (InNewSpaceEden(new_object.ptr()) ||
-          InNewSpaceSurvivor(new_object.ptr())) {
+      if (InNewSpaceFast(new_object.ptr())) {
         remembered_set->Set(new_size++, slot);
       }
     }
@@ -195,8 +255,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 再次检查：如果slot中的对象已经不是NewSpace对象了（可能被重写，或者晋升了）
     // 则移除该记录
-    if (object.IsSmi() || object.is_null() ||
-        (!InNewSpaceEden(object.ptr()) && !InNewSpaceSurvivor(object.ptr()))) {
+    if (!IsHeapObject(object) || !InNewSpaceFast(object.ptr())) {
       continue;
     }
 
@@ -206,9 +265,7 @@ void Heap::IterateRememberedSet(ObjectVisitor* v) {
 
     // 访问后再次检查：如果更新后的对象还在NewSpace，保留记录；否则（晋升）移除
     Tagged<PyObject> new_object = *slot;
-    if (!new_object.IsSmi() && !new_object.is_null() &&
-        (InNewSpaceEden(new_object.ptr()) ||
-         InNewSpaceSurvivor(new_object.ptr()))) {
+    if (IsHeapObject(new_object) && InNewSpaceFast(new_object.ptr())) {
       remembered_set_.Set(new_size++, slot);
     }
   }
@@ -250,41 +307,6 @@ void Heap::IterateRoots(ObjectVisitor* v) {
   // TODO: 当前版本暂时先不实现分代式GC，这行注释请勿开放！
   // 遍历记忆集 (Remembered Set)，处理跨代引用
   // IterateRememberedSet(v);
-}
-
-void Heap::DoScavenge() {
-  ScavenageVisitor visitor(isolate_);
-
-  // 遍历GC ROOTS，把所有的GC ROOT从eden空间拷贝到survivor空间
-  IterateRoots(&visitor);
-
-  // 此时：
-  // new_space_->SurvivorSpaceBase() 指向第一个被拷贝的root对象
-  // new_space_->SurvivorSpaceTop() 指向最后一个被拷贝的root对象的末尾
-  Address scan_ptr = ObjectSizeAlign(new_space_.SurvivorSpaceBase());
-  Address threshold = new_space_.SurvivorSpaceTop();
-
-  // 只要scan_ptr还没追上threshold，说明还有对象没被扫描
-  while (scan_ptr < threshold) {
-    // 获取当前要扫描的对象
-    Tagged<PyObject> object(scan_ptr);
-    size_t instance_size = PyObject::GetInstanceSize(object);
-
-    // 扫描该对象，将该对象持有引用的子对象全部拷贝到survivor空间
-    PyObject::Iterate(object, &visitor);
-
-    // 移动scan_ptr指针，准备扫描下一个对象
-    scan_ptr += instance_size;
-
-    // 可能又有新的对象被拷贝到survivor空间了，再次更新threshold
-    threshold = new_space_.SurvivorSpaceTop();
-  }
-
-  // 交换空间
-  new_space_.Flip();
-
-  // 重置survivor空间的内部指针
-  new_space_.survivor_space().Reset();
 }
 
 }  // namespace saauso::internal

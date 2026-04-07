@@ -6,10 +6,12 @@
 #define SAAUSO_HEAP_MARK_SWEEP_COLLECTOR_H_
 
 #include "src/heap/spaces.h"
+#include "src/utils/vector.h"
 
 namespace saauso::internal {
 
 class Heap;
+class OldPage;
 
 struct OldLiveObjectInfo {
   Address addr;
@@ -39,8 +41,9 @@ class MarkSweepCollector {
                               OldLiveObjectPredicate predicate,
                               void* data) const;
 
-  OldSpaceSweepStats SweepOldSpaceFromPredicate(OldLiveObjectPredicate predicate,
-                                                void* data) const;
+  OldSpaceSweepStats SweepOldSpaceFromPredicate(
+      OldLiveObjectPredicate predicate,
+      void* data) const;
   OldSpaceSweepStats SweepOldSpaceFromLiveObjects(
       const LiveObjectVector& live_objects) const;
 

@@ -45,6 +45,7 @@ class VirtualMemory {
  public:
   // Reserves virtual memory with size.
   explicit VirtualMemory(size_t size);
+  VirtualMemory(size_t size, size_t alignment);
   ~VirtualMemory();
 
   // Returns whether the memory has been reserved.
@@ -63,6 +64,8 @@ class VirtualMemory {
   bool Uncommit(void* address, size_t size);
 
  private:
+  void Reserve(size_t size, size_t alignment);
+
   void* address_;  // Start address of the virtual memory.
   size_t size_;    // Size of the virtual memory.
 };

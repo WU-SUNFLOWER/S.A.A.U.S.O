@@ -11,16 +11,18 @@
 #include "src/execution/isolate.h"
 #include "src/handles/tagged.h"
 #include "src/heap/heap.h"
+#include "src/heap/new-space.h"
 #include "src/objects/klass.h"
 #include "src/objects/mark-word.h"
 #include "src/objects/py-object.h"
 
 namespace saauso::internal {
 
-ScavenageVisitor::ScavenageVisitor(Isolate* isolate) : ObjectVisitor(isolate) {}
+ScavengeVisitor::ScavengeVisitor(Heap* heap)
+    : ObjectVisitor(heap->isolate()), heap_(heap) {}
 
-void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
-                                     Tagged<PyObject>* end) {
+void ScavengeVisitor::VisitPointers(Tagged<PyObject>* start,
+                                    Tagged<PyObject>* end) {
   for (Tagged<PyObject>* p = start; p < end; ++p) {
     Tagged<PyObject> object = *p;
 
@@ -33,7 +35,7 @@ void ScavenageVisitor::VisitPointers(Tagged<PyObject>* start,
   }
 }
 
-void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
+void ScavengeVisitor::VisitKlass(Tagged<Klass>* p) {
   assert(p != nullptr);
   if (p->is_null()) {
     return;
@@ -41,7 +43,7 @@ void ScavenageVisitor::VisitKlass(Tagged<Klass>* p) {
   (*p)->Iterate(this);
 }
 
-bool ScavenageVisitor::CanEvacuate(Tagged<PyObject> object) {
+bool ScavengeVisitor::CanEvacuate(Tagged<PyObject> object) {
   // object 必须是位于 NewSpace 的有效堆上对象，
   // 才可以执行 Evacuate 操作。
   //
@@ -49,11 +51,10 @@ bool ScavenageVisitor::CanEvacuate(Tagged<PyObject> object) {
   // 对于已经被拷贝过的对象，即 MarkWord 已被更新成 Forwarding Address 的对象，
   // 这里不能排除掉。
   // 因为我们需要通过执行 Evacuate 操作来更新当前遍历到的 slot。
-  return IsHeapObject(object) &&
-         isolate()->heap()->InNewSpaceEden(object.ptr());
+  return IsHeapObject(object) && Heap::InNewSpaceEdenFast(object.ptr());
 }
 
-void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
+void ScavengeVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   Tagged<PyObject> object = *slot_ptr;
 
   // 如果当前slot处指针指向的对象已经被转发
@@ -81,10 +82,9 @@ void ScavenageVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
   // 这将在Scavenage算法的主循环中完成 (无递归)
 }
 
-Address ScavenageVisitor::AllocateInSurvivorSpace(size_t size) {
-  Address target_addr =
-      isolate()->heap()->new_space().survivor_space().AllocateRaw(size);
-  // survivor space中理论上一定有剩余的空间
+Address ScavengeVisitor::AllocateInSurvivorSpace(size_t size) {
+  Address target_addr = heap_->new_space()->AllocateInSurvivorSpace(size);
+  // // survivor space中理论上一定有可供分配的空间
   assert(target_addr != kNullAddress &&
          "survivor space must have enough space!!!");
   return target_addr;

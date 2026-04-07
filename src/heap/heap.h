@@ -6,15 +6,20 @@
 #define SAAUSO_HEAP_HEAP_H_
 
 #include "src/handles/tagged.h"
-#include "src/heap/spaces.h"
 #include "src/utils/vector.h"
 
 namespace saauso::internal {
 
 class Isolate;
-class MarkSweepCollector;
 class ObjectVisitor;
 class VirtualMemory;
+
+class NewSpace;
+class OldSpace;
+class MetaSpace;
+
+class ScavengerCollector;
+class MarkSweepCollector;
 
 class Heap {
  public:
@@ -39,15 +44,16 @@ class Heap {
     return Tagged<T>(AllocateRaw(sizeof(T), space));
   }
 
-  bool InNewSpaceEden(Address raw_addr);
-  bool InNewSpaceSurvivor(Address raw_addr);
-  bool InOldSpace(Address raw_addr);
+  static bool InNewSpaceFast(Address addr_in_heap);
+  static bool InNewSpaceEdenFast(Address addr_in_heap);
+  static bool InNewSpaceSurvivorFast(Address addr_in_heap);
+  static bool InOldSpaceFast(Address addr);
 
   void CollectGarbage();
 
-  NewSpace& new_space() { return new_space_; }
-  OldSpace& old_space() { return old_space_; }
-  MetaSpace& meta_space() { return meta_space_; }
+  NewSpace* new_space() { return new_space_; }
+  OldSpace* old_space() { return old_space_; }
+  MetaSpace* meta_space() { return meta_space_; }
   MarkSweepCollector& mark_sweep_collector() { return *mark_sweep_collector_; }
 
   void IncrementAllocationDisallowedDepth();
@@ -62,19 +68,26 @@ class Heap {
                    Address* slot,
                    Tagged<PyObject> value);
 
+  Isolate* isolate() const { return isolate_; }
+
  private:
+  friend class ScavengerCollector;
+  friend class MarkSweepCollector;
+
   enum class GcState { kNotInGc, kScavenage, kMarkCompact };
+
+  void SetUpSpaces(size_t young_generation_size,
+                   size_t old_generation_size,
+                   size_t meta_space_size);
 
   Address AllocateRawImpl(size_t size_in_bytes, AllocationSpace space);
 
   void IterateRoots(ObjectVisitor* v);
   void IterateRememberedSet(ObjectVisitor* v);
 
-  void DoScavenge();
-
-  NewSpace new_space_;
-  OldSpace old_space_;
-  MetaSpace meta_space_;
+  NewSpace* new_space_;
+  OldSpace* old_space_;
+  MetaSpace* meta_space_;
 
   // 记忆集：记录从老生代指向新生代的指针
   // 简单实现：使用std::vector作为Sequential Store Buffer
@@ -86,6 +99,8 @@ class Heap {
   // TODO: 实现大块虚拟内存的灵活生长和收缩
   size_t initial_size_;
   VirtualMemory* initial_chunk_;
+
+  ScavengerCollector* scavenger_collector_{nullptr};
   MarkSweepCollector* mark_sweep_collector_{nullptr};
 
   Isolate* isolate_{nullptr};

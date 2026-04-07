@@ -1,0 +1,75 @@
+// Copyright 2026 the S.A.A.U.S.O project authors. All rights reserved.
+// Use of this source code is governed by a GNU-style license that can be
+// found in the LICENSE file.
+
+#ifndef SAAUSO_HEAP_BASE_PAGE_H_
+#define SAAUSO_HEAP_BASE_PAGE_H_
+
+#include "include/saauso-internal.h"
+
+namespace saauso::internal {
+
+class PagedSpace;
+
+class BasePage {
+ public:
+  enum Flag : uintptr_t {
+    kNoFlags = 0u,
+    kEdenPage = 1u << 0,
+    kSurvivorPage = 1u << 1,
+    kOldPage = 1u << 2,
+    kMetaPage = 1u << 3,
+  };
+
+  static constexpr uint32_t kMagicHeader = 0x53415553;
+  static constexpr size_t kPageSizeInBytes = 256 * 1024;
+
+  uint32_t magic() const { return magic_; }
+  PagedSpace* owner() const { return owner_; }
+
+  BasePage* next() const { return next_; }
+  BasePage* prev() const { return prev_; }
+
+  Address area_start() const { return area_start_; }
+  Address area_end() const { return area_end_; }
+
+  Address allocation_top() const { return allocation_top_; }
+  Address allocation_limit() const { return allocation_limit_; }
+
+  bool HasFlag(uintptr_t flag) const;
+  void SetFlag(uintptr_t flag);
+  void ClearFlag(uintptr_t flag);
+
+  static Address PageBase(Address addr);
+  static BasePage* FromAddress(Address addr);
+
+  static bool InEdenPage(Address addr_in_page);
+  static bool InSurvivorPage(Address addr_in_page);
+  static bool InYoungPage(Address addr_in_page);
+  static bool InOldPage(Address addr_in_page);
+  static bool InMetaPage(Address addr_in_page);
+
+ protected:
+  friend class MarkSweepCollector;
+  friend class MetaSpace;
+  friend class NewSpace;
+  friend class OldSpace;
+  friend class PagedSpace;
+
+  // 从可分配区域的头部申请内存
+  Address AllocateAndUpdateTop(size_t size_in_bytes);
+
+  uint32_t magic_{0};
+  uintptr_t flags_{0};
+  PagedSpace* owner_{nullptr};
+  BasePage* next_{nullptr};
+  BasePage* prev_{nullptr};
+  Address area_start_{kNullAddress};
+  Address area_end_{kNullAddress};
+  Address allocation_top_{kNullAddress};
+  Address allocation_limit_{kNullAddress};
+};
+
+}  // namespace saauso::internal
+
+#endif  // SAAUSO_HEAP_BASE_PAGE_H_

@@ -9,11 +9,11 @@
 
 namespace saauso::internal {
 
-class Isolate;
+class Heap;
 
-class ScavenageVisitor : public ObjectVisitor {
+class ScavengeVisitor : public ObjectVisitor {
  public:
-  ScavenageVisitor(Isolate* isolate);
+  ScavengeVisitor(Heap* heap);
 
   void VisitPointers(Tagged<PyObject>* start, Tagged<PyObject>* end) override;
   void VisitKlass(Tagged<Klass>* p) override;
@@ -24,6 +24,8 @@ class ScavenageVisitor : public ObjectVisitor {
   void EvacuateObject(Tagged<PyObject>* slot_ptr);
 
   Address AllocateInSurvivorSpace(size_t size);
+
+  Heap* heap_;
 };
 
 }  // namespace saauso::internal
