@@ -1,4 +1,4 @@
-# S.A.A.U.S.O
+# S.A.A.U.S.O —— 一个轻量级 Python 虚拟机
 
 ![Logo](logo/logo-with-title-light.png#gh-light-mode-only)
 ![Logo](logo/logo-with-title-dark.png#gh-dark-mode-only)
