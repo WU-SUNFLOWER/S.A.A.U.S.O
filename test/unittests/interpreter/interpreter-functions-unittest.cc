@@ -210,6 +210,36 @@ print(calc(1, 2, 3, 4, coeff = 2))
   ExpectPrintResult(expected_printv_result);
 }
 
+TEST_F(BasicInterpreterTest, ExtendPosAndKwArgsWithBusinessScenario) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+def send_email(sender, *recipients, **settings):
+    print("Sender: " + sender)
+    print("Recipients: " + ' '.join(recipients))
+
+    # 提取配置，并提供默认值
+    channel = settings.get('channel', 'email')
+    priority = settings.get('priority', 'normal')
+
+    print("Channel: " + channel + ", Priority: " + priority)
+
+# 调用函数
+send_email("Wang", "Mr.Song", "Mr.Liu", "Mr.Wu", channel="WeChat", priority="high")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result,
+                 PyString::New(isolate_, "Sender: Wang"));
+  AppendExpected(expected_printv_result,
+                 PyString::New(isolate_, "Recipients: Mr.Song Mr.Liu Mr.Wu"));
+  AppendExpected(expected_printv_result,
+                 PyString::New(isolate_, "Channel: WeChat, Priority: high"));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, ExtendArgsEmptyPack) {
   HandleScope scope(isolate_);
 
@@ -393,6 +423,38 @@ print(foo(1, c = 3, **d1))
   auto expected_printv_result = PyList::New(isolate_);
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 123));
   AppendExpected(expected_printv_result, PyFloat::New(isolate_, 123));
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, FibRecursion) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+def F(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return F(n - 1) + F(n - 2)
+
+i = 0
+while True:
+  print(F(i))
+  i += 1
+  if i > 5:
+    break
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(0));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(1));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(3));
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(5));
   ExpectPrintResult(expected_printv_result);
 }
 
