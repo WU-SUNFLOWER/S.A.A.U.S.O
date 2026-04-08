@@ -6,8 +6,8 @@
 
 #include "src/code/compiler.h"
 #include "src/execution/isolate.h"
-#include "src/heap/factory.h"
 #include "src/handles/handles.h"
+#include "src/heap/factory.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
@@ -34,7 +34,8 @@ print(A.value)
   RunScript(kSource, kInterpreterTestFileName);
 
   auto expected_printv_result = PyList::New(isolate_);
-  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(2025));
+  AppendExpected(expected_printv_result,
+                 isolate_->factory()->NewSmiFromInt(2025));
   ExpectPrintResult(expected_printv_result);
 }
 
@@ -131,6 +132,40 @@ c.say()    # "I am A"
 
   AppendExpected(expected_printv_result, PyString::New(isolate_, "I am B"));
   AppendExpected(expected_printv_result, PyString::New(isolate_, "I am A"));
+
+  ExpectPrintResult(expected_printv_result);
+}
+
+TEST_F(BasicInterpreterTest, MagicMethodCanBeOverrided) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+class Base(object):
+  def __call__(self):
+    print("Base is called")
+
+class Derive(Base):
+  def __init__(self, v):
+    self.v = v
+
+  def show(self):
+    print(self.v)
+
+  def __call__(self):
+    print("Derive is called")
+
+a = Derive(7)
+f = a.show
+f()  # output: 7
+a()  # output: "Derive is called"
+)";
+
+  RunScript(kSource, kInterpreterTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+
+  AppendExpected(expected_printv_result, isolate_->factory()->NewSmiFromInt(7));
+  AppendExpected(expected_printv_result, PyString::New(isolate_, "Derive is called"));
 
   ExpectPrintResult(expected_printv_result);
 }
