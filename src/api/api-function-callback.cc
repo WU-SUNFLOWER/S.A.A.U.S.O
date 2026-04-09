@@ -36,11 +36,9 @@ Local<Value> FunctionCallbackInfo::operator[](int index) const {
   return api::Utils::ToLocal<Value>(impl->args->Get(index, impl->isolate));
 }
 
-MaybeLocal<Value> FunctionCallbackInfo::Receiver() const {
+Local<Value> FunctionCallbackInfo::Receiver() const {
   auto* impl = reinterpret_cast<api::FunctionCallbackInfoImpl*>(impl_);
-  if (impl == nullptr) {
-    return MaybeLocal<Value>();
-  }
+  assert(impl != nullptr);
   return api::Utils::ToLocal<Value>(impl->receiver);
 }
 

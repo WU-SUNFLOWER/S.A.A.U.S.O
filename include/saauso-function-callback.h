@@ -31,8 +31,11 @@ class FunctionCallbackInfo {
   Local<Value> operator[](int index) const;
 
   // 获取接收者对象；不可用时返回 Nothing。
-  MaybeLocal<Value> Receiver() const;
+  Local<Value> Receiver() const;
+
+  // 获取执行函数的 Isolate 上下文
   Isolate* GetIsolate() const;
+
   void ThrowRuntimeError(std::string_view message) const;
   // 设置回调返回值。未设置时回调返回 None。
   void SetReturnValue(Local<Value> value);
