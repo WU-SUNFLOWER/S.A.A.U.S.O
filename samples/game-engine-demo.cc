@@ -64,7 +64,7 @@ int main() {
       return 1;
     }
 
-    Local<Object> global = context->Global().ToLocalChecked();
+    Local<Object> global = context->Global();
     (void)global->Set(
         String::New(isolate, "GetPlayerHealth"),
         Function::New(isolate, &HostGetPlayerHealth, "GetPlayerHealth"));

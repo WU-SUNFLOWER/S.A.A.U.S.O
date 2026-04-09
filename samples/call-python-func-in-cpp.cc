@@ -51,7 +51,7 @@ int main() {
     // 运行编译好的Python脚本
     maybe_script.ToLocalChecked()->Run(context);
 
-    Local<Object> global = context->Global().ToLocalChecked();
+    Local<Object> global = context->Global();
     MaybeLocal<Value> maybe_to_binary_string =
         global->Get(String::New(isolate, kPythonFuncName));
     Local<Function> to_binary_string =
