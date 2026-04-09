@@ -7,6 +7,9 @@
 #include "include/saauso-value.h"
 #include "src/api/api-function-callback-support.h"
 #include "src/api/api-handle-utils.h"
+#include "src/api/api-isolate-utils.h"
+#include "src/heap/factory.h"
+#include "src/objects/py-oddballs.h"
 #include "src/objects/py-tuple.h"
 #include "src/runtime/runtime-exceptions.h"
 
@@ -20,22 +23,17 @@ int FunctionCallbackInfo::Length() const {
   return static_cast<int>(impl->args->length());
 }
 
-MaybeLocal<Value> FunctionCallbackInfo::operator[](int index) const {
+Local<Value> FunctionCallbackInfo::operator[](int index) const {
   auto* impl = reinterpret_cast<api::FunctionCallbackInfoImpl*>(impl_);
-  if (impl == nullptr || impl->args.is_null() || index < 0 ||
-      index >= impl->args->length()) {
-    return MaybeLocal<Value>();
-  }
-  return api::Utils::ToLocal<Value>(impl->args->Get(index, impl->isolate));
-}
+  assert(impl != nullptr);
+  assert(!impl->args.is_null());
 
-Maybe<int64_t> FunctionCallbackInfo::GetIntegerArg(int index) const {
-  MaybeLocal<Value> maybe_value = operator[](index);
-  Local<Value> value;
-  if (!maybe_value.ToLocal(&value)) {
-    return i::kNullMaybe;
+  auto* i_isolate = api::RequireExplicitIsolate(GetIsolate());
+  if (index < 0 || impl->args->length() <= index) {
+    return api::Utils::ToLocal<Value>(i_isolate->factory()->py_none_object());
   }
-  return value->ToInteger();
+
+  return api::Utils::ToLocal<Value>(impl->args->Get(index, impl->isolate));
 }
 
 Maybe<std::string> FunctionCallbackInfo::GetStringArg(int index) const {
