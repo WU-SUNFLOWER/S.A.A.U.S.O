@@ -64,8 +64,7 @@ int main() {
 
     Local<String> injected_func_name = String::New(isolate, kInjectedFuncName);
     Local<Function> injected_func =
-        Function::New(isolate, &ToBinaryString, kInjectedFuncName)
-            .ToLocalChecked();
+        Function::New(isolate, &ToBinaryString, kInjectedFuncName);
 
     (void)global->Set(injected_func_name, injected_func);
 

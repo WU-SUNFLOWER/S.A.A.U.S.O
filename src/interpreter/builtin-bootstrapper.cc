@@ -138,11 +138,9 @@ Maybe<void> BuiltinBootstrapper::InstallBuiltinFunctions() {
 
   auto builtins_handle = builtins_.Get(isolate_);
   for (const auto& entry : entries) {
-    Handle<PyFunction> func_object;
     FunctionTemplateInfo func_template(isolate_, entry.func, entry.name);
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate_, func_object,
-        isolate_->factory()->NewPyFunctionWithTemplate(func_template));
+    Handle<PyFunction> func_object =
+        isolate_->factory()->NewPyFunctionWithTemplate(func_template);
 
     RETURN_ON_EXCEPTION(isolate_, PyDict::Put(builtins_handle, entry.name,
                                               func_object, isolate_));

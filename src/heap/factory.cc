@@ -392,7 +392,7 @@ Handle<PyCodeObject> Factory::NewPyCodeObject() {
   return scope.Escape(object);
 }
 
-MaybeHandle<PyFunction> Factory::NewPyFunction() {
+Handle<PyFunction> Factory::NewPyFunction() {
   EscapableHandleScope scope(isolate_);
 
   auto klass = PyFunctionKlass::GetInstance(isolate_);
@@ -421,12 +421,11 @@ MaybeHandle<PyFunction> Factory::NewPyFunction() {
   return scope.Escape(object);
 }
 
-MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
+Handle<PyFunction> Factory::NewPyFunctionWithCodeObject(
     Handle<PyCodeObject> code_object) {
   EscapableHandleScope scope(isolate_);
 
-  Handle<PyFunction> object;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
+  Handle<PyFunction> object = NewPyFunction();
 
   object->set_func_code(code_object);
   object->set_func_name(code_object->co_name(isolate_));
@@ -437,12 +436,11 @@ MaybeHandle<PyFunction> Factory::NewPyFunctionWithCodeObject(
   return scope.Escape(object);
 }
 
-MaybeHandle<PyFunction> Factory::NewPyFunctionWithTemplate(
+Handle<PyFunction> Factory::NewPyFunctionWithTemplate(
     const FunctionTemplateInfo& func_template) {
   EscapableHandleScope scope(isolate_);
 
-  Handle<PyFunction> object;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate_, object, NewPyFunction());
+  Handle<PyFunction> object = NewPyFunction();
 
   assert(func_template.function() != nullptr ||
          func_template.function_with_closure() != nullptr);
