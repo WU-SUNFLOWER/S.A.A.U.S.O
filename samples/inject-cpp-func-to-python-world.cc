@@ -22,7 +22,7 @@ print(result)
 void ToBinaryString(FunctionCallbackInfo& info) {
   Isolate* isolate = info.GetIsolate();
 
-  Maybe<int64_t> maybe_value = info.GetIntegerArg(0);
+  Maybe<int64_t> maybe_value = info[0]->ToInteger();
   if (maybe_value.IsEmpty()) {
     info.ThrowRuntimeError("to_binary_string except one int argument.");
     return;
