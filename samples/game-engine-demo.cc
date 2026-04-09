@@ -67,12 +67,10 @@ int main() {
     Local<Object> global = context->Global().ToLocalChecked();
     (void)global->Set(
         String::New(isolate, "GetPlayerHealth"),
-        Function::New(isolate, &HostGetPlayerHealth, "GetPlayerHealth")
-            .ToLocalChecked());
+        Function::New(isolate, &HostGetPlayerHealth, "GetPlayerHealth"));
     (void)global->Set(
         String::New(isolate, "SetPlayerStatus"),
-        Function::New(isolate, &HostSetPlayerStatus, "SetPlayerStatus")
-            .ToLocalChecked());
+        Function::New(isolate, &HostSetPlayerStatus, "SetPlayerStatus"));
 
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
     TryCatch compile_try_catch(isolate);
@@ -104,7 +102,7 @@ int main() {
     for (int frame = 1; frame <= 6; ++frame) {
       TryCatch call_try_catch(isolate);
       MaybeLocal<Value> call_result =
-          on_update->Call(context, Local<Value>(), 0, nullptr);                                                                                                                                                                                                                                                                                                                                                                                                                  
+          on_update->Call(context, Local<Value>(), 0, nullptr);
       if (call_result.IsEmpty() || call_try_catch.HasCaught()) {
         std::cout << "on_update() call failed, switch to script fallback"
                   << std::endl;

@@ -17,9 +17,10 @@ class Context;
 class Function final : public Value {
  public:
   // 创建宿主回调函数；创建失败返回 Nothing。
-  static MaybeLocal<Function> New(Isolate* isolate,
-                                  FunctionCallback callback,
-                                  std::string_view name);
+  static Local<Function> New(Isolate* isolate,
+                             FunctionCallback callback,
+                             std::string_view name);
+
   // 调用函数；调用成功返回 Just(value)，失败返回 Nothing。
   MaybeLocal<Value> Call(Local<Context> context,
                          Local<Value> receiver,

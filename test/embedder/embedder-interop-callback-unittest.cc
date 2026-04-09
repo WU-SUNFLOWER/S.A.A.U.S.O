@@ -69,28 +69,32 @@ void HostOuterReentrant(FunctionCallbackInfo& info) {
     return;
   }
   Isolate* isolate = info.GetIsolate();
-  MaybeLocal<Function> maybe_inner =
+
+  Local<Function> inner =
       Function::New(isolate, &HostInnerPlusOne, "Host_InnerPlusOne");
-  if (maybe_inner.IsEmpty()) {
+  if (inner.IsEmpty()) {
     info.ThrowRuntimeError(
         "Host_OuterReentrant failed to create inner callback");
     return;
   }
-  Local<Function> inner = maybe_inner.ToLocalChecked();
+
   Local<Context> context = Context::New(isolate);
   if (context.IsEmpty()) {
     info.ThrowRuntimeError(
         "Host_OuterReentrant failed to create execution context");
     return;
   }
+
   Local<Value> argv[1] = {
       Local<Value>::Cast(Integer::New(isolate, code.ToChecked()))};
   MaybeLocal<Value> result = inner->Call(context, Local<Value>(), 1, argv);
+
   Local<Value> result_local;
   if (result.IsEmpty() || !result.ToLocal(&result_local)) {
     info.ThrowRuntimeError("Host_OuterReentrant failed to call inner callback");
     return;
   }
+
   Maybe<int64_t> inner_value = result_local->ToInteger();
   if (inner_value.IsNothing()) {
     info.ThrowRuntimeError("Host_OuterReentrant failed to call inner callback");
@@ -213,10 +217,11 @@ TEST(EmbedderPhase3Test, MultiIsolate_ParallelCallbackRegression) {
       {
         Isolate::Scope isolate_scope(isolate);
         HandleScope scope(isolate);
-        MaybeLocal<Function> maybe_func =
+
+        Local<Function> func =
             Function::New(isolate, &HostAccumulateParallel, "Host_Acc");
-        EXPECT_FALSE(maybe_func.IsEmpty());
-        Local<Function> func = maybe_func.ToLocalChecked();
+        EXPECT_FALSE(func.IsEmpty());
+
         Local<Context> context = Context::New(isolate);
         EXPECT_FALSE(context.IsEmpty());
         for (int i = 0; i < kLoops; ++i) {
@@ -244,10 +249,11 @@ TEST(EmbedderPhase4Test, FunctionCall_Reentrant_Safe) {
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
-    MaybeLocal<Function> maybe_outer =
+
+    Local<Function> outer =
         Function::New(isolate, &HostOuterReentrant, "Host_OuterReentrant");
-    ASSERT_FALSE(maybe_outer.IsEmpty());
-    Local<Function> outer = maybe_outer.ToLocalChecked();
+    ASSERT_FALSE(outer.IsEmpty());
+
     Local<Context> context = Context::New(isolate);
     ASSERT_FALSE(context.IsEmpty());
     Local<Value> argv[1] = {Local<Value>::Cast(Integer::New(isolate, 10))};
@@ -277,14 +283,13 @@ TEST(EmbedderPhase3Test, HostMock_PythonToCppRoundTrip) {
     Local<Context> context = Context::New(isolate);
     ASSERT_FALSE(context.IsEmpty());
 
-    MaybeLocal<Function> maybe_host_get_config =
+    Local<Function> host_get_config =
         Function::New(isolate, &HostGetConfig, "Host_GetConfig");
-    MaybeLocal<Function> maybe_host_set_status =
+    Local<Function> host_set_status =
         Function::New(isolate, &HostSetStatus, "Host_SetStatus");
-    ASSERT_FALSE(maybe_host_get_config.IsEmpty());
-    ASSERT_FALSE(maybe_host_set_status.IsEmpty());
-    Local<Function> host_get_config = maybe_host_get_config.ToLocalChecked();
-    Local<Function> host_set_status = maybe_host_set_status.ToLocalChecked();
+
+    ASSERT_FALSE(host_get_config.IsEmpty());
+    ASSERT_FALSE(host_set_status.IsEmpty());
 
     EXPECT_TRUE(context
                     ->Set(String::New(isolate, "Host_GetConfig"),
@@ -327,10 +332,10 @@ TEST(EmbedderPhase3Test, CallbackThrow_PythonToTryCatch) {
     Local<Context> context = Context::New(isolate);
     ASSERT_FALSE(context.IsEmpty());
 
-    MaybeLocal<Function> maybe_host_get_status =
+    Local<Function> host_get_status =
         Function::New(isolate, &HostGetStatusWithValidation, "Host_GetStatus");
-    ASSERT_FALSE(maybe_host_get_status.IsEmpty());
-    Local<Function> host_get_status = maybe_host_get_status.ToLocalChecked();
+    ASSERT_FALSE(host_get_status.IsEmpty());
+
     EXPECT_TRUE(context
                     ->Set(String::New(isolate, "Host_GetStatus"),
                           Local<Value>::Cast(host_get_status))
@@ -365,11 +370,10 @@ TEST(EmbedderPhase3Test, Callback_Stress_RemainsCorrectAfterRepeatedCalls) {
     Local<Context> context = Context::New(isolate);
     ASSERT_FALSE(context.IsEmpty());
 
-    MaybeLocal<Function> maybe_host_set_status =
+    Local<Function> host_set_status =
         Function::New(isolate, &HostSetStatus, "Host_SetStatus");
-    ASSERT_FALSE(maybe_host_set_status.IsEmpty());
+    ASSERT_FALSE(host_set_status.IsEmpty());
 
-    Local<Function> host_set_status = maybe_host_set_status.ToLocalChecked();
     EXPECT_TRUE(context
                     ->Set(String::New(isolate, "Host_SetStatus"),
                           Local<Value>::Cast(host_set_status))

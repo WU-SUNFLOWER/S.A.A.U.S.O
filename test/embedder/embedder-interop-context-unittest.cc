@@ -129,10 +129,10 @@ TEST(EmbedderPhase4Test, MultiContext_CallbackBindingIsolation) {
     Local<Context> context_a = maybe_context_a.ToLocalChecked();
     Local<Context> context_b = maybe_context_b.ToLocalChecked();
 
-    MaybeLocal<Function> maybe_host_set_status =
+    Local<Function> host_set_status =
         Function::New(isolate, &HostSetStatus, "Host_SetStatus");
-    ASSERT_FALSE(maybe_host_set_status.IsEmpty());
-    Local<Function> host_set_status = maybe_host_set_status.ToLocalChecked();
+    ASSERT_FALSE(host_set_status.IsEmpty());
+
     EXPECT_TRUE(context_a
                     ->Set(String::New(isolate, "Host_SetStatus"),
                           Local<Value>::Cast(host_set_status))
