@@ -57,9 +57,9 @@ TEST(EmbedderPhase4Test, Context_Global_ObjectBridge) {
     Local<Context> context = Context::New(isolate);
     ASSERT_FALSE(context.IsEmpty());
 
-    MaybeLocal<Object> maybe_global = context->Global();
-    ASSERT_FALSE(maybe_global.IsEmpty());
-    Local<Object> global = maybe_global.ToLocalChecked();
+    Local<Object> global = context->Global();
+    ASSERT_FALSE(global.IsEmpty());
+
     EXPECT_TRUE(global
                     ->Set(String::New(isolate, "score"),
                           Local<Value>::Cast(Integer::New(isolate, 88)))

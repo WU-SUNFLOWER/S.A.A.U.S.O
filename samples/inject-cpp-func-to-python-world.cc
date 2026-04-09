@@ -60,7 +60,7 @@ int main() {
     // 创建一个默认的全局环境
     Local<Context> context = Context::New(isolate);
 
-    Local<Object> global = context->Global().ToLocalChecked();
+    Local<Object> global = context->Global();
 
     Local<String> injected_func_name = String::New(isolate, kInjectedFuncName);
     Local<Function> injected_func =

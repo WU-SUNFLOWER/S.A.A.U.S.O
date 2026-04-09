@@ -38,7 +38,7 @@ class Context final : public Value {
   // 读取变量；命中返回 Just(value)，未命中或失败返回 Nothing。
   MaybeLocal<Value> Get(Local<String> key);
   // 获取全局对象；失败返回 Nothing。
-  MaybeLocal<Object> Global();
+  Local<Object> Global();
 
  private:
   friend class Isolate;

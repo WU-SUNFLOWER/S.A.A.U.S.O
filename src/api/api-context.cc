@@ -126,11 +126,8 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   return api::Utils::ToLocal<Value>(escaped);
 }
 
-MaybeLocal<Object> Context::Global() {
+Local<Object> Context::Global() {
   i::Handle<i::PyObject> context_object = api::Utils::OpenHandle(this);
-  if (context_object.is_null() || !i::IsPyDict(context_object)) {
-    return MaybeLocal<Object>();
-  }
   return api::Utils::ToLocal<Object>(context_object);
 }
 
