@@ -27,6 +27,32 @@ constexpr std::string_view kTestFileName = kInterpreterTestFileName;
 
 }  // namespace
 
+TEST_F(BasicInterpreterTest, IntToBinarySample) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+def to_binary_string(value):
+  result = ""
+  
+  if value == 0:
+    return "0"
+  
+  while value > 0:
+    result = str(value % 2) + result
+    value //= 2
+  return result
+
+print(to_binary_string(2026))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected_printv_result = PyList::New(isolate_);
+  AppendExpected(expected_printv_result,
+                 PyString::New(isolate_, "11111101010"));
+  ExpectPrintResult(expected_printv_result);
+}
+
 TEST_F(BasicInterpreterTest, FunctionWithArgs) {
   HandleScope scope(isolate_);
 

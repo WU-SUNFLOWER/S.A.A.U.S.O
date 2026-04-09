@@ -454,6 +454,18 @@ executable("embedder_game_engine_demo") {
   deps = [ ":embedder_api" ]
 }
 
+executable("inject_cpp_func") {
+  testonly = true
+  sources = [ "//samples/inject-cpp-func-to-python-world.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+executable("call_python_func") {
+  testonly = true
+  sources = [ "//samples/call-python-func-in-cpp.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
 # -----------------------------------------------------------------------------
 # 统一测试入口
 # -----------------------------------------------------------------------------
