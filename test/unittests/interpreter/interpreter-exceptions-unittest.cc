@@ -128,6 +128,28 @@ print("after")
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, TryExceptFinallyWithExceptionEmitByVm) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+try:
+  x = len()
+except TypeError:
+  print("except")
+finally:
+  print("finally")
+print("after")
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::New(isolate_);
+  AppendExpected(expected, PyString::New(isolate_, "except"));
+  AppendExpected(expected, PyString::New(isolate_, "finally"));
+  AppendExpected(expected, PyString::New(isolate_, "after"));
+  ExpectPrintResult(expected);
+}
+
 TEST_F(BasicInterpreterTest, TryFinallyNoException) {
   HandleScope scope(isolate_);
 

@@ -88,8 +88,19 @@ config("debug") {
 
 # 3. Release 配置
 config("release") {
+  cflags = [
+    # 忽略未使用变量警告
+    "-Wno-unused-variable",
+
+    # 忽略未使用函数警告
+    "-Wno-unused-function",
+
+    # 忽略未使用成员变量
+    "-Wno-unused-private-field",
+  ]
+
   if (is_win) {
-    cflags = [
+    cflags += [
       "/O2",
       "/MD",
       "-flto=thin",
@@ -99,7 +110,7 @@ config("release") {
       "/OPT:ICF",
     ]
   } else if (is_linux) {
-    cflags = [
+    cflags += [
       "-O3",  # 最大优化
       "-flto=thin",  # 开启 ThinLTO
       "-g",
