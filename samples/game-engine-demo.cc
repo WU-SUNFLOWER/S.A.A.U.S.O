@@ -31,20 +31,21 @@ GameState g_game_state;
 
 // 宿主 API：给脚本读当前玩家血量。
 void HostGetPlayerHealth(FunctionCallbackInfo& info) {
-  info.SetReturnValue(Local<Value>::Cast(
-      Integer::New(info.GetIsolate(), g_game_state.player_health)));
+  info.SetReturnValue(
+      Integer::New(info.GetIsolate(), g_game_state.player_health));
 }
 
 // 宿主 API：让脚本回写玩家状态。
 void HostSetPlayerStatus(FunctionCallbackInfo& info) {
-  Maybe<std::string> maybe_status = info[0]->ToString();
-  if (maybe_status.IsNothing()) {
+  std::string status;
+  if (!info[0]->ToString().To(&status)) {
     info.ThrowRuntimeError("SetPlayerStatus expects string argument");
     return;
   }
-  g_game_state.player_status = maybe_status.ToChecked();
-  info.SetReturnValue(Local<Value>::Cast(
-      String::New(info.GetIsolate(), g_game_state.player_status)));
+
+  g_game_state.player_status = status;
+  info.SetReturnValue(
+      String::New(info.GetIsolate(), g_game_state.player_status));
 }
 
 }  // namespace
@@ -52,17 +53,11 @@ void HostSetPlayerStatus(FunctionCallbackInfo& info) {
 int main() {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();
-  if (isolate == nullptr) {
-    return 1;
-  }
 
   {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     Local<Context> context = Context::New(isolate);
-    if (context.IsEmpty()) {
-      return 1;
-    }
 
     Local<Object> global = context->Global();
     (void)global->Set(

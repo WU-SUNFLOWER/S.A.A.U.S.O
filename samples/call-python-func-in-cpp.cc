@@ -52,14 +52,12 @@ int main() {
     maybe_script.ToLocalChecked()->Run(context);
 
     Local<Object> global = context->Global();
-    MaybeLocal<Value> maybe_to_binary_string =
-        global->Get(String::New(isolate, kPythonFuncName));
-    Local<Function> to_binary_string =
-        Local<Function>::Cast(maybe_to_binary_string.ToLocalChecked());
+    Local<String> func_name = String::New(isolate, kPythonFuncName);
+
+    auto func = Local<Function>::Cast(global->Get(func_name).ToLocalChecked());
 
     Local<Value> argv[] = {Integer::New(isolate, 2026)};
-    MaybeLocal<Value> result =
-        to_binary_string->Call(context, Local<Value>(), 1, argv);
+    MaybeLocal<Value> result = func->Call(context, Local<Value>(), 1, argv);
 
     Maybe<std::string> result_in_std = result.ToLocalChecked()->ToString();
     std::cout << result_in_std.ToChecked() << std::endl;

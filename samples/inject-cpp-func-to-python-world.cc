@@ -22,15 +22,14 @@ print(result)
 void ToBinaryString(FunctionCallbackInfo& info) {
   Isolate* isolate = info.GetIsolate();
 
-  Maybe<int64_t> maybe_value = info[0]->ToInteger();
-  if (maybe_value.IsEmpty()) {
+  int64_t value;
+  if (!info[0]->ToInteger().To(&value)) {
     info.ThrowRuntimeError("to_binary_string except one int argument.");
     return;
   }
 
-  int64_t value = maybe_value.ToChecked();
   std::string result;
-  if (value == 0) {
+  if (value != 0) {
     while (value > 0) {
       result = static_cast<char>(value % 2 + '0') + result;
       value /= 2;
@@ -66,7 +65,11 @@ int main() {
     Local<Function> injected_func =
         Function::New(isolate, &ToBinaryString, kInjectedFuncName);
 
-    (void)global->Set(injected_func_name, injected_func);
+    Maybe<void> set_result = global->Set(injected_func_name, injected_func);
+    if (set_result.IsNothing()) [[unlikely]] {
+      std::cerr << "set global failed" << std::endl;
+      return 1;
+    }
 
     // 创建并编译一段Python脚本
     MaybeLocal<Script> maybe_script =
