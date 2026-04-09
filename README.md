@@ -240,78 +240,58 @@ int main() {
 - 借鉴 V8 的 `Smi` 思路，在虚拟机内部复用堆指针位宽表示小整数，减少常见整型值的堆分配开销。
 - 借鉴 HotSpot / V8 的 `Handle` 与 `Tracing GC` 思路，围绕 GC 安全引用、对象遍历与托管内存管理建立统一机制，为解释器与嵌入接口提供稳定基础。
 
-## 8. 当前边界与后续演进方向
+## 8. 当前边界与未来展望
 
-为了保证系统验收阶段的稳定性，当前版本重点聚焦于核心闭环而非无限扩展功能。
+编程语言 VM 开发是一项高度复杂的工程。为了保证系统验收阶段的稳定性，当前版本重点聚焦于 Python VM 后端的核心功能闭环，而非在答辩前继续扩展功能面。
 
-目前已知边界包括：
+本项目当前的阶段性边界与未来演进方向，包括：
+- 当前 VM 中已经实装 Scavenge GC 算法
+  - **未来展望**：后续可以继续扩展为类似工业级 VM 的分代式 GC 架构。
+- 当前 VM 已经支持 Python 语言的核心功能子集
+  - **未来展望**：后续可以对支持的 Python 语言功能进行进一步扩展，例如 format string、descriptor、生成器与协程等。
+- 当前 Embedder API 已具备清晰的公共接口与内部实现分层
+  - **未来展望**：后续可明确库产物、ABI 策略与分发策略等事宜，并推出产品化的 VM SDK。
+- 由于本项目的研究课题为 PVM 后端，当前源码到字节码的前端编译链路可选复用 CPython 3.12 的成熟能力；**关闭该复用后，VM 后端仍可独立运行**，但部分依赖源码编译前端的功能会受到限制。
 
-- 老生代 GC 尚未完成，当前以新生代 Scavenge 为主
-- remembered set / write barrier 主路径尚未作为完整分代 GC 方案启用
-- 更完整的 Python 语义仍在后续计划中，例如更完整的 importlib/元路径、descriptor 细节、生成器与协程
-- 同一 `Isolate` 不保证并发执行安全，跨线程共享需使用 `Locker`
-- OOM 暂不承诺可恢复异常语义
+> 上述内容体现的是本项目当前阶段的工程边界、工程取舍与未来演进方向，而非系统无法验收或能力闭环缺失。当前系统已经具备对象系统、解释执行、内存管理等 PVM 核心机制并形成闭环，即支撑系统验收演示所需的核心能力。
 
-这些边界说明的是“系统仍可继续演进”，而不是“项目尚未形成可验收闭环”。  
-当前版本已经能够独立支撑对象系统、解释执行、异常、模块导入和 Embedder API 的联动工作流。
+## 9. 项目的构建与测试
 
-## 9. 如何构建
+### 9.1 环境准备
 
-### Release
+Windows 系统，请自行安装并配置以下工具：
+- **Visual Studio Build Tools**：用于提供 Windows 环境下的链接器支持
+- **LLVM Clang**：核心编译环境，VS Code 中的 clangd 插件也依赖该环境
+- **MSYS2**：用于进一步安装 UCRT 环境，以便于构建 Asan/UBSan 包
+- **Git**：版本管理工具，以及运行`build.sh`所需的 Git Bash 终端
 
+Linux 系统，直接运行以下脚本：
 ```shell
-gn gen out/release
-ninja -C out/release vm
-gn gen out/release --export-compile-commands
+./tools/llvm_setup_for_linux.sh
 ```
 
-### Debug
+### 9.2 构建命令
 
+构建单元测试（自动开启 Asan/UBSan）：
 ```shell
-gn gen out/debug --args="is_debug=true"
-ninja -C out/debug vm
-gn gen out/debug --export-compile-commands
+./build.sh ut
 ```
 
-### ASan
-
+构建 Embedder API Demo：
 ```shell
-gn gen out/asan --args="is_asan=true"
-ninja -C out/asan vm
-gn gen out/asan --export-compile-commands
+./build.sh demo
 ```
 
-## 10. 如何测试
+### 9.3 如何跑单元测试
 
-### 单元测试构建
-
+跑 VM 核心单元测试：
 ```shell
-gn gen out/ut --args="is_asan=true"
-ninja -C out/ut all_ut
-gn gen out/ut --export-compile-commands
+./out/ut/ut
 ```
 
-### 单元测试运行
-
-```powershell
-$env:ASAN_SYMBOLIZER_PATH = "D:\LLVM\bin\llvm-symbolizer.exe"
-$env:ASAN_OPTIONS = "symbolize=1"
-.\out\ut\ut.exe
-.\out\ut\embedder_ut.exe
+跑 Embedder API 单元测试：
+```shell
+./out/ut/embedder_ut
 ```
 
-项目当前同时提供三类验证材料：
-
-- 单元测试：验证解释器、对象系统、模块系统与 Embedder API 的功能正确性
-- Samples：验证宿主程序嵌入脚本引擎的真实使用方式
-- 文档体系：验证设计边界、实现思路与工程约束的完整性
-
-## 11. 文档索引
-
-- [AI 贡献指南](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-AI-Developer-Contributing-Guide.md)
-- [代码风格指南](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Coding-Style-Guide.md)
-- [构建与测试指南](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Build-and-Test-Guide.md)
-- [VM 系统架构总览](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-VM-System-Architecture.md)
-- [Embedder API 接入指南](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Embedder-API-User-Guide.md)
-- [Embedder API 架构设计](file:///e:/MyProject/S.A.A.U.S.O/docs/architecture/Embedder-API-Architecture-Design.md)
-- [项目结构与阅读路线](file:///e:/MyProject/S.A.A.U.S.O/docs/Saauso-Project-Structure-And-Reading-Guide.md)
+更多细节，请参考[docs/Saauso-Build-and-Test-Guide.md](./docs/Saauso-Build-and-Test-Guide.md)
