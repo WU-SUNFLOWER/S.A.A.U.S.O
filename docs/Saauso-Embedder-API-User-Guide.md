@@ -134,7 +134,7 @@ int64_t g_last_damage = 0;
 
 void HostApplyDamage(saauso::FunctionCallbackInfo& info) {
   int64_t damage = 0;
-  if (!info.GetIntegerArg(0, &damage)) {
+  if (!info[0]->ToChecked(&damage)) {
     info.ThrowRuntimeError("ApplyDamage expects integer");
     return;
   }

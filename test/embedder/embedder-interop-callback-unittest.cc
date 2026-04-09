@@ -17,7 +17,7 @@ int64_t g_last_status = -1;
 std::atomic<int64_t> g_parallel_hits{0};
 
 void HostSetStatus(FunctionCallbackInfo& info) {
-  Maybe<int64_t> code = info.GetIntegerArg(0);
+  Maybe<int64_t> code = info[0]->ToInteger();
   if (code.IsNothing()) {
     info.ThrowRuntimeError("Host_SetStatus expects an integer argument");
     return;
@@ -28,7 +28,7 @@ void HostSetStatus(FunctionCallbackInfo& info) {
 }
 
 void HostGetStatusWithValidation(FunctionCallbackInfo& info) {
-  Maybe<std::string> key = info.GetStringArg(0);
+  Maybe<std::string> key = info[0]->ToString();
   if (key.IsNothing()) {
     info.ThrowRuntimeError("Host_GetStatus expects a string argument");
     return;
@@ -42,7 +42,7 @@ void HostGetStatusWithValidation(FunctionCallbackInfo& info) {
 }
 
 void HostAccumulateParallel(FunctionCallbackInfo& info) {
-  Maybe<int64_t> code = info.GetIntegerArg(0);
+  Maybe<int64_t> code = info[0]->ToInteger();
   if (code.IsNothing()) {
     info.ThrowRuntimeError("Host_Acc expects an integer argument");
     return;
@@ -53,7 +53,7 @@ void HostAccumulateParallel(FunctionCallbackInfo& info) {
 }
 
 void HostInnerPlusOne(FunctionCallbackInfo& info) {
-  Maybe<int64_t> code = info.GetIntegerArg(0);
+  Maybe<int64_t> code = info[0]->ToInteger();
   if (code.IsNothing()) {
     info.ThrowRuntimeError("Host_InnerPlusOne expects an integer argument");
     return;
@@ -63,7 +63,7 @@ void HostInnerPlusOne(FunctionCallbackInfo& info) {
 }
 
 void HostOuterReentrant(FunctionCallbackInfo& info) {
-  Maybe<int64_t> code = info.GetIntegerArg(0);
+  Maybe<int64_t> code = info[0]->ToInteger();
   if (code.IsNothing()) {
     info.ThrowRuntimeError("Host_OuterReentrant expects an integer argument");
     return;

@@ -13,7 +13,7 @@ namespace {
 int64_t g_last_status = -1;
 
 void HostSetStatus(FunctionCallbackInfo& info) {
-  Maybe<int64_t> code = info.GetIntegerArg(0);
+  Maybe<int64_t> code = info[0]->ToInteger();
   if (code.IsNothing()) {
     info.ThrowRuntimeError("Host_SetStatus expects an integer argument");
     return;
