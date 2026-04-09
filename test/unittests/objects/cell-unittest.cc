@@ -62,18 +62,15 @@ TEST_F(CellTest, FunctionClosuresSurviveMinorGc) {
   Handle<PyString> func_name = PyString::New(isolate_, "dummy");
   FunctionTemplateInfo func_template(isolate_, &DummyNative, func_name);
 
-  Handle<PyFunction> func;
-  if (!isolate_->factory()
-           ->NewPyFunctionWithTemplate(func_template)
-           .To(&func)) {
-    FAIL() << "fail to create function object";
-  }
+  Handle<PyFunction> func =
+      isolate_->factory()->NewPyFunctionWithTemplate(func_template);
   func->set_closures(closures);
 
   isolate_->heap()->CollectGarbage();
 
   Handle<PyTuple> closures_after = func->closures(isolate_);
-  Handle<Cell> cell_after = Handle<Cell>::cast(closures_after->Get(0, isolate_));
+  Handle<Cell> cell_after =
+      Handle<Cell>::cast(closures_after->Get(0, isolate_));
   Handle<PyObject> cell_value = cell_after->value(isolate_);
   ASSERT_FALSE(cell_value.is_null());
   EXPECT_EQ((*cell_value).ptr(), (*payload).ptr());

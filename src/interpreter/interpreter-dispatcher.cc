@@ -834,9 +834,8 @@ void Interpreter::EvalCurrentFrame() {
   INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
     auto code_object = Handle<PyCodeObject>::cast(POP());
 
-    Handle<PyFunction> func;
-    ASSIGN_GOTO_ON_EXCEPTION(
-        func, isolate_->factory()->NewPyFunctionWithCodeObject(code_object));
+    Handle<PyFunction> func =
+        isolate_->factory()->NewPyFunctionWithCodeObject(code_object);
 
     // 向函数对象注入创建它的函数所绑定的全局变量表
     // 这是Python中函数依据词法作用域规则访问它所在模块全局变量的根本原理！！！

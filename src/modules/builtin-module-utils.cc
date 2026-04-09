@@ -70,10 +70,8 @@ Maybe<void> BuiltinModuleUtils::InstallBuiltinModuleFunc(
   Handle<PyString> py_name = PyString::New(isolate, name);
   FunctionTemplateInfo function_template(isolate, func, py_name);
 
-  Handle<PyFunction> function_object;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, function_object,
-      isolate->factory()->NewPyFunctionWithTemplate(function_template));
+  Handle<PyFunction> function_object =
+      isolate->factory()->NewPyFunctionWithTemplate(function_template);
 
   RETURN_ON_EXCEPTION(
       isolate, PyDict::Put(module_dict, py_name, function_object, isolate));

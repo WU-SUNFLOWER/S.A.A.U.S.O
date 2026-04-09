@@ -96,10 +96,10 @@ class Factory {
 
   Handle<PyCodeObject> NewPyCodeObject();
 
-  MaybeHandle<PyFunction> NewPyFunction();
-  MaybeHandle<PyFunction> NewPyFunctionWithCodeObject(
+  Handle<PyFunction> NewPyFunction();
+  Handle<PyFunction> NewPyFunctionWithCodeObject(
       Handle<PyCodeObject> code_object);
-  MaybeHandle<PyFunction> NewPyFunctionWithTemplate(
+  Handle<PyFunction> NewPyFunctionWithTemplate(
       const FunctionTemplateInfo& func_template);
 
   Handle<MethodObject> NewMethodObject(Handle<PyObject> func,

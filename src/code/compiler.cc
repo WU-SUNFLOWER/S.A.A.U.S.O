@@ -60,9 +60,8 @@ MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
       std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
   Handle<PyCodeObject> code = parser.Parse();
 
-  Handle<PyFunction> func;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
+  Handle<PyFunction> func =
+      isolate->factory()->NewPyFunctionWithCodeObject(code);
 
   return scope.Escape(func);
 #endif  // !SAAUSO_ENABLE_CPYTHON_COMPILER
@@ -76,9 +75,8 @@ MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
       std::span<const uint8_t>(bytes.data(), bytes.size()), isolate);
   Handle<PyCodeObject> code = parser.Parse();
 
-  Handle<PyFunction> func;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
+  Handle<PyFunction> func =
+      isolate->factory()->NewPyFunctionWithCodeObject(code);
 
   return scope.Escape(func);
 }
@@ -90,9 +88,8 @@ MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
   CPython312PycFileParser parser(filename, isolate);
   Handle<PyCodeObject> code = parser.Parse();
 
-  Handle<PyFunction> func;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, func, isolate->factory()->NewPyFunctionWithCodeObject(code));
+  Handle<PyFunction> func =
+      isolate->factory()->NewPyFunctionWithCodeObject(code);
 
   return scope.Escape(func);
 }
