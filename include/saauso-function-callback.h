@@ -30,8 +30,6 @@ class FunctionCallbackInfo {
   // 如果 index 下标越界，则返回 None。
   Local<Value> operator[](int index) const;
 
-  // 获取第 index 个参数并转换为字符串；越界或类型不匹配时返回 Nothing。
-  Maybe<std::string> GetStringArg(int index) const;
   // 获取接收者对象；不可用时返回 Nothing。
   MaybeLocal<Value> Receiver() const;
   Isolate* GetIsolate() const;

@@ -36,15 +36,6 @@ Local<Value> FunctionCallbackInfo::operator[](int index) const {
   return api::Utils::ToLocal<Value>(impl->args->Get(index, impl->isolate));
 }
 
-Maybe<std::string> FunctionCallbackInfo::GetStringArg(int index) const {
-  MaybeLocal<Value> maybe_value = operator[](index);
-  Local<Value> value;
-  if (!maybe_value.ToLocal(&value)) {
-    return i::kNullMaybe;
-  }
-  return value->ToString();
-}
-
 MaybeLocal<Value> FunctionCallbackInfo::Receiver() const {
   auto* impl = reinterpret_cast<api::FunctionCallbackInfoImpl*>(impl_);
   if (impl == nullptr) {

@@ -28,7 +28,7 @@ void HostSetStatus(FunctionCallbackInfo& info) {
 }
 
 void HostGetStatusWithValidation(FunctionCallbackInfo& info) {
-  Maybe<std::string> key = info.GetStringArg(0);
+  Maybe<std::string> key = info[0]->ToString();
   if (key.IsNothing()) {
     info.ThrowRuntimeError("Host_GetStatus expects a string argument");
     return;

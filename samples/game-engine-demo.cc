@@ -37,7 +37,7 @@ void HostGetPlayerHealth(FunctionCallbackInfo& info) {
 
 // 宿主 API：让脚本回写玩家状态。
 void HostSetPlayerStatus(FunctionCallbackInfo& info) {
-  Maybe<std::string> maybe_status = info.GetStringArg(0);
+  Maybe<std::string> maybe_status = info[0]->ToString();
   if (maybe_status.IsNothing()) {
     info.ThrowRuntimeError("SetPlayerStatus expects string argument");
     return;
