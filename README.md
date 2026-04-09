@@ -203,7 +203,11 @@ int main() {
 
 ## 6. 虚拟机整体架构介绍
 
-本项目的架构设计借鉴了 V8 与 HotSpot 的分层思想，目标是让对象表示、运行时语义、执行引擎与对外接口各司其职。
+本项目的架构设计借鉴了现代工业级 VM 系统（如 V8、HotSpot），目标是让对象表示、运行时语义、执行引擎与对外接口边界清晰、职责单一，便于进行长期拓展和维护。
+
+![Architecture](./logo/architecture-light.png#gh-light-mode-only)
+![Architecture](./logo/architecture-dark.png#gh-dark-mode-only)
+
 
 ### 6.1 VM 内部分层
 
