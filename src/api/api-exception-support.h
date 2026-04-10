@@ -5,7 +5,6 @@
 #ifndef SAAUSO_API_API_EXCEPTION_SUPPORT_H_
 #define SAAUSO_API_API_EXCEPTION_SUPPORT_H_
 
-#include "include/saauso-local-handle.h"
 #include "src/execution/isolate.h"
 
 namespace saauso {
