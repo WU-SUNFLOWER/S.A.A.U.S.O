@@ -30,7 +30,8 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
       "Script::Compile requires CPython frontend compiler support");
-  return api::CapturePendingExceptionAndReturnEmptyLocal<Script>(i_isolate);
+  api::CapturePendingException(i_isolate);
+  return MaybeLocal<Script>();
 #endif
 }
 

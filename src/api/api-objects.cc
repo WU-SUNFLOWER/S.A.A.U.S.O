@@ -46,7 +46,8 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
 
   auto maybe_put = i::PyDict::Put(dict, py_key, py_value, i_isolate);
   if (maybe_put.IsNothing()) {
-    return api::CapturePendingExceptionAndReturnNothing(i_isolate);
+    api::CapturePendingException(i_isolate);
+    return i::kNullMaybe;
   }
 
   return JustVoid();
@@ -72,8 +73,8 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   i::Handle<i::PyObject> out;
   auto maybe_found = i::PyDict::Get(dict, py_key, out, internal_isolate);
   if (maybe_found.IsNothing()) {
-    return api::CapturePendingExceptionAndReturnEmptyLocal<Value>(
-        internal_isolate);
+    api::CapturePendingException(internal_isolate);
+    return MaybeLocal<Value>();
   }
   if (!maybe_found.ToChecked()) {
     return MaybeLocal<Value>();
