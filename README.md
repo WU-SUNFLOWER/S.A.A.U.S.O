@@ -95,7 +95,7 @@ send_email("Wang", "Mr.Song", "Mr.Liu", "Mr.Wu", channel="WeChat", priority="hig
 
 **这个例子用于说明**：本项目已支持 Python 中的常用内建类型（`str`、`list`、`dict`），以及函数调用中的关键字参数和位置参数混合绑定。 
 
-出处：[test/unittests/interpreter/interpreter-functions-unittest.cc](test/unittests/interpreter/interpreter-functions-unittest.cc) 中的 `ExtendPosAndKwArgsWithBusinessScenario`
+**出处**：[test/unittests/interpreter/interpreter-functions-unittest.cc](test/unittests/interpreter/interpreter-functions-unittest.cc) 中的 `ExtendPosAndKwArgsWithBusinessScenario`
 
 #### 例 3：类的继承、方法绑定与魔法方法
 
