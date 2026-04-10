@@ -30,13 +30,13 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
       "Script::Compile requires CPython frontend compiler support");
-  return api::FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal<Script>(
-      i_isolate);
+  api::FinalizePendingExceptionAtApiBoundary(i_isolate);
+  return {};
 #endif
 }
 
 MaybeLocal<Value> Script::Run(Local<Context> context) {
-  i::Isolate* internal_isolate = api::RequireCurrentIsolate();
+  i::Isolate* i_isolate = api::RequireCurrentIsolate();
 
   if (context.IsEmpty()) {
     return MaybeLocal<Value>();
@@ -54,20 +54,20 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
 
   i::Tagged<i::PyString> source_string =
       i::Tagged<i::PyString>::cast(*script_object);
-  i::EscapableHandleScope handle_scope(internal_isolate);
+  i::EscapableHandleScope handle_scope(i_isolate);
   i::Handle<i::PyDict> globals = i::Handle<i::PyDict>::cast(context_object);
   i::MaybeHandle<i::PyObject> maybe_result = i::Runtime_ExecutePythonSourceCode(
-      internal_isolate,
+      i_isolate,
       std::string_view(source_string->buffer(),
                        static_cast<size_t>(source_string->length())),
       globals, globals);
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
-    return api::FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal<Value>(
-        internal_isolate);
+    api::FinalizePendingExceptionAtApiBoundary(i_isolate);
+    return {};
   }
-  
+
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
   return api::Utils::ToLocal<Value>(escaped);
 }

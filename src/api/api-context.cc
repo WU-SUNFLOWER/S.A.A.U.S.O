@@ -90,8 +90,8 @@ Maybe<void> Context::Set(Local<String> key, Local<Value> value) {
 
   auto maybe_set = i::PyDict::Put(globals, i_key, i_value, i_isolate);
   if (maybe_set.IsNothing()) {
-    return api::FinalizePendingExceptionAtApiBoundaryAndReturnNothing(
-        i_isolate);
+    api::FinalizePendingExceptionAtApiBoundary(i_isolate);
+    return i::kNullMaybe;
   }
 
   return JustVoid();
@@ -116,8 +116,8 @@ MaybeLocal<Value> Context::Get(Local<String> key) {
   i::Handle<i::PyObject> out;
   auto maybe_found = i::PyDict::Get(globals, py_key, out, i_isolate);
   if (maybe_found.IsNothing()) {
-    return api::FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal<Value>(
-        i_isolate);
+    api::FinalizePendingExceptionAtApiBoundary(i_isolate);
+    return {};
   }
   if (!maybe_found.ToChecked()) {
     return MaybeLocal<Value>();

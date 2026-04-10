@@ -58,11 +58,5 @@ bool FinalizePendingExceptionAtApiBoundary(i::Isolate* isolate) {
   return true;
 }
 
-Maybe<void> FinalizePendingExceptionAtApiBoundaryAndReturnNothing(
-    i::Isolate* isolate) {
-  FinalizePendingExceptionAtApiBoundary(isolate);
-  return i::kNullMaybe;
-}
-
 }  // namespace api
 }  // namespace saauso

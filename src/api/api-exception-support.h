@@ -13,15 +13,6 @@ namespace api {
 
 bool TryToCapturePendingExceptionToEembedderTryCatch(i::Isolate* isolate);
 bool FinalizePendingExceptionAtApiBoundary(i::Isolate* isolate);
-Maybe<void> FinalizePendingExceptionAtApiBoundaryAndReturnNothing(
-    i::Isolate* isolate);
-
-template <typename T>
-MaybeLocal<T> FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal(
-    i::Isolate* isolate) {
-  FinalizePendingExceptionAtApiBoundary(isolate);
-  return MaybeLocal<T>();
-}
 
 }  // namespace api
 }  // namespace saauso
