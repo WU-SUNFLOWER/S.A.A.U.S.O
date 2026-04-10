@@ -10,7 +10,7 @@
 namespace saauso {
 namespace api {
 
-bool TryToCapturePendingExceptionToEembedderTryCatch(i::Isolate* isolate) {
+bool TryToForwardPendingExceptionToEembedderTryCatch(i::Isolate* isolate) {
   assert(isolate->HasPendingException());
 
   TryCatch* try_catch = isolate->try_catch_top();
@@ -38,7 +38,7 @@ bool FinalizePendingExceptionAtApiBoundary(i::Isolate* isolate) {
   }
 
   // 先尝试查找是否有合适的 saauso::TryCatch，可以把异常转发过去
-  if (TryToCapturePendingExceptionToEembedderTryCatch(isolate)) {
+  if (TryToForwardPendingExceptionToEembedderTryCatch(isolate)) {
     return true;
   }
 

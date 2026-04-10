@@ -48,7 +48,7 @@ void Isolate::ThrowException(Local<Value> exception) {
 
   i_isolate->exception_state()->Throw(*py_exception);
   if (!i_isolate->IsInsidePythonExecution()) {
-    api::TryToCapturePendingExceptionToEembedderTryCatch(i_isolate);
+    api::TryToForwardPendingExceptionToEembedderTryCatch(i_isolate);
   }
 }
 
