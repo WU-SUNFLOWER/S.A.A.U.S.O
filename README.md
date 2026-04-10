@@ -145,238 +145,47 @@ print("after")
 
 ### 4.1 核心概念介绍
 
-S.A.A.U.S.O 提供一套面向宿主程序的 Embedder API。  
+S.A.A.U.S.O 不仅仅可以独立运行脚本，还可以用作一个**可嵌入到 C++ 程序中的 Python 脚本引擎**。
 
-这套 API 中包含几个关键概念：
-- **`Isolate`**：代表一个 VM 实例。
-  - 在宿主程序中，必须先"进入"一个具体的 Isolate 实例，之后才能使用 VM 的功能。
-  - 使用 VM 功能结束后，需要"退出"该 Isolate 实例。
-- **`Local<T>`**：类似于 C++ 中智能指针的概念，在 S.A.A.U.S.O 中必须使用它来持有被分配在 VM 堆上的对象。
-- **`HandleScope`**：用于控制 C++ 代码中 `Local<T>` 的生命周期。
-  - 当一个 `HandleScope` 被析构时，在它所处作用域内的所有 `Local<T>` 对 VM 堆上对象的引用都会失效。
-  - 在根 `HandleScope` 被创建前，不得在 VM 堆上创建对象。
-- **`Context`**：分配在 VM 堆上，代表一个 Python 脚本执行的全局环境。
-- **`Script`**：分配在 VM 堆上，代表一个可执行的 Python 脚本。
-  - 运行 Python 脚本时，需要提供一个有效的 `Context`。
+为此，它提供一套面向宿主程序的 Embedder API。
 
-### 4.2 一个最简单的例子
+这套 API 中最重要的几个概念如下：
+- **`Isolate`**：一个独立的 VM 实例，也可以理解成一个“脚本世界”。
+- **`Context`**：这个 VM 实例中的一个全局执行环境，脚本里的全局变量和全局函数都放在这里。
+- **`Script`**：宿主要交给 VM 执行的一段 Python 脚本。
 
-要将 S.A.A.U.S.O 接入宿主程序，一个最基本的流程如下：
-1. 初始化 S.A.A.U.S.O 库（调用 `Saauso::Initialize()`）。
-1. 创建一个虚拟机单例（调用 `Isolate::New()`）
-1. 进入该虚拟机单例。
-1. 创建一个根 `HandleScope` 实例。
-1. 创建一个默认的 `Context` 实例（调用 `Context::New()`，并使用 `Local<Context>` 接住）。
-1. 创建一个 `Script` 并编译（调用 `Script::Compile()`，并使用 `Local<Script>` 接住）。
-1. 运行脚本（调用 `Script::Run(context)`）。
-1. 退出虚拟机单例。
-1. 销毁虚拟机单例。
-1. 关闭 S.A.A.U.S.O 库（调用 `Saauso::Dispose()`）。
+宿主的接入流程可以概括如下：
+- 先创建一个 `Isolate` 和一个 `Context`
+- 再把 `Script` 交给 VM 执行
+- 如果需要更复杂的交互，还可以把 C++ 函数注入给 Python，或者在 C++ 中反向调用 Python 函数。
 
-一个具体的例子（执行 Python 脚本 HelloWorld）如下：
-```C++
-int main() {
-  // 1. 初始化 S.A.A.U.S.O 库
-  saauso::Saauso::Initialize();
-  // 2. 创建虚拟机实例
-  saauso::Isolate* isolate = saauso::Isolate::New();
+### 4.2 几个实际的例子
 
-  {
-    // 3. 创建一个与 isolate 绑定的 scope，之后会自动进入 isolate 实例 
-    saauso::Isolate::Scope isolate_scope(isolate);
+1. **Hello World**
+   - 内容：演示宿主程序能够创建 VM、提供 `Context` 并执行 Python 脚本
+   - 代码：[hello-world.cc](./samples/hello-world.cc)
 
-    // 4. 创建一个 HandleScope
-    saauso::HandleScope scope(isolate);
+2. **把 C++ 函数注入给 Python**
+   - 内容：演示宿主程序可以把 C++ 能力注入给 Python 脚本
+   - 代码：[inject-cpp-func-to-python-world.cc](./samples/inject-cpp-func-to-python-world.cc)
 
-    // 5. 创建一个默认的全局环境
-    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
+3. **在 C++ 中调用 Python 函数**
+   - 内容：演示宿主程序中 C++ 代码可以反向调用 Python 函数并拿回结果
+   - 代码：[call-python-func-in-cpp.cc](./samples/call-python-func-in-cpp.cc)
 
-    // 6. 创建并编译一段Python脚本
-    saauso::MaybeLocal<saauso::Script> maybe_script = saauso::Script::Compile(
-        isolate, saauso::String::New(isolate, "print('Hello World')\n"));
+### 4.3 详细文档
 
-    // 7. 运行编译好的Python脚本
-    maybe_script.ToLocalChecked()->Run(context);
+如果需要查看更完整的开发者教程，请阅读：
 
-    // 8. 此处 isolate_scope 会被析构，然后 isolate 会自动退出
-  }
-
-  // 销毁虚拟机实例
-  isolate->Dispose();
-  // 关闭 S.A.A.U.S.O 库
-  saauso::Saauso::Dispose();
-  return 0;
-}
-```
-
-完整代码，见[samples/hello-world.cc](./samples/hello-world.cc)
-
-### 4.3 注入 C++ 函数供 Python 脚本调用
-
-在许多实际的业务场景中，嵌入方需要将一个 C++ 函数注入进 Python 世界的全局环境，以便于脚本进行调用。下面通过一个实际的例子，来说明如何在 S.A.A.U.S.O 中实现这一需求。
-
-假设我们有如下的 Python 脚本，其中 `to_binary_string` 是宿主要注入的 C++ 函数，它的功能是将一个整型转为对应的二进制字符串。
-
-```python
-value = 2026
-result = to_binary_string(value)
-print(result) # 预期输出字符串"11111101010"
-```
-
-下面分两步来介绍如何实现这个效果。
-
-#### 4.3.1 实现宿主侧的 C++ 函数
-
-在编写代码之前，你肯定会问，我们应该如何在宿主的 C++ 函数中，拿到 Python 脚本执行函数调用的上下文信息（例如 Python 脚本传入的实参、发起函数调用的虚拟机实例）呢？
-
-答案是，S.A.A.U.S.O 为嵌入方提供了一个名为 `FunctionCallbackInfo` 的抽象数据结构，其中就封装了这些必要的上下文信息。并且它的使用非常简单。
-
-首先我们先定义这个准备注入的 C++ 函数，并且将 `FunctionCallbackInfo` 作为它唯一的形参：
-```C++
-using namespace saauso;
-
-void ToBinaryString(saauso::FunctionCallbackInfo& info) {}
-```
-
-然后，我们直接通过访问 `info[0]` 将 Python 脚本传入的整型数据取出来：
-```C++
-int64_t value;
-if (!info[0]->ToInteger().To(&value)) {
-  // 如果 info[0] 不存在，或者它不是整型类型的，那么抛出异常
-  info.ThrowRuntimeError("to_binary_string except one int argument.");
-  return;
-}
-```
-
-取到 Python 脚本传入的参数后，我们直接编写"整型转二进制字符串"的代码即可：
-```C++
-std::string result;
-if (value != 0) {
-  while (value > 0) {
-    result = static_cast<char>(value % 2 + '0') + result;
-    value /= 2;
-  }
-} else {
-  result = "0";
-}
-```
-
-接下来，由于我们现在得到的是一个 `std::string`，因此我们要先将它转换成 Python 世界对应的字符串对象。这可以通过 `String::New` API 实现：
-```C++
-Isolate* isolate = info.GetIsolate();
-Local<String> result_str = String::New(isolate, result);
-```
-
-> 为什么 `String::New` 的第一个参数是 `Isolate*` 呢？因为 S.A.A.U.S.O 中不同 VM 实例的堆是互相隔离的；在 Python 世界创建字符串时，它需要明确地知道需要在哪个 VM 实例的堆上进行创建！
-
-最后，我们通过 `FunctionCallbackInfo` 提供的 `SetReturnValue` 方法，将 `result_str` 作为函数的返回值"写回" Python 世界：
-```C++
-info.SetReturnValue(result_str);
-```
-
-到此为止，宿主侧要注入的 C++ 函数 `ToBinaryString` 就编写完成了。
-
-#### 4.3.2 将宿主侧的 C++ 函数注入进 Python 世界的全局环境
-
-在 S.A.A.U.S.O 中，宿主只需将需要注入的全局变量/函数，写进脚本执行时所提供的 `Context` 实例中。Python 脚本在运行时，会将宿主提供的 `Context` 中的内容自动作为全局环境使用。
-
-首先，同之前的 Hello World 例子，我们需要创建一个 `Context` 实例：
-```C++
-Local<Context> context = Context::New(isolate);
-```
-
-然后，我们需要将刚才实现的 `ToBinaryString` C++ 函数包装成一个 Python 世界的 `Function` 对象：
-```C++
-constexpr std::string_view kInjectedFuncName = "to_binary_string";
-Local<Function> injected_func = 
-    Function::New(isolate, &ToBinaryString, kInjectedFuncName);
-```
-
-接下来，我们将要注入的函数名作为"键"、 `Function` 对象作为"值"，注入进 `context` 中：
-
-```C++
-// 要注入的函数名，一样要先转成 Python 对象
-Local<String> injected_func_name = String::New(isolate, kInjectedFuncName);
-
-// 将要注入的函数名作为"键"、 Function 对象作为"值"，注入进 context
-Maybe<void> set_result = context->Global()->Set(injected_func_name, injected_func);
-
-// 理论上操作不可能失败，这里的报错不可能触发！
-if (set_result.IsNothing()) [[unlikely]] {
-  std::cerr << "set global failed" << std::endl;
-  return 1;
-}
-```
-
-最后，我们使用这个已经注入了 C++ 函数的 `context`，来运行 Python 脚本，即可看到效果：
-```C++
-// 创建并编译一段Python脚本
-MaybeLocal<Script> maybe_script =
-    Script::Compile(isolate, String::New(isolate, kPythonScript));
-// 运行编译好的Python脚本
-maybe_script.ToLocalChecked()->Run(context);
-```
-
-完整代码，见[samples/inject-cpp-func-to-python-world.cc](./samples/inject-cpp-func-to-python-world.cc)
-
-### 4.4 在宿主 C++ 程序中调用 Python 函数
-
-在另外的一些业务场景中，宿主程序需要主动调用脚本中的 Python 函数。下面仍然通过一个实际的例子，来说明如何在 S.A.A.U.S.O 中实现这一需求。
-
-假设有一段 Python 脚本，会在全局环境中创建如下函数：
-```python
-def to_binary_string(value):
-  result = ""
-  
-  if value == 0:
-    return "0"
-  
-  while value > 0:
-    result = str(value % 2) + result
-    value //= 2
-  return result
-```
-
-我们已经知道，在 S.A.A.U.S.O 中，Python 脚本的全局环境，即对应于宿主 C++ 程序中的 `Context` 实例。
-
-这意味着，一旦这段脚本执行后，宿主程序可以直接通过 `Context` 实例拿到 `to_binary_string` 这个 Python 函数在 C++ 世界对应的 `Function` 对象。
-
-代码如下：
-```C++
-// 要获取的全局函数名称。
-constexpr std::string_view kPythonFuncName = "to_binary_string";
-Local<String> func_name = String::New(isolate, kPythonFuncName);
-
-// 以 func_name 为"键"，从 context 中拿到对应的"值"，
-// 注意，这里的返回值的类型为基类 Value。
-Local<Value> raw_func = 
-    context->Global()->Get(func_name).ToLocalChecked();
-
-// 将 raw_func 转化为可以被宿主调用的 Function 类型。
-auto func = Local<Function>::Cast(raw_func);
-```
-
-然后，我们直接设置实参、调用该 Function 对象。在 S.A.A.U.S.O 内部，该 Function 对象对应的 Python 函数会被 VM 执行：
-```C++
-Local<Value> argv[] = {Integer::New(isolate, 2026)};
-MaybeLocal<Value> result = func->Call(context, Local<Value>(), 1, argv);
-```
-
-最后，我们可以将返回结果转换成 `std::string`，并打印到终端：
-```C++
-Maybe<std::string> result_in_std = result.ToLocalChecked()->ToString();
-std::cout << result_in_std.ToChecked() << std::endl;
-```
-
-完整代码，见[samples/call-python-func-in-cpp.cc](./samples/call-python-func-in-cpp.cc)
-
-### 4.5 文档索引
-
-如果你需要更详细的接入文档，请阅读：
 - [Embedder API 接入指南](./docs/Saauso-Embedder-API-User-Guide.md)
-
-如果你想要了解 Eembedder API 的架构设计思路，请阅读：
 - [Embedder API 架构设计](./docs/architecture/Embedder-API-Architecture-Design.md)
+
+这两份文档中包含：
+
+- `Isolate / Context / HandleScope / Local` 等概念的详细说明
+- 更完整的 C++ 回调注入示例讲解
+- 具体的错误处理、线程契约与接入建议
+- Embedder API 的具体架构设计思路与实现原理
 
 ## 5. 本项目的整体架构
 
