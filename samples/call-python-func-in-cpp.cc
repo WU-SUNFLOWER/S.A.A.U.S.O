@@ -29,16 +29,11 @@ def to_binary_string(value):
 }  // namespace
 
 int main() {
-  // 初始化 S.A.A.U.S.O 库
   Saauso::Initialize();
-  // 创建虚拟机实例
   Isolate* isolate = Isolate::New();
 
   {
-    // 创建一个与 isolate 绑定的 scope，之后会自动进入 isolate 实例
     Isolate::Scope isolate_scope(isolate);
-
-    // 创建一个 HandleScope
     HandleScope scope(isolate);
 
     // 创建一个默认的全局环境
@@ -48,26 +43,27 @@ int main() {
     MaybeLocal<Script> maybe_script =
         Script::Compile(isolate, String::New(isolate, kPythonScript));
 
-    // 运行编译好的Python脚本
     maybe_script.ToLocalChecked()->Run(context);
 
-    Local<Object> global = context->Global();
+    /////////////////////////////////////////////////////////////////////////
+
+    // 要获取的全局函数名称。
     Local<String> func_name = String::New(isolate, kPythonFuncName);
 
-    auto func = Local<Function>::Cast(global->Get(func_name).ToLocalChecked());
+    // 通过 Context 实例，拿到 Python 函数在 C++ 世界对应的 Function 对象
+    auto func = Local<Function>::Cast(
+        context->Global()->Get(func_name).ToLocalChecked());
 
+    // 调用 Function 对象，并保存返回结果
     Local<Value> argv[] = {Integer::New(isolate, 2026)};
     MaybeLocal<Value> result = func->Call(context, Local<Value>(), 1, argv);
 
+    // 将返回得到 Value 转成 std::string，并打印
     Maybe<std::string> result_in_std = result.ToLocalChecked()->ToString();
     std::cout << result_in_std.ToChecked() << std::endl;
-
-    // 此处 isolate_scope 会被析构，然后 isolate 会自动退出
   }
 
-  // 销毁虚拟机实例
   isolate->Dispose();
-  // 关闭 S.A.A.U.S.O 库
   Saauso::Dispose();
   return 0;
 }
