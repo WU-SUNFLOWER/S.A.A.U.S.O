@@ -20,14 +20,14 @@ print(result)
 )";
 
 void ToBinaryString(FunctionCallbackInfo& info) {
-  Isolate* isolate = info.GetIsolate();
-
   int64_t value;
   if (!info[0]->ToInteger().To(&value)) {
+    // 如果 info[0] 不存在，或者它不是整型类型的，那么抛出异常
     info.ThrowRuntimeError("to_binary_string except one int argument.");
     return;
   }
 
+  // 将整型转成二进制字符串
   std::string result;
   if (value != 0) {
     while (value > 0) {
@@ -38,34 +38,40 @@ void ToBinaryString(FunctionCallbackInfo& info) {
     result = "0";
   }
 
-  info.SetReturnValue(String::New(isolate, result));
+  // 将 result 转换成 Python 世界对应的字符串对象。
+  // 由于创建 Python 世界的字符串对象时，String::New
+  // 需要明确知道在哪个 VM 实例的堆上进行创建，这里需要
+  // 显式传入具体的 Isolate 单例！
+  Isolate* isolate = info.GetIsolate();
+  Local<String> result_str = String::New(isolate, result);
+
+  // 将 result_str 作为函数的返回值"写回" Python 世界
+  info.SetReturnValue(result_str);
 }
 
 }  // namespace
 
 int main() {
-  // 初始化 S.A.A.U.S.O 库
   Saauso::Initialize();
-  // 创建虚拟机实例
   Isolate* isolate = Isolate::New();
 
   {
-    // 创建一个与 isolate 绑定的 scope，之后会自动进入 isolate 实例
     Isolate::Scope isolate_scope(isolate);
-
-    // 创建一个 HandleScope
     HandleScope scope(isolate);
 
     // 创建一个默认的全局环境
     Local<Context> context = Context::New(isolate);
 
-    Local<Object> global = context->Global();
-
+    // 将 C++ 函数包装为一个 Python 世界的 Function 对象
     Local<String> injected_func_name = String::New(isolate, kInjectedFuncName);
     Local<Function> injected_func =
         Function::New(isolate, &ToBinaryString, kInjectedFuncName);
 
-    Maybe<void> set_result = global->Set(injected_func_name, injected_func);
+    // 将要注入的函数名作为"键"、 Function 对象作为"值"，注入进 context
+    Maybe<void> set_result =
+        context->Global()->Set(injected_func_name, injected_func);
+
+    // 理论上操作不可能失败，这里的报错不可能触发！
     if (set_result.IsNothing()) [[unlikely]] {
       std::cerr << "set global failed" << std::endl;
       return 1;
@@ -77,13 +83,9 @@ int main() {
 
     // 运行编译好的Python脚本
     maybe_script.ToLocalChecked()->Run(context);
-
-    // 此处 isolate_scope 会被析构，然后 isolate 会自动退出
   }
 
-  // 销毁虚拟机实例
   isolate->Dispose();
-  // 关闭 S.A.A.U.S.O 库
   Saauso::Dispose();
   return 0;
 }

@@ -145,86 +145,52 @@ print("after")
 
 ### 4.1 核心概念介绍
 
-S.A.A.U.S.O 提供一套面向宿主程序的 Embedder API。  
+S.A.A.U.S.O 不仅仅可以独立运行脚本，还可以用作一个**嵌入到 C++ 宿主程序中的 Python 脚本引擎**。
 
-这套 API 中包含几个关键概念：
-- **`Isolate`**：代表一个 VM 实例。
-  - 在宿主程序中，必须先"进入"一个具体的 Isolate 实例，之后才能使用 VM 的功能。
-  - 使用 VM 功能结束后，需要"退出"该 Isolate 实例。
-- **`Local<T>`**：类似于 C++ 中智能指针的概念，在 S.A.A.U.S.O 中必须使用它来持有被分配在 VM 堆上的对象。
-- **`HandleScope`**：用于控制 C++ 代码中 `Local<T>` 的生命周期。
-  - 当一个 `HandleScope` 被析构时，在它所处作用域内的所有 `Local<T>` 对 VM 堆上对象的引用都会失效。
-  - 在根 `HandleScope` 被创建前，不得在 VM 堆上创建对象。
-- **`Context`**：分配在 VM 堆上，代表一个 Python 脚本执行的全局环境。
-- **`Script`**：分配在 VM 堆上，代表一个可执行的 Python 脚本。
-  - 运行 Python 脚本时，需要提供一个有效的 `Context`。
+为此，它提供一套供宿主程序使用的 Embedder API。
 
-### 4.2 一个最简单的例子
+这套 API 中最重要的几个概念如下：
+- **`Isolate`**：一个独立的 VM 实例，也可以理解成一个“Python 世界”。
+- **`Context`**：这个 VM 实例中的一个全局执行环境，可以把它理解成 Python 脚本运行时的全局变量表。
+- **`Script`**：宿主要交给 VM 执行的一段 Python 脚本。
 
-要将 S.A.A.U.S.O 接入宿主程序，一个最基本的流程如下：
-1. 初始化 S.A.A.U.S.O 库（调用 `Saauso::Initialize()`）。
-1. 创建一个虚拟机单例（调用 `Isolate::New()`）
-1. 进入该虚拟机单例。
-1. 创建一个根 `HandleScope` 实例。
-1. 创建一个默认的 `Context` 实例（调用 `Context::New()`，并使用 `Local<Context>` 接住）。
-1. 创建一个 `Script` 并编译（调用 `Script::Compile()`，并使用 `Local<Script>` 接住）。
-1. 运行脚本（调用 `Script::Run(context)`）。
-1. 退出虚拟机单例。
-1. 销毁虚拟机单例。
-1. 关闭 S.A.A.U.S.O 库（调用 `Saauso::Dispose()`）。
+宿主的接入流程可以概括如下：
+- 先创建一个 `Isolate` 和一个 `Context`
+- 再把 `Script` 交给 VM 执行
+- 如果需要更复杂的交互，还可以把 C++ 函数注入给 Python，或者在 C++ 中反向调用 Python 函数。
 
-一个具体的例子（执行 Python 脚本 HelloWorld）如下：
-```C++
-int main() {
-  // 1. 初始化 S.A.A.U.S.O 库
-  saauso::Saauso::Initialize();
-  // 2. 创建虚拟机实例
-  saauso::Isolate* isolate = saauso::Isolate::New();
+### 4.2 几个实际的例子
 
-  {
-    // 3. 创建一个与 isolate 绑定的 scope，之后会自动进入 isolate 实例 
-    saauso::Isolate::Scope isolate_scope(isolate);
+1. **Hello World**
+   - **内容**：宿主程序执行一段打印 `Hello World` 的 Python 脚本。
+   - **代码**：[hello-world.cc](./samples/hello-world.cc)
+   - **结论**：这个例子说明宿主程序可以创建 VM、提供 `Context` 并执行 Python 脚本。
 
-    // 4. 创建一个 HandleScope
-    saauso::HandleScope scope(isolate);
+2. **把 C++ 函数注入给 Python**
+   - **内容**：Python 脚本调用 C++ 函数，将整型`2026`转为二进制串`11111101010`并打印。
+   - **代码**：[inject-cpp-func-to-python-world.cc](./samples/inject-cpp-func-to-python-world.cc)
+   - **结论**：这个例子说明宿主程序可以把 C++ 能力注入给 Python 脚本。
 
-    // 5. 创建一个默认的全局环境
-    saauso::Local<saauso::Context> context = saauso::Context::New(isolate);
+3. **在 C++ 中调用 Python 函数**
+   - **内容**：C++ 代码调用 Python 自定义函数，将整型`2026`转为二进制串`11111101010`并打印。
+   - **代码**：[call-python-func-in-cpp.cc](./samples/call-python-func-in-cpp.cc)
+   - **结论**：这个例子说明宿主程序中 C++ 代码可以反向调用 Python 函数并拿回结果。
 
-    // 6. 创建并编译一段Python脚本
-    saauso::MaybeLocal<saauso::Script> maybe_script = saauso::Script::Compile(
-        isolate, saauso::String::New(isolate, "print('Hello World')\n"));
+### 4.3 详细文档
 
-    // 7. 运行编译好的Python脚本
-    maybe_script.ToLocalChecked()->Run(context);
+如果需要查看更完整的开发者教程，请阅读：
 
-    // 8. 此处 isolate_scope 会被析构，然后 isolate 会自动退出
-  }
-
-  // 销毁虚拟机实例
-  isolate->Dispose();
-  // 关闭 S.A.A.U.S.O 库
-  saauso::Saauso::Dispose();
-  return 0;
-}
-```
-
-完整代码，见[samples/hello-world.cc](./samples/hello-world.cc)
-
-### 4.3 注入 C++ 函数供 Python 脚本调用
-
-
-
-### 4.4 在宿主 C++ 程序中调用 Python 函数
-
-
-### 4.5 文档索引
-
-如果你需要更完整的接入文档，请阅读：
 - [Embedder API 接入指南](./docs/Saauso-Embedder-API-User-Guide.md)
-
-如果你想要了解 Eembedder API 的架构设计思路，请阅读：
 - [Embedder API 架构设计](./docs/architecture/Embedder-API-Architecture-Design.md)
+
+这两份文档中包含：
+
+- `Isolate / Context / HandleScope / Local` 等概念的详细说明
+- 更完整的 C++ 回调注入示例讲解
+- 具体的错误处理、线程契约与接入建议
+- Embedder API 的具体架构设计思路与实现原理
+
+另外，你可以在[samples](./samples/)目录下找到更多的演示案例。
 
 ## 5. 本项目的整体架构
 
@@ -264,6 +230,7 @@ int main() {
 - 借鉴 HotSpot 的 `Klass-Oop` 思路，把对象实例数据与类型/多态信息解耦，以更清晰地组织 Python 对象模型。
 - 借鉴 V8 的 `Smi` 思路，在虚拟机内部复用堆指针位宽表示小整数，减少常见整型值的堆分配开销。
 - 借鉴 HotSpot / V8 的 `Handle` 与 `Tracing GC` 思路，围绕 GC 安全引用、对象遍历与托管内存管理建立统一机制，为解释器与嵌入接口提供稳定基础。
+- 借鉴 V8 的 `Embedder API` 思路，为嵌入方提供 VM 功能的接入方案。
 
 ## 7. 当前边界与未来展望
 
@@ -275,7 +242,7 @@ int main() {
 - 当前 VM 已经支持 Python 语言的核心功能子集
   - **未来展望**：后续可以对支持的 Python 语言功能进行进一步扩展，例如 format string、descriptor、生成器与协程等。
 - 当前 Embedder API 已具备清晰的公共接口与内部实现分层
-  - **未来展望**：后续可明确库产物、ABI 策略与分发策略等事宜，并推出产品化的 VM SDK。
+  - **未来展望**：后续可明确库产物、ABI 策略与分发策略等事宜，并推出类似于工业级 VM 的产品化 SDK。
 - 由于本项目的研究课题为 PVM 后端，当前源码到字节码的前端编译链路可选复用 CPython 3.12 的成熟能力；**关闭该复用后，VM 后端仍可独立运行**，但部分依赖源码编译前端的功能会受到限制。
 
 > 上述内容体现的是本项目当前阶段的工程边界、工程取舍与未来演进方向，而非系统无法验收或能力闭环缺失。当前系统已经具备对象系统、解释执行、内存管理等 PVM 核心机制并形成闭环，即支撑系统验收演示所需的核心能力。
