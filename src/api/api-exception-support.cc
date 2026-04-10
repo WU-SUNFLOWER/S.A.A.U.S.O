@@ -31,10 +31,5 @@ bool CapturePendingException(i::Isolate* isolate) {
   return true;
 }
 
-Maybe<void> CapturePendingExceptionAndReturnNothing(i::Isolate* isolate) {
-  CapturePendingException(isolate);
-  return i::kNullMaybe;
-}
-
 }  // namespace api
 }  // namespace saauso
