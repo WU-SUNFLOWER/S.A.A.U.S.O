@@ -46,8 +46,8 @@ Maybe<void> Object::Set(Local<String> key, Local<Value> value) {
 
   auto maybe_put = i::PyDict::Put(dict, py_key, py_value, i_isolate);
   if (maybe_put.IsNothing()) {
-    api::CapturePendingException(i_isolate);
-    return i::kNullMaybe;
+    return api::FinalizePendingExceptionAtApiBoundaryAndReturnNothing(
+        i_isolate);
   }
 
   return JustVoid();
@@ -73,8 +73,8 @@ MaybeLocal<Value> Object::Get(Local<String> key) {
   i::Handle<i::PyObject> out;
   auto maybe_found = i::PyDict::Get(dict, py_key, out, internal_isolate);
   if (maybe_found.IsNothing()) {
-    api::CapturePendingException(internal_isolate);
-    return MaybeLocal<Value>();
+    return api::FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal<Value>(
+        internal_isolate);
   }
   if (!maybe_found.ToChecked()) {
     return MaybeLocal<Value>();
@@ -110,8 +110,8 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
   i::MaybeHandle<i::PyObject> maybe_callee =
       i::PyObject::GetAttrForCall(i_isolate, self, py_name, self_or_null);
   if (!maybe_callee.ToHandle(&callee)) {
-    api::CapturePendingException(i_isolate);
-    return MaybeLocal<Value>();
+    return api::FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal<Value>(
+        i_isolate);
   }
 
   i::Handle<i::PyTuple> py_args;
@@ -128,8 +128,8 @@ MaybeLocal<Value> Object::CallMethod(Local<Context> context,
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(i_isolate);
-    return MaybeLocal<Value>();
+    return api::FinalizePendingExceptionAtApiBoundaryAndReturnEmptyLocal<Value>(
+        i_isolate);
   }
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
