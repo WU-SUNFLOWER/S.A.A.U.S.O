@@ -61,9 +61,15 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
       std::string_view(source_string->buffer(),
                        static_cast<size_t>(source_string->length())),
       globals, globals);
-  return api::ToLocalOrCapturePendingException<Value>(internal_isolate,
-                                                      handle_scope,
-                                                      maybe_result);
+
+  i::Handle<i::PyObject> result;
+  if (!maybe_result.ToHandle(&result)) {
+    api::CapturePendingException(internal_isolate);
+    return MaybeLocal<Value>();
+  }
+  
+  i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
+  return api::Utils::ToLocal<Value>(escaped);
 }
 
 }  // namespace saauso
