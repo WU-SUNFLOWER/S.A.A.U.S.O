@@ -206,6 +206,17 @@ bool Isolate::HasPendingException() const {
   return exception_state_.HasPendingException();
 }
 
+int Isolate::python_execution_depth() const {
+  if (interpreter_ == nullptr) {
+    return 0;
+  }
+  return interpreter_->python_execution_depth();
+}
+
+bool Isolate::IsInsidePythonExecution() const {
+  return python_execution_depth() != 0;
+}
+
 Tagged<PyDict> Isolate::raw_builtins() const {
   return Tagged<PyDict>::cast(builtins_);
 }

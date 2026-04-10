@@ -121,6 +121,16 @@ void HostGetConfig(FunctionCallbackInfo& info) {
   info.SetReturnValue(
       Local<Value>::Cast(String::New(info.GetIsolate(), value)));
 }
+
+void HostThrowViaIsolate(FunctionCallbackInfo& info) {
+  Isolate* isolate = info.GetIsolate();
+  MaybeLocal<Value> error =
+      Exception::RuntimeError(String::New(isolate, "host-isolate-throw"));
+  if (error.IsEmpty()) {
+    return;
+  }
+  isolate->ThrowException(error.ToLocalChecked());
+}
 #endif
 
 }  // namespace
@@ -351,6 +361,94 @@ TEST(EmbedderPhase3Test, CallbackThrow_PythonToTryCatch) {
     EXPECT_TRUE(run_result.IsEmpty());
     EXPECT_TRUE(try_catch.HasCaught());
     EXPECT_FALSE(try_catch.Exception().IsEmpty());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(EmbedderPhase3Test,
+     IsolateThrowException_PythonExceptWinsOverOuterTryCatch) {
+  g_last_status = -1;
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
+    Local<Function> host_throw =
+        Function::New(isolate, &HostThrowViaIsolate, "Host_ThrowViaIsolate");
+    Local<Function> host_set_status =
+        Function::New(isolate, &HostSetStatus, "Host_SetStatus");
+    ASSERT_FALSE(host_throw.IsEmpty());
+    ASSERT_FALSE(host_set_status.IsEmpty());
+
+    EXPECT_TRUE(context
+                    ->Set(String::New(isolate, "Host_ThrowViaIsolate"),
+                          Local<Value>::Cast(host_throw))
+                    .IsJust());
+    EXPECT_TRUE(context
+                    ->Set(String::New(isolate, "Host_SetStatus"),
+                          Local<Value>::Cast(host_set_status))
+                    .IsJust());
+
+    Local<String> source = String::New(isolate,
+                                       "try:\n"
+                                       "    Host_ThrowViaIsolate()\n"
+                                       "except:\n"
+                                       "    Host_SetStatus(777)\n");
+    ASSERT_FALSE(source.IsEmpty());
+
+    TryCatch try_catch(isolate);
+    MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
+    ASSERT_FALSE(maybe_script.IsEmpty());
+    MaybeLocal<Value> run_result = maybe_script.ToLocalChecked()->Run(context);
+    ASSERT_FALSE(run_result.IsEmpty());
+    EXPECT_FALSE(try_catch.HasCaught());
+    EXPECT_EQ(g_last_status, 777);
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
+TEST(EmbedderPhase3Test, IsolateThrowException_UnhandledFallsBackToTryCatch) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    Local<Context> context = Context::New(isolate);
+    ASSERT_FALSE(context.IsEmpty());
+
+    Local<Function> host_throw =
+        Function::New(isolate, &HostThrowViaIsolate, "Host_ThrowViaIsolate");
+    ASSERT_FALSE(host_throw.IsEmpty());
+    EXPECT_TRUE(context
+                    ->Set(String::New(isolate, "Host_ThrowViaIsolate"),
+                          Local<Value>::Cast(host_throw))
+                    .IsJust());
+
+    Local<String> source = String::New(isolate, "Host_ThrowViaIsolate()\n");
+    ASSERT_FALSE(source.IsEmpty());
+
+    TryCatch try_catch(isolate);
+    MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
+    ASSERT_FALSE(maybe_script.IsEmpty());
+    MaybeLocal<Value> run_result = maybe_script.ToLocalChecked()->Run(context);
+    EXPECT_TRUE(run_result.IsEmpty());
+    EXPECT_TRUE(try_catch.HasCaught());
+    Local<Value> exception = try_catch.Exception();
+    ASSERT_FALSE(exception.IsEmpty());
+    Maybe<std::string> message = exception->ToString();
+    ASSERT_FALSE(message.IsNothing());
+    EXPECT_EQ(message.ToChecked(), "[RuntimeError] host-isolate-throw");
   }
 
   isolate->Dispose();

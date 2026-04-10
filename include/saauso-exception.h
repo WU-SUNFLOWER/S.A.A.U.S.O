@@ -48,6 +48,7 @@ class TryCatch {
   struct Impl;
   friend class api::ApiBridgeAccess;
   void SetException(internal::Handle<internal::PyObject> exception);
+  int PythonExecutionDepth() const;
 
   internal::Isolate* i_isolate_{nullptr};
   TryCatch* previous_{nullptr};

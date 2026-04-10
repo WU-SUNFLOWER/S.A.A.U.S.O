@@ -78,14 +78,8 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
   i::MaybeHandle<i::PyObject> maybe_result =
       i::PyObject::Call(i_isolate, function_object, py_receiver, py_args,
                         i::Handle<i::PyObject>::null());
-  i::Handle<i::PyObject> result;
-  if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(i_isolate);
-    return MaybeLocal<Value>();
-  }
-
-  i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return api::Utils::ToLocal<Value>(escaped);
+  return api::ToLocalOrCapturePendingException<Value>(i_isolate, handle_scope,
+                                                      maybe_result);
 }
 
 }  // namespace saauso

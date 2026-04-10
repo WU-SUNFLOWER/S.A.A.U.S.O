@@ -30,6 +30,11 @@ class ApiBridgeAccess final {
     assert(try_catch != nullptr);
     try_catch->SetException(exception);
   }
+
+  static int GetTryCatchPythonExecutionDepth(const TryCatch* try_catch) {
+    assert(try_catch != nullptr);
+    return try_catch->PythonExecutionDepth();
+  }
 };
 
 }  // namespace api

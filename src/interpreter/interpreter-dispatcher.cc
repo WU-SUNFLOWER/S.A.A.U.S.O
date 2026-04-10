@@ -1231,6 +1231,7 @@ Maybe<void> Interpreter::InvokeCallableWithNormalizedArgs(
 void Interpreter::EnterFrame(FrameObject* frame) {
   frame->set_caller(current_frame_);
   current_frame_ = frame;
+  ++python_execution_depth_;
 }
 
 void Interpreter::LeaveCurrentFrame() {
@@ -1245,6 +1246,7 @@ void Interpreter::DestroyCurrentFrame() {
   FrameObject* callee = current_frame_;
   // 弹出并销毁当前python栈帧，恢复上一个python栈帧
   current_frame_ = callee->caller();
+  --python_execution_depth_;
   delete callee;
 }
 

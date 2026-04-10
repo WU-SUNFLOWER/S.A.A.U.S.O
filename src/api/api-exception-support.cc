@@ -19,12 +19,21 @@ bool CapturePendingException(i::Isolate* isolate) {
   if (try_catch == nullptr) {
     return true;
   }
+  if (ApiBridgeAccess::GetTryCatchPythonExecutionDepth(try_catch) !=
+      isolate->python_execution_depth()) {
+    return true;
+  }
 
   i::Handle<i::PyObject> exception =
       isolate->exception_state()->pending_exception(isolate);
   ApiBridgeAccess::SetTryCatchException(try_catch, exception);
   isolate->exception_state()->Clear();
   return true;
+}
+
+Maybe<void> CapturePendingExceptionAndReturnNothing(i::Isolate* isolate) {
+  CapturePendingException(isolate);
+  return i::kNullMaybe;
 }
 
 }  // namespace api

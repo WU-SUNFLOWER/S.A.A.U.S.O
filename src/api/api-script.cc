@@ -30,8 +30,7 @@ MaybeLocal<Script> Script::Compile(Isolate* isolate, Local<String> source) {
   i::Runtime_ThrowError(
       i::ExceptionType::kRuntimeError,
       "Script::Compile requires CPython frontend compiler support");
-  api::CapturePendingException(i_isolate);
-  return MaybeLocal<Script>();
+  return api::CapturePendingExceptionAndReturnEmptyLocal<Script>(i_isolate);
 #endif
 }
 
@@ -61,13 +60,9 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
       std::string_view(source_string->buffer(),
                        static_cast<size_t>(source_string->length())),
       globals, globals);
-  i::Handle<i::PyObject> result;
-  if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(internal_isolate);
-    return MaybeLocal<Value>();
-  }
-  i::Handle<i::PyObject> escaped = handle_scope.Escape(result);
-  return api::Utils::ToLocal<Value>(escaped);
+  return api::ToLocalOrCapturePendingException<Value>(internal_isolate,
+                                                      handle_scope,
+                                                      maybe_result);
 }
 
 }  // namespace saauso
