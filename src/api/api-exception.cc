@@ -67,10 +67,10 @@ void TryCatch::Reset() {
   impl_->exception_.Reset();
 }
 
-MaybeLocal<Value> TryCatch::Exception() const {
+Local<Value> TryCatch::Exception() const {
   i::Handle<i::PyObject> exception = impl_->exception_.Get(i_isolate_);
   if (exception.is_null()) {
-    return MaybeLocal<Value>();
+    return Local<Value>();
   }
   return api::Utils::ToLocal<Value>(exception);
 }

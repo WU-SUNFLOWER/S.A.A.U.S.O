@@ -327,6 +327,7 @@ std::cout << result_in_std.ToChecked() << std::endl;
 2. 只要你关心失败原因，就在调用前创建 `TryCatch`。
 3. `MaybeLocal` 失败 + `TryCatch.HasCaught()==true` 才是完整错误闭环。
 4. 不要忽略空句柄；必须先判空再 `ToLocalChecked`。
+5. `TryCatch::Exception()` 返回 `Local<Value>`；未捕获异常时返回空句柄。
 
 ## 4.1 Isolate 契约（严格模式）
 

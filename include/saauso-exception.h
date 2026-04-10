@@ -41,8 +41,8 @@ class TryCatch {
 
   bool HasCaught() const;
   void Reset();
-  // 返回当前捕获的异常；未捕获时返回 Nothing。
-  MaybeLocal<Value> Exception() const;
+  // 返回当前捕获的异常；未捕获时返回空 Local<Value>。
+  Local<Value> Exception() const;
 
  private:
   struct Impl;
