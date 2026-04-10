@@ -145,13 +145,13 @@ print("after")
 
 ### 4.1 核心概念介绍
 
-S.A.A.U.S.O 不仅仅可以独立运行脚本，还可以用作一个**可嵌入到 C++ 程序中的 Python 脚本引擎**。
+S.A.A.U.S.O 不仅仅可以独立运行脚本，还可以用作一个**嵌入到 C++ 宿主程序中的 Python 脚本引擎**。
 
-为此，它提供一套面向宿主程序的 Embedder API。
+为此，它提供一套供宿主程序使用的 Embedder API。
 
 这套 API 中最重要的几个概念如下：
-- **`Isolate`**：一个独立的 VM 实例，也可以理解成一个“脚本世界”。
-- **`Context`**：这个 VM 实例中的一个全局执行环境，脚本里的全局变量和全局函数都放在这里。
+- **`Isolate`**：一个独立的 VM 实例，也可以理解成一个“Python 世界”。
+- **`Context`**：这个 VM 实例中的一个全局执行环境，可以把它理解成 Python 脚本运行时的全局变量表。
 - **`Script`**：宿主要交给 VM 执行的一段 Python 脚本。
 
 宿主的接入流程可以概括如下：
@@ -162,16 +162,19 @@ S.A.A.U.S.O 不仅仅可以独立运行脚本，还可以用作一个**可嵌入
 ### 4.2 几个实际的例子
 
 1. **Hello World**
-   - 内容：演示宿主程序能够创建 VM、提供 `Context` 并执行 Python 脚本
-   - 代码：[hello-world.cc](./samples/hello-world.cc)
+   - **内容**：宿主程序执行一段打印 `Hello World` 的 Python 脚本。
+   - **代码**：[hello-world.cc](./samples/hello-world.cc)
+   - **结论**：这个例子说明宿主程序可以创建 VM、提供 `Context` 并执行 Python 脚本。
 
 2. **把 C++ 函数注入给 Python**
-   - 内容：演示宿主程序可以把 C++ 能力注入给 Python 脚本
-   - 代码：[inject-cpp-func-to-python-world.cc](./samples/inject-cpp-func-to-python-world.cc)
+   - **内容**：Python 脚本调用 C++ 函数，将整型`2026`转为二进制串`11111101010`并打印。
+   - **代码**：[inject-cpp-func-to-python-world.cc](./samples/inject-cpp-func-to-python-world.cc)
+   - **结论**：这个例子说明宿主程序可以把 C++ 能力注入给 Python 脚本。
 
 3. **在 C++ 中调用 Python 函数**
-   - 内容：演示宿主程序中 C++ 代码可以反向调用 Python 函数并拿回结果
-   - 代码：[call-python-func-in-cpp.cc](./samples/call-python-func-in-cpp.cc)
+   - **内容**：C++ 代码调用 Python 自定义函数，将整型`2026`转为二进制串`11111101010`并打印。
+   - **代码**：[call-python-func-in-cpp.cc](./samples/call-python-func-in-cpp.cc)
+   - **结论**：这个例子说明宿主程序中 C++ 代码可以反向调用 Python 函数并拿回结果。
 
 ### 4.3 详细文档
 
@@ -186,6 +189,8 @@ S.A.A.U.S.O 不仅仅可以独立运行脚本，还可以用作一个**可嵌入
 - 更完整的 C++ 回调注入示例讲解
 - 具体的错误处理、线程契约与接入建议
 - Embedder API 的具体架构设计思路与实现原理
+
+另外，你可以在[samples](./samples/)目录下找到更多的演示案例。
 
 ## 5. 本项目的整体架构
 
