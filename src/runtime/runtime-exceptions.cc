@@ -116,8 +116,7 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(PyString::New(isolate, ""));
   }
 
-  auto exception =
-      Handle<PyBaseException>::cast(state->pending_exception(isolate));
+  Handle<PyBaseException> exception = state->pending_exception(isolate);
   Handle<PyString> type_name = PyObject::GetTypeName(exception, isolate);
 
   Handle<PyTuple> exception_args =

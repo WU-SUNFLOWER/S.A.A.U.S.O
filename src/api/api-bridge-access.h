@@ -12,6 +12,7 @@
 #include "include/saauso-local-handle.h"
 #include "include/saauso-value.h"
 #include "src/handles/handles.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-object.h"
 
 namespace saauso {
@@ -25,8 +26,9 @@ class ApiBridgeAccess final {
     info->impl_ = impl;
   }
 
-  static void SetTryCatchException(TryCatch* try_catch,
-                                   i::Handle<internal::PyObject> exception) {
+  static void SetTryCatchException(
+      TryCatch* try_catch,
+      i::Handle<internal::PyBaseException> exception) {
     assert(try_catch != nullptr);
     try_catch->SetException(exception);
   }

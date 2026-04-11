@@ -35,7 +35,7 @@ class ExceptionState final {
     return pending_exception_;
   }
 
-  Handle<PyObject> pending_exception(Isolate* isolate) const;
+  Handle<PyBaseException> pending_exception(Isolate* isolate) const;
 
   int pending_exception_pc() const { return pending_exception_pc_; }
   void set_pending_exception_pc(int pc) { pending_exception_pc_ = pc; }

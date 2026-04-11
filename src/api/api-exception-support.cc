@@ -25,7 +25,7 @@ bool TryToForwardPendingExceptionToEembedderTryCatch(i::Isolate* isolate) {
     return false;
   }
 
-  i::Handle<i::PyObject> exception =
+  i::Handle<i::PyBaseException> exception =
       isolate->exception_state()->pending_exception(isolate);
   ApiBridgeAccess::SetTryCatchException(try_catch, exception);
   isolate->exception_state()->Clear();
