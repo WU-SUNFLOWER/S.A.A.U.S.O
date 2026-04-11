@@ -11,7 +11,9 @@
 namespace saauso::internal {
 
 class ObjectVisitor;
+
 class PyObject;
+class PyBaseException;
 
 // 解释器执行期间的“传播态异常状态”（error indicator）。
 //
@@ -29,11 +31,8 @@ class ExceptionState final {
 
   bool HasPendingException() const { return !pending_exception_.is_null(); }
 
-  Tagged<PyObject> pending_exception_tagged() const {
-    return pending_exception_;
-  }
-
-  Handle<PyObject> pending_exception(Isolate* isolate) const;
+  Tagged<PyBaseException> pending_exception_tagged() const;
+  Handle<PyBaseException> pending_exception(Isolate* isolate) const;
 
   int pending_exception_pc() const { return pending_exception_pc_; }
   void set_pending_exception_pc(int pc) { pending_exception_pc_ = pc; }
@@ -47,20 +46,9 @@ class ExceptionState final {
 
   // 设置 pending exception，并重置 pc/origin 为无效值。
   // 该接口仅改变 error indicator，不负责构造异常对象。
-  void Throw(Tagged<PyObject> exception) {
-    if (HasPendingException()) {
-      return;
-    }
-    pending_exception_ = exception;
-    pending_exception_pc_ = kInvalidProgramCounter;
-    pending_exception_origin_pc_ = kInvalidProgramCounter;
-  }
+  void Throw(Handle<PyBaseException> exception);
 
-  void Clear() {
-    pending_exception_ = Tagged<PyObject>::null();
-    pending_exception_pc_ = kInvalidProgramCounter;
-    pending_exception_origin_pc_ = kInvalidProgramCounter;
-  }
+  void Clear();
 
   // GC root 扫描接口：暴露 pending_exception_。
   void Iterate(ObjectVisitor* v);

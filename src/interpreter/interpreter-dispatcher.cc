@@ -292,7 +292,8 @@ void Interpreter::EvalCurrentFrame() {
     }
 
     // 执行真正的抛错操作
-    isolate_->exception_state()->Throw(*exception);
+    isolate_->exception_state()->Throw(
+        Handle<PyBaseException>::cast(exception));
   })
 
   // 如果没匹配任何 except，重新抛出异常
@@ -324,7 +325,8 @@ void Interpreter::EvalCurrentFrame() {
       }
     }
 
-    isolate_->exception_state()->Throw(*exception);
+    isolate_->exception_state()->Throw(
+        Handle<PyBaseException>::cast(exception));
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(BinarySubscr, {
