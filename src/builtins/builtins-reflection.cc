@@ -26,7 +26,7 @@ BUILTIN(Len) {
   int64_t args_length = args.is_null() ? 0 : args->length();
   if (args_length != 1) [[unlikely]] {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
-                        "len() takes exactly one argument (" PRId64 " given)",
+                        "len() takes exactly one argument (%" PRId64 " given)",
                         args_length);
     return kNullMaybeHandle;
   }
@@ -37,7 +37,7 @@ BUILTIN(Repr) {
   int64_t args_length = args.is_null() ? 0 : args->length();
   if (args_length != 1) [[unlikely]] {
     Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,
-                        "repr() takes exactly one argument (" PRId64 " given)",
+                        "repr() takes exactly one argument (%" PRId64 " given)",
                         args_length);
     return kNullMaybeHandle;
   }

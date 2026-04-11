@@ -223,6 +223,8 @@ source_set("saauso_core") {
     "//src/init/saauso.cc",
 
     # execution（虚拟机执行层门面）
+    "//src/execution/exception-roots.cc",
+    "//src/execution/exception-roots.h",
     "//src/execution/exception-state.cc",
     "//src/execution/exception-state.h",
     "//src/execution/exception-utils.h",
@@ -463,6 +465,12 @@ executable("inject_cpp_func") {
 executable("call_python_func") {
   testonly = true
   sources = [ "//samples/call-python-func-in-cpp.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+executable("catch_exception") {
+  testonly = true
+  sources = [ "//samples/catch-python-exception.cc" ]
   deps = [ ":embedder_api" ]
 }
 

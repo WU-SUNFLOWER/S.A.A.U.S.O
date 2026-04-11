@@ -6,8 +6,14 @@
 #include "include/saauso-primitive.h"
 #include "src/api/api-handle-utils.h"
 #include "src/api/api-isolate-utils.h"
+#include "src/execution/exception-types.h"
 #include "src/handles/global-handles.h"
+#include "src/heap/factory.h"
+#include "src/objects/klass.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-object.h"
+#include "src/objects/py-string.h"
+#include "src/runtime/runtime-exceptions.h"
 
 namespace saauso {
 
@@ -19,26 +25,28 @@ struct TryCatch::Impl {
 //////////////////////////////////////////////////////////////////////////////////
 // Exception
 
-MaybeLocal<Value> Exception::TypeError(Local<String> msg) {
-  if (msg.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
+Local<Value> Exception::TypeError(Local<String> message) {
+  assert(!message.IsEmpty());
 
   i::Isolate* isolate = api::RequireCurrentIsolate();
-  Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
-                                  "[TypeError] " + msg->Value());
-  return out;
+  i::Handle<i::PyString> py_message =
+      i::Handle<i::PyString>::cast(api::Utils::OpenHandle(message));
+  i::Handle<i::PyBaseException> error =
+      isolate->factory()->NewExceptionFromMessage(i::ExceptionType::kTypeError,
+                                                  py_message);
+  return api::Utils::ToLocal<Value>(error);
 }
 
-MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
-  if (msg.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
+Local<Value> Exception::RuntimeError(Local<String> message) {
+  assert(!message.IsEmpty());
 
   i::Isolate* isolate = api::RequireCurrentIsolate();
-  Local<String> out = String::New(reinterpret_cast<Isolate*>(isolate),
-                                  "[RuntimeError] " + msg->Value());
-  return out;
+  i::Handle<i::PyString> py_message =
+      i::Handle<i::PyString>::cast(api::Utils::OpenHandle(message));
+  i::Handle<i::PyBaseException> error =
+      isolate->factory()->NewExceptionFromMessage(
+          i::ExceptionType::kRuntimeError, py_message);
+  return api::Utils::ToLocal<Value>(error);
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +87,23 @@ Local<Value> TryCatch::Exception() const {
     return Local<Value>();
   }
   return api::Utils::ToLocal<Value>(exception);
+}
+
+Local<String> TryCatch::Message() const {
+  i::Handle<i::PyObject> raw_exception = impl_->exception_.Get(i_isolate_);
+  if (raw_exception.is_null()) {
+    assert(!HasCaught());
+    return Local<String>();
+  }
+
+  auto exception = i::Handle<i::PyBaseException>::cast(raw_exception);
+  i::Handle<i::PyString> message;
+  if (!i::Runtime_ParseExceptionMessageFromArgs(i_isolate_, exception)
+           .ToHandle(&message)) {
+    return Local<String>();
+  }
+
+  return api::Utils::ToLocal<String>(message);
 }
 
 }  // namespace saauso
