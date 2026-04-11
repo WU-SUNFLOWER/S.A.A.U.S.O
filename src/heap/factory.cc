@@ -528,6 +528,8 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
 
   auto klass = PyObjectKlass::GetInstance(isolate_);
   Handle<PyObject> object;
+  // 目前Factory::NewPythonObject中加入了针对异常对象的特化逻辑。
+  // 未来需要将异常对象的创建下沉为独立的 Factory::NewException API。
   if (type_object->own_klass()->native_layout_kind() ==
       NativeLayoutKind::kBaseException) {
     Handle<PyBaseException> base_exception(
