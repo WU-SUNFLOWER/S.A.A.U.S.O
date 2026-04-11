@@ -33,29 +33,20 @@ MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
   if (exception_args.is_null() || exception_args->length() == 0) {
     return PyString::New(isolate, "");
   }
-  if (exception_args->length() == 1 &&
-      IsPyString(exception_args->Get(0, isolate))) {
-    return Handle<PyString>::cast(exception_args->Get(0, isolate));
-  }
-  return PyString::New(isolate, "");
-}
 
-MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
-                                       Handle<PyObject> self) {
-  Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
-  if (properties.is_null()) {
-    return Handle<PyTuple>::null();
+  if (exception_args->length() == 1) {
+    Handle<PyObject> message_obj = exception_args->Get(0, isolate);
+    Handle<PyObject> message_as_str;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, message_as_str,
+                               PyObject::Str(isolate, message_obj));
+    return Handle<PyString>::cast(message_as_str);
   }
 
-  Handle<PyObject> args_obj;
-  bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, found,
-      PyDict::Get(properties, ST(args, isolate), args_obj, isolate));
-  if (!found || !IsPyTuple(args_obj)) {
-    return Handle<PyTuple>::null();
-  }
-  return Handle<PyTuple>::cast(args_obj);
+  Handle<PyObject> args_as_str;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, args_as_str,
+                             PyObject::Str(isolate,
+                                           Handle<PyObject>::cast(exception_args)));
+  return Handle<PyString>::cast(args_as_str);
 }
 
 }  // namespace
@@ -153,22 +144,6 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
   Handle<PyTuple> init_args =
       args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
   PyBaseException::cast(*instance)->set_args(init_args);
-  Handle<PyDict> properties = PyObject::GetProperties(instance, isolate);
-  if (properties.is_null()) {
-    properties = PyDict::New(isolate);
-    PyObject::SetProperties(*instance, *properties);
-  }
-
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(args, isolate), init_args, isolate),
-      kNullMaybeHandle);
-
-  Handle<PyString> message;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
-                             MessageFromArgsTuple(isolate, init_args));
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(message, isolate), message, isolate),
-      kNullMaybeHandle);
 
   return isolate->factory()->py_none_object();
 }
@@ -179,17 +154,17 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
   EscapableHandleScope scope(isolate);
 
   Handle<PyString> type_name = PyObject::GetTypeName(self, isolate);
-  Handle<PyObject> message_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(isolate, self));
-  Handle<PyString> message = Handle<PyString>::cast(message_obj);
-
-  Handle<PyString> result = PyString::New(isolate, "<");
-  result = PyString::Append(result, type_name, isolate);
-  if (!message.is_null() && !message->IsEmpty()) {
-    result = PyString::Append(result, PyString::New(isolate, ": "), isolate);
-    result = PyString::Append(result, message, isolate);
+  Handle<PyTuple> exception_args = PyBaseException::cast(*self)->args(isolate);
+  if (exception_args.is_null()) {
+    exception_args = PyTuple::New(isolate, 0);
   }
-  result = PyString::Append(result, PyString::New(isolate, ">"), isolate);
+  Handle<PyObject> args_repr_obj;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, args_repr_obj,
+      PyObject::Repr(isolate, Handle<PyObject>::cast(exception_args)));
+  Handle<PyString> args_repr = Handle<PyString>::cast(args_repr_obj);
+
+  Handle<PyString> result = PyString::Append(type_name, args_repr, isolate);
 
   return scope.Escape(result);
 }
@@ -198,29 +173,14 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
                                                         Handle<PyObject> self) {
   EscapableHandleScope scope(isolate);
 
-  Handle<PyTuple> exception_args;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, exception_args,
-                             ReadExceptionArgs(isolate, self));
-  if (!exception_args.is_null()) {
-    Handle<PyString> args_message;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
-                               MessageFromArgsTuple(isolate, exception_args));
-    return scope.Escape(args_message);
+  Handle<PyTuple> exception_args = PyBaseException::cast(*self)->args(isolate);
+  if (exception_args.is_null()) {
+    exception_args = PyTuple::New(isolate, 0);
   }
-
-  Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
-  if (!properties.is_null()) {
-    Handle<PyObject> message;
-    bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found,
-        PyDict::Get(properties, ST(message, isolate), message, isolate));
-    if (found && IsPyString(message)) {
-      return scope.Escape(Handle<PyString>::cast(message));
-    }
-  }
-
-  return scope.Escape(PyString::New(isolate, ""));
+  Handle<PyString> args_message;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
+                             MessageFromArgsTuple(isolate, exception_args));
+  return scope.Escape(args_message);
 }
 
 size_t PyBaseExceptionKlass::Virtual_InstanceSize(Tagged<PyObject>) {

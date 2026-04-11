@@ -13,6 +13,7 @@
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
@@ -27,16 +28,41 @@ namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
 
+// TODO:
+// 这个函数和src/objects/py-base-exception-klass.cc中的同名函数重复了。
+// 需要进行去重。
 MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
                                            Handle<PyTuple> exception_args) {
   if (exception_args.is_null() || exception_args->length() == 0) {
     return PyString::New(isolate, "");
   }
-  if (exception_args->length() == 1 &&
-      IsPyString(exception_args->Get(0, isolate))) {
-    return Handle<PyString>::cast(exception_args->Get(0, isolate));
+
+  if (exception_args->length() == 1) {
+    Handle<PyObject> message_obj = exception_args->Get(0, isolate);
+    Handle<PyObject> message_as_str;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, message_as_str,
+                               PyObject::Str(isolate, message_obj));
+    return Handle<PyString>::cast(message_as_str);
   }
-  return PyString::New(isolate, "");
+
+  Handle<PyObject> args_as_str;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, args_as_str,
+      PyObject::Str(isolate, Handle<PyObject>::cast(exception_args)));
+  return Handle<PyString>::cast(args_as_str);
+}
+
+Handle<PyTuple> ReadExceptionArgsFromLayout(Isolate* isolate,
+                                            Handle<PyObject> exception) {
+  if (!IsHeapObject(*exception)) {
+    return Handle<PyTuple>::null();
+  }
+
+  Tagged<Klass> klass = PyObject::GetHeapKlassUnchecked(*exception);
+  if (klass->native_layout_kind() != NativeLayoutKind::kBaseException) {
+    return Handle<PyTuple>::null();
+  }
+  return PyBaseException::cast(*exception)->args(isolate);
 }
 
 void ThrowNewException(Isolate* isolate,
@@ -106,16 +132,6 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
       Runtime_NewObject(isolate, exception_type, init_args,
                         Handle<PyObject>::null()));
 
-  if (!message_or_null.is_null()) {
-    Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
-    if (!properties.is_null()) {
-      RETURN_ON_EXCEPTION_VALUE(isolate,
-                                PyDict::Put(properties, ST(message, isolate),
-                                            message_or_null, isolate),
-                                kNullMaybeHandle);
-    }
-  }
-
   return scope.Escape(exception);
 }
 
@@ -154,30 +170,14 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
   Handle<PyObject> exception = state->pending_exception(isolate);
   Handle<PyString> type_name = PyObject::GetTypeName(exception, isolate);
 
-  Handle<PyString> message = Handle<PyString>::null();
-  Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
-  if (!properties.is_null()) {
-    Handle<PyObject> args_obj;
-    bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found,
-        PyDict::Get(properties, ST(args, isolate), args_obj, isolate));
-    if (found && IsPyTuple(args_obj)) {
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate, message,
-          MessageFromArgsTuple(isolate, Handle<PyTuple>::cast(args_obj)));
-    }
-
-    Handle<PyObject> msg_obj;
-    found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found,
-        PyDict::Get(properties, ST(message, isolate), msg_obj, isolate));
-    if ((message.is_null() || message->IsEmpty()) && found &&
-        IsPyString(msg_obj)) {
-      message = Handle<PyString>::cast(msg_obj);
-    }
+  Handle<PyTuple> exception_args =
+      ReadExceptionArgsFromLayout(isolate, exception);
+  if (exception_args.is_null()) {
+    return scope.Escape(type_name);
   }
+  Handle<PyString> message;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
+                             MessageFromArgsTuple(isolate, exception_args));
 
   if (message.is_null() || message->IsEmpty()) {
     return scope.Escape(type_name);
