@@ -16,6 +16,7 @@
 #include "src/modules/module-manager.h"
 #include "src/objects/cell.h"
 #include "src/objects/fixed-array.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict-views.h"
@@ -259,11 +260,8 @@ void Interpreter::EvalCurrentFrame() {
                 raise_pc);
           }
         } else {
-          ASSIGN_GOTO_ON_EXCEPTION(
-              exception,
-              Runtime_NewExceptionInstance(isolate_,
-                                           ExceptionType::kRuntimeError,
-                                           Handle<PyString>::null()));
+          exception = isolate_->factory()->NewException(
+              ExceptionType::kRuntimeError, Handle<PyTuple>::null());
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
         }

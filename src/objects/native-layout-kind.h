@@ -18,6 +18,7 @@ enum class NativeLayoutKind : uint8_t {
   kFloat,
   kTypeObject,
   kCodeObject,
+  kBaseException,
   kFixedArray,
   kCell,
   kMethodObject,

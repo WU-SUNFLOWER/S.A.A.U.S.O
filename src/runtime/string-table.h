@@ -52,7 +52,6 @@ class ObjectVisitor;
   V(builtins, "__builtins__")   \
   V(file, "__file__")           \
   V(args, "args")               \
-  V(message, "message")         \
   V(end, "end")                 \
   V(eol, "eol")                 \
   V(print_file, "file")         \

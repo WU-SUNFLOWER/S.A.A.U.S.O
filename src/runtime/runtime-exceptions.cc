@@ -12,14 +12,14 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
-#include "src/objects/py-dict.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-reflection.h"
-#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -27,16 +27,17 @@ namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
 
-MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
-                                           Handle<PyTuple> exception_args) {
-  if (exception_args.is_null() || exception_args->length() == 0) {
-    return PyString::New(isolate, "");
+Handle<PyTuple> ReadExceptionArgsFromLayout(Isolate* isolate,
+                                            Handle<PyObject> exception) {
+  if (!IsHeapObject(*exception)) {
+    return Handle<PyTuple>::null();
   }
-  if (exception_args->length() == 1 &&
-      IsPyString(exception_args->Get(0, isolate))) {
-    return Handle<PyString>::cast(exception_args->Get(0, isolate));
+
+  Tagged<Klass> klass = PyObject::GetHeapKlassUnchecked(*exception);
+  if (klass->native_layout_kind() != NativeLayoutKind::kBaseException) {
+    return Handle<PyTuple>::null();
   }
-  return PyString::New(isolate, "");
+  return PyBaseException::cast(*exception)->args(isolate);
 }
 
 void ThrowNewException(Isolate* isolate,
@@ -47,11 +48,8 @@ void ThrowNewException(Isolate* isolate,
     return;
   }
 
-  Handle<PyObject> exception;
-  ASSIGN_RETURN_ON_EXCEPTION_VOID(
-      isolate, exception,
-      Runtime_NewExceptionInstance(isolate, type, message_or_null));
-
+  Handle<PyObject> exception =
+      isolate->factory()->NewExceptionFromMessage(type, message_or_null);
   state->Throw(*exception);
 }
 
@@ -86,39 +84,6 @@ void ThrowFormattedError(Isolate* isolate,
 
 //////////////////////////////////////////////////////////////////////////
 
-MaybeHandle<PyObject> Runtime_NewExceptionInstance(
-    Isolate* isolate,
-    ExceptionType type,
-    Handle<PyString> message_or_null) {
-  EscapableHandleScope scope(isolate);
-
-  Handle<PyTypeObject> exception_type = isolate->exception_roots()->Get(type);
-
-  Handle<PyTuple> init_args = Handle<PyTuple>::null();
-  if (!message_or_null.is_null()) {
-    init_args = PyTuple::New(isolate, 1);
-    init_args->SetInternal(0, message_or_null);
-  }
-
-  Handle<PyObject> exception = Handle<PyObject>::null();
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, exception,
-      Runtime_NewObject(isolate, exception_type, init_args,
-                        Handle<PyObject>::null()));
-
-  if (!message_or_null.is_null()) {
-    Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
-    if (!properties.is_null()) {
-      RETURN_ON_EXCEPTION_VALUE(isolate,
-                                PyDict::Put(properties, ST(message, isolate),
-                                            message_or_null, isolate),
-                                kNullMaybeHandle);
-    }
-  }
-
-  return scope.Escape(exception);
-}
-
 void Runtime_ThrowError(Isolate* isolate,
                         ExceptionType type,
                         const char* message) {
@@ -151,33 +116,19 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(PyString::New(isolate, ""));
   }
 
-  Handle<PyObject> exception = state->pending_exception(isolate);
+  auto exception =
+      Handle<PyBaseException>::cast(state->pending_exception(isolate));
   Handle<PyString> type_name = PyObject::GetTypeName(exception, isolate);
 
-  Handle<PyString> message = Handle<PyString>::null();
-  Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
-  if (!properties.is_null()) {
-    Handle<PyObject> args_obj;
-    bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found,
-        PyDict::Get(properties, ST(args, isolate), args_obj, isolate));
-    if (found && IsPyTuple(args_obj)) {
-      ASSIGN_RETURN_ON_EXCEPTION(
-          isolate, message,
-          MessageFromArgsTuple(isolate, Handle<PyTuple>::cast(args_obj)));
-    }
-
-    Handle<PyObject> msg_obj;
-    found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found,
-        PyDict::Get(properties, ST(message, isolate), msg_obj, isolate));
-    if ((message.is_null() || message->IsEmpty()) && found &&
-        IsPyString(msg_obj)) {
-      message = Handle<PyString>::cast(msg_obj);
-    }
+  Handle<PyTuple> exception_args =
+      ReadExceptionArgsFromLayout(isolate, exception);
+  if (exception_args.is_null()) {
+    return scope.Escape(type_name);
   }
+  Handle<PyString> message;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, message,
+      Runtime_ParseExceptionMessageFromArgs(isolate, exception));
 
   if (message.is_null() || message->IsEmpty()) {
     return scope.Escape(type_name);
@@ -213,6 +164,29 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
 
   state->Clear();
   return Maybe<bool>(true);
+}
+
+MaybeHandle<PyString> Runtime_ParseExceptionMessageFromArgs(
+    Isolate* isolate,
+    Handle<PyBaseException> exception) {
+  Handle<PyTuple> exception_args = exception->args(isolate);
+
+  if (exception_args.is_null() || exception_args->length() == 0) {
+    return PyString::New(isolate, "");
+  }
+
+  if (exception_args->length() == 1) {
+    Handle<PyObject> message_obj = exception_args->Get(0, isolate);
+    Handle<PyObject> message_as_str;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, message_as_str,
+                               PyObject::Str(isolate, message_obj));
+    return Handle<PyString>::cast(message_as_str);
+  }
+
+  Handle<PyObject> args_as_str;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, args_as_str,
+                             PyObject::Str(isolate, exception_args));
+  return Handle<PyString>::cast(args_as_str);
 }
 
 }  // namespace saauso::internal

@@ -15,12 +15,7 @@ namespace saauso::internal {
 class Isolate;
 
 class PyString;
-
-// 创建一个新的异常实例。
-MaybeHandle<PyObject> Runtime_NewExceptionInstance(
-    Isolate* isolate,
-    ExceptionType type,
-    Handle<PyString> message_or_null);
+class PyBaseException;
 
 // 统一异常抛出 API
 void Runtime_ThrowError(Isolate* isolate,
@@ -43,6 +38,10 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(Isolate* isolate);
 // 正常结束迭代）；否则不修改状态并返回 false。调用方需在 next_result 为 null 时
 // 根据返回值决定是正常退出循环还是进入异常展开。
 Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate);
+
+MaybeHandle<PyString> Runtime_ParseExceptionMessageFromArgs(
+    Isolate* isolate,
+    Handle<PyBaseException> exception);
 
 }  // namespace saauso::internal
 

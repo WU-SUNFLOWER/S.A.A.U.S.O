@@ -10,6 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -17,45 +18,12 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
-#include "src/runtime/string-table.h"
+#include "src/utils/utils.h"
 
 namespace saauso::internal {
-
-namespace {
-
-MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
-                                           Handle<PyTuple> exception_args) {
-  if (exception_args.is_null() || exception_args->length() == 0) {
-    return PyString::New(isolate, "");
-  }
-  if (exception_args->length() == 1 &&
-      IsPyString(exception_args->Get(0, isolate))) {
-    return Handle<PyString>::cast(exception_args->Get(0, isolate));
-  }
-  return PyString::New(isolate, "");
-}
-
-MaybeHandle<PyTuple> ReadExceptionArgs(Isolate* isolate,
-                                       Handle<PyObject> self) {
-  Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
-  if (properties.is_null()) {
-    return Handle<PyTuple>::null();
-  }
-
-  Handle<PyObject> args_obj;
-  bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, found,
-      PyDict::Get(properties, ST(args, isolate), args_obj, isolate));
-  if (!found || !IsPyTuple(args_obj)) {
-    return Handle<PyTuple>::null();
-  }
-  return Handle<PyTuple>::cast(args_obj);
-}
-
-}  // namespace
 
 // static
 Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
@@ -72,15 +40,17 @@ Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
 void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // BaseException 实例目前仍采用 __dict__ 存储语义字段（args/message 等）。
-  set_instance_has_properties_dict(true);
-  set_native_layout_kind(NativeLayoutKind::kPyObject);
+  set_instance_has_properties_dict(false);
+  set_native_layout_kind(NativeLayoutKind::kBaseException);
   set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   vtable_.Clear();
+  vtable_.new_instance_ = &Virtual_NewInstance;
   vtable_.init_instance_ = &Virtual_InitInstance;
   vtable_.str_ = &Virtual_Str;
   vtable_.repr_ = &Virtual_Repr;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
@@ -114,6 +84,25 @@ void PyBaseExceptionKlass::Finalize(Isolate* isolate) {
   isolate->set_py_base_exception_klass(Tagged<PyBaseExceptionKlass>::null());
 }
 
+MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_NewInstance(
+    Isolate* isolate,
+    Handle<PyTypeObject> receiver_type,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  Handle<PyDict> dict_kwargs = Handle<PyDict>::cast(kwargs);
+  if (!dict_kwargs.is_null() && dict_kwargs->occupied() != 0) [[unlikely]] {
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
+                       "BaseException.__new__() takes no keyword arguments");
+    return kNullMaybeHandle;
+  }
+
+  Handle<PyTuple> init_args =
+      args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
+  Handle<PyBaseException> exception =
+      isolate->factory()->NewException(receiver_type, init_args);
+  return Handle<PyObject>::cast(exception);
+}
+
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
     Isolate* isolate,
     Handle<PyObject> instance,
@@ -145,22 +134,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
 
   Handle<PyTuple> init_args =
       args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
-  Handle<PyDict> properties = PyObject::GetProperties(instance, isolate);
-  if (properties.is_null()) {
-    properties = PyDict::New(isolate);
-    PyObject::SetProperties(*instance, *properties);
-  }
-
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(args, isolate), init_args, isolate),
-      kNullMaybeHandle);
-
-  Handle<PyString> message;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
-                             MessageFromArgsTuple(isolate, init_args));
-  RETURN_ON_EXCEPTION_VALUE(
-      isolate, PyDict::Put(properties, ST(message, isolate), message, isolate),
-      kNullMaybeHandle);
+  PyBaseException::cast(*instance)->set_args(init_args);
 
   return isolate->factory()->py_none_object();
 }
@@ -171,17 +145,30 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
   EscapableHandleScope scope(isolate);
 
   Handle<PyString> type_name = PyObject::GetTypeName(self, isolate);
-  Handle<PyObject> message_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message_obj, Virtual_Str(isolate, self));
-  Handle<PyString> message = Handle<PyString>::cast(message_obj);
-
-  Handle<PyString> result = PyString::New(isolate, "<");
-  result = PyString::Append(result, type_name, isolate);
-  if (!message.is_null() && !message->IsEmpty()) {
-    result = PyString::Append(result, PyString::New(isolate, ": "), isolate);
-    result = PyString::Append(result, message, isolate);
+  Handle<PyTuple> exception_args = PyBaseException::cast(*self)->args(isolate);
+  if (exception_args.is_null()) {
+    exception_args = PyTuple::New(isolate, 0);
   }
-  result = PyString::Append(result, PyString::New(isolate, ">"), isolate);
+  Handle<PyString> args_repr;
+  if (exception_args->length() == 1) {
+    Handle<PyObject> arg_repr_obj;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, arg_repr_obj,
+        PyObject::Repr(isolate, exception_args->Get(0, isolate)));
+    Handle<PyString> arg_repr = Handle<PyString>::cast(arg_repr_obj);
+    args_repr = PyString::New(isolate, "(");
+    args_repr = PyString::Append(args_repr, arg_repr, isolate);
+    args_repr =
+        PyString::Append(args_repr, PyString::New(isolate, ")"), isolate);
+  } else {
+    Handle<PyObject> args_repr_obj;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, args_repr_obj,
+        PyObject::Repr(isolate, Handle<PyObject>::cast(exception_args)));
+    args_repr = Handle<PyString>::cast(args_repr_obj);
+  }
+
+  Handle<PyString> result = PyString::Append(type_name, args_repr, isolate);
 
   return scope.Escape(result);
 }
@@ -190,29 +177,22 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
                                                         Handle<PyObject> self) {
   EscapableHandleScope scope(isolate);
 
-  Handle<PyTuple> exception_args;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, exception_args,
-                             ReadExceptionArgs(isolate, self));
-  if (!exception_args.is_null()) {
-    Handle<PyString> args_message;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
-                               MessageFromArgsTuple(isolate, exception_args));
-    return scope.Escape(args_message);
-  }
+  Handle<PyString> args_message;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
+                             Runtime_ParseExceptionMessageFromArgs(
+                                 isolate, Handle<PyBaseException>::cast(self)));
 
-  Handle<PyDict> properties = PyObject::GetProperties(self, isolate);
-  if (!properties.is_null()) {
-    Handle<PyObject> message;
-    bool found = false;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate, found,
-        PyDict::Get(properties, ST(message, isolate), message, isolate));
-    if (found && IsPyString(message)) {
-      return scope.Escape(Handle<PyString>::cast(message));
-    }
-  }
+  return scope.Escape(args_message);
+}
 
-  return scope.Escape(PyString::New(isolate, ""));
+size_t PyBaseExceptionKlass::Virtual_InstanceSize(Tagged<PyObject>) {
+  return ObjectSizeAlign(sizeof(PyBaseException));
+}
+
+void PyBaseExceptionKlass::Virtual_Iterate(Tagged<PyObject> self,
+                                           ObjectVisitor* v) {
+  Tagged<PyBaseException> exception = PyBaseException::cast(self);
+  v->VisitPointer(&exception->args_);
 }
 
 }  // namespace saauso::internal

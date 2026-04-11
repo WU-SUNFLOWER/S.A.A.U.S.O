@@ -9,13 +9,23 @@
 
 namespace saauso::internal {
 
+class Isolate;
+class PyString;
+class PyTuple;
+
 class PyBaseException : public PyObject {
  public:
   static Tagged<PyBaseException> cast(Tagged<PyObject> object);
 
+  Handle<PyTuple> args(Isolate* isolate) const;
+  void set_args(Handle<PyTuple> args);
+  void set_args(Tagged<PyTuple> args);
+
  private:
   friend class PyBaseExceptionKlass;
   friend class Factory;
+
+  Tagged<PyObject> args_;
 };
 
 }  // namespace saauso::internal

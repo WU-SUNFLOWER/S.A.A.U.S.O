@@ -5,6 +5,7 @@
 #ifndef SAAUSO_HEAP_FACTORY_H_
 #define SAAUSO_HEAP_FACTORY_H_
 
+#include "src/execution/exception-types.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
@@ -19,6 +20,7 @@ class FixedArray;
 class Cell;
 class MethodObject;
 class PyBoolean;
+class PyBaseException;
 class PyCodeObject;
 class PyDict;
 class PyDictItemIterator;
@@ -107,6 +109,13 @@ class Factory {
 
   MaybeHandle<PyModule> NewPyModule();
   MaybeHandle<PyTypeObject> NewPyTypeObject();
+
+  Handle<PyBaseException> NewException(Handle<PyTypeObject> receiver_type,
+                                       Handle<PyTuple> args);
+  Handle<PyBaseException> NewException(ExceptionType type,
+                                       Handle<PyTuple> args);
+  Handle<PyBaseException> NewExceptionFromMessage(ExceptionType type,
+                                                  Handle<PyString> message);
 
   // 根据已知类型，创建一个Python对象实例
   // 注意：该函数仅保证输出Python对象的类型是确定的，不负责调用__init__方法等后续操作！

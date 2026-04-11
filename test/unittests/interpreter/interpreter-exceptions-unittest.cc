@@ -549,4 +549,43 @@ print("after")
   ExpectPrintResult(expected);
 }
 
+TEST_F(BasicInterpreterTest, BaseExceptionStrAndReprUseArgsLayout) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+x = RuntimeError()
+print(str(x))
+print(repr(x))
+y = RuntimeError(1, 2, 3)
+print(str(y))
+print(repr(y))
+z = RuntimeError("WU-SUNFLOWER")
+print(str(z))
+print(repr(z))
+)";
+
+  RunScript(kSource, kTestFileName);
+
+  auto expected = PyList::New(isolate_);
+  AppendExpected(expected, PyString::New(isolate_, ""));
+  AppendExpected(expected, PyString::New(isolate_, "RuntimeError()"));
+  AppendExpected(expected, PyString::New(isolate_, "(1, 2, 3)"));
+  AppendExpected(expected, PyString::New(isolate_, "RuntimeError(1, 2, 3)"));
+  AppendExpected(expected, PyString::New(isolate_, "WU-SUNFLOWER"));
+  AppendExpected(expected,
+                 PyString::New(isolate_, "RuntimeError('WU-SUNFLOWER')"));
+  ExpectPrintResult(expected);
+}
+
+TEST_F(BasicInterpreterTest, PendingExceptionFormatUsesArgsLayout) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+raise RuntimeError(1, 2, 3)
+)";
+
+  RunScriptExpectExceptionContains(kSource, "RuntimeError: (1, 2, 3)",
+                                   kTestFileName);
+}
+
 }  // namespace saauso::internal
