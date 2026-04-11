@@ -40,7 +40,7 @@ Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
 void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // TODO: 
+  // TODO:
   // BaseException 实例当前处于“布局字段 + __dict__”并存阶段。
   // 未来需要移除 __dict__ ，让架构进一步与 CPython 对齐。
   set_instance_has_properties_dict(true);
@@ -135,14 +135,14 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
   Handle<PyString> args_repr;
   if (exception_args->length() == 1) {
     Handle<PyObject> arg_repr_obj;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, arg_repr_obj,
-                               PyObject::Repr(isolate,
-                                              exception_args->Get(0, isolate)));
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, arg_repr_obj,
+        PyObject::Repr(isolate, exception_args->Get(0, isolate)));
     Handle<PyString> arg_repr = Handle<PyString>::cast(arg_repr_obj);
     args_repr = PyString::New(isolate, "(");
     args_repr = PyString::Append(args_repr, arg_repr, isolate);
-    args_repr = PyString::Append(args_repr, PyString::New(isolate, ")"),
-                                 isolate);
+    args_repr =
+        PyString::Append(args_repr, PyString::New(isolate, ")"), isolate);
   } else {
     Handle<PyObject> args_repr_obj;
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -160,14 +160,11 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
                                                         Handle<PyObject> self) {
   EscapableHandleScope scope(isolate);
 
-  Handle<PyTuple> exception_args = PyBaseException::cast(*self)->args(isolate);
-  if (exception_args.is_null()) {
-    exception_args = PyTuple::New(isolate, 0);
-  }
   Handle<PyString> args_message;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
-                             PyBaseException::FormatMessageFromArgs(
-                                 isolate, exception_args));
+                             Runtime_ParseExceptionMessageFromArgs(
+                                 isolate, Handle<PyBaseException>::cast(self)));
+
   return scope.Escape(args_message);
 }
 

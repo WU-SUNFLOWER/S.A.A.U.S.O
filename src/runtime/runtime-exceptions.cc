@@ -141,7 +141,8 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(PyString::New(isolate, ""));
   }
 
-  Handle<PyObject> exception = state->pending_exception(isolate);
+  auto exception =
+      Handle<PyBaseException>::cast(state->pending_exception(isolate));
   Handle<PyString> type_name = PyObject::GetTypeName(exception, isolate);
 
   Handle<PyTuple> exception_args =
@@ -150,9 +151,9 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
     return scope.Escape(type_name);
   }
   Handle<PyString> message;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
-                             PyBaseException::FormatMessageFromArgs(
-                                 isolate, exception_args));
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, message,
+      Runtime_ParseExceptionMessageFromArgs(isolate, exception));
 
   if (message.is_null() || message->IsEmpty()) {
     return scope.Escape(type_name);
@@ -188,6 +189,29 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
 
   state->Clear();
   return Maybe<bool>(true);
+}
+
+MaybeHandle<PyString> Runtime_ParseExceptionMessageFromArgs(
+    Isolate* isolate,
+    Handle<PyBaseException> exception) {
+  Handle<PyTuple> exception_args = exception->args(isolate);
+
+  if (exception_args.is_null() || exception_args->length() == 0) {
+    return PyString::New(isolate, "");
+  }
+
+  if (exception_args->length() == 1) {
+    Handle<PyObject> message_obj = exception_args->Get(0, isolate);
+    Handle<PyObject> message_as_str;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, message_as_str,
+                               PyObject::Str(isolate, message_obj));
+    return Handle<PyString>::cast(message_as_str);
+  }
+
+  Handle<PyObject> args_as_str;
+  ASSIGN_RETURN_ON_EXCEPTION(isolate, args_as_str,
+                             PyObject::Str(isolate, exception_args));
+  return Handle<PyString>::cast(args_as_str);
 }
 
 }  // namespace saauso::internal

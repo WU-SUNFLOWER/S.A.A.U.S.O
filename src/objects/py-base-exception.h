@@ -20,9 +20,6 @@ class PyBaseException : public PyObject {
   Handle<PyTuple> args(Isolate* isolate) const;
   void set_args(Handle<PyTuple> args);
   void set_args(Tagged<PyTuple> args);
-  static MaybeHandle<PyString> FormatMessageFromArgs(
-      Isolate* isolate,
-      Handle<PyTuple> exception_args);
 
  private:
   friend class PyBaseExceptionKlass;
