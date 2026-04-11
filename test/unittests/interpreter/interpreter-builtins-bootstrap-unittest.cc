@@ -4,6 +4,8 @@
 
 #include <string_view>
 
+#include "src/execution/exception-roots.h"
+#include "src/execution/exception-types.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
@@ -104,6 +106,8 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
   HandleScope scope(isolate_);
 
   Handle<PyDict> builtins = isolate_->builtins();
+  auto* exception_roots = isolate_->exception_roots();
+  ASSERT_NE(exception_roots, nullptr);
 
   const char* const kExceptionTypes[] = {
       "BaseException",  "Exception",  "TypeError", "ValueError",   "NameError",
@@ -161,6 +165,26 @@ TEST_F(BuiltinsBootstrapTest, BuiltinsContainMvpExceptionTypes) {
                                   isolate_)
                   .To(&has_str));
   EXPECT_TRUE(has_str);
+
+  // 校验 exception_roots 中持有的，
+  // 和 builtin 字典中持有的异常 type object 均为同一个对象。
+#define ASSERT_EXCEPTION_ROOTS_EQUALS_BUILTINS(type_enum, name_in_string_table, \
+                                               ignored_literal_name)             \
+  do {                                                                           \
+    Handle<PyObject> builtin_type_object;                                        \
+    bool builtins_found = false;                                                 \
+    ASSERT_TRUE(PyDict::Get(builtins, ST(name_in_string_table, isolate_),        \
+                            builtin_type_object, isolate_)                       \
+                    .To(&builtins_found));                                       \
+    ASSERT_TRUE(builtins_found);                                                 \
+    Handle<PyTypeObject> root_type_object =                                      \
+        exception_roots->Get(ExceptionType::type_enum);                          \
+    EXPECT_EQ(*root_type_object, *Handle<PyTypeObject>::cast(builtin_type_object)); \
+  } while (false);
+
+  EXCEPTION_TYPE_LIST(ASSERT_EXCEPTION_ROOTS_EQUALS_BUILTINS);
+
+#undef ASSERT_EXCEPTION_ROOTS_EQUALS_BUILTINS
 }
 
 TEST_F(BuiltinsBootstrapTest, CoreBuiltinTypesExposeReprAndStrMethods) {
