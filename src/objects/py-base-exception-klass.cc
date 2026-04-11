@@ -21,35 +21,9 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
-#include "src/runtime/string-table.h"
 #include "src/utils/utils.h"
 
 namespace saauso::internal {
-
-namespace {
-
-MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
-                                           Handle<PyTuple> exception_args) {
-  if (exception_args.is_null() || exception_args->length() == 0) {
-    return PyString::New(isolate, "");
-  }
-
-  if (exception_args->length() == 1) {
-    Handle<PyObject> message_obj = exception_args->Get(0, isolate);
-    Handle<PyObject> message_as_str;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, message_as_str,
-                               PyObject::Str(isolate, message_obj));
-    return Handle<PyString>::cast(message_as_str);
-  }
-
-  Handle<PyObject> args_as_str;
-  ASSIGN_RETURN_ON_EXCEPTION(isolate, args_as_str,
-                             PyObject::Str(isolate,
-                                           Handle<PyObject>::cast(exception_args)));
-  return Handle<PyString>::cast(args_as_str);
-}
-
-}  // namespace
 
 // static
 Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
@@ -158,11 +132,24 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Repr(
   if (exception_args.is_null()) {
     exception_args = PyTuple::New(isolate, 0);
   }
-  Handle<PyObject> args_repr_obj;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, args_repr_obj,
-      PyObject::Repr(isolate, Handle<PyObject>::cast(exception_args)));
-  Handle<PyString> args_repr = Handle<PyString>::cast(args_repr_obj);
+  Handle<PyString> args_repr;
+  if (exception_args->length() == 1) {
+    Handle<PyObject> arg_repr_obj;
+    ASSIGN_RETURN_ON_EXCEPTION(isolate, arg_repr_obj,
+                               PyObject::Repr(isolate,
+                                              exception_args->Get(0, isolate)));
+    Handle<PyString> arg_repr = Handle<PyString>::cast(arg_repr_obj);
+    args_repr = PyString::New(isolate, "(");
+    args_repr = PyString::Append(args_repr, arg_repr, isolate);
+    args_repr = PyString::Append(args_repr, PyString::New(isolate, ")"),
+                                 isolate);
+  } else {
+    Handle<PyObject> args_repr_obj;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate, args_repr_obj,
+        PyObject::Repr(isolate, Handle<PyObject>::cast(exception_args)));
+    args_repr = Handle<PyString>::cast(args_repr_obj);
+  }
 
   Handle<PyString> result = PyString::Append(type_name, args_repr, isolate);
 
@@ -179,7 +166,8 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
   }
   Handle<PyString> args_message;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, args_message,
-                             MessageFromArgsTuple(isolate, exception_args));
+                             PyBaseException::FormatMessageFromArgs(
+                                 isolate, exception_args));
   return scope.Escape(args_message);
 }
 

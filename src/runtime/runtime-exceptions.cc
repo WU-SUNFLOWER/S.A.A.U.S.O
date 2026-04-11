@@ -14,43 +14,17 @@
 #include "src/execution/isolate.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-base-exception.h"
-#include "src/objects/py-dict.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
 #include "src/runtime/runtime-reflection.h"
-#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
 namespace {
 
 constexpr size_t kFormattedErrorBufferSize = 256;
-
-// TODO:
-// 这个函数和src/objects/py-base-exception-klass.cc中的同名函数重复了。
-// 需要进行去重。
-MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
-                                           Handle<PyTuple> exception_args) {
-  if (exception_args.is_null() || exception_args->length() == 0) {
-    return PyString::New(isolate, "");
-  }
-
-  if (exception_args->length() == 1) {
-    Handle<PyObject> message_obj = exception_args->Get(0, isolate);
-    Handle<PyObject> message_as_str;
-    ASSIGN_RETURN_ON_EXCEPTION(isolate, message_as_str,
-                               PyObject::Str(isolate, message_obj));
-    return Handle<PyString>::cast(message_as_str);
-  }
-
-  Handle<PyObject> args_as_str;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, args_as_str,
-      PyObject::Str(isolate, Handle<PyObject>::cast(exception_args)));
-  return Handle<PyString>::cast(args_as_str);
-}
 
 Handle<PyTuple> ReadExceptionArgsFromLayout(Isolate* isolate,
                                             Handle<PyObject> exception) {
@@ -177,7 +151,8 @@ MaybeHandle<PyString> Runtime_FormatPendingExceptionForStderr(
   }
   Handle<PyString> message;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, message,
-                             MessageFromArgsTuple(isolate, exception_args));
+                             PyBaseException::FormatMessageFromArgs(
+                                 isolate, exception_args));
 
   if (message.is_null() || message->IsEmpty()) {
     return scope.Escape(type_name);

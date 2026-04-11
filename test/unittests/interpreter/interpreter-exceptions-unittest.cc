@@ -561,7 +561,7 @@ print(str(y))
 print(repr(y))
 z = RuntimeError("WU-SUNFLOWER")
 print(str(z))
-#print(repr(z))
+print(repr(z))
 )";
 
   RunScript(kSource, kTestFileName);
@@ -572,7 +572,8 @@ print(str(z))
   AppendExpected(expected, PyString::New(isolate_, "(1, 2, 3)"));
   AppendExpected(expected, PyString::New(isolate_, "RuntimeError(1, 2, 3)"));
   AppendExpected(expected, PyString::New(isolate_, "WU-SUNFLOWER"));
-  //AppendExpected(expected, PyString::New(isolate_, "RuntimeError('Hello')"));
+  AppendExpected(expected,
+                 PyString::New(isolate_, "RuntimeError('WU-SUNFLOWER')"));
   ExpectPrintResult(expected);
 }
 
