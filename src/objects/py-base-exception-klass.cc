@@ -89,13 +89,6 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_NewInstance(
     Handle<PyTypeObject> receiver_type,
     Handle<PyObject> args,
     Handle<PyObject> kwargs) {
-  Handle<PyDict> dict_kwargs = Handle<PyDict>::cast(kwargs);
-  if (!dict_kwargs.is_null() && dict_kwargs->occupied() != 0) [[unlikely]] {
-    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
-                       "BaseException.__new__() takes no keyword arguments");
-    return kNullMaybeHandle;
-  }
-
   Handle<PyTuple> init_args =
       args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
   Handle<PyBaseException> exception =
