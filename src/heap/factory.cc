@@ -15,6 +15,7 @@
 #include "src/objects/fixed-array-klass.h"
 #include "src/objects/fixed-array.h"
 #include "src/objects/klass.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-code-object-klass.h"
 #include "src/objects/py-code-object.h"
 #include "src/objects/py-dict-klass.h"
@@ -526,12 +527,26 @@ MaybeHandle<PyObject> Factory::NewPythonObject(
   EscapableHandleScope scope(isolate_);
 
   auto klass = PyObjectKlass::GetInstance(isolate_);
-  Handle<PyObject> object(Allocate<PyObject>(Heap::AllocationSpace::kNewSpace),
-                          isolate_);
-  {
-    DisallowHeapAllocation disallow(isolate_);
-    PyObject::SetKlass(object, klass);
-    PyObject::SetProperties(*object, Tagged<PyDict>::null());
+  Handle<PyObject> object;
+  if (type_object->own_klass()->native_layout_kind() ==
+      NativeLayoutKind::kBaseException) {
+    Handle<PyBaseException> base_exception(
+        Allocate<PyBaseException>(Heap::AllocationSpace::kNewSpace), isolate_);
+    {
+      DisallowHeapAllocation disallow(isolate_);
+      PyObject::SetKlass(base_exception, klass);
+      PyObject::SetProperties(*base_exception, Tagged<PyDict>::null());
+      base_exception->set_args(Tagged<PyTuple>::null());
+    }
+    object = Handle<PyObject>::cast(base_exception);
+  } else {
+    object = Handle<PyObject>(
+        Allocate<PyObject>(Heap::AllocationSpace::kNewSpace), isolate_);
+    {
+      DisallowHeapAllocation disallow(isolate_);
+      PyObject::SetKlass(object, klass);
+      PyObject::SetProperties(*object, Tagged<PyDict>::null());
+    }
   }
 
   if (type_object->own_klass()->instance_has_properties_dict()) {

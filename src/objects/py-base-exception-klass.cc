@@ -10,6 +10,7 @@
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/heap/heap.h"
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-object-klass.h"
 #include "src/objects/py-object.h"
@@ -17,9 +18,11 @@
 #include "src/objects/py-string.h"
 #include "src/objects/py-tuple.h"
 #include "src/objects/py-type-object.h"
+#include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-reflection.h"
 #include "src/runtime/string-table.h"
+#include "src/utils/utils.h"
 
 namespace saauso::internal {
 
@@ -72,15 +75,19 @@ Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
 void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // BaseException 实例目前仍采用 __dict__ 存储语义字段（args/message 等）。
+  // TODO: 
+  // BaseException 实例当前处于“布局字段 + __dict__”并存阶段。
+  // 未来需要移除 __dict__ ，让架构进一步与 CPython 对齐。
   set_instance_has_properties_dict(true);
-  set_native_layout_kind(NativeLayoutKind::kPyObject);
+  set_native_layout_kind(NativeLayoutKind::kBaseException);
   set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   vtable_.Clear();
   vtable_.init_instance_ = &Virtual_InitInstance;
   vtable_.str_ = &Virtual_Str;
   vtable_.repr_ = &Virtual_Repr;
+  vtable_.instance_size_ = &Virtual_InstanceSize;
+  vtable_.iterate_ = &Virtual_Iterate;
 }
 
 Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
@@ -145,6 +152,7 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(
 
   Handle<PyTuple> init_args =
       args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
+  PyBaseException::cast(*instance)->set_args(init_args);
   Handle<PyDict> properties = PyObject::GetProperties(instance, isolate);
   if (properties.is_null()) {
     properties = PyDict::New(isolate);
@@ -213,6 +221,16 @@ MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_Str(Isolate* isolate,
   }
 
   return scope.Escape(PyString::New(isolate, ""));
+}
+
+size_t PyBaseExceptionKlass::Virtual_InstanceSize(Tagged<PyObject>) {
+  return ObjectSizeAlign(sizeof(PyBaseException));
+}
+
+void PyBaseExceptionKlass::Virtual_Iterate(Tagged<PyObject> self,
+                                           ObjectVisitor* v) {
+  Tagged<PyBaseException> exception = PyBaseException::cast(self);
+  v->VisitPointer(&exception->args_);
 }
 
 }  // namespace saauso::internal
