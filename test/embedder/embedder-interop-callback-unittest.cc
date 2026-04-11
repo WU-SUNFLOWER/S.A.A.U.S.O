@@ -124,12 +124,9 @@ void HostGetConfig(FunctionCallbackInfo& info) {
 
 void HostThrowViaIsolate(FunctionCallbackInfo& info) {
   Isolate* isolate = info.GetIsolate();
-  MaybeLocal<Value> error =
+  Local<Value> error =
       Exception::RuntimeError(String::New(isolate, "host-isolate-throw"));
-  if (error.IsEmpty()) {
-    return;
-  }
-  isolate->ThrowException(error.ToLocalChecked());
+  isolate->ThrowException(error);
 }
 
 void HostCallGetterWithBadArg(FunctionCallbackInfo& info) {
@@ -232,7 +229,8 @@ TEST(EmbedderPhase3Test, FunctionCallbackInfo_ArgumentValidation) {
   Saauso::Dispose();
 }
 
-TEST(EmbedderPhase3Test, FunctionCall_FailureWithoutTryCatchDoesNotPoisonNextCall) {
+TEST(EmbedderPhase3Test,
+     FunctionCall_FailureWithoutTryCatchDoesNotPoisonNextCall) {
   g_last_status = 42;
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();

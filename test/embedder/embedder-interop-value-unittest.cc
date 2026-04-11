@@ -211,10 +211,9 @@ TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
     Isolate::Scope isolate_scope(isolate);
     HandleScope scope(isolate);
     TryCatch try_catch(isolate);
-    MaybeLocal<Value> error =
-        Exception::RuntimeError(String::New(isolate, "boom"));
+    Local<Value> error = Exception::RuntimeError(String::New(isolate, "boom"));
     ASSERT_FALSE(error.IsEmpty());
-    isolate->ThrowException(error.ToLocalChecked());
+    isolate->ThrowException(error);
     EXPECT_TRUE(try_catch.HasCaught());
     Local<Value> exception = try_catch.Exception();
     ASSERT_FALSE(exception.IsEmpty());
@@ -239,10 +238,10 @@ TEST(EmbedderPhase4Test, TryCatch_ExceptionSurvivesInnerScopeAndGcPressure) {
 
     {
       HandleScope inner_scope(isolate);
-      MaybeLocal<Value> error =
+      Local<Value> error =
           Exception::RuntimeError(String::New(isolate, "survive-gc"));
       ASSERT_FALSE(error.IsEmpty());
-      isolate->ThrowException(error.ToLocalChecked());
+      isolate->ThrowException(error);
       ASSERT_TRUE(try_catch.HasCaught());
     }
 

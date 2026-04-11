@@ -7,8 +7,8 @@
 #include "src/api/api-handle-utils.h"
 #include "src/api/api-isolate-utils.h"
 #include "src/execution/exception-types.h"
-#include "src/heap/factory.h"
 #include "src/handles/global-handles.h"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-base-exception.h"
 #include "src/objects/py-object.h"
@@ -25,31 +25,28 @@ struct TryCatch::Impl {
 //////////////////////////////////////////////////////////////////////////////////
 // Exception
 
-MaybeLocal<Value> Exception::TypeError(Local<String> msg) {
-  if (msg.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
+Local<Value> Exception::TypeError(Local<String> message) {
+  assert(!message.IsEmpty());
 
   i::Isolate* isolate = api::RequireCurrentIsolate();
   i::Handle<i::PyString> py_message =
-      i::Handle<i::PyString>::cast(api::Utils::OpenHandle(msg));
+      i::Handle<i::PyString>::cast(api::Utils::OpenHandle(message));
   i::Handle<i::PyBaseException> error =
       isolate->factory()->NewExceptionFromMessage(i::ExceptionType::kTypeError,
                                                   py_message);
-  return api::Utils::ToLocal<Value>(i::Handle<i::PyObject>::cast(error));
+  return api::Utils::ToLocal<Value>(error);
 }
 
-MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
-  if (msg.IsEmpty()) {
-    return MaybeLocal<Value>();
-  }
+Local<Value> Exception::RuntimeError(Local<String> message) {
+  assert(!message.IsEmpty());
 
   i::Isolate* isolate = api::RequireCurrentIsolate();
   i::Handle<i::PyString> py_message =
-      i::Handle<i::PyString>::cast(api::Utils::OpenHandle(msg));
-  i::Handle<i::PyBaseException> error = isolate->factory()->NewExceptionFromMessage(
-      i::ExceptionType::kRuntimeError, py_message);
-  return api::Utils::ToLocal<Value>(i::Handle<i::PyObject>::cast(error));
+      i::Handle<i::PyString>::cast(api::Utils::OpenHandle(message));
+  i::Handle<i::PyBaseException> error =
+      isolate->factory()->NewExceptionFromMessage(
+          i::ExceptionType::kRuntimeError, py_message);
+  return api::Utils::ToLocal<Value>(error);
 }
 
 //////////////////////////////////////////////////////////////////////////////////
