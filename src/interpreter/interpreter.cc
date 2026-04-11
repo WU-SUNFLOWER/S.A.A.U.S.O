@@ -53,10 +53,6 @@ Handle<PyObject> Interpreter::caught_exception() const {
   return handle(caught_exception_tagged(), isolate_);
 }
 
-Tagged<PyObject> Interpreter::pending_exception_tagged() const {
-  return isolate_->exception_state()->pending_exception_tagged();
-}
-
 void Interpreter::ClearPendingException() {
   isolate_->exception_state()->Clear();
 }

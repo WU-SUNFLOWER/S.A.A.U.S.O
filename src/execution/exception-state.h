@@ -31,10 +31,7 @@ class ExceptionState final {
 
   bool HasPendingException() const { return !pending_exception_.is_null(); }
 
-  Tagged<PyObject> pending_exception_tagged() const {
-    return pending_exception_;
-  }
-
+  Tagged<PyBaseException> pending_exception_tagged() const;
   Handle<PyBaseException> pending_exception(Isolate* isolate) const;
 
   int pending_exception_pc() const { return pending_exception_pc_; }

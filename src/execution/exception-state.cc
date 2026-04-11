@@ -10,9 +10,13 @@
 
 namespace saauso::internal {
 
+Tagged<PyBaseException> ExceptionState::pending_exception_tagged() const {
+  return Tagged<PyBaseException>::cast(pending_exception_);
+}
+
 Handle<PyBaseException> ExceptionState::pending_exception(
     Isolate* isolate) const {
-  return handle(Tagged<PyBaseException>::cast(pending_exception_), isolate);
+  return handle(pending_exception_tagged(), isolate);
 }
 
 void ExceptionState::Throw(Handle<PyBaseException> exception) {
