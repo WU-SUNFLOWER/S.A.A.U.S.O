@@ -18,9 +18,7 @@ namespace saauso::internal {
 
 // static
 Tagged<PyBaseException> PyBaseException::cast(Tagged<PyObject> object) {
-  assert(IsHeapObject(object));
-  assert(PyObject::GetHeapKlassUnchecked(object)->native_layout_kind() ==
-         NativeLayoutKind::kBaseException);
+  assert(IsPyBaseException(object));
   return Tagged<PyBaseException>::cast(object);
 }
 
