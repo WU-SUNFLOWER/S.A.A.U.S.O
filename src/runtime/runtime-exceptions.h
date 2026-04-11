@@ -17,12 +17,6 @@ class Isolate;
 class PyString;
 class PyBaseException;
 
-// 创建一个新的异常实例。
-MaybeHandle<PyObject> Runtime_NewExceptionInstance(
-    Isolate* isolate,
-    ExceptionType type,
-    Handle<PyString> message_or_null);
-
 // 统一异常抛出 API
 void Runtime_ThrowError(Isolate* isolate,
                         ExceptionType type,

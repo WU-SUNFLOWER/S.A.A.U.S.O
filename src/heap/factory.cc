@@ -8,6 +8,7 @@
 #include <cstring>
 
 #include "include/saauso-internal.h"
+#include "src/execution/exception-roots.h"
 #include "src/execution/exception-utils.h"
 #include "src/handles/handle-scopes.h"
 #include "src/objects/cell-klass.h"
@@ -520,6 +521,43 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
   PyObject::SetProperties(*object, *properties);
 
   return scope.Escape(object);
+}
+
+Handle<PyBaseException> Factory::NewException(ExceptionType type,
+                                              Handle<PyTuple> args) {
+  EscapableHandleScope scope(isolate_);
+
+  Handle<PyTypeObject> exception_type = isolate_->exception_roots()->Get(type);
+  Tagged<Klass> exception_klass = exception_type->own_klass();
+
+  assert(exception_klass->native_layout_kind() ==
+         NativeLayoutKind::kBaseException);
+
+  Handle<PyTuple> init_args = args;
+  if (init_args.is_null()) {
+    init_args = NewPyTuple(0);
+  }
+
+  Handle<PyBaseException> exception(
+      Allocate<PyBaseException>(Heap::AllocationSpace::kNewSpace), isolate_);
+  {
+    DisallowHeapAllocation disallow(isolate_);
+    PyObject::SetProperties(*exception, Tagged<PyDict>::null());
+    exception->set_args(init_args);
+    PyObject::SetKlass(exception, exception_klass);
+  }
+
+  return scope.Escape(exception);
+}
+
+Handle<PyBaseException> Factory::NewExceptionFromMessage(
+    ExceptionType type,
+    Handle<PyString> message) {
+  Handle<PyTuple> args = NewPyTuple(message.is_null() ? 0 : 1);
+  if (!message.is_null()) {
+    args->SetInternal(0, message);
+  }
+  return NewException(type, args);
 }
 
 MaybeHandle<PyObject> Factory::NewPythonObject(

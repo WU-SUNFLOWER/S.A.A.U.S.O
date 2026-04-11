@@ -12,6 +12,7 @@
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
+#include "src/heap/factory.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-base-exception.h"
 #include "src/objects/py-object.h"
@@ -47,11 +48,8 @@ void ThrowNewException(Isolate* isolate,
     return;
   }
 
-  Handle<PyObject> exception;
-  ASSIGN_RETURN_ON_EXCEPTION_VOID(
-      isolate, exception,
-      Runtime_NewExceptionInstance(isolate, type, message_or_null));
-
+  Handle<PyObject> exception =
+      isolate->factory()->NewExceptionFromMessage(type, message_or_null);
   state->Throw(*exception);
 }
 
@@ -85,29 +83,6 @@ void ThrowFormattedError(Isolate* isolate,
 }  // namespace
 
 //////////////////////////////////////////////////////////////////////////
-
-MaybeHandle<PyObject> Runtime_NewExceptionInstance(
-    Isolate* isolate,
-    ExceptionType type,
-    Handle<PyString> message_or_null) {
-  EscapableHandleScope scope(isolate);
-
-  Handle<PyTypeObject> exception_type = isolate->exception_roots()->Get(type);
-
-  Handle<PyTuple> init_args = Handle<PyTuple>::null();
-  if (!message_or_null.is_null()) {
-    init_args = PyTuple::New(isolate, 1);
-    init_args->SetInternal(0, message_or_null);
-  }
-
-  Handle<PyObject> exception = Handle<PyObject>::null();
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, exception,
-      Runtime_NewObject(isolate, exception_type, init_args,
-                        Handle<PyObject>::null()));
-
-  return scope.Escape(exception);
-}
 
 void Runtime_ThrowError(Isolate* isolate,
                         ExceptionType type,
