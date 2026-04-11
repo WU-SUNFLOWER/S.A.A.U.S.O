@@ -48,9 +48,9 @@ void ThrowNewException(Isolate* isolate,
     return;
   }
 
-  Handle<PyObject> exception =
+  Handle<PyBaseException> exception =
       isolate->factory()->NewExceptionFromMessage(type, message_or_null);
-  state->Throw(*exception);
+  state->Throw(exception);
 }
 
 // 将 va_list 格式化为字符串并抛出指定类型的异常。

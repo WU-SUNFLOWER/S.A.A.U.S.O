@@ -11,7 +11,9 @@
 namespace saauso::internal {
 
 class ObjectVisitor;
+
 class PyObject;
+class PyBaseException;
 
 // 解释器执行期间的“传播态异常状态”（error indicator）。
 //
@@ -47,7 +49,7 @@ class ExceptionState final {
 
   // 设置 pending exception，并重置 pc/origin 为无效值。
   // 该接口仅改变 error indicator，不负责构造异常对象。
-  void Throw(Tagged<PyObject> exception);
+  void Throw(Handle<PyBaseException> exception);
 
   void Clear();
 

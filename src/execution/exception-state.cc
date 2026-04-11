@@ -4,6 +4,7 @@
 
 #include "src/execution/exception-state.h"
 
+#include "src/objects/py-base-exception.h"
 #include "src/objects/py-object.h"
 #include "src/objects/visitors.h"
 
@@ -13,12 +14,11 @@ Handle<PyObject> ExceptionState::pending_exception(Isolate* isolate) const {
   return handle(pending_exception_, isolate);
 }
 
-void ExceptionState::Throw(Tagged<PyObject> exception) {
+void ExceptionState::Throw(Handle<PyBaseException> exception) {
   if (HasPendingException()) {
     return;
   }
-  assert(IsPyBaseException(exception));
-  pending_exception_ = exception;
+  pending_exception_ = *exception;
   pending_exception_pc_ = kInvalidProgramCounter;
   pending_exception_origin_pc_ = kInvalidProgramCounter;
 }
