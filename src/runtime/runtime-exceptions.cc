@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <string>
 
+#include "src/execution/exception-roots.h"
 #include "src/execution/exception-utils.h"
 #include "src/execution/execution.h"
 #include "src/execution/isolate.h"
@@ -39,7 +40,7 @@ MaybeHandle<PyString> MessageFromArgsTuple(Isolate* isolate,
 }
 
 void ThrowNewException(Isolate* isolate,
-                       Handle<PyString> exception_type_name,
+                       ExceptionType type,
                        Handle<PyString> message_or_null) {
   auto* state = isolate->exception_state();
   if (state->HasPendingException()) {
@@ -49,27 +50,9 @@ void ThrowNewException(Isolate* isolate,
   Handle<PyObject> exception;
   ASSIGN_RETURN_ON_EXCEPTION_VOID(
       isolate, exception,
-      Runtime_NewExceptionInstance(isolate, exception_type_name,
-                                   message_or_null));
+      Runtime_NewExceptionInstance(isolate, type, message_or_null));
 
   state->Throw(*exception);
-}
-
-// 辅助函数：根据枚举类型获取对应的异常类名字符串 Handle
-Handle<PyString> GetExceptionStringHandle(Isolate* isolate,
-                                          ExceptionType type) {
-  switch (type) {
-#define DEFINE_EXCEPTION_TYPE_CASE(type, string_table_name, _) \
-  case ExceptionType::type:                                    \
-    return ST(string_table_name, isolate);
-
-    EXCEPTION_TYPE_LIST(DEFINE_EXCEPTION_TYPE_CASE)
-
-#undef DEFINE_EXCEPTION_TYPE_CASE
-    default:
-      // 默认回退到 RuntimeError
-      return ST(runtime_err, isolate);
-  }
 }
 
 // 将 va_list 格式化为字符串并抛出指定类型的异常。
@@ -105,16 +88,11 @@ void ThrowFormattedError(Isolate* isolate,
 
 MaybeHandle<PyObject> Runtime_NewExceptionInstance(
     Isolate* isolate,
-    Handle<PyString> exception_type_name,
+    ExceptionType type,
     Handle<PyString> message_or_null) {
   EscapableHandleScope scope(isolate);
 
-  Handle<PyDict> builtins = isolate->builtins();
-
-  Handle<PyObject> exception_type;
-  RETURN_ON_EXCEPTION(isolate, PyDict::Get(builtins, exception_type_name,
-                                           exception_type, isolate));
-  assert(!exception_type.is_null());
+  Handle<PyTypeObject> exception_type = isolate->exception_roots()->Get(type);
 
   Handle<PyTuple> init_args = Handle<PyTuple>::null();
   if (!message_or_null.is_null()) {
@@ -125,8 +103,8 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
   Handle<PyObject> exception = Handle<PyObject>::null();
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, exception,
-      Runtime_NewObject(isolate, Handle<PyTypeObject>::cast(exception_type),
-                        init_args, Handle<PyObject>::null()));
+      Runtime_NewObject(isolate, exception_type, init_args,
+                        Handle<PyObject>::null()));
 
   if (!message_or_null.is_null()) {
     Handle<PyDict> properties = PyObject::GetProperties(exception, isolate);
@@ -144,11 +122,10 @@ MaybeHandle<PyObject> Runtime_NewExceptionInstance(
 void Runtime_ThrowError(Isolate* isolate,
                         ExceptionType type,
                         const char* message) {
-  Handle<PyString> type_name = GetExceptionStringHandle(isolate, type);
   Handle<PyString> wrapped_message = message != nullptr
                                          ? PyString::New(isolate, message)
                                          : Handle<PyString>::null();
-  ThrowNewException(isolate, type_name, wrapped_message);
+  ThrowNewException(isolate, type, wrapped_message);
 }
 
 void Runtime_ThrowErrorf(Isolate* isolate,
@@ -222,22 +199,13 @@ Maybe<bool> Runtime_ConsumePendingStopIterationIfSet(Isolate* isolate) {
 
   HandleScope scope(isolate);
   Handle<PyObject> pending = state->pending_exception(isolate);
-
-  Handle<PyDict> builtins = isolate->builtins();
-  Handle<PyObject> stop_iter_type;
-  bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, found,
-      PyDict::Get(builtins, ST(stop_iter, isolate), stop_iter_type, isolate),
-      kNullMaybe);
-  assert(found);
-  assert(!stop_iter_type.is_null());
+  Handle<PyTypeObject> stop_iter_type =
+      isolate->exception_roots()->Get(ExceptionType::kStopIteration);
 
   bool is_stop_iteration = false;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, is_stop_iteration,
-      Runtime_IsInstanceOfTypeObject(
-          isolate, pending, Handle<PyTypeObject>::cast(stop_iter_type)));
+      Runtime_IsInstanceOfTypeObject(isolate, pending, stop_iter_type));
 
   if (!is_stop_iteration) {
     return Maybe<bool>(false);

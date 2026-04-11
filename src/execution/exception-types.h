@@ -49,6 +49,7 @@ enum class ExceptionType {
 #define DEFINE_EXCEPTION_TYPE(type, ignore1, ignore2) type,
   EXCEPTION_TYPE_LIST(DEFINE_EXCEPTION_TYPE)
 #undef DEFINE_EXCEPTION_TYPE
+  kCount,
 };
 
 }  // namespace saauso::internal
