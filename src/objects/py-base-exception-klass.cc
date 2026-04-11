@@ -40,10 +40,7 @@ Tagged<PyBaseExceptionKlass> PyBaseExceptionKlass::GetInstance(
 void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
   isolate->klass_list().PushBack(Tagged<Klass>(this));
 
-  // TODO:
-  // BaseException 实例当前处于“布局字段 + __dict__”并存阶段。
-  // 未来需要移除 __dict__ ，让架构进一步与 CPython 对齐。
-  set_instance_has_properties_dict(true);
+  set_instance_has_properties_dict(false);
   set_native_layout_kind(NativeLayoutKind::kBaseException);
   set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
