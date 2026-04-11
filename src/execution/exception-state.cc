@@ -13,6 +13,22 @@ Handle<PyObject> ExceptionState::pending_exception(Isolate* isolate) const {
   return handle(pending_exception_, isolate);
 }
 
+void ExceptionState::Throw(Tagged<PyObject> exception) {
+  if (HasPendingException()) {
+    return;
+  }
+  assert(IsPyBaseException(exception));
+  pending_exception_ = exception;
+  pending_exception_pc_ = kInvalidProgramCounter;
+  pending_exception_origin_pc_ = kInvalidProgramCounter;
+}
+
+void ExceptionState::Clear() {
+  pending_exception_ = Tagged<PyObject>::null();
+  pending_exception_pc_ = kInvalidProgramCounter;
+  pending_exception_origin_pc_ = kInvalidProgramCounter;
+}
+
 void ExceptionState::Iterate(ObjectVisitor* v) {
   v->VisitPointer(&pending_exception_);
 }

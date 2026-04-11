@@ -47,20 +47,9 @@ class ExceptionState final {
 
   // 设置 pending exception，并重置 pc/origin 为无效值。
   // 该接口仅改变 error indicator，不负责构造异常对象。
-  void Throw(Tagged<PyObject> exception) {
-    if (HasPendingException()) {
-      return;
-    }
-    pending_exception_ = exception;
-    pending_exception_pc_ = kInvalidProgramCounter;
-    pending_exception_origin_pc_ = kInvalidProgramCounter;
-  }
+  void Throw(Tagged<PyObject> exception);
 
-  void Clear() {
-    pending_exception_ = Tagged<PyObject>::null();
-    pending_exception_pc_ = kInvalidProgramCounter;
-    pending_exception_origin_pc_ = kInvalidProgramCounter;
-  }
+  void Clear();
 
   // GC root 扫描接口：暴露 pending_exception_。
   void Iterate(ObjectVisitor* v);
