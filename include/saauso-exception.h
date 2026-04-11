@@ -41,13 +41,14 @@ class TryCatch {
 
   bool HasCaught() const;
   void Reset();
-  // 返回当前捕获的异常；未捕获时返回 Nothing。
-  MaybeLocal<Value> Exception() const;
+  // 返回当前捕获的异常；未捕获时返回空 Local<Value>。
+  Local<Value> Exception() const;
 
  private:
   struct Impl;
   friend class api::ApiBridgeAccess;
   void SetException(internal::Handle<internal::PyObject> exception);
+  int PythonExecutionDepth() const;
 
   internal::Isolate* i_isolate_{nullptr};
   TryCatch* previous_{nullptr};

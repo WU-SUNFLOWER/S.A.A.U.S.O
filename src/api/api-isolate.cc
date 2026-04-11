@@ -47,7 +47,7 @@ void Isolate::ThrowException(Local<Value> exception) {
   assert(!py_exception.is_null());
 
   i_isolate->exception_state()->Throw(*py_exception);
-  api::CapturePendingException(i_isolate);
+  api::TryToForwardPendingExceptionToEembedderTryCatch(i_isolate);
 }
 
 }  // namespace saauso

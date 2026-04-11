@@ -80,8 +80,8 @@ MaybeLocal<Value> Function::Call(Local<Context> context,
                         i::Handle<i::PyObject>::null());
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
-    api::CapturePendingException(i_isolate);
-    return MaybeLocal<Value>();
+    api::FinalizePendingExceptionAtApiBoundary(i_isolate);
+    return {};
   }
 
   i::Handle<i::PyObject> escaped = handle_scope.Escape(result);

@@ -100,6 +100,8 @@ class Isolate {
 #undef DECLARE_ISOLATE_KLASS_ACCESSORS
 
   bool HasPendingException() const;
+  int python_execution_depth() const;
+  bool IsInsidePythonExecution() const;
 
   // GC 接口
   void Iterate(ObjectVisitor* v);

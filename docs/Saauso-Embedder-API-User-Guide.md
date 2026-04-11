@@ -319,7 +319,7 @@ std::cout << result_in_std.ToChecked() << std::endl;
 3. `FunctionCallbackInfo`（读参数、写返回值、`ThrowRuntimeError`）
 4. `TryCatch`（统一捕获 API 失败）
 5. `Exception::TypeError/RuntimeError`（MVP 工厂接口）
-6. `Isolate::ThrowException`（宿主主动注入异常）
+6. `Isolate::ThrowException`（宿主主动向当前传播域注入异常）
 
 ## 4. 错误处理规范（必须遵守）
 
@@ -327,6 +327,12 @@ std::cout << result_in_std.ToChecked() << std::endl;
 2. 只要你关心失败原因，就在调用前创建 `TryCatch`。
 3. `MaybeLocal` 失败 + `TryCatch.HasCaught()==true` 才是完整错误闭环。
 4. 不要忽略空句柄；必须先判空再 `ToLocalChecked`。
+5. `TryCatch::Exception()` 返回 `Local<Value>`；未捕获异常时返回空句柄。
+6. 对于 `Script::Compile/Run`、`Function::Call`、`Context::Set/Get`、`Object::Set/Get/CallMethod` 这类“用空 `MaybeLocal` / `Nothing` 报告失败”的 API，桥接层会在边界先尝试把 pending exception 转交给当前可接收的 `TryCatch`。
+7. 若当前不存在可接收的 `TryCatch`，并且 `python_execution_depth == 0`（说明控制权已经回到宿主 C++ 边界），桥接层会清理 `Isolate` 上的 pending exception，避免旧异常污染后续调用。
+8. 若当前不存在可接收的 `TryCatch`，但 `python_execution_depth > 0`，桥接层不会清理 pending exception；这是为了让异常继续回到解释器，由更外层 Python `try/except` 决定是否处理。
+9. 这意味着：没有安装 `TryCatch` 时，你依然可以通过空返回值知道“这次 API 调用失败了”；只是拿不到异常对象本身。
+10. `Isolate::ThrowException()` 是例外：它不依赖空 `MaybeLocal` / `Nothing` 报告失败，因此不会走“无人接收时自动清理边界异常”的结算路径。它只会向当前传播域注入 pending exception，并在条件满足时尝试立即转交给 Embedder `TryCatch`。
 
 ## 4.1 Isolate 契约（严格模式）
 

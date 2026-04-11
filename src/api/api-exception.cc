@@ -13,6 +13,7 @@ namespace saauso {
 
 struct TryCatch::Impl {
   i::Global<i::PyObject> exception_;
+  int python_execution_depth_{0};
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -46,6 +47,7 @@ MaybeLocal<Value> Exception::RuntimeError(Local<String> msg) {
 TryCatch::TryCatch(Isolate* isolate)
     : i_isolate_(api::RequireExplicitIsolate(isolate)),
       impl_(std::make_unique<Impl>()) {
+  impl_->python_execution_depth_ = i_isolate_->python_execution_depth();
   previous_ = i_isolate_->try_catch_top();
   i_isolate_->set_try_catch_top(this);
 }
@@ -67,10 +69,14 @@ void TryCatch::Reset() {
   impl_->exception_.Reset();
 }
 
-MaybeLocal<Value> TryCatch::Exception() const {
+int TryCatch::PythonExecutionDepth() const {
+  return impl_->python_execution_depth_;
+}
+
+Local<Value> TryCatch::Exception() const {
   i::Handle<i::PyObject> exception = impl_->exception_.Get(i_isolate_);
   if (exception.is_null()) {
-    return MaybeLocal<Value>();
+    return Local<Value>();
   }
   return api::Utils::ToLocal<Value>(exception);
 }

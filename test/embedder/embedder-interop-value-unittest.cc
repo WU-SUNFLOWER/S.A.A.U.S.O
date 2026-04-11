@@ -91,6 +91,27 @@ TEST(EmbedderPhase4Test, Object_CallMethod_Miss_Captured) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, Object_Get_Miss_DoesNotCapture) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    MaybeLocal<Object> maybe_obj = Object::New(isolate);
+    ASSERT_FALSE(maybe_obj.IsEmpty());
+    Local<Object> obj = maybe_obj.ToLocalChecked();
+    TryCatch try_catch(isolate);
+    MaybeLocal<Value> out = obj->Get(String::New(isolate, "missing_key"));
+    EXPECT_TRUE(out.IsEmpty());
+    EXPECT_FALSE(try_catch.HasCaught());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 TEST(EmbedderPhase4Test, Object_CallMethod_PythonInstanceMethod) {
   Saauso::Initialize();
@@ -195,9 +216,8 @@ TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
     ASSERT_FALSE(error.IsEmpty());
     isolate->ThrowException(error.ToLocalChecked());
     EXPECT_TRUE(try_catch.HasCaught());
-    EXPECT_FALSE(try_catch.Exception().IsEmpty());
-    Local<Value> exception;
-    ASSERT_TRUE(try_catch.Exception().ToLocal(&exception));
+    Local<Value> exception = try_catch.Exception();
+    ASSERT_FALSE(exception.IsEmpty());
     Maybe<std::string> message = exception->ToString();
     ASSERT_FALSE(message.IsNothing());
     EXPECT_EQ(message.ToChecked(), "[RuntimeError] boom");
@@ -227,8 +247,8 @@ TEST(EmbedderPhase4Test, TryCatch_ExceptionSurvivesInnerScopeAndGcPressure) {
     }
 
     {
-      Local<Value> exception;
-      ASSERT_TRUE(try_catch.Exception().ToLocal(&exception));
+      Local<Value> exception = try_catch.Exception();
+      ASSERT_FALSE(exception.IsEmpty());
       Maybe<std::string> message = exception->ToString();
       ASSERT_FALSE(message.IsNothing());
       EXPECT_EQ(message.ToChecked(), "[RuntimeError] survive-gc");
@@ -241,8 +261,8 @@ TEST(EmbedderPhase4Test, TryCatch_ExceptionSurvivesInnerScopeAndGcPressure) {
     }
 
     {
-      Local<Value> exception;
-      ASSERT_TRUE(try_catch.Exception().ToLocal(&exception));
+      Local<Value> exception = try_catch.Exception();
+      ASSERT_FALSE(exception.IsEmpty());
       Maybe<std::string> message = exception->ToString();
       ASSERT_FALSE(message.IsNothing());
       EXPECT_EQ(message.ToChecked(), "[RuntimeError] survive-gc");

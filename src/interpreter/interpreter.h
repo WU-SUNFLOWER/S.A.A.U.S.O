@@ -53,6 +53,7 @@ class Interpreter {
   Tagged<PyObject> pending_exception_tagged() const;
   Handle<PyObject> pending_exception() const;
   void ClearPendingException();
+  int python_execution_depth() const { return python_execution_depth_; }
 
   // GC接口
   void Iterate(ObjectVisitor* v);
@@ -119,6 +120,7 @@ class Interpreter {
   Vector<int> caught_exception_origin_pc_stack_;
 
   FrameObject* current_frame_{nullptr};
+  int python_execution_depth_{0};
 
   void* dispatch_table_[256];
   bool dispatch_table_initialized_{false};

@@ -10,7 +10,8 @@
 namespace saauso {
 namespace api {
 
-bool CapturePendingException(i::Isolate* isolate);
+bool TryToForwardPendingExceptionToEembedderTryCatch(i::Isolate* isolate);
+bool FinalizePendingExceptionAtApiBoundary(i::Isolate* isolate);
 
 }  // namespace api
 }  // namespace saauso
