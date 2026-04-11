@@ -5,6 +5,7 @@
 #ifndef SAAUSO_INTERPRETER_BUILTIN_BOOTSTRAPPER_H_
 #define SAAUSO_INTERPRETER_BUILTIN_BOOTSTRAPPER_H_
 
+#include "src/execution/exception-types.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/maybe-handles.h"
 
@@ -39,14 +40,10 @@ class BuiltinBootstrapper {
   // 用于对齐 CPython 的 builtins 自引用行为。
   Maybe<void> InstallBuiltinsSelfReference();
 
-  // 注册内建异常类型（MVP：仅覆盖常用的一小批）。
-  Maybe<void> InstallBuiltinExceptionTypes();
-
-  // 注册BaseException和Exception
-  Maybe<void> InstallBuiltinBasicExceptionTypes();
-
-  Maybe<void> RegisterSimpleTypeToBuiltins(Handle<PyString> type_name,
-                                    Handle<PyObject> type_base);
+  // 注入内建异常类型（BaseException等）到 builtins
+  Maybe<void> PublishBuiltinExceptionTypes();
+  Maybe<void> PublishExceptionType(ExceptionType type,
+                                   Handle<PyString> type_name);
 
   Global<PyDict> builtins_;
   bool is_bootstrapped_{false};
