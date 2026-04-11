@@ -552,9 +552,9 @@ TEST(EmbedderPhase3Test, IsolateThrowException_UnhandledFallsBackToTryCatch) {
     EXPECT_TRUE(try_catch.HasCaught());
     Local<Value> exception = try_catch.Exception();
     ASSERT_FALSE(exception.IsEmpty());
-    Maybe<std::string> message = exception->ToString();
-    ASSERT_FALSE(message.IsNothing());
-    EXPECT_EQ(message.ToChecked(), "[RuntimeError] host-isolate-throw");
+    Local<String> message = try_catch.Message();
+    ASSERT_FALSE(message.IsEmpty());
+    EXPECT_EQ(message->Value(), "host-isolate-throw");
   }
 
   isolate->Dispose();

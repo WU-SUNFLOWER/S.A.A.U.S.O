@@ -218,9 +218,9 @@ TEST(EmbedderPhase4Test, Isolate_ThrowException_CapturedByTryCatch) {
     EXPECT_TRUE(try_catch.HasCaught());
     Local<Value> exception = try_catch.Exception();
     ASSERT_FALSE(exception.IsEmpty());
-    Maybe<std::string> message = exception->ToString();
-    ASSERT_FALSE(message.IsNothing());
-    EXPECT_EQ(message.ToChecked(), "[RuntimeError] boom");
+    Local<String> message = try_catch.Message();
+    ASSERT_FALSE(message.IsEmpty());
+    EXPECT_EQ(message->Value(), "boom");
   }
 
   isolate->Dispose();
@@ -249,9 +249,9 @@ TEST(EmbedderPhase4Test, TryCatch_ExceptionSurvivesInnerScopeAndGcPressure) {
     {
       Local<Value> exception = try_catch.Exception();
       ASSERT_FALSE(exception.IsEmpty());
-      Maybe<std::string> message = exception->ToString();
-      ASSERT_FALSE(message.IsNothing());
-      EXPECT_EQ(message.ToChecked(), "[RuntimeError] survive-gc");
+      Local<String> message = try_catch.Message();
+      ASSERT_FALSE(message.IsEmpty());
+      EXPECT_EQ(message->Value(), "survive-gc");
     }
 
     for (int i = 0; i < 4000; ++i) {
@@ -263,9 +263,9 @@ TEST(EmbedderPhase4Test, TryCatch_ExceptionSurvivesInnerScopeAndGcPressure) {
     {
       Local<Value> exception = try_catch.Exception();
       ASSERT_FALSE(exception.IsEmpty());
-      Maybe<std::string> message = exception->ToString();
-      ASSERT_FALSE(message.IsNothing());
-      EXPECT_EQ(message.ToChecked(), "[RuntimeError] survive-gc");
+      Local<String> message = try_catch.Message();
+      ASSERT_FALSE(message.IsEmpty());
+      EXPECT_EQ(message->Value(), "survive-gc");
     }
   }
 
