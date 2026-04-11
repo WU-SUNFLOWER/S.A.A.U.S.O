@@ -92,6 +92,7 @@ Local<Value> TryCatch::Exception() const {
 Local<String> TryCatch::Message() const {
   i::Handle<i::PyObject> raw_exception = impl_->exception_.Get(i_isolate_);
   if (raw_exception.is_null()) {
+    assert(!HasCaught());
     return Local<String>();
   }
 

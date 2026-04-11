@@ -112,6 +112,25 @@ TEST(EmbedderPhase4Test, Object_Get_Miss_DoesNotCapture) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, TryCatch_Message_EmptyWhenNoExceptionCaught) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    TryCatch try_catch(isolate);
+
+    EXPECT_FALSE(try_catch.HasCaught());
+    Local<String> message = try_catch.Message();
+    EXPECT_TRUE(message.IsEmpty());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 #if SAAUSO_ENABLE_CPYTHON_COMPILER
 TEST(EmbedderPhase4Test, Object_CallMethod_PythonInstanceMethod) {
   Saauso::Initialize();
