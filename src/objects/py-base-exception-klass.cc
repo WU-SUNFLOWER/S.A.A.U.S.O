@@ -45,6 +45,7 @@ void PyBaseExceptionKlass::PreInitialize(Isolate* isolate) {
   set_native_layout_base(PyObjectKlass::GetInstance(isolate));
 
   vtable_.Clear();
+  vtable_.new_instance_ = &Virtual_NewInstance;
   vtable_.init_instance_ = &Virtual_InitInstance;
   vtable_.str_ = &Virtual_Str;
   vtable_.repr_ = &Virtual_Repr;
@@ -81,6 +82,25 @@ Maybe<void> PyBaseExceptionKlass::Initialize(Isolate* isolate) {
 
 void PyBaseExceptionKlass::Finalize(Isolate* isolate) {
   isolate->set_py_base_exception_klass(Tagged<PyBaseExceptionKlass>::null());
+}
+
+MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_NewInstance(
+    Isolate* isolate,
+    Handle<PyTypeObject> receiver_type,
+    Handle<PyObject> args,
+    Handle<PyObject> kwargs) {
+  Handle<PyDict> dict_kwargs = Handle<PyDict>::cast(kwargs);
+  if (!dict_kwargs.is_null() && dict_kwargs->occupied() != 0) [[unlikely]] {
+    Runtime_ThrowError(isolate, ExceptionType::kTypeError,
+                       "BaseException.__new__() takes no keyword arguments");
+    return kNullMaybeHandle;
+  }
+
+  Handle<PyTuple> init_args =
+      args.is_null() ? PyTuple::New(isolate, 0) : Handle<PyTuple>::cast(args);
+  Handle<PyBaseException> exception =
+      isolate->factory()->NewException(receiver_type, init_args);
+  return Handle<PyObject>::cast(exception);
 }
 
 MaybeHandle<PyObject> PyBaseExceptionKlass::Virtual_InitInstance(

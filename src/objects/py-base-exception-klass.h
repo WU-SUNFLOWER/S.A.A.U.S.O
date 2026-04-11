@@ -25,6 +25,10 @@ class PyBaseExceptionKlass : public Klass {
   static size_t Virtual_InstanceSize(Tagged<PyObject> self);
   static void Virtual_Iterate(Tagged<PyObject> self, ObjectVisitor* v);
 
+  static MaybeHandle<PyObject> Virtual_NewInstance(Isolate* isolate,
+                                                   Handle<PyTypeObject> receiver_type,
+                                                   Handle<PyObject> args,
+                                                   Handle<PyObject> kwargs);
   static MaybeHandle<PyObject> Virtual_InitInstance(Isolate* isolate,
                                                     Handle<PyObject> instance,
                                                     Handle<PyObject> args,
