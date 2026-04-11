@@ -109,8 +109,11 @@ class Factory {
 
   MaybeHandle<PyModule> NewPyModule();
   MaybeHandle<PyTypeObject> NewPyTypeObject();
-  
-  Handle<PyBaseException> NewException(ExceptionType type, Handle<PyTuple> args);
+
+  Handle<PyBaseException> NewException(Handle<PyTypeObject> receiver_type,
+                                       Handle<PyTuple> args);
+  Handle<PyBaseException> NewException(ExceptionType type,
+                                       Handle<PyTuple> args);
   Handle<PyBaseException> NewExceptionFromMessage(ExceptionType type,
                                                   Handle<PyString> message);
 

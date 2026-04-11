@@ -525,11 +525,26 @@ MaybeHandle<PyTypeObject> Factory::NewPyTypeObject() {
 
 Handle<PyBaseException> Factory::NewException(ExceptionType type,
                                               Handle<PyTuple> args) {
+  Handle<PyTypeObject> exception_type = isolate_->exception_roots()->Get(type);
+  return NewException(exception_type, args);
+}
+
+Handle<PyBaseException> Factory::NewExceptionFromMessage(
+    ExceptionType type,
+    Handle<PyString> message) {
+  Handle<PyTuple> args = NewPyTuple(message.is_null() ? 0 : 1);
+  if (!message.is_null()) {
+    args->SetInternal(0, message);
+  }
+  return NewException(type, args);
+}
+
+Handle<PyBaseException> Factory::NewException(
+    Handle<PyTypeObject> receiver_type,
+    Handle<PyTuple> args) {
   EscapableHandleScope scope(isolate_);
 
-  Handle<PyTypeObject> exception_type = isolate_->exception_roots()->Get(type);
-  Tagged<Klass> exception_klass = exception_type->own_klass();
-
+  Tagged<Klass> exception_klass = receiver_type->own_klass();
   assert(exception_klass->native_layout_kind() ==
          NativeLayoutKind::kBaseException);
 
@@ -550,43 +565,17 @@ Handle<PyBaseException> Factory::NewException(ExceptionType type,
   return scope.Escape(exception);
 }
 
-Handle<PyBaseException> Factory::NewExceptionFromMessage(
-    ExceptionType type,
-    Handle<PyString> message) {
-  Handle<PyTuple> args = NewPyTuple(message.is_null() ? 0 : 1);
-  if (!message.is_null()) {
-    args->SetInternal(0, message);
-  }
-  return NewException(type, args);
-}
-
 MaybeHandle<PyObject> Factory::NewPythonObject(
     Handle<PyTypeObject> type_object) {
   EscapableHandleScope scope(isolate_);
 
   auto klass = PyObjectKlass::GetInstance(isolate_);
-  Handle<PyObject> object;
-  // 目前Factory::NewPythonObject中加入了针对异常对象的特化逻辑。
-  // 未来需要将异常对象的创建下沉为独立的 Factory::NewException API。
-  if (type_object->own_klass()->native_layout_kind() ==
-      NativeLayoutKind::kBaseException) {
-    Handle<PyBaseException> base_exception(
-        Allocate<PyBaseException>(Heap::AllocationSpace::kNewSpace), isolate_);
-    {
-      DisallowHeapAllocation disallow(isolate_);
-      PyObject::SetKlass(base_exception, klass);
-      PyObject::SetProperties(*base_exception, Tagged<PyDict>::null());
-      base_exception->set_args(Tagged<PyTuple>::null());
-    }
-    object = Handle<PyObject>::cast(base_exception);
-  } else {
-    object = Handle<PyObject>(
-        Allocate<PyObject>(Heap::AllocationSpace::kNewSpace), isolate_);
-    {
-      DisallowHeapAllocation disallow(isolate_);
-      PyObject::SetKlass(object, klass);
-      PyObject::SetProperties(*object, Tagged<PyDict>::null());
-    }
+  Handle<PyObject> object(Allocate<PyObject>(Heap::AllocationSpace::kNewSpace),
+                          isolate_);
+  {
+    DisallowHeapAllocation disallow(isolate_);
+    PyObject::SetKlass(object, klass);
+    PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
   if (type_object->own_klass()->instance_has_properties_dict()) {
