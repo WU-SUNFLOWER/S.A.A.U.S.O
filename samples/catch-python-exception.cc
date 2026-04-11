@@ -38,9 +38,8 @@ int main() {
 
     // 输出异常报错
     if (try_catch.HasCaught()) {
-      Local<Value> exception = try_catch.Message();
-      std::string exception_msg = exception->ToString().ToChecked();
-      std::cout << "exception_msg=" << exception_msg << std::endl;
+      Local<String> exception = try_catch.Message();
+      std::cout << "exception_msg=" << exception->Value() << std::endl;
       return 1;
     }
   }
