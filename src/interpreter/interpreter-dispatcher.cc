@@ -261,7 +261,8 @@ void Interpreter::EvalCurrentFrame() {
         } else {
           ASSIGN_GOTO_ON_EXCEPTION(
               exception,
-              Runtime_NewExceptionInstance(isolate_, ST(runtime_err, isolate_),
+              Runtime_NewExceptionInstance(isolate_,
+                                           ExceptionType::kRuntimeError,
                                            Handle<PyString>::null()));
           isolate_->exception_state()->set_pending_exception_origin_pc(
               raise_pc);
