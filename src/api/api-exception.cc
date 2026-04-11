@@ -90,29 +90,19 @@ Local<Value> TryCatch::Exception() const {
 }
 
 Local<String> TryCatch::Message() const {
-  i::Handle<i::PyObject> exception = impl_->exception_.Get(i_isolate_);
-  if (exception.is_null()) {
+  i::Handle<i::PyObject> raw_exception = impl_->exception_.Get(i_isolate_);
+  if (raw_exception.is_null()) {
     return Local<String>();
   }
 
-  if (i::IsPyString(exception)) {
-    return api::Utils::ToLocal<String>(i::Handle<i::PyString>::cast(exception));
+  auto exception = i::Handle<i::PyBaseException>::cast(raw_exception);
+  i::Handle<i::PyString> message;
+  if (!i::Runtime_ParseExceptionMessageFromArgs(i_isolate_, exception)
+           .ToHandle(&message)) {
+    return Local<String>();
   }
 
-  if (i::IsHeapObject(*exception)) {
-    i::Tagged<i::Klass> klass = i::PyObject::GetHeapKlassUnchecked(*exception);
-    if (klass->native_layout_kind() == i::NativeLayoutKind::kBaseException) {
-      i::Handle<i::PyString> message;
-      if (!i::Runtime_ParseExceptionMessageFromArgs(
-               i_isolate_, i::Handle<i::PyBaseException>::cast(exception))
-               .ToHandle(&message)) {
-        return Local<String>();
-      }
-      return api::Utils::ToLocal<String>(message);
-    }
-  }
-
-  return Local<String>();
+  return api::Utils::ToLocal<String>(message);
 }
 
 }  // namespace saauso
