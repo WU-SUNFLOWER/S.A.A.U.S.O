@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 
+#include "src/execution/exception-roots.h"
 #include "src/execution/thread-state-infras.h"
 #include "src/handles/handle-scope-implementer.h"
 #include "src/handles/handles.h"
@@ -158,6 +159,12 @@ void Isolate::Init() {
     // 初始化每个 Isolate 独立持有的随机数状态。
     random_number_generator_ = new RandomNumberGenerator();
 
+    // 初始化内建异常类型容器
+    exception_roots_ = new ExceptionRoots(this);
+    if (exception_roots_->Setup().IsNothing()) {
+      break;
+    }
+
     // 初始化内建对象字典
     Handle<PyDict> builtins;
     if (!BuiltinBootstrapper(this).CreateBuiltins().ToHandle(&builtins)) {
@@ -229,6 +236,10 @@ Handle<PyDict> Isolate::builtins() {
 void Isolate::Iterate(ObjectVisitor* v) {
   // 遍历内建对象字典
   v->VisitPointer(&builtins_);
+  // 遍历内建异常类型容器
+  if (exception_roots_ != nullptr) {
+    exception_roots_->Iterate(v);
+  }
 }
 
 void Isolate::TearDown() {
@@ -264,6 +275,9 @@ void Isolate::TearDown() {
 
     delete factory_;
     factory_ = nullptr;
+
+    delete exception_roots_;
+    exception_roots_ = nullptr;
 
     klass_list_.Resize(0);
 

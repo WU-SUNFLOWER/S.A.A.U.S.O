@@ -29,6 +29,7 @@ class StringTable;
 class Factory;
 class RandomNumberGenerator;
 class ObjectVisitor;
+class ExceptionRoots;
 
 class Heap;
 class Klass;
@@ -84,6 +85,7 @@ class Isolate {
 
   ExceptionState* exception_state() { return &exception_state_; }
   const ExceptionState* exception_state() const { return &exception_state_; }
+  ExceptionRoots* exception_roots() const { return exception_roots_; }
 
   Tagged<PyDict> raw_builtins() const;
   Handle<PyDict> builtins();
@@ -139,6 +141,7 @@ class Isolate {
   StringTable* string_table_{nullptr};
   RandomNumberGenerator* random_number_generator_{nullptr};
   ExceptionState exception_state_;
+  ExceptionRoots* exception_roots_{nullptr};
 
   Tagged<PyObject> builtins_{kNullAddress};
 
