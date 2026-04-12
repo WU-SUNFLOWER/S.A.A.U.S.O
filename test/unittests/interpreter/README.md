@@ -22,9 +22,16 @@
 - `interpreter-custom-class-dunder-unittest.cc`：自定义类 dunder 运算/打印协议。
 - `interpreter-custom-class-mro-unittest.cc`：C3 MRO、菱形继承、查找顺序与冲突边界。
 - `interpreter-dict-unittest.cc`：dict 构造/读写/视图 API、异常传播、dict 子类与 GC 场景。
-- `interpreter-exceptions-unittest.cc`：`try/except/finally/raise/from`、异常匹配与 unwind 行为。
+- `interpreter-exceptions-format-unittest.cc`：异常对象 `str/repr`、pending exception 文本格式、除零错误报文。
+- `interpreter-exceptions-iteration-unittest.cc`：`StopIteration` 与 `for` 迭代交互语义。
+- `interpreter-exceptions-trycatch-unittest.cc`：`try/except/finally/raise/from` 与异常匹配主路径。
+- `interpreter-exceptions-unwind-unittest.cc`：跨函数异常传播、`finally` 展开顺序与覆盖规则。
 - `interpreter-exec-unittest.cc`：`exec` 作用域语义与参数错误边界。
-- `interpreter-functions-unittest.cc`：函数调用协议（位置/关键字/默认值/`*args/**kwargs`）与调用错误边界。
+- `interpreter-functions-args-binding-unittest.cc`：函数参数绑定主路径（位置/关键字/默认值）与方法调用注入 `self`。
+- `interpreter-functions-call-errors-unittest.cc`：函数调用错误边界（参数缺失、重复赋值、意外关键字、位置参数过多等）。
+- `interpreter-functions-call-unpack-unittest.cc`：调用侧 `*args/**kwargs` 展开与多 `**` 合并语义。
+- `interpreter-functions-recursion-unittest.cc`：函数递归与算法场景（如 Fibonacci、Merge Sort）回归。
+- `interpreter-functions-varargs-def-unittest.cc`：定义侧 `*args/**kwargs` 打包语义与混合参数场景。
 - `interpreter-import-unittest.cc`：导入系统（模块缓存、包、相对导入、`import *`、失败回退）。
 - `interpreter-lambda-unittests.cc`：lambda 基础行为与调用语义。
 - `interpreter-list-basic-unittest.cc`：list 基础构造/访问/迭代/变更与运算主流程语义。
@@ -46,6 +53,8 @@
 - list 排序行为（`sort` 及其参数、稳定性、排序相关报错）放入 `interpreter-list-sort-unittest.cc`。
 - list 异常传播与错误信息（如 `index`/比较异常）放入 `interpreter-list-exceptions-unittest.cc`。
 - list 子类化与自定义初始化行为放入 `interpreter-list-subclass-unittest.cc`。
+- 异常相关测试按最窄职责归位：`trycatch`（匹配/处理）、`unwind`（跨帧展开）、`iteration`（`StopIteration` 交互）、`format`（报文/格式化）。
+- 函数相关测试按最窄职责归位：`args-binding`（绑定规则）、`varargs-def`（定义侧打包）、`call-unpack`（调用侧展开）、`call-errors`（错误边界）、`recursion`（递归算法）。
 - 其余测试按“最窄职责”优先放入对应专题文件；若无法归类且形成新专题，再新建单测文件并同步更新本 README。
 
 ## 命名规范
@@ -81,4 +90,3 @@
 - `interpreter-list-exceptions-unittest.cc`
 - `interpreter-list-subclass-unittest.cc`
 - `interpreter-builtins-method-dispatch-unittest.cc`
-
