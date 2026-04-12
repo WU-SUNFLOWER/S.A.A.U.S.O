@@ -34,7 +34,7 @@ class ObjectVisitor;
   V(class, "__class__")              \
   V(traceback, "__traceback__")      \
   V(context, "__context__")          \
-  V(main, "__main_")                 \
+  V(main, "__main__")                \
   V(dot, ".")
 
 #define PY_BUILTIN_FUNC_LIST(V)          \
