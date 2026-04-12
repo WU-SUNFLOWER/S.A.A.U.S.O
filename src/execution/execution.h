@@ -12,15 +12,21 @@
 namespace saauso::internal {
 
 class Isolate;
+
 class PyObject;
 class PyTuple;
 class PyDict;
-class PyTypeObject;
+class PyFunction;
 
 // execution 层的全静态门面：收敛“执行 Python 代码/调用可调用对象”的入口。
 // 该门面本身不维护任何状态，状态归属由 Isolate/ExceptionState 等类型承载。
 class Execution final : public AllStatic {
  public:
+  static MaybeHandle<PyObject> CallScript(Isolate* isolate,
+                                          Handle<PyFunction> boilerplate,
+                                          Handle<PyDict> locals,
+                                          Handle<PyDict> globals);
+
   static MaybeHandle<PyObject> Call(Isolate* isolate,
                                     Handle<PyObject> callable,
                                     Handle<PyObject> receiver,

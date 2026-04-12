@@ -295,6 +295,62 @@ TEST(EmbedderPhase2Test, ScriptRunSucceedsWithFrontendCompiler) {
   isolate->Dispose();
   Saauso::Dispose();
 }
+
+TEST(EmbedderPhase2Test, ScriptRunBindsFunctionGlobalsToCurrentContext) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    Local<String> source = String::New(
+        isolate,
+        "def read_x():\n"
+        "  return x\n"
+        "if read_x() != expected:\n"
+        "  raise ValueError('bad x binding')\n");
+    ASSERT_FALSE(source.IsEmpty());
+
+    MaybeLocal<Script> maybe_script = Script::Compile(isolate, source);
+    ASSERT_FALSE(maybe_script.IsEmpty());
+    Local<Script> script = maybe_script.ToLocalChecked();
+
+    Local<Context> context_a = Context::New(isolate);
+    ASSERT_FALSE(context_a.IsEmpty());
+    ASSERT_TRUE(
+        context_a->Set(String::New(isolate, "x"), Integer::New(isolate, 7))
+            .IsJust());
+    ASSERT_TRUE(context_a
+                    ->Set(String::New(isolate, "expected"),
+                          Integer::New(isolate, 7))
+                    .IsJust());
+
+    Local<Context> context_b = Context::New(isolate);
+    ASSERT_FALSE(context_b.IsEmpty());
+    ASSERT_TRUE(
+        context_b->Set(String::New(isolate, "x"), Integer::New(isolate, 19))
+            .IsJust());
+    ASSERT_TRUE(context_b
+                    ->Set(String::New(isolate, "expected"),
+                          Integer::New(isolate, 19))
+                    .IsJust());
+
+    TryCatch try_catch(isolate);
+    // 尝试以 context_a 作为全局上下文，运行一遍 Script 实例，
+    // 校验脚本的运行效果是否符合预期。
+    EXPECT_FALSE(script->Run(context_a).IsEmpty());
+    EXPECT_FALSE(try_catch.HasCaught());
+
+    // 尝试以 context_a 作为全局上下文，再次运行同一个 Script 实例，
+    // 校验脚本的运行效果是否符合预期。
+    EXPECT_FALSE(script->Run(context_b).IsEmpty());
+    EXPECT_FALSE(try_catch.HasCaught());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
 #else
 TEST(EmbedderPhase2Test,
      TryCatchCapturesCompileFailureWithoutFrontendCompiler) {

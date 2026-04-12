@@ -4,16 +4,37 @@
 
 #include "src/execution/execution.h"
 
+#include "src/execution/exception-utils.h"
 #include "src/execution/isolate.h"
+#include "src/handles/handles.h"
 #include "src/interpreter/interpreter.h"
 #include "src/objects/klass.h"
 #include "src/objects/py-dict.h"
+#include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-tuple.h"
-#include "src/objects/py-type-object.h"
 
 namespace saauso::internal {
 
+// static
+MaybeHandle<PyObject> Execution::CallScript(Isolate* isolate,
+                                            Handle<PyFunction> boilerplate,
+                                            Handle<PyDict> locals,
+                                            Handle<PyDict> globals) {
+  EscapableHandleScope scope(isolate);
+
+  boilerplate->set_func_globals(globals);
+
+  Handle<PyObject> result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result,
+      Call(isolate, boilerplate, Handle<PyObject>::null(),
+           Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+
+  return scope.Escape(result);
+}
+
+// static
 MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                       Handle<PyObject> callable,
                                       Handle<PyObject> receiver,
@@ -23,6 +44,7 @@ MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                             kw_args);
 }
 
+// static
 MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                       Handle<PyObject> callable,
                                       Handle<PyObject> receiver,
@@ -33,10 +55,12 @@ MaybeHandle<PyObject> Execution::Call(Isolate* isolate,
                                             kw_args, bound_locals);
 }
 
+// static
 Handle<PyDict> Execution::CurrentFrameGlobals(Isolate* isolate) {
   return isolate->interpreter()->CurrentFrameGlobals();
 }
 
+// static
 Handle<PyDict> Execution::CurrentFrameLocals(Isolate* isolate) {
   return isolate->interpreter()->CurrentFrameLocals();
 }

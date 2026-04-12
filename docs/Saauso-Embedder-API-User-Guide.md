@@ -26,9 +26,10 @@ S.A.A.U.S.O Embedder API 用于把脚本能力嵌入到 C++ 宿主程序中。
    - `Context::New` 每次都会创建一个独立 globals，不同 Context 之间默认隔离。
    - 脚本里写的全局函数/变量，本质都挂在当前运行的这个环境上。
 
-3. `Script`：待执行的脚本文本
-   - `Script::Compile` 相当于“把字符串脚本编译成可执行对象”。
-   - `Run` 才是真正执行。
+3. `Script`：已编译的脚本对象
+   - `Script::Compile` 会把字符串源码编译成一个可重复执行的脚本对象。
+   - `Run` 只负责执行，不会在内部再次重新编译源码。
+   - 当前实现里，脚本执行时会把传入 `Context` 的底层字典同时作为根栈帧的 `globals` 与 `locals` 使用。
    - 任何一步失败都可能返回空 `MaybeLocal`，并由 `TryCatch` 捕获错误。
 
 4. `Local<T>`：一个“受作用域管理”的安全引用
@@ -76,8 +77,8 @@ S.A.A.U.S.O Embedder API 用于把脚本能力嵌入到 C++ 宿主程序中。
 1. 进入该虚拟机单例。
 1. 创建一个根 `HandleScope` 实例。
 1. 创建一个默认的 `Context` 实例（调用 `Context::New()`，并使用 `Local<Context>` 接住）。
-1. 创建一个 `Script` 并编译（调用 `Script::Compile()`，并使用 `Local<Script>` 接住）。
-1. 运行脚本（调用 `Script::Run(context)`）。
+1. 创建一个 `Script` 并编译（调用 `Script::Compile()`，并使用 `MaybeLocal<Script>` 接住）。
+1. 运行脚本（调用 `Script::Run(context)`；运行时会直接复用该 `Context` 作为脚本的全局环境）。
 1. 退出虚拟机单例。
 1. 销毁虚拟机单例。
 1. 关闭 S.A.A.U.S.O 库（调用 `Saauso::Dispose()`）。
@@ -104,7 +105,7 @@ int main() {
     saauso::MaybeLocal<saauso::Script> maybe_script = saauso::Script::Compile(
         isolate, saauso::String::New(isolate, "print('Hello World')\n"));
 
-    // 7. 运行编译好的Python脚本
+    // 7. 运行编译好的 Python 脚本
     maybe_script.ToLocalChecked()->Run(context);
 
     // 8. 此处 isolate_scope 会被析构，然后 isolate 会自动退出
@@ -187,7 +188,7 @@ info.SetReturnValue(result_str);
 
 #### 2.2.2 将宿主侧的 C++ 函数注入进 Python 世界的全局环境
 
-在 S.A.A.U.S.O 中，宿主只需将需要注入的全局变量/函数，写进脚本执行时所提供的 `Context` 实例中。Python 脚本在运行时，会将宿主提供的 `Context` 中的内容自动作为全局环境使用。
+在 S.A.A.U.S.O 中，宿主只需将需要注入的全局变量/函数，写进脚本执行时所提供的 `Context` 实例中。当前 `Script::Run(context)` 的实现会直接复用这个 `Context` 底层字典作为根栈帧的全局环境；因此脚本顶层定义的变量与函数，执行完成后也会继续保留在这个 `Context` 里。
 
 首先，同之前的 Hello World 例子，我们需要创建一个 `Context` 实例：
 ```C++
@@ -305,14 +306,31 @@ std::cout << result_in_std.ToChecked() << std::endl;
    - 回调绑定隔离：只注入到 `context_a` 的宿主函数不会自动出现在 `context_b`。
    - 异常隔离：某个 Context 中的脚本失败不会污染另一个 Context 的后续执行路径。
 
-### 3.3 值类型
+### 3.3 Script 适用场景与语义
+
+1. `Script::Compile` 语义
+   - 输入是一段源码字符串，输出是一个已编译的脚本对象。
+   - 编译阶段依赖 `SAAUSO_ENABLE_CPYTHON_COMPILER`；未开启时，`Compile` 失败是预期行为。
+   - 同一个 `Script` 可以在后续被重复执行。
+
+2. `Script::Run(context)` 语义
+   - `Run` 不会再次重新编译源码，而是直接执行 `Compile` 阶段得到的脚本对象。
+   - 当前实现中，`context` 底层字典会同时作为根栈帧的 `globals` 与 `locals`。
+   - 这意味着脚本顶层写入的名字会直接保留在 `context` 中，宿主可在运行后通过 `Context::Get` 或 `Context::Global()` 继续访问。
+
+3. 当前 MVP 注意事项
+   - 当前不会额外向 `globals` 自动镜像 `__builtins__`。
+   - 当前也没有为 `Script::Run` 统一自动注入 `__name__`。
+   - 如果宿主脚本依赖 `__name__` 等名字，请嵌入方先显式写入对应 `Context`。
+
+### 3.4 值类型
 
 1. `String` / `Integer` / `Float` / `Boolean`
 2. `Object`：`Set/Get/CallMethod`
 3. `List`：`Length/Push/Set/Get`
 4. `Tuple`：`New/Length/Get`
 
-### 3.4 回调与异常
+### 3.5 回调与异常
 
 1. `Function::New`（注册宿主回调）
 2. `Function::Call`
