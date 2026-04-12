@@ -52,10 +52,6 @@ Handle<PyObject> Interpreter::caught_exception() const {
   return handle(caught_exception_tagged(), isolate_);
 }
 
-void Interpreter::ClearPendingException() {
-  isolate_->exception_state()->Clear();
-}
-
 Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
   assert(current_frame_ != nullptr);
   return current_frame_->globals(isolate_);

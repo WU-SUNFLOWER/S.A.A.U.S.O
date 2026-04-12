@@ -48,7 +48,6 @@ class Interpreter {
   Tagged<PyObject> caught_exception_tagged() const;
   Handle<PyObject> caught_exception() const;
 
-  void ClearPendingException();
   int python_execution_depth() const { return python_execution_depth_; }
 
   // GC接口

@@ -5,7 +5,6 @@
 #include "gtest/gtest.h"
 #include "src/builtins/builtins-definitions.h"
 #include "src/handles/handles.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-string.h"
@@ -40,9 +39,9 @@ TEST_F(NativePrintTest, EndParameter) {
   args->SetInternal(0, PyString::New(isolate_, "a"));
   args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
-  ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(end, isolate_), PyString::New(isolate_, "!"), isolate_)
-          .IsNothing());
+  ASSERT_FALSE(PyDict::Put(kwargs, ST(end, isolate_),
+                           PyString::New(isolate_, "!"), isolate_)
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(
@@ -59,14 +58,14 @@ TEST_F(NativePrintTest, EolKeywordRejected) {
   args->SetInternal(0, PyString::New(isolate_, "a"));
   args->SetInternal(1, PyString::New(isolate_, "b"));
   auto kwargs = PyDict::New(isolate_);
-  ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(eol, isolate_), PyString::New(isolate_, "??"), isolate_)
-          .IsNothing());
+  ASSERT_FALSE(PyDict::Put(kwargs, ST(eol, isolate_),
+                           PyString::New(isolate_, "??"), isolate_)
+                   .IsNothing());
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(
       isolate_, Handle<PyObject>::null(), args, kwargs);
   ASSERT_TRUE(maybe_result.IsEmpty());
   ASSERT_TRUE(isolate_->HasPendingException());
-  isolate_->interpreter()->ClearPendingException();
+  isolate_->exception_state()->Clear();
 }
 
 TEST_F(NativePrintTest, SepParameter) {
@@ -77,9 +76,9 @@ TEST_F(NativePrintTest, SepParameter) {
   args->SetInternal(1, PyString::New(isolate_, "b"));
   args->SetInternal(2, PyString::New(isolate_, "c"));
   auto kwargs = PyDict::New(isolate_);
-  ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(sep, isolate_), PyString::New(isolate_, ","), isolate_)
-          .IsNothing());
+  ASSERT_FALSE(PyDict::Put(kwargs, ST(sep, isolate_),
+                           PyString::New(isolate_, ","), isolate_)
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(
@@ -94,9 +93,9 @@ TEST_F(NativePrintTest, NoArgsUsesEnd) {
 
   auto args = PyTuple::New(isolate_, 0);
   auto kwargs = PyDict::New(isolate_);
-  ASSERT_FALSE(
-      PyDict::Put(kwargs, ST(end, isolate_), PyString::New(isolate_, "X"), isolate_)
-          .IsNothing());
+  ASSERT_FALSE(PyDict::Put(kwargs, ST(end, isolate_),
+                           PyString::New(isolate_, "X"), isolate_)
+                   .IsNothing());
 
   testing::internal::CaptureStdout();
   auto maybe_result = BUILTIN_FUNC_NAME(Print)(
