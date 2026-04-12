@@ -474,6 +474,12 @@ executable("catch_exception") {
   deps = [ ":embedder_api" ]
 }
 
+executable("bubble_sort") {
+  testonly = true
+  sources = [ "//samples/bubble-sort.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
 # -----------------------------------------------------------------------------
 # 统一测试入口
 # -----------------------------------------------------------------------------
