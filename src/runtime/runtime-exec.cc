@@ -21,30 +21,6 @@
 
 namespace saauso::internal {
 
-namespace {
-
-// 对齐 CPython：若 globals 未提供 __builtins__，则自动注入当前解释器的
-// builtins。
-MaybeHandle<PyObject> InjectDefaultBuiltinsToGlobalsIfNeeded(
-    Isolate* isolate,
-    Handle<PyDict> globals) {
-  bool found = false;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate, found,
-      PyDict::ContainsKey(globals, ST(builtins, isolate), isolate));
-
-  if (!found) {
-    Handle<PyDict> builtins = isolate->builtins();
-    RETURN_ON_EXCEPTION_VALUE(
-        isolate, PyDict::Put(globals, ST(builtins, isolate), builtins, isolate),
-        kNullMaybeHandle);
-  }
-
-  return isolate->factory()->py_none_object();
-}
-
-}  // namespace
-
 // 执行一个 code object，并显式指定其运行环境（locals/globals）。
 // 该函数的核心用途是为内建 exec 等路径提供“在指定字典中执行代码”的能力。
 MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
@@ -63,9 +39,6 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
                        "locals and globals must not be null");
     return kNullMaybeHandle;
   }
-
-  RETURN_ON_EXCEPTION(isolate,
-                      InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
 
   // 将 code object 包装为一个可调用的 PyFunction，随后以“绑定 locals 作为
   // frame.locals” 的方式驱动解释器执行。
@@ -117,9 +90,6 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
   return kNullMaybeHandle;
 #else  // !SAAUSO_ENABLE_CPYTHON_COMPILER
 
-  RETURN_ON_EXCEPTION(isolate,
-                      InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
-
   // 将源码编译为模块级 boilerplate function，然后。
   Handle<PyFunction> boilerplate;
   ASSIGN_RETURN_ON_EXCEPTION(
@@ -149,9 +119,6 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
                        "locals and globals must not be null");
     return kNullMaybeHandle;
   }
-
-  RETURN_ON_EXCEPTION(isolate,
-                      InjectDefaultBuiltinsToGlobalsIfNeeded(isolate, globals));
 
   std::string filename_str(filename);
   Handle<PyFunction> boilerplate;
