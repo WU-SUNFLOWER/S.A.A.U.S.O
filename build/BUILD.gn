@@ -119,13 +119,15 @@ config("release") {
     cflags += [
       "-O3",  # 最大优化
       "-flto=thin",  # 开启 ThinLTO
-      "-g",
+      "-ffunction-sections",
+      "-fdata-sections",
     ]
     ldflags = [
       "-O3",  # 链接器优化级别
       "-flto=thin",  # 链接器 LTO 处理
+      "-fuse-ld=lld",
       "-Wl,--gc-sections",  # 移除未使用的段 (类似 Windows 的/OPT:REF)
-      "-g",
+      "-Wl,--icf=all",
     ]
   }
 
