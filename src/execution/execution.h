@@ -22,6 +22,9 @@ class PyFunction;
 // 该门面本身不维护任何状态，状态归属由 Isolate/ExceptionState 等类型承载。
 class Execution final : public AllStatic {
  public:
+  static MaybeHandle<PyObject> RunScriptAsMain(Isolate* isolate,
+                                               Handle<PyFunction> boilerplate);
+
   static MaybeHandle<PyObject> CallScript(Isolate* isolate,
                                           Handle<PyFunction> boilerplate,
                                           Handle<PyDict> locals,

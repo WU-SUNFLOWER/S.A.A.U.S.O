@@ -13,8 +13,25 @@
 #include "src/objects/py-function.h"
 #include "src/objects/py-object.h"
 #include "src/objects/py-tuple.h"
+#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
+
+// static
+MaybeHandle<PyObject> Execution::RunScriptAsMain(
+    Isolate* isolate,
+    Handle<PyFunction> boilerplate) {
+  EscapableHandleScope scope(isolate);
+  Handle<PyDict> globals = PyDict::New(isolate);
+  RETURN_ON_EXCEPTION(isolate,
+                      PyDict::Put(globals, ST(name, isolate), ST(main, isolate),
+                                  isolate));
+
+  Handle<PyObject> result;
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate, result, CallScript(isolate, boilerplate, globals, globals));
+  return scope.Escape(result);
+}
 
 // static
 MaybeHandle<PyObject> Execution::CallScript(Isolate* isolate,
