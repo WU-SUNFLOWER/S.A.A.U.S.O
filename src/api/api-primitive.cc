@@ -77,4 +77,11 @@ bool Boolean::Value() const {
   return i::IsPyTrue(object, i_isolate);
 }
 
+Local<Value> None(Isolate* isolate) {
+  i::Isolate* internal_isolate = api::RequireExplicitIsolate(isolate);
+  i::Handle<i::PyObject> py_none =
+      i::handle(internal_isolate->py_none_object(), internal_isolate);
+  return api::Utils::ToLocal<Value>(py_none);
+}
+
 }  // namespace saauso

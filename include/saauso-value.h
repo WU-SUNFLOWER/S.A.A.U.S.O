@@ -18,6 +18,7 @@ class Value {
   bool IsInteger() const;
   bool IsFloat() const;
   bool IsBoolean() const;
+  bool IsNone() const;
   // 若当前值为字符串，返回字符串值；否则返回 Nothing。
   Maybe<std::string> ToString() const;
   // 若当前值为整数，返回整数值；否则返回 Nothing。
