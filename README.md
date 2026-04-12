@@ -138,7 +138,7 @@ print("after")
 
 **这个例子用于说明**：本项目已支持 Python 程序抛出异常，并且在程序执行流中对异常进行基本的捕获与处理。
 
-**出处**: [test/unittests/interpreter/interpreter-exceptions-unittest.cc](test/unittests/interpreter/interpreter-exceptions-unittest.cc) 中的 `TryExceptFinallyWithExceptionEmitByVm`
+**出处**: [test/unittests/interpreter/interpreter-exceptions-trycatch-unittest.cc](./test/unittests/interpreter/interpreter-exceptions-trycatch-unittest.cc) 中的 `TryExceptFinallyWithExceptionEmitByVm`
 
 
 ## 4. 如何把虚拟机嵌入到你的应用程序
