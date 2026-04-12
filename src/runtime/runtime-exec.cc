@@ -88,24 +88,21 @@ MaybeHandle<PyObject> Runtime_ExecutePythonSourceCode(
       "executing Python source requires embedded CPython compiler; build with "
       "saauso_enable_cpython_compiler=true");
   return kNullMaybeHandle;
-#else  // !SAAUSO_ENABLE_CPYTHON_COMPILER
+#else   // !SAAUSO_ENABLE_CPYTHON_COMPILER
 
   // 将源码编译为模块级 boilerplate function，然后。
   Handle<PyFunction> boilerplate;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, boilerplate, Compiler::CompileSource(isolate, source, filename));
 
-  boilerplate->set_func_globals(globals);
-
+  // 执行boilerplate
   Handle<PyObject> result;
-  // 在指定字典环境中执行boilerplate
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, boilerplate, Handle<PyObject>::null(),
-                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+      Execution::CallScript(isolate, boilerplate, locals, globals));
 
   return scope.Escape(result);
-#endif
+#endif  //! SAAUSO_ENABLE_CPYTHON_COMPILER
 }
 
 MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
@@ -126,14 +123,11 @@ MaybeHandle<PyObject> Runtime_ExecutePythonPycFile(Isolate* isolate,
       isolate, boilerplate,
       Compiler::CompilePyc(isolate, filename_str.c_str()));
 
-  boilerplate->set_func_globals(globals);
-
+  // 执行boilerplate
   Handle<PyObject> result;
-
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, boilerplate, Handle<PyObject>::null(),
-                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+      Execution::CallScript(isolate, boilerplate, locals, globals));
 
   return scope.Escape(result);
 }
