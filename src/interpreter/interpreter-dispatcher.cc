@@ -628,26 +628,50 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ImportName, {
-    // 获取导入列表。
-    // 例如，`from os import path, rmdir`的fromlist是
-    // ('path', 'rmdir')。
+    // IMPORT_NAME 是 import 语句的第一阶段：
+    // - 先根据字节码栈上的 name / fromlist / level 解析并导入“父模块”
+    // - 然后把导入结果压栈，供后续字节码继续消费
+    //
+    // 典型场景：
+    // - import os
+    //   这里只有 IMPORT_NAME，没有后续 IMPORT_FROM
+    //   本 handler 直接导入 "os"
+    // - from os import path, rmdir
+    //   本 handler 先导入父模块 "os"
+    //   然后后续两个 IMPORT_FROM 再分别取出/解析 "path" 与 "rmdir"
+    //
+    // fromlist 描述“后续要从父模块里导入哪些名字”。
+    // 例如：
+    // - from os import path, rmdir
+    //   => fromlist = ('path', 'rmdir')
+    // - import os
+    //   => fromlist = None
     auto fromlist_obj = POP();
     Handle<PyTuple> fromlist;
-    // 对于纯import操作，fromlist为None。
-    // 例如`import os`就没有有效的fromlist。
     if (!IsPyNone(fromlist_obj, isolate_)) {
       fromlist = Handle<PyTuple>::cast(fromlist_obj);
     }
 
-    // 相对导入层级。
-    // 例如`import os`和`from os import path`的level都是0。
-    // `from .os import path`的level是1。
-    // `from ..os import path`的level是2。
+    // level 表示相对导入向上回退的层级：
+    // - import os / from os import path      => level = 0（绝对导入）
+    // - from .os import path                 => level = 1
+    // - from ..os import path                => level = 2
+    //
+    // ImportName 负责把这些原始参数交给 ModuleManager，
+    // 由后者进一步完成：
+    // - 相对模块名解析（例如 ".os" -> "pkg.os"）
+    // - builtin / 文件模块查找
+    // - 模块执行与缓存
     auto level = Handle<PySmi>::cast(POP());
 
     auto name = Handle<PyString>::cast(
         current_frame_->names(isolate_)->Get(op_arg, isolate_));
 
+    // 这里导入的是“本轮 import 的基础模块对象”：
+    // - import os                    => 导入 os
+    // - import os.path               => 这里请求 fullname="os.path"
+    // - from os import path, rmdir   => 这里先导入 os
+    // - from .core import api        => 这里先导入解析后的父模块，如 pkg.core
     Handle<PyObject> module;
     ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, module,
                                     isolate_->module_manager()->ImportModule(
@@ -658,11 +682,32 @@ void Interpreter::EvalCurrentFrame() {
   })
 
   INTERPRETER_HANDLER_WITH_SCOPE(ImportFrom, {
+    // IMPORT_FROM 只出现在 `from x import y` 这一类语句里，
+    // 它处理的是第二阶段：基于栈顶父模块，再取出某个成员名。
+    //
+    // 与 ImportName 的分工差异：
+    // - ImportName：负责“把父模块 x 导进来”
+    // - ImportFrom：负责“从父模块 x 中拿到 y”
+    //
+    // 例如：
+    // - from os import path
+    //   先由 ImportName 导入 os
+    //   再由 ImportFrom 处理名字 path
+    // - from pkg import util
+    //   先由 ImportName 导入 pkg
+    //   再由 ImportFrom 处理名字 util
     auto parent_module = TOP();
     auto sub_module_name = Handle<PyString>::cast(
         current_frame_->names(isolate_)->Get(op_arg, isolate_));
 
-    // Fast Path: 如果目标子模块已经被解析过了，直接返回
+    // Fast Path:
+    // 如果父模块对象上已经有这个属性，就直接返回，不再触发新的 import。
+    //
+    // 典型例子：
+    // - from math import pi
+    //   pi 通常是 math 模块的普通属性，不需要继续导入 math.pi
+    // - from pkg import util
+    //   如果 pkg.__dict__ 里已经绑定了 util，也可以直接复用
     Handle<PyObject> value;
     GOTO_ON_EXCEPTION(
         PyObject::LookupAttr(isolate_, parent_module, sub_module_name, value));
@@ -672,7 +717,14 @@ void Interpreter::EvalCurrentFrame() {
       break;
     }
 
-    // Slow Path: 目标子模块还没被解析过，走完整的解析流程
+    // Slow Path:
+    // 父模块上还没有这个名字时，按“它可能是一个尚未加载的子模块”处理。
+    //
+    // 典型例子：
+    // - from os import path
+    //   如果 os.path 还没被挂到 os 对象上，就尝试继续导入 os.path
+    // - from pkg import util
+    //   如果 pkg.util 尚未绑定到 pkg，就尝试继续导入 pkg.util
     Handle<PyObject> parent_module_name_obj;
     ASSIGN_GOTO_ON_EXCEPTION(
         parent_module_name_obj,
@@ -683,18 +735,27 @@ void Interpreter::EvalCurrentFrame() {
       goto pending_exception_unwind;
     }
 
-    // 拼接目标子模块的完整符号名
-    // 如`from os import path`，则目标子模块`path`的
-    // 完整符号名为`os.path`。
+    // 通过父模块 __name__ + "." + 子名，拼出候选子模块全名。
+    // 例如：
+    // - parent="os",  sub="path" => "os.path"
+    // - parent="pkg", sub="util" => "pkg.util"
+    //
+    // 注意这里处理的是“子模块导入候选名”，不是普通属性访问。
     auto sub_module_fullname = Handle<PyString>::cast(parent_module_name_obj);
     sub_module_fullname =
         PyString::Append(sub_module_fullname, ST(dot, isolate_), isolate_);
     sub_module_fullname =
         PyString::Append(sub_module_fullname, sub_module_name, isolate_);
 
+    // 构造一个合成 fromlist，让 ImportModule 按
+    // “from parent import child” 的语义继续处理。
     auto synthetic_fromlist = PyTuple::New(isolate_, 1);
     synthetic_fromlist->SetInternal(0, sub_module_name);
 
+    // 继续导入候选子模块。
+    // 例如：
+    // - from os import path  => 这里尝试导入 os.path
+    // - from pkg import util => 这里尝试导入 pkg.util
     Handle<PyObject> submodule;
     ASSIGN_GOTO_ON_EXCEPTION_TARGET(isolate_, submodule,
                                     isolate_->module_manager()->ImportModule(
