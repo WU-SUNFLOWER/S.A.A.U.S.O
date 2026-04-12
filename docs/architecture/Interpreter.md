@@ -4,7 +4,7 @@
 
 ## 1. 解释器架构（`src/interpreter`）
 
-- **Interpreter**：字节码执行入口与跨语言调用入口；负责维护当前栈帧链、异常展开状态与 computed-goto 的 dispatch table。`builtins` 字典本身归属 `Isolate`，Interpreter 按需读取。
+- **Interpreter**：字节码执行器与调用算法实现层；负责维护当前栈帧链、异常展开状态与 computed-goto 的 dispatch table。对外执行门面统一收敛在 `src/execution/execution.h` 的 `Execution::*`，Interpreter 不再直接暴露顶层脚本启动 API。`builtins` 字典本身归属 `Isolate`，Interpreter 按需读取。
 - **builtins 字典（行为对齐用）**：
   - builtins 字典由 `BuiltinBootstrapper` 统一构建并挂到 `Isolate`（避免 Interpreter 构造函数膨胀），见 [builtin-bootstrapper.h](file:///e:/MyProject/S.A.A.U.S.O/src/interpreter/builtin-bootstrapper.h)。
 - 同时会注入最小异常类型对象体系：`BaseException/Exception` 以及 `TypeError/RuntimeError/ValueError/IndexError/KeyError/NameError/AttributeError/ZeroDivisionError/ImportError/ModuleNotFoundError/StopIteration` 等。
@@ -84,4 +84,3 @@ if (method != NULL) {
 ### 2.4 迁移/扩展注意事项
 
 - 如果未来引入更完整的 descriptor/`__get__` 协议，需要同步扩展 `GetAttrForCall` 的“是否可拆成 (method,self)”判定规则；目前仅对 `PyFunction/PyNativeFunction` 做了特判优化。
-
