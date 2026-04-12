@@ -165,13 +165,23 @@ MaybeHandle<PyObject> PySmiKlass::Virtual_Div(Isolate* isolate,
   assert(IsPySmi(self));
   int64_t self_value = PySmi::cast(*self).value();
   if (IsPySmi(other)) {
-    double value =
-        static_cast<double>(self_value) / PySmi::cast(*other).value();
+    int64_t other_value = PySmi::cast(*other).value();
+    if (other_value == 0) [[unlikely]] {
+      Runtime_ThrowError(isolate, ExceptionType::kZeroDivisionError,
+                         "division by zero");
+      return kNullMaybeHandle;
+    }
+    double value = static_cast<double>(self_value) / other_value;
     return PyFloat::New(isolate, value);
   }
   if (IsPyFloat(other)) {
-    double value =
-        static_cast<double>(self_value) / Handle<PyFloat>::cast(other)->value();
+    double other_value = Handle<PyFloat>::cast(other)->value();
+    if (other_value == 0.0) [[unlikely]] {
+      Runtime_ThrowError(isolate, ExceptionType::kZeroDivisionError,
+                         "float division by zero");
+      return kNullMaybeHandle;
+    }
+    double value = static_cast<double>(self_value) / other_value;
     return PyFloat::New(isolate, value);
   }
   Runtime_ThrowErrorf(isolate, ExceptionType::kTypeError,

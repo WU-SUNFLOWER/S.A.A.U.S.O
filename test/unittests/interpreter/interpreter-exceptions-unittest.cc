@@ -588,4 +588,36 @@ raise RuntimeError(1, 2, 3)
                                    kTestFileName);
 }
 
+TEST_F(BasicInterpreterTest, TrueDivideByZeroRaisesZeroDivisionError) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kIntDivIntZero = R"(
+10 / 0
+)";
+  RunScriptExpectExceptionContains(kIntDivIntZero,
+                                   "ZeroDivisionError: division by zero",
+                                   kTestFileName);
+
+  constexpr std::string_view kIntDivFloatZero = R"(
+10 / 0.0
+)";
+  RunScriptExpectExceptionContains(kIntDivFloatZero,
+                                   "ZeroDivisionError: float division by zero",
+                                   kTestFileName);
+
+  constexpr std::string_view kFloatDivIntZero = R"(
+10.0 / 0
+)";
+  RunScriptExpectExceptionContains(kFloatDivIntZero,
+                                   "ZeroDivisionError: float division by zero",
+                                   kTestFileName);
+
+  constexpr std::string_view kFloatDivFloatZero = R"(
+10.0 / 0.0
+)";
+  RunScriptExpectExceptionContains(kFloatDivFloatZero,
+                                   "ZeroDivisionError: float division by zero",
+                                   kTestFileName);
+}
+
 }  // namespace saauso::internal
