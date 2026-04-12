@@ -5,11 +5,13 @@
 #include <string_view>
 
 #include "src/code/compiler.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/interpreter/interpreter.h"
+#include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
+#include "src/objects/py-object.h"
 #include "src/objects/py-string.h"
 #include "test/unittests/test-helpers.h"
 #include "test/unittests/test-utils.h"
@@ -57,7 +59,7 @@ print("after")
   ExpectPrintResult(expected_printv_result);
 }
 
-TEST_F(BasicInterpreterTest, RunReturnsJustOnSuccess) {
+TEST_F(BasicInterpreterTest, RunScriptAsMainReturnsValueOnSuccess) {
   HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
@@ -68,12 +70,13 @@ print("ok")
   ASSERT_TRUE(Compiler::CompileSource(isolate(), kSource, kTestFileName)
                   .To(&boilerplate));
 
-  auto run_result = isolate()->interpreter()->Run(boilerplate);
-  ASSERT_FALSE(run_result.IsNothing());
+  Handle<PyObject> result;
+  ASSERT_TRUE(Execution::RunScriptAsMain(isolate(), boilerplate).ToHandle(
+      &result));
   ASSERT_FALSE(isolate()->HasPendingException());
 }
 
-TEST_F(BasicInterpreterTest, RunReturnsNothingOnUnhandledException) {
+TEST_F(BasicInterpreterTest, RunScriptAsMainReturnsNothingOnUnhandledException) {
   HandleScope scope(isolate_);
 
   constexpr std::string_view kSource = R"(
@@ -84,13 +87,31 @@ raise RuntimeError("boom")
   ASSERT_TRUE(Compiler::CompileSource(isolate(), kSource, kTestFileName)
                   .To(&boilerplate));
 
-  auto run_result = isolate()->interpreter()->Run(boilerplate);
-  ASSERT_TRUE(run_result.IsNothing());
+  Handle<PyObject> result;
+  ASSERT_FALSE(Execution::RunScriptAsMain(isolate(), boilerplate).ToHandle(
+      &result));
   ASSERT_TRUE(isolate()->HasPendingException());
 
   std::string msg = ExpectedAndTakePendingExceptionMessage();
   ASSERT_FALSE(msg.empty());
   EXPECT_NE(msg.find("RuntimeError"), std::string::npos);
+}
+
+TEST_F(BasicInterpreterTest, RunScriptAsMainSetsDunderName) {
+  HandleScope scope(isolate_);
+
+  constexpr std::string_view kSource = R"(
+assert __name__ == "__main__"
+)";
+
+  Handle<PyFunction> boilerplate;
+  ASSERT_TRUE(Compiler::CompileSource(isolate(), kSource, kTestFileName)
+                  .To(&boilerplate));
+
+  Handle<PyObject> result;
+  ASSERT_TRUE(Execution::RunScriptAsMain(isolate(), boilerplate).ToHandle(
+      &result));
+  ASSERT_FALSE(isolate()->HasPendingException());
 }
 
 }  // namespace saauso::internal
