@@ -6,7 +6,6 @@
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
 #include "src/handles/handles.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-smi.h"
