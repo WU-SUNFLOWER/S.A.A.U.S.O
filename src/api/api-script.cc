@@ -60,7 +60,7 @@ MaybeLocal<Value> Script::Run(Local<Context> context) {
       i_isolate,
       std::string_view(source_string->buffer(),
                        static_cast<size_t>(source_string->length())),
-      globals, globals);
+      globals, i::PyDict::New(i_isolate));
 
   i::Handle<i::PyObject> result;
   if (!maybe_result.ToHandle(&result)) {
