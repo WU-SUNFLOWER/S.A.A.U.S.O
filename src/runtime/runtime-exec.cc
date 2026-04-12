@@ -69,15 +69,13 @@ MaybeHandle<PyObject> Runtime_ExecutePyCodeObject(Isolate* isolate,
 
   // 将 code object 包装为一个可调用的 PyFunction，随后以“绑定 locals 作为
   // frame.locals” 的方式驱动解释器执行。
-  Handle<PyFunction> func =
+  Handle<PyFunction> boilerplate =
       isolate->factory()->NewPyFunctionWithCodeObject(code);
-  func->set_func_globals(globals);
 
   Handle<PyObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
-      Execution::Call(isolate, func, Handle<PyObject>::null(),
-                      Handle<PyTuple>::null(), Handle<PyDict>::null(), locals));
+      Execution::CallScript(isolate, boilerplate, locals, globals));
 
   return scope.Escape(result);
 }
