@@ -27,8 +27,6 @@ class Interpreter {
  public:
   explicit Interpreter(Isolate* isolate);
 
-  Maybe<void> Run(Handle<PyFunction> boilerplate);
-
   MaybeHandle<PyObject> CallPython(Handle<PyObject> callable,
                                    Handle<PyObject> receiver,
                                    Handle<PyTuple> pos_args,

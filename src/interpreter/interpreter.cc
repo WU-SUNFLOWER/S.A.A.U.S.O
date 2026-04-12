@@ -35,7 +35,6 @@
 #include "src/objects/visitors.h"
 #include "src/runtime/runtime-exceptions.h"
 #include "src/runtime/runtime-py-function.h"
-#include "src/runtime/string-table.h"
 
 namespace saauso::internal {
 
@@ -65,35 +64,6 @@ Handle<PyDict> Interpreter::CurrentFrameGlobals() const {
 Handle<PyDict> Interpreter::CurrentFrameLocals() const {
   assert(current_frame_ != nullptr);
   return current_frame_->locals(isolate_);
-}
-
-Maybe<void> Interpreter::Run(Handle<PyFunction> boilerplate) {
-  // 创建默认的 globals 全局字典
-  // 注意，对于根栈帧来说，它的局部作用域字典（locals）直接指向 globals！
-  Handle<PyDict> globals = PyDict::New(isolate_);
-  RETURN_ON_EXCEPTION(isolate_, PyDict::Put(globals, ST(name, isolate_),
-                                            ST(main, isolate_), isolate_));
-
-  boilerplate->set_func_globals(globals);
-
-  FrameObject* frame;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, frame,
-      FrameObjectBuilder::BuildFastPath(
-          isolate_, boilerplate, Handle<PyObject>::null(),
-          Handle<PyTuple>::null(), Handle<PyTuple>::null(), globals));
-
-  EnterFrame(frame);
-  EvalCurrentFrame();
-  DestroyCurrentFrame();
-
-  // 如果执行Python代码的过程中出现了未被处理的异常，
-  // 则显式向上传播。
-  if (isolate_->HasPendingException()) {
-    return kNullMaybe;
-  }
-
-  return JustVoid();
 }
 
 MaybeHandle<PyObject> Interpreter::CallPython(Handle<PyObject> callable,
