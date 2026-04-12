@@ -194,6 +194,23 @@ TEST(EmbedderPhase4Test, FloatBoolean_RoundTrip) {
   Saauso::Dispose();
 }
 
+TEST(EmbedderPhase4Test, NoneFactoryAndIsNone) {
+  Saauso::Initialize();
+  Isolate* isolate = Isolate::New();
+  ASSERT_NE(isolate, nullptr);
+
+  {
+    Isolate::Scope isolate_scope(isolate);
+    HandleScope scope(isolate);
+    Local<Value> none = None(isolate);
+    ASSERT_FALSE(none.IsEmpty());
+    EXPECT_TRUE(none->IsNone());
+  }
+
+  isolate->Dispose();
+  Saauso::Dispose();
+}
+
 TEST(EmbedderPhase4Test, ListTuple_Get_OutOfRange_SafeReturn) {
   Saauso::Initialize();
   Isolate* isolate = Isolate::New();

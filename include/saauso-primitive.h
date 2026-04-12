@@ -36,6 +36,8 @@ class Boolean final : public Value {
   bool Value() const;
 };
 
+Local<Value> None(Isolate* isolate);
+
 }  // namespace saauso
 
 #endif  // INCLUDE_SAAUSO_PRIMITIVE_H_

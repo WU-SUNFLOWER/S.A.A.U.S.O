@@ -7,6 +7,7 @@
 #include "include/saauso-value.h"
 #include "src/api/api-handle-utils.h"
 #include "src/api/api-isolate-utils.h"
+#include "src/objects/object-checkers.h"
 #include "src/objects/py-float.h"
 #include "src/objects/py-smi.h"
 #include "src/objects/py-string.h"
@@ -35,6 +36,15 @@ bool Value::IsBoolean() const {
   }
   i::Isolate* isolate = api::RequireCurrentIsolate();
   return i::IsPyTrue(object, isolate) || i::IsPyFalse(object, isolate);
+}
+
+bool Value::IsNone() const {
+  i::Handle<i::PyObject> object = api::Utils::OpenHandle(this);
+  if (object.is_null()) {
+    return false;
+  }
+  i::Isolate* isolate = api::RequireCurrentIsolate();
+  return i::IsPyNone(object, isolate);
 }
 
 Maybe<std::string> Value::ToString() const {
