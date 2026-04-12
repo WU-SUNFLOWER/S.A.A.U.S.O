@@ -6,11 +6,11 @@
 
 #include "include/saauso-initialization.h"
 #include "src/code/compiler.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/handles/global-handles.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-function.h"
 #include "src/objects/py-list.h"
@@ -96,7 +96,7 @@ void BasicInterpreterTest::TearDownTestSuite() {
 void BasicInterpreterTest::SetUp() {
   HandleScope scope(isolate_);
   printv_result_ = Global<PyList>(isolate_, PyList::New(isolate_));
-  isolate_->interpreter()->ClearPendingException();
+  isolate_->exception_state()->Clear();
 }
 
 void BasicInterpreterTest::RunScript(std::string_view source,
@@ -107,7 +107,7 @@ void BasicInterpreterTest::RunScript(std::string_view source,
     return;
   }
 
-  if (isolate_->interpreter()->Run(boilerplate).IsNothing()) {
+  if (Execution::RunScriptAsMain(isolate_, boilerplate).IsEmpty()) {
     ASSERT_TRUE(isolate_->HasPendingException());
   }
 
@@ -159,9 +159,10 @@ void BasicInterpreterTest::RunScriptExpectExceptionContains(
     return;
   }
 
-  auto run_result = isolate_->interpreter()->Run(boilerplate);
+  bool run_succeeded =
+      !Execution::RunScriptAsMain(isolate_, boilerplate).IsEmpty();
   if (isolate_->HasPendingException()) {
-    EXPECT_TRUE(run_result.IsNothing());
+    EXPECT_FALSE(run_succeeded);
   }
   ASSERT_TRUE(isolate_->HasPendingException());
 

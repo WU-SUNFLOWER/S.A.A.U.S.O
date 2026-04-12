@@ -27,8 +27,6 @@ class Interpreter {
  public:
   explicit Interpreter(Isolate* isolate);
 
-  Maybe<void> Run(Handle<PyFunction> boilerplate);
-
   MaybeHandle<PyObject> CallPython(Handle<PyObject> callable,
                                    Handle<PyObject> receiver,
                                    Handle<PyTuple> pos_args,
@@ -50,7 +48,6 @@ class Interpreter {
   Tagged<PyObject> caught_exception_tagged() const;
   Handle<PyObject> caught_exception() const;
 
-  void ClearPendingException();
   int python_execution_depth() const { return python_execution_depth_; }
 
   // GC接口

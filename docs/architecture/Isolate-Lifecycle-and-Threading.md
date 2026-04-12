@@ -17,7 +17,7 @@
 - 初始化 `StringTable`。
 - 创建全局单例 `None/True/False`（这些对象需要在大量初始化逻辑之前就可用）。
 - 正式初始化所有 `Klass`：`Initialize()`（常见动作：创建类字典、C3/MRO、绑定 type object 等）。
-- 初始化 `Interpreter`（提供字节码执行入口）。
+- 初始化 `Interpreter`（提供字节码执行器与调用算法实现，真正的对外执行入口统一由 execution 门面承接）。
 - 初始化 `ModuleManager`（负责 `sys.modules/sys.path` 与 import 入口）。
 - 构建并挂载 `builtins` 字典（`BuiltinBootstrapper`）。
 
@@ -29,4 +29,3 @@
 ## 4. 全局运行时初始化（`src/init`）
 
 - `saauso::Saauso::{Initialize,Dispose}` 位于 `src/init/`，用于嵌入式 CPython312 编译器前端的 Setup/TearDown。
-

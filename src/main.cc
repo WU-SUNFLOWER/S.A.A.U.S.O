@@ -10,9 +10,9 @@
 
 #include "include/saauso-initialization.h"
 #include "src/code/compiler.h"
+#include "src/execution/execution.h"
 #include "src/execution/isolate.h"
 #include "src/heap/heap.h"
-#include "src/interpreter/interpreter.h"
 #include "src/objects/py-dict.h"
 #include "src/objects/py-list.h"
 #include "src/objects/py-object.h"
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     if (isolate->initialized()) {
       Handle<PyFunction> boilerplate;
       if (LoadFunctionBoilerplate(isolate).To(&boilerplate)) {
-        if (isolate->interpreter()->Run(boilerplate).IsNothing()) {
+        if (Execution::RunScriptAsMain(isolate, boilerplate).IsNothing()) {
           exit_code = 1;
         }
       } else {
