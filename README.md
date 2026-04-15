@@ -8,6 +8,8 @@ S.A.A.U.S.O 是一个轻量级 Python 虚拟机（后端），其实现了 Pytho
 
 它既可以作为独立运行的 Python 脚本解释执行系统，也可以作为脚本引擎嵌入 C++ 宿主程序。
 
+> The name S.A.A.U.S.O is inspired by a fictional acronym from a Japanese anime, used here purely as a tribute.
+
 ## 1. 这个项目是什么
 
 ### 1.1 背景
