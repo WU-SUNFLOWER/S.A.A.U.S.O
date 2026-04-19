@@ -795,9 +795,11 @@ Handle<PyObject> Execution::RunScriptAsMain(Isolate* isolate, Handle<PyFunction>
 
 S.A.A.U.S.O VM 中句柄机制层的核心组件为 `HandleScopeImplementer`。该组件会负责管理一批内存块（block）。每个内存块会被视作一个提供若干 `Address` 槽位（slot）的定长 C 数组。在本文系统中，`Address` 用于代表指向堆上对象的内存地址。
 
-从实现本质上看， `Handle<T>` 并没有直接保存对象地址，而是保存了某个槽位的位置。这些槽位就来自 `HandleScopeImplementer` 管理的内存块。换言之，槽位中放置了实际指向堆上对象的地址，而 `Handle<T>` 自身则保存指向该槽位的指针，即 `Address* location_`。因此，当 VM 通过 Handle 访问对象时，逻辑上存在两次解引用：第一次对 `location_` 解引用，取出槽位中保存的对象地址；第二次再根据该对象地址访问真实对象内容。
+从实现本质上看，`Handle<T>` 并没有直接保存对象地址，而是保存了某个槽位的位置。这些槽位就来自 `HandleScopeImplementer` 管理的内存块。换言之，槽位中放置了实际指向堆上对象的地址，而 `Handle<T>` 自身则保存指向该槽位的指针，即 `Address* location_`。因此，当 VM 通过 Handle 访问对象时，逻辑上存在两次解引用：第一次对 `location_` 解引用，取出槽位中保存的对象地址；第二次再根据该对象地址访问真实对象内容。
 
-代码 4-7 给出了上述机制的删节实现。可以看到，`Handle<T>` 负责保存并解引用槽位，而 `HandleScopeImplementer` 则负责维护整片内存块的分配状态。
+值得注意的是，在实际使用时，除了直接拷贝 `Handle<T>` 的场景，VM 开发者往往会先拿到一个原始对象地址或 `Tagged<T>` 值，再向 `HandleScopeImplementer` 申请槽位并写入地址。具体而言，当代码以 `Handle(Tagged<T>, Isolate*)` 的形式构造对象句柄时，会进一步调用 `HandleScopeImplementer::CreateHandle()` 以申请一个空闲槽位，然后把原始对象地址写入该槽位中。
+
+代码 4-7 给出了上述机制的删节实现。可以看到，`Handle<T>` 负责保存并解引用槽位，而 `HandleScopeImplementer::CreateHandle()` 则负责完成“从原始对象地址申请槽位并写入对象地址”的过程。同时，`HandleScopeImplementer` 负责维护整片内存块的分配状态。
 
 ```cpp
 using Address = uintptr_t;
@@ -805,6 +807,15 @@ using Address = uintptr_t;
 template <typename T>
 class Handle {
  public:
+  Handle(Tagged<T> tagged, Isolate* isolate) {
+    if (object != kNullAddress) {
+      location_ = HandleScopeImplementer::CreateHandle(isolate, object.ptr());
+    }
+  }
+
+  template <typename S>
+  constexpr Handle(Handle<S> other) : Handle(other.location()) {}
+
   constexpr Address* location() const { return location_; }
 
   constexpr Tagged<T> operator*() const { return Tagged<T>(*location()); }
@@ -817,6 +828,7 @@ class Handle {
 class HandleScopeImplementer {
  public:
   static constexpr int kHandleBlockSize = 512;
+  static Address* CreateHandle(Isolate* isolate, Address ptr);
 
  private:
   Vector<Address*> blocks_;
@@ -824,42 +836,32 @@ class HandleScopeImplementer {
 ```
 代码 4-7
 
-这个设计是解决 3.4.3 中讨论的问题的关键。其一，C++ 代码不再直接传播对象地址，而是统一通过槽位间接引用对象，从而为 GC 机制留出了方便更新的中间层。其二，槽位本身由 `HandleScopeImplementer` 统一管理，使系统可以把"当前 native C++ 代码持有哪些对象引用"转化为"当前哪些槽位已经被分配且仍处于活跃状态"的问题进行处理。
+这个设计是解决 3.4.3 中讨论的问题的关键。其一，C++ 代码不再直接传播对象地址，而是统一通过槽位间接引用对象，从而为 GC 机制留出了方便扫描与更新的中间层。其二，槽位本身由 `HandleScopeImplementer` 统一管理，使系统可以把"当前 native C++ 代码持有哪些对象引用"转化为"当前哪些槽位已经被分配且仍处于活跃状态"的问题进行处理。
 
 ### 4.2.3 HandleScope 的作用域回退与长期句柄
 
-在局部执行场景中，S.A.A.U.S.O VM 通过 `HandleScope` 管理 Handle 槽位的生命周期。`HandleScope` 在创建时会保存当前 `HandleScopeImplementer` 的分配状态，在退出时再把该状态恢复到进入该作用域之前的位置。于是，该作用域内后续申请出去的局部 slot 就可以被整体视为“无效并可复用”。这正是 `HandleScope` 能够批量释放局部 Handle 的本质原因。
+在 4.2.2 中提到，创建 `Handle<T>` 时需要向 `HandleScopeImplementer` 申请槽位。那么反过来，本文系统中同时需要一种机制，能够在对象句柄失效时，能够及时释放其占用的槽位。这样，才能建立对象句柄槽位的生命周期闭环。
 
-代码清单 4-8 给出了 `HandleScope` 的删节实现。可以看到，构造函数会保存父级状态，析构时则恢复父级状态并释放当前作用域额外申请的 block；而新的 Handle 依然统一通过 `CreateHandle()` 在 slot 区域中顺序分配。
+在局部执行场景中，S.A.A.U.S.O VM 通过 `HandleScope` 管理 Handle 槽位的生命周期。如代码 4-8 给出的删节代码所示，`HandleScope` 在创建时会保存当前 `HandleScopeImplementer` 的分配状态，在退出析构时再把该状态恢复到进入该作用域之前的位置。于是，该作用域内后续申请出去的局部 slot 就可以被整体视为“无效并可复用”。这正是 `HandleScope` 能够批量释放局部 Handle 所申请槽位的本质原因。
 
 ```cpp
 HandleScope::HandleScope(Isolate* isolate) {
   auto* impl = isolate->handle_scope_implementer();
   auto* handle_scope_state = impl->handle_scope_state();
   previous_ = *handle_scope_state;
-  handle_scope_state->extension = 0;
 }
 
-void HandleScope::Close() {
+void HandleScope::~HandleScope() {
   auto* impl = isolate_->handle_scope_implementer();
   auto* handle_scope_state = impl->handle_scope_state();
-  impl->ReleaseSpareAndExtendedBlocks(handle_scope_state->extension);
   impl->set_handle_scope_state(&previous_);
 }
-
-Address* HandleScope::CreateHandle(Isolate* isolate, Address ptr) {
-  auto* handle_scope_state = isolate->handle_scope_implementer()->handle_scope_state();
-  if (handle_scope_state->next == handle_scope_state->limit) Extend(isolate);
-  Address* location = handle_scope_state->next;
-  *location = ptr;
-  ++handle_scope_state->next;
-  return location;
-}
 ```
+代码4-8
 
-因此，`HandleScope` 的本质并不是“提供一个更好看的 C++ 作用域接口”，而是“保存并回退 slot 分配状态”。当某个作用域结束后，系统并不需要逐个销毁其中的局部 Handle 对象，只需把 `next/limit/extension` 等状态恢复到父级作用域的快照即可。这种按作用域整体回退的方式，非常适合解释器、运行时和模块系统中大量短生命周期临时对象的管理场景。
+这种设计的一个好处在于，`HandleScope` 对槽位的释放是批量执行的，相较于每个 `Handle` 析构时各自释放自己申请的槽位，在 VM 这种对性能较为敏感的系统中更加合适。
 
-除局部 Handle 外，系统还需要处理那些生命周期明显长于单个局部执行过程的引用，例如运行时全局对象、部分宿主侧长期持有对象以及需要跨多次回收保留的状态。对此，S.A.A.U.S.O VM 进一步提供长期句柄形式 `Global<T>`。它与局部 Handle 的差别主要体现在生命周期管理策略上，而不是底层机制完全不同：长期句柄同样依赖受管 slot，只是这些 slot 不会随着某个局部 `HandleScope` 的退出而一起回退。
+与此同时，除局部 Handle 外，VM 系统中还可能存在生命周期明显长于单个局部执行过程的引用，例如运行时全局对象、部分宿主侧长期持有对象等。对此，S.A.A.U.S.O VM 进一步提供长期句柄形式 `Global<T>`。虽然它的底层机制与一般的 `Handle<T>` 类似，均依赖 `HandleScopeImplementer` 提供的槽位实现，但它所申请的槽位确实长期占用的，并不会随着某个局部 `HandleScope` 的退出而一并释放。
 
 ### 4.2.4 与垃圾回收的协同
 
