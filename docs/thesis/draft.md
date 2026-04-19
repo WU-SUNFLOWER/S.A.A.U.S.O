@@ -516,9 +516,7 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 ### 3.4.4 对象表示层
 
-对象表示层负责定义 Python 对象在 VM 内部的统一表示方式，并组织类型元信息、对象布局以及核心对象模型。
-
-在核心对象模型层面，S.A.A.U.S.O VM 采用“对象实例数据与类型行为分离”的总体思路，对运行时、解释器等 VM 更上层逻辑提供通用的对象行为调用入口。
+对象表示层主要包括 VM 的对象系统。对象系统负责给出系统中 Python 对象的表示方式、内存布局、对象行为分派机制，并支撑 Python 作为面向对象语言应有的封装、继承与多态能力。
 
 ### 3.4.5 执行层
 
@@ -791,7 +789,7 @@ Handle<PyObject> Execution::RunScriptAsMain(Isolate* isolate, Handle<PyFunction>
 
 需要强调的是，句柄机制是 S.A.A.U.S.O VM 中解释器、运行时和对象工厂等高层逻辑都必须依赖的基础设施。只有让 VM 中的所有高层逻辑都统一依赖句柄机制，才能将 VM 内部高层逻辑中所有堆堆上对象的临时引用，统一纳入虚拟机堆系统和 GC 逻辑的统一管控，而不会演变为难以追踪的 C++ 裸指针。
 
-### 4.2.2 Handle 与槽位模型
+### 4.2.2 对象句柄与槽位模型
 
 S.A.A.U.S.O VM 中句柄机制层的核心组件为 `HandleScopeImplementer`。该组件会负责管理一批内存块（block）。每个内存块会被视作一个提供若干 `Address` 槽位（slot）的定长 C 数组。在本文系统中，`Address` 用于代表指向堆上对象的内存地址。
 
@@ -836,7 +834,7 @@ class HandleScopeImplementer {
 ```
 代码 4-7
 
-这个设计是解决 3.4.3 中讨论的问题的关键。其一，C++ 代码不再直接传播对象地址，而是统一通过槽位间接引用对象，从而为 GC 机制留出了方便扫描与更新的中间层。其二，槽位本身由 `HandleScopeImplementer` 统一管理，使系统可以把"当前 native C++ 代码持有哪些对象引用"转化为"当前哪些槽位已经被分配且仍处于活跃状态"的问题进行处理。
+槽位模型是解决 3.4.3 中所提出问题的关键。在 4.2.4 中会进一步说明它所起到的作用。
 
 ### 4.2.3 HandleScope 的作用域回退与长期句柄
 
@@ -863,11 +861,13 @@ void HandleScope::~HandleScope() {
 
 与此同时，除局部 Handle 外，VM 系统中还可能存在生命周期明显长于单个局部执行过程的引用，例如运行时全局对象、部分宿主侧长期持有对象等。对此，S.A.A.U.S.O VM 进一步提供长期句柄形式 `Global<T>`。虽然它的底层机制与一般的 `Handle<T>` 类似，均依赖 `HandleScopeImplementer` 提供的槽位实现，但它所申请的槽位确实长期占用的，并不会随着某个局部 `HandleScope` 的退出而一并释放。
 
-### 4.2.4 与垃圾回收的协同
+### 4.2.4 与 GC 机制的协同
 
-句柄机制真正的价值，最终体现在它与 GC 的协同上。GC 发生时，`HandleScopeImplementer` 管理的 slot block 会被统一当作 roots 扫描；扫描过程中，visitor 会读取 slot 中的对象地址，并在对象被复制移动后把 slot 直接更新到新地址。这样一来，只要后续代码仍通过 Handle 访问对象，就总能经由 slot 间接访问到移动后的最新地址，而不会再持有失效的旧地址。
+在建立了对象句柄的槽位模型，并明确槽位的生命周期管理之后，下一步就是实现句柄机制与 GC 机制的协同。
 
-代码清单 4-9 给出了 Handle slot 被纳入 GC 扫描的删节实现。
+在 4.1.2 中已经提到，`HandleScopeImplementer` 作为根集合的一部分，会在 GC 发生时被 GC 访问器扫描。具体到实现，GC 访问器会逐个扫描 `HandleScopeImplementer` 所管理内存块当中已经被分配出去的有效槽位。扫描过程中，访问器会逐个读取槽位中的对象地址，并在对象位置被调整后将槽位中的内容直接更新为新地址。这样一来，一方面 GC 机制就成功找到了所有在 native C++ 代码中被对象句柄持有的存活对象；另一方面，只要后续代码仍通过 Handle 访问对象，就总能经由对应槽位间接访问到移动后的最新地址，而非已经失效的旧地址。
+
+代码 4-9 给出了这一过程的删节实现。
 
 ```cpp
 void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
@@ -888,12 +888,29 @@ void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
   }
 }
 ```
+代码 4-9
 
-结合前文 Scavenge 访问器的实现可以进一步看到，`VisitPointers()` 并不只是“观察一下这些 slot”，而是会在需要时触发对象复制，并把 slot 更新到 forwarding 之后的新地址。由此，S.A.A.U.S.O VM 实际上把“native 代码持有堆对象引用”这一问题，转化为了“GC 扫描并维护一组受管 slot”的问题。这一转换正是 Handle/HandleScope 机制能够成立并且必要的根本原因。
+可以进一步指出的是，在当前版本的 S.A.A.U.S.O VM 实现中，这段代码中的 GC 访问器，即为 4.1.3 中提及的 `ScavengeVisitor`。如代码 4-10 所示，在 `ScavengeVisitor::VisitPointers()` 当中，会进一步调用 `ScavengeVisitor::EvacuateObject()` 将槽位所指的对象复制至 Survivor 空间，并在槽位中写入复制后对象的新地址。`ScavengeVisitor::EvacuateObject()` 的内部实现代码，同样已经在 4.1.3 给出过了。
+
+```cpp
+void ScavengeVisitor::VisitPointers(Tagged<PyObject>* start,
+                                    Tagged<PyObject>* end) {
+  for (Tagged<PyObject>* p = start; p < end; ++p) {
+    Tagged<PyObject> object = *p;
+    if (!CanEvacuate(object)) {
+      continue;
+    }
+    EvacuateObject(p);
+  }
+}
+```
+代码 4-10
+
+总的来说，S.A.A.U.S.O VM 实际上把“寻找并维护 native 代码持有的堆对象引用”这一需求，转化为“GC 机制扫描并维护一组已知槽位”的需求，从而成功解决了 3.4.3 中所提出的问题。
 
 ## 4.3 对象系统实现
 
-对象系统是 S.A.A.U.S.O VM 形成 Python 运行时语义的基础。无论是整数、字符串、列表、函数、模块，还是用户定义类与实例，最终都必须被统一表示为可由 VM 管理和分派的对象。如果没有稳定的对象系统，后续的解释执行、属性访问、方法调用、异常传播和模块装载都无法形成一致的实现基础。
+在 3.4.4 中，已经探讨了。本节中将进一步探讨对象系统在 S.A.A.U.S.O VM 中的具体落地实现。
 
 ### 4.3.1 统一对象表示
 
