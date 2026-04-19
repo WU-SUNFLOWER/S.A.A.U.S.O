@@ -768,49 +768,69 @@ Handle<PyDict> Factory::NewDict(int64_t init_capacity) {
 
 ## 4.2 句柄机制实现
 
-仅有托管堆还不足以支撑整个 VM 正常工作，因为大量运行时逻辑本身是由 C++ 代码实现的。这意味着解释器、运行时和模块系统在执行过程中会频繁临时持有堆上对象。为了让这些引用在垃圾回收发生时仍然保持安全，S.A.A.U.S.O VM 引入了专门的句柄机制。
+在 3.4.3 中，已经从 VM 总体设计的角度，论述了引入句柄机制层的背景与动机。在本节中，将进一步从实际 S.A.A.U.S.O VM 系统实现的角度，介绍对象句柄在实际系统中的使用方法，以及句柄机制的内部实现。
 
-### 4.2.1 引入句柄机制的原因
+### 4.2.1 VM 代码中的句柄使用方式
 
-如果 VM 内部直接在高层逻辑中传播裸指针，那么一旦回收器移动对象地址，原有指针就会立即失效。更进一步地说，GC 还必须知道当前有哪些 native 代码引用着哪些对象，否则便无法正确判断这些对象是否仍然存活。句柄机制的意义，正是在托管对象与 native 代码之间建立一个可被 VM 感知和统一管理的中间层。
+在介绍句柄机制的内部实现之前，本小节将首先说明一个更贴近 VM 日常开发的问题：在 S.A.A.U.S.O VM 的 C++ 代码中，对象句柄究竟是如何被实际使用的。总体上，VM 开发者并不会直接在高层逻辑中直接使用裸指针传递堆堆对象的引用，而是优先使用 `Handle<T>` 持有对象；与此同时，当某段逻辑可能临时创建一批新的对象引用时，一般情况下需要先创建相应的句柄作用域，即 `HandleScope` 或 `EscapableHandleScope`。
 
-在 S.A.A.U.S.O VM 中，这种设计使对象引用不再只是某段 C++ 代码私有保存的地址，而是变成了垃圾回收器可以枚举、更新和保护的受管引用。这是整个系统能够安全支持对象移动与自动回收的前提之一。
+代码 4-6 给出了 `Execution::RunScriptAsMain()` 的删节实现。该函数很好地展示了 S.A.A.U.S.O VM 中对象句柄的典型用法：先建立 `EscapableHandleScope`，再通过 `Handle<T>` 持有新创建的对象，最后通过 `scope.Escape()` 将需要返回到外层作用域的结果安全导出。
+
+```cpp
+Handle<PyObject> Execution::RunScriptAsMain(Isolate* isolate, Handle<PyFunction> boilerplate) {
+  EscapableHandleScope scope(isolate);
+
+  Handle<PyDict> globals = PyDict::New(isolate);
+  PyDict::Put(globals, ST(name, isolate), ST(main, isolate));
+
+  Handle<PyObject> result = CallScript(isolate, boilerplate, globals, globals);
+  return scope.Escape(result);
+}
+```
+代码 4-6
+
+需要强调的是，句柄机制是 S.A.A.U.S.O VM 中解释器、运行时和对象工厂等高层逻辑都必须依赖的基础设施。只有让 VM 中的所有高层逻辑都统一依赖句柄机制，才能将 VM 内部高层逻辑中所有堆堆上对象的临时引用，统一纳入虚拟机堆系统和 GC 逻辑的统一管控，而不会演变为难以追踪的 C++ 裸指针。
 
 ### 4.2.2 Handle 与槽位模型
 
-从实现本质上看，S.A.A.U.S.O VM 并没有让 `Handle<T>` 直接保存对象地址，而是让它保存某个槽位（slot）的位置。`HandleScopeImplementer` 统一管理多块用于存放槽位的内存区域，每个槽位本质上只是一个 `Address`，其内容为某个堆上对象的当前地址。`Handle<T>` 自身则保存指向该槽位的指针，即 `Address* location`。因此，当 VM 通过 Handle 访问对象时，逻辑上存在两次解引用：第一次对 `location` 解引用，取出槽位中保存的对象地址；第二次再根据该对象地址访问真实对象内容。
+S.A.A.U.S.O VM 中句柄机制层的核心组件为 `HandleScopeImplementer`。该组件会负责管理一批内存块（block）。每个内存块会被视作一个提供若干 `Address` 槽位（slot）的定长 C 数组。在本文系统中，`Address` 用于代表指向堆上对象的内存地址。
 
-代码清单 4-5 给出了这一机制的删节定义。可以看到，`Handle<T>` 负责保存并解引用 slot，而 `HandleScopeImplementer` 则负责维护整片 slot block 的分配状态。
+从实现本质上看， `Handle<T>` 并没有直接保存对象地址，而是保存了某个槽位的位置。这些槽位就来自 `HandleScopeImplementer` 管理的内存块。换言之，槽位中放置了实际指向堆上对象的地址，而 `Handle<T>` 自身则保存指向该槽位的指针，即 `Address* location_`。因此，当 VM 通过 Handle 访问对象时，逻辑上存在两次解引用：第一次对 `location_` 解引用，取出槽位中保存的对象地址；第二次再根据该对象地址访问真实对象内容。
+
+代码 4-7 给出了上述机制的删节实现。可以看到，`Handle<T>` 负责保存并解引用槽位，而 `HandleScopeImplementer` 则负责维护整片内存块的分配状态。
 
 ```cpp
+using Address = uintptr_t;
+
 template <typename T>
-class Handle : public HandleBase {
+class Handle {
  public:
-  explicit Handle(Address* location) : HandleBase(location) {}
+  constexpr Address* location() const { return location_; }
 
   constexpr Tagged<T> operator*() const { return Tagged<T>(*location()); }
   constexpr T* operator->() const { return Tagged<T>(*location()).operator->(); }
+
+ private:
+  Address* location_{nullptr};
 };
 
 class HandleScopeImplementer {
  public:
   static constexpr int kHandleBlockSize = 512;
-  HandleScope::State* handle_scope_state();
 
  private:
-  HandleScope::State handle_scope_state_;
   Vector<Address*> blocks_;
-  Address* spare_{nullptr};
 };
 ```
+代码 4-7
 
-这一设计有两个直接收益。其一，C++ 代码不再直接传播对象地址，而是统一通过 slot 间接引用对象，从而为 GC 留出了可扫描、可更新的中间层。其二，slot 本身由 `HandleScopeImplementer` 统一管理，使系统可以把“当前 native 代码持有哪些对象引用”转化为“当前哪些 slot 已经被分配且仍处于活跃状态”的问题。也正因如此，Handle 机制的关键不在于“包装了一层对象指针”，而在于它把 native 引用纳入了 VM 可追踪的统一内存模型。
+这个设计是解决 3.4.3 中讨论的问题的关键。其一，C++ 代码不再直接传播对象地址，而是统一通过槽位间接引用对象，从而为 GC 机制留出了方便更新的中间层。其二，槽位本身由 `HandleScopeImplementer` 统一管理，使系统可以把"当前 native C++ 代码持有哪些对象引用"转化为"当前哪些槽位已经被分配且仍处于活跃状态"的问题进行处理。
 
 ### 4.2.3 HandleScope 的作用域回退与长期句柄
 
 在局部执行场景中，S.A.A.U.S.O VM 通过 `HandleScope` 管理 Handle 槽位的生命周期。`HandleScope` 在创建时会保存当前 `HandleScopeImplementer` 的分配状态，在退出时再把该状态恢复到进入该作用域之前的位置。于是，该作用域内后续申请出去的局部 slot 就可以被整体视为“无效并可复用”。这正是 `HandleScope` 能够批量释放局部 Handle 的本质原因。
 
-代码清单 4-6 给出了 `HandleScope` 的删节实现。可以看到，构造函数会保存父级状态，析构时则恢复父级状态并释放当前作用域额外申请的 block；而新的 Handle 依然统一通过 `CreateHandle()` 在 slot 区域中顺序分配。
+代码清单 4-8 给出了 `HandleScope` 的删节实现。可以看到，构造函数会保存父级状态，析构时则恢复父级状态并释放当前作用域额外申请的 block；而新的 Handle 依然统一通过 `CreateHandle()` 在 slot 区域中顺序分配。
 
 ```cpp
 HandleScope::HandleScope(Isolate* isolate) {
@@ -845,7 +865,7 @@ Address* HandleScope::CreateHandle(Isolate* isolate, Address ptr) {
 
 句柄机制真正的价值，最终体现在它与 GC 的协同上。GC 发生时，`HandleScopeImplementer` 管理的 slot block 会被统一当作 roots 扫描；扫描过程中，visitor 会读取 slot 中的对象地址，并在对象被复制移动后把 slot 直接更新到新地址。这样一来，只要后续代码仍通过 Handle 访问对象，就总能经由 slot 间接访问到移动后的最新地址，而不会再持有失效的旧地址。
 
-代码清单 4-7 给出了 Handle slot 被纳入 GC 扫描的删节实现。
+代码清单 4-9 给出了 Handle slot 被纳入 GC 扫描的删节实现。
 
 ```cpp
 void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
