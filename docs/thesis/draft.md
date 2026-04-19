@@ -639,7 +639,7 @@ class MetaSpace : public PagedSpace { ... };
 
 在 3.4.2 中，已经论述了当系统选择 tracing GC 的理由与算法思想，并引出了根集合与可达性的概念。
 
-在实现层面，S.A.A.U.S.O VM 的根集合来源并不单一，它既包括 `Isolate` 持有的关键运行时对象，也包括解释器函数调用堆栈、活动句柄作用域、内建类型元信息、模块缓存、异常状态中持有的对象引用。
+在实现层面，S.A.A.U.S.O VM 的根集合来源并不单一，它既包括 `Isolate` 持有的关键运行时对象，也包括解释器函数调用堆栈、句柄机制、内建类型元信息、模块缓存、异常状态中持有的对象引用。
 
 换言之，垃圾回收并不是仅涉及堆模块自己的局部逻辑，而是整个 VM 各个子系统的全局协作过程。只有把各个子系统中的运行时状态作为扫描起点都显式暴露给 GC 系统，它才能成功遍历到 VM 中全体仍然存活的对象。
 
@@ -668,6 +668,8 @@ void Heap::IterateRoots(ObjectVisitor* v) {
 代码 4-2
 
 从这段代码可以看出，根集合在实现中被显式组织出来的一批运行时状态入口。如果在 `Heap::IterateRoots()` 中遗漏了某一个入口，例如遗漏了句柄系统、解释器栈帧或模块缓存，那么 GC 就可能错误地把仍然存活的对象视为垃圾并提前回收。因此，对 tracing GC 而言，“对象遍历能力”和“如何将 VM 子系统或持有状态暴露为根”与具体采用何种回收算法同样重要。
+
+与此同时，句柄机制作为一个关键的 GC 扫描根，其内部机制将在 4.2 中进一步展开介绍。
 
 ### 4.1.3 具体的垃圾回收算法与实现
 
@@ -720,31 +722,51 @@ void ScavengeVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 
 ### 4.1.4 工厂分配与对象初始化约束
 
-为了避免对象分配逻辑散落在各个业务模块中，S.A.A.U.S.O VM 通过统一的 `Factory` 入口组织对象创建过程。这样做的直接意义，在于可以集中控制对象分配顺序、字段初始化规则以及对象何时对外可见。
+在建立虚拟机堆之后，就可以在它上面分配内存并创建对象了。在 S.A.A.U.S.O VM 中，引入了统一的工厂函数用于在堆上创建对象并完成初始化。一般情况下，VM 的上层业务逻辑只需要直接调用这些工厂函数即可。
 
-这一点在带有垃圾回收的系统中尤为重要。若一个对象尚未完成初始化便被提前暴露，而此时又发生新的堆分配或触发回收，就可能出现“半初始化对象参与系统运行”的危险情况。因此，S.A.A.U.S.O VM 在实现中对对象创建阶段施加了额外约束，尽量把“申请内存”“填充字段”“建立可达关系”组织为一条更清晰、更安全的路径。
-
-为了更具体地说明这一点，代码清单 4-4 给出了 `Factory::NewDictLike()` 的删节实现。该函数能够较集中地体现统一工厂入口、初始化阶段禁止再次触发堆分配以及对象在完成最小初始化后再继续扩展内部数据结构这几个关键约束。
+代码 4-4 展示了本文系统中部分常用的工厂函数。
 
 ```cpp
-Handle<PyDict> Factory::NewDictLike(Tagged<Klass> klass_self,
-                                    int64_t init_capacity) {
+class Factory {
+ public:
+  Handle<PyDict> NewPyDict(int64_t init_capacity);
+  Handle<PyList> NewPyList(int64_t init_capacity);
+  Handle<PyString> NewString(const char* source, int64_t str_length, bool in_meta_space);
+  Handle<PyFunction> NewPyFunctionWithCodeObject(Handle<PyCodeObject> code_object);
+  // 后略...
+};
+```
+代码4-4
+
+这个设计主要有两个目的。其一，可以避免对象分配与初始化逻辑散落在 VM 更上层的业务逻辑中，或者在 VM 更上层中出现重复造轮子的问题。其二，提供统一的抽象工厂函数对 VM 堆中的内存分配接口进行封装，可以避免 VM 堆直接向更上层逻辑暴露接口细节，从而强化系统的分层架构边界。其三，将对象的分配与初始化逻辑收敛到统一的工厂函数中完成，可以避免 VM 更上层的业务逻辑在自行创建和初始化对象时，因操作顺序不当而引发错误。
+
+第三点在可能因申请堆内存而触发 GC 的系统中尤为重要。例如，若一个对象中在其指针字段尚未被初始化（相当于一个野指针）的情况下，系统因为接下来的堆内存申请操作而触发了 GC，就可能出现 GC 逻辑在扫描该对象时因尝试访问野指针，而导致系统崩溃或其他不可预知的问题。
+
+为了更具体地说明这一点，代码清单 4-5 给出了 `Factory::NewDict()` 的删节实现。
+
+```cpp
+Handle<PyDict> Factory::NewDict(int64_t init_capacity) {
   EscapableHandleScope scope(isolate_);
   Handle<PyDict> object(Allocate<PyDict>(Heap::AllocationSpace::kNewSpace),
                         isolate_);
   {
     DisallowHeapAllocation disallow(isolate_);
     object->set_occupied(0);
-    PyDict::SetKlass(object, klass_self);
     object->set_data(Tagged<FixedArray>::null());
     PyObject::SetProperties(*object, Tagged<PyDict>::null());
   }
 
   Handle<FixedArray> data = NewFixedArray(init_capacity * 2);
   object->set_data(data);
-```
 
-从这段代码可以看到，对象在刚被分配出来后，并不会立刻进入“任意可用”状态，而是先在 `DisallowHeapAllocation` 保护下完成最基本的字段初始化。这样做的意义在于，若对象尚未建立起最小一致状态时又触发新的分配或垃圾回收，系统就有可能观察到一个处于半初始化状态的对象。只有当这些关键字段已经被安全写入之后，后续才继续为字典申请底层数组等附属结构。由此可见，S.A.A.U.S.O VM 并不是把对象创建理解为一次简单的 `new` 操作，而是把它视为一个必须与 GC 安全约束共同设计的受控过程。
+  return object;
+}
+```
+代码 4-5
+
+在这段代码中，`DisallowHeapAllocation` 是 S.A.A.U.S.O VM 内部实现的辅助工具，用于管控其所在的 C++ 作用域，提醒 VM 开发者避免在该作用域内执行向虚拟机堆申请内存的操作。若开发者在 debug 模式下误在受 `DisallowHeapAllocation` 管控的作用域内申请 VM 堆内存，则系统会自动检测到并抛出提示。
+
+从这段代码可以看到，Python 字典对象在刚被分配出来后，工厂函数并不会立刻为它申请内部数据结构，而是先在 `DisallowHeapAllocation` 保护下完成最基本的字段初始化，将对象中的指针字段预填充为 null。这样做的目的在于，在对象中的字段尚未完成最基本的初始化之前，若因为再次申请 VM 堆内存而引发 GC，就有可能出现上文所述的系统因野指针而发生错误。因此在本文系统的工厂函数的实现中，统一要求对象的全体字段先完成最基本的初始化，再执行申请内部数据结构等需要与 VM 堆交互的操作。
 
 ## 4.2 句柄机制实现
 
