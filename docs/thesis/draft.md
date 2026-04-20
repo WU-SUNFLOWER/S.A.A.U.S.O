@@ -1282,17 +1282,17 @@ void KlassVtable::InitializeFromSupers(Isolate* isolate, Tagged<Klass> klass) {
 ```
 代码 4-22
 
-## 4.4 执行层实现
+## 4.4 执行层基建的实现
 
-在完成堆、句柄机制和对象系统之后，S.A.A.U.S.O VM 才真正具备了“让 Python 程序运行起来”的基础。执行层的职责，就是把这些底层能力进一步组织为完整的运行时系统。按照第 3 章中的分层定义，执行层内部又可分为运行时语义、内建能力、模块系统、代码装载前端和字节码解释器等若干子部分。它们既各自承担不同职责，又共同服务于同一条主线，即把输入的 Python 程序转换为可持续推进的执行过程。
+在完成堆、句柄机制和对象系统之后，S.A.A.U.S.O VM 才真正具备了“让 Python 程序运行起来”的基础。不过，从工程实现的角度看，真正推动字节码逐条执行的解释器，并不是执行层的全部。要让一段 Python 程序进入“可被执行”的状态，系统还必须先完成运行时入口收口、内建环境装配、模块导入组织以及代码装载等准备工作。基于这一考虑，本文将执行层中这些更靠近“执行前提”的部分单独归入“执行层基建”进行说明；而把与栈帧推进、函数调用和异常展开高度耦合的部分，放到下一节集中讨论。
 
 ### 4.4.1 运行时语义与执行门面
 
-S.A.A.U.S.O VM 并没有把“执行一段脚本”简单设计为直接调用解释器中的某个底层方法，而是先通过执行门面层统一收口，再转入具体执行逻辑。这样做一方面可以避免高层模块直接耦合解释器内部细节，另一方面也便于脚本执行、模块执行、函数调用等不同场景共享相对一致的进入方式。
+S.A.A.U.S.O VM 并没有把“执行一段脚本”简单设计为直接调用解释器中的某个底层方法，而是先通过执行门面层统一收口，再转入具体执行逻辑。这样做一方面可以避免高层模块直接耦合解释器内部细节，另一方面也便于脚本执行、模块执行和函数调用等不同场景共享相对一致的进入方式。
 
 与此同时，执行层还需要承载大量不适合直接写入解释器主循环的高层语义逻辑，例如对象协议辅助、执行过程中的通用转换与调度支持等。这些能力由运行时语义部分统一组织，可以有效减轻解释器负担，使解释器更专注于控制流推进和执行现场管理。
 
-代码清单 4-21 给出了执行门面 `Execution` 中主脚本运行路径的删节实现。该实现较好地说明了本文在第 3 章所强调的一个总体设计原则，即解释器并不是对外直接暴露的脚本入口，而是被收敛在更高层的执行门面之后。
+代码清单 4-23 给出了执行门面 `Execution` 中主脚本运行路径的删节实现。
 
 ```cpp
 MaybeHandle<PyObject> Execution::RunScriptAsMain(
@@ -1320,27 +1320,17 @@ MaybeHandle<PyObject> Execution::CallScript(Isolate* isolate,
 }
 ```
 
-从这段代码可以看出，主脚本执行并不是简单“把代码对象扔给解释器”即可完成，而是至少还要处理默认全局命名空间的创建、`__name__ = "__main__"` 的注入以及脚本函数对象的公共调用入口收敛。这种做法的价值在于，脚本执行、模块执行和函数调用虽然底层都依赖解释器，但它们在进入解释器之前所需的上下文准备并不完全相同。把这些差异留在 `Execution` 门面层统一组织，能够显著降低解释器主路径的耦合度，也使系统对外呈现出更清晰的执行语义。
+从这段代码可以看出，主脚本执行并不是简单“把代码对象交给解释器”即可完成，而是至少还要处理默认全局命名空间的创建、`__name__ = "__main__"` 的注入，以及脚本函数对象的公共调用入口收敛。这种做法的价值在于，脚本执行、模块执行和函数调用虽然底层都依赖解释器，但它们在进入解释器之前所需的上下文准备并不完全相同。把这些差异留在 `Execution` 门面层统一组织，能够显著降低解释器主路径的耦合度，也使系统对外呈现出更清晰的执行语义。
 
-### 4.4.2 异常状态与抛错门面
-
-异常机制是执行层中最关键的公共语义之一。S.A.A.U.S.O VM 没有把异常状态仅仅放在解释器内部，而是将其集中挂载在 `Isolate` 上统一管理。这样做的原因在于，异常并不只会在解释器某条字节码处理路径上产生，运行时层、内建函数甚至嵌入接口桥接层都可能触发异常对象的创建与传播。
-
-为了使不同模块的抛错方式保持一致，系统还提供了统一的抛错门面。无论错误来自何处，最终都尽量通过统一接口构造异常对象并写入待传播异常状态。这样的设计一方面符合 Python 以异常对象作为控制流载体的语言特征，另一方面也让错误处理在工程上更可维护。
-
-### 4.4.3 基于异常表的异常展开
-
-在异常真正传播时，S.A.A.U.S.O VM 采用了与现代 CPython 字节码模型相一致的异常表思路。也就是说，解释器在检测到待传播异常后，会结合当前代码对象携带的异常表信息判断当前指令位置是否处于某个异常处理范围内，并据此定位 `except` 或 `finally` 对应的处理器。
-
-若当前栈帧无法处理异常，解释器还需要继续向更外层调用帧展开。这说明异常机制天然依赖栈帧结构和调用边界。S.A.A.U.S.O VM 在实现上将“异常状态的记录”与“异常控制流的恢复”进行分离：前者由共享运行时状态承担，后者则由解释器在合适时机完成。这样的划分既保证了各层都能统一抛错，也保证了真正的控制流恢复仍然掌握在执行引擎手中。
-
-### 4.4.4 内建能力的启动装配
+### 4.4.2 内建能力的启动装配
 
 一个 Python 虚拟机即使已经拥有对象系统和解释器，如果没有基本的内建运行环境，仍然无法真正“可用”。因此，S.A.A.U.S.O VM 在执行层中专门组织了内建能力子系统，用于在 `Isolate` 初始化阶段统一装配基础 builtins、基础类型名、单例对象以及最小异常类型对象等运行环境。
 
 这部分能力的意义在于，它把用户脚本中最常见、最基础的语言入口组织成可直接使用的运行时上下文。一方面，解释器执行顶层脚本和函数体时需要依赖这些名称与对象；另一方面，模块系统、运行时语义和嵌入接口也会共享这一批基础环境。因此，内建能力子系统虽然不直接体现为某种复杂算法，但它是整个执行层得以启动的必要条件。
 
-### 4.4.5 模块系统实现
+与此同时，这一节与下一节介绍的函数对象设计也形成了衔接关系。对于用户程序而言，`print`、`len` 等内建函数与普通 Python 函数都表现为“可调用对象”；但在虚拟机内部，它们被统一装配进内建命名空间，并在调用阶段再由解释器区分走普通函数路径还是 native 路径。也正因为有了这层预先装配，解释器在查找全局名和内建名时，才能将两者纳入同一套调用语义之中。
+
+### 4.4.3 模块系统实现
 
 模块系统是 S.A.A.U.S.O VM 从“能够执行单段脚本”走向“能够支撑较真实程序结构”的关键一环。相比独立执行一段顶层代码，支持 `import` 语义意味着系统必须额外回答模块名如何解析、文件如何查找、包结构如何识别、模块如何缓存以及父子模块关系如何维护等问题。
 
@@ -1348,9 +1338,7 @@ MaybeHandle<PyObject> Execution::CallScript(Isolate* isolate,
 
 其中，模块管理器承担了类似 `sys.modules` 与 `sys.path` 的核心状态维护职责。解释器在执行导入相关字节码时，会先检查模块缓存；若目标模块已经加载，则直接复用现有对象；否则再进入后续的名称解析、路径查找和模块加载流程。这样既保证了模块对象身份的一致性，也避免了同一模块体被重复执行。
 
-当模块位置被确定之后，系统还需要创建对应模块对象，补全命名空间并执行模块体代码完成初始化。这里的执行本质上仍然依赖解释器，只是其上下文不再是普通脚本的全局环境，而是目标模块自己的命名空间。这一过程清楚体现出对象系统、解释器和模块系统之间的协作关系。
-
-为了说明模块导入确实是一条独立的复合运行时路径，代码清单 4-22 给出了 `ModuleImporter::ImportModule()` 的删节实现。该实现清楚展示了“名称解析 -> 合法性检查 -> 递交到导入实现主路径 -> 处理 `fromlist` 返回语义”这一高层组织方式。
+代码清单 4-24 给出了 `ModuleImporter::ImportModule()` 的删节实现。
 
 ```cpp
 MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
@@ -1381,21 +1369,291 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
 }
 ```
 
-这段代码说明，S.A.A.U.S.O VM 并没有把模块导入压缩为解释器中的单个特判分支，而是通过专门的导入器对象协调名称解析、错误处理、模块加载和返回语义整理等多个环节。尤其值得注意的是，`ImportModule()` 自身并不直接负责全部文件查找与模块体执行细节，而是把更底层的工作继续下放到 `ImportModuleImpl()` 等子路径中。这种拆分方式与本文前面所强调的“模块系统应作为执行层中的独立子系统存在”的设计判断是完全一致的。
+这段代码说明，S.A.A.U.S.O VM 并没有把模块导入压缩为解释器中的单个特判分支，而是通过专门的导入器对象协调名称解析、错误处理、模块加载和返回语义整理等多个环节。尤其值得注意的是，`ImportModule()` 自身并不直接负责全部文件查找与模块体执行细节，而是把更底层的工作继续下放到 `ImportModuleImpl()` 等子路径中。这种拆分方式与本文第 2 章关于模块机制的分析是一致的，即模块导入本质上是一条独立的复合运行时路径，而不是解释器中的某个零散技巧。
 
-### 4.4.6 代码装载前端实现
+### 4.4.4 代码装载前端实现
 
 解释器并不能直接执行任意文本输入，它必须先获得内部可执行表示。因此，执行层中还包含代码装载前端，用于把 Python 源码或 `.pyc` 文件转化为 VM 可以执行的代码对象。
 
 对本文课题而言，重点研究对象是 PVM 后端，因此 S.A.A.U.S.O VM 在源码编译能力上采用了“可选复用 CPython 前端”的策略；与此同时，系统也支持直接装载 `.pyc` 路径。这样的实现具有两个意义。其一，它能够让系统在研究重心仍放在后端的前提下具备较完整的输入链路；其二，它也在结构上进一步说明了前端与后端的职责分工，即前端负责构造可执行表示，后端负责真正执行这些表示。
 
-### 4.4.7 字节码解释器实现
+代码清单 4-25 给出了代码装载前端的删节实现。
 
-字节码解释器是执行层中最直接体现“程序正在运行”的部分。S.A.A.U.S.O VM 的解释器负责接收代码对象和当前运行上下文，逐条调度字节码，并在执行过程中维护栈帧、操作数栈、局部变量、返回值和异常传播状态。
+```cpp
+MaybeHandle<PyFunction> Compiler::CompileSource(Isolate* isolate,
+                                                const char* source,
+                                                size_t source_size,
+                                                std::string_view filename) {
+  EscapableHandleScope scope(isolate);
 
-为了支撑函数调用、递归执行和局部环境隔离，系统引入了显式的 `FrameObject` 作为栈帧表示。每个栈帧保存程序计数器、局部变量区、操作数栈以及与当前代码对象相关的辅助信息。采用显式栈帧对象的好处在于：调用边界更清晰，局部执行状态更容易统一管理，同时这些状态也更容易被纳入 GC 根集合和异常展开流程。
+#if !SAAUSO_ENABLE_CPYTHON_COMPILER
+  Runtime_ThrowError(
+      ExceptionType::kRuntimeError,
+      "RuntimeError: CompileSource() requires embedded CPython compiler");
+  return kNullMaybeHandle;
+#else
+  std::vector<uint8_t> pyc = EmbeddedPython312Compiler::CompileToPycBytes(
+      std::string_view(source, source_size), filename);
+  CPython312PycFileParser parser(
+      std::span<const uint8_t>(pyc.data(), pyc.size()), isolate);
+  Handle<PyCodeObject> code = parser.Parse();
+  Handle<PyFunction> func =
+      isolate->factory()->NewPyFunctionWithCodeObject(code);
+  return scope.Escape(func);
+#endif
+}
 
-在具体执行方式上，S.A.A.U.S.O VM 采用基于调度表的字节码分派机制。相比将所有语义堆叠在单个巨大 `switch-case` 中，这种方式更有利于在字节码种类逐步增多后保持实现清晰。代码清单 4-23 给出了 `EvalCurrentFrame()` 中与调度相关的删节实现。
+MaybeHandle<PyFunction> Compiler::CompilePyc(Isolate* isolate,
+                                             std::vector<uint8_t> bytes) {
+  EscapableHandleScope scope(isolate);
+  CPython312PycFileParser parser(
+      std::span<const uint8_t>(bytes.data(), bytes.size()), isolate);
+  Handle<PyCodeObject> code = parser.Parse();
+  Handle<PyFunction> func =
+      isolate->factory()->NewPyFunctionWithCodeObject(code);
+  return scope.Escape(func);
+}
+```
+
+从这段代码可以更直观地看到，无论输入是源码还是 `.pyc` 文件，执行层最终都会把外部输入收敛为内部的 `PyCodeObject`，再进一步包装成 `PyFunction` 交给后续执行路径处理。换言之，代码装载前端的职责并不是“执行代码”，而是为解释器准备统一的可执行表示。这一点与第 2 章关于“代码对象是程序静态描述，运行时动态状态在后续执行阶段维护”的理论分析是完全一致的。
+
+## 4.5 字节码解释器与异常处理的实现
+
+在前一节完成执行入口、运行环境、模块导入和代码装载之后，S.A.A.U.S.O VM 才真正进入“解释执行”这一核心阶段。需要说明的是，受论文篇幅限制，本文不可能逐一介绍每个字节码 handler 的实现逻辑，否则第 4 章很容易退化为字节码规范手册。基于这一现实考虑，本文只选取与第 2 章理论分析关系最紧密的几类机制进行说明，即函数对象表示、栈帧组织、命名空间查找、函数调用主路径、调度表解释器以及异常展开机制。
+
+### 4.5.1 Python 函数对象与可调用对象表示
+
+第 2 章已经指出，Python 中的函数并不是一段裸代码，而是运行时动态创建的函数对象。对 S.A.A.U.S.O VM 而言，这一点在实现中被进一步具体化为：普通 Python 函数与 native 函数统一由 `PyFunction` 对象承载，只是在其内部保存的元数据和实际调用路径上有所区别。
+
+代码清单 4-26 给出了 `PyFunction` 定义以及 `MAKE_FUNCTION` 字节码处理逻辑的删节实现。
+
+```cpp
+class PyFunction : public PyObject {
+ public:
+  Handle<PyCodeObject> func_code(Isolate* isolate) const;
+  Handle<PyDict> func_globals(Isolate* isolate) const;
+  Handle<PyTuple> default_args(Isolate* isolate) const;
+  Handle<PyTuple> closures(Isolate* isolate) const;
+
+  NativeFuncPointer native_func() const { return native_func_; }
+  NativeFuncPointerWithClosure native_func_with_closure() const {
+    return native_func_with_closure_;
+  }
+
+ private:
+  Tagged<PyObject> func_code_{kNullAddress};
+  Tagged<PyObject> func_globals_{kNullAddress};
+  Tagged<PyObject> default_args_{kNullAddress};
+  Tagged<PyObject> closures_{kNullAddress};
+  NativeFuncPointer native_func_{nullptr};
+  NativeFuncPointerWithClosure native_func_with_closure_{nullptr};
+  Tagged<PyObject> native_closure_data_{kNullAddress};
+};
+
+INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
+  auto code_object = Handle<PyCodeObject>::cast(POP());
+  Handle<PyFunction> func =
+      isolate_->factory()->NewPyFunctionWithCodeObject(code_object);
+  func->set_func_globals(current_frame_->globals(isolate_));
+
+  if (op_arg & MakeFunctionOpArgMask::kClosure) {
+    func->set_closures(Handle<PyTuple>::cast(POP()));
+  }
+  if (op_arg & MakeFunctionOpArgMask::kDefaults) {
+    func->set_default_args(Handle<PyTuple>::cast(POP()));
+  }
+  PUSH(func);
+})
+```
+
+这段代码说明，`PyFunction` 至少同时承担了四类信息的组织责任：其一，`func_code_` 对应函数的静态代码对象；其二，`func_globals_` 对应函数创建时绑定的全局命名空间；其三，`default_args_` 与 `closures_` 分别对应默认参数和闭包变量；其四，`native_func_` 等字段则为 native 函数调用提供宿主回调入口。也就是说，在虚拟机内部，普通函数和 native 函数并不是两套完全割裂的对象体系，而是共享同一套“可调用 Python 对象”外形。
+
+与此同时，`MAKE_FUNCTION` 字节码的处理逻辑也直接回应了第 2 章的理论分析。解释器在运行到函数定义语句时，并不是简单记录某个代码对象，而是即时创建新的 `PyFunction`，并把当时可见的全局变量表、默认参数和闭包元组写入函数对象内部。这样一来，第 2 章中提到的“函数对象与所在模块全局命名空间发生动态绑定”“函数对象可能携带默认参数与闭包状态”等现象，便在实现层面得到了明确落点。
+
+### 4.5.2 栈帧数据结构与局部执行现场
+
+第 2 章还指出，代码对象只描述程序的静态部分，而程序运行过程中的动态状态需要由栈帧维护。S.A.A.U.S.O VM 中，这一职责由 `FrameObject` 和 `FrameObjectBuilder` 共同承担。前者负责保存栈帧本体，后者负责在函数调用发生时构造这个局部执行现场。
+
+代码清单 4-27 给出了相关实现的删节代码。
+
+```cpp
+class FrameObject : Object {
+ public:
+  Handle<FixedArray> stack(Isolate* isolate) const;
+  Handle<PyDict> locals(Isolate* isolate) const;
+  Handle<FixedArray> localsplus(Isolate* isolate) const;
+  Handle<PyDict> globals(Isolate* isolate) const;
+  Handle<PyCodeObject> code_object(Isolate* isolate) const;
+  Handle<PyFunction> func(Isolate* isolate) const;
+  int pc() const { return pc_; }
+  FrameObject* caller() const { return caller_; }
+
+ private:
+  Tagged<PyObject> stack_{kNullAddress};
+  int stack_top_{0};
+  Tagged<PyObject> locals_{kNullAddress};
+  Tagged<PyObject> localsplus_{kNullAddress};
+  Tagged<PyObject> globals_{kNullAddress};
+  Tagged<PyObject> code_object_{kNullAddress};
+  Tagged<PyObject> func_{kNullAddress};
+  int64_t pc_{0};
+  FrameObject* caller_{nullptr};
+};
+
+struct FrameBuildContext {
+  Handle<PyCodeObject> code_object;
+  Handle<PyFunction> func;
+  Handle<PyDict> locals;
+  Handle<PyDict> globals;
+  Handle<FixedArray> localsplus;
+  Handle<FixedArray> stack;
+  int64_t real_formal_pos_arg_cnt{0};
+  int64_t formal_pos_arg_cnt{0};
+  int self_arg_cnt{0};
+  int localsplus_idx{0};
+};
+```
+
+可以看到，一个 `FrameObject` 至少同时维护了操作数栈、局部变量表、局部槽位区、全局变量表、当前代码对象、当前函数对象以及程序计数器 `pc_` 等信息。这些字段与第 2 章对栈帧职责的描述是逐项对应的。其中，`caller_` 字段尤其重要，因为它使各个 Python 栈帧能够串联成一条显式的函数调用链，而不仅仅是若干彼此孤立的局部状态块。
+
+同时还需要特别说明 `locals_` 与 `localsplus_` 的分工。`locals_` 更接近于按符号名组织、与 Python 语义直接对应的局部命名空间，而 `localsplus_` 则是解释器内部高频访问的槽位数组，用于顺序放置形参、局部变量、Cell 变量和 Free 变量。也正因为采用了这种二分设计，S.A.A.U.S.O VM 才既能保留 Python 语义上的命名空间概念，又能在热点路径中使用更高效的下标访问方式。
+
+### 4.5.3 局部变量、全局变量与闭包变量查找
+
+在第 2 章关于命名空间和变量绑定机制的分析中，已经指出 Python 中至少同时存在局部、全局、内建和闭包几类名称查找路径。S.A.A.U.S.O VM 在解释器实现中，分别通过不同字节码 handler 对应这些查找语义，而不是把所有变量访问都统一退化为一套慢速字典查询。
+
+代码清单 4-28 给出了几类代表性变量查找路径的删节实现。
+
+```cpp
+INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
+  Handle<PyObject> key =
+      current_frame_->names(isolate_)->Get(op_arg, isolate_);
+  Handle<PyObject> value;
+  bool found = false;
+
+  ASSIGN_GOTO_ON_EXCEPTION(
+      found,
+      PyDict::Get(current_frame_->locals(isolate_), key, value, isolate_));
+  if (found) { PUSH(value); break; }
+
+  ASSIGN_GOTO_ON_EXCEPTION(
+      found,
+      PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
+  if (found) { PUSH(value); break; }
+
+  ASSIGN_GOTO_ON_EXCEPTION(
+      found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
+  if (found) { PUSH(value); break; }
+})
+
+INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
+  Handle<PyObject> key =
+      current_frame_->names(isolate_)->Get(op_arg >> 1, isolate_);
+  Handle<PyObject> value;
+  bool found = false;
+
+  ASSIGN_GOTO_ON_EXCEPTION(
+      found,
+      PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
+  if (found) { PUSH(value); break; }
+
+  ASSIGN_GOTO_ON_EXCEPTION(
+      found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
+  if (found) { PUSH(value); break; }
+})
+
+INTERPRETER_HANDLER_WITH_SCOPE(
+    LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
+
+INTERPRETER_HANDLER_WITH_SCOPE(
+    StoreFast, current_frame_->localsplus(isolate_)->Set(op_arg, *POP());)
+
+INTERPRETER_HANDLER_WITH_SCOPE(LoadDeref, {
+  Tagged<Cell> cell =
+      Tagged<Cell>::cast(current_frame_->localsplus(isolate_)->Get(op_arg));
+  Tagged<PyObject> value = cell->value_tagged();
+  if (!value.is_null()) [[likely]] {
+    PUSH(value);
+    break;
+  }
+  ...
+})
+
+INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
+  Tagged<PyObject> value = POP_TAGGED();
+  Tagged<Cell> cell =
+      Tagged<Cell>::cast(current_frame_->localsplus(isolate_)->Get(op_arg));
+  cell->set_value(value);
+})
+```
+
+从这部分实现中可以看到，S.A.A.U.S.O VM 并不是用一条单一规则处理全部变量访问。`LOAD_FAST/STORE_FAST` 直接针对 `localsplus` 槽位进行下标读写，这与第 2 章提到的“局部变量区可被视作一个定长数组”的分析完全一致；`LOAD_NAME` 则依次查找局部、全局和内建命名空间，从而对应顶层脚本和普通非优化环境中的名称解析语义；`LOAD_DEREF/STORE_DEREF` 则通过 `Cell` 访问闭包自由变量，从而把闭包变量的读写从普通局部变量路径中区分出来。
+
+这也意味着，第 2 章中关于“变量读取并不是对某个固定内存位置的直接访问，而是对名称绑定关系的解析”这一判断，在本文系统里并不是停留在理论层面，而是被切分为多条不同的实现路径。S.A.A.U.S.O VM 用不同字节码处理不同类别的变量访问，正是为了让 Python 的命名空间规则能够在运行时被较准确地落实。
+
+### 4.5.4 函数调用主路径与调用栈管理
+
+函数调用是第 2 章最强调的核心机制之一。对于 S.A.A.U.S.O VM 而言，这一过程既包括普通 Python 函数的建帧与解释执行，也包括 native 函数的直接调用路径，还包括 Python 调用栈本身如何被创建、维护和回退。
+
+代码清单 4-29 给出了相关实现的删节代码。
+
+```cpp
+MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
+                                                  Handle<PyObject> receiver,
+                                                  Handle<PyTuple> pos_args,
+                                                  Handle<PyDict> kw_args) {
+  EscapableHandleScope scope(isolate_);
+  NormalizeCallable(callable, receiver);
+  Handle<PyObject> result;
+
+  if (IsNormalPyFunction(callable, isolate_)) {
+    FrameObject* frame;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate_, frame,
+        FrameObjectBuilder::BuildSlowPath(
+            isolate_, Handle<PyFunction>::cast(callable), receiver, pos_args,
+            kw_args));
+    frame->set_is_entry_frame(true);
+    EnterFrame(frame);
+    EvalCurrentFrame();
+
+    Handle<PyObject> result = ReleaseReturnValue();
+    DestroyCurrentFrame();
+    if (isolate_->HasPendingException()) return kNullMaybeHandle;
+    return scope.Escape(result);
+  }
+
+  ASSIGN_RETURN_ON_EXCEPTION(
+      isolate_, result,
+      CallNonNormalFunction(callable, receiver, pos_args, kw_args));
+  return scope.Escape(result);
+}
+
+void Interpreter::EnterFrame(FrameObject* frame) {
+  frame->set_caller(current_frame_);
+  current_frame_ = frame;
+  ++python_execution_depth_;
+}
+
+void Interpreter::DestroyCurrentFrame() {
+  FrameObject* callee = current_frame_;
+  current_frame_ = callee->caller();
+  --python_execution_depth_;
+  delete callee;
+}
+```
+
+这段代码说明，普通 Python 函数调用在进入解释器之前至少经历了四个关键阶段：首先，对传入的 callable 与 receiver 做归一化处理；其次，通过 `FrameObjectBuilder` 构造新的 Python 栈帧，并在构造过程中完成参数绑定、默认参数回填以及局部变量区初始化；再次，通过 `EnterFrame()` 把新建栈帧压入当前 Python 调用栈；最后，在 `EvalCurrentFrame()` 返回后提取返回值，并通过 `DestroyCurrentFrame()` 恢复上一层栈帧。
+
+与此同时，`CallPythonImpl()` 也清楚体现出普通 Python 函数与 native 函数在执行路径上的分流：若目标 callable 是普通函数，则进入“建帧后解释执行”的主路径；若目标 callable 属于 native 函数等其他可调用对象，则改走 `CallNonNormalFunction()` 对应的运行时路径。这种设计一方面保持了用户视角下“它们都是可调用对象”的统一外观，另一方面又避免了让 native 函数不必要地经过完整的 Python 栈帧解释流程。
+
+从第 2 章的角度回看，这里已经形成了较完整的闭环：函数调用不再是抽象的“控制权切换”，而是被具体实现为“创建新栈帧 -> 把新栈帧链接到 `caller_` 链上 -> 解释器推进字节码 -> 取回返回值 -> 销毁当前帧”的过程。因此，S.A.A.U.S.O VM 中的函数调用堆栈并不是隐含在 C++ 调用栈之中的，而是由虚拟机自身显式维护的 Python 调用栈结构。
+
+### 4.5.5 基于调度表的字节码分派
+
+在具备函数对象、栈帧和变量访问机制之后，解释器才真正进入“逐条推进字节码”的主循环。这里仍需再次强调：本文不会将第 4 章写成逐字节码的规范说明，而只选取能体现执行模型主线的代表性 handler。其目的不在于罗列全部指令细节，而在于说明第 2 章中关于栈机模型、程序计数器和控制流推进的理论基础，究竟如何在 S.A.A.U.S.O VM 中落地。
+
+代码清单 4-30 给出了与调度和控制流最相关的删节实现。
 
 ```cpp
 #define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
@@ -1413,72 +1671,106 @@ MaybeHandle<PyModule> ModuleImporter::ImportModule(Handle<PyString> name,
     goto* dispatch_table_[op_code];                     \
   } while (0)
 
-#define INTERPRETER_HANDLER_DISPATCH(bytecode, ...) \
-  INTERPRETER_HANDLER(bytecode) {                   \
-    do { __VA_ARGS__ } while (0);                   \
-    DISPATCH();                                     \
+INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
+  Tagged<PyObject> condition = POP_TAGGED();
+  if (!Runtime_PyObjectIsTrue(isolate_, condition)) {
+    current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
   }
+})
 ```
 
-从这段代码可以看出，解释器主循环并不是在每一步都重新进入一个大型条件分支，而是通过 `dispatch_table_` 直接跳转到当前字节码对应的 handler。`DISPATCH()` 宏同时负责处理三类关键状态：其一，若当前已经出现待传播异常，则立即转入异常展开路径；其二，若当前栈帧的字节码已经执行完毕，则直接退出解释器；其三，若仍可继续执行，则读取下一条字节码及其参数，并跳转到目标 handler。对一个教学导向但又追求工程完整性的 PVM 后端而言，这种实现方式既保留了典型栈式解释器的执行模型，也比单纯的 `switch-case` 写法更能体现调度机制本身的结构化设计。
+从这段代码可以看出，解释器主循环并不是在每一步都重新进入一个大型条件分支，而是通过 `dispatch_table_` 直接跳转到当前字节码对应的 handler。`DISPATCH()` 宏同时负责处理三类关键状态：其一，若当前已经出现待传播异常，则立即转入异常展开路径；其二，若当前栈帧的字节码已经执行完毕，则直接退出解释器；其三，若仍可继续执行，则读取下一条字节码及其参数，并跳转到目标 handler。
 
-对于普通 Python 函数调用，解释器并不会在主循环内部临时拼装全部调用现场，而是先通过 `FrameObjectBuilder` 构造栈帧，再进入解释器执行。代码清单 4-24 给出了 `CallPythonImpl()` 的删节实现。
+同时，`JumpIfFalse` 的例子也很好地回应了第 2 章关于控制流的分析。程序计数器的推进并不是单纯地机械加一，而是会受到条件判断结果的直接影响；而条件判断本身又需要借助 `Runtime_PyObjectIsTrue()` 把任意 Python 对象解释为逻辑上的真或假。由此可见，第 2 章中提出的“控制流既表现为程序计数器变化，又离不开对象真值语义”的判断，在本文系统中是通过解释器调度与运行时语义协同实现的。
+
+### 4.5.6 异常状态、异常表与展开机制
+
+异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。对 S.A.A.U.S.O VM 而言，异常处理之所以值得单独成节，恰恰是因为它同时涉及异常状态的记录、异常表查找、操作数栈恢复以及函数调用栈的向上展开。
+
+代码清单 4-31 给出了异常状态与异常展开主路径的删节实现。
 
 ```cpp
-MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
-                                                  Handle<PyObject> receiver,
-                                                  Handle<PyTuple> pos_args,
-                                                  Handle<PyDict> kw_args) {
-  EscapableHandleScope scope(isolate_);
-  NormalizeCallable(callable, receiver);
-
-  if (IsNormalPyFunction(callable, isolate_)) {
-    FrameObject* frame;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate_, frame,
-        FrameObjectBuilder::BuildSlowPath(
-            isolate_, Handle<PyFunction>::cast(callable), receiver, pos_args,
-            kw_args));
-
-    frame->set_is_entry_frame(true);
-    EnterFrame(frame);
-    EvalCurrentFrame();
-
-    Handle<PyObject> result = ReleaseReturnValue();
-    DestroyCurrentFrame();
-    if (isolate_->HasPendingException()) return kNullMaybeHandle;
-    return scope.Escape(result);
+class ExceptionState final {
+ public:
+  bool HasPendingException() const { return !pending_exception_.is_null(); }
+  Tagged<PyObject> pending_exception_tagged() const { return pending_exception_; }
+  int pending_exception_pc() const { return pending_exception_pc_; }
+  void set_pending_exception_pc(int pc) { pending_exception_pc_ = pc; }
+  int pending_exception_origin_pc() const {
+    return pending_exception_origin_pc_;
   }
-  ...
+  void set_pending_exception_origin_pc(int pc) {
+    pending_exception_origin_pc_ = pc;
+  }
+  void Throw(Handle<PyBaseException> exception);
+  void Clear();
+
+ private:
+  Tagged<PyObject> pending_exception_{kNullAddress};
+  int pending_exception_pc_{kInvalidProgramCounter};
+  int pending_exception_origin_pc_{kInvalidProgramCounter};
+};
+
+pending_exception_unwind: {
+  auto* exception_state = isolate_->exception_state();
+  exception_state->set_pending_exception_pc(current_frame_->pc() -
+                                            kBytecodeSizeInBytes);
+
+  ExceptionHandlerInfo handler_info;
+  if (ExceptionTable::LookupHandler(
+          isolate_, current_frame_->code_object(isolate_),
+          exception_state->pending_exception_pc(), handler_info)) {
+    current_frame_->set_stack_top(handler_info.stack_depth);
+    if (handler_info.need_push_lasti) {
+      PUSH(PySmi::FromInt(exception_state->pending_exception_origin_pc()));
+    }
+    PUSH(exception_state->pending_exception_tagged());
+    exception_state->Clear();
+    current_frame_->set_pc(handler_info.handler_pc);
+    DISPATCH();
+  }
+
+  if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
+    goto exit_interpreter;
+  }
+  UnwindCurrentFrameForException();
+  DISPATCH();
+}
 ```
 
-这段代码说明，普通 Python 函数调用在进入解释器之前至少经历了三个关键阶段：首先，对传入的 callable 与 receiver 做归一化处理；其次，通过 `FrameObjectBuilder` 创建新的 Python 栈帧，并在构造过程中一并完成参数绑定、默认参数回填以及局部变量区初始化；最后，解释器再接手这个已经准备好的栈帧，负责真正的字节码执行、返回值提取与异常检查。由此可见，S.A.A.U.S.O VM 并没有把“函数调用准备”和“字节码执行推进”混杂到同一层中，而是通过栈帧构建与解释执行两步协作，保持了执行层内部较清晰的职责边界。
+首先，`ExceptionState` 被挂在 `Isolate` 上，而不是解释器内部的局部结构中。这意味着运行时、内建函数和解释器都可以通过统一接口写入待传播异常状态，从而避免不同模块各自维护一套错误表示。其次，当解释器在 `DISPATCH()` 前检测到存在 pending exception 时，会立即跳入 `pending_exception_unwind`，说明异常传播已经被直接纳入解释器主循环，而不是事后补救。
 
-## 4.5 Embedder API 实现
+更关键的是，异常展开的过程与第 2 章所分析的栈展开逻辑形成了非常直接的对应关系。若 `ExceptionTable::LookupHandler()` 在当前栈帧中命中有效处理器，解释器就先恢复操作数栈深度，再把异常对象和必要的 `lasti` 信息压栈，随后把程序计数器直接跳转到目标 handler；若当前栈帧中不存在匹配处理器，则调用 `UnwindCurrentFrameForException()` 销毁当前栈帧，并继续向上一层 `caller` 传播。也就是说，S.A.A.U.S.O VM 中的异常处理并不是“记录一个错误然后返回”，而是由解释器真正负责恢复控制流、裁剪栈帧并寻找新的执行落点。
+
+因此，从第 2 章关于异常机制的理论分析，到本节关于 `ExceptionState`、异常表和栈展开的实现说明，本文已经形成了一条较完整的闭环：异常对象是传播载体，`ExceptionState` 负责统一保存传播态错误，解释器根据异常表恢复控制流，而函数调用栈则为异常继续向外层传播提供了承载结构。
+
+## 4.6 Embedder API 实现
 
 除了作为独立解释执行系统之外，S.A.A.U.S.O VM 还希望具备较好的嵌入能力。因此，系统专门设计并实现了一套面向宿主程序的 Embedder API，用于把 VM 核心能力以更稳定、易用的方式暴露给外部 C++ 应用。
 
-### 4.5.1 对外接口的总体结构
+### 4.6.1 对外接口的总体结构
 
 S.A.A.U.S.O VM 的嵌入接口采用“公共头文件 + API 桥接层 + VM 内核实现”三层结构。最外层是供宿主直接包含和调用的公共接口，中间层负责把公共接口对象转换为 VM 内核可理解的内部表示，最内层则是真正的解释器、运行时和对象系统。
 
 这种结构的最大优点是实现细节不会直接泄漏给外部调用者。宿主程序可以通过 `Isolate`、`Context`、`Script`、`Value`、`Function`、`TryCatch` 等相对稳定的概念使用虚拟机，而不需要了解内部对象布局、GC 细节或解释器状态管理方式。
 
-### 4.5.2 运行时生命周期管理
+### 4.6.2 运行时生命周期管理
 
 在 Embedder API 中，`Isolate` 是最外层的 VM 生命周期单元。宿主程序首先初始化库并创建 `Isolate`，再在其内部创建 `Context` 作为脚本运行环境，最后通过 `Script` 接口编译和执行脚本。这样的结构与前文总体设计中“以 `Isolate` 作为系统装配中心”的思路保持一致，也使对外接口具有较好的可理解性。
 
 从宿主视角看，这套接口大幅降低了“接入一个虚拟机”所需的心智负担：只要理解一个 VM 实例、一个上下文环境和一段脚本对象这三个核心概念，便能基本完成嵌入过程。
 
-### 4.5.3 宿主与脚本的双向互操作
+### 4.6.3 宿主与脚本的双向互操作
 
 S.A.A.U.S.O VM 的 Embedder API 并不只支持“宿主把一段脚本跑起来”，还支持更重要的双向互操作能力。一方面，宿主程序可以创建函数对象并将其注入脚本环境，使 Python 脚本调用 C++ 回调；另一方面，宿主程序也可以从脚本上下文中取回 Python 函数对象，并在 C++ 侧发起调用。
 
 这种双向互操作能力，是 S.A.A.U.S.O VM 具备“脚本引擎”属性的重要体现。对论文而言，这一部分不仅展示了嵌入接口的工程价值，也展示了对象系统、函数调用机制和异常传播机制如何向外部接口自然延伸。
 
-## 4.6 本章小结
+## 4.7 本章小结
 
-本章按照“虚拟机堆 -> 句柄机制 -> 对象系统 -> 执行层 -> 嵌入接口”的顺序，对 S.A.A.U.S.O VM 的关键实现进行了归纳和说明。可以看到，这些模块虽然关注点不同，但在实现上并不是彼此孤立的：堆提供托管内存基础，句柄机制保证对象引用安全，对象系统提供统一数据表示，执行层把这些基础进一步组织为可运行的 Python 语义，而嵌入接口则将内核能力整理为宿主可用的脚本引擎接口。
+本章按照“虚拟机堆 -> 句柄机制 -> 对象系统 -> 执行层基建 -> 字节码解释器与异常处理 -> 嵌入接口”的顺序，对 S.A.A.U.S.O VM 的关键实现进行了归纳和说明。可以看到，这些模块虽然关注点不同，但在实现上并不是彼此孤立的：堆提供托管内存基础，句柄机制保证对象引用安全，对象系统提供统一语义载体，执行层基建为程序运行准备必要环境，而解释器与异常处理则真正推动 Python 程序的逐步执行，最后由嵌入接口把这些能力整理为宿主可用的脚本引擎接口。
+
+更重要的是，经过本章的重构后，第 4 章已经能够与第 2 章中关于 PVM 执行模型、命名空间与变量绑定、函数对象、栈帧、异常机制和模块系统的理论分析形成较清晰的前后呼应关系。第 2 章回答“一个最小可用的 PVM 后端需要解决哪些问题”，而第 4 章则进一步回答“这些问题在 S.A.A.U.S.O VM 中分别落到了哪些数据结构、调用链与工程模块上”。
 
 因此，S.A.A.U.S.O VM 的工程难点并不在于孤立地完成某一个模块，而在于让这些模块在统一的运行时容器和清晰的层次结构下形成稳定协作关系。也正是这种分层清晰、主路径闭环的系统实现，构成了本文工作的核心内容。下一章将在此基础上，通过测试与结果分析对系统的功能正确性、兼容性和当前表现进行验证。
 
