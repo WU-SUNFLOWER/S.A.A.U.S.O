@@ -389,10 +389,16 @@ instance.bar()
 
 除了单继承之外，Python 还支持多继承。多继承带来的核心问题是：当多个父类中存在同名属性或方法时，PVM 应当按照什么顺序进行查找。为此，Python 引入了方法解析顺序（Method Resolution Order，MRO）的概念，并采用 C3 线性化算法生成类层次结构中的查找顺序。
 
-C3 线性化算法由 Kim Barrett, Bob Cassels 等人在论文《A Monotonic Superclass Linearization for Dylan》中提出。
+C3 线性化算法由 Kim Barrett, Bob Cassels 等人在论文《A Monotonic Superclass Linearization for Dylan》中提出。从思想上看，C3 线性化算法并不是简单地把多个父类线性拼接起来，而是要在保持局部继承顺序的前提下，逐步选择一个“合法的下一个类型”加入最终 MRO 序列。其核心过程可以简要描述为：
 
+```python
+while 仍有未处理的父类MRO序列:
+  在各序列的头元素中选择一个“不出现在其他序列尾部”的合法元素
+  将该元素加入结果MRO序列
+  从所有序列中删除该元素
+```
 
-从 PVM 实现角度看，MRO 不只体现了一个 Python 类的继承关系，它还直接参与 PVM 中类属性查找、方法解析等逻辑的实现。
+从 PVM 实现角度看，一方面它需要在类的创建过程中正确计算并保存该类的 MRO 序列；另一方面，PVM 要让 MRO 序列直接参与 PVM 中类属性查找、方法解析等逻辑。
 
 ### 2.4.5 类的多态
 
@@ -1008,7 +1014,7 @@ Handle<PyModule> Factory::NewPyListLike(Tagged<Klass> klass_self, int64_t init_c
 ```
 代码 4-12
 
-属性容器确定之后，下一步就是回答属性查找与方法绑定的具体实现。代码 4-13 给出了 `PyObjectKlass::Generic_GetAttr()` 的删节实现，这是 S.A.A.U.S.O VM 中默认的 Python 对象属性查找与方法绑定逻辑。
+下面进一步在代码 4-13 和 4-14 中分别给出 `PyObjectKlass::Generic_GetAttr()` 以及它所依赖的 `Runtime_LookupPropertyInInstanceTypeMro()` 的删节实现，用于说明 S.A.A.U.S.O VM 中默认的 Python 对象属性查找与方法绑定逻辑。
 
 ```cpp
 bool PyObjectKlass::Generic_GetAttr(Isolate* isolate,
@@ -1045,8 +1051,27 @@ bool PyObjectKlass::Generic_GetAttr(Isolate* isolate,
   ...
 }
 ```
+代码 4-13
 
-从该实现可以看到，S.A.A.U.S.O VM 中属性查找与方法绑定机制的主流程与第 2.4.3 节的理论分析是一致的。首先尝试在实例字典中查找；若未命中，再沿实例所属类型的 MRO 序列查找类字典；若类字典命中的是函数对象，则在普通属性读取路径中通过 `NewMethodObject()` 构造绑定方法对象；若仍未找到，则继续尝试调用 `__getattr__` 魔法函数进行补救；若全部失败，最终抛出 `AttributeError` 异常。
+```cpp
+Handle<PyObject> Runtime_LookupPropertyInInstanceTypeMro(Handle<PyObject> object,
+                                                    Handle<PyObject> prop_name) {
+  ...
+  Tagged<Klass> object_klass = PyObject::ResolveObjectKlass(instance, isolate);
+  Handle<PyList> mro_of_object = object_klass->mro(isolate);
+  for (auto i = 0; i < mro_of_object->length(); ++i) {
+    ...
+    Handle<PyObject> result = PyDict::Get(current_klass_properties, prop_name);
+    if (!result.is_null()) {
+      return result;
+    }
+  }
+  ...
+}
+```
+代码 4-14
+
+从这部分实现中可以看到，S.A.A.U.S.O VM 中属性查找与方法绑定机制的主流程与 2.4.3 和 2.4.4 中的理论分析是一致的。首先尝试在实例字典中查找。若未命中，再沿实例所属类型的 MRO 序列查找类字典；若类字典命中的是函数对象，则在普通属性读取路径中通过 `NewMethodObject()` 构造绑定方法对象。若仍未找到，则继续尝试调用 `__getattr__` 魔法函数进行补救；若全部失败，最终抛出 `AttributeError` 异常。
 
 此外值得一提的是，在实际实现中，S.A.A.U.S.O VM 还针对对象方法调用的场景提供了一条快路径。如果 Python 程序中存在形如 `object.method_name()` 的疑似方法调用操作，PVM 会优先尝试在对象对应的祖先类中查找属性。如查找成功，且属性值为函数对象，则直接将其返回并立即由解释器发起方法调用，从而绕开创建绑定方法的中间过程。代码 4-13 给出了这一查找逻辑的关键实现部分。
 
@@ -1068,7 +1093,7 @@ Handle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
   ...
 }
 ```
-代码 4-13
+代码 4-15
 
 ### 4.3.3 基于 `Klass/KlassVtable` 的对象核心行为分派机制
 
@@ -1156,7 +1181,7 @@ Handle<PyObject> KlassVtableTrampolines::Add(Isolate* isolate,
 
 在这段代码中，`KlassVtable::UpdateOverrideSlots()` 会在初始化用户自定义类的虚函数表时被调用。如果该函数发现用户代码中重载了某个魔法函数，那么就会将相应的虚函数槽位指向 `KlassVtableTrampolines` 中的对应桥接函数。例如，如果用户重写了自定义类的 `__add__` 方法，那么系统在处理该类型实例对象的加法操作时，就会进入桥接函数 `KlassVtableTrampolines::Add()`。在该函数中，会进一步从该类型的属性字典当中查出名为 `__add__` 的方法对象，然后执行常规的 Python 函数对象调用逻辑。
 
-### 4.3.4 类型对象、继承与 MRO
+### 4.3.4 用户自定义类的创建、继承与 MRO
 
 第 2.4.4 节已经指出，继承与 MRO 的关键意义不在于“复制父类代码”，而在于为属性查找和方法解析建立一条确定的顺序。S.A.A.U.S.O VM 对这一问题的回答，是把“类作为语言对象”和“类作为 VM 内部类型描述”统一组织起来：用户在 Python 层看到的是 `PyTypeObject`，而运行时真正维护实例布局、类属性字典、继承关系和 vtable 的则是与之绑定的 `Klass`。两者通过双向绑定共同构成一条完整的类型表达链。
 
