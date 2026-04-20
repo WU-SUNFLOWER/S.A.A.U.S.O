@@ -416,7 +416,7 @@ do_say(cat_instance)
 do_say(dog_instance)
 ```
 
-从这一意义上说，Python 中的多态本质上依赖于运行时的属性查找与方法绑定。对于用户自定义类而言，对象实例属性、类属性以及继承链上的属性查找结果，会共同决定调用一个方法最终表现出的行为。因此，语言层面的多态并不要求 PVM 在编译阶段就把某个调用点与具体实现预先绑定，而是要求虚拟机在运行阶段保留足够的动态解析能力。
+从这一意义上说，Python 中的多态本质上依赖于 2.4.3 中讨论的运行时阶段的属性查找与方法绑定。对于用户自定义类而言，对象实例属性、类属性以及继承链上的属性查找结果，会共同决定调用一个方法最终表现出的行为。因此，语言层面的多态并不要求 PVM 在编译阶段就把某个调用点与具体实现预先绑定，而是要求虚拟机在运行阶段保留足够的动态解析能力。
 
 但对实际的 PVM 而言，仅仅保留语言层面的动态性还不够。若将所有对象行为都统一退化为字典查询与方法绑定，虽然能够较自然地贴近 Python 语义，但在 PVM 内部会带来较高的运行时开销。例如，假设每次执行整数加法运算时，PVM 都要在 `int` 类型中查找一次 `__add__` 方法，则这种性能开销显然是难以接受的。
 
@@ -629,7 +629,7 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 这种设计的好处主要有三点：其一，系统可以通过页头记录该页属于哪个空间、当前已分配到何处。其二，系统可以根据堆对象地址时快速定位到页面头部，以判断该对象所在的空间类别。其三，由于页面之间采用链表进行组织，因此可以很方便地对堆空间进行扩容或缩容。
 
-需要指出的是，尽管由于开发时间的限制，当前版本的 S.A.A.U.S.O VM 中并未实现和启用完整的老生代空间与分代式 GC，也没有引入类似于工业级 VM 更加复杂的堆空间扩缩容策略，但现阶段的这种页化空间的设计，无疑为未来进一步实现上述功能奠定了良好的架构基础。
+需要指出的是，尽管由于开发时间的限制，现阶段的 S.A.A.U.S.O VM 中并未实现和启用完整的老生代空间与分代式 GC，也没有引入类似于工业级 VM 更加复杂的堆空间扩缩容策略，但现阶段的这种页化空间的设计，无疑为未来进一步实现上述功能奠定了良好的架构基础。
 
 代码 4-1 给出了 S.A.A.U.S.O VM 中页化空间的删节定义。
 
@@ -698,7 +698,7 @@ void Heap::IterateRoots(ObjectVisitor* v) {
 
 ### 4.1.3 具体的垃圾回收算法与实现
 
-在当前版本的 S.A.A.U.S.O VM 中，主要实装的是 Cheney 算法，这是追踪式 GC 算法的一种。它由 C. J. Cheney 在论文《A nonrecursive list compacting algorithm》中提出。在 HotSpot、V8 等工业级 VM 的实现中，该算法主要被用作针对新生代空间的 GC 算法，亦被称为 Scavenge 算法；在 S.A.A.U.S.O VM 的代码实现中，同样沿用了这一称呼。
+在现阶段的 S.A.A.U.S.O VM 中，主要实装的是 Cheney 算法，这是追踪式 GC 算法的一种。它由 C. J. Cheney 在论文《A nonrecursive list compacting algorithm》中提出。在 HotSpot、V8 等工业级 VM 的实现中，该算法主要被用作针对新生代空间的 GC 算法，亦被称为 Scavenge 算法；在 S.A.A.U.S.O VM 的代码实现中，同样沿用了这一称呼。
 
 这种算法的基本思想是：
 （1）将堆空间进一步划分为 Eden 区与 Survivor 区，新分配对象首先进入 Eden 区。
@@ -743,7 +743,7 @@ void ScavengeVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 
 这段代码揭示了当前 GC 逻辑的几个关键工程特征。首先，回收并不是从堆中“盲目扫描全部对象”开始，而是从根集合出发，把所有可达对象逐步复制到 Survivor 区。其次，复制完成后，Eden 区中原对象位置会被写入该对象被复制至的新内存地址（被称为转发地址，forwarding address）；后续若再遇到指向该对象在 Eden 区中旧位置的引用，系统不需要重复复制，只需读取转发地址并让外部引用指向它即可。再次，`ScavengerCollector` 并未采用递归式的 DFS 遍历，而是以 Survivor 空间中的已复制对象作为一个隐式的 BFS 队列，按线性扫描方式不断推进，这种做法既避免了深递归，又无需开辟额外的内存空间。
 
-需要指出的是，之所以在当前版本的 S.A.A.U.S.O 优先采用这一算法，一方面是因为它足以支撑当前对象系统、解释器和模块系统形成可运行的轻量级 PVM 后端系统；另一方面则是因为相较于立即引入更加复杂的分代式 GC 策略，采用 Scavenge 作为全量 GC 算法，更适合作为轻量级 PVM 的第一阶段实现。这种做法既符合 3.6 中讨论的工程取舍；同时也为未来实现分代式 GC 策略，将 Scavenge 降级为仅针对新生代空间的 GC 算法，保留了架构演进的空间。
+需要指出的是，之所以在现阶段的 S.A.A.U.S.O 优先采用这一算法，一方面是因为它足以支撑当前对象系统、解释器和模块系统形成可运行的轻量级 PVM 后端系统；另一方面则是因为相较于立即引入更加复杂的分代式 GC 策略，采用 Scavenge 作为全量 GC 算法，更适合作为轻量级 PVM 的第一阶段实现。这种做法既符合 3.6 中讨论的工程取舍；同时也为未来实现分代式 GC 策略，将 Scavenge 降级为仅针对新生代空间的 GC 算法，保留了架构演进的空间。
 
 ### 4.1.4 工厂分配与对象初始化约束
 
@@ -919,7 +919,7 @@ void HandleScopeImplementer::Iterate(ObjectVisitor* v) {
 ```
 代码 4-9
 
-可以进一步指出的是，在当前版本的 S.A.A.U.S.O VM 实现中，这段代码中的 GC 访问器，即为 4.1.3 中提及的 `ScavengeVisitor`。如代码 4-10 所示，在 `ScavengeVisitor::VisitPointers()` 当中，会进一步调用 `ScavengeVisitor::EvacuateObject()` 将槽位所指的对象复制至 Survivor 空间，并在槽位中写入复制后对象的新地址。`ScavengeVisitor::EvacuateObject()` 的内部实现代码，同样已经在 4.1.3 给出过了。
+可以进一步指出的是，在现阶段的 S.A.A.U.S.O VM 实现中，这段代码中的 GC 访问器，即为 4.1.3 中提及的 `ScavengeVisitor`。如代码 4-10 所示，在 `ScavengeVisitor::VisitPointers()` 当中，会进一步调用 `ScavengeVisitor::EvacuateObject()` 将槽位所指的对象复制至 Survivor 空间，并在槽位中写入复制后对象的新地址。`ScavengeVisitor::EvacuateObject()` 的内部实现代码，同样已经在 4.1.3 给出过了。
 
 ```cpp
 void ScavengeVisitor::VisitPointers(Tagged<PyObject>* start,
@@ -1069,9 +1069,11 @@ Handle<PyObject> PyObjectKlass::Generic_GetAttrForCall(
 
 ### 4.3.3 基于 `Klass/KlassVtable` 的对象核心行为分派机制
 
-在通过字典查找与方法绑定维持语言层动态性的同时，VM 内部仍然需要为若干高频核心行为提供更加稳定和高效的入口。否则，如果每次整数加法、对象调用或迭代器推进都完全退化为一次完整的属性字典查找，那么这种实现虽然接近 Python 语义，却会在解释器主路径上引入较大开销。为此，S.A.A.U.S.O VM 在 `Klass` 基础上进一步引入了 `KlassVtable` 机制，用于统一组织对象的核心行为分派。这里所谓“核心行为”，并不仅仅包括 `__add__`、`__call__`、`__iter__`、`__len__` 等与 Python 语言语义直接相关的操作，也包括实例大小计算、对象遍历等 GC 需要使用的内部能力。
+根据 2.4.5 中所做的理论分析，在通过字典查找与方法绑定维持语言层动态性的同时，为保证对象核心行为调用的效率，VM 内部仍然需要为若干高频核心行为提供更加稳定和高效的入口。而在实现阶段，S.A.A.U.S.O VM 又对对象"核心行为"的概念进行了进一步泛化，让它不仅仅包括 `__add__`、`__call__`、`__iter__`、`__len__` 等与 Python 语言语义直接相关的操作，也包括实例大小计算、对象扫描等 PVM 需要使用的内部能力。
 
-代码清单 4-14 给出了 `Klass` 与 `KlassVtable` 的删节定义。可以看到，`Klass` 既维护类型元信息，又直接持有对象行为对应的 vtable；而 `KlassVtable` 则集中列出了若干对解释器和运行时开放的 slot。
+在本文系统的实际实现中，基于 `Klass` 又进一步引入了虚函数表机制，用于统一组织对象的核心行为分派。在本文系统的代码实现中，虚函数表被称为 `KlassVtable`。
+
+代码 4-14 给出了 `Klass` 与 `KlassVtable` 的删节定义。可以看到，在真实的系统实现中 `Klass` 既维护类型元信息，又直接持有对象核心行为对应的虚函数表；而 `KlassVtable` 则集中列出了若干对解释器和运行时开放的 C++ 函数指针槽位。
 
 ```cpp
 class Klass : public Object {
@@ -1083,7 +1085,7 @@ class Klass : public Object {
 
  protected:
   KlassVtable vtable_;
-  Tagged<PyObject> klass_properties_{kNullAddress};
+  Tagged<PyObject> klass_properties_;
 };
 
 #define KLASS_VTABLE_SLOT_EXPOSED(V) \
@@ -1092,45 +1094,54 @@ class Klass : public Object {
   V(..., call, "__call__", Call)     \
   V(..., len, "__len__", Len)        \
   V(..., new_instance, "__new__", NewInstance) \
-  V(..., init_instance, "__init__", InitInstance)
+  V(..., init_instance, "__init__", InitInstance) \
+  ...
 
 class KlassVtable {
  public:
   Maybe<void> Initialize(Isolate* isolate, Tagged<Klass> klass);
+
+#define DEFINE_VTABLE_SLOT(signature, field_name, ...) \
+  signature field_name##_{nullptr};
+  KLASS_VTABLE_SLOT_LIST(DEFINE_VTABLE_SLOT)
+#undef DEFINE_VTABLE_SLOT
+
  private:
   void InitializeFromSupers(Isolate* isolate, Tagged<Klass> klass);
   Maybe<void> UpdateOverrideSlots(Isolate* isolate, Tagged<Klass> klass);
 };
 ```
 
-这意味着，解释器和运行时在面对对象时，并不需要每次都退化为“到实例字典、类字典和继承链中逐层查找行为入口”。对于一批与对象类型强绑定、且在 VM 内部高频使用的操作，系统可以先沿着 `PyObject -> Klass -> KlassVtable` 这条路径找到稳定的内部入口。这种做法使行为分派更加统一，也使新类型接入现有执行框架时更容易获得一致的调度接口。
+通过提供虚函数表，系统在调用对象的核心操作时，就可以直接沿着 `PyObject -> Klass -> KlassVtable` 这条路径直接找到并调用相应的内部 C++ 实现，而无需再执行开销昂贵的属性查找与方法绑定操作。
 
-与此同时，Python 语言本身仍然保留了高度动态的行为覆写能力。用户完全可以在自定义类中重载 `__add__`、`__call__`、`__init__` 等魔法方法。为了兼顾这种语言层动态性与内部执行效率，S.A.A.U.S.O VM 采用了“优先走 vtable，必要时退化为 trampoline”的折中方案。代码清单 4-15 展示了这一策略在 `KlassVtable::UpdateOverrideSlots()` 中的核心实现。
+与此同时需要指出的是，不同于 C++、Java 等静态语言，Python 语言本身仍然保留了高度动态的行为覆写能力。用户完全可以在自定义类中重载 `__add__`、`__call__`、`__init__` 等魔法方法。在现阶段的 S.A.A.U.S.O VM 中，为了兼顾这种语言层动态性与内部执行效率，采用了“优先走虚函数表查找，必要时退化为字典查找”的"两层多态"折中方案。具体来说，系统在初始化 Python 类型的虚函数表时，如果发现用户重载了某个魔法方法，那么就将该魔法方法对应内部操作的虚函数槽位指向一个桥接函数，其中会执行 Python 对象属性查找、方法绑定与方法调用这一条常规的慢路径。
+
+代码 4-15 给出了这一策略在实际系统中的删节实现。
 
 ```cpp
-Maybe<void> KlassVtable::UpdateOverrideSlots(Isolate* isolate,
-                                             Tagged<Klass> klass) {
-  Handle<PyObject> dummy;
+void KlassVtable::UpdateOverrideSlots(Isolate* isolate,
+                                      Tagged<Klass> klass) {
   Handle<PyDict> klass_properties = klass->klass_properties(isolate);
 
-#define UPDATE_OVERRIDE_SLOT(ignore1, slot_name, ignore2, trampoline_name) \
-  do {                                                                     \
-    bool has_magic_method = false;                                         \
-    ASSIGN_RETURN_ON_EXCEPTION(                                            \
-        isolate, has_magic_method,                                         \
-        PyDict::Get(klass_properties, ST(slot_name, isolate), dummy,       \
-                    isolate));                                             \
-    if (has_magic_method) {                                                \
-      slot_name##_ = &KlassVtableTrampolines::trampoline_name;             \
-    }                                                                      \
-  } while (0);
+  bool has_magic_method = PyDict::Get(klass_properties, "__add__", ...);
+  if (has_magic_method) {
+    add_ = &KlassVtableTrampolines::Add;
+  }
 
-  KLASS_VTABLE_SLOT_EXPOSED(UPDATE_OVERRIDE_SLOT)
-  return JustVoid();
+  其他魔法函数同理...
+}
+
+Handle<PyObject> KlassVtableTrampolines::Add(Isolate* isolate,
+                                             Handle<PyObject> self,
+                                             Handle<PyObject> other) {
+  ...
+  Handle<PyObject> result = 
+      Runtime_InvokeMagicOperationMethod(isolate, self, args, kwargs, "__add__");
+  return result;
 }
 ```
 
-这段代码非常适合用来解释本文前面区分的“两层多态”。一方面，是否存在 `__add__`、`__call__` 等魔法方法，仍然要回到 Python 类型对象及其属性字典中判断，因此语言层的动态性并没有被破坏；另一方面，一旦 VM 判断某一行为需要回退到动态路径，相关 slot 就会被统一改写到 trampoline 这一桥接入口，再转回动态解析逻辑，从而避免解释器在每次执行时都重新拼装一整套分派流程。换言之，S.A.A.U.S.O VM 并不是在“纯字典查找”和“纯静态虚表”之间二选一，而是通过 `Klass/KlassVtable` 把二者组织为一套可切换的内部机制。
+在这段代码中，`KlassVtable::UpdateOverrideSlots()` 会在初始化用户自定义类的虚函数表时被调用。如果该函数发现用户代码中重载了某个魔法函数，那么就会将相应的虚函数槽位指向 `KlassVtableTrampolines` 中的对应桥接函数。例如，如果用户重写了自定义类的 `__add__` 方法，那么系统在处理该类型实例对象的加法操作时，就会进入桥接函数 `KlassVtableTrampolines::Add()`。在该函数中，会进一步从该类型的属性字典当中查出名为 `__add__` 的方法对象，然后执行常规的 Python 函数对象调用逻辑。
 
 ### 4.3.4 类型对象、继承与 MRO
 
