@@ -389,6 +389,9 @@ instance.bar()
 
 除了单继承之外，Python 还支持多继承。多继承带来的核心问题是：当多个父类中存在同名属性或方法时，PVM 应当按照什么顺序进行查找。为此，Python 引入了方法解析顺序（Method Resolution Order，MRO）的概念，并采用 C3 线性化算法生成类层次结构中的查找顺序。
 
+C3 线性化算法由 Kim Barrett, Bob Cassels 等人在论文《A Monotonic Superclass Linearization for Dylan》中提出。
+
+
 从 PVM 实现角度看，MRO 不只体现了一个 Python 类的继承关系，它还直接参与 PVM 中类属性查找、方法解析等逻辑的实现。
 
 ### 2.4.5 类的多态
