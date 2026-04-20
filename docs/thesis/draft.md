@@ -1107,16 +1107,25 @@ class KlassVtable {
 #undef DEFINE_VTABLE_SLOT
 
  private:
-  void InitializeFromSupers(Isolate* isolate, Tagged<Klass> klass);
   Maybe<void> UpdateOverrideSlots(Isolate* isolate, Tagged<Klass> klass);
 };
 ```
 
-通过提供虚函数表，系统在调用对象的核心操作时，就可以直接沿着 `PyObject -> Klass -> KlassVtable` 这条路径直接找到并调用相应的内部 C++ 实现，而无需再执行开销昂贵的属性查找与方法绑定操作。
+通过提供虚函数表，系统在调用对象的核心操作时，就可以直接沿着 `PyObject -> Klass -> KlassVtable` 这条路径直接找到并调用相应的内部 C++ 实现，而无需再执行开销昂贵的属性查找与方法绑定操作。例如，代码 4-15 中给出了本文系统中暴露给运行时、解释器等上层组件使用的 Python 对象加法操作接口的删节逻辑，其中就封装了这一条基于虚函数表的调用路径。
+
+```cpp
+Handle<PyObject> PyObject::Add(Isolate* isolate,
+                               Handle<PyObject> self,
+                               Handle<PyObject> other) {
+  Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
+  return klass->vtable().add_(isolate, self, other);
+}
+```
+代码 4-15
 
 与此同时需要指出的是，不同于 C++、Java 等静态语言，Python 语言本身仍然保留了高度动态的行为覆写能力。用户完全可以在自定义类中重载 `__add__`、`__call__`、`__init__` 等魔法方法。在现阶段的 S.A.A.U.S.O VM 中，为了兼顾这种语言层动态性与内部执行效率，采用了“优先走虚函数表查找，必要时退化为字典查找”的"两层多态"折中方案。具体来说，系统在初始化 Python 类型的虚函数表时，如果发现用户重载了某个魔法方法，那么就将该魔法方法对应内部操作的虚函数槽位指向一个桥接函数，其中会执行 Python 对象属性查找、方法绑定与方法调用这一条常规的慢路径。
 
-代码 4-15 给出了这一策略在实际系统中的删节实现。
+代码 4-16 给出了这一策略在实际系统中的删节实现。
 
 ```cpp
 void KlassVtable::UpdateOverrideSlots(Isolate* isolate,
@@ -1140,6 +1149,7 @@ Handle<PyObject> KlassVtableTrampolines::Add(Isolate* isolate,
   return result;
 }
 ```
+代码 4-16
 
 在这段代码中，`KlassVtable::UpdateOverrideSlots()` 会在初始化用户自定义类的虚函数表时被调用。如果该函数发现用户代码中重载了某个魔法函数，那么就会将相应的虚函数槽位指向 `KlassVtableTrampolines` 中的对应桥接函数。例如，如果用户重写了自定义类的 `__add__` 方法，那么系统在处理该类型实例对象的加法操作时，就会进入桥接函数 `KlassVtableTrampolines::Add()`。在该函数中，会进一步从该类型的属性字典当中查出名为 `__add__` 的方法对象，然后执行常规的 Python 函数对象调用逻辑。
 
