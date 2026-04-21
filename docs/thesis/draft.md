@@ -270,11 +270,11 @@ Python 中的函数调用通常是通过 `CALL` 等字节码指令发起的。
 
 为了实现可实际使用的 PVM，对于栈帧中的“局部变量环境”这一概念，这里还需要作进一步剖析。站在 Python 语义层面，PVM 至少要能够表达当前函数内部的局部变量命名空间，这可以使用字典数据结构进行实现。但站在解释器实现层面，若仍让所有局部变量都通过字典按名字查找，则执行代价会过高。因此，一个更加合理的做法是参考 C/C++ 等静态语言的思想，在栈帧中引入一个槽位区（即一个定长数组）：在编译阶段，由编译器前端负责为函数中的每个局部变量分配槽位；在运行阶段，解释器直接通过硬编码在 `LOAD/STORE` 指令参数中的槽位下标读写相应的变量。
 
-在 CPython 3.12 的执行模型中，对字典和槽位区两种方案进行了结合。首先，对于单个 Python 文件的顶层代码，也就是可视作“根函数”的那部分代码，因为其中的顶层变量可能会通过变量符号名被暴露给其他 Python 文件，因此在栈帧会提供一个被称为 `locals` 的字典用于保存这些顶层变量。而要以变量符号名为键访问这些顶层变量，就需要通过 `LOAD_NAME` 和 `STORE_NAME` 等字节码指令实现
+在 CPython 3.12 的执行模型中，对字典和槽位区两种方案进行了结合。首先，对于单个 Python 文件的顶层代码，也就是可视作“根函数”的那部分代码，因为其中的顶层变量可能会通过变量符号名被暴露给其他 Python 文件，因此栈帧通常会提供一个被称为 `locals` 的字典用于保存这些顶层变量。而要以变量符号名为键访问这些顶层变量，就需要通过 `LOAD_NAME` 和 `STORE_NAME` 等字节码指令实现。
 
-相对地，对于一般 Python 函数中的局部变量，则采用了上文介绍的槽位区方案，同时将 `locals` 指针置空。这个槽位区在 CPython 的源代码中被称为 `localsplus` 数组。另外，Python 函数中的形参以及闭包场景下出现的自由变量，同样会被安排在槽位区中进行维护。相应地，`LOAD_FAST`、`STORE_FAST`、`LOAD_DEREF`、`STORE_DEREF` 等字节码指令就是直接按槽位下标访问对应变量值的。需说明的是，关于闭包的实现原理，在 2.3.4 中会进一步讨论。
+相对地，对于一般 Python 函数中的局部变量，则采用了上文介绍的槽位区方案。这个槽位区在 CPython 的源代码中被称为 `localsplus` 数组。另外，Python 函数中的形参以及闭包场景下出现的自由变量，同样会被安排在槽位区中进行维护。相应地，`LOAD_FAST`、`STORE_FAST`、`LOAD_DEREF`、`STORE_DEREF` 等字节码指令就是直接按槽位下标访问对应变量值的。需说明的是，关于闭包的实现原理，在 2.3.4 中会进一步讨论。
 
-与此同时，函数体对全局变量命名空间的访问又是另一条路径。除了上文介绍的 `locals` 字典和 `localsplus` 数组，栈帧中还会预留一个 `globals` 字段用于指向当前函数代码使用的全局命名空间字典。若函数内部需要读取其所在模块中的全局名称，编译器通常会生成 `LOAD_GLOBAL` 字节码指令，解释器在运行时会先查该函数绑定的全局命名空间，再查内建命名空间作为兜底；若函数体显式使用 `globals` 声明并对某个名称赋值，则相应写操作会通过 `STORE_GLOBAL` 落到该函数绑定的全局命名空间之中。
+与此同时，函数体对全局变量命名空间的访问又是另一条路径。除了上文介绍的 `locals` 字典和 `localsplus` 数组，栈帧中还会预留一个 `globals` 字段用于指向当前函数代码使用的全局命名空间字典。若函数内部需要读取其所在模块中的全局名称，编译器通常会生成 `LOAD_GLOBAL` 字节码指令，解释器在运行时会先查该函数绑定的全局命名空间，再查内建命名空间作为兜底；若函数体显式使用 `global` 关键字声明并对某个名称赋值，则相应写操作会通过 `STORE_GLOBAL` 落到该函数绑定的全局命名空间之中。
 
 上文中说过，顶层代码中的变量会直接被放进根函数栈帧的 `locals` 字典中维护，那么为什么还需要引入 `globals` 的概念呢？这一点可以通过一个简单例子更直观地解释。假设有两个模块 `mod_a.py` 和 `mod_b.py`：
 
@@ -1427,6 +1427,7 @@ class Compiler : AllStatic {
                                             const char* filename);
 };
 ```
+代码 4-28
 
 ## 4.5 字节码解释器与异常处理的实现
 
@@ -1483,69 +1484,123 @@ INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
 
 ### 4.5.2 栈帧数据结构与局部执行现场
 
-在 2.3.2 中已经给出了栈帧的概念。在 S.A.A.U.S.O VM 中，栈帧由 `FrameObject` 类进行描述。代码 4-28 给出了该类的删节定义。
+在 S.A.A.U.S.O VM 中，栈帧的实体为 `FrameObject` 类。代码 4-29 给出了该类的删节定义。
 
 ```cpp
 class FrameObject : Object {
  private:
-  Tagged<PyObject> stack_{kNullAddress};
-  int stack_top_{0};
-  Tagged<PyObject> locals_{kNullAddress};
-  Tagged<PyObject> localsplus_{kNullAddress};
-  Tagged<PyObject> globals_{kNullAddress};
-  Tagged<PyObject> code_object_{kNullAddress};
-  Tagged<PyObject> func_{kNullAddress};
+  Tagged<PyObject> stack_;
+
+  Tagged<PyObject> locals_;
+  Tagged<PyObject> localsplus_;
+  Tagged<PyObject> globals_;
+
+  Tagged<PyObject> code_object_;
+  Tagged<PyObject> func_;
   int64_t pc_{0};
-  FrameObject* caller_{nullptr};
+  FrameObject* caller_;
 };
 ```
-代码 4-28
+代码 4-29
 
-可以看到，一个 `FrameObject` 至少同时维护了操作数栈、局部变量表、局部槽位区、全局变量表、当前函数对象及其对应代码对象，还有程序计数器 `pc_` 等信息。这些字段与 2.3.2 对栈帧职责的描述是逐项对应的。
+从这一定义可以看出，除了在 2.3.2 中已经讨论过的操作数栈、程序计数器，以及 `locals`、`globals` 与 `localsplus` 三类不同职责的变量环境，S.A.A.U.S.O VM 中的栈帧还显式保存了常量表、名称表、当前被调用的函数对象及其对应的代码对象，还有上一层调用者指针 `caller_`。其中的`caller_` 使各个 Python 栈帧能够被组织成一条显式的调用链；这也意味着本文系统中的 Python 调用栈并不是隐含在 C++ 调用栈内部，而是由 PVM 自己维护的数据结构。
 
-与此同时，`caller_` 字段也很重要，因为它使各个 Python 栈帧能够以单链表的形式进行组织。这样一来，当解释器执行函数调用，创建新栈帧时，只需向链表尾部添加一个新成员；而当函数退出时，只需摘除链表尾部的成员。
+下面再进一步说明这些变量环境是如何被真正装配进栈帧的。在现阶段的 S.A.A.U.S.O VM 中，当解释器需要发起 Python 函数调用时，栈帧的初始化及装配由 `FrameObjectBuilder` 承担。代码清单 4-30 给出了这部分逻辑的删节实现。
 
-同时还需要特别说明 `locals_` 与 `localsplus_` 的分工。在 CPython 3.12 的执行模型中，`locals_` 更接近于按符号名组织、与 Python 语义直接对应的局部命名空间，而 `localsplus_` 则是解释器内部高频访问的槽位数组，用于顺序放置形参、局部变量、Cell 变量和 Free 变量。
+```cpp
+struct FrameBuildContext {
+  Handle<PyDict> locals;
+  Handle<PyDict> globals;
+  Handle<FixedArray> localsplus;
+  Handle<PyCodeObject> code_object;
+  Handle<PyFunction> func;
+};
+
+FrameBuildContext PrepareForFunction(Isolate* isolate,
+                                    Handle<PyFunction> func,
+                                    Handle<PyDict> bound_locals) {
+  FrameBuildContext ctx;
+  ctx.code_object = func->func_code(isolate);
+  ctx.func = func;
+  ctx.locals = bound_locals;
+  ctx.globals = func->func_globals(isolate);
+  if (ctx.code_object->nlocalsplus() > 0) {
+    ctx.localsplus =
+        isolate->factory()->NewFixedArray(ctx.code_object->nlocalsplus());
+  }
+  ctx.stack = isolate->factory()->NewFixedArray(ctx.code_object->stack_size());
+  ...
+  return ctx;
+}
+
+Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
+    Isolate* isolate,
+    Handle<PyFunction> func,
+    Handle<PyDict> bound_locals,
+    ...) {
+  FrameBuildContext ctx =
+      PrepareForFunction(isolate, func, bound_locals);
+  ...
+  auto* frame_object = FrameObject::Create(ctx);
+  return Maybe<FrameObject*>(frame_object);
+}
+```
+代码 4-30
+
+从这段实现可以看到，本文系统中的栈帧装配策略与 2.3.2 中的理论分析是对应的。
+（1）`ctx.globals = func->func_globals(isolate)` 表明每个函数栈帧都会显式保存该函数所绑定的全局命名空间，以供后续在函数体内执行 `LOAD_GLOBAL` 字节码指令时进行查询。
+（2）调用 `FrameObjectBuilder::BuildSlowPath()` 时需显式指定 `locals` 字典，这说明 PVM 在发起函数调用时，可以灵活指定提供给当前函数使用的 `locals`。例如，对顶层代码而言，`locals` 便可以与 `globals` 指向同一个字典。
+（3）`localsplus` 会按保存在代码对象中的 `nlocalsplus()` 的大小单独分配出来，用于承载函数形参、普通局部变量以及闭包变量。显然，代码对象中提供的槽位区大小是由编译器事先计算好的；这表明槽位的分配情况在 Python 代码编译阶段就已经被确定下来了。
 
 ### 4.5.3 局部变量、全局变量与闭包变量查找
 
-在第 2 章关于命名空间和变量绑定机制的分析中，已经指出 Python 中至少同时存在局部、全局、内建和闭包几类名称查找路径。S.A.A.U.S.O VM 在解释器实现中，分别通过不同字节码 handler 对应这些查找语义，而不是把所有变量访问都统一退化为一套慢速字典查询。
-
-代码清单 4-28 给出了几类代表性变量查找路径的删节实现。
+有了上一小节中 `FrameObject` 的数据结构之后，第 2 章关于 `LOAD_NAME/STORE_NAME`、`LOAD_FAST/STORE_FAST`、`LOAD_GLOBAL/STORE_GLOBAL` 与 `LOAD_DEREF/STORE_DEREF` 的理论区分，便可以在解释器源码中被直接对应出来。S.A.A.U.S.O VM 并不是用一条统一规则处理全部变量访问，而是针对不同类别的变量绑定关系分别设置了不同的 handler。代码清单 4-31 给出了几类代表性变量访问路径的删节实现。
 
 ```cpp
+INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
+  Handle<PyObject> key =
+      current_frame_->names(isolate_)->Get(op_arg, isolate_);
+  Handle<PyDict> locals = current_frame_->locals(isolate_);
+  if (locals.is_null()) [[unlikely]] {
+    Runtime_ThrowError(isolate_, ExceptionType::kRuntimeError,
+                       "no locals found when storing name");
+    goto pending_exception_unwind;
+  }
+  GOTO_ON_EXCEPTION(PyDict::Put(locals, key, POP(), isolate_));
+})
+
 INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg, isolate_);
-  Handle<PyObject> value;
-  bool found = false;
-
+  ...
   ASSIGN_GOTO_ON_EXCEPTION(
       found,
       PyDict::Get(current_frame_->locals(isolate_), key, value, isolate_));
   if (found) { PUSH(value); break; }
-
   ASSIGN_GOTO_ON_EXCEPTION(
       found,
       PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
   if (found) { PUSH(value); break; }
-
   ASSIGN_GOTO_ON_EXCEPTION(
       found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
   if (found) { PUSH(value); break; }
 })
 
+INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
+  Handle<PyObject> key =
+      current_frame_->names(isolate_)->Get(op_arg, isolate_);
+  GOTO_ON_EXCEPTION(
+      PyDict::Put(current_frame_->globals(isolate_), key, POP(), isolate_));
+})
+
 INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg >> 1, isolate_);
-  Handle<PyObject> value;
-  bool found = false;
-
+  ...
   ASSIGN_GOTO_ON_EXCEPTION(
       found,
       PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
   if (found) { PUSH(value); break; }
-
   ASSIGN_GOTO_ON_EXCEPTION(
       found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
   if (found) { PUSH(value); break; }
@@ -1553,7 +1608,6 @@ INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
 
 INTERPRETER_HANDLER_WITH_SCOPE(
     LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
-
 INTERPRETER_HANDLER_WITH_SCOPE(
     StoreFast, current_frame_->localsplus(isolate_)->Set(op_arg, *POP());)
 
@@ -1576,15 +1630,19 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
 })
 ```
 
-从这部分实现中可以看到，S.A.A.U.S.O VM 并不是用一条单一规则处理全部变量访问。`LOAD_FAST/STORE_FAST` 直接针对 `localsplus` 槽位进行下标读写，这与第 2 章提到的“局部变量区可被视作一个定长数组”的分析完全一致；`LOAD_NAME` 则依次查找局部、全局和内建命名空间，从而对应顶层脚本和普通非优化环境中的名称解析语义；`LOAD_DEREF/STORE_DEREF` 则通过 `Cell` 访问闭包自由变量，从而把闭包变量的读写从普通局部变量路径中区分出来。
+从这部分实现可以看到，第 2 章建立起来的那套变量模型，在 S.A.A.U.S.O VM 中已经被切分为三条彼此不同、但又相互衔接的运行时路径。第一条是 `LoadName/StoreName` 对应的“按名称访问局部命名空间”路径。它首先通过 `current_frame_->names(...)` 取出符号名，再把读写操作落到 `locals` 字典上；`LoadName` 在读取失败后还会继续向 `globals` 和内建命名空间回退。这条路径主要服务于顶层脚本、模块级根函数以及其他需要显式按名字解析局部命名空间的场景。
 
-这也意味着，第 2 章中关于“变量读取并不是对某个固定内存位置的直接访问，而是对名称绑定关系的解析”这一判断，在本文系统里并不是停留在理论层面，而是被切分为多条不同的实现路径。S.A.A.U.S.O VM 用不同字节码处理不同类别的变量访问，正是为了让 Python 的命名空间规则能够在运行时被较准确地落实。
+第二条是 `LoadFast/StoreFast` 与 `LoadDeref/StoreDeref` 对应的“按槽位访问局部环境”路径。前者直接对 `localsplus` 数组按下标读写，用于处理形参与普通局部变量；后者则先从 `localsplus` 中取出 `Cell` 对象，再对其内部保存的引用做解引用或回写，从而支撑闭包变量的共享与更新。也就是说，在 S.A.A.U.S.O VM 的当前实现中，`localsplus` 并不是一个抽象概念，而是真正承载热点变量访问的底层槽位区。
+
+第三条则是 `LoadGlobal/StoreGlobal` 对应的“按函数绑定的全局命名空间访问”路径。这里最值得注意的一点是：即使根函数场景下 `locals` 与 `globals` 可能物理上指向同一个字典，解释器依然没有把 `globals` 这个字段消除掉。原因正如第 2 章 `mod_a.py / mod_b.py` 的例子所揭示的那样，普通函数在运行时访问全局变量时，必须以函数对象绑定的模块级全局命名空间为准，而不能退化为“查调用点所在帧的局部环境”。`LoadGlobal/StoreGlobal` 直接读取 `current_frame_->globals(isolate_)`，正是这一设计判断在代码层面的直接体现。
+
+因此，从第 2 章“变量访问本质上是对不同命名空间和不同存储区域的有区别查找”这一理论判断出发，到本节 `LoadName/StoreName`、`LoadFast/StoreFast`、`LoadGlobal/StoreGlobal`、`LoadDeref/StoreDeref` 的实现说明，本文已经形成了一条较完整的闭环：局部变量、全局变量和闭包变量并不共享同一条访问主路径，而是分别映射到 `locals`、`globals` 与 `localsplus/Cell` 这些不同的数据结构上，由解释器通过不同字节码 handler 加以落实。
 
 ### 4.5.4 函数调用主路径与调用栈管理
 
 函数调用是第 2 章最强调的核心机制之一。对于 S.A.A.U.S.O VM 而言，这一过程既包括普通 Python 函数的建帧与解释执行，也包括 native 函数的直接调用路径，还包括 Python 调用栈本身如何被创建、维护和回退。
 
-代码清单 4-29 给出了相关实现的删节代码。
+代码清单 4-32 给出了相关实现的删节代码。
 
 ```cpp
 MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
@@ -1642,7 +1700,7 @@ void Interpreter::DestroyCurrentFrame() {
 
 在具备函数对象、栈帧和变量访问机制之后，解释器才真正进入“逐条推进字节码”的主循环。本小节将以调度表和一个代表性条件跳转 handler 为例，说明解释器如何把“取指、判断、跳转、继续执行”组织为连续推进的执行过程。
 
-代码清单 4-30 给出了与调度和控制流最相关的删节实现。
+代码清单 4-33 给出了与调度和控制流最相关的删节实现。
 
 ```cpp
 #define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
@@ -1678,7 +1736,7 @@ INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
 
 异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。对 S.A.A.U.S.O VM 而言，异常处理之所以值得单独成节，恰恰是因为它同时涉及异常状态的记录、异常表查找、操作数栈恢复以及函数调用栈的向上展开。
 
-代码清单 4-31 给出了异常状态与异常展开主路径的删节实现。
+代码清单 4-34 给出了异常状态与异常展开主路径的删节实现。
 
 ```cpp
 class ExceptionState final {
