@@ -212,7 +212,7 @@ print(i)
 
 ### 2.3.1 简单函数的创建
 
-不同于 C/C++ 等静态语言，在 CPython 的执行模型中，函数的静态部分和动态部分是分开的。静态部分对应编译阶段产生的代码对象，动态部分则是运行阶段由 PVM 动态创建的函数对象。也就是说，编译器首先会为每个函数体生成一个独立的代码对象；当程序真正运行到函数定义语句时，解释器再通过 `MAKE_FUNCTION` 字节码把该代码对象包装为可调用的函数对象，并绑定到当前命名空间中。
+不同于 C/C++ 等静态语言，在 CPython 的执行模型中，函数的静态部分和动态部分是分开的。静态部分对应编译阶段产生的代码对象，动态部分则是运行阶段由 PVM 动态创建的函数对象。也就是说，编译器首先会为每个函数体生成一个独立的代码对象；当程序真正运行到函数定义语句时，解释器再通过 `MAKE_FUNCTION` 字节码指令把该代码对象包装为可调用的函数对象，并绑定到当前命名空间中。
 
 例如：
 
@@ -1425,35 +1425,30 @@ class Compiler : AllStatic {
 
 ### 4.5.1 Python 函数对象与可调用对象表示
 
-第 2 章已经指出，Python 中的函数的本质是运行阶段由 PVM 动态创建的可调用对象。对 S.A.A.U.S.O VM 而言，这一点在实现中被进一步具体化为：普通 Python 函数与 native 函数统一由 `PyFunction` 对象承载，只是在其内部保存的元数据和实际调用路径上有所区别。
+在 2.3.1 中已经指出，Python 中的函数的本质是运行阶段由 PVM 动态创建的可调用对象。在现阶段 S.A.A.U.S.O VM 的实现中，普通 Python 函数与 native 函数统一由 `PyFunction` 对象表示，只是在其内部保存的元数据和实际调用路径上有所区别。
 
 代码 4-26 给出了 `PyFunction` 的删节定义。
 
 ```cpp
 class PyFunction : public PyObject {
- public:
-  Handle<PyCodeObject> func_code(Isolate* isolate) const;
-  Handle<PyDict> func_globals(Isolate* isolate) const;
-  Handle<PyTuple> default_args(Isolate* isolate) const;
-  Handle<PyTuple> closures(Isolate* isolate) const;
-
-  NativeFuncPointer native_func() const { return native_func_; }
-  NativeFuncPointerWithClosure native_func_with_closure() const {
-    return native_func_with_closure_;
-  }
-
  private:
-  Tagged<PyObject> func_code_{kNullAddress};
-  Tagged<PyObject> func_globals_{kNullAddress};
-  Tagged<PyObject> default_args_{kNullAddress};
-  Tagged<PyObject> closures_{kNullAddress};
+  Tagged<PyObject> func_code_;
+  Tagged<PyObject> func_globals_;
+  Tagged<PyObject> default_args_;
+  Tagged<PyObject> closures_;
   NativeFuncPointer native_func_{nullptr};
-  NativeFuncPointerWithClosure native_func_with_closure_{nullptr};
-  Tagged<PyObject> native_closure_data_{kNullAddress};
 };
 ```
+代码 4-26
 
-这段代码说明，`PyFunction` 至少同时承担了四类信息的组织责任：其一，`func_code_` 对应函数的静态代码对象；其二，`func_globals_` 对应函数创建时绑定的全局命名空间；其三，`default_args_` 与 `closures_` 分别对应默认参数和闭包变量；其四，`native_func_` 等字段则为 native 函数调用提供宿主回调入口。也就是说，在虚拟机内部，普通函数和 native 函数并不是两套完全割裂的对象体系，而是共享同一套“可调用 Python 对象”外形。
+这段代码说明，`PyFunction` 至少同时承担了四类信息的组织责任：
+（1）`func_code_` 对应函数的静态代码对象；
+（2）`func_globals_` 对应函数创建时绑定的全局命名空间；
+（3）`default_args_` 与 `closures_` 分别对应全体默认参数和全体被该函数捕获的自由变量；
+（4）`native_func_` 对应 native 函数的 C++ 函数指针
+其中，（1）（2）（3）均服务于普通的 Python 函数，而（4）则预留给 native 函数使用。也就是说，当 `PyFunction` 对象对应一个普通 Python 函数时，（1）（2）（3）这些字段生效，（4）不适用；反之同理。
+
+与此同时，在 2.3.1 中还讨论了 `MAKE_FUNCTION` 字节码指令创建函数对象的原理。S.A.A.U.S.O VM 的实际实现与理论分析基本一致：解释器在执行该字节码指令时，根据给定的代码对象动态创建一个新的 `PyFunction` 对象，并把当前栈帧中挂载的全局变量表，以及默认参数和自由变量元组（均已预先创建并压入操作数栈中）写入函数对象内部。
 
 代码 4-27 给出了 `MAKE_FUNCTION` 字节码处理逻辑的删节实现。
 
@@ -1473,28 +1468,14 @@ INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
   PUSH(func);
 })
 ```
-
-
-与此同时，`MAKE_FUNCTION` 字节码的处理逻辑也直接回应了第 2 章的理论分析。解释器在运行到函数定义语句时，并不是简单记录某个代码对象，而是即时创建新的 `PyFunction`，并把当时可见的全局变量表、默认参数和闭包元组写入函数对象内部。这样一来，第 2 章中提到的“函数对象与所在模块全局命名空间发生动态绑定”“函数对象可能携带默认参数与闭包状态”等现象，便在实现层面得到了明确落点。
+代码 4-27
 
 ### 4.5.2 栈帧数据结构与局部执行现场
 
-第 2 章还指出，代码对象只描述程序的静态部分，而程序运行过程中的动态状态需要由栈帧维护。S.A.A.U.S.O VM 中，这一职责由 `FrameObject` 和 `FrameObjectBuilder` 共同承担。前者负责保存栈帧本体，后者负责在函数调用发生时构造这个局部执行现场。
-
-代码清单 4-27 给出了相关实现的删节代码。
+在 2.3.2 中已经给出了栈帧的概念。在 S.A.A.U.S.O VM 中，栈帧由 `FrameObject` 类进行描述。代码 4-28 给出了该类的删节定义。
 
 ```cpp
 class FrameObject : Object {
- public:
-  Handle<FixedArray> stack(Isolate* isolate) const;
-  Handle<PyDict> locals(Isolate* isolate) const;
-  Handle<FixedArray> localsplus(Isolate* isolate) const;
-  Handle<PyDict> globals(Isolate* isolate) const;
-  Handle<PyCodeObject> code_object(Isolate* isolate) const;
-  Handle<PyFunction> func(Isolate* isolate) const;
-  int pc() const { return pc_; }
-  FrameObject* caller() const { return caller_; }
-
  private:
   Tagged<PyObject> stack_{kNullAddress};
   int stack_top_{0};
@@ -1506,24 +1487,14 @@ class FrameObject : Object {
   int64_t pc_{0};
   FrameObject* caller_{nullptr};
 };
-
-struct FrameBuildContext {
-  Handle<PyCodeObject> code_object;
-  Handle<PyFunction> func;
-  Handle<PyDict> locals;
-  Handle<PyDict> globals;
-  Handle<FixedArray> localsplus;
-  Handle<FixedArray> stack;
-  int64_t real_formal_pos_arg_cnt{0};
-  int64_t formal_pos_arg_cnt{0};
-  int self_arg_cnt{0};
-  int localsplus_idx{0};
-};
 ```
+代码 4-28
 
-可以看到，一个 `FrameObject` 至少同时维护了操作数栈、局部变量表、局部槽位区、全局变量表、当前代码对象、当前函数对象以及程序计数器 `pc_` 等信息。这些字段与第 2 章对栈帧职责的描述是逐项对应的。其中，`caller_` 字段尤其重要，因为它使各个 Python 栈帧能够串联成一条显式的函数调用链，而不仅仅是若干彼此孤立的局部状态块。
+可以看到，一个 `FrameObject` 至少同时维护了操作数栈、局部变量表、局部槽位区、全局变量表、当前函数对象及其对应代码对象，还有程序计数器 `pc_` 等信息。这些字段与 2.3.2 对栈帧职责的描述是逐项对应的。
 
-同时还需要特别说明 `locals_` 与 `localsplus_` 的分工。`locals_` 更接近于按符号名组织、与 Python 语义直接对应的局部命名空间，而 `localsplus_` 则是解释器内部高频访问的槽位数组，用于顺序放置形参、局部变量、Cell 变量和 Free 变量。也正因为采用了这种二分设计，S.A.A.U.S.O VM 才既能保留 Python 语义上的命名空间概念，又能在热点路径中使用更高效的下标访问方式。
+与此同时，`caller_` 字段也很重要，因为它使各个 Python 栈帧能够以单链表的形式进行组织。这样一来，当解释器执行函数调用，创建新栈帧时，只需向链表尾部添加一个新成员；而当函数退出时，只需摘除链表尾部的成员。
+
+同时还需要特别说明 `locals_` 与 `localsplus_` 的分工。在 CPython 3.12 的执行模型中，`locals_` 更接近于按符号名组织、与 Python 语义直接对应的局部命名空间，而 `localsplus_` 则是解释器内部高频访问的槽位数组，用于顺序放置形参、局部变量、Cell 变量和 Free 变量。
 
 ### 4.5.3 局部变量、全局变量与闭包变量查找
 
