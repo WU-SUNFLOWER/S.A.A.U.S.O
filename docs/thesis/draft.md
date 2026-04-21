@@ -272,6 +272,8 @@ Python 中的函数调用通常是通过 `CALL` 等字节码指令发起的。
 
 在 CPython 3.12 的执行模型中，对字典和槽位区两种方案进行了结合。首先，对于单个 Python 文件的顶层代码，也就是可视作“根函数”的那部分代码，因为其中的顶层变量可能会通过变量符号名被暴露给其他 Python 文件，因此栈帧通常会提供一个被称为 `locals` 的字典用于保存这些顶层变量。而要以变量符号名为键访问这些顶层变量，就需要通过 `LOAD_NAME` 和 `STORE_NAME` 等字节码指令实现。
 
+这里还需要特别说明 `LOAD_NAME` 与 `STORE_NAME` 的职责差异。对于 `STORE_NAME` 而言，其语义是在当前按名字解析的局部命名空间中建立或更新绑定关系，因此它会直接把值写入当前栈帧的 `locals` 字典。相对地，`LOAD_NAME` 的语义并不是“只查当前 `locals`”即可结束：当名称在当前 `locals` 中不存在时，PVM 还需要继续向 `globals` 以及内建命名空间回退查找。这样设计的原因在于，顶层代码或其他按名字解析局部命名空间的执行场景，虽然以 `locals` 作为第一落点，但程序仍然需要继续访问模块级全局名称以及内建函数。
+
 相对地，对于一般 Python 函数中的局部变量，则采用了上文介绍的槽位区方案。这个槽位区在 CPython 的源代码中被称为 `localsplus` 数组。另外，Python 函数中的形参以及闭包场景下出现的自由变量，同样会被安排在槽位区中进行维护。相应地，`LOAD_FAST`、`STORE_FAST`、`LOAD_DEREF`、`STORE_DEREF` 等字节码指令就是直接按槽位下标访问对应变量值的。需说明的是，关于闭包的实现原理，在 2.3.4 中会进一步讨论。
 
 与此同时，函数体对全局变量命名空间的访问又是另一条路径。除了上文介绍的 `locals` 字典和 `localsplus` 数组，栈帧中还会预留一个 `globals` 字段用于指向当前函数代码使用的全局命名空间字典。若函数内部需要读取其所在模块中的全局名称，编译器通常会生成 `LOAD_GLOBAL` 字节码指令，解释器在运行时会先查该函数绑定的全局命名空间，再查内建命名空间作为兜底；若函数体显式使用 `global` 关键字声明并对某个名称赋值，则相应写操作会通过 `STORE_GLOBAL` 落到该函数绑定的全局命名空间之中。
@@ -295,14 +297,6 @@ func()
 当 PVM 执行 `mod_a.py` 的顶层代码时，会为该模块准备一个模块级全局命名空间。在 CPython 3.12 的执行模型中，当前根函数对应栈帧中的 `locals` 与 `globals` 字段均直接指向这一个字典。当 `MAKE_FUNCTION` 创建 `func` 时，会把栈帧中 `globals` 字段所指向的该字典一并绑定进新生成的函数对象中。于是，当我们在 `mod_b.py` 中调用 `func` 时，PVM 首先会将当前栈帧中的 `globals` 字段指向与该函数绑定的全局命名空间。接下来，因为函数读取变量 `x` 的操作是通过 `LOAD_GLOBAL` 字节码指令完成的，所以 PVM 会在当前栈帧中 `globals` 所指向的全局命名空间中进行查找，从而得出的输出结果为 10 而非 999。
 
 综上所述，PVM 栈帧中 `locals`、`globals` 和 `localsplus` 字段的职责并不相同，也不能彼此替代。对于模块级根函数，对外可见的 `locals` 与 `globals` 可以指向同一个模块命名空间字典；但对于一般函数，对应栈帧中保留独立的 `globals` 字段仍然是必要的，因为函数体中的 `LOAD_GLOBAL`、`STORE_GLOBAL` 需要据此访问该函数在定义阶段绑定的模块级全局命名空间，而不是调用点所在栈帧的局部环境。
-
-### 2.3.3 关键字参数、扩展参数与键值对参数
-
-Python 函数调用语义比许多静态语言更灵活。除了普通的位置参数外，Python 还支持关键字参数以及 `*args` 和 `**kwargs` 形式的扩展参数。关键字参数用于对指定名称的形参进行赋值；`*args` 代表一个 `tuple` 容器，用于接收多余的位置参数；`**kwargs` 代表一个 `dict` 容器，用于接收未被显式形参消耗的键值对参数。
-
-从 PVM 的角度看，这意味着“函数调用”并不仅仅是简单地把一组实参按顺序打包进形参表中，而是需要经过一轮更复杂的参数归一化过程。PVM 必须区分哪些实参属于普通位置参数，哪些属于关键字参数，哪些应被打包进 `tuple`，哪些应被收集进 `dict`，以及默认值在何时参与补全。
-
-这一点对于实现来说非常重要。因为只要参数绑定规则稍有偏差，Python 函数调用的表现就会与预期不一致。考虑到 Python 的函数语义本身具有较高复杂度，不能简单照搬静态语言函数调用模型，本文所实现的 S.A.A.U.S.O VM 选择将参数绑定逻辑提取为虚拟机中的解释器下属的专门模块，以便独立进行维护。
 
 ### 2.3.4 函数闭包
 
@@ -1554,75 +1548,69 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 
 ### 4.5.3 局部变量、全局变量与名称查找
 
-有了上一小节中 `FrameObject` 的数据结构之后，第 2 章关于 `LOAD_NAME/STORE_NAME`、`LOAD_FAST/STORE_FAST`、`LOAD_GLOBAL/STORE_GLOBAL` 的理论区分，便可以在解释器源码中被直接对应出来。S.A.A.U.S.O VM 并不是用一条统一规则处理全部变量访问，而是针对不同类别的变量绑定关系分别设置了不同的 handler。代码清单 4-31 给出了几类代表性变量访问路径的删节实现。
+在建立了栈帧的数据结构后，下一步就可以给出 `LOAD_NAME/STORE_NAME`、`LOAD_FAST/STORE_FAST`、`LOAD_GLOBAL/STORE_GLOBAL` 这些读写变量字节码指令的具体实现了。尤其是对于第 2 章 `2.3.2` 中已经提出的那条规则，即 `STORE_NAME` 直接写入当前 `locals`，而 `LOAD_NAME` 需要遵循 `locals -> globals -> builtins` 的回退顺序，本节可以在解释器源码中看到其对应实现。
+
+代码 4-31 给出了 `STORE_NAME/LOAD_NAME` 字节码指令的删节实现。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg, isolate_);
   Handle<PyDict> locals = current_frame_->locals(isolate_);
-  if (locals.is_null()) [[unlikely]] {
-    Runtime_ThrowError(isolate_, ExceptionType::kRuntimeError,
-                       "no locals found when storing name");
-    goto pending_exception_unwind;
-  }
-  GOTO_ON_EXCEPTION(PyDict::Put(locals, key, POP(), isolate_));
+  ...
+  PyDict::Put(locals, key, POP(), isolate_);
 })
 
 INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg, isolate_);
   ...
-  ASSIGN_GOTO_ON_EXCEPTION(
-      found,
-      PyDict::Get(current_frame_->locals(isolate_), key, value, isolate_));
-  if (found) { PUSH(value); break; }
-  ASSIGN_GOTO_ON_EXCEPTION(
-      found,
-      PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
-  if (found) { PUSH(value); break; }
-  ASSIGN_GOTO_ON_EXCEPTION(
-      found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
-  if (found) { PUSH(value); break; }
-})
+  Handle<PyObject> value = 
+      PyDict::Get(current_frame_->locals(isolate_), key, ...);
+  if (!value.is_null()) { PUSH(value); break; }
 
+  value = PyDict::Get(current_frame_->globals(isolate_), key, ...);
+  if (!value.is_null()) { PUSH(value); break; }
+
+  value = PyDict::Get(isolate_->builtins(), key, ...);
+  if (!value.is_null()) { PUSH(value); break; }
+})
+```
+代码 4-31
+
+对于 `STORE_NAME` 字节码指令，PVM 首先通过 `current_frame_->names(...)` 取出符号名，再把写入操作直接落到 `locals` 字典上；这正对应了第 2 章中“`STORE_NAME` 在当前按名字解析的局部命名空间中建立绑定”的理论描述。而对于 `LOAD_NAME` 指令，在 `locals` 字典中查找失败后，还会继续向 `globals` 和内建命名空间回退；这同样正对应了第 2 章中给出的 `locals -> globals -> builtins` 查找规则。这两条指令主要服务于顶层脚本、模块级根函数以及其他需要显式按名字解析局部命名空间的场景。
+
+代码 4-32 给出了 `STORE_GLOBAL/LOAD_GLOBAL` 和 `STORE_FAST/LOAD_FAST` 字节码指令的删节实现。可以看到它们与 2.3.2 中给出的理论分析基本一致，因此这里不再展开。
+
+```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg, isolate_);
-  GOTO_ON_EXCEPTION(
-      PyDict::Put(current_frame_->globals(isolate_), key, POP(), isolate_));
+  PyDict::Put(current_frame_->globals(isolate_), key, POP(), isolate_);
 })
 
 INTERPRETER_HANDLER_WITH_SCOPE(LoadGlobal, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg >> 1, isolate_);
   ...
-  ASSIGN_GOTO_ON_EXCEPTION(
-      found,
-      PyDict::Get(current_frame_->globals(isolate_), key, value, isolate_));
-  if (found) { PUSH(value); break; }
-  ASSIGN_GOTO_ON_EXCEPTION(
-      found, PyDict::Get(isolate_->builtins(), key, value, isolate_));
-  if (found) { PUSH(value); break; }
+  Handle<PyObject> value = 
+      PyDict::Get(current_frame_->globals(isolate_), key, ...);
+  if (!value.is_null()) { PUSH(value); break; }
+
+  value = PyDict::Get(isolate_->builtins(), key, ...);
+  if (!value.is_null()) { PUSH(value); break; }
 })
 
 INTERPRETER_HANDLER_WITH_SCOPE(
-    LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
-INTERPRETER_HANDLER_WITH_SCOPE(
     StoreFast, current_frame_->localsplus(isolate_)->Set(op_arg, *POP());)
+INTERPRETER_HANDLER_WITH_SCOPE(
+    LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
 ```
-
-从这部分实现可以看到，第 2 章建立起来的那套变量模型，在 S.A.A.U.S.O VM 中已经被切分为三条彼此不同、但又相互衔接的运行时路径。第一条是 `LoadName/StoreName` 对应的“按名称访问局部命名空间”路径。它首先通过 `current_frame_->names(...)` 取出符号名，再把读写操作落到 `locals` 字典上；`LoadName` 在读取失败后还会继续向 `globals` 和内建命名空间回退。这条路径主要服务于顶层脚本、模块级根函数以及其他需要显式按名字解析局部命名空间的场景。
-
-第二条是 `LoadFast/StoreFast` 对应的“按槽位访问普通局部变量”路径。它直接对 `localsplus` 数组按下标读写，用于处理形参与普通局部变量。这与第 2 章中关于“局部变量槽位区由编译器前端预先安排，解释器运行时按槽位下标直接访问”的理论分析是完全一致的。也就是说，在 S.A.A.U.S.O VM 的当前实现中，`localsplus` 并不是一个抽象概念，而是真正承载热点局部变量访问的底层槽位区。
-
-第三条则是 `LoadGlobal/StoreGlobal` 对应的“按函数绑定的全局命名空间访问”路径。这里最值得注意的一点是：即使根函数场景下 `locals` 与 `globals` 可能物理上指向同一个字典，解释器依然没有把 `globals` 这个字段消除掉。原因正如第 2 章 `mod_a.py / mod_b.py` 的例子所揭示的那样，普通函数在运行时访问全局变量时，必须以函数对象绑定的模块级全局命名空间为准，而不能退化为“查调用点所在帧的局部环境”。`LoadGlobal/StoreGlobal` 直接读取 `current_frame_->globals(isolate_)`，正是这一设计判断在代码层面的直接体现。
-
-因此，从第 2 章“变量访问本质上是对不同命名空间和不同存储区域的有区别查找”这一理论判断出发，到本节 `LoadName/StoreName`、`LoadFast/StoreFast` 与 `LoadGlobal/StoreGlobal` 的实现说明，本文已经形成了一条较完整的闭环：局部变量与全局变量并不共享同一条访问主路径，而是分别映射到 `locals`、`globals` 与 `localsplus` 这些不同的数据结构上，由解释器通过不同字节码 handler 加以落实。
+代码 4-32
 
 ### 4.5.4 函数闭包的实现
 
-不过，若仅讨论 `LoadFast/StoreFast` 这类普通局部变量访问路径，还不足以完整回应第 2 章 `2.3.4 函数闭包` 提出的理论问题。闭包机制的难点并不在于“再增加一组变量读取字节码”这么简单，而在于如何让内部函数在外层函数返回后，仍能继续持有并读写同一个自由变量引用。当前 S.A.A.U.S.O VM 中，这条链路主要由 `MakeCell`、`LoadClosure`、`MakeFunction`、`CopyFreeVars`、`LoadDeref` 和 `StoreDeref` 共同完成。代码清单 4-32 给出了相关实现的删节代码。
+不过，若仅讨论 `LoadFast/StoreFast` 这类普通局部变量访问路径，还不足以完整回应第 2 章 `2.3.4 函数闭包` 提出的理论问题。闭包机制的难点并不在于“再增加一组变量读取字节码”这么简单，而在于如何让内部函数在外层函数返回后，仍能继续持有并读写同一个自由变量引用。当前 S.A.A.U.S.O VM 中，这条链路主要由 `MakeCell`、`LoadClosure`、`MakeFunction`、`CopyFreeVars`、`LoadDeref` 和 `StoreDeref` 共同完成。代码清单 4-33 给出了相关实现的删节代码。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
