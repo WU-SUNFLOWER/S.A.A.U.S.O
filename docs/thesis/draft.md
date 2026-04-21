@@ -1397,7 +1397,7 @@ Handle<PyModule> ModuleImporter::GetOrLoadModulePart(
 
 ### 4.4.4 代码装载前端实现
 
-对本文课题而言，重点研究的对象是 PVM 后端，因此 S.A.A.U.S.O VM 在源码编译能力上直接复用了 CPython 的编译前端的策略。关闭该复用后，PVM 后端仍可独立运行，但部分依赖源码编译前端的功能会受到限制。与此同时，系统也支持直接装载 CPython 编译器前端生成的 `.pyc` 格式的代码对象二进制文件。
+对本文课题而言，重点研究的对象是 PVM 后端，因此 S.A.A.U.S.O VM 在源码编译能力上直接封装了 CPython 的编译前端。关闭该复用后，PVM 后端仍可独立运行，但部分依赖源码编译前端的功能会受到限制。与此同时，系统也支持直接装载 CPython 编译器前端生成的 `.pyc` 格式的代码对象二进制文件。
 
 代码 4-28 给出了删节版本的代码装载前端函数接口。
 ```cpp
@@ -1419,13 +1419,15 @@ class Compiler : AllStatic {
 
 ## 4.5 字节码解释器与异常处理的实现
 
-在前一节完成执行入口、运行环境、模块导入和代码装载之后，S.A.A.U.S.O VM 才真正进入“解释执行”这一核心阶段。需要说明的是，受论文篇幅限制，本文不可能逐一介绍每个字节码 handler 的实现逻辑，否则第 4 章很容易退化为字节码规范手册。基于这一现实考虑，本文只选取与第 2 章理论分析关系最紧密的几类机制进行说明，即函数对象表示、栈帧组织、命名空间查找、函数调用主路径、调度表解释器以及异常展开机制。
+在建立起执行门面，以及运行时语义、内建能力和代码装载前端等基础设施后，就可以开始搭建字节码解释器了。需要说明的是，受限于论文篇幅，本节中不可能逐一介绍每个字节码指令的实现逻辑。本节只选取与第 2 章中所分析的 Python 语言核心机制进行说明，即函数对象表示、栈帧组织、命名空间查找、函数调用主路径、调度表解释器以及异常展开机制。
+
+与此同时，在本文附录 B 中，给出现阶段 S.A.A.U.S.O VM 所实现的 CPython 3.12 字节码指令简表，可供有需要的读者查阅。
 
 ### 4.5.1 Python 函数对象与可调用对象表示
 
-第 2 章已经指出，Python 中的函数并不是一段裸代码，而是运行时动态创建的函数对象。对 S.A.A.U.S.O VM 而言，这一点在实现中被进一步具体化为：普通 Python 函数与 native 函数统一由 `PyFunction` 对象承载，只是在其内部保存的元数据和实际调用路径上有所区别。
+第 2 章已经指出，Python 中的函数的本质是运行阶段由 PVM 动态创建的可调用对象。对 S.A.A.U.S.O VM 而言，这一点在实现中被进一步具体化为：普通 Python 函数与 native 函数统一由 `PyFunction` 对象承载，只是在其内部保存的元数据和实际调用路径上有所区别。
 
-代码清单 4-26 给出了 `PyFunction` 定义以及 `MAKE_FUNCTION` 字节码处理逻辑的删节实现。
+代码 4-26 给出了 `PyFunction` 的删节定义。
 
 ```cpp
 class PyFunction : public PyObject {
@@ -1449,7 +1451,13 @@ class PyFunction : public PyObject {
   NativeFuncPointerWithClosure native_func_with_closure_{nullptr};
   Tagged<PyObject> native_closure_data_{kNullAddress};
 };
+```
 
+这段代码说明，`PyFunction` 至少同时承担了四类信息的组织责任：其一，`func_code_` 对应函数的静态代码对象；其二，`func_globals_` 对应函数创建时绑定的全局命名空间；其三，`default_args_` 与 `closures_` 分别对应默认参数和闭包变量；其四，`native_func_` 等字段则为 native 函数调用提供宿主回调入口。也就是说，在虚拟机内部，普通函数和 native 函数并不是两套完全割裂的对象体系，而是共享同一套“可调用 Python 对象”外形。
+
+代码 4-27 给出了 `MAKE_FUNCTION` 字节码处理逻辑的删节实现。
+
+```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
   auto code_object = Handle<PyCodeObject>::cast(POP());
   Handle<PyFunction> func =
@@ -1466,7 +1474,6 @@ INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
 })
 ```
 
-这段代码说明，`PyFunction` 至少同时承担了四类信息的组织责任：其一，`func_code_` 对应函数的静态代码对象；其二，`func_globals_` 对应函数创建时绑定的全局命名空间；其三，`default_args_` 与 `closures_` 分别对应默认参数和闭包变量；其四，`native_func_` 等字段则为 native 函数调用提供宿主回调入口。也就是说，在虚拟机内部，普通函数和 native 函数并不是两套完全割裂的对象体系，而是共享同一套“可调用 Python 对象”外形。
 
 与此同时，`MAKE_FUNCTION` 字节码的处理逻辑也直接回应了第 2 章的理论分析。解释器在运行到函数定义语句时，并不是简单记录某个代码对象，而是即时创建新的 `PyFunction`，并把当时可见的全局变量表、默认参数和闭包元组写入函数对象内部。这样一来，第 2 章中提到的“函数对象与所在模块全局命名空间发生动态绑定”“函数对象可能携带默认参数与闭包状态”等现象，便在实现层面得到了明确落点。
 
@@ -1797,3 +1804,5 @@ S.A.A.U.S.O VM 的 Embedder API 并不只支持“宿主把一段脚本跑起来
 
 本文所实现的 S.A.A.U.S.O VM 系统的完整源代码、单元测试及相关开发文档已公开发布于 GitHub 平台，访问地址如下：
 https://github.com/WU-SUNFLOWER/S.A.A.U.S.O
+
+# 附录 S.A.A.U.S.O VM 实现的字节码指令简表
