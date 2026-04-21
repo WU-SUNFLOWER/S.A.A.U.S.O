@@ -1552,9 +1552,9 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 （2）调用 `FrameObjectBuilder::BuildSlowPath()` 时需显式指定 `locals` 字典，这说明 PVM 在发起函数调用时，可以灵活指定提供给当前函数使用的 `locals`。例如，对顶层代码而言，`locals` 便可以与 `globals` 指向同一个字典。
 （3）`localsplus` 会按保存在代码对象中的 `nlocalsplus()` 的大小单独分配出来，用于承载函数形参、普通局部变量以及闭包变量。显然，代码对象中提供的槽位区大小是由编译器事先计算好的；这表明槽位的分配情况在 Python 代码编译阶段就已经被确定下来了。
 
-### 4.5.3 局部变量、全局变量与闭包变量查找
+### 4.5.3 局部变量、全局变量与名称查找
 
-有了上一小节中 `FrameObject` 的数据结构之后，第 2 章关于 `LOAD_NAME/STORE_NAME`、`LOAD_FAST/STORE_FAST`、`LOAD_GLOBAL/STORE_GLOBAL` 与 `LOAD_DEREF/STORE_DEREF` 的理论区分，便可以在解释器源码中被直接对应出来。S.A.A.U.S.O VM 并不是用一条统一规则处理全部变量访问，而是针对不同类别的变量绑定关系分别设置了不同的 handler。代码清单 4-31 给出了几类代表性变量访问路径的删节实现。
+有了上一小节中 `FrameObject` 的数据结构之后，第 2 章关于 `LOAD_NAME/STORE_NAME`、`LOAD_FAST/STORE_FAST`、`LOAD_GLOBAL/STORE_GLOBAL` 的理论区分，便可以在解释器源码中被直接对应出来。S.A.A.U.S.O VM 并不是用一条统一规则处理全部变量访问，而是针对不同类别的变量绑定关系分别设置了不同的 handler。代码清单 4-31 给出了几类代表性变量访问路径的删节实现。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
@@ -1610,6 +1610,57 @@ INTERPRETER_HANDLER_WITH_SCOPE(
     LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
 INTERPRETER_HANDLER_WITH_SCOPE(
     StoreFast, current_frame_->localsplus(isolate_)->Set(op_arg, *POP());)
+```
+
+从这部分实现可以看到，第 2 章建立起来的那套变量模型，在 S.A.A.U.S.O VM 中已经被切分为三条彼此不同、但又相互衔接的运行时路径。第一条是 `LoadName/StoreName` 对应的“按名称访问局部命名空间”路径。它首先通过 `current_frame_->names(...)` 取出符号名，再把读写操作落到 `locals` 字典上；`LoadName` 在读取失败后还会继续向 `globals` 和内建命名空间回退。这条路径主要服务于顶层脚本、模块级根函数以及其他需要显式按名字解析局部命名空间的场景。
+
+第二条是 `LoadFast/StoreFast` 对应的“按槽位访问普通局部变量”路径。它直接对 `localsplus` 数组按下标读写，用于处理形参与普通局部变量。这与第 2 章中关于“局部变量槽位区由编译器前端预先安排，解释器运行时按槽位下标直接访问”的理论分析是完全一致的。也就是说，在 S.A.A.U.S.O VM 的当前实现中，`localsplus` 并不是一个抽象概念，而是真正承载热点局部变量访问的底层槽位区。
+
+第三条则是 `LoadGlobal/StoreGlobal` 对应的“按函数绑定的全局命名空间访问”路径。这里最值得注意的一点是：即使根函数场景下 `locals` 与 `globals` 可能物理上指向同一个字典，解释器依然没有把 `globals` 这个字段消除掉。原因正如第 2 章 `mod_a.py / mod_b.py` 的例子所揭示的那样，普通函数在运行时访问全局变量时，必须以函数对象绑定的模块级全局命名空间为准，而不能退化为“查调用点所在帧的局部环境”。`LoadGlobal/StoreGlobal` 直接读取 `current_frame_->globals(isolate_)`，正是这一设计判断在代码层面的直接体现。
+
+因此，从第 2 章“变量访问本质上是对不同命名空间和不同存储区域的有区别查找”这一理论判断出发，到本节 `LoadName/StoreName`、`LoadFast/StoreFast` 与 `LoadGlobal/StoreGlobal` 的实现说明，本文已经形成了一条较完整的闭环：局部变量与全局变量并不共享同一条访问主路径，而是分别映射到 `locals`、`globals` 与 `localsplus` 这些不同的数据结构上，由解释器通过不同字节码 handler 加以落实。
+
+### 4.5.4 函数闭包的实现
+
+不过，若仅讨论 `LoadFast/StoreFast` 这类普通局部变量访问路径，还不足以完整回应第 2 章 `2.3.4 函数闭包` 提出的理论问题。闭包机制的难点并不在于“再增加一组变量读取字节码”这么简单，而在于如何让内部函数在外层函数返回后，仍能继续持有并读写同一个自由变量引用。当前 S.A.A.U.S.O VM 中，这条链路主要由 `MakeCell`、`LoadClosure`、`MakeFunction`、`CopyFreeVars`、`LoadDeref` 和 `StoreDeref` 共同完成。代码清单 4-32 给出了相关实现的删节代码。
+
+```cpp
+INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
+  auto code_object = Handle<PyCodeObject>::cast(POP());
+  Handle<PyFunction> func =
+      isolate_->factory()->NewPyFunctionWithCodeObject(code_object);
+  func->set_func_globals(current_frame_->globals(isolate_));
+
+  if (op_arg & MakeFunctionOpArgMask::kClosure) {
+    func->set_closures(Handle<PyTuple>::cast(POP()));
+  }
+  if (op_arg & MakeFunctionOpArgMask::kDefaults) {
+    func->set_default_args(Handle<PyTuple>::cast(POP()));
+  }
+  PUSH(func);
+})
+
+INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
+  Handle<Cell> cell = isolate_->factory()->NewCell();
+  Tagged<PyObject> initial =
+      current_frame_->localsplus(isolate_)->Get(op_arg);
+  cell->set_value(initial);
+  current_frame_->localsplus(isolate_)->Set(op_arg, cell);
+})
+
+INTERPRETER_HANDLER_DISPATCH(LoadClosure, {
+  Tagged<PyObject> cell = current_frame_->localsplus(isolate_)->Get(op_arg);
+  PUSH(cell);
+})
+
+INTERPRETER_HANDLER_DISPATCH(CopyFreeVars, {
+  Tagged<PyTuple> func_closures = current_frame_->func_tagged()->closures_tagged();
+  int offset = current_frame_->code_object_tagged()->nlocalsplus() - op_arg;
+  for (auto i = 0; i < op_arg; ++i) {
+    current_frame_->localsplus(isolate_)->Set(
+        i + offset, func_closures->GetTagged(i));
+  }
+})
 
 INTERPRETER_HANDLER_WITH_SCOPE(LoadDeref, {
   Tagged<Cell> cell =
@@ -1630,19 +1681,19 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
 })
 ```
 
-从这部分实现可以看到，第 2 章建立起来的那套变量模型，在 S.A.A.U.S.O VM 中已经被切分为三条彼此不同、但又相互衔接的运行时路径。第一条是 `LoadName/StoreName` 对应的“按名称访问局部命名空间”路径。它首先通过 `current_frame_->names(...)` 取出符号名，再把读写操作落到 `locals` 字典上；`LoadName` 在读取失败后还会继续向 `globals` 和内建命名空间回退。这条路径主要服务于顶层脚本、模块级根函数以及其他需要显式按名字解析局部命名空间的场景。
+这段代码实际上把第 2 章中提出的四个问题串成了一条连续的实现链。首先，`MakeCell` 表明自由变量并不会继续作为普通局部变量值直接存放在槽位中，而是会被替换为一个 `Cell` 对象；这就使普通局部变量路径与闭包变量路径在运行时被真正区分开来。随后，`LoadClosure` 会把这些 `Cell` 压栈，`MakeFunction` 再通过 `func->set_closures(...)` 将它们绑定进新创建的函数对象。也就是说，正如 `4.5.1` 中 `PyFunction` 的 `closures_` 字段所展示的那样，内部函数在创建时并不是简单获得一个代码对象，而是会一并获得对外层自由变量单元对象的持有关系。
 
-第二条是 `LoadFast/StoreFast` 与 `LoadDeref/StoreDeref` 对应的“按槽位访问局部环境”路径。前者直接对 `localsplus` 数组按下标读写，用于处理形参与普通局部变量；后者则先从 `localsplus` 中取出 `Cell` 对象，再对其内部保存的引用做解引用或回写，从而支撑闭包变量的共享与更新。也就是说，在 S.A.A.U.S.O VM 的当前实现中，`localsplus` 并不是一个抽象概念，而是真正承载热点变量访问的底层槽位区。
+更关键的是，`CopyFreeVars` 说明内部函数在真正被调用、建立新栈帧之后，并不是重新复制一份自由变量的值，而是把函数对象中保存的 `closures` 再次注入到新栈帧的 `localsplus` 自由变量区域中。这样一来，外层函数和内部函数实际持有的是同一个 `Cell` 对象，而不是两个内容相同但彼此独立的值副本。这一点正是第 2 章中“闭包函数持有的是对自由变量的真实引用，而非副本”在实现层面的直接证据。
 
-第三条则是 `LoadGlobal/StoreGlobal` 对应的“按函数绑定的全局命名空间访问”路径。这里最值得注意的一点是：即使根函数场景下 `locals` 与 `globals` 可能物理上指向同一个字典，解释器依然没有把 `globals` 这个字段消除掉。原因正如第 2 章 `mod_a.py / mod_b.py` 的例子所揭示的那样，普通函数在运行时访问全局变量时，必须以函数对象绑定的模块级全局命名空间为准，而不能退化为“查调用点所在帧的局部环境”。`LoadGlobal/StoreGlobal` 直接读取 `current_frame_->globals(isolate_)`，正是这一设计判断在代码层面的直接体现。
+在此基础上，`LoadDeref` 与 `StoreDeref` 则承担了闭包变量的日常读写职责：读取时，解释器先从 `localsplus` 中取出 `Cell`，再解析其中保存的真实引用；写入时，则是把新的值对象重新写回 `Cell`。因此，无论是外层函数还是内部函数，只要它们访问的是同一个 `Cell`，双方就都能够观察到对自由变量所做的更新。也正因为如此，闭包变量访问不能简单退化为 `LoadFast/StoreFast`，而必须拥有自己独立的 `LoadDeref/StoreDeref` 路径。
 
-因此，从第 2 章“变量访问本质上是对不同命名空间和不同存储区域的有区别查找”这一理论判断出发，到本节 `LoadName/StoreName`、`LoadFast/StoreFast`、`LoadGlobal/StoreGlobal`、`LoadDeref/StoreDeref` 的实现说明，本文已经形成了一条较完整的闭环：局部变量、全局变量和闭包变量并不共享同一条访问主路径，而是分别映射到 `locals`、`globals` 与 `localsplus/Cell` 这些不同的数据结构上，由解释器通过不同字节码 handler 加以落实。
+综上所述，S.A.A.U.S.O VM 中的闭包实现已经与第 2 章的理论分析形成了较完整的闭环：编译器前端先区分普通局部变量与自由变量，解释器通过 `MakeCell` 在外层函数栈帧中建立单元对象，通过 `MakeFunction` 和 `closures_` 把这些单元对象绑定进内部函数，再通过 `CopyFreeVars` 将其注入被调栈帧，最终由 `LoadDeref/StoreDeref` 完成对自由变量的读写。闭包之所以能够在外层函数返回后依然成立，并不是因为 PVM 特判保存了一份额外副本，而是因为内外两层函数共享的是同一个被函数对象持续持有的 `Cell`。
 
-### 4.5.4 函数调用主路径与调用栈管理
+### 4.5.5 函数调用主路径与调用栈管理
 
 函数调用是第 2 章最强调的核心机制之一。对于 S.A.A.U.S.O VM 而言，这一过程既包括普通 Python 函数的建帧与解释执行，也包括 native 函数的直接调用路径，还包括 Python 调用栈本身如何被创建、维护和回退。
 
-代码清单 4-32 给出了相关实现的删节代码。
+代码清单 4-33 给出了相关实现的删节代码。
 
 ```cpp
 MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
@@ -1696,11 +1747,11 @@ void Interpreter::DestroyCurrentFrame() {
 
 从第 2 章的角度回看，这里已经形成了较完整的闭环：函数调用不再是抽象的“控制权切换”，而是被具体实现为“创建新栈帧 -> 把新栈帧链接到 `caller_` 链上 -> 解释器推进字节码 -> 取回返回值 -> 销毁当前帧”的过程。因此，S.A.A.U.S.O VM 中的函数调用堆栈并不是隐含在 C++ 调用栈之中的，而是由虚拟机自身显式维护的 Python 调用栈结构。
 
-### 4.5.5 基于调度表的字节码分派
+### 4.5.6 基于调度表的字节码分派
 
 在具备函数对象、栈帧和变量访问机制之后，解释器才真正进入“逐条推进字节码”的主循环。本小节将以调度表和一个代表性条件跳转 handler 为例，说明解释器如何把“取指、判断、跳转、继续执行”组织为连续推进的执行过程。
 
-代码清单 4-33 给出了与调度和控制流最相关的删节实现。
+代码清单 4-34 给出了与调度和控制流最相关的删节实现。
 
 ```cpp
 #define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
@@ -1732,11 +1783,11 @@ INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
 
 同时，`JumpIfFalse` 的例子也很好地回应了第 2 章关于控制流的分析。程序计数器的推进并不是单纯地机械加一，而是会受到条件判断结果的直接影响；而条件判断本身又需要借助 `Runtime_PyObjectIsTrue()` 把任意 Python 对象解释为逻辑上的真或假。由此可见，第 2 章中提出的“控制流既表现为程序计数器变化，又离不开对象真值语义”的判断，在本文系统中是通过解释器调度与运行时语义协同实现的。
 
-### 4.5.6 异常状态、异常表与展开机制
+### 4.5.7 异常状态、异常表与展开机制
 
 异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。对 S.A.A.U.S.O VM 而言，异常处理之所以值得单独成节，恰恰是因为它同时涉及异常状态的记录、异常表查找、操作数栈恢复以及函数调用栈的向上展开。
 
-代码清单 4-34 给出了异常状态与异常展开主路径的删节实现。
+代码清单 4-35 给出了异常状态与异常展开主路径的删节实现。
 
 ```cpp
 class ExceptionState final {
