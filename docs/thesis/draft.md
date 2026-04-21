@@ -272,7 +272,7 @@ Python 中的函数调用通常是通过 `CALL` 等字节码指令发起的。
 
 在 CPython 3.12 的执行模型中，对字典和槽位区两种方案进行了结合。首先，对于单个 Python 文件的顶层代码，也就是可视作“根函数”的那部分代码，因为其中的顶层变量可能会通过变量符号名被暴露给其他 Python 文件，因此栈帧通常会提供一个被称为 `locals` 的字典用于保存这些顶层变量。而要以变量符号名为键访问这些顶层变量，就需要通过 `LOAD_NAME` 和 `STORE_NAME` 等字节码指令实现。
 
-这里还需要特别说明 `LOAD_NAME` 与 `STORE_NAME` 的职责差异。对于 `STORE_NAME` 而言，其语义是在当前按名字解析的局部命名空间中建立或更新绑定关系，因此它会直接把值写入当前栈帧的 `locals` 字典。相对地，`LOAD_NAME` 的语义并不是“只查当前 `locals`”即可结束：当名称在当前 `locals` 中不存在时，PVM 还需要继续向 `globals` 以及内建命名空间回退查找。这样设计的原因在于，顶层代码或其他按名字解析局部命名空间的执行场景，虽然以 `locals` 作为第一落点，但程序仍然需要继续访问模块级全局名称以及内建函数。
+这里进一步说明 `LOAD_NAME` 与 `STORE_NAME` 的语义差异。对于 `STORE_NAME` 而言，其语义是在当前按名字解析的局部命名空间中建立或更新绑定关系，因此它会直接把值写入当前栈帧的 `locals` 字典。然而，`LOAD_NAME` 的语义并不是“只查当前 `locals`”即可结束：当名称在当前栈帧的 `locals` 字典中不存在时，PVM 还需要继续在 `globals` 以及内建命名空间中进行查找。这样设计的原因在于，在 CPython 当前的执行模型中，可能会复用这条指令用于查找模块级全局变量或内建函数。
 
 相对地，对于一般 Python 函数中的局部变量，则采用了上文介绍的槽位区方案。这个槽位区在 CPython 的源代码中被称为 `localsplus` 数组。另外，Python 函数中的形参以及闭包场景下出现的自由变量，同样会被安排在槽位区中进行维护。相应地，`LOAD_FAST`、`STORE_FAST`、`LOAD_DEREF`、`STORE_DEREF` 等字节码指令就是直接按槽位下标访问对应变量值的。需说明的是，关于闭包的实现原理，在 2.3.4 中会进一步讨论。
 
@@ -298,7 +298,7 @@ func()
 
 综上所述，PVM 栈帧中 `locals`、`globals` 和 `localsplus` 字段的职责并不相同，也不能彼此替代。对于模块级根函数，对外可见的 `locals` 与 `globals` 可以指向同一个模块命名空间字典；但对于一般函数，对应栈帧中保留独立的 `globals` 字段仍然是必要的，因为函数体中的 `LOAD_GLOBAL`、`STORE_GLOBAL` 需要据此访问该函数在定义阶段绑定的模块级全局命名空间，而不是调用点所在栈帧的局部环境。
 
-### 2.3.4 函数闭包
+### 2.3.3 函数闭包
 
 不同于 C/C++，Python 中支持嵌套定义函数，因此进一步会延伸出闭包（closure）机制。闭包是 Python 词法作用域规则的重要体现。
 
@@ -329,7 +329,7 @@ def outer():
 
 综上所述，闭包机制并不是简单在普通局部变量的基础上打补丁，而是一套需要由编译器前端、单元对象间接层和专用字节码指令共同协作完成的完整机制。
 
-### 2.3.5 内建函数
+### 2.3.4 内建函数
 
 除了用户在源码中定义的函数之外，PVM 还负责提供一批内建函数（builtin function），如 `print`、`len`、`isinstance` 等。这些函数在用户视角下与普通函数看起来相似，但它们通常并不是由 Python 源码直接定义，而是由虚拟机自身的 native 开发语言直接实现在 VM 内部，并预先注册到 Python 程序的内建命名空间中的。
 
@@ -1548,7 +1548,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
 
 ### 4.5.3 局部变量、全局变量与名称查找
 
-在建立了栈帧的数据结构后，下一步就可以给出 `LOAD_NAME/STORE_NAME`、`LOAD_FAST/STORE_FAST`、`LOAD_GLOBAL/STORE_GLOBAL` 这些读写变量字节码指令的具体实现了。尤其是对于第 2 章 `2.3.2` 中已经提出的那条规则，即 `STORE_NAME` 直接写入当前 `locals`，而 `LOAD_NAME` 需要遵循 `locals -> globals -> builtins` 的回退顺序，本节可以在解释器源码中看到其对应实现。
+在建立了栈帧的数据结构后，下一步就可以给出变量读写相关字节码指令的具体实现了。
 
 代码 4-31 给出了 `STORE_NAME/LOAD_NAME` 字节码指令的删节实现。
 
@@ -1578,9 +1578,9 @@ INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
 ```
 代码 4-31
 
-对于 `STORE_NAME` 字节码指令，PVM 首先通过 `current_frame_->names(...)` 取出符号名，再把写入操作直接落到 `locals` 字典上；这正对应了第 2 章中“`STORE_NAME` 在当前按名字解析的局部命名空间中建立绑定”的理论描述。而对于 `LOAD_NAME` 指令，在 `locals` 字典中查找失败后，还会继续向 `globals` 和内建命名空间回退；这同样正对应了第 2 章中给出的 `locals -> globals -> builtins` 查找规则。这两条指令主要服务于顶层脚本、模块级根函数以及其他需要显式按名字解析局部命名空间的场景。
+对于 `STORE_NAME` 字节码指令，PVM 首先通过 `current_frame_->names(...)` 取出符号名，再把写入操作直接落到 `locals` 字典上；这正对应了第 2 章中“`STORE_NAME` 在当前按名字解析的局部命名空间中建立绑定”的理论描述。而对于 `LOAD_NAME` 指令，在 `locals` 字典中查找失败后，还会继续向 `globals` 和内建命名空间回退；这同样正对应了第 2 章中给出的先查 `locals`，再查 `globals` 和 `builtins` 的查找规则。
 
-代码 4-32 给出了 `STORE_GLOBAL/LOAD_GLOBAL` 和 `STORE_FAST/LOAD_FAST` 字节码指令的删节实现。可以看到它们与 2.3.2 中给出的理论分析基本一致，因此这里不再展开。
+代码 4-32 给出了 `STORE_GLOBAL/LOAD_GLOBAL` 和 `STORE_FAST/LOAD_FAST` 字节码指令的删节实现。可以看到它们与 2.3.2 中给出的理论分析基本一致，且实现较为简单，因此这里不再展开。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
@@ -1610,7 +1610,7 @@ INTERPRETER_HANDLER_WITH_SCOPE(
 
 ### 4.5.4 函数闭包的实现
 
-不过，若仅讨论 `LoadFast/StoreFast` 这类普通局部变量访问路径，还不足以完整回应第 2 章 `2.3.4 函数闭包` 提出的理论问题。闭包机制的难点并不在于“再增加一组变量读取字节码”这么简单，而在于如何让内部函数在外层函数返回后，仍能继续持有并读写同一个自由变量引用。当前 S.A.A.U.S.O VM 中，这条链路主要由 `MakeCell`、`LoadClosure`、`MakeFunction`、`CopyFreeVars`、`LoadDeref` 和 `StoreDeref` 共同完成。代码清单 4-33 给出了相关实现的删节代码。
+在 2.3.3 中已经探讨过，闭包机制的难点并不在于“再增加一组变量读取字节码”这么简单，而在于如何让内部函数在外层函数返回后，仍能继续持有并读写同一个自由变量引用。当前 S.A.A.U.S.O VM 中，这条链路主要由 `MakeCell`、`LoadClosure`、`MakeFunction`、`CopyFreeVars`、`LoadDeref` 和 `StoreDeref` 共同完成。代码清单 4-33 给出了相关实现的删节代码。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
@@ -1681,7 +1681,7 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
 
 函数调用是第 2 章最强调的核心机制之一。对于 S.A.A.U.S.O VM 而言，这一过程既包括普通 Python 函数的建帧与解释执行，也包括 native 函数的直接调用路径，还包括 Python 调用栈本身如何被创建、维护和回退。
 
-代码清单 4-33 给出了相关实现的删节代码。
+代码 4-34 给出了相关实现的删节代码。
 
 ```cpp
 MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
@@ -1739,7 +1739,7 @@ void Interpreter::DestroyCurrentFrame() {
 
 在具备函数对象、栈帧和变量访问机制之后，解释器才真正进入“逐条推进字节码”的主循环。本小节将以调度表和一个代表性条件跳转 handler 为例，说明解释器如何把“取指、判断、跳转、继续执行”组织为连续推进的执行过程。
 
-代码清单 4-34 给出了与调度和控制流最相关的删节实现。
+代码清单 4-35 给出了与调度和控制流最相关的删节实现。
 
 ```cpp
 #define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
@@ -1775,7 +1775,7 @@ INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
 
 异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。对 S.A.A.U.S.O VM 而言，异常处理之所以值得单独成节，恰恰是因为它同时涉及异常状态的记录、异常表查找、操作数栈恢复以及函数调用栈的向上展开。
 
-代码清单 4-35 给出了异常状态与异常展开主路径的删节实现。
+代码清单 4-36 给出了异常状态与异常展开主路径的删节实现。
 
 ```cpp
 class ExceptionState final {
