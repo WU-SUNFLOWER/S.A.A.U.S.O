@@ -1524,7 +1524,7 @@ class FrameObject : Object {
 ```
 代码 4-29
 
-从这一定义可以看出，除了在 2.3.2 中已经讨论过的操作数栈、程序计数器，以及 `locals`、`globals` 与 `localsplus` 三类不同职责的变量环境，S.A.A.U.S.O VM 中的栈帧还显式保存了常量表、名称表、当前被调用的函数对象及其对应的代码对象，还有上一层调用者指针 `caller_`。其中的`caller_` 使各个 Python 栈帧能够被组织成一条显式的调用链；这也意味着本文系统中的 Python 调用栈并不是隐含在 C++ 调用栈内部，而是由 PVM 自己维护的数据结构。
+从这一定义可以看出，除了在 2.3.2 中已经讨论过的操作数栈、程序计数器，以及 `locals`、`globals` 与 `localsplus` 三类不同职责的变量环境，S.A.A.U.S.O VM 中的栈帧还显式保存了常量表、名称表、当前被调用的函数对象及其对应的代码对象，还有上一层调用者指针 `caller_`。其中的`caller_` 使各个 Python 栈帧能够被组织成一条显式的调用链表；这也意味着本文系统中的 Python 调用栈并不是隐含在 C++ 调用栈内部，而是由 PVM 自己维护的数据结构。
 
 下面再进一步说明这些变量环境是如何被真正装配进栈帧的。在现阶段的 S.A.A.U.S.O VM 中，当解释器需要发起 Python 函数调用时，栈帧的初始化及装配由 `FrameObjectBuilder` 承担。代码清单 4-30 给出了这部分逻辑的删节实现。
 
@@ -1554,7 +1554,7 @@ FrameBuildContext PrepareForFunction(Isolate* isolate,
   return ctx;
 }
 
-Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
+FrameObject* FrameObjectBuilder::BuildSlowPath(
     Isolate* isolate,
     Handle<PyFunction> func,
     Handle<PyDict> bound_locals,
@@ -1563,7 +1563,7 @@ Maybe<FrameObject*> FrameObjectBuilder::BuildSlowPath(
       PrepareForFunction(isolate, func, bound_locals);
   ...
   auto* frame_object = FrameObject::Create(ctx);
-  return Maybe<FrameObject*>(frame_object);
+  return frame_object;
 }
 ```
 代码 4-30
@@ -1701,65 +1701,98 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
 代码 4-34 给出了相关实现的删节代码。
 
 ```cpp
-MaybeHandle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
-                                                  Handle<PyObject> receiver,
-                                                  Handle<PyTuple> pos_args,
-                                                  Handle<PyDict> kw_args) {
+Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
+                                             Handle<PyObject> receiver,
+                                             Handle<PyTuple> pos_args,
+                                             Handle<PyDict> kw_args) {
   EscapableHandleScope scope(isolate_);
-  NormalizeCallable(callable, receiver);
+  ...
   Handle<PyObject> result;
-
   if (IsNormalPyFunction(callable, isolate_)) {
-    FrameObject* frame;
-    ASSIGN_RETURN_ON_EXCEPTION(
-        isolate_, frame,
+    FrameObject* frame =
         FrameObjectBuilder::BuildSlowPath(
-            isolate_, Handle<PyFunction>::cast(callable), receiver, pos_args,
-            kw_args));
-    frame->set_is_entry_frame(true);
+            isolate_, callable, receiver, pos_args, kw_args);
+    ...
     EnterFrame(frame);
     EvalCurrentFrame();
 
     Handle<PyObject> result = ReleaseReturnValue();
     DestroyCurrentFrame();
-    if (isolate_->HasPendingException()) return kNullMaybeHandle;
+    ...
     return scope.Escape(result);
   }
 
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, result,
-      CallNonNormalFunction(callable, receiver, pos_args, kw_args));
+  result = CallNonNormalFunction(callable, receiver, pos_args, kw_args);
   return scope.Escape(result);
 }
 
 void Interpreter::EnterFrame(FrameObject* frame) {
   frame->set_caller(current_frame_);
   current_frame_ = frame;
-  ++python_execution_depth_;
 }
 
 void Interpreter::DestroyCurrentFrame() {
   FrameObject* callee = current_frame_;
   current_frame_ = callee->caller();
-  --python_execution_depth_;
   delete callee;
 }
 ```
+代码 4-34
 
-这段代码说明，普通 Python 函数调用在进入解释器之前至少经历了四个关键阶段：首先，对传入的 callable 与 receiver 做归一化处理；其次，通过 `FrameObjectBuilder` 构造新的 Python 栈帧，并在构造过程中完成参数绑定、默认参数回填以及局部变量区初始化；再次，通过 `EnterFrame()` 把新建栈帧压入当前 Python 调用栈；最后，在 `EvalCurrentFrame()` 返回后提取返回值，并通过 `DestroyCurrentFrame()` 恢复上一层栈帧。
+在这段代码中，`Interpreter::CallPythonImpl()` 是 S.A.A.U.S.O VM 中执行调用操作的底层逻辑中枢。其中：
+（1）`callable` 参数表示一个可调用 Python 对象，它可能是一个普通的 Python 函数对象，也可能是其他类别的可调用对象，比如一个包装成 `PyFunction` 的 native 函数，或者重载了 `__call__` 魔法函数的用户自定义类实例。
+（2）`receiver` 参数仅在 PVM 执行对象方法调用时有效，表示发起方法调用的 Python 对象。
+（3）`pos_args` 和 `kw_args` 分别表示用户程序传入的位置参数和键值对参数。
 
-与此同时，`CallPythonImpl()` 也清楚体现出普通 Python 函数与 native 函数在执行路径上的分流：若目标 callable 是普通函数，则进入“建帧后解释执行”的主路径；若目标 callable 属于 native 函数等其他可调用对象，则改走 `CallNonNormalFunction()` 对应的运行时路径。这种设计一方面保持了用户视角下“它们都是可调用对象”的统一外观，另一方面又避免了让 native 函数不必要地经过完整的 Python 栈帧解释流程。
+这段代码说明了本文系统执行普通 Python 函数调用的几个关键步骤：首先，通过 4.5.2 中已经介绍过的 `FrameObjectBuilder` 构造新的 Python 栈帧，并完成参数绑定、默认参数回填以及局部变量区初始化；其次，通过 `EnterFrame()` 把新建栈帧加入 PVM 的调用堆栈（本质上是个链表），并注册为 PVM 当前正在处理的栈帧；再次，进入 `EvalCurrentFrame()` 逐条解释执行函数体内的字节码指令；最后，在函数体执行完毕后通过 `ReleaseReturnValue()` 提取返回值，并通过 `DestroyCurrentFrame()` 弹出当前栈帧并恢复上一层栈帧。
 
-从第 2 章的角度回看，这里已经形成了较完整的闭环：函数调用不再是抽象的“控制权切换”，而是被具体实现为“创建新栈帧 -> 把新栈帧链接到 `caller_` 链上 -> 解释器推进字节码 -> 取回返回值 -> 销毁当前帧”的过程。因此，S.A.A.U.S.O VM 中的函数调用堆栈并不是隐含在 C++ 调用栈之中的，而是由虚拟机自身显式维护的 Python 调用栈结构。
+与此同时，`CallPythonImpl()` 也清楚体现出普通 Python 函数与其他可调用对象在执行路径上的分流：若目标 `callable` 属于 native 函数或其他可调用对象，则改走 `CallNonNormalFunction()` 进行处理。这种设计的好处在于， `CallPythonImpl()` 为 VM 中上层业务逻辑提供了统一的调用入口函数，使得上层无需关心可调用 Pythob 对象的具体身份。
+
+代码 4-35 给出了 `CallNonNormalFunction()` 内部逻辑的删节实现。
+
+```cpp
+Handle<PyObject> Interpreter::CallNonNormalFunction(...) {
+  // 如果是NativeFunction，直接执行调用
+  if (IsNativePyFunction(callable, isolate_)) {
+    return Runtime_CallNativePyFunction(isolate_, callable, ...);
+  }
+  // 否则尝试调用callable的call虚方法
+  return PyObject::Call(isolate_, callable, ...);
+}
+
+Handle<PyObject> Runtime_CallNativePyFunction(...) {
+  ...
+  NativeFuncPointer native_func_ptr = func->native_func();
+  ...
+  return native_func_ptr(isolate, receiver, args, kwargs);
+}
+
+Handle<PyObject> PyObject::Call(...) {
+  Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
+  auto* call_method = klass->vtable().call_;
+  return call_method(isolate, self, ...);
+}
+```
+代码 4-35
 
 ### 4.5.6 基于调度表的字节码分派
 
-在具备函数对象、栈帧和变量访问机制之后，解释器才真正进入“逐条推进字节码”的主循环。本小节将以调度表和一个代表性条件跳转 handler 为例，说明解释器如何把“取指、判断、跳转、继续执行”组织为连续推进的执行过程。
+在建立起函数对象、栈帧和变量访问机制之后，解释器“逐条解释执行字节码指令”的主循环才得以确立起来。本小节将说明，在实际的 S.A.A.U.S.O VM 实现中，解释器如何把“取指、判断、跳转、继续执行”组织为连续推进的执行过程。
 
-代码清单 4-35 给出了与调度和控制流最相关的删节实现。
+代码 4-35 给出了与调度和控制流最相关的删节实现。
 
 ```cpp
-#define INTERPRETER_HANDLER(bytecode) handler_##bytecode:
+void Interpreter::EvalCurrentFrame() {
+  uint8_t op_code = 0;
+  int op_arg = 0;
+
+#define INTERPRETER_HANDLER_DISPATCH(bytecode, ...) \
+  handler_##bytecode {                              \
+    do {                                            \
+      __VA_ARGS__                                   \
+    } while (0);                                    \
+    DISPATCH();                                     \
+  }
 
 #define DISPATCH()                                      \
   do {                                                  \
@@ -1774,19 +1807,30 @@ void Interpreter::DestroyCurrentFrame() {
     goto* dispatch_table_[op_code];                     \
   } while (0)
 
-INTERPRETER_HANDLER_DISPATCH(JumpIfFalse, {
+INTERPRETER_HANDLER_DISPATCH(PopJumpIfFalse, {
   Tagged<PyObject> condition = POP_TAGGED();
   if (!Runtime_PyObjectIsTrue(isolate_, condition)) {
     current_frame_->set_pc(current_frame_->pc() + (op_arg << 1));
   }
 })
+
+其他字节码指令的实现略...
+}
+
+uint8_t FrameObject::GetOpCode() {
+  ...
+  return bytecodes->buffer()[pc_++];
+}
 ```
+代码 4-35
 
-从这段代码可以看出，解释器主循环并不是在每一步都重新进入一个大型条件分支，而是通过 `dispatch_table_` 直接跳转到当前字节码对应的 handler。`DISPATCH()` 宏同时负责处理三类关键状态：其一，若当前已经出现待传播异常，则立即转入异常展开路径；其二，若当前栈帧的字节码已经执行完毕，则直接退出解释器；其三，若仍可继续执行，则读取下一条字节码及其参数，并跳转到目标 handler。
+从这段代码可以看出，解释器内部并非是通过一个巨大的 switch 语句进行字节码指令分发的；而是以字节码指令为键，通过检索分发表（dispatch table）直接跳转到当前字节码指令对应的处理代码（在本文系统的实际代码中被称为 handler）。分发表的初始化逻辑在 VM 系统首次解释执行 Python 程序前完成，本文中因篇幅原因不再给出。
 
-其中，`INTERPRETER_HANDLER_DISPATCH(bytecode, ...)` 可以理解为“定义某条字节码对应 handler，并在执行完该 handler 的主体逻辑后自动回到分派主循环”的宏封装。借助这层封装，解释器在书写单个字节码处理逻辑时，可以把注意力集中在该指令本身的语义上，而把“处理完成后继续调度下一条字节码”这一公共步骤统一交由宏模板处理。这种写法既减少了重复样板代码，也使调度主路径在工程上更加稳定。
+接下来，每当一条字节码指令的内部逻辑执行完毕后，会执行 `DISPATCH()` 宏中的调度逻辑。这个宏负责集中处理三类关键状态：其一，若当前 VM 系统已经陷入待处理的异常状态，则立即转入异常处理逻辑；其二，若当前栈帧的所有字节码指令已全部执行完毕，则直接退出解释器流程；其三，若仍可继续执行，则读取下一条字节码及其参数，同时向前推进程序计数器，并跳转到目标 handler。其中，关于异常处理逻辑 `pending_exception_unwind` 的内部实现，将在 4.5.7 中展开探讨。
 
-同时，`JumpIfFalse` 的例子也很好地回应了第 2 章关于控制流的分析。程序计数器的推进并不是单纯地机械加一，而是会受到条件判断结果的直接影响；而条件判断本身又需要借助 `Runtime_PyObjectIsTrue()` 把任意 Python 对象解释为逻辑上的真或假。由此可见，第 2 章中提出的“控制流既表现为程序计数器变化，又离不开对象真值语义”的判断，在本文系统中是通过解释器调度与运行时语义协同实现的。
+为了更加方便地为字节码指令编写 handler，在 S.A.A.U.S.O VM 中又引入了宏 `INTERPRETER_HANDLER_DISPATCH(bytecode, ...)`。这个宏的语义为“定义某条字节码指令对应 handler，并在执行完该 handler 的主体逻辑后进行字节码调度”。借助这层封装，VM 开发者在编写单个字节码指令的处理逻辑时，可以把注意力集中在该指令本身的语义上，而把“处理完成后继续调度下一条字节码”这一公共步骤统一交由宏模板处理，以减少重复代码、提升 VM 代码的可读性。
+
+另外，代码 4-35 中给出的 `POP_JUMP_IF_FALSE` 字节码指令的实现例子也很好地回应了 2.2 中关于控制流的理论分析。其一，跳转类别的字节码指令可以通过修改解释器程序计数器的方式，来改变程序控制流的走向。其二，PVM 中的条件判断类字节码指令需要判断对象的真值语义，这在本文系统中是通过运行时语义层提供的 `Runtime_PyObjectIsTrue()` 函数实现的。
 
 ### 4.5.7 异常状态、异常表与展开机制
 
