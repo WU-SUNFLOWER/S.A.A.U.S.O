@@ -469,7 +469,7 @@ do_say(dog_instance)
 
 Python 的异常处理以异常对象（如 `RuntimeError`、`TypeError` 等）为中心。当程序执行过程中虚拟机内部抛出异常，或用户显式执行 `raise` 语句时，PVM 会创建并传播一个异常对象，并在虚拟机内部记录当前的异常状态（如具体的异常对象、发生异常时解释器的程序计数器等）。
 
-之后，PVM 需要查找并将控制流转向 Python 程序中与异常发生点相匹配的异常处理器。与 C++ 类似，Python 语言中这个过程是通过栈展开（stack unwinding）完成的，只不过是由 PVM 完成的。
+之后，PVM 需要查找并将控制流转向 Python 程序中与异常发生点相匹配的异常处理器（exception handler）。与 C++ 类似，Python 语言中这个过程是通过栈展开（stack unwinding）完成的，只不过是由 PVM 完成的。
 
 栈展开的过程可以用伪代码进行描述：
 ```python
@@ -480,9 +480,9 @@ while 虚拟机调用堆栈非空:
   将当前栈帧从虚拟机调用堆栈中弹出
 ```
 
-自 CPython 3.11 起，异常处理引入了函数级异常表（exception table）。也就是说，解释器不再需要早期那种显式维护块栈的方式来描述异常处理范围，而是在异常发生后，由 PVM 通过当前栈帧对应函数的异常表，查询是否存在可匹配的处理器。这种方式使得正常执行路径几乎不需要为实现异常处理而付出额外开销，同时也让异常控制流与普通控制流之间的分工更清晰。
+自 CPython 3.11 起，异常处理引入了函数级异常表（exception table）。也就是说，解释器不再需要早期那种显式维护块栈的方式来描述异常处理范围，而是在异常发生后，由 PVM 通过当前栈帧对应函数的异常表，查询是否存在可匹配的处理器。这种方式使得正常执行路径几乎不需要为实现异常处理而付出额外开销，同时也让异常控制流与普通控制流之间的分工更清晰。需要进一步指出的是，现代异常表返回的信息也不只是“当前栈帧中是否存在处理器”这一布尔结果；为了让解释器能够真正恢复控制流，它通常还需要提供处理器入口位置、恢复后的操作数栈深度，以及是否需要补充与异常发生点相关的辅助信息等元数据。
 
-对一个兼容现代 CPython 字节码模型的 PVM 而言，异常机制至少要解决四个问题：如何表示异常状态，在虚拟机内部抛出异常后如何持续传播异常，如何根据异常表查找处理器，以及如何实现栈展开。在本节介绍的理论基础之上，在本文所实现的 S.A.A.U.S.O VM 中，异常系统正是围绕这几个问题展开设计的。
+与此相对应，虚拟机内部记录的异常状态也不能只保存“当前异常对象”本身。对 PVM 而言，异常状态通常还需要额外保存与异常发生位置有关的控制流信息，例如异常发生时的程序计数器，或供异常处理器恢复现场时使用的位置数据。也正因如此，对一个兼容现代 CPython 字节码模型的 PVM 而言，异常机制至少要解决四个问题：如何表示异常状态，在虚拟机内部抛出异常后如何持续传播异常，如何根据异常表查找处理器，以及如何实现栈展开。在本节介绍的理论基础之上，在本文所实现的 S.A.A.U.S.O VM 中，异常系统正是围绕这几个问题展开设计的。
 
 ## 2.6 Python 中的模块机制
 
@@ -1830,25 +1830,24 @@ uint8_t FrameObject::GetOpCode() {
 
 另外，代码 4-35 中给出的 `POP_JUMP_IF_FALSE` 字节码指令的实现例子也很好地回应了 2.2 中关于控制流的理论分析。其一，跳转类别的字节码指令可以通过修改解释器程序计数器的方式，来改变程序控制流的走向。其二，PVM 中的条件判断类字节码指令需要判断对象的真值语义，这在本文系统中是通过运行时语义层提供的 `Runtime_PyObjectIsTrue()` 函数实现的。
 
-### 4.5.7 异常状态、异常表与展开机制
+### 4.5.7 异常机制的实现
 
-异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。对 S.A.A.U.S.O VM 而言，异常处理之所以值得单独成节，恰恰是因为它同时涉及异常状态的记录、异常表查找、操作数栈恢复以及函数调用栈的向上展开。
+在 2.5 中已经指出，异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。同时，要实现一个实际可用的异常机制，PVM 至少需要解决异常状态记录、异常表查找与栈展开等几个关键问题。
 
-代码清单 4-36 给出了异常状态与异常展开主路径的删节实现。
+这里首先讨论异常状态记录的实现。在本文系统中，异常状态是由 `ExceptionState` 组件统一管理的，代码 4-36 给出了它的删节定义。
 
 ```cpp
+class Isolate {
+ public:
+  ExceptionState* exception_state() { return &exception_state_; }
+ private:
+  ExceptionState exception_state_;
+};
+
 class ExceptionState final {
  public:
   bool HasPendingException() const { return !pending_exception_.is_null(); }
-  Tagged<PyObject> pending_exception_tagged() const { return pending_exception_; }
-  int pending_exception_pc() const { return pending_exception_pc_; }
-  void set_pending_exception_pc(int pc) { pending_exception_pc_ = pc; }
-  int pending_exception_origin_pc() const {
-    return pending_exception_origin_pc_;
-  }
-  void set_pending_exception_origin_pc(int pc) {
-    pending_exception_origin_pc_ = pc;
-  }
+  ...
   void Throw(Handle<PyBaseException> exception);
   void Clear();
 
@@ -1857,7 +1856,16 @@ class ExceptionState final {
   int pending_exception_pc_{kInvalidProgramCounter};
   int pending_exception_origin_pc_{kInvalidProgramCounter};
 };
+```
+代码 4-36
 
+从这段代码中可以看到，`ExceptionState` 被挂在 `Isolate` 实例上，而没有被当作解释器的内部组件。这样设计的好处有两点：其一，方便将异常状态作为 VM 系统的全局状态进行维护；其二，为运行时语义、内建能力和解释器等子系统提供统一接口用于向 VM 抛出异常或查询 VM 的异常状态，从而避免不同模块各自维护一套异常表示。
+
+接下来再讨论异常表查找与栈展开的实现。在 4.5.6 中已经提到，当解释器在 `DISPATCH()` 中检测到 VM 存在待处理的异常状态时，会立即跳入 `pending_exception_unwind` 以处理异常。代码 4-37 给出了这部分逻辑的删节实现。
+
+```cpp
+void Interpreter::EvalCurrentFrame() {
+  ...
 pending_exception_unwind: {
   auto* exception_state = isolate_->exception_state();
   exception_state->set_pending_exception_pc(current_frame_->pc() -
@@ -1868,28 +1876,42 @@ pending_exception_unwind: {
           isolate_, current_frame_->code_object(isolate_),
           exception_state->pending_exception_pc(), handler_info)) {
     current_frame_->set_stack_top(handler_info.stack_depth);
-    if (handler_info.need_push_lasti) {
-      PUSH(PySmi::FromInt(exception_state->pending_exception_origin_pc()));
-    }
+    ...
     PUSH(exception_state->pending_exception_tagged());
     exception_state->Clear();
     current_frame_->set_pc(handler_info.handler_pc);
     DISPATCH();
   }
 
-  if (current_frame_->IsFirstFrame() || current_frame_->is_entry_frame()) {
-    goto exit_interpreter;
-  }
+  ...
   UnwindCurrentFrameForException();
   DISPATCH();
 }
+  ...
+}
 ```
+代码 4-37
 
-首先，`ExceptionState` 被挂在 `Isolate` 上，而不是解释器内部的局部结构中。这意味着运行时、内建函数和解释器都可以通过统一接口写入待传播异常状态，从而避免不同模块各自维护一套错误表示。其次，当解释器在 `DISPATCH()` 前检测到存在 pending exception 时，会立即跳入 `pending_exception_unwind`，说明异常传播已经被直接纳入解释器主循环，而不是事后补救。
+从这段代码中可以看到，`pending_exception_unwind` 中主要实现了栈展开相关的逻辑。首先，解释器会保存触发异常的字节码指令的地址；其次，调用 `ExceptionTable::LookupHandler()` ，依据该字节码指令的地址，查询当前栈帧对应代码对象的异常表中是否有匹配的处理器（handler）。接下来，如果存在有效的处理器，解释器就先恢复操作数栈深度，再把异常对象压入栈顶，随后把程序计数器指向目标处理器的指令首地址，并借助 `DISPATCH()` 宏完成实际的跳转。而在目标处理器中，一般就会消费当前处于操作数栈顶部的异常对象。与此同时，若当前栈帧中不存在匹配处理器，则调用 `UnwindCurrentFrameForException()` 进行栈帧回溯。
 
-更关键的是，异常展开的过程与第 2 章所分析的栈展开逻辑形成了非常直接的对应关系。若 `ExceptionTable::LookupHandler()` 在当前栈帧中命中有效处理器，解释器就先恢复操作数栈深度，再把异常对象和必要的 `lasti` 信息压栈，随后把程序计数器直接跳转到目标 handler；若当前栈帧中不存在匹配处理器，则调用 `UnwindCurrentFrameForException()` 销毁当前栈帧，并继续向上一层 `caller` 传播。也就是说，S.A.A.U.S.O VM 中的异常处理并不是“记录一个错误然后返回”，而是由解释器真正负责恢复控制流、裁剪栈帧并寻找新的执行落点。
+在代码 4-38 中给出了 `UnwindCurrentFrameForException()` 的删节实现。从中可以看到，它会销毁当前栈帧，并将异常继续向调用方函数的栈帧传播。进一步地，在代码 4-37 中调用 `UnwindCurrentFrameForException()` 完毕后，由于 VM 的异常状态仍未被消除，且 `ExceptionState` 当中发生异常的字节码指令地址已经被重设为先前调用方函数中的调用点地址，因此借助 `DISPATCH()` 宏就可以让解释器在调用方函数的栈帧中再次尝试查找异常表；如此循环往复，直至找到有效的异常处理器，或回溯到根栈帧并迫使 VM 停止继续执行整个 Python 程序。
 
-因此，从第 2 章关于异常机制的理论分析，到本节关于 `ExceptionState`、异常表和栈展开的实现说明，本文已经形成了一条较完整的闭环：异常对象是传播载体，`ExceptionState` 负责统一保存传播态错误，解释器根据异常表恢复控制流，而函数调用栈则为异常继续向外层传播提供了承载结构。
+```cpp
+void Interpreter::UnwindCurrentFrameForException() {
+  // 当前栈帧已经发生错误，因此强制回溯到上一层栈帧
+  DestroyCurrentFrame();
+  ret_value_ = Tagged<PyObject>::null();
+  // 重要：将 pending_exception_pc 回溯为上一层栈帧的函数调用点地址
+  if (current_frame_ != nullptr) {
+    isolate_->exception_state()->set_pending_exception_pc(current_frame_->pc() -
+                                                          kBytecodeSizeInBytes);
+  }
+  ...
+}
+```
+代码 4-38
+
+总的来说，`pending_exception_unwind` 与 `UnwindCurrentFrameForException()` 相结合，在本文系统中实际落地了 2.5 中所给出的栈展开流程原理。通过这两者与中心化的异常状态管理组件 `ExceptionState` 的紧密配合，在工程上较为完善地实现了 Python 语言的异常机制。
 
 ## 4.6 Embedder API 实现
 
