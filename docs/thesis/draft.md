@@ -337,6 +337,7 @@ outer 函数的字节码指令序列：
   4      LOAD_CONST               1 (10)
   6      STORE_DEREF              1 (x)
   8      LOAD_CLOSURE             1 (x)
+ 10      BUILD_TUPLE              1
  12      LOAD_CONST               2 (<code object inner>)
  14      MAKE_FUNCTION            8 (closure)
 
@@ -349,7 +350,7 @@ inner 函数的字节码指令序列：
 
 从这段代码中可以看出，闭包机制并不是依靠某一条孤立指令完成的，而是由多条字节码指令配合形成一条完整链路。首先，在外层函数 `outer` 中，`MAKE_CELL` 字节码指令会在变量 `x` 所的对应局部变量槽位中新创建一个单元对象（cell object）；随后，`STORE_DEREF` 字节码指令并不是把常量 `10` 直接写入 `x` 对应的槽位，而是写入该槽位的单元对象当中。这意味着从这一时刻开始，`x` 在运行时就已经不再以“普通局部变量值”的形态存在，而是变成了一个可被多个函数共享的间接引用单元。与此同时，这部分字节码指令表明，Python 代码中普通局部变量和自由变量是在编译阶段完成区分的，这就首先回答了问题（1）。
 
-接下来，在内部函数 `inner` 被创建之前，`LOAD_CLOSURE` 指令会把 `x` 对应的单元对象压入操作数栈；随后，被编译器前端添加特殊参数标记的 `MAKE_FUNCTION` 指令会在创建函数对象时，把单元对象一并绑定进内部函数。这里最关键的一点在于：内部函数拿到的并不是 `x` 当前变量值的一份副本，而是对同一个单元对象的引用。也正因为如此，当外层函数 `outer` 后续返回时，只要这个函数对象仍然存活，它就能够继续持有该单元对象，从而解决问题（2）。
+接下来，在内部函数 `inner` 被创建之前，`LOAD_CLOSURE` 指令会把 `x` 对应的单元对象压入操作数栈。随后，`BUILD_TUPLE` 字节码会将操作数栈顶的全体单元对象打包成一个 Python 元组。最后，被编译器前端添加特殊参数标记的 `MAKE_FUNCTION` 指令会在创建函数对象时，会把这个装有单元对象的元组绑定进内部函数。这里最关键的一点在于：内部函数拿到的并不是 `x` 当前变量值的一份副本，而是对同一个单元对象的引用。也正因为如此，当外层函数 `outer` 后续返回时，只要这个函数对象仍然存活，它就能够继续持有该单元对象，从而解决问题（2）。
 
 当内部函数 `inner` 真正被调用时，`COPY_FREE_VARS` 指令又会把函数对象里保存的这些单元对象重新注入新建立栈帧中，使该栈帧的局部变量区域继续持有同一个单元对象。随后，`LOAD_DEREF` 才真正执行对自由变量的读取操作。换言之，内部函数运行时读取到的，并不是当初创建函数对象时复制下来的一份静态值，而是通过单元对象间接解析出来的“当前值”。因此，无论是外层函数还是内部函数，只要它们操作的是同一个单元对象，就都能够观察到对该变量所做的更新。这就解释了 PVM 是如何实现问题（3）与（4）的。
 
@@ -1636,22 +1637,15 @@ INTERPRETER_HANDLER_WITH_SCOPE(
 
 ### 4.5.4 函数闭包的实现
 
-在 2.3.3 中已经探讨过，闭包机制的难点并不在于“再增加一组变量读取字节码”这么简单，而在于如何让内部函数在外层函数返回后，仍能继续持有并读写同一个自由变量引用。当前 S.A.A.U.S.O VM 中，这条链路主要由 `MakeCell`、`LoadClosure`、`MakeFunction`、`CopyFreeVars`、`LoadDeref` 和 `StoreDeref` 共同完成。代码清单 4-33 给出了相关实现的删节代码。
+在 2.3.3 中已经分析了函数闭包机制的实现原理。本节中将围绕 `MAKE_FUNCTION`、`MAKE_CELL`、`LOAD_CLOSURE`、`COPY_FREE_VARS`、`LOAD_DEREF` 和 `STORE_DEREF` 这几条关键字节码指令，给出 S.A.A.U.S.O VM 中函数闭包机制的实际实现。相关删节代码见代码 4-33。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
-  auto code_object = Handle<PyCodeObject>::cast(POP());
-  Handle<PyFunction> func =
-      isolate_->factory()->NewPyFunctionWithCodeObject(code_object);
-  func->set_func_globals(current_frame_->globals(isolate_));
-
+  ...
   if (op_arg & MakeFunctionOpArgMask::kClosure) {
     func->set_closures(Handle<PyTuple>::cast(POP()));
   }
-  if (op_arg & MakeFunctionOpArgMask::kDefaults) {
-    func->set_default_args(Handle<PyTuple>::cast(POP()));
-  }
-  PUSH(func);
+  ...
 })
 
 INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
@@ -1669,10 +1663,9 @@ INTERPRETER_HANDLER_DISPATCH(LoadClosure, {
 
 INTERPRETER_HANDLER_DISPATCH(CopyFreeVars, {
   Tagged<PyTuple> func_closures = current_frame_->func_tagged()->closures_tagged();
-  int offset = current_frame_->code_object_tagged()->nlocalsplus() - op_arg;
-  for (auto i = 0; i < op_arg; ++i) {
-    current_frame_->localsplus(isolate_)->Set(
-        i + offset, func_closures->GetTagged(i));
+  ...
+  for (...) {
+    current_frame_->localsplus(isolate_)->Set(..., func_closures->GetTagged(i));
   }
 })
 
@@ -1680,10 +1673,7 @@ INTERPRETER_HANDLER_WITH_SCOPE(LoadDeref, {
   Tagged<Cell> cell =
       Tagged<Cell>::cast(current_frame_->localsplus(isolate_)->Get(op_arg));
   Tagged<PyObject> value = cell->value_tagged();
-  if (!value.is_null()) [[likely]] {
-    PUSH(value);
-    break;
-  }
+  PUSH(value);
   ...
 })
 
@@ -1694,14 +1684,15 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
   cell->set_value(value);
 })
 ```
+代码 4-33
 
-这段代码实际上把第 2 章中提出的四个问题串成了一条连续的实现链。首先，`MakeCell` 表明自由变量并不会继续作为普通局部变量值直接存放在槽位中，而是会被替换为一个 `Cell` 对象；这就使普通局部变量路径与闭包变量路径在运行时被真正区分开来。随后，`LoadClosure` 会把这些 `Cell` 压栈，`MakeFunction` 再通过 `func->set_closures(...)` 将它们绑定进新创建的函数对象。也就是说，正如 `4.5.1` 中 `PyFunction` 的 `closures_` 字段所展示的那样，内部函数在创建时并不是简单获得一个代码对象，而是会一并获得对外层自由变量单元对象的持有关系。
+从闭包机制的实现顺序看，第一步发生在外层函数执行过程之中。`MAKE_CELL` 指令会把局部变量区 `localsplus` 中原本保存普通局部变量值的槽位替换为一个单元对象 `cell`，并把该变量当前值写入 `cell` 内部。由此，自由变量在运行时便不再以“直接存值”的方式留在局部变量区中，而是转为通过单元对象间接持有。
 
-更关键的是，`CopyFreeVars` 说明内部函数在真正被调用、建立新栈帧之后，并不是重新复制一份自由变量的值，而是把函数对象中保存的 `closures` 再次注入到新栈帧的 `localsplus` 自由变量区域中。这样一来，外层函数和内部函数实际持有的是同一个 `Cell` 对象，而不是两个内容相同但彼此独立的值副本。这一点正是第 2 章中“闭包函数持有的是对自由变量的真实引用，而非副本”在实现层面的直接证据。
+第二步发生在内部函数对象创建阶段。`LOAD_CLOSURE` 指令会把外层函数栈帧中对应的单元对象从局部变量区中取出并压栈，随后 `MAKE_FUNCTION` 在创建函数对象时，通过 `func->set_closures(...)` 把单元对象绑定进函数对象内部。
 
-在此基础上，`LoadDeref` 与 `StoreDeref` 则承担了闭包变量的日常读写职责：读取时，解释器先从 `localsplus` 中取出 `Cell`，再解析其中保存的真实引用；写入时，则是把新的值对象重新写回 `Cell`。因此，无论是外层函数还是内部函数，只要它们访问的是同一个 `Cell`，双方就都能够观察到对自由变量所做的更新。也正因为如此，闭包变量访问不能简单退化为 `LoadFast/StoreFast`，而必须拥有自己独立的 `LoadDeref/StoreDeref` 路径。
+第三步发生在内部函数真正被调用、建立新栈帧之后。`COPY_FREE_VARS` 会把函数对象中保存的自由变量元组 `closures` 解包并注入当前栈帧的 `localsplus` 自由变量区域。这里的关键点在于：被注入的新栈帧元素并不是自由变量值的副本，而仍然是原先那一组单元对象本身。也就是说，外层函数与内部函数访问到的始终是共享的单元对象。
 
-综上所述，S.A.A.U.S.O VM 中的闭包实现已经与第 2 章的理论分析形成了较完整的闭环：编译器前端先区分普通局部变量与自由变量，解释器通过 `MakeCell` 在外层函数栈帧中建立单元对象，通过 `MakeFunction` 和 `closures_` 把这些单元对象绑定进内部函数，再通过 `CopyFreeVars` 将其注入被调栈帧，最终由 `LoadDeref/StoreDeref` 完成对自由变量的读写。闭包之所以能够在外层函数返回后依然成立，并不是因为 PVM 特判保存了一份额外副本，而是因为内外两层函数共享的是同一个被函数对象持续持有的 `Cell`。
+最后，`LOAD_DEREF` 与 `STORE_DEREF` 字节码承担闭包变量的日常读写职责。读取时，解释器先从 `localsplus` 中取出单元对象，再解析其中保存的真实引用；写入时，则是把新的值对象重新写回单元对象。这与 4.5.3 中介绍的 `LOAD_FAST` 和 `STORE_FAST` 有所不同，在读写变量值时因为多出了单元对象这一中间层，因此需要额外的一次解引用操作，同时这也是这两个字节码名称的来源。
 
 ### 4.5.5 函数调用主路径与调用栈管理
 
