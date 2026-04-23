@@ -805,7 +805,7 @@ class Factory {
 
 ```cpp
 Handle<PyDict> Factory::NewDict(int64_t init_capacity) {
-  EscapableHandleScope scope(isolate_);
+  ...
   Handle<PyDict> object(Allocate<PyDict>(Heap::AllocationSpace::kNewSpace),
                         isolate_);
   {
