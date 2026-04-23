@@ -661,7 +661,7 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 ### 4.1.1 对象引用表示与 `Tagged<T>`
 
-在正式讨论虚拟机堆与垃圾回收的具体实现之前，还需要先说明一个在后文代码中会频繁出现的基础概念，即 `Tagged<T>`。在 S.A.A.U.S.O VM 中，它用于统一表示运行时对象引用。之所以不直接使用 `PyObject*` 之类的 C++ 裸指针，是因为本文系统在底层采用了标记指针（tagged pointer）的思想，旨在复用同一套位表示，使之可以既可以用于容纳堆对象引用，也可以用于容纳整型立即数，从而避免在虚拟机堆上为整形立即数申请空间。
+在正式讨论虚拟机堆与垃圾回收的具体实现之前，还需要先说明一个在后文代码中会频繁出现的基础概念，即 `Tagged<T>`。在 S.A.A.U.S.O VM 中，它用于统一表示运行时对象引用。之所以不直接使用 `PyObject*` 之类的 C++ 裸指针，是因为本文系统在底层采用了标记指针（tagged pointer）的思想，旨在复用同一套位表示，使之既可以用于容纳堆对象引用，也可以用于容纳整型立即数，从而避免在虚拟机堆上为整型立即数申请空间。
 
 若直接把这种混合表示塞入 C++ 裸指针对象中，则会破坏 C++ 语言规范对指针对齐和值语义的要求，从而导致 C++ 编译器在优化阶段引入未定义行为（undefined behavior），使构建出来的 VM 系统根本无法正常运行。为此，S.A.A.U.S.O VM 借鉴了 V8 等工业级 VM 的通行做法，引入 `Tagged<T>` 作为对底层引用表示的统一封装。后文示例代码中反复出现的 `Tagged<PyObject>`、`Tagged<Klass>` 等，均应理解为“运行时对象引用”的统一表达，而不应简单等同为普通的 C++ 裸指针。
 
@@ -671,7 +671,7 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 而在实际实现中，S.A.A.U.S.O VM 中的堆空间并非为一段简单的连续内存段，而是由若干内存页面（page）所构成的。每个堆页都拥有固定页大小、页头元信息和线性分配状态；VM 需要负责维护页链表与分配状态。
 
-这种设计的好处主要有三点：其一，系统可以通过页头记录该页属于哪个空间、当前已分配到何处。其二，系统可以根据堆对象地址时快速定位到页面头部，以判断该对象所在的空间类别。其三，由于页面之间采用链表进行组织，因此可以很方便地对堆空间进行扩容或缩容。
+这种设计的好处主要有三点：其一，系统可以通过页头记录该页属于哪个空间、当前已分配到何处。其二，系统可以根据堆对象地址快速定位到页面头部，以判断该对象所在的空间类别。其三，由于页面之间采用链表进行组织，因此可以很方便地对堆空间进行扩容或缩容。
 
 需要指出的是，尽管由于开发时间的限制，现阶段的 S.A.A.U.S.O VM 中并未实现和启用完整的老生代空间与分代式 GC，也没有引入类似于工业级 VM 更加复杂的堆空间扩缩容策略，但现阶段的这种页化空间的设计，无疑为未来进一步实现上述功能奠定了良好的架构基础。
 
@@ -807,7 +807,7 @@ class Factory {
   // 后略...
 };
 ```
-代码4-4
+代码 4-4
 
 首先需要指出的是，这段代码中出现的 `Handle<T>` 即 3.4.3 中提到的对象句柄，用于在 C++ 代码中安全持有堆 VM 对象的引用；其具体机制将在 4.2 节中进一步展开。此处可先将其理解为工厂函数返回新分配对象时所使用的统一引用包装形式。
 
@@ -815,7 +815,7 @@ class Factory {
 
 第三点在可能因申请堆内存而触发 GC 的系统中尤为重要。例如，若一个对象中在其指针字段尚未被初始化（相当于一个野指针）的情况下，系统因为接下来的堆内存申请操作而触发了 GC，就可能出现 GC 逻辑在扫描该对象时因尝试访问野指针，而导致系统崩溃或其他不可预知的问题。
 
-为了更具体地说明这一点，代码清单 4-5 给出了 `Factory::NewDict()` 的删节实现。
+为了更具体地说明这一点，代码 4-5 给出了 `Factory::NewDict()` 的删节实现。
 
 ```cpp
 Handle<PyDict> Factory::NewDict(int64_t init_capacity) {
@@ -847,7 +847,7 @@ Handle<PyDict> Factory::NewDict(int64_t init_capacity) {
 
 ### 4.2.1 VM 代码中的句柄使用方式
 
-在介绍句柄机制的内部实现之前，本小节将首先说明一个更贴近 VM 日常开发的问题：在 S.A.A.U.S.O VM 的 C++ 代码中，对象句柄究竟是如何被实际使用的。总体上，VM 开发者很少会直接在高层逻辑中直接使用 4.1.1 当中介绍的 `Tagged<T>` 来传递对堆对象的引用，而是优先使用 `Handle<T>` 持有对象；与此同时，当某段逻辑可能临时创建一批新的对象引用时，一般情况下需要先创建相应的句柄作用域，即 `HandleScope` 或 `EscapableHandleScope`。
+在介绍句柄机制的内部实现之前，本小节将首先说明一个更贴近 VM 日常开发的问题：在 S.A.A.U.S.O VM 的 C++ 代码中，对象句柄究竟是如何被实际使用的。总体上，VM 开发者很少会在高层逻辑中直接使用 4.1.1 当中介绍的 `Tagged<T>` 来传递对堆对象的引用，而是优先使用 `Handle<T>` 持有对象；与此同时，当某段逻辑可能临时创建一批新的对象引用时，一般情况下需要先创建相应的句柄作用域，即 `HandleScope` 或 `EscapableHandleScope`。
 
 代码 4-6 给出了 `Execution::RunScriptAsMain()` 的删节实现。该函数很好地展示了 S.A.A.U.S.O VM 中对象句柄的典型用法：先建立 `EscapableHandleScope`，再通过 `Handle<T>` 持有新创建的对象，最后通过 `scope.Escape()` 将需要返回到外层作用域的结果安全导出。
 
@@ -915,7 +915,7 @@ class HandleScopeImplementer {
 
 ### 4.2.3 HandleScope 的作用域回退与长期句柄
 
-在 4.2.2 中提到，创建 `Handle<T>` 时需要向 `HandleScopeImplementer` 申请槽位。那么反过来，本文系统中同时需要一种机制，能够在对象句柄失效时，能够及时释放其占用的槽位。这样，才能建立对象句柄槽位的生命周期闭环。
+在 4.2.2 中提到，创建 `Handle<T>` 时需要向 `HandleScopeImplementer` 申请槽位。那么反过来，本文系统中也需要一种机制，能够在对象句柄失效时及时释放其占用的槽位。这样，才能建立对象句柄槽位的生命周期闭环。
 
 在局部执行场景中，S.A.A.U.S.O VM 通过 `HandleScope` 管理 Handle 槽位的生命周期。如代码 4-8 给出的删节代码所示，`HandleScope` 在创建时会保存当前 `HandleScopeImplementer` 的分配状态，在退出析构时再把该状态恢复到进入该作用域之前的位置。于是，该作用域内后续申请出去的局部 slot 就可以被整体视为“无效并可复用”。这正是 `HandleScope` 能够批量释放局部 Handle 所申请槽位的本质原因。
 
@@ -932,11 +932,11 @@ void HandleScope::~HandleScope() {
   impl->set_handle_scope_state(&previous_);
 }
 ```
-代码4-8
+代码 4-8
 
 这种设计的一个好处在于，`HandleScope` 对槽位的释放是批量执行的，相较于每个 `Handle` 析构时各自释放自己申请的槽位，在 VM 这种对性能较为敏感的系统中更加合适。
 
-与此同时，除局部 Handle 外，VM 系统中还可能存在生命周期明显长于单个局部执行过程的引用，例如运行时全局对象、部分宿主侧长期持有对象等。对此，S.A.A.U.S.O VM 进一步提供长期句柄形式 `Global<T>`。虽然它的底层机制与一般的 `Handle<T>` 类似，均依赖 `HandleScopeImplementer` 提供的槽位实现，但它所申请的槽位确实长期占用的，并不会随着某个局部 `HandleScope` 的退出而一并释放。
+与此同时，除局部 Handle 外，VM 系统中还可能存在生命周期明显长于单个局部执行过程的引用，例如运行时全局对象、部分宿主侧长期持有对象等。对此，S.A.A.U.S.O VM 进一步提供长期句柄形式 `Global<T>`。虽然它的底层机制与一般的 `Handle<T>` 类似，均依赖 `HandleScopeImplementer` 提供的槽位实现，但它所申请的槽位是长期占用的，并不会随着某个局部 `HandleScope` 的退出而一并释放。
 
 ### 4.2.4 与 GC 机制的协同
 
@@ -1374,7 +1374,7 @@ Handle<PyObject> Execution::CallScript(Isolate* isolate,
 
 其中，模块管理器 `ModuleManager` 持有并管理模块缓存 `modules_` 和导入路径 `path_`（对应于 Python 语言层面的 `sys.modules` 与 `sys.path`），并向解释器提供导入模块的功能入口 `ModuleManager::ImportModule()`。此外，模块子系统中的各个功能组件均由 `ModuleManager` 负责持有。
 
-代码 4-25 给出了 `ModuleManager` 的删节实现。
+代码 4-24 给出了 `ModuleManager` 的删节实现。
 ```cpp
 class ModuleManager {
  public:
@@ -1394,11 +1394,11 @@ class ModuleManager {
   Tagged<PyList> path_;
 };
 ```
-代码 4-25
+代码 4-24
 
-从这段代码可知，当解释器调用 `ModuleManager::ImportModule()` 接口后，实则会进一步调用 `ModuleImporter::ImportModule`。
+从这段代码可知，当解释器调用 `ModuleManager::ImportModule()` 接口后，实则会进一步调用 `ModuleImporter::ImportModule()`。
 
-`ModuleImporter` 是模块子系统中核心导入逻辑的调度枢纽。在 `ModuleImporter` 中，系统首先调用 `ModuleNameResolver` 组件解析导入模块名中的相对导入符号，再进一步调用 `ModuleImporter::ImportModuleImpl()` 根据完整的模块名分段进行导入。例如，如果用户想要导入的完整模块名为 `a.b.c`，则首先需要导入包 a，再导入子包 b，最后导入子包 b 中的模块 c。由于在 Python 中包被视作一种特殊的模块对象，因此这部分逻辑可以复用。代码 4-26 给出了这一过程的删节实现。
+`ModuleImporter` 是模块子系统中核心导入逻辑的调度枢纽。在 `ModuleImporter` 中，系统首先调用 `ModuleNameResolver` 组件解析导入模块名中的相对导入符号，再进一步调用 `ModuleImporter::ImportModuleImpl()` 根据完整的模块名分段进行导入。例如，如果用户想要导入的完整模块名为 `a.b.c`，则首先需要导入包 a，再导入子包 b，最后导入子包 b 中的模块 c。由于在 Python 中包被视作一种特殊的模块对象，因此这部分逻辑可以复用。代码 4-25 给出了这一过程的删节实现。
 
 ```cpp
 Handle<PyModule> ModuleImporter::ImportModule(...) {
@@ -1424,9 +1424,9 @@ Handle<PyModule> ModuleImporter::ImportModuleImpl(Handle<PyString> fullname) {
   return last_module;
 }
 ```
-代码 4-26
+代码 4-25
 
-最后，分段后导入具体的包或者模块是在 `ModuleImporter::GetOrLoadModulePart()` 当中完成的：首先检查模块缓存；若目标模块已经加载，则直接复用现有对象；否则再进入调用 `ModuleLoader` 组件进入后续的路径查找和模块加载流程。代码 4-27 给出了这一过程的删节实现。
+最后，分段后导入具体的包或者模块是在 `ModuleImporter::GetOrLoadModulePart()` 当中完成的：首先检查模块缓存；若目标模块已经加载，则直接复用现有对象；否则再调用 `ModuleLoader` 组件进入后续的路径查找和模块加载流程。代码 4-26 给出了这一过程的删节实现。
 
 ```cpp
 Handle<PyModule> ModuleImporter::GetOrLoadModulePart(
@@ -1441,42 +1441,41 @@ Handle<PyModule> ModuleImporter::GetOrLoadModulePart(
   return manager_->loader()->LoadModulePart(part_fullname, search_path_list);
 }
 ```
-代码 4-27
+代码 4-26
 
 ### 4.4.4 代码装载前端实现
 
 对本文课题而言，重点研究的对象是 PVM 后端，因此 S.A.A.U.S.O VM 在源码编译能力上直接封装了 CPython 的编译前端。关闭该复用后，PVM 后端仍可独立运行，但部分依赖源码编译前端的功能会受到限制。与此同时，系统也支持直接装载 CPython 编译器前端生成的 `.pyc` 格式的代码对象二进制文件。
 
-代码 4-28 给出了删节版本的代码装载前端函数接口。
+代码 4-27 给出了删节版本的代码装载前端函数接口。
 ```cpp
 class Compiler : AllStatic {
  public:
-  // 传入Python源代码，需要走CPython的编译器前端进行翻译
+  // 传入 Python 源代码，需要走 CPython 的编译器前端进行翻译
   static Handle<PyFunction> CompileSource(
       Isolate* isolate,
       std::string_view source,
       ...);
 
-  // 传入pyc文件路径或二进制流，直接进行解析
+  // 传入 .pyc 文件路径或二进制流，直接进行解析
   static Handle<PyFunction> CompilePyc(Isolate* isolate,
                                             std::vector<uint8_t> bytes);
   static Handle<PyFunction> CompilePyc(Isolate* isolate,
                                             const char* filename);
 };
 ```
-代码 4-28
+代码 4-27
 
 ## 4.5 字节码解释器与异常处理的实现
 
 在建立起执行门面，以及运行时语义、内建能力和代码装载前端等基础设施后，就可以开始搭建字节码解释器了。需要说明的是，受限于论文篇幅，本节中不会逐条罗列全部字节码指令语义的具体实现，而只选取第 2 章中讨论的几类 PVM 核心机制进行说明，即函数对象表示、栈帧组织、命名空间查找、函数调用主路径、调度表解释器以及异常展开机制，以揭示 S.A.A.U.S.O VM 中字节码解释器的内部实现思路。
 
-与此同时，在本文附录 B 中，给出现阶段 S.A.A.U.S.O VM 所实现的 CPython 3.12 字节码指令简表，可供有需要的读者查阅。
 
 ### 4.5.1 Python 函数对象与可调用对象表示
 
 在 2.3.1 中已经指出，Python 中的函数的本质是运行阶段由 PVM 动态创建的可调用对象。在现阶段 S.A.A.U.S.O VM 的实现中，普通 Python 函数与 native 函数统一由 `PyFunction` 对象表示，只是在其内部保存的元数据和实际调用路径上有所区别。
 
-代码 4-26 给出了 `PyFunction` 的删节定义。
+代码 4-28 给出了 `PyFunction` 的删节定义。
 
 ```cpp
 class PyFunction : public PyObject {
@@ -1488,7 +1487,7 @@ class PyFunction : public PyObject {
   NativeFuncPointer native_func_{nullptr};
 };
 ```
-代码 4-26
+代码 4-28
 
 这段代码说明，`PyFunction` 至少同时承担了四类信息的组织责任：
 （1）`func_code_` 对应函数的静态代码对象；
@@ -1499,7 +1498,7 @@ class PyFunction : public PyObject {
 
 与此同时，在 2.3.1 中还讨论了 `MAKE_FUNCTION` 字节码指令创建函数对象的原理。S.A.A.U.S.O VM 的实际实现与理论分析基本一致：解释器在执行该字节码指令时，根据给定的代码对象动态创建一个新的 `PyFunction` 对象，并把当前栈帧中挂载的全局变量表，以及默认参数和自由变量元组（均已预先创建并压入操作数栈中）写入函数对象内部。
 
-代码 4-27 给出了 `MAKE_FUNCTION` 字节码处理逻辑的删节实现。
+代码 4-29 给出了 `MAKE_FUNCTION` 字节码处理逻辑的删节实现。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
@@ -1517,11 +1516,11 @@ INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
   PUSH(func);
 })
 ```
-代码 4-27
+代码 4-29
 
 ### 4.5.2 栈帧数据结构与局部执行现场
 
-在 S.A.A.U.S.O VM 中，栈帧的实体为 `FrameObject` 类。代码 4-29 给出了该类的删节定义。
+在 S.A.A.U.S.O VM 中，栈帧的实体为 `FrameObject` 类。代码 4-30 给出了该类的删节定义。
 
 ```cpp
 class FrameObject : Object {
@@ -1538,11 +1537,11 @@ class FrameObject : Object {
   FrameObject* caller_;
 };
 ```
-代码 4-29
+代码 4-30
 
-从这一定义可以看出，除了在 2.3.2 中已经讨论过的操作数栈、程序计数器，以及 `locals`、`globals` 与 `localsplus` 三类不同职责的变量环境，S.A.A.U.S.O VM 中的栈帧还显式保存了常量表、名称表、当前被调用的函数对象及其对应的代码对象，还有上一层调用者指针 `caller_`。其中的`caller_` 使各个 Python 栈帧能够被组织成一条显式的调用链表；这也意味着本文系统中的 Python 调用栈并不是隐含在 C++ 调用栈内部，而是由 PVM 自己维护的数据结构。
+从这一定义可以看出，除了在 2.3.2 中已经讨论过的操作数栈、程序计数器，以及 `locals`、`globals` 与 `localsplus` 三类不同职责的变量环境，S.A.A.U.S.O VM 中的栈帧还显式保存了常量表、名称表、当前被调用的函数对象及其对应的代码对象，还有上一层调用者指针 `caller_`。其中，`caller_` 使各个 Python 栈帧能够被组织成一条显式的调用链表；这也意味着本文系统中的 Python 调用栈并不是隐含在 C++ 调用栈内部，而是由 PVM 自己维护的数据结构。
 
-下面再进一步说明这些变量环境是如何被真正装配进栈帧的。在现阶段的 S.A.A.U.S.O VM 中，当解释器需要发起 Python 函数调用时，栈帧的初始化及装配由 `FrameObjectBuilder` 承担。代码清单 4-30 给出了这部分逻辑的删节实现。
+下面再进一步说明这些变量环境是如何被真正装配进栈帧的。在现阶段的 S.A.A.U.S.O VM 中，当解释器需要发起 Python 函数调用时，栈帧的初始化及装配由 `FrameObjectBuilder` 承担。代码 4-31 给出了这部分逻辑的删节实现。
 
 ```cpp
 struct FrameBuildContext {
@@ -1582,7 +1581,7 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(
   return frame_object;
 }
 ```
-代码 4-30
+代码 4-31
 
 从这段实现可以看到，本文系统中的栈帧装配策略与 2.3.2 中的理论分析是对应的。
 （1）`ctx.globals = func->func_globals(isolate)` 表明每个函数栈帧都会显式保存该函数所绑定的全局命名空间，以供后续在函数体内执行 `LOAD_GLOBAL` 字节码指令时进行查询。
@@ -1593,7 +1592,7 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(
 
 在建立了栈帧的数据结构后，下一步就可以给出变量读写相关字节码指令的具体实现了。
 
-代码 4-31 给出了 `STORE_NAME/LOAD_NAME` 字节码指令的删节实现。
+代码 4-32 给出了 `STORE_NAME/LOAD_NAME` 字节码指令的删节实现。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
@@ -1619,11 +1618,11 @@ INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
   if (!value.is_null()) { PUSH(value); break; }
 })
 ```
-代码 4-31
+代码 4-32
 
 对于 `STORE_NAME` 字节码指令，PVM 首先通过 `current_frame_->names(...)` 取出符号名，再把写入操作直接落到 `locals` 字典上；这正对应了第 2 章中“`STORE_NAME` 在当前按名字解析的局部命名空间中建立绑定”的理论描述。而对于 `LOAD_NAME` 指令，在 `locals` 字典中查找失败后，还会继续向 `globals` 和内建命名空间回退；这同样正对应了第 2 章中给出的先查 `locals`，再查 `globals` 和 `builtins` 的查找规则。
 
-代码 4-32 给出了 `STORE_GLOBAL/LOAD_GLOBAL` 和 `STORE_FAST/LOAD_FAST` 字节码指令的删节实现。可以看到它们与 2.3.2 中给出的理论分析基本一致，且实现较为简单，因此这里不再展开。
+代码 4-33 给出了 `STORE_GLOBAL/LOAD_GLOBAL` 和 `STORE_FAST/LOAD_FAST` 字节码指令的删节实现。可以看到它们与 2.3.2 中给出的理论分析基本一致，且实现较为简单，因此这里不再展开。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(StoreGlobal, {
@@ -1649,11 +1648,11 @@ INTERPRETER_HANDLER_WITH_SCOPE(
 INTERPRETER_HANDLER_WITH_SCOPE(
     LoadFast, PUSH(current_frame_->localsplus(isolate_)->Get(op_arg));)
 ```
-代码 4-32
+代码 4-33
 
 ### 4.5.4 函数闭包的实现
 
-在 2.3.3 中已经分析了函数闭包机制的实现原理。本节中将围绕 `MAKE_FUNCTION`、`MAKE_CELL`、`LOAD_CLOSURE`、`COPY_FREE_VARS`、`LOAD_DEREF` 和 `STORE_DEREF` 这几条关键字节码指令，给出 S.A.A.U.S.O VM 中函数闭包机制的实际实现。相关删节代码见代码 4-33。
+在 2.3.3 中已经分析了函数闭包机制的实现原理。本节中将围绕 `MAKE_FUNCTION`、`MAKE_CELL`、`LOAD_CLOSURE`、`COPY_FREE_VARS`、`LOAD_DEREF` 和 `STORE_DEREF` 这几条关键字节码指令，给出 S.A.A.U.S.O VM 中函数闭包机制的实际实现。相关删节代码见代码 4-34。
 
 ```cpp
 INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
@@ -1700,7 +1699,7 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
   cell->set_value(value);
 })
 ```
-代码 4-33
+代码 4-34
 
 从闭包机制的实现顺序看，第一步发生在外层函数执行过程之中。`MAKE_CELL` 指令会把局部变量区 `localsplus` 中原本保存普通局部变量值的槽位替换为一个单元对象 `cell`，并把该变量当前值写入 `cell` 内部。由此，自由变量在运行时便不再以“直接存值”的方式留在局部变量区中，而是转为通过单元对象间接持有。
 
@@ -1714,7 +1713,7 @@ INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
 
 函数调用是第 2 章最强调的核心机制之一。对于 S.A.A.U.S.O VM 而言，这一过程既包括普通 Python 函数的建帧与解释执行，也包括 native 函数的直接调用路径，还包括 Python 调用栈本身如何被创建、维护和回退。
 
-代码 4-34 给出了相关实现的删节代码。
+代码 4-35 给出了相关实现的删节代码。
 
 ```cpp
 Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
@@ -1753,7 +1752,7 @@ void Interpreter::DestroyCurrentFrame() {
   delete callee;
 }
 ```
-代码 4-34
+代码 4-35
 
 在这段代码中，`Interpreter::CallPythonImpl()` 是 S.A.A.U.S.O VM 中执行调用操作的底层逻辑中枢。其中：
 （1）`callable` 参数表示一个可调用 Python 对象，它可能是一个普通的 Python 函数对象，也可能是其他类别的可调用对象，比如一个包装成 `PyFunction` 的 native 函数，或者重载了 `__call__` 魔法函数的用户自定义类实例。
@@ -1764,7 +1763,7 @@ void Interpreter::DestroyCurrentFrame() {
 
 与此同时，`CallPythonImpl()` 也清楚体现出普通 Python 函数与其他可调用对象在执行路径上的分流：若目标 `callable` 属于 native 函数或其他可调用对象，则改走 `CallNonNormalFunction()` 进行处理。这种设计的好处在于， `CallPythonImpl()` 为 VM 中上层业务逻辑提供了统一的调用入口函数，使得上层无需关心可调用 Python 对象的具体身份。
 
-代码 4-35 给出了 `CallNonNormalFunction()` 内部逻辑的删节实现。
+代码 4-36 给出了 `CallNonNormalFunction()` 内部逻辑的删节实现。
 
 ```cpp
 Handle<PyObject> Interpreter::CallNonNormalFunction(...) {
@@ -1789,11 +1788,11 @@ Handle<PyObject> PyObject::Call(...) {
   return call_method(isolate, self, ...);
 }
 ```
-代码 4-35
+代码 4-36
 
 ### 4.5.6 基于调度表的字节码分派
 
-在建立起函数对象、栈帧和变量访问机制之后，就可以搭建解释器“逐条调度执行执行字节码指令”的主路径了。代码 4-35 给出了实际的 S.A.A.U.S.O VM 中，调度和控制流相关逻辑的删节实现。
+在建立起函数对象、栈帧和变量访问机制之后，就可以搭建解释器“逐条调度执行字节码指令”的主路径了。代码 4-37 给出了实际的 S.A.A.U.S.O VM 中，调度和控制流相关逻辑的删节实现。
 
 ```cpp
 void Interpreter::EvalCurrentFrame() {
@@ -1836,7 +1835,7 @@ uint8_t FrameObject::GetOpCode() {
   return bytecodes->buffer()[pc_++];
 }
 ```
-代码 4-35
+代码 4-37
 
 从这段代码可以看出，本文系统中解释器内部并非是通过一个巨大的 switch 语句进行字节码指令分发的；而是以字节码指令为键，通过检索分发表（dispatch table）直接跳转到当前字节码指令对应的处理代码（在本文系统的实际代码中被称为 handler）。分发表的初始化逻辑在 VM 系统首次解释执行 Python 程序前完成，本文中因篇幅原因不再给出。
 
@@ -1844,13 +1843,13 @@ uint8_t FrameObject::GetOpCode() {
 
 为了更加方便地为字节码指令编写 handler，在 S.A.A.U.S.O VM 中又引入了宏 `INTERPRETER_HANDLER_DISPATCH(bytecode, ...)`。这个宏的语义为“定义某条字节码指令对应 handler，并在执行完该 handler 的主体逻辑后进行字节码调度”。借助这层封装，VM 开发者在编写单个字节码指令的处理逻辑时，可以把注意力集中在该指令本身的语义上，而把“处理完成后继续调度下一条字节码”这一公共步骤统一交由宏模板处理，以减少重复代码、提升 VM 代码的可读性。
 
-另外，代码 4-35 中给出的 `POP_JUMP_IF_FALSE` 字节码指令的实现例子也很好地回应了 2.2 中关于控制流的理论分析。其一，跳转类别的字节码指令可以通过修改解释器程序计数器的方式，来改变程序控制流的走向。其二，PVM 中的条件判断类字节码指令需要判断对象的真值语义，这在本文系统中是通过运行时语义层提供的 `Runtime_PyObjectIsTrue()` 函数实现的。
+另外，代码 4-37 中给出的 `POP_JUMP_IF_FALSE` 字节码指令的实现例子也很好地回应了 2.2 中关于控制流的理论分析。其一，跳转类别的字节码指令可以通过修改解释器程序计数器的方式，来改变程序控制流的走向。其二，PVM 中的条件判断类字节码指令需要判断对象的真值语义，这在本文系统中是通过运行时语义层提供的 `Runtime_PyObjectIsTrue()` 函数实现的。
 
 ### 4.5.7 异常机制的实现
 
 在 2.5 中已经指出，异常机制本质上是解释器主路径中的一种特殊控制流，因此它不能被理解为解释器之外附加的一段错误处理逻辑。同时，要实现一个实际可用的异常机制，PVM 至少需要解决异常状态记录、异常表查找与栈展开两大关键问题。
 
-这里首先讨论异常状态记录的实现。在本文系统中，异常状态是由 `ExceptionState` 组件统一管理的，代码 4-36 给出了它的删节定义。其中 `pending_exception_` 字段用于保存异常对象，`pending_exception_pc_` 字段用于保存触发异常的字节码指令的地址。
+这里首先讨论异常状态记录的实现。在本文系统中，异常状态是由 `ExceptionState` 组件统一管理的，代码 4-38 给出了它的删节定义。其中 `pending_exception_` 字段用于保存异常对象，`pending_exception_pc_` 字段用于保存触发异常的字节码指令的地址。
 
 ```cpp
 class Isolate {
@@ -1873,11 +1872,11 @@ class ExceptionState final {
   ...
 };
 ```
-代码 4-36
+代码 4-38
 
 从这段代码中可以看到，`ExceptionState` 被挂在 `Isolate` 实例上，而没有被收缩为解释器内部的私有组件。这样设计的好处有两点：其一，便于把异常状态作为 VM 实例级别的共享状态统一维护；其二，为运行时语义、内建能力和解释器等子系统提供统一接口，用于向 VM 抛出异常或查询异常状态，从而避免不同模块各自维护一套异常表示。
 
-接下来再讨论异常表查找与栈展开的实现。在 4.5.6 中已经提到，当解释器在 `DISPATCH()` 中检测到 VM 存在待处理的异常状态时，会立即跳入 `pending_exception_unwind` 以处理异常。代码 4-37 给出了这部分逻辑的删节实现。
+接下来再讨论异常表查找与栈展开的实现。在 4.5.6 中已经提到，当解释器在 `DISPATCH()` 中检测到 VM 存在待处理的异常状态时，会立即跳入 `pending_exception_unwind` 以处理异常。代码 4-39 给出了这部分逻辑的删节实现。
 
 ```cpp
 void Interpreter::EvalCurrentFrame() {
@@ -1906,11 +1905,11 @@ pending_exception_unwind: {
   ...
 }
 ```
-代码 4-37
+代码 4-39
 
 从这段代码中可以看到，`pending_exception_unwind` 主要承担异常表查找与当前帧内控制流恢复的职责。首先，解释器会记录触发异常的字节码指令地址；其次，调用 `ExceptionTable::LookupHandler()`，依据该地址查询当前栈帧对应代码对象的异常表中是否存在覆盖该位置的处理器（handler）。若存在有效处理器，解释器便先恢复处理器要求的操作数栈深度，再把异常对象压入栈顶，随后把程序计数器指向目标处理器的入口地址，并借助 `DISPATCH()` 宏完成跳转。在目标处理器中，异常对象作为栈顶值一般会被消费。相对地，若当前栈帧中不存在匹配处理器，则解释器转而调用 `UnwindCurrentFrameForException()` 执行栈帧回溯。
 
-在代码 4-38 中给出了 `UnwindCurrentFrameForException()` 的删节实现。从中可以看到，它会销毁当前栈帧，并将异常继续向调用方函数的栈帧传播。这一过程正对应第 2 章伪代码中的“弹出当前栈帧并继续向外层查找处理器”。进一步地，在代码 4-37 中调用 `UnwindCurrentFrameForException()` 完毕后，由于 VM 的异常状态仍未被清除，且 `ExceptionState` 中记录的异常发生地址已经被回溯为上一层栈帧中的函数调用点地址，因此借助 `DISPATCH()` 宏，解释器就可以在调用方栈帧中再次尝试查询异常表；如此循环往复，直至找到有效的异常处理器，或回溯到根栈帧并迫使 VM 停止继续执行整个 Python 程序。
+在代码 4-40 中给出了 `UnwindCurrentFrameForException()` 的删节实现。从中可以看到，它会销毁当前栈帧，并将异常继续向调用方函数的栈帧传播。这一过程正对应第 2 章伪代码中的“弹出当前栈帧并继续向外层查找处理器”。进一步地，在代码 4-39 中调用 `UnwindCurrentFrameForException()` 完毕后，由于 VM 的异常状态仍未被清除，且 `ExceptionState` 中记录的异常发生地址已经被回溯为上一层栈帧中的函数调用点地址，因此借助 `DISPATCH()` 宏，解释器就可以在调用方栈帧中再次尝试查询异常表；如此循环往复，直至找到有效的异常处理器，或回溯到根栈帧并迫使 VM 停止继续执行整个 Python 程序。
 
 ```cpp
 void Interpreter::UnwindCurrentFrameForException() {
@@ -1925,13 +1924,13 @@ void Interpreter::UnwindCurrentFrameForException() {
   ...
 }
 ```
-代码 4-38
+代码 4-40
 
 总的来说，`pending_exception_unwind` 与 `UnwindCurrentFrameForException()` 相结合，在本文系统中实际落实了 2.5 中给出的栈展开原理。通过这两者与中心化异常状态管理组件 `ExceptionState` 的紧密配合，S.A.A.U.S.O VM 在工程上较为完整地实现了 Python 语言的异常机制。
 
 ## 4.6 Embedder API 实现
 
-除了作为独立解释执行系统之外，S.A.A.U.S.O VM 还希望具备较好的嵌入能力。因此，系统专门设计并实现了一套面向宿主程序的 Embedder API，用于把 VM 核心能力以更稳定、易用的方式暴露给外部 C++ 应用。需要说明的是，由于本文的研究重点在于轻量级 PVM 内核本身的设计与实现，因此本节中不再像前文那样对各项接及实现逐一展开，而仅对其总体结构、运行时容器与宿主互操作能力作概要性介绍。
+除了作为独立解释执行系统之外，S.A.A.U.S.O VM 还希望具备较好的嵌入能力。因此，系统专门设计并实现了一套面向宿主程序的 Embedder API，用于把 VM 核心能力以更稳定、易用的方式暴露给外部 C++ 应用。需要说明的是，由于本文的研究重点在于轻量级 PVM 内核本身的设计与实现，因此本节中不再像前文那样对各项接口及实现逐一展开，而仅对其总体结构、运行时容器与宿主互操作能力作概要性介绍。
 
 ### 4.6.1 对外接口的总体结构
 
@@ -1953,7 +1952,7 @@ S.A.A.U.S.O VM 的 Embedder API 并不只支持“宿主把一段脚本跑起来
 
 ## 4.7 本章小结
 
-本章围绕 S.A.A.U.S.O VM 的关键模块实现，按照虚拟机堆、句柄机制、对象系统、执行层基础设施、字节码解释器与异常机制、Embedder API自底向上的顺序，对第 3 章中论述的总体设计进行了落地。可以看到，这些模块虽然在职责上彼此分离，但又构成了紧密协作的整体：虚拟机堆负责提供托管内存与垃圾回收基础，句柄机制负责保证 native C++ 代码持有对象引用时的安全性，对象系统负责统一表示 Python 对象及其类型行为，执行层基础设施负责提供程序运行所需的环境，而字节码解释器与异常机制则真正推动 Python 程序的执行与控制流恢复。
+本章围绕 S.A.A.U.S.O VM 的关键模块实现，按照虚拟机堆、句柄机制、对象系统、执行层基础设施、字节码解释器与异常机制、Embedder API 自底向上的顺序，对第 3 章中论述的总体设计进行了落地。可以看到，这些模块虽然在职责上彼此分离，但又构成了紧密协作的整体：虚拟机堆负责提供托管内存与垃圾回收基础，句柄机制负责保证 native C++ 代码持有对象引用时的安全性，对象系统负责统一表示 Python 对象及其类型行为，执行层基础设施负责提供程序运行所需的环境，而字节码解释器与异常机制则真正推动 Python 程序的执行与控制流恢复。
 
 更重要的是，经过本章的实现分析，第 2 章中围绕 PVM 所提出的若干核心理论问题，已经在 S.A.A.U.S.O VM 中获得了较为明确的工程落地。例如，关于命名空间与变量绑定的问题，被具体落实为 `locals`、`globals` 与 `localsplus` 等栈帧结构以及相关字节码指令的实现；关于函数对象、函数调用与闭包的问题，被落实为 `PyFunction`、`FrameObject` 等 VM 内部结构与 `COPY_FREE_VARS` 等相关字节码指令；关于异常机制的问题，则进一步落实为 `ExceptionState` 组件、异常表查询和栈展开主路径。也就是说，第 2 章回答了“一个轻量级的 PVM 后端应当解决哪些问题”，而本章则进一步回答了“这些问题在实际系统中是如何被组织和实现的”。
 
