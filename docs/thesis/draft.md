@@ -1668,7 +1668,7 @@ uint8_t FrameObject::GetOpCode() {
 ```
 代码 4-36
 
-从这段代码可以看出，本文系统并非通过巨大的 `switch` 语句分发字节码，而是通过分发表（dispatch table）直接跳转到对应 handler。每条指令执行完后，`DISPATCH()` 统一处理三类状态：待处理异常、当前栈帧结束以及下一条字节码的继续调度。为减少重复代码，系统又引入 `INTERPRETER_HANDLER_DISPATCH(bytecode, ...)` 宏来统一封装单条指令的 handler 结构。
+从这段代码可以看出，本文系统并非通过巨大的 `switch` 语句分发字节码，而是通过分发表（dispatch table）直接跳转到对应 handler。每条指令执行完后，`DISPATCH()` 统一处理三类状态：待处理异常、当前栈帧结束以及下一条字节码的继续调度。为减少重复代码，系统又引入 `INTERPRETER_HANDLER_DISPATCH` 宏来统一封装单条指令的 handler 结构。
 
 其中 `POP_JUMP_IF_FALSE` 的实现也直接回应了 2.2 的理论分析：跳转指令通过修改程序计数器改变控制流，而条件判断则依赖运行时提供的对象真值语义。
 
