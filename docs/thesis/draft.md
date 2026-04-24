@@ -833,13 +833,13 @@ void PyListKlass::PreInitialize(Isolate* isolate) {
 }
 
 void PyListKlass::Initialize(Isolate* isolate) {
-  CreateAndBindToPyTypeObject(isolate);  // 创建对应的类型对象，并建立双方的绑定关系
+  CreateAndBindToPyTypeObject(isolate);  // 创建类型对象，并建立绑定关系
   auto klass_properties = PyDict::New(isolate);
-  set_klass_properties(klass_properties);
-  AddSuper(PyObjectKlass::GetInstance(isolate), isolate);  // 将 object 添加为 list 的父类
+  set_klass_properties(klass_properties);  // 创建并设置类属性字典
+  AddSuper(PyObjectKlass::GetInstance(isolate));  // 将 object 添加为父类
   OrderSupers(isolate);  // 计算生成 mro 序列
-  vtable_.Initialize(isolate, Tagged<Klass>(this));  // 依据继承关系填充虚函数表中其余槽位
-  PyListBuiltinMethods::Install(isolate, klass_properties);  // 安装内建方法到类型字典
+  vtable_.Initialize(isolate, Tagged<Klass>(this));  // 填充虚函数表中其余槽位
+  PyListBuiltinMethods::Install(klass_properties);  // 安装内建方法到类型字典
   set_name(PyString::New(isolate, "list"));  // 设置类名
 }
 ```
