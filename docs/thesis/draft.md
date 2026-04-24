@@ -1938,6 +1938,24 @@ void Interpreter::UnwindCurrentFrameForException() {
 
 # 参考文献
 
+[] PyPy Document [EB/OL]. (2026.04.24)[2026-04-24]. https://doc.pypy.org/.
+[] MicroPython Document [EB/OL]. (2026.04.20)[2026-04-24]. https://docs.micropython.org/en/latest/.
+[] Codon Document [EB/OL]. (2026.02.06)[2026-04-24]. https://docs.micropython.org/en/latest/.
+[] Google V8 team. Guide to embedding V8[EB/OL]. (2025-03-26)[2026-04-24]. https://v8.dev/docs/embed.
+[] 中村成洋, 相川光. 垃圾回收的算法与实现[M]. 汪引,译. 北京: 人民邮电出版社, 2016: 22-37, 66-83.
+[] Python Software Foundation. CPython 3.12 source code[EB/OL]. (n.d.)[2026-04-24]. https://github.com/python/cpython/tree/3.12.
+[] Nystrom R. Crafting Interpreters[M]. USA: Genever Benning, 2021.
+[] Anthony Shaw. CPython设计与实现[M]. 史海, 赵羽, 陈啸, 等,译. 北京: 人民邮电出版社, 2024.
+[] 陈儒. Python源码剖析[M]. 北京: 电子工业出版社, 2008.
+[] 李博. 深入浅出Java虚拟机：JVM原理与实战[M]. 北京: 北京大学出版社, 2023.
+[] Cheney C J. A nonrecursive list compacting algorithm[J]. Communications of the ACM, 1970, 13(11): 677-678.
+[] Ungar D. Generation Scavenging: A non-disruptive high performance storage reclamation algorithm[C]//SDE 1: Proceedings of the first ACM SIGSOFT/SIGPLAN software engineering symposium on Practical software development environments. 1984: 157-167.
+[] Barrett K, Cassels B, Haahr P, Moon D A, Playford K, Withington P T. A monotonic superclass linearization for Dylan[C]//OOPSLA '96: Proceedings of the 11th ACM SIGPLAN conference on Object-oriented programming, systems, languages, and applications. 1996: 69-82.
+[] Python Software Foundation. The Python 3.12 Language Reference: Execution model[EB/OL]. (n.d.)[2026-04-24]. https://docs.python.org/3.12/reference/executionmodel.html.
+[] Python Software Foundation. The Python 3.12 Language Reference: Data model[EB/OL]. (n.d.)[2026-04-24]. https://docs.python.org/3.12/reference/datamodel.html.
+[] Python Software Foundation. The Python 3.12 Standard Library: dis - Disassembler for Python bytecode[EB/OL]. (n.d.)[2026-04-24]. https://docs.python.org/3.12/library/dis.html.
+[] Python Software Foundation. The Python 3.12 Language Reference: The import system[EB/OL]. (n.d.)[2026-04-24]. https://docs.python.org/3.12/reference/import.html.
+
 # 附录A S.A.A.U.S.O VM 的完整系统源码及开发文档
 
 本文所实现的 S.A.A.U.S.O VM 系统的完整源代码、单元测试及相关开发文档已公开发布于 GitHub 平台，访问地址如下：
