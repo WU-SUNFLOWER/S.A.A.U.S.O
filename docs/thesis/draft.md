@@ -829,35 +829,18 @@ Handle<PyObject> KlassVtableTrampolines::Add(...) {
 ```cpp
 void PyListKlass::PreInitialize(Isolate* isolate) {
   填写基础元信息，代码略...
-
-  // 将内建类型的特有核心行为入口直接写进虚函数表的槽位
-  vtable_.Clear();
-  vtable_.new_instance_ = &Virtual_NewInstance;
-  vtable_.init_instance_ = &Virtual_InitInstance;
-  vtable_.len_ = &Virtual_Len;
-  ...
+  将内建类型的特有核心行为入口写进虚函数表的槽位，代码略...
 }
 
 void PyListKlass::Initialize(Isolate* isolate) {
-  // 创建对应的类型对象，并建立双方的绑定关系
-  CreateAndBindToPyTypeObject(isolate);
-
-  // 初始化类型字典
+  CreateAndBindToPyTypeObject(isolate);  // 创建对应的类型对象，并建立双方的绑定关系
   auto klass_properties = PyDict::New(isolate);
   set_klass_properties(klass_properties);
-
-  // 将 object 作为 list 的父类，并计算生成 mro 序列
-  AddSuper(PyObjectKlass::GetInstance(isolate), isolate);
-  OrderSupers(isolate);
-
-  // 根据继承关系填充虚函数表中剩余的空缺槽位
-  vtable_.Initialize(isolate, Tagged<Klass>(this));
-
-  // 安装内建方法到类型字典
-  PyListBuiltinMethods::Install(isolate, klass_properties);
-
-  // 设置类名
-  set_name(PyString::New(isolate, "list"));
+  AddSuper(PyObjectKlass::GetInstance(isolate), isolate);  // 将 object 添加为 list 的父类
+  OrderSupers(isolate);  // 计算生成 mro 序列
+  vtable_.Initialize(isolate, Tagged<Klass>(this));  // 依据继承关系填充虚函数表中其余槽位
+  PyListBuiltinMethods::Install(isolate, klass_properties);  // 安装内建方法到类型字典
+  set_name(PyString::New(isolate, "list"));  // 设置类名
 }
 ```
 代码 4-6
@@ -972,38 +955,18 @@ INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
 下面再进一步说明这些变量环境是如何被真正装配进栈帧的。在现阶段的 S.A.A.U.S.O VM 中，当解释器需要发起 Python 函数调用时，栈帧的初始化及装配由 `FrameObjectBuilder` 承担。代码 4-9 给出了这部分逻辑的删节实现。
 
 ```cpp
-struct FrameBuildContext {
-  Handle<PyDict> locals;
-  Handle<PyDict> globals;
-  Handle<FixedArray> localsplus;
-  Handle<PyCodeObject> code_object;
-  Handle<PyFunction> func;
-};
-
-FrameBuildContext PrepareForFunction(Isolate* isolate,
-                                    Handle<PyFunction> func,
-                                    Handle<PyDict> bound_locals) {
-  FrameBuildContext ctx;
-  ctx.code_object = func->func_code(isolate);
-  ctx.func = func;
-  ctx.locals = bound_locals;
-  ctx.globals = func->func_globals(isolate);
-  isolate->factory()->NewFixedArray(ctx.code_object->nlocalsplus());
-  ctx.stack = isolate->factory()->NewFixedArray(ctx.code_object->stack_size());
-  ...
-  return ctx;
-}
-
 FrameObject* FrameObjectBuilder::BuildSlowPath(
     Isolate* isolate,
     Handle<PyFunction> func,
     Handle<PyDict> bound_locals,
     ...) {
-  FrameBuildContext ctx =
-      PrepareForFunction(isolate, func, bound_locals);
+  Handle<PyCodeObject> code_object = func->func_code(isolate);
+  Handle<FixedArray> localsplus =
+      isolate->factory()->NewFixedArray(code_object->nlocalsplus());
+  Handle<FixedArray> stack =
+      isolate->factory()->NewFixedArray(code_object->stack_size());
   ...
-  auto* frame_object = FrameObject::Create(ctx);
-  return frame_object;
+  return FrameObject::Create(...);
 }
 ```
 代码 4-9
@@ -1014,17 +977,9 @@ FrameObject* FrameObjectBuilder::BuildSlowPath(
 
 在建立了栈帧的数据结构后，下一步就可以给出变量读写相关字节码指令的具体实现了。
 
-代码 4-10 给出了 `STORE_NAME/LOAD_NAME` 字节码指令的删节实现。
+代码 4-10 给出了 `LOAD_NAME` 字节码指令的删节实现。
 
 ```cpp
-INTERPRETER_HANDLER_WITH_SCOPE(StoreName, {
-  Handle<PyObject> key =
-      current_frame_->names(isolate_)->Get(op_arg, isolate_);
-  Handle<PyDict> locals = current_frame_->locals(isolate_);
-  ...
-  PyDict::Put(locals, key, POP(), isolate_);
-})
-
 INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
   Handle<PyObject> key =
       current_frame_->names(isolate_)->Get(op_arg, isolate_);
@@ -1042,39 +997,25 @@ INTERPRETER_HANDLER_WITH_SCOPE(LoadName, {
 ```
 代码 4-10
 
-对于 `STORE_NAME`，系统先取出符号名，再把写入操作落到 `locals` 字典上；对于 `LOAD_NAME`，若 `locals` 未命中，则继续向 `globals` 和内建命名空间回退。这与第 2 章给出的名称查找规则一致。
+对于 `LOAD_NAME`，若 `locals` 未命中，则继续向 `globals` 和内建命名空间回退。这与第 2 章给出的名称查找规则一致。与之相对的 `STORE_NAME` 只需把写入操作落到 `locals` 字典上，这里不再给出具体代码。
 
 与此相对应，`STORE_GLOBAL/LOAD_GLOBAL` 和 `STORE_FAST/LOAD_FAST` 也分别沿着全局命名空间与 `localsplus` 槽位区完成读写，其实现与 2.3.2 中的理论分析基本一致，因此不再逐段展开。
 
 ### 4.5.4 函数闭包的实现
 
-在 2.3.3 中已经分析了函数闭包机制的实现原理。本节中将围绕 `MAKE_FUNCTION`、`MAKE_CELL`、`LOAD_CLOSURE`、`COPY_FREE_VARS`、`LOAD_DEREF` 和 `STORE_DEREF` 这几条关键字节码指令，给出 S.A.A.U.S.O VM 中函数闭包机制的实际实现。相关删节代码见代码 4-11。
+在 2.3.3 中已经分析了函数闭包机制的实现原理。本节中选取 `MAKE_CELL`、`COPY_FREE_VARS` 与 `LOAD_DEREF` 三个关键指令，说明 S.A.A.U.S.O VM 中闭包机制的实际实现。相关删节代码见代码 4-11。
 
 ```cpp
-INTERPRETER_HANDLER_WITH_SCOPE(MakeFunction, {
-  ...
-  if (op_arg & MakeFunctionOpArgMask::kClosure) {
-    func->set_closures(Handle<PyTuple>::cast(POP()));
-  }
-  ...
-})
-
 INTERPRETER_HANDLER_WITH_SCOPE(MakeCell, {
   Handle<Cell> cell = isolate_->factory()->NewCell();
   Tagged<PyObject> initial =
       current_frame_->localsplus(isolate_)->Get(op_arg);
   cell->set_value(initial);
   current_frame_->localsplus(isolate_)->Set(op_arg, cell);
-})
-
-INTERPRETER_HANDLER_DISPATCH(LoadClosure, {
-  Tagged<PyObject> cell = current_frame_->localsplus(isolate_)->Get(op_arg);
-  PUSH(cell);
-})
+}
 
 INTERPRETER_HANDLER_DISPATCH(CopyFreeVars, {
   Tagged<PyTuple> func_closures = current_frame_->func_tagged()->closures_tagged();
-  ...
   for (...) {
     current_frame_->localsplus(isolate_)->Set(..., func_closures->GetTagged(i));
   }
@@ -1086,16 +1027,10 @@ INTERPRETER_HANDLER_WITH_SCOPE(LoadDeref, {
   PUSH(value);
   ...
 })
-
-INTERPRETER_HANDLER_DISPATCH(StoreDeref, {
-  Tagged<PyObject> value = POP_TAGGED();
-  Tagged<Cell> cell = current_frame_->localsplus(isolate_)->Get(op_arg);
-  cell->set_value(value);
-})
 ```
 代码 4-11
 
-从这段代码看，闭包机制的具体实现与 2.3.3 中给出的理论分析是一致的。首先，`MAKE_CELL` 把自由变量从普通槽位改为由单元对象间接持有；其次，`LOAD_CLOSURE` 与 `MAKE_FUNCTION` 把这些单元对象绑定进内部函数；最后，`COPY_FREE_VARS`、`LOAD_DEREF` 与 `STORE_DEREF` 保证新栈帧继续访问并更新同一组单元对象。
+从这段代码看，闭包机制的具体实现与 2.3.3 中给出的理论分析是一致的。首先，`MAKE_CELL` 把自由变量从普通槽位改为由单元对象间接持有；其次，函数创建阶段会把相关单元对象绑定进内部函数；最后，`COPY_FREE_VARS` 与 `LOAD_DEREF` 保证新栈帧能够继续访问同一组被捕获变量。与之对应的 `LOAD_CLOSURE` 和 `STORE_DEREF` 逻辑与此同理，故不再展开。
 
 ### 4.5.5 函数调用主路径与调用栈管理
 
@@ -1108,7 +1043,6 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
                                              Handle<PyObject> receiver,
                                              Handle<PyTuple> pos_args,
                                              Handle<PyDict> kw_args) {
-  EscapableHandleScope scope(isolate_);
   ...
   Handle<PyObject> result;
   if (IsNormalPyFunction(callable, isolate_)) {
@@ -1122,22 +1056,9 @@ Handle<PyObject> Interpreter::CallPythonImpl(Handle<PyObject> callable,
     Handle<PyObject> result = ReleaseReturnValue();
     DestroyCurrentFrame();
     ...
-    return scope.Escape(result);
   }
-
   result = CallNonNormalFunction(callable, receiver, pos_args, kw_args);
-  return scope.Escape(result);
-}
-
-void Interpreter::EnterFrame(FrameObject* frame) {
-  frame->set_caller(current_frame_);
-  current_frame_ = frame;
-}
-
-void Interpreter::DestroyCurrentFrame() {
-  FrameObject* callee = current_frame_;
-  current_frame_ = callee->caller();
-  delete callee;
+  ...
 }
 ```
 代码 4-12
@@ -1147,7 +1068,7 @@ void Interpreter::DestroyCurrentFrame() {
 （2）`receiver` 参数仅在 PVM 执行对象方法调用时有效，表示发起方法调用的 Python 对象。
 （3）`pos_args` 和 `kw_args` 分别表示用户程序传入的位置参数和键值对参数。
 
-这段代码说明了普通 Python 函数调用的关键步骤：构造新栈帧并完成参数绑定；通过 `EnterFrame()` 将其加入 PVM 调用链；调用 `EvalCurrentFrame()` 逐条解释执行；最后提取返回值并通过 `DestroyCurrentFrame()` 恢复上一层栈帧。
+这段代码说明了普通 Python 函数调用的关键步骤。首先通过 `FrameObjectBuilder` 构造新栈帧并完成参数绑定。其次调用 `EnterFrame()` 将其加入 PVM 调用链。接下来调用 `EvalCurrentFrame()` 逐条解释执行。最后分别调用 `ReleaseReturnValue()` 提取返回值并恢复上一层栈帧。
 
 与此同时，`CallPythonImpl()` 的实现逻辑也体现出普通 Python 函数与其他可调用对象的执行分流。若调用目标属于普通的 Python 函数，则直接走解释器内部逻辑。若目标属于 native 函数或其他可调用对象，则转入 `CallNonNormalFunction()`。在 `CallNonNormalFunction()` 中，前者会直接进入 native 调用路径，而后者则通过调用对象系统提供的 `call` 核心行为进行处理。这样，上层逻辑只需依赖统一调用入口，而无需关心可调用对象的具体身份。
 
@@ -1160,21 +1081,10 @@ void Interpreter::EvalCurrentFrame() {
   uint8_t op_code = 0;
   int op_arg = 0;
 
-#define INTERPRETER_HANDLER_DISPATCH(bytecode, ...) \
-  handler_##bytecode {                              \
-    do {                                            \
-      __VA_ARGS__                                   \
-    } while (0);                                    \
-    DISPATCH();                                     \
-  }
-
 #define DISPATCH()                                      \
   do {                                                  \
     if (isolate_->HasPendingException()) [[unlikely]] { \
       goto pending_exception_unwind;                    \
-    }                                                   \
-    if (!current_frame_->HasMoreCodes()) [[unlikely]] { \
-      goto exit_interpreter;                            \
     }                                                   \
     op_code = current_frame_->GetOpCode();              \
     op_arg = current_frame_->GetOpArg();                \
@@ -1190,17 +1100,12 @@ INTERPRETER_HANDLER_DISPATCH(PopJumpIfFalse, {
 
 其他字节码指令的实现略...
 }
-
-uint8_t FrameObject::GetOpCode() {
-  ...
-  return bytecodes->buffer()[pc_++];
-}
 ```
 代码 4-13
 
-从这段代码可以看出，本文系统并非通过巨大的 `switch` 语句分发字节码，而是通过分发表（dispatch table）直接跳转到对应 handler。每条指令执行完后，`DISPATCH()` 统一处理三类状态：待处理异常、当前栈帧结束以及下一条字节码的继续调度。
+从这段代码可以看出，本文系统并非通过巨大的 `switch` 语句分发字节码，而是通过分发表（dispatch table）直接跳转到对应 handler。每条指令执行完后，`DISPATCH()` 宏统一调度两类状态：VM 出现待处理异常，以及继续执行下一条字节码。另外为了增强代码的可读性，引入了工具宏 `INTERPRETER_HANDLER_DISPATCH()`；其中进一步封装有 handler 本体执行完毕后执行 `DISPATCH()` 宏的语义。
 
-其中 `POP_JUMP_IF_FALSE` 的实现也直接回应了 2.2 的理论分析：跳转指令通过修改程序计数器改变控制流，而条件判断则依赖运行时提供的对象真值语义。
+这段代码中 `POP_JUMP_IF_FALSE` 指令的实现也直接回应了 2.2 的理论分析：跳转指令通过修改程序计数器改变控制流，而条件判断则依赖运行时提供的对象真值语义。
 
 ### 4.5.7 异常机制的实现
 
