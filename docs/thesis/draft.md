@@ -497,6 +497,11 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 在 S.A.A.U.S.O VM 中，`Isolate` 是最核心的运行时容器。它既可以理解为一个独立的虚拟机实例，也可以理解为一个完整的 Python 运行时环境。系统中的堆、解释器、模块状态、异常状态以及其他关键运行时资源，都会被统一收敛到某个 `Isolate` 之下管理。
 
+如图 3.2 所示，`Isolate` 在系统总体设计中承担的是“运行时状态统一入口”的角色。它并不等同于某个单一功能模块，而是把虚拟机堆相关状态、脚本执行相关状态、模块系统相关状态、运行时环境以及异常相关状态收拢到同一个运行时容器之下。这样一来，系统中的对象分配、脚本执行、模块导入、异常传播和宿主嵌入等关键操作，都能够围绕同一个 VM 实例展开。
+
+![`Isolate` 作为核心运行时容器的关系示意图](./images/the-duty-of-isolate.png)
+图 3.2 `Isolate` 作为核心运行时容器的关系示意图
+
 引入 `Isolate` 的主要目的，是为 VM 提供明确的运行时上下文边界。一方面，它减少了全局状态分散带来的管理复杂度；另一方面，也使宿主程序能够创建多个彼此隔离的运行时实例。正因如此，在第 4 章的具体实现中将会看到，许多核心接口都会显式接收 `Isolate`，以明确相关操作所属的运行时环境。
 
 ## 3.4 核心层的职责与设计要点
@@ -730,6 +735,11 @@ class HandleScopeImplementer {
 在 3.4.3 中，已经提出了“对象实例数据与类型行为分离”的对象模型设计思路。在具体实现上，S.A.A.U.S.O VM 中所有 Python 对象实例都统一纳入 `PyObject` 体系，而类型元信息则由 `Klass` 体系统一描述。`PyObject` 负责对象布局与字段组织，`Klass` 负责类型行为、继承关系等元信息；系统会为每一种内建类型及用户自定义类建立唯一的对应 `Klass` 实体。
 
 在进一步介绍 `PyObject` 和 `Klass` 各自承载的数据之前，首先需要回答一个问题：`PyObject` 实体是如何与 `Klass` 建立关联的呢？在本文系统中，`PyObject` 会在对象头部保留 `MarkWord` 字段，用于在正常运行时记录所属 `Klass` 的地址，从而在对象实体与类型元信息之间建立起直接关联。需要指出的是，`Klass` 实体仅供 VM 内部使用，Python 程序只能直接观察到类型对象。为打通二者，本文系统又在 `Klass` 与 `PyTypeObject` 之间建立了双向关联：运行时可由类型对象快速定位到 `Klass` 实体，反之亦然。
+
+如图 4.1 所示，`PyObject`、`Klass` 与 `PyTypeObject` 在本文系统中分别位于对象实例层、VM 内部类型元信息层和 Python 层可见类型对象层。对象实例通过对象头中的 `MarkWord` 与所属 `Klass` 建立关联，而 `Klass` 又与 `PyTypeObject` 建立绑定关系，从而使 VM 内部类型行为组织与 Python 层类型观察之间形成统一桥接。
+
+![`PyObject`、`Klass` 与 `PyTypeObject` 的关系示意图](./images/object-klass-model.png)
+图 4.1 `PyObject`、`Klass` 与 `PyTypeObject` 的关系示意图
 
 ### 4.3.2 实例属性、类属性与方法绑定
 
@@ -1130,7 +1140,7 @@ pending_exception_unwind: {
   }
 
   ...
-  UnwindCurrentFrameForException();
+  UnwindCurrentFrame();
   DISPATCH();
 }
   ...
@@ -1138,9 +1148,12 @@ pending_exception_unwind: {
 ```
 代码 4-14
 
-从这段代码中可以看到，`pending_exception_unwind` 主要承担异常表查找与当前帧内控制流恢复的职责。解释器首先记录触发异常的字节码指令地址，再调用 `ExceptionTable::LookupHandler()` 查询当前代码对象的异常表中是否存在覆盖该位置的处理器。若存在有效处理器，解释器就恢复目标操作数栈深、压入异常对象，并把程序计数器跳转到处理器入口；若不存在匹配处理器，则转而调用 `UnwindCurrentFrameForException()` 回溯当前栈帧，并把异常发生地址回溯为上一层栈帧中的调用点，以便继续在外层帧中查询异常表。如此循环，直至找到有效处理器，或回溯到根栈帧并停止整个 Python 程序的执行。
+从这段代码中可以看到，`pending_exception_unwind` 主要承担异常表查找与当前帧内控制流恢复的职责。解释器首先记录触发异常的字节码指令地址，再调用 `ExceptionTable::LookupHandler()` 查询当前代码对象的异常表中是否存在覆盖该位置的处理器。若存在有效处理器，解释器就恢复目标操作数栈深、压入异常对象，并把程序计数器跳转到处理器入口；若不存在匹配处理器，则转而调用 `UnwindCurrentFrame()` 回溯当前栈帧，并把异常发生地址回溯为上一层栈帧中的调用点，以便继续在外层帧中查询异常表。如此循环，直至找到有效处理器，或回溯到根栈帧并停止整个 Python 程序的执行。
 
-概括而言，`pending_exception_unwind` 与 `UnwindCurrentFrameForException()` 相结合，在本文系统中落实了 2.5 中给出的栈展开原理。通过它们与中心化异常状态组件 `ExceptionState` 的配合，在工程上实现了异常机制的主路径。
+若把解释器主循环与异常处理路径放在同一张全局流程图中观察，则可得到图 4.2。可以看到，普通字节码 handler 的执行、`DISPATCH()` 宏的统一收口，以及异常发生后经由 `pending_exception_unwind` 进入异常表查找与栈展开路径，实际上共同构成了同一条解释执行主链路。
+
+![解释器主循环与异常处理流程图](./images/interpreter-loop-and-exception-process.png)
+图 4.2 解释器主循环与异常处理流程图
 
 ## 4.6 Embedder API 实现
 
