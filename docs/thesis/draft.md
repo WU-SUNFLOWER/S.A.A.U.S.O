@@ -824,40 +824,19 @@ void PyListKlass::Initialize(Isolate* isolate) {
 
 ### 4.3.5 用户自定义类的创建过程
 
-对本文系统来说，创建用户自定义类，本质上是同时完成 Python 语义层可见的类型对象建立，以及 `Klass` 中元信息、继承关系和虚函数表的初始化。其中，`Klass` 的初始化尤为关键，因为它是 4.3.2 中属性查找与 4.3.3 中核心行为分派得以正确工作的基础。也正是在这里，前文对象系统的总体设计开始真正转化为 Python 层可见的动态类型能力。代码 4-7 给出了这一过程的删节实现。
+对本文系统来说，创建用户自定义类，本质上是同时完成 Python 语义层可见的类型对象建立，以及 `Klass` 中元信息、继承关系和虚函数表的初始化。其中，`Klass` 的初始化尤为关键，因为它是 4.3.2 中属性查找与 4.3.3 中核心行为分派得以正确工作的基础。也正是在这里，前文对象系统的总体设计开始真正转化为 Python 层可见的动态类型能力。
 
-```cpp
-Handle<PyTypeObject> Runtime_CreatePythonClass(
-    Isolate* isolate,
-    Handle<PyString> class_name,
-    Handle<PyDict> class_properties,
-    Handle<PyList> supers) {
-  EscapableHandleScope scope(isolate);
-  
-  Handle<PyTypeObject> type_object = isolate->factory()->NewPyTypeObject();
-  Tagged<Klass> klass = isolate->factory()->NewPythonKlass();
+在 S.A.A.U.S.O VM 中，创建用户自定义类的过程是由 `Runtime_CreatePythonClass()` 函数完成的，图 4.4 给出了该函数的内部处理流程。
 
-  klass->set_klass_properties(class_properties);
-  klass->set_name(class_name);
+![用户自定义类的创建过程](./images/create-python-class.png)
+图 4.4 用户自定义类的创建过程
 
-  if (supers->IsEmpty()) {
-    PyList::Append(supers, base_object_klass, isolate);
-  }
-  klass->set_supers(supers);
+从图中可见，整个类的创建过程由三个阶段分步完成：
+1. **实体创建与双向绑定**：系统首先在虚拟机堆内存中分别分配暴露给 Python 层的 Python 类型对象（在系统代码中被称为 `PyTypeObject`）和供 VM 内部使用的 `Klass` 实体，并建立两者的双向绑定。
+2. **基本元信息装配**：系统将类型名称（class_name）、类属性字典（class_properties）、基类列表（supers）等数据写入 `Klass` 实体。特别地，若用户没有显式声明父类，系统会自动补入内建的 `object` 类型作为默认基类，以保证对象模型的统一。
+3. **高级行为初始化**：这是最关键的阶段。系统首先对基类列表执行 C3 线性化算法计算出 MRO 序列；随后沿 MRO 序列查找并复制祖先类的有效虚函数表槽位；最后，检查当前类的属性字典，若发现用户重写了某魔法方法，则将对应虚表槽位改写为 4.3.3 中描述的桥接函数（Trampoline）。
 
-  type_object->BindWithKlass(klass, isolate);
-  
-  klass->OrderSupers(isolate);
-  klass->InitializeVtable(isolate);
-
-  return scope.Escape(type_object);
-}
-```
-代码 4-7
-
-在这段代码中，系统首先创建新的类型对象和 `Klass` 并完成绑定；随后把类名、类属性字典以及基类列表写入 `Klass`；若用户没有显式声明父类，则自动补入 `object` 作为默认基类。
-
-绑定完成后，系统继续计算 MRO 序列，并据此初始化 `KlassVtable`。具体而言，系统先对基类列表执行 C3 线性化算法，得到最终 MRO 序列；再沿该序列复制父类虚函数表中可继承的核心行为槽位，并使用 4.3.3 中介绍的 `KlassVtable::UpdateOverrideSlots()` 覆写被用户魔法函数重载的槽位。这样，用户自定义类既能继承已有核心行为，也能保持 Python 语义允许的动态覆写能力。
+通过上述三个阶段的初始化流程，用户自定义类既能继承父类的高效 C++ 核心行为，又能完美兼容 Python 语义所允许的动态覆写能力。最终，`Runtime_CreatePythonClass()` 函数会向执行层返回一个状态完整、可正常使用的类型对象。
 
 ## 4.4 执行层基础设施的实现
 
