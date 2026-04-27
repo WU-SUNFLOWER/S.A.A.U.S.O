@@ -752,80 +752,44 @@ class HandleScopeImplementer {
 
 S.A.A.U.S.O VM 并没有把 Python 对象实例的所有属性都简单地堆入同一个容器中，而是将实例属性与类属性分开组织，这与 2.4.3 中关于“字典化封装”问题的分析结论是一致的。在实际系统中，实例对象负责持有自身的属性字典，对应类型的 `Klass` 实体负责持有类属性字典。这样一来，“对象当前持有的具体状态”和“类型为所有实例共享的属性与方法”就在结构上被分开表示了，而后续解释器在执行属性访问相关字节码时也就有了统一查找路径。
 
-在此基础上，代码 4-4 给出了默认属性查找与方法绑定主路径的删节实现。
+为了清晰地展示 S.A.A.U.S.O VM 内部这一统一查找路径是如何运行的，图 4.2 给出了其的核心执行逻辑。
 
-```cpp
-bool PyObjectKlass::Generic_GetAttr(Isolate* isolate,
-                                    Handle<PyObject> self,
-                                    Handle<PyObject> prop_name,
-                                    ...) {
-  ...
-  Handle<PyObject> result;
-  Handle<PyDict> properties = PyObject::GetProperties(self);
-  if (!properties.is_null()) {
-    result = PyDict::Get(properties, prop_name);
-    if (!result.is_null()) {
-      goto found;
-    }
-  }
+![属性查找与方法绑定路径图](./images/get-attr.png)
+图 4.2 属性查找与方法绑定路径图
 
-  result = Runtime_LookupPropertyInInstanceTypeMro(self, prop_name);
-  if (!result.is_null()) {
-    if (IsPyFunction(result)) {
-      result = isolate->factory()->NewMethodObject(result, self);
-    }
-    goto found;
-  }
-
-  Handle<PyObject> getattr_func = Runtime_LookupPropertyInInstanceTypeMro(
-                                      self, "__getattr__");
-  if (!getattr_func.is_null()) {
-    result = Execution::Call(isolate, getattr_func, ...);
-    goto found;
-  }
-  ...
-  Runtime_ThrowErrorf(isolate, ExceptionType::kAttributeError,
-                      "'%s' object has no attribute '%s'\n", ...);
-  ...
-}
-```
-代码 4-4
-
-这段实现表明，S.A.A.U.S.O VM 中属性查找与方法绑定的主流程与 2.4.3 和 2.4.4 的理论分析是一致的：先查实例字典，再沿 MRO 查类字典；若命中函数对象，则构造绑定方法；若仍未找到，则尝试查找并调用 `__getattr__` 魔法方法；最后抛出 `AttributeError` 异常。
+从图中可知，S.A.A.U.S.O VM 中属性查找与方法绑定的主流程与 2.4.3 和 2.4.4 的理论分析是一致的：系统首先在 `self` 的实例字典中查找；若未命中，则沿 MRO 序列遍历各基类的类字典；如果在类字典中找到了属性且其值为函数对象，VM 会在运行时将其与 `self` 组合为绑定方法（Method Object）返回；若整条 MRO 链均未命中，系统会尝试调用兜底的 `__getattr__` 方法；若仍失败，则最终抛出 `AttributeError` 异常。
 
 ### 4.3.3 基于 `Klass/KlassVtable` 的对象核心行为分派机制
 
-根据 2.4.5 中的理论分析，在通过字典查找与方法绑定维持语言层动态性的同时，VM 内部仍需要为若干高频核心行为提供更稳定和高效的调用入口。实现阶段中，S.A.A.U.S.O VM 又对“对象核心行为”的概念进行了泛化，使其不仅包括 `__add__`、`__call__`、`__iter__`、`__len__` 等语言层操作，也包括实例大小计算、对象扫描等 PVM 内部能力。这样，后续解释器与运行时在面对不同对象类型时就不必到处编写大量特判分支。
+根据 2.4.5 中的理论分析，在通过字典查找与方法绑定维持语言层动态性的同时，VM 内部仍需要为若干高频核心行为提供更稳定和高效的调用入口。实现阶段中，S.A.A.U.S.O VM 又对“对象核心行为”的概念进行了泛化，使其不仅包括 `__add__`、`__call__`、`__equal__`、`__len__` 等语言层操作，也包括实例大小计算、对象扫描等 PVM 内部能力。这样，后续解释器与运行时在面对不同对象类型时就不必到处编写大量特判分支。
 
-在本文系统中，基于 `Klass` 又进一步引入虚函数表机制 `KlassVtable`，用于统一组织对象核心行为的分派。这样，系统在调用对象的核心操作时，就可以先查询到对象所绑定的 `Klass` 实体，再进一步通过其持有的 `KlassVtable` 虚函数表直接找到并调用相应的内部 C++ 实现，而无需再执行开销昂贵的属性查找与方法绑定操作。
+在本文系统中，基于 `Klass` 又进一步引入了虚函数表机制 `KlassVtable`，用于统一组织对象核心行为的分派。这样，系统在调用对象的核心操作时，就可以先查询到对象所绑定的 `Klass` 实体，再进一步通过其持有的 `KlassVtable` 虚函数表直接找到并调用相应的内部 C++ 实现，而无需再执行开销昂贵的属性查找与方法绑定操作。
 
-与此同时，Python 仍保留了高度动态的行为覆写能力。为兼顾语言层动态性与内部执行效率，现阶段系统采用“优先走虚函数表，必要时退化为字典查找”的两层多态方案：若初始化类型虚函数表时发现用户重载了某个魔法方法，就把对应槽位改写为桥接函数，再走常规的属性查找与方法调用慢路径。
+与此同时，Python 仍保留了高度动态的行为覆写能力。为兼顾语言层动态性与内部执行效率，现阶段系统采用“优先走虚函数表，必要时退化为字典查找”的**双层多态方案**。图 4.3 给出了这一机制的运作原理。
 
-代码 4-5 给出了这一策略在实际系统中的删节实现。
+![对象核心行为的双层多态分派机制示意图](./images/call-through-vtable.png)
+图 4.3 对象核心行为的双层多态分派机制示意图
+
+如图 4.3 所示，当 VM 内部调用对象的核心行为时，会面临两种场景：
+- **快路径（Fast Path）**：如果用户未覆写该类中核心行为所对应的魔法方法，虚函数表中的槽位将直接指向 C++ 本地函数（如 `Virtual_Add`），从而在调用时实现快速执行。
+- **慢路径（Slow Path）**：如果在初始化类型虚函数表时，VM 检测到用户在 Python 层面重载了该核心行为对应的魔法方法，就会把该虚函数槽位的指针改写为指向一个桥接函数（在系统源码中被称为 trampoline）。当调用发生时，桥接函数会退化执行类属性查找，最终调用到用户定义的 Python 函数。
+
+代码 4-5 给出了系统源码中上述底层入口与桥接逻辑的骨架。
 
 ```cpp
-void KlassVtable::UpdateOverrideSlots(Isolate* isolate,
-                                      Tagged<Klass> klass) {
-  Handle<PyDict> klass_properties = klass->klass_properties(isolate);
-
-  bool has_magic_method = PyDict::Get(klass_properties, "__add__", ...);
-  if (has_magic_method) {
-    add_ = &KlassVtableTrampolines::Add;
-  }
-
-  其他魔法函数同理...
+// 对象的统一加法入口：直接通过虚函数表分派
+Handle<PyObject> PyObject::Add(Isolate* isolate, Handle<PyObject> self, Handle<PyObject> other) {
+  Tagged<Klass> klass = ResolveObjectKlass(self, isolate);
+  return klass->vtable().add_(isolate, self, other);
 }
 
+// 桥接函数：退化为字典查找与动态调用
 Handle<PyObject> KlassVtableTrampolines::Add(...) {
-  ...
-  Handle<PyObject> result = 
-      Runtime_InvokeMagicOperationMethod(isolate, self, args, kwargs, "__add__");
-  return result;
+  // 内部回退调用 并执行 Python 函数
+  return Runtime_InvokeMagicOperationMethod(isolate, self, args, kwargs, "__add__");
 }
 ```
 代码 4-5
-
-在这段代码中，`KlassVtable::UpdateOverrideSlots()` 会在初始化用户自定义类的虚函数表时被调用。若发现用户重载了某个魔法函数，系统就把相应槽位改写为 `KlassVtableTrampolines` 中的桥接函数；例如，若用户重写了 `__add__`，加法操作就会退化为常规的属性查找与函数调用路径。
 
 ### 4.3.4 内建类型的实现原理及初始化
 
