@@ -700,37 +700,36 @@ void ScavengeVisitor::EvacuateObject(Tagged<PyObject>* slot_ptr) {
 
 ### 4.2.2 对象句柄与槽位模型
 
-S.A.A.U.S.O VM 中句柄机制层的核心组件为 `HandleScopeImplementer`。该组件会负责管理一批内存块（block）。每个内存块会被视作一个提供若干 `Address` 槽位（slot）的定长 C 数组。在本文系统中，`Address` 用于代表指向堆上对象的内存地址。
+S.A.A.U.S.O VM 中句柄机制层的核心组件为 `HandleScopeImplementer`。该组件会负责管理一批内存块（block）。每个内存块会被视作一个提供若干地址槽位（address slot）的定长数组，每个槽位中专门用于保存指向堆上真实对象的内存地址。
 
-从实现本质上看，`Handle<T>` 并没有直接保存对象地址，而是保存了某个槽位的位置。这些槽位就来自 `HandleScopeImplementer` 管理的内存块。换言之，槽位中放置了实际指向堆上对象的地址，而 `Handle<T>` 自身则保存指向该槽位的指针，即 `Address* location_`。因此，当 VM 通过 Handle 访问对象时，逻辑上存在两次解引用：第一次对 `location_` 解引用，取出槽位中保存的对象地址；第二次再根据该对象地址访问真实对象内容。
+如图 4.2 所示，从实现本质上看，对象句柄 `Handle<T>` 当中并没有直接保存对象地址，而是保存了指向某个地址槽位的指针。因此，当 VM 通过对象句柄访问对象时，实际上存在两次解引用：第一次对指向槽位的地址解引用，取出槽位中保存的对象地址；第二次再根据该地址访问位于虚拟机堆上对象的内容。
 
-在实际使用时，除直接拷贝 `Handle<T>` 外，开发者往往先拿到原始对象的 `Tagged<T>`，再向 `HandleScopeImplementer` 申请槽位并写入地址。也就是说，对象句柄的构造过程本质上就是“申请槽位并把对象地址写进去”。
+![对象句柄内部实现原理](./images/handle.png)
+图 4.2 对象句柄内部实现原理
 
-代码 4-3 给出了上述机制的删节实现。其中，`Handle<T>` 负责保存并解引用槽位，`HandleScopeImplementer::CreateHandle()` 负责完成“申请槽位并写入对象地址”的过程。同时，`HandleScopeImplementer` 内部会维护整片内存块的分配状态。
+与此同时，在实际使用时，除直接拷贝 `Handle<T>` 外，开发者往往首先拿到原始对象的 `Tagged<T>`。因此 `HandleScopeImplementer` 还需要开放申请地址槽位的能力，以便对象句柄在构造时获得一个有效的地址槽位并写入真实的对象地址。
+
+代码 4-3 给出了上述机制的删节实现。从这段代码中可知，在构造对象句柄时会调用 `HandleScopeImplementer::CreateHandle()` 完成“申请槽位并写入对象地址”的过程。同时，`HandleScopeImplementer` 内部会持有用于分配槽位的内存块。
 
 ```cpp
 template <typename T>
 class Handle {
  public:
+  // 构造时：申请槽位，并将对象地址写入该槽位
   Handle(Tagged<T> object, Isolate* isolate) {
-    if (object != kNullAddress) {
-      location_ = HandleScopeImplementer::CreateHandle(isolate, object.ptr());
-    }
+    location_ = HandleScopeImplementer::CreateHandle(isolate, object.ptr());
   }
-  ...
-  constexpr T* operator->() const { return Tagged<T>(*location()).operator->(); }
-
+  // 访问时：两次解引用以获取真实对象
+  T* operator->() const { return Tagged<T>(*location()).operator->(); }
  private:
-  Address* location_{nullptr};
+  Address* location_{nullptr}; // 仅保存指向槽位的指针
 };
 
 class HandleScopeImplementer {
  public:
-  static constexpr int kHandleBlockSize = 512;
   static Address* CreateHandle(Isolate* isolate, Address ptr);
-
  private:
-  Vector<Address*> blocks_;
+  Vector<Address*> blocks_; // 管理槽位内存块
 };
 ```
 代码 4-3
@@ -739,15 +738,17 @@ class HandleScopeImplementer {
 
 ### 4.2.3 HandleScope 释放句柄槽位的原理
 
-在 4.2.2 中提到，创建 `Handle<T>` 时需要向 `HandleScopeImplementer` 申请槽位。那么反过来，本文系统中也需要一种机制，能够在对象句柄失效时及时释放其占用的槽位。这样，才能建立对象句柄槽位的生命周期闭环。
+在 4.2.2 中提到，创建 `Handle<T>` 时需要向 `HandleScopeImplementer` 申请地址槽位。那么反过来，本文系统中也需要一种机制，能够在对象句柄失效时及时释放其占用的地址槽位。这样，才能建立对象句柄槽位的生命周期闭环。
 
-在局部执行场景中，S.A.A.U.S.O VM 通过 `HandleScope` 管理 Handle 槽位的生命周期。其基本做法是在进入局部作用域时借助 `HandleScope` 的 C++ 构造函数记录当前槽位的分配状态，在退出时借助 `HandleScope` 的 C++ 析构函数使分配状态恢复。于是，该局部作用域内申请出去的槽位，在程序退出作用域后就可以被统一视作“无效并可复用”。这种批量回退的策略，比逐个 `Handle` 释放更适合 VM 这类对性能敏感的系统。
+针对这个问题，S.A.A.U.S.O VM 又引入了 HandleScope 用于统一管理局部作用域中对象句柄所申请的地址槽位的生命周期。其实现思路为：在进入局部作用域时借助 `HandleScope` 的 C++ 构造函数记录当前 `HandleScopeImplementer` 中槽位的分配状态，在退出时借助 `HandleScope` 的 C++ 析构函数使其分配状态恢复。于是，该局部作用域内 `HandleScopeImplementer` 分配出去的槽位，在 C++ 程序退出作用域后就可以被统一视作“无效并可复用”。这种批量回退的策略，相较于逐个对象句柄单独释放所申请的槽位，更适合 VM 这类对性能敏感的系统。
 
 ### 4.2.4 与 GC 机制的协同
 
 在建立槽位模型及其生命周期管理之后，下一步就是实现句柄机制与 GC 的协同。
 
-如 4.1.3 所述，`HandleScopeImplementer` 作为根集合的一部分，会在 GC 发生时被访问器逐个扫描其当前有效槽位。若对象在回收过程中被移动，访问器就直接把槽位内容改写为新地址。这样，GC 一方面能够找到本地 C++ 代码持有的存活对象，另一方面也能保证后续 Handle 访问到的始终是对象的最新地址。概括而言，S.A.A.U.S.O VM 把“维护本地代码持有的堆对象引用”转化为“维护一组已知槽位”，从而解决了 3.4.2 中提出的问题。
+正如 4.1.3 所述以及图 4.2 顶部所示，`HandleScopeImplementer` 作为根集合的一部分，会在 GC 发生时被访问器（Visitor）逐个扫描其当前有效槽位。若对象在回收过程中被移动（例如在 Scavenge 中被复制到 Survivor 区），访问器就直接把槽位内容改写为新地址。这样，GC 一方面能够找到本地 C++ 代码持有的存活对象，另一方面也能保证后续 Handle 访问到的始终是对象的最新地址。
+
+概括而言，S.A.A.U.S.O VM 把“维护散落在本地代码执行栈中的零碎堆对象引用”巧妙地转化为“集中维护一组连续的已知槽位”，从而完美解决了 3.4.2 中提出的跨越 C++/受管堆边界的内存安全问题。
 
 ## 4.3 对象系统实现
 
