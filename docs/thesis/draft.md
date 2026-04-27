@@ -594,13 +594,13 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 这种设计的价值在于：系统可通过页头记录所属空间和分配进度；可根据对象地址快速定位页面头部并判断空间类别；也便于后续实现空间的动态扩容或缩容。需要说明的是，虽然因为开发时间的限制，现阶段系统尚未实现完整的老生代空间与分代式 GC，但页化空间已经为这一后续演进打下了扎实的结构基础。
 
-### 4.1.3 根集合的实现
+### 4.1.3 根集合与 GC 访问器的实现
 
-在 3.4.1 中，已经论述了追踪式 GC 的总体技术路线，并引出了根集合与可达性的概念。在实现层面，S.A.A.U.S.O VM 的根集合并不单一，它既包括 `Isolate` 持有的关键运行时组件，也包括解释器调用栈、句柄机制、内建类型元信息、模块缓存和异常状态中的对象引用。
+在 3.4.1 中，已经论述了追踪式 GC 的总体技术路线，并引出了根集合与可达性的概念。在实现层面，S.A.A.U.S.O VM 的根集合并不单一，它既包括 `Isolate` 持有的关键运行时组件，也包括解释器调用栈、句柄机制、内建类型元信息、模块缓存和异常状态中的对象引用。因此，垃圾回收不是虚拟机堆子系统的局部逻辑，而是整个 VM 的协作过程。只有把全体运行时组件、子系统和运行时状态都显式暴露给 GC 机制，它才能正确遍历全部存活对象。
 
-因此，垃圾回收不是堆模块的局部逻辑，而是整个 VM 的协作过程。只有把这些运行时状态都显式暴露给 GC，系统才能正确遍历全部存活对象。
+为了在工程上实现这种跨子系统的遍历，S.A.A.U.S.O VM 引入了 GC 访问器（在系统代码中被称为 `ObjectVisitor`）模式。访问器本质上是一个包含回调逻辑的独立组件，它知道“遇到对象引用时该怎么处理”（例如在 Scavenge 算法中执行复制）。而 VM 中的各个子系统（如解释器、句柄机制等）只需实现一个统一的 `Iterate(ObjectVisitor* v)` 遍历接口，其职责仅仅是“把本模块持有的所有对象引用逐个交给传入的访问器”。通过这种设计，对象图的遍历逻辑与具体的 GC 算法逻辑被成功解耦。
 
-代码 4-1 给出了 `Heap::IterateRoots()` 的删节实现。该函数把 VM 中若干关键运行时状态统一暴露给 GC 访问器，从而构成追踪式 GC 执行扫描时的根集合。
+在本文系统中，由 `Heap::IterateRoots()` 函数负责把 VM 中若干关键子系统和运行时状态的遍历接口统一暴露给 GC 访问器，从而构成追踪式 GC 算法执行扫描时的根集合。代码 4-1 给出了该函数的删节实现。
 
 ```cpp
 void Heap::IterateRoots(ObjectVisitor* v) {
@@ -610,21 +610,16 @@ void Heap::IterateRoots(ObjectVisitor* v) {
     isolate_->klass_list().Get(i)->Iterate(v);
   }
 
-  if (isolate_->handle_scope_implementer() != nullptr) {
-    isolate_->handle_scope_implementer()->Iterate(v);
-  }
-  if (isolate_->interpreter() != nullptr) {
-    isolate_->interpreter()->Iterate(v);
-  }
-  if (isolate_->module_manager() != nullptr) {
-    isolate_->module_manager()->Iterate(v);
-  }
+  isolate_->handle_scope_implementer()->Iterate(v);
+  isolate_->interpreter()->Iterate(v);
+  isolate_->module_manager()->Iterate(v);
   isolate_->exception_state()->Iterate(v);
+  ...
 }
 ```
 代码 4-1
 
-从这段代码可以看出，根集合在实现中被显式组织为一组运行时状态入口。若 `Heap::IterateRoots()` 漏掉某个入口，GC 就可能错误回收仍然存活的对象。因此，对追踪式 GC 而言，根的组织与回收算法同样关键。句柄机制作为重要扫描根，会在 4.2 中进一步展开。
+在这段代码中可以看到，句柄机制是组成根集合的重要部分。它的内部实现会在 4.2 中进一步展开。
 
 ### 4.1.4 具体的垃圾回收算法与实现
 
