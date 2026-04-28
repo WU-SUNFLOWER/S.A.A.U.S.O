@@ -605,11 +605,6 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 ```cpp
 void Heap::IterateRoots(ObjectVisitor* v) {
   isolate_->Iterate(v);
-
-  for (size_t i = 0; i < isolate_->klass_list().length(); ++i) {
-    isolate_->klass_list().Get(i)->Iterate(v);
-  }
-
   isolate_->handle_scope_implementer()->Iterate(v);
   isolate_->interpreter()->Iterate(v);
   isolate_->module_manager()->Iterate(v);
@@ -823,38 +818,7 @@ Handle<PyObject> KlassVtableTrampolines::Add(...) {
 ```
 代码 4-5
 
-### 4.3.4 内建类型的实现原理及初始化
-
-在 2.4.2 中已经指出，一个最小可用的 PVM 必须先提供若干基础内建类型。从实现角度看，这些类型并不是由用户代码在运行时临时创建的，而是由 VM 在 C++ 侧预先定义。因此，PVM 既要为它们提供各自的实例布局，也要准备对应的类型元信息与核心行为实现。这一步实际是在把前述统一对象模型真正落到可运行的基础类型上。
-
-在 S.A.A.U.S.O VM 中，这种“预先定义”主要体现在两层：对象实体层由 `PyObject` 子类承载具体字段布局，类型元信息层由对应的 `Klass` 子类承载名称、继承关系、实例特征和核心行为入口。需要指出的是，并非所有内建值都一定以普通堆对象出现；例如当前系统中的整数采用标记指针表示，但仍通过 `PySmiKlass` 被统一纳入对象系统。
-
-以 Python 中的 `list` 类型为例，其对象实体会在 `PyObject` 基础上增加长度和元素存储区等字段，而对应类型在初始化过程中需要补齐元信息、继承关系与核心行为入口。
-
-代码 4-6 给出了 `list` 类型初始化过程的删节实现。
-
-```cpp
-void PyListKlass::PreInitialize(Isolate* isolate) {
-  填写基础元信息，代码略...
-  将内建类型的特有核心行为入口写进虚函数表的槽位，代码略...
-}
-
-void PyListKlass::Initialize(Isolate* isolate) {
-  CreateAndBindToPyTypeObject(isolate);  // 创建类型对象，并建立绑定关系
-  auto klass_properties = PyDict::New(isolate);
-  set_klass_properties(klass_properties);  // 创建并设置类属性字典
-  AddSuper(PyObjectKlass::GetInstance(isolate));  // 将 object 添加为父类
-  OrderSupers(isolate);  // 计算生成 mro 序列
-  vtable_.Initialize(isolate, Tagged<Klass>(this));  // 填充虚函数表中其余槽位
-  PyListBuiltinMethods::Install(klass_properties);  // 安装内建方法到类型字典
-  set_name(PyString::New(isolate, "list"));  // 设置类名
-}
-```
-代码 4-6
-
-需特别说明的是，为避免自举阶段的循环依赖，现阶段系统采用分阶段初始化：各内建类型先执行无需依赖其他类型的 `PreInitialize()`，使系统达到最小可用；再执行依赖关系更完整的 `Initialize()`，补齐类型的 Python 语义。
-
-### 4.3.5 用户自定义类的创建过程
+### 4.3.4 用户自定义类的创建过程
 
 对本文系统来说，创建用户自定义类，本质上是同时完成 Python 语义层可见的类型对象建立，以及 `Klass` 中元信息、继承关系和虚函数表的初始化。其中，`Klass` 的初始化尤为关键，因为它是 4.3.2 中属性查找与 4.3.3 中核心行为分派得以正确工作的基础。
 
@@ -865,10 +829,22 @@ void PyListKlass::Initialize(Isolate* isolate) {
 
 从图中可见，整个类的创建过程由三个阶段分步完成：
 （1）实体创建与双向绑定：系统首先在虚拟机堆内存中分别分配暴露给 Python 层的 Python 类型对象（在系统代码中被称为 `PyTypeObject`）和供 VM 内部使用的 `Klass` 实体，并建立两者的双向绑定。
-（2）基本元信息装配：系统将类型名称（class_name）、类属性字典（class_properties）、基类列表（supers）等数据写入 `Klass` 实体。特别地，若用户没有显式声明父类，系统需要自动补入内建的 `object` 类型作为默认基类，以保证对象模型的统一。
+（2）基本元信息填写：系统将类型名称（class_name）、类属性字典（class_properties）、基类列表（supers）等数据写入 `Klass` 实体。特别地，若用户没有显式声明父类，系统需要自动补入内建的 `object` 类型作为默认基类，以保证对象模型的统一。
 （3）MRO 序列与虚函数表初始化：这是最关键的阶段。系统首先对基类列表执行 C3 线性化算法计算出 MRO 序列，并存入 `Klass` 实体；随后遍历 MRO 序列查找并复制祖先类的有效虚函数表槽位；最后，检查当前类的属性字典，若发现用户重写了某魔法方法，则将对应虚表槽位改写为 4.3.3 中描述的桥接函数（Trampoline）。
 
 通过上述三个阶段的初始化流程，用户自定义类既能继承父类的高效 C++ 核心行为，又能完美兼容 Python 语义所允许的动态覆写能力。最终，`Runtime_CreatePythonClass()` 函数会向解释器返回一个状态完整、可正常使用的类型对象。
+
+### 4.3.5 内建类型的实现原理及初始化自举
+
+在 2.4.2 中已经指出，一个最小可用的 PVM 必须先提供若干基础内建类型。与 4.3.4 中在运行时动态创建的自定义类不同，内建类型（如 `int`、`list`、`dict` 等）由 VM 在 C++ 侧预先定义，并在 VM 启动时完成创建与初始化。
+
+在实现机制上，内建类型同样遵循“对象实例数据与类型行为分离”的对象模型。落地到具体的工程实现中，S.A.A.U.S.O VM 内部由 `PyObject` 的特定派生类（如 `PyList`、`PyDict`）负责承载内建类型实例的数据，由对应的 `Klass` 派生类（如 `PyListKlass`、`PyDictKlass`）实例承载核心行为入口与实现。其初始化流程也与图 4.4 高度一致，均需要经历实体创建与双向绑定、基本元信息填写和MRO 序列与虚函数表初始化等关键步骤。
+
+然而，内建 Python 类型的初始化还会面临一个特有的工程问题，即内建类型的循环依赖（cyclic dependency）。例如，`dict` 类型的父类是 `object`，因此在初始化 `dict` 类型时要求 `object` 类型先完成初始化；而 `object` 自身的类属性字典又是一个 `dict` 实例，因此在初始化 `dict` 类型时反而又要求 `object` 类型先完成初始化。从这个例子中可见，如果采用与自定义类相同的单阶段顺序初始化来初始化内建类型，系统将非常容易陷入“先有鸡还是先有蛋”的难题。
+
+为了解决这一问题，S.A.A.U.S.O VM 针对内建类型设计了**两阶段初始化机制**：
+（1）最小可用阶段初始化：该阶段在系统代码中被称为 `PreInitialize`。各内建类型首先统一执行无外部依赖的基础初始化，仅完成 `Klass` 实体的创建与基础元信息填入，以及将内建类型核心行为对应的本地 C++ 函数指针注册到虚函数表槽位。在这个阶段，为了避免陷入循环依赖，绝不能引入可能依赖其他内建类型的操作。
+（2）语义补齐阶段：该阶段在系统代码中被称为 `Initialize`，即最为正式的初始化阶段。在所有基础类型均达到最小可用状态后，系统再统一调度执行第二阶段。在此阶段，系统安全地进行创建 Python 类型对象、挂载类型字典和计算 MRO 序列等需要依赖其他内建类型的初始化步骤，最终彻底补齐内建类型的 Python 面向对象语义。
 
 ## 4.4 执行层基础设施的实现
 
