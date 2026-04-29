@@ -1385,3 +1385,130 @@ pending_exception_unwind:
 
 本文所实现的 S.A.A.U.S.O VM 系统的完整源代码、单元测试及相关开发文档已公开发布于 GitHub 平台，访问地址如下：
 https://github.com/WU-SUNFLOWER/S.A.A.U.S.O
+
+# 附录 B S.A.A.U.S.O VM 系统性能表现补充测试用例
+
+## (1) 核心控制流测试
+
+```python
+import time
+
+def generate_data(n):
+    i = n
+    data = []
+    while i >= 0:
+        data.append(i)
+        i -= 1
+    return data
+
+def bubble_sort(arr):
+    n = len(arr)
+    i = 0
+    while i < n - 1:
+        swapped = False
+        j = 0
+        while j < n - i - 1:
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+                swapped = True
+            j += 1
+        if not swapped:
+            break
+        i += 1
+    return arr
+
+def main():
+    data = generate_data(10000)
+
+    start_time = time.perf_counter()
+    sorted_data = bubble_sort(data)
+    end_time = time.perf_counter()
+
+    elapsed = end_time - start_time
+    print(elapsed)
+
+main()
+```
+
+## (2) 递归控制流测试
+
+```python
+import time
+
+def fib(n):
+    if n < 2:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+def main():
+    start_time = time.perf_counter()
+    result = fib(32)
+    end_time = time.perf_counter()
+    elapsed = end_time - start_time
+    print(result)
+    print(elapsed)
+
+main()
+```
+
+## (3) 高频创建海量自定义对象的测试
+
+```python
+import time
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+def main():
+    i = 0
+    start_time = time.perf_counter()
+    while i < 200000:
+        point = Point(i, i + 1)
+        i += 1
+    end_time = time.perf_counter()
+    elapsed = end_time - start_time
+    print(elapsed)
+
+main()
+```
+
+## (4) 高频调用自定义对象方法的测试
+
+```python
+import time
+
+class Counter:
+    def __init__(self, base):
+        self.base = base
+
+    def step(self, value):
+        return self.base + value
+
+def build_objects():
+    i = 0
+    result = []
+    while i < 1000:
+        result.append(Counter(i))
+        i += 1
+    return result
+
+def main():
+    objects = build_objects()
+    outer = 0
+    total = 0
+    start_time = time.perf_counter()
+    while outer < 200:
+        inner = 0
+        while inner < len(objects):
+            total = total + objects[inner].step(inner)
+            inner += 1
+        outer += 1
+    end_time = time.perf_counter()
+    elapsed = end_time - start_time
+    print(total)
+    print(elapsed)
+
+main()
+```
