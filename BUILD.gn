@@ -498,6 +498,12 @@ executable("object_method_call_benchmark") {
   deps = [ ":embedder_api" ]
 }
 
+executable("major_gc_benchmark") {
+  testonly = true
+  sources = [ "//samples/major-gc-benchmark.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
 # -----------------------------------------------------------------------------
 # 统一测试入口
 # -----------------------------------------------------------------------------
