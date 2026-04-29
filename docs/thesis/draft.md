@@ -12,6 +12,18 @@ Python 语言因其语法简洁、生态丰富和开发效率高，被广泛应�
 
 关键词：Python；Python 虚拟机；字节码解释器；对象系统；运行时系统；垃圾回收
 
+# Abstract
+
+Python is widely used in web development, data analysis, artificial intelligence, and automation because of its concise syntax, rich ecosystem, and high development efficiency. As a dynamically typed high-level language, Python programs usually rely on a Python virtual machine to perform bytecode interpretation, object management, and runtime support. Although CPython has become a highly mature industrial implementation, its codebase and internal mechanisms are relatively complex, which makes it less suitable for teaching-oriented exploration and customized development in some scenarios. To address this issue, this thesis designs and implements a lightweight Python virtual machine backend system named S.A.A.U.S.O VM for teaching and customization-oriented use cases.
+
+This thesis first analyzes the key capabilities required by a lightweight virtual machine compatible with the core bytecode execution model of CPython 3.12, focusing on the execution model, function objects, stack frames, closures, object system, exception mechanism, and module mechanism of Python. On this basis, it proposes the overall architecture of S.A.A.U.S.O VM and further implements the virtual machine heap and the main path of Scavenge garbage collection, the handle mechanism, a unified object system, a dispatch-table-driven bytecode interpreter, exception state management and stack unwinding, module import infrastructure, and an embedder API for host programs.
+
+To validate the correctness and usability of the system, this thesis builds automated test suites for both the VM kernel and the embedder interface based on Google Test, and conducts systematic tests covering bytecode execution, object system behavior, exception handling, module import, cooperation between handles and garbage collection, and host-script interaction. In addition, several representative programs are selected for supplementary performance observation, and the readability and maintainability of the system are analyzed qualitatively from an engineering perspective. The results show that S.A.A.U.S.O VM currently passes 438 automated test cases, demonstrates good functional correctness and runtime stability, and basically achieves the expected goals in lightweight design, structural clarity, and embeddability.
+
+Although S.A.A.U.S.O VM still shows a performance gap compared with mature industrial Python implementations, this work remains of practical value. Centered on the goals of lightweight design, embeddability, structural clarity, and suitability for teaching demonstration and customized development, this thesis establishes a real, executable, testable, and extensible Python virtual machine backend system. The completed work not only helps illustrate how the core mechanisms of programming language virtual machines can be realized in engineering practice, but also provides a lightweight option for customized development scenarios. The system foundation established in this thesis also lays the groundwork for future extension of Python language semantics, improvement of the garbage collection framework, and enhancement of embedded scripting capabilities.
+
+Keywords: Python; Python Virtual Machine; Bytecode Interpreter; Object System; Runtime System; Garbage Collection
+
 # 第1章 绪论
 
 ## 1.1 课题背景
