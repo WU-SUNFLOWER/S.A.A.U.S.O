@@ -46,6 +46,12 @@ int main() {
     TryCatch try_catch(isolate);
 
     Local<Context> context = Context::New(isolate);
+    Maybe<void> set_name_result = context->Global()->Set(
+        String::New(isolate, "__name__"), String::New(isolate, "__main__"));
+    if (set_name_result.IsNothing()) [[unlikely]] {
+      std::cout << "set __name__ failed" << std::endl;
+      return 1;
+    }
 
     MaybeLocal<Script> maybe_script =
         Script::Compile(isolate, String::New(isolate, kPythonSource));
