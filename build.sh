@@ -64,7 +64,7 @@ case $MODE in
     demo)
         OUT_DIR="out/demo"
         GN_ARGS=""
-        TARGET="embedder_hello_world embedder_game_engine_demo inject_cpp_func call_python_func catch_exception bubble_sort"
+        TARGET="embedder_hello_world embedder_game_engine_demo inject_cpp_func call_python_func catch_exception bubble_sort_benchmark fibonacci_benchmark object_create_benchmark object_method_call_benchmark"
         ;;
     *)
         echo "错误: 未知的模式 '$MODE'"
