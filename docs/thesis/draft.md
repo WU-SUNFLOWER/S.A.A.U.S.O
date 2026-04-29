@@ -1079,36 +1079,39 @@ INTERPRETER_HANDLER_DISPATCH(PopJumpIfFalse, {
 
 ```cpp
 void Interpreter::EvalCurrentFrame() {
-  ...
-pending_exception_unwind: {
-  auto* exception_state = isolate_->exception_state();
-  exception_state->set_pending_exception_pc(current_frame_->pc() -
-                                            kBytecodeSizeInBytes);
+  正常字节码处理 handler ...
 
-  ExceptionHandlerInfo handler_info;
-  if (ExceptionTable::LookupHandler(
-          isolate_, current_frame_->code_object(isolate_),
-          exception_state->pending_exception_pc(), handler_info)) {
-    current_frame_->set_stack_top(handler_info.stack_depth);
-    ...
-    PUSH(exception_state->pending_exception_tagged());
-    exception_state->Clear();
-    current_frame_->set_pc(handler_info.handler_pc);
-    DISPATCH();
+pending_exception_unwind: 
+  // （1） 记录当前触发异常的指令位置
+  ExceptionState* state = isolate_->exception_state();
+  int exception_pc = current_frame_->pc() - kBytecodeSizeInBytes;
+  state->set_pending_exception_pc(exception_pc);
+
+  // （2）在当前栈帧对应代码对象的异常表中查找匹配的处理器
+  ExceptionHandlerInfo handler;
+  bool found = ExceptionTable::LookupHandler(
+                   current_frame_->code_object(), exception_pc, handler);
+
+  if (found) {
+    // （3a）命中处理器：恢复操作数栈深，压入异常对象，并跳转到处理器入口
+    current_frame_->set_stack_top(handler.stack_depth);
+    PUSH(state->pending_exception());
+    state->Clear();
+    
+    current_frame_->set_pc(handler.handler_pc);
+    DISPATCH(); // 跳转至异常处理器继续执行
+  } else {
+    // （3b）未命中处理器：回溯当前栈帧，退回到上一层栈帧
+    UnwindCurrentFrame();
+    DISPATCH(); // 在上一层栈帧中再次触发异常处理流程
   }
-
-  ...
-  UnwindCurrentFrame();
-  DISPATCH();
-}
-  ...
 }
 ```
 代码 4-14
 
 从这段代码中可以看到，`pending_exception_unwind` 主要承担异常表查找与当前帧内控制流恢复的职责。解释器首先记录触发异常的字节码指令地址，再调用 `ExceptionTable::LookupHandler()` 查询当前代码对象的异常表中是否存在覆盖该位置的处理器。若存在有效处理器，解释器就恢复目标操作数栈深、压入异常对象，并把程序计数器跳转到处理器入口；若不存在匹配处理器，则转而调用 `UnwindCurrentFrame()` 回溯当前栈帧，并把异常发生地址回溯为上一层栈帧中的调用点，以便继续在外层帧中查询异常表。如此循环，直至找到有效处理器，或回溯到根栈帧并停止整个 Python 程序的执行。
 
-若把解释器主循环与异常处理路径放在同一张全局流程图中观察，则可得到图 4.7。可以看到，普通字节码 handler 的执行、`DISPATCH()` 宏的统一收口，以及异常发生后经由 `pending_exception_unwind` 进入异常表查找与栈展开路径，实际上共同构成了同一条解释执行主链路。换言之，异常并不是解释器之外的补丁逻辑，而是解释器内部的一条分支路径。
+若把解释器主循环与异常处理路径放在同一张全局流程图中观察，则可得到图 4.7。可以看到，普通字节码 handler 的执行、`DISPATCH()` 宏的统一收口，以及异常发生后经由 `pending_exception_unwind` 进入异常表查找与栈展开路径，共同构成了解释器的执行主链路。换言之，异常并不是解释器之外的补丁逻辑，而是解释器内部的一条分支路径。
 
 ![解释器主循环与异常处理流程图](./images/interpreter-loop-and-exception-process.png)
 图 4.7 解释器主循环与异常处理流程图
