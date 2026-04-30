@@ -292,7 +292,7 @@ func()
 
 ### 2.3.3 函数闭包
 
-不同于 C/C++，Python 中支持嵌套定义函数，因此进一步会延伸出闭包（closure）机制。闭包是 Python 词法作用域规则的重要体现。
+Python 语言支持定义嵌套函数，并且被嵌套的内部函数可以捕获外部函数中的变量，从而形成闭包。闭包是 Python 词法作用域的重要体现。
 
 首先通过代码 2-11 中的例子，简要说明 Python 语言中闭包的概念和特点。
 ```python
@@ -533,7 +533,7 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 
 在堆空间划分的总体设计上，S.A.A.U.S.O VM 中主要包括新生代空间（new space）、元数据空间（meta space）以及预留的老生代空间（old space）。其中，新生代空间负责承载大量短生命周期的普通运行时对象；元数据空间负责承载类型元信息、VM 内部字符串常量等持久存在的对象。VM 内部默认会在新生代空间中创建新对象，如果后续系统认为某个对象具有较长的寿命（例如系统发现某些对象在经历若干轮 GC 后仍然存活），那么它们就会被晋升（promotion）至老生代空间单独进行维护。
 
-其次，还需要考虑针对虚拟机堆所采用的 GC 策略。在 GC 策略的总体选择上，S.A.A.U.S.O VM 当前并没有采用类似于 CPython 中以引用计数为主路径的对象生命周期管理方式。原因在于，若以引用计数作为主路径，还需要额外处理计数维护、循环引用检测等问题，这将会大幅增加本文系统的设计与实现难度，与轻量级、易理解的开发目标相悖。
+其次，还需要考虑针对虚拟机堆所采用的 GC 策略。在 GC 策略的总体选择上，S.A.A.U.S.O VM 当前并没有采用类似于 CPython 中以引用计数为主路径的对象生命周期管理方式。原因在于，若以引用计数作为主路径，还需要额外处理计数维护、循环引用检测等问题，这将会大幅增加本文系统的设计与实现难度，与轻量级、易理解的开发目标相悖[15]。
 
 基于上述考虑，S.A.A.U.S.O VM 在技术路线上选择了追踪式 GC（tracing GC）方案。追踪式 GC 是一大类 GC 算法的统称，这类算法的基本思想是：将虚拟机堆视作一张有向图，将其中的对象视作图的节点，将单个对象对其他对象的引用分别视作一条有向边。当 GC 算法执行时，首先从一组显式可枚举的存活起点对象（即根集合，roots）出发，沿着对象之间的引用关系遍历整张对象图，并将遍历过程中可达（reachable）的对象视为存活对象予以保留，未被遍历到的对象则被视为垃圾进行销毁。
 
@@ -542,7 +542,7 @@ S.A.A.U.S.O VM 的总体设计主要围绕以下几个目标展开。
 ![追踪式 GC 示例](./images/tracing-gc.png)
 图 3.3 追踪式 GC 中对象可达性判定示例
 
-在追踪式 GC 算法的技术路线框架下，实现可实际使用的 GC 机制的重点在于如何选取具体的 GC 算法、如何组织根集合以及如何实现遍历对象图[15]。在 4.1 中将会回答这几个问题在本文系统的实际实现中是如何解决的。
+在追踪式 GC 算法的技术路线框架下，实现可实际使用的 GC 机制的重点在于如何选取具体的 GC 算法、如何组织根集合以及如何实现遍历对象图。在 4.1 中将会回答这几个问题在本文系统的实际实现中是如何解决的。
 
 ### 3.4.2 句柄机制层
 
@@ -1386,10 +1386,10 @@ pending_exception_unwind:
 [9] Python Software Foundation. The Python 3.12 Standard Library: dis - Disassembler for Python bytecode[EB/OL]. (2025)[2026-04-24]. https://docs.python.org/3.12/library/dis.html.
 [10] Nystrom R. Crafting Interpreters[M]. USA: Genever Benning, 2021.
 [11] Python Software Foundation. The Python 3.12 Language Reference: Data model[EB/OL]. (2025)[2026-04-24]. https://docs.python.org/3.12/reference/datamodel.html.
-[12] Barrett K, Cassels B, Haahr P, Moon D A, Playford K, Withington P T. A monotonic superclass linearization for Dylan[C]//OOPSLA '96: Proceedings of the 11th ACM SIGPLAN Conference on Object-Oriented Programming, Systems, Languages, and Applications. 1996: 69-82.
+[12] Barrett K, Cassels B, Haahr P, et al. A monotonic superclass linearization for Dylan[C]//OOPSLA '96: Proceedings of the 11th ACM SIGPLAN Conference on Object-Oriented Programming, Systems, Languages, and Applications. 1996: 69-82.
 [13] Python Software Foundation. The Python 3.12 Language Reference: The import system[EB/OL]. (2025)[2026-04-24]. https://docs.python.org/3.12/reference/import.html.
 [14] Ungar D. Generation Scavenging: A non-disruptive high performance storage reclamation algorithm[C]//SDE 1: Proceedings of the First ACM SIGSOFT/SIGPLAN Software Engineering Symposium on Practical Software Development Environments. 1984: 157-167.
-[15] 中村成洋, 相川光. 垃圾回收的算法与实现[M]. 汪引,译. 北京: 人民邮电出版社, 2016: 22-37, 66-83.
+[15] 中村成洋, 相川光. 垃圾回收的算法与实现[M]. 汪引,译. 北京: 人民邮电出版社, 2016: 40-46, 22-31, 89-95.
 [16] Google V8 Team. Guide to embed V8[EB/OL]. (2025-03-26)[2026-04-24]. https://v8.dev/docs/embed.
 [17] 李博. 深入浅出Java虚拟机：JVM原理与实战[M]. 北京: 北京大学出版社, 2023.
 [18] Cheney C J. A nonrecursive list compacting algorithm[J]. Communications of the ACM, 1970, 13(11): 677-678.
