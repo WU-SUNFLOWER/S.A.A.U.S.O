@@ -474,9 +474,33 @@ executable("catch_exception") {
   deps = [ ":embedder_api" ]
 }
 
-executable("bubble_sort") {
+executable("bubble_sort_benchmark") {
   testonly = true
-  sources = [ "//samples/bubble-sort.cc" ]
+  sources = [ "//samples/bubble-sort-benchmark.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+executable("fibonacci_benchmark") {
+  testonly = true
+  sources = [ "//samples/fibonacci-benchmark.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+executable("object_create_benchmark") {
+  testonly = true
+  sources = [ "//samples/object-create-benchmark.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+executable("object_method_call_benchmark") {
+  testonly = true
+  sources = [ "//samples/object-method-call-benchmark.cc" ]
+  deps = [ ":embedder_api" ]
+}
+
+executable("major_gc_benchmark") {
+  testonly = true
+  sources = [ "//samples/major-gc-benchmark.cc" ]
   deps = [ ":embedder_api" ]
 }
 

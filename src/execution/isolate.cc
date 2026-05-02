@@ -130,7 +130,7 @@ void Isolate::Init() {
 
   // 初始化堆（Heap）
   heap_ = new Heap(this);
-  heap_->Setup();
+  heap_->Setup(1024 * 1024 * 1024);
 
   factory_ = new Factory(this);
 

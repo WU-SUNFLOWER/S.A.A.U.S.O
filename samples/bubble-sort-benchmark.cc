@@ -7,34 +7,27 @@
 namespace {
 
 constexpr std::string_view kPythonSource = R"(
-import random
 import time
 
 def generate_data(n):
-    i = 0
+    i = n
     data = []
-    while i < n:
-        data.append(random.randint(0, 100000))
-        i += 1
+    while i >= 0:
+        data.append(i)
+        i -= 1
     return data
 
 def bubble_sort(arr):
-    """
-    冒泡排序（使用 while 循环实现）
-    """
     n = len(arr)
     i = 0
-    # 外层循环：控制需要比较的轮数
     while i < n - 1:
         swapped = False
         j = 0
-        # 内层循环：相邻元素比较并交换
         while j < n - i - 1:
             if arr[j] > arr[j + 1]:
                 arr[j], arr[j + 1] = arr[j + 1], arr[j]
                 swapped = True
             j += 1
-        # 如果本轮没有发生交换，说明已经有序，提前结束
         if not swapped:
             break
         i += 1
@@ -43,15 +36,11 @@ def bubble_sort(arr):
 def main():
     data = generate_data(10000)
 
-    # 计时开始
     start_time = time.perf_counter()
-
     sorted_data = bubble_sort(data)
-
-    # 计时结束
     end_time = time.perf_counter()
-    elapsed = end_time - start_time
 
+    elapsed = end_time - start_time
     print(elapsed)
 
 main()
